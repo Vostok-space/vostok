@@ -1,0 +1,21 @@
+MODULE Chars;
+
+IMPORT O := Out;
+
+CONST
+	c2 = 030X;
+
+TYPE
+
+VAR ch: CHAR;
+
+BEGIN
+	ASSERT(ORD(c2) = 3 * 16);
+	O.Char("a");
+	ch := "b";
+	O.Char(c2);
+	O.Char(ch);
+	O.Ln;
+	ch := c2
+END Chars.
+
