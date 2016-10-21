@@ -71,6 +71,8 @@ CONST
 	ErrExpectReturn*				= -42;
 	ErrDeclarationNotFound*			= -43;
 	ErrConstRecursive*				= -44;
+	ErrImportModuleNotFound*		= -45;
+	ErrImportModuleWithError*		= -46;
 
 	ErrNotImplemented*				= -49;
 
@@ -507,16 +509,26 @@ VAR imp: Import;
 	err: INTEGER;
 
 	PROCEDURE Load(VAR res: Module; host: Module;
-				   buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER; p: Provider);
+				   buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER;
+				   p: Provider): INTEGER;
 	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
-		l: INTEGER;
+		l, err: INTEGER;
 	BEGIN
 		l := 0;
 		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
 		(* TODO сделать загрузку модуля из символьного файла *)
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
 		res := GetModuleByName(p, host, buf, realOfs, realEnd);
+		IF res = NIL THEN
+			res := ModuleNew(buf, realOfs, realEnd);
+			err := ErrImportModuleNotFound
+		ELSIF res.errors # NIL THEN
+			err := ErrImportModuleWithError
+		ELSE
+			err := ErrNo
+		END;
 		Log.Str("Модуль получен: "); Log.Int(ORD(res # NIL)); Log.Ln
+		RETURN err
 	END Load;
 
 	PROCEDURE IsDup(i: Import; buf: ARRAY OF CHAR;
@@ -534,17 +546,16 @@ BEGIN
 	WHILE (imp # NIL) & ~IsDup(imp, buf, nameOfs, nameEnd, realOfs, realEnd) DO
 		imp := imp.next(Import)
 	END;
-	IF imp = NIL THEN
-		err := ErrNo
-	ELSE
+	IF imp # NIL THEN
 		err := ErrImportNameDuplicate
-	END;
-	NEW(imp); imp.id := IdImport;
-	DeclConnect(imp, m, buf, nameOfs, nameEnd);
-	IF m.import = NIL THEN
-		m.import := imp
-	END;
-	Load(imp.module, m, buf, realOfs, realEnd, p)
+	ELSE
+		NEW(imp); imp.id := IdImport;
+		DeclConnect(imp, m, buf, nameOfs, nameEnd);
+		IF m.import = NIL THEN
+			m.import := imp
+		END;
+		err := Load(imp.module, m, buf, realOfs, realEnd, p)
+	END
 	RETURN err
 END ImportAdd;
 

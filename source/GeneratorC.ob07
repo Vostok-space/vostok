@@ -1,4 +1,4 @@
-(*  Generator of C-code by Oberon-07 qbstract syntax tree
+(*  Generator of C-code by Oberon-07 abstract syntax tree
  *  Copyright (C) 2016  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify

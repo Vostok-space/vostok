@@ -1,4 +1,4 @@
-(*  Command line interface for translator of Oberon-07
+(*  Command line interface for Oberon-07 translator 
  *  Copyright (C) 2016  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -142,13 +142,17 @@ BEGIN
 			O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры")
 		| Ast.ErrExpectReturn				:
 			O("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип")
-
-		| Ast.ErrNotImplemented				:
-			O("Ast.ErrNotImplemented")
 		| Ast.ErrDeclarationNotFound		:
 			O("Предварительное объявление имени не было найдено")
 		| Ast.ErrConstRecursive				:
 			O("Недопустимое использование константы для задания собственного значения")
+		| Ast.ErrImportModuleNotFound		:
+			O("Импортированный модуль не был найден")
+		| Ast.ErrImportModuleWithError		:
+			O("Импортированный модуль содержит ошибки")
+
+		| Ast.ErrNotImplemented				:
+			O("Ast.ErrNotImplemented")
 		END
 	ELSE
 		CASE code OF
