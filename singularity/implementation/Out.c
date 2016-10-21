@@ -18,6 +18,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "o7c.h"
+
 #include "Out.h"
 
 extern void Out_String(char s[/*len0*/], int s_len0) {

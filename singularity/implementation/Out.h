@@ -26,8 +26,8 @@ extern void Out_Ln(void);
 
 extern void Out_Real(double x, int n);
 
-static inline void Out_Open(void) { ; }
+static O7C_INLINE void Out_Open(void) { ; }
 
-static inline void Out_init_(void) { ; }
+static O7C_INLINE void Out_init_(void) { ; }
 
 #endif
