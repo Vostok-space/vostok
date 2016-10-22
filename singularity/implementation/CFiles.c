@@ -34,7 +34,6 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 	assert(ofs < name_len);
 	file = (CFiles_File)malloc(sizeof(*file));
 	if (NULL != file) {
-		/*printf("open %s %s\n", (char *)(name + ofs), mode);*/
 		file->file = fopen((char *)(name + ofs), mode);
 		if (NULL == file->file) {
 			free(file); file = NULL;
@@ -45,6 +44,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 
 extern void CFiles_Close(CFiles_File *file, int *file_tag) {
 	fclose((*file)->file);
+	free(*file);
 	*file = NULL;
 }
 

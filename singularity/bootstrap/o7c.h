@@ -1,9 +1,19 @@
+/* Copyright 2016 ComdivByZero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #if !defined(HEADER_GUARD_o7c)
 #define HEADER_GUARD_o7c
-
-#if !defined(O7C_MAX_RECORD_EXT)
-#	define O7C_MAX_RECORD_EXT 15
-#endif
 
 #if !defined(O7C_INLINE)
 #	if __STDC_VERSION__ >= 199901L
@@ -11,6 +21,24 @@
 #	else
 #		define O7C_INLINE 
 #	endif
+#endif
+
+#if defined(O7C_LSAN_LEAK_IGNORE)
+#	include <sanitizer/lsan_interface.h>
+	static O7C_INLINE void* o7c_malloc(size_t size) {
+		void *mem;
+		mem = malloc(size);
+		__lsan_ignore_object(mem);
+		return mem;
+	}
+#else
+	static O7C_INLINE void* o7c_malloc(size_t size) {
+		return malloc(size);
+	}
+#endif
+
+#if !defined(O7C_MAX_RECORD_EXT)
+#	define O7C_MAX_RECORD_EXT 15
 #endif
 
 #if defined(O7C_TAG_ID_TYPE)
@@ -25,7 +53,7 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
 
 static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
 	void *mem;
-	mem = malloc(sizeof(o7c_id_t *) + size);
+	mem = o7c_malloc(sizeof(o7c_id_t *) + size);
 	if (NULL != mem) {
 		*(o7c_id_t const **)mem = tag;
 		mem = (void *)((o7c_id_t **)mem + 1);

@@ -9,8 +9,7 @@ SING_BS := singularity/bootstrap
 SELF := result/self
 
 SRC := $(filter-out $(wildcard source/VFileStream.*.ob07),$(wildcard source/*.ob07))
-#SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address
-SANITIZE := -ftrapv -fsanitize=undefined
+SANITIZE :=  -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
 DEBUG := -g
 OPTIM := -O1
