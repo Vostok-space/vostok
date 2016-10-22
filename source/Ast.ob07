@@ -135,8 +135,10 @@ TYPE
 
 	Type* = POINTER TO RType;
 	Declaration* = POINTER TO RDeclaration;
+	Declarations* = POINTER TO RDeclarations;
 	RDeclaration* = RECORD(Node)
 		module*: Module;
+		up*: Declarations;
 
 		name*: Strings.String;
 		mark*: BOOLEAN;
@@ -165,8 +167,6 @@ TYPE
 	RArray* = RECORD(RConstruct)
 		count*: Expression
 	END;
-
-	Declarations* = POINTER TO RDeclarations;
 
 	Pointer* = POINTER TO RPointer;
 
@@ -197,7 +197,6 @@ TYPE
 	Procedure* = POINTER TO RProcedure;
 	RDeclarations* = RECORD(RDeclaration)
 		start*, end*: Declaration;
-		up*: Declarations;
 
 		consts*: Const;
 		types*: Type;
@@ -425,6 +424,7 @@ BEGIN
 	ELSE
 		d.module := ds.module
 	END;
+	d.up := ds;
 	d.mark := FALSE;
 	d.name.block := NIL;
 	d.name.ofs := -1;

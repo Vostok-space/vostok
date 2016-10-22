@@ -214,9 +214,10 @@ extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, int *p_t
 	return p->get(p, NULL, host, NULL, name, name_len0, ofs, end);
 }
 
-static void ImportAdd_Load(struct Ast_RModule **res, int *res_tag, struct Ast_RModule *host, int *host_tag, char unsigned buf[/*len0*/], int buf_len0, int realOfs, int realEnd, struct Ast_RProvider *p, int *p_tag) {
+static int ImportAdd_Load(struct Ast_RModule **res, int *res_tag, struct Ast_RModule *host, int *host_tag, char unsigned buf[/*len0*/], int buf_len0, int realOfs, int realEnd, struct Ast_RProvider *p, int *p_tag) {
 	char unsigned n[TranslatorLimits_MaxLenName_cnst];
 	int l;
+	int err;
 
 	l = 0;
 	assert(StringStore_CopyChars(n, TranslatorLimits_MaxLenName_cnst, &l, buf, buf_len0, realOfs, realEnd));
@@ -224,9 +225,18 @@ static void ImportAdd_Load(struct Ast_RModule **res, int *res_tag, struct Ast_RM
 	Log_Str(n, TranslatorLimits_MaxLenName_cnst);
 	Log_StrLn("' загружается", 25);
 	(*res) = Ast_GetModuleByName(p, NULL, host, NULL, buf, buf_len0, realOfs, realEnd);
+	if ((*res) == NULL) {
+		(*res) = Ast_ModuleNew(buf, buf_len0, realOfs, realEnd);
+		err = Ast_ErrImportModuleNotFound_cnst;
+	} else if ((*res)->errors != NULL) {
+		err = Ast_ErrImportModuleWithError_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
 	Log_Str("Модуль получен: ", 30);
 	Log_Int((int)((*res) != NULL));
 	Log_Ln();
+	return err;
 }
 
 static bool ImportAdd_IsDup(struct Ast_Import_s *i, int *i_tag, char unsigned buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd) {
@@ -242,18 +252,17 @@ extern int Ast_ImportAdd(struct Ast_RModule *m, int *m_tag, char unsigned buf[/*
 	while ((imp != NULL) && !ImportAdd_IsDup(imp, NULL, buf, buf_len0, nameOfs, nameEnd, realOfs, realEnd)) {
 		imp = (&O7C_GUARD(Ast_Import_s, imp->_.next, NULL));
 	}
-	if (imp == NULL) {
-		err = Ast_ErrNo_cnst;
-	} else {
+	if (imp != NULL) {
 		err = Ast_ErrImportNameDuplicate_cnst;
+	} else {
+		imp = o7c_new(sizeof(*imp), Ast_Import_s_tag);
+		imp->_._.id = Ast_IdImport_cnst;
+		DeclConnect(&imp->_, NULL, &m->_, NULL, buf, buf_len0, nameOfs, nameEnd);
+		if (m->import_ == NULL) {
+			m->import_ = imp;
+		}
+		err = ImportAdd_Load(&imp->_.module, NULL, m, NULL, buf, buf_len0, realOfs, realEnd, p, NULL);
 	}
-	imp = o7c_new(sizeof(*imp), Ast_Import_s_tag);
-	imp->_._.id = Ast_IdImport_cnst;
-	DeclConnect(&imp->_, NULL, &m->_, NULL, buf, buf_len0, nameOfs, nameEnd);
-	if (m->import_ == NULL) {
-		m->import_ = imp;
-	}
-	ImportAdd_Load(&imp->_.module, NULL, m, NULL, buf, buf_len0, realOfs, realEnd, p, NULL);
 	return err;
 }
 

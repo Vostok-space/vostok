@@ -124,12 +124,16 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры", 147);
 			} else if ((o7_case_expr == -42)) {
 				ErrorMessage_O("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип", 150);
-			} else if ((o7_case_expr == -49)) {
-				ErrorMessage_O("Ast.ErrNotImplemented", 22);
 			} else if ((o7_case_expr == -43)) {
 				ErrorMessage_O("Предварительное объявление имени не было найдено", 92);
 			} else if ((o7_case_expr == -44)) {
 				ErrorMessage_O("Недопустимое использование константы для задания собственного значения", 135);
+			} else if ((o7_case_expr == -45)) {
+				ErrorMessage_O("Импортированный модуль не был найден", 69);
+			} else if ((o7_case_expr == -46)) {
+				ErrorMessage_O("Импортированный модуль содержит ошибки", 74);
+			} else if ((o7_case_expr == -49)) {
+				ErrorMessage_O("Ast.ErrNotImplemented", 22);
 			} else assert(0); 
 		}
 	} else {

@@ -30,6 +30,22 @@ VAR
 	r3: R3;
 
 PROCEDURE Pr1(VAR r1: R1);
+TYPE
+	R = RECORD(R3)
+		r: REAL
+	END;
+VAR r: R;
+
+	PROCEDURE Check(r: R1);
+	BEGIN
+		ASSERT(r IS R2);
+		ASSERT(r IS R3);
+		ASSERT(r IS R)
+	END Check;
+BEGIN
+	r.r := 0.1;
+	ASSERT(r.r = 0.1);
+	Check(r)
 END Pr1;
 
 PROCEDURE Pr(p: PRec);

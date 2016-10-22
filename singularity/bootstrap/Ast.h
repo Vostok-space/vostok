@@ -54,6 +54,8 @@
 #define Ast_ErrExpectReturn_cnst (-42)
 #define Ast_ErrDeclarationNotFound_cnst (-43)
 #define Ast_ErrConstRecursive_cnst (-44)
+#define Ast_ErrImportModuleNotFound_cnst (-45)
+#define Ast_ErrImportModuleWithError_cnst (-46)
 #define Ast_ErrNotImplemented_cnst (-49)
 #define Ast_ErrMin_cnst (-50)
 #define Ast_NoId_cnst (-1)

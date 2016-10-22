@@ -1,3 +1,17 @@
+/* Copyright 2016 ComdivByZero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <stdlib.h>
 #include <stddef.h>
 #include <assert.h>
@@ -20,7 +34,6 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 	assert(ofs < name_len);
 	file = (CFiles_File)malloc(sizeof(*file));
 	if (NULL != file) {
-		/*printf("open %s %s\n", (char *)(name + ofs), mode);*/
 		file->file = fopen((char *)(name + ofs), mode);
 		if (NULL == file->file) {
 			free(file); file = NULL;
@@ -31,6 +44,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 
 extern void CFiles_Close(CFiles_File *file, int *file_tag) {
 	fclose((*file)->file);
+	free(*file);
 	*file = NULL;
 }
 

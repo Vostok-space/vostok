@@ -78,12 +78,6 @@ TYPE
 		opt: Options
 	END;
 
-	Selectors = RECORD
-		decl: Ast.Declaration;
-		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
-		i: INTEGER
-	END;
-
 VAR
 	type: PROCEDURE(VAR gen: Generator; type: Ast.Type;
 					typeDecl, sameType: BOOLEAN);
@@ -372,8 +366,10 @@ END IsNameOccupied;
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
 BEGIN
-	IF ~gen.opt.procLocal & (decl IS Ast.Procedure) THEN
-		up := decl(Ast.Procedure).up;
+	IF (decl IS Ast.Type) & (decl.up # decl.module) & (decl.up # NIL)
+	OR ~gen.opt.procLocal & (decl IS Ast.Procedure)
+	THEN
+		up := decl.up;
 		WHILE ~(up IS Ast.Module) DO
 			String(gen, up.name);
 			Str(gen, "_");
@@ -465,12 +461,12 @@ BEGIN
 END CheckStructName;
 
 PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
-(*TYPE TODO исправить использование локальных записей
+TYPE
 	Selectors = RECORD
 		decl: Ast.Declaration;
 		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
 		i: INTEGER
-	END;*)
+	END;
 VAR 
 	sels: Selectors;
 	typ: Ast.Type;
@@ -1407,6 +1403,22 @@ BEGIN
 	END
 END Type;
 
+PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
+BEGIN
+	IF ~rec.mark THEN
+		Str(gen, "static int ")
+	ELSIF gen.interface THEN
+		Str(gen, "extern int ")
+	ELSE
+		Str(gen, "int ")
+	END;
+	GlobalName(gen, rec);
+	Str(gen, "_tag[");
+	Int(gen, TranLim.MaxRecordExt);
+	StrLn(gen, "];");
+	Ln(gen)
+END RecordTag;
+
 PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 
 	PROCEDURE Typedef(VAR gen: Generator; type: Ast.Type);
@@ -1416,22 +1428,6 @@ PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 		Declarator(gen, type, TRUE, FALSE, TRUE);
 		StrLn(gen, ";")
 	END Typedef;
-
-	PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
-	BEGIN
-		IF ~rec.mark THEN
-			Str(gen, "static int ")
-		ELSIF gen.interface THEN
-			Str(gen, "extern int ")
-		ELSE
-			Str(gen, "int ")
-		END;
-		GlobalName(gen, rec);
-		Str(gen, "_tag[");
-		Int(gen, TranLim.MaxRecordExt);
-		StrLn(gen, "];");
-		Ln(gen)
-	END RecordTag;
 
 	PROCEDURE LinkRecord(opt: Options; rec: Ast.Record);
 	BEGIN
@@ -1787,20 +1783,26 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 	END ProcDecl;
 
 	PROCEDURE LocalProcs(VAR out: MOut; proc: Ast.Procedure);
-	VAR p: Ast.Declaration;
+	VAR p, t: Ast.Declaration;
 	BEGIN
-		IF ~out.opt.procLocal THEN
-			p := proc.procedures;
-			IF p # NIL THEN
-				IF ~proc.mark THEN
-					(* TODO также проверить наличие рекурсии из локальных процедур*)
-					ProcDecl(out.g[Implementation], proc)
-				END;
-				REPEAT
-					Procedure(out, p(Ast.Procedure));
-					p := p.next
-				UNTIL p = NIL
-			END
+		t := proc.types;
+		WHILE (t # NIL) & (t IS Ast.Type) DO
+			TypeDecl(out, t(Ast.Type));
+			(*IF t IS Ast.Record THEN
+				RecordTag(out.g[Implementation], t(Ast.Record))
+			END;*)
+			t := t.next
+		END;
+		p := proc.procedures;
+		IF p # NIL THEN
+			IF ~proc.mark & ~out.opt.procLocal THEN
+				(* TODO также проверить наличие рекурсии из локальных процедур*)
+				ProcDecl(out.g[Implementation], proc)
+			END;
+			REPEAT
+				Procedure(out, p(Ast.Procedure));
+				p := p.next
+			UNTIL p = NIL
 		END
 	END LocalProcs;
 BEGIN
@@ -1840,11 +1842,16 @@ BEGIN
 		d := d.next
 	END;
 	LnIfWrote(out);
-	WHILE (d # NIL) & (d IS Ast.Type) DO
-		TypeDecl(out, d(Ast.Type));
-		d := d.next
+
+	IF ds IS Ast.Module THEN
+		WHILE (d # NIL) & (d IS Ast.Type) DO
+			TypeDecl(out, d(Ast.Type));
+			d := d.next
+		END;
+		LnIfWrote(out)
+	ELSE
+		d := ds.vars
 	END;
-	LnIfWrote(out);
 	prev := NIL;
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		(*Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var));*)

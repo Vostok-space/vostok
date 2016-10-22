@@ -1179,15 +1179,7 @@ static void Type(struct GeneratorC_Generator *gen, int *gen_tag, struct Ast_RTyp
 	}
 }
 
-static void TypeDecl(struct MOut *out, int *out_tag, struct Ast_RType *type, int *type_tag);
-static void TypeDecl_Typedef(struct GeneratorC_Generator *gen, int *gen_tag, struct Ast_RType *type, int *type_tag) {
-	Tabs(&(*gen), gen_tag, 0);
-	Str(&(*gen), gen_tag, "typedef ", 9);
-	Declarator(&(*gen), gen_tag, &type->_, NULL, true, false, true);
-	StrLn(&(*gen), gen_tag, ";", 2);
-}
-
-static void TypeDecl_RecordTag(struct GeneratorC_Generator *gen, int *gen_tag, struct Ast_Record_s *rec, int *rec_tag) {
+static void RecordTag(struct GeneratorC_Generator *gen, int *gen_tag, struct Ast_Record_s *rec, int *rec_tag) {
 	if (!rec->_._._.mark) {
 		Str(&(*gen), gen_tag, "static int ", 12);
 	} else if ((*gen).interface_) {
@@ -1200,6 +1192,14 @@ static void TypeDecl_RecordTag(struct GeneratorC_Generator *gen, int *gen_tag, s
 	Int(&(*gen), gen_tag, TranslatorLimits_MaxRecordExt_cnst);
 	StrLn(&(*gen), gen_tag, "];", 3);
 	Ln(&(*gen), gen_tag);
+}
+
+static void TypeDecl(struct MOut *out, int *out_tag, struct Ast_RType *type, int *type_tag);
+static void TypeDecl_Typedef(struct GeneratorC_Generator *gen, int *gen_tag, struct Ast_RType *type, int *type_tag) {
+	Tabs(&(*gen), gen_tag, 0);
+	Str(&(*gen), gen_tag, "typedef ", 9);
+	Declarator(&(*gen), gen_tag, &type->_, NULL, true, false, true);
+	StrLn(&(*gen), gen_tag, ";", 2);
 }
 
 static void TypeDecl_LinkRecord(struct GeneratorC_Options_s *opt, int *opt_tag, struct Ast_Record_s *rec, int *rec_tag) {
@@ -1219,9 +1219,9 @@ static void TypeDecl(struct MOut *out, int *out_tag, struct Ast_RType *type, int
 			type = type->_.type;
 		}
 		type->_.mark = type->_.mark || ((&O7C_GUARD(Ast_Record_s, type, NULL))->pointer != NULL) && ((&O7C_GUARD(Ast_Record_s, type, NULL))->pointer->_._._.mark);
-		TypeDecl_RecordTag(&(*out).g[(int)type->_.mark], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
+		RecordTag(&(*out).g[(int)type->_.mark], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 		if (type->_.mark) {
-			TypeDecl_RecordTag(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
+			RecordTag(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 		}
 		TypeDecl_LinkRecord((*out).opt, NULL, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 	}
@@ -1533,18 +1533,22 @@ static void Procedure_ProcDecl(struct GeneratorC_Generator *gen, int *gen_tag, s
 
 static void Procedure_LocalProcs(struct MOut *out, int *out_tag, struct Ast_RProcedure *proc, int *proc_tag) {
 	struct Ast_RDeclaration *p;
+	struct Ast_RDeclaration *t;
 
-	if (!(*out).opt->procLocal) {
-		p = (&(proc->_._.procedures)->_._._);
-		if (p != NULL) {
-			if (!proc->_._._.mark) {
-				Procedure_ProcDecl(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, proc, NULL);
-			}
-			do {
-				Procedure(&(*out), out_tag, (&O7C_GUARD(Ast_RProcedure, p, NULL)), NULL);
-				p = p->next;
-			} while (!(p == NULL));
+	t = (&(proc->_._.types)->_);
+	while ((t != NULL) && (o7c_is(NULL, t, Ast_RType_tag))) {
+		TypeDecl(&(*out), out_tag, (&O7C_GUARD(Ast_RType, t, NULL)), NULL);
+		t = t->next;
+	}
+	p = (&(proc->_._.procedures)->_._._);
+	if (p != NULL) {
+		if (!proc->_._._.mark && !(*out).opt->procLocal) {
+			Procedure_ProcDecl(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, proc, NULL);
 		}
+		do {
+			Procedure(&(*out), out_tag, (&O7C_GUARD(Ast_RProcedure, p, NULL)), NULL);
+			p = p->next;
+		} while (!(p == NULL));
 	}
 }
 
@@ -1585,11 +1589,15 @@ static void Declarations(struct MOut *out, int *out_tag, struct Ast_RDeclaration
 		d = d->next;
 	}
 	LnIfWrote(&(*out), out_tag);
-	while ((d != NULL) && (o7c_is(NULL, d, Ast_RType_tag))) {
-		TypeDecl(&(*out), out_tag, (&O7C_GUARD(Ast_RType, d, NULL)), NULL);
-		d = d->next;
+	if (o7c_is(NULL, ds, Ast_RModule_tag)) {
+		while ((d != NULL) && (o7c_is(NULL, d, Ast_RType_tag))) {
+			TypeDecl(&(*out), out_tag, (&O7C_GUARD(Ast_RType, d, NULL)), NULL);
+			d = d->next;
+		}
+		LnIfWrote(&(*out), out_tag);
+	} else {
+		d = (&(ds->vars)->_);
 	}
-	LnIfWrote(&(*out), out_tag);
 	prev = NULL;
 	while ((d != NULL) && (o7c_is(NULL, d, Ast_RVar_tag))) {
 		Var(&(*out), out_tag, NULL, NULL, d, NULL, true);
