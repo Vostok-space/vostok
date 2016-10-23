@@ -1643,58 +1643,139 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Assign;
 
-	PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabelRange);
+	PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabelRange;
+						caseExpr: Ast.Expression);
 	BEGIN
 		IF r.right = NIL THEN
-			Str(gen, "(o7_case_expr == ");
+			IF caseExpr = NIL THEN
+				Str(gen, "(o7c_case_expr == ")
+			ELSE
+				Str(gen, "(");
+				Expression(gen, caseExpr);
+				Str(gen, " == ")
+			END;
 			Int(gen, r.left.value)
 		ELSE
 			ASSERT(r.left.value <= r.right.value);
 			Str(gen, "(");
 			Int(gen, r.left.value);
-			Str(gen, " <= o7_case_expr && o7_case_expr <= ");
+			IF caseExpr = NIL THEN
+				Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
+			ELSE
+				Str(gen, " <= ");
+				Expression(gen, caseExpr);
+				Str(gen, " && ");
+				Expression(gen, caseExpr);
+				Str(gen, " <= ")
+			END;
 			Int(gen, r.right.value)
 		END;
 		Str(gen, ")")
 	END CaseRange;
 
-	PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
+	PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
+							  caseExpr: Ast.Expression);
 	VAR r: Ast.CaseLabelRange;
 	BEGIN
 		Str(gen, "if (");
 		r := elem.range;
 		ASSERT(r # NIL);
-		CaseRange(gen, r);
+		CaseRange(gen, r, caseExpr);
 		WHILE r.next # NIL DO
 			r := r.next;
 			Str(gen, " || ");
-			CaseRange(gen, r)
+			CaseRange(gen, r, caseExpr)
 		END;
 		StrLn(gen, ") {");
 		INC(gen.tabs);
 		statements(gen, elem.stats);
 		Tabs(gen, -1);
 		Str(gen, "}")
+	END CaseElementAsIf;
+
+	PROCEDURE IsCaseElementWithRange(elem: Ast.CaseElement): BOOLEAN;
+	BEGIN
+		WHILE (elem # NIL) & (elem.range.right = NIL) DO
+			elem := elem.next
+		END
+		RETURN elem # NIL
+	END IsCaseElementWithRange;
+
+	PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
+	VAR r: Ast.CaseLabelRange;
+	BEGIN
+		IF ~IsCaseElementWithRange(elem) THEN
+			r := elem.range;
+			WHILE r # NIL DO
+				Tabs(gen, 0);
+				Str(gen, "case ");
+				Int(gen, r.left.value);
+				StrLn(gen, ":");
+
+				r := r.next
+			END;
+			INC(gen.tabs);
+			statements(gen, elem.stats);
+			Tabs(gen, 0);
+			StrLn(gen, "break;");
+			DEC(gen.tabs, 1)
+		END
 	END CaseElement;
 
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
-	VAR elem: Ast.CaseElement;
+	VAR elem, elemWithRange: Ast.CaseElement;
+		caseExpr: Ast.Expression;
 	BEGIN
-		Str(gen, "{ int o7_case_expr = ");
-		Expression(gen, st.expr);
-		StrLn(gen, ";");
+		elemWithRange := st.elements;
+		WHILE (elemWithRange # NIL) & ~IsCaseElementWithRange(elemWithRange) DO
+			elemWithRange := elemWithRange.next
+		END;
+		IF (elemWithRange = NIL)
+		& ~((st.expr IS Ast.Factor) & ~(st.expr IS Ast.ExprBraces))
+		THEN
+			caseExpr := NIL;
+			Str(gen, "{ int o7c_case_expr = ");
+			Expression(gen, st.expr);
+			StrLn(gen, ";");
+			Tabs(gen, +1);
+			StrLn(gen, "switch (o7c_case_expr) {")
+		ELSE
+			caseExpr := st.expr;
+			Str(gen, "switch (");
+			Expression(gen, caseExpr);
+			StrLn(gen, ") {")
+		END;
 		elem := st.elements;
-		Tabs(gen, +1);
-		CaseElement(gen, elem);
-		elem := elem.next;
-		WHILE elem # NIL DO
-			Str(gen, " else ");
+		REPEAT
 			CaseElement(gen, elem);
 			elem := elem.next
+		UNTIL elem = NIL;
+		Tabs(gen, 0);
+		StrLn(gen, "default:");
+		Tabs(gen, +1);
+		IF elemWithRange = NIL THEN
+			StrLn(gen, "abort();")
+		ELSE
+			elem := elemWithRange;
+			CaseElementAsIf(gen, elem, caseExpr);
+			elem := elem.next;
+			WHILE elem # NIL DO
+				IF IsCaseElementWithRange(elem) THEN
+					Str(gen, " else ");
+					CaseElementAsIf(gen, elem, caseExpr)
+				END;
+				elem := elem.next
+			END;
+			StrLn(gen, " else abort();")
 		END;
-		StrLn(gen, " else assert(0); ");
+		Tabs(gen, 0);
+		StrLn(gen, "break;");
 		Tabs(gen, -1);
-		StrLn(gen, "}")
+		StrLn(gen, "}");
+		IF caseExpr = NIL THEN
+			Tabs(gen, -1);
+			StrLn(gen, "}")
+		END
 	END Case;
 BEGIN
 	Tabs(gen, 0);
