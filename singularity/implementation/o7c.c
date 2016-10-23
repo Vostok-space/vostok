@@ -23,7 +23,7 @@ char**	o7c_cli_argv;
 
 int o7c_exit_code;
 
-extern void o7c_cli_init(int argc, char *argv[]) {
+extern void o7c_init(int argc, char *argv[]) {
 	o7c_exit_code = 0;
 	
 	o7c_cli_argc = argc;
@@ -37,6 +37,7 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 		ext[0] = 0;
 	} else {
 		ext[0] = base[0] + 1;
+		assert(ext[0] <= O7C_MAX_RECORD_EXT);
 		i = 1;
 		while (i < ext[0]) {
 			ext[i] = base[i];

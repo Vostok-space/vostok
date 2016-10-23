@@ -47,7 +47,7 @@
 	typedef int o7c_id_t;
 #endif
 
-typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT];
+typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
 
@@ -83,7 +83,7 @@ static O7C_INLINE void const*
 	return strct;
 }
 
-extern void o7c_cli_init(int argc, char *argv[]);
+extern void o7c_init(int argc, char *argv[]);
 
 extern int o7c_exit_code;
 

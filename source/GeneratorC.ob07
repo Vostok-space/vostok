@@ -1193,7 +1193,7 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			t := fp.type;
 			i := 0;
 			IF t.id IN {Ast.IdRecord, Ast.IdPointer} THEN
-				Str(gen, ", int *");
+				Str(gen, ", o7c_tag_t ");
 				Name(gen, fp);
 				Str(gen, "_tag")
 			ELSE
@@ -1406,17 +1406,14 @@ END Type;
 PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
 BEGIN
 	IF ~rec.mark THEN
-		Str(gen, "static int ")
+		Str(gen, "static o7c_tag_t ")
 	ELSIF gen.interface THEN
-		Str(gen, "extern int ")
+		Str(gen, "extern o7c_tag_t ")
 	ELSE
-		Str(gen, "int ")
+		Str(gen, "o7c_tag_t ")
 	END;
 	GlobalName(gen, rec);
-	Str(gen, "_tag[");
-	Int(gen, TranLim.MaxRecordExt);
-	StrLn(gen, "];");
-	Ln(gen)
+	StrLn(gen, "_tag;")
 END RecordTag;
 
 PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
@@ -2103,7 +2100,7 @@ VAR out: MOut;
 	BEGIN
 		StrLn(gen, "extern int main(int argc, char **argv) {");
 		Tabs(gen, +1);
-		StrLn(gen, "o7c_cli_init(argc, argv);");
+		StrLn(gen, "o7c_init(argc, argv);");
 		ImportInit(gen, module.import);
 		Tags(gen);
 		IF module.stats # NIL THEN

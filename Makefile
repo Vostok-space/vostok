@@ -21,7 +21,7 @@ TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.o
 
 result/o7c : $(patsubst source/%.ob07,result/%.c, $(SRC)) Makefile
 	$(O7CI) source/Translator.ob07 result/Translator.c source $(SING_O7)
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_C) result/*.c $(SING_C)/*.c -o $@
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c -o $@
 
 result/%.c : source/%.ob07 Makefile $(O7CI)
 	@mkdir -p result
@@ -29,7 +29,7 @@ result/%.c : source/%.ob07 Makefile $(O7CI)
 
 result/bs-o7c:
 	@mkdir -p result
-	$(CC) $(CC_OPT) -I$(SING_BS) $(SING_BS)/*.c -o $@
+	$(CC) $(CC_OPT) $(SANITIZE) -I$(SING_BS) -I$(SING_BS)/singularity $(SING_BS)/*.c $(SING_BS)/singularity/*.c -o $@
 
 result/test/% : test/source/%.ob07 always
 	@mkdir -p result/test
