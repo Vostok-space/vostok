@@ -9,14 +9,11 @@
 
 #include "StringStore.h"
 
-int StringStore_Block_s_tag[15];
+o7c_tag_t StringStore_Block_s_tag;
+o7c_tag_t StringStore_String_tag;
+o7c_tag_t StringStore_Store_tag;
 
-int StringStore_String_tag[15];
-
-int StringStore_Store_tag[15];
-
-
-static void Put_AddBlock(struct StringStore_Block_s **b, int *b_tag, int *i) {
+static void Put_AddBlock(struct StringStore_Block_s **b, o7c_tag_t b_tag, int *i) {
 	assert((*b)->next == NULL);
 	(*i) = 0;
 	(*b)->next = o7c_new(sizeof(*(*b)->next), StringStore_Block_s_tag);
@@ -26,7 +23,7 @@ static void Put_AddBlock(struct StringStore_Block_s **b, int *b_tag, int *i) {
 	(*b)->next = NULL;
 }
 
-extern void StringStore_Put(struct StringStore_Store *store, int *store_tag, struct StringStore_String *w, int *w_tag, char unsigned s[/*len0*/], int s_len0, int j, int end) {
+extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag, struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0, int j, int end) {
 	struct StringStore_Block_s *b;
 	int i;
 
@@ -60,7 +57,7 @@ extern void StringStore_Put(struct StringStore_Store *store, int *store_tag, str
 	(*store).ofs = i;
 }
 
-extern bool StringStore_IsEqualToChars(struct StringStore_String *w, int *w_tag, char unsigned s[/*len0*/], int s_len0, int j, int end) {
+extern bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0, int j, int end) {
 	int i;
 	struct StringStore_Block_s *b;
 
@@ -77,7 +74,7 @@ extern bool StringStore_IsEqualToChars(struct StringStore_String *w, int *w_tag,
 	return (b->s[i] == 0x00u) && (j == end);
 }
 
-extern bool StringStore_IsEqualToString(struct StringStore_String *w, int *w_tag, char unsigned s[/*len0*/], int s_len0) {
+extern bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0) {
 	int i;
 	int j;
 	struct StringStore_Block_s *b;
@@ -95,7 +92,7 @@ extern bool StringStore_IsEqualToString(struct StringStore_String *w, int *w_tag
 	return b->s[i] == s[j];
 }
 
-extern void StringStore_CopyToChars(char unsigned d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, int *w_tag) {
+extern void StringStore_CopyToChars(char unsigned d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, o7c_tag_t w_tag) {
 	struct StringStore_Block_s *b;
 	int i;
 
@@ -113,7 +110,7 @@ extern void StringStore_CopyToChars(char unsigned d[/*len0*/], int d_len0, int *
 	d[(*dofs)] = 0x00u;
 }
 
-extern void StringStore_StoreInit(struct StringStore_Store *s, int *s_tag) {
+extern void StringStore_StoreInit(struct StringStore_Store *s, o7c_tag_t s_tag) {
 	V_Init(&(*s)._, s_tag);
 	(*s).first = o7c_new(sizeof(*(*s).first), StringStore_Block_s_tag);
 	(*s).last = (*s).first;
@@ -121,7 +118,7 @@ extern void StringStore_StoreInit(struct StringStore_Store *s, int *s_tag) {
 	(*s).ofs = 0;
 }
 
-extern void StringStore_StoreDone(struct StringStore_Store *s, int *s_tag) {
+extern void StringStore_StoreDone(struct StringStore_Store *s, o7c_tag_t s_tag) {
 	while ((*s).first != NULL) {
 		(*s).first = (*s).first->next;
 	}
@@ -144,7 +141,7 @@ extern bool StringStore_CopyChars(char unsigned dest[/*len0*/], int dest_len0, i
 	return ret;
 }
 
-extern int StringStore_Write(struct VDataStream_Out *out, int *out_tag, struct StringStore_String *str, int *str_tag) {
+extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, struct StringStore_String *str, o7c_tag_t str_tag) {
 	int i;
 	int len;
 	struct StringStore_Block_s *block;

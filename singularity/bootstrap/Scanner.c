@@ -13,12 +13,11 @@
 #define CharMax_cnst "\xFF"
 #define RealScaleMax_cnst 512
 
-int Scanner_Scanner_tag[15];
-
+o7c_tag_t Scanner_Scanner_tag;
 typedef bool (*Suit)(char unsigned ch);
 typedef int (*SuitDigit)(char unsigned ch);
 
-extern void Scanner_Init(struct Scanner_Scanner *s, int *s_tag, struct VDataStream_In *in_, int *in__tag) {
+extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_, o7c_tag_t in__tag) {
 	assert(in_ != NULL);
 	V_Init(&(*s)._, s_tag);
 	(*s).column = 0;
@@ -29,7 +28,7 @@ extern void Scanner_Init(struct Scanner_Scanner *s, int *s_tag, struct VDataStre
 	(*s).buf[(*s).ind] = 0x0Cu;
 }
 
-static void FillBuf(char unsigned buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, int *in__tag) {
+static void FillBuf(char unsigned buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, o7c_tag_t in__tag) {
 	int size;
 
 	if ((*ind) % (buf_len0 / 2) != 0) {
@@ -49,7 +48,7 @@ static void FillBuf(char unsigned buf[/*len0*/], int buf_len0, int *ind, struct 
 	}
 }
 
-static char unsigned ScanChar(struct Scanner_Scanner *s, int *s_tag) {
+static char unsigned ScanChar(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	char unsigned ch;
 
 	(*s).ind++;
@@ -61,7 +60,7 @@ static char unsigned ScanChar(struct Scanner_Scanner *s, int *s_tag) {
 	return ch;
 }
 
-static void ScanChars(char unsigned buf[/*len0*/], int buf_len0, int *i, Suit suit, struct VDataStream_In *in_, int *in__tag) {
+static void ScanChars(char unsigned buf[/*len0*/], int buf_len0, int *i, Suit suit, struct VDataStream_In *in_, o7c_tag_t in__tag) {
 	while (1) if (suit(buf[(*i)])) {
 		(*i)++;
 	} else if (buf[(*i)] == 0x0Cu) {
@@ -101,8 +100,8 @@ static int ValHexDigit(char unsigned ch) {
 	return i;
 }
 
-static int SNumber(struct Scanner_Scanner *s, int *s_tag);
-static void SNumber_Val(struct Scanner_Scanner *s, int *s_tag, int *lex, int capacity, SuitDigit valDigit) {
+static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag);
+static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, int capacity, SuitDigit valDigit) {
 	int d;
 	int val;
 	int i;
@@ -130,7 +129,7 @@ static void SNumber_Val(struct Scanner_Scanner *s, int *s_tag, int *lex, int cap
 	(*s).integer = val;
 }
 
-static void SNumber_ValReal(struct Scanner_Scanner *s, int *s_tag, int *lex) {
+static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex) {
 	int i;
 	int d;
 	int scale;
@@ -206,7 +205,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, int *s_tag, int *lex) {
 	(*s).real = val;
 }
 
-static int SNumber(struct Scanner_Scanner *s, int *s_tag) {
+static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int lex;
 	char unsigned ch;
 
@@ -285,46 +284,70 @@ extern int Scanner_CheckPredefined(char unsigned buf[/*len0*/], int buf_len0, in
 
 	save = buf[end];
 	buf[end] = 0x08u;
-	{ int o7_case_expr = buf[begin];
-		if ((o7_case_expr == 65)) {
-			if (CheckPredefined_Eq("ABS", 4, buf, buf_len0, begin, end)) {
-				id = Scanner_Abs_cnst;
-			} else {
-				id = CheckPredefined_T("ASR", 4, buf, buf_len0, begin, end, Scanner_Asr_cnst, "ASSERT", 7, Scanner_Assert_cnst);
-			}
-		} else if ((o7_case_expr == 66)) {
-			id = CheckPredefined_T("BOOLEAN", 8, buf, buf_len0, begin, end, Scanner_Boolean_cnst, "BYTE", 5, Scanner_Byte_cnst);
-		} else if ((o7_case_expr == 67)) {
-			id = CheckPredefined_T("CHAR", 5, buf, buf_len0, begin, end, Scanner_Char_cnst, "CHR", 4, Scanner_Chr_cnst);
-		} else if ((o7_case_expr == 68)) {
-			id = CheckPredefined_O("DEC", 4, buf, buf_len0, begin, end, Scanner_Dec_cnst);
-		} else if ((o7_case_expr == 69)) {
-			id = CheckPredefined_O("EXCL", 5, buf, buf_len0, begin, end, Scanner_Excl_cnst);
-		} else if ((o7_case_expr == 70)) {
-			id = CheckPredefined_T("FLOOR", 6, buf, buf_len0, begin, end, Scanner_Floor_cnst, "FLT", 4, Scanner_Flt_cnst);
-		} else if ((o7_case_expr == 73)) {
-			if (CheckPredefined_Eq("INC", 4, buf, buf_len0, begin, end)) {
-				id = Scanner_Inc_cnst;
-			} else {
-				id = CheckPredefined_T("INCL", 5, buf, buf_len0, begin, end, Scanner_Incl_cnst, "INTEGER", 8, Scanner_Integer_cnst);
-			}
-		} else if ((o7_case_expr == 76)) {
-			id = CheckPredefined_T("LEN", 4, buf, buf_len0, begin, end, Scanner_Len_cnst, "LSL", 4, Scanner_Lsl_cnst);
-		} else if ((o7_case_expr == 78)) {
-			id = CheckPredefined_O("NEW", 4, buf, buf_len0, begin, end, Scanner_New_cnst);
-		} else if ((o7_case_expr == 79)) {
-			id = CheckPredefined_T("ODD", 4, buf, buf_len0, begin, end, Scanner_Odd_cnst, "ORD", 4, Scanner_Ord_cnst);
-		} else if ((o7_case_expr == 80)) {
-			id = CheckPredefined_O("PACK", 5, buf, buf_len0, begin, end, Scanner_Pack_cnst);
-		} else if ((o7_case_expr == 82)) {
-			id = CheckPredefined_T("REAL", 5, buf, buf_len0, begin, end, Scanner_Real_cnst, "ROR", 4, Scanner_Ror_cnst);
-		} else if ((o7_case_expr == 83)) {
-			id = CheckPredefined_O("SET", 4, buf, buf_len0, begin, end, Scanner_Set_cnst);
-		} else if ((o7_case_expr == 85)) {
-			id = CheckPredefined_O("UNPK", 5, buf, buf_len0, begin, end, Scanner_Unpk_cnst);
-		} else if ((o7_case_expr == 71) || (o7_case_expr == 72) || (o7_case_expr == 74) || (o7_case_expr == 75) || (o7_case_expr == 77) || (o7_case_expr == 84) || (86 <= o7_case_expr && o7_case_expr <= 90) || (97 <= o7_case_expr && o7_case_expr <= 122)) {
-			id = Scanner_Ident_cnst;
-		} else assert(0); 
+	switch (buf[begin]) {
+	case 65:
+		if (CheckPredefined_Eq("ABS", 4, buf, buf_len0, begin, end)) {
+			id = Scanner_Abs_cnst;
+		} else {
+			id = CheckPredefined_T("ASR", 4, buf, buf_len0, begin, end, Scanner_Asr_cnst, "ASSERT", 7, Scanner_Assert_cnst);
+		}
+		break;
+	case 66:
+		id = CheckPredefined_T("BOOLEAN", 8, buf, buf_len0, begin, end, Scanner_Boolean_cnst, "BYTE", 5, Scanner_Byte_cnst);
+		break;
+	case 67:
+		id = CheckPredefined_T("CHAR", 5, buf, buf_len0, begin, end, Scanner_Char_cnst, "CHR", 4, Scanner_Chr_cnst);
+		break;
+	case 68:
+		id = CheckPredefined_O("DEC", 4, buf, buf_len0, begin, end, Scanner_Dec_cnst);
+		break;
+	case 69:
+		id = CheckPredefined_O("EXCL", 5, buf, buf_len0, begin, end, Scanner_Excl_cnst);
+		break;
+	case 70:
+		id = CheckPredefined_T("FLOOR", 6, buf, buf_len0, begin, end, Scanner_Floor_cnst, "FLT", 4, Scanner_Flt_cnst);
+		break;
+	case 73:
+		if (CheckPredefined_Eq("INC", 4, buf, buf_len0, begin, end)) {
+			id = Scanner_Inc_cnst;
+		} else {
+			id = CheckPredefined_T("INCL", 5, buf, buf_len0, begin, end, Scanner_Incl_cnst, "INTEGER", 8, Scanner_Integer_cnst);
+		}
+		break;
+	case 76:
+		id = CheckPredefined_T("LEN", 4, buf, buf_len0, begin, end, Scanner_Len_cnst, "LSL", 4, Scanner_Lsl_cnst);
+		break;
+	case 78:
+		id = CheckPredefined_O("NEW", 4, buf, buf_len0, begin, end, Scanner_New_cnst);
+		break;
+	case 79:
+		id = CheckPredefined_T("ODD", 4, buf, buf_len0, begin, end, Scanner_Odd_cnst, "ORD", 4, Scanner_Ord_cnst);
+		break;
+	case 80:
+		id = CheckPredefined_O("PACK", 5, buf, buf_len0, begin, end, Scanner_Pack_cnst);
+		break;
+	case 82:
+		id = CheckPredefined_T("REAL", 5, buf, buf_len0, begin, end, Scanner_Real_cnst, "ROR", 4, Scanner_Ror_cnst);
+		break;
+	case 83:
+		id = CheckPredefined_O("SET", 4, buf, buf_len0, begin, end, Scanner_Set_cnst);
+		break;
+	case 85:
+		id = CheckPredefined_O("UNPK", 5, buf, buf_len0, begin, end, Scanner_Unpk_cnst);
+		break;
+	case 71:
+	case 72:
+	case 74:
+	case 75:
+	case 77:
+	case 84:
+	case 86:
+	case 97:
+		id = Scanner_Ident_cnst;
+		break;
+	default:
+		abort();
+		break;
 	}
 	buf[end] = save;
 	return id;
@@ -359,24 +382,25 @@ static int CheckWord(char unsigned buf[/*len0*/], int buf_len0, int ind, int end
 
 	save = buf[end];
 	buf[end] = 0x08u;
-	{ int o7_case_expr = buf[ind];
-		if ((o7_case_expr == 65)) {
+	switch (buf[ind]) {
+	default:
+		if ((buf[ind] == 65)) {
 			CheckWord_O(&lex, "ARRAY", 6, buf, buf_len0, ind, end, Scanner_Array_cnst);
-		} else if ((o7_case_expr == 66)) {
+		} else if ((buf[ind] == 66)) {
 			CheckWord_T(&lex, "BEGIN", 6, Scanner_Begin_cnst, "BY", 3, Scanner_By_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 67)) {
+		} else if ((buf[ind] == 67)) {
 			CheckWord_T(&lex, "CASE", 5, Scanner_Case_cnst, "CONST", 6, Scanner_Const_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 68)) {
+		} else if ((buf[ind] == 68)) {
 			CheckWord_T(&lex, "DIV", 4, Scanner_Div_cnst, "DO", 3, Scanner_Do_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 69)) {
+		} else if ((buf[ind] == 69)) {
 			if (CheckWord_Eq("ELSE", 5, buf, buf_len0, ind, end)) {
 				lex = Scanner_Else_cnst;
 			} else {
 				CheckWord_T(&lex, "ELSIF", 6, Scanner_Elsif_cnst, "END", 4, Scanner_End_cnst, buf, buf_len0, ind, end);
 			}
-		} else if ((o7_case_expr == 70)) {
+		} else if ((buf[ind] == 70)) {
 			CheckWord_T(&lex, "FALSE", 6, Scanner_False_cnst, "FOR", 4, Scanner_For_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 73)) {
+		} else if ((buf[ind] == 73)) {
 			if (CheckWord_Eq("IF", 3, buf, buf_len0, ind, end)) {
 				lex = Scanner_If_cnst;
 			} else if (CheckWord_Eq("IMPORT", 7, buf, buf_len0, ind, end)) {
@@ -384,21 +408,21 @@ static int CheckWord(char unsigned buf[/*len0*/], int buf_len0, int ind, int end
 			} else {
 				CheckWord_T(&lex, "IN", 3, Scanner_In_cnst, "IS", 3, Scanner_Is_cnst, buf, buf_len0, ind, end);
 			}
-		} else if ((o7_case_expr == 77)) {
+		} else if ((buf[ind] == 77)) {
 			CheckWord_T(&lex, "MOD", 4, Scanner_Mod_cnst, "MODULE", 7, Scanner_Module_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 78)) {
+		} else if ((buf[ind] == 78)) {
 			CheckWord_O(&lex, "NIL", 4, buf, buf_len0, ind, end, Scanner_Nil_cnst);
-		} else if ((o7_case_expr == 79)) {
+		} else if ((buf[ind] == 79)) {
 			CheckWord_T(&lex, "OF", 3, Scanner_Of_cnst, "OR", 3, Scanner_Or_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 80)) {
+		} else if ((buf[ind] == 80)) {
 			CheckWord_T(&lex, "POINTER", 8, Scanner_Pointer_cnst, "PROCEDURE", 10, Scanner_Procedure_cnst, buf, buf_len0, ind, end);
-		} else if ((o7_case_expr == 82)) {
+		} else if ((buf[ind] == 82)) {
 			if (CheckWord_Eq("RECORD", 7, buf, buf_len0, ind, end)) {
 				lex = Scanner_Record_cnst;
 			} else {
 				CheckWord_T(&lex, "REPEAT", 7, Scanner_Repeat_cnst, "RETURN", 7, Scanner_Return_cnst, buf, buf_len0, ind, end);
 			}
-		} else if ((o7_case_expr == 84)) {
+		} else if ((buf[ind] == 84)) {
 			if (CheckWord_Eq("THEN", 5, buf, buf_len0, ind, end)) {
 				lex = Scanner_Then_cnst;
 			} else if (CheckWord_Eq("TO", 3, buf, buf_len0, ind, end)) {
@@ -406,15 +430,16 @@ static int CheckWord(char unsigned buf[/*len0*/], int buf_len0, int ind, int end
 			} else {
 				CheckWord_T(&lex, "TRUE", 5, Scanner_True_cnst, "TYPE", 5, Scanner_Type_cnst, buf, buf_len0, ind, end);
 			}
-		} else if ((o7_case_expr == 85)) {
+		} else if ((buf[ind] == 85)) {
 			CheckWord_O(&lex, "UNTIL", 6, buf, buf_len0, ind, end, Scanner_Until_cnst);
-		} else if ((o7_case_expr == 86)) {
+		} else if ((buf[ind] == 86)) {
 			CheckWord_O(&lex, "VAR", 4, buf, buf_len0, ind, end, Scanner_Var_cnst);
-		} else if ((o7_case_expr == 87)) {
+		} else if ((buf[ind] == 87)) {
 			CheckWord_O(&lex, "WHILE", 6, buf, buf_len0, ind, end, Scanner_While_cnst);
-		} else if ((0 <= o7_case_expr && o7_case_expr <= 64) || (o7_case_expr == 71) || (o7_case_expr == 72) || (74 <= o7_case_expr && o7_case_expr <= 76) || (o7_case_expr == 81) || (o7_case_expr == 83) || (88 <= o7_case_expr && o7_case_expr <= 255)) {
+		} else if ((0 <= buf[ind] && buf[ind] <= 64) || (buf[ind] == 71) || (buf[ind] == 72) || (74 <= buf[ind] && buf[ind] <= 76) || (buf[ind] == 81) || (buf[ind] == 83) || (88 <= buf[ind] && buf[ind] <= 255)) {
 			lex = Scanner_Ident_cnst;
-		} else assert(0); 
+		} else abort();
+		break;
 	}
 	buf[end] = save;
 	return lex;
@@ -424,7 +449,7 @@ static bool IsLetterOrDigit(char unsigned ch) {
 	return (ch >= (char unsigned)'A') && (ch <= (char unsigned)'Z') || (ch >= (char unsigned)'a') && (ch <= (char unsigned)'z') || (ch >= (char unsigned)'0') && (ch <= (char unsigned)'9');
 }
 
-static int SWord(struct Scanner_Scanner *s, int *s_tag) {
+static int SWord(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int len;
 	int l;
 
@@ -439,7 +464,7 @@ static int SWord(struct Scanner_Scanner *s, int *s_tag) {
 	return l;
 }
 
-static bool ScanBlank(struct Scanner_Scanner *s, int *s_tag) {
+static bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int start;
 	int i;
 	int comment;
@@ -492,7 +517,7 @@ static bool ScanBlank(struct Scanner_Scanner *s, int *s_tag) {
 	return comment <= 0;
 }
 
-static int ScanString(struct Scanner_Scanner *s, int *s_tag) {
+static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int l;
 	int i;
 	int j;
@@ -525,12 +550,12 @@ static int ScanString(struct Scanner_Scanner *s, int *s_tag) {
 	return l;
 }
 
-static void Next_L(int *lex, struct Scanner_Scanner *s, int *s_tag, int l) {
+static void Next_L(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, int l) {
 	(*s).ind++;
 	(*lex) = l;
 }
 
-static void Next_Li(int *lex, struct Scanner_Scanner *s, int *s_tag, char unsigned ch, int then, int else_) {
+static void Next_Li(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, char unsigned ch, int then, int else_) {
 	(*s).ind++;
 	if ((*s).buf[(*s).ind] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, &(*(*s).in_), NULL);
@@ -543,69 +568,94 @@ static void Next_Li(int *lex, struct Scanner_Scanner *s, int *s_tag, char unsign
 	}
 }
 
-extern int Scanner_Next(struct Scanner_Scanner *s, int *s_tag) {
+extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int lex;
 
 	if (!ScanBlank(&(*s), s_tag)) {
 		lex = Scanner_ErrUnclosedComment_cnst;
 	} else {
 		(*s).lexStart = (*s).ind;
-		{ int o7_case_expr = (*s).buf[(*s).ind];
-			if ((o7_case_expr == 0)) {
+		switch ((*s).buf[(*s).ind]) {
+		case 43:
+			Next_L(&lex, &(*s), s_tag, Scanner_Plus_cnst);
+			break;
+		case 45:
+			Next_L(&lex, &(*s), s_tag, Scanner_Minus_cnst);
+			break;
+		case 42:
+			Next_L(&lex, &(*s), s_tag, Scanner_Asterisk_cnst);
+			break;
+		case 47:
+			Next_L(&lex, &(*s), s_tag, Scanner_Slash_cnst);
+			break;
+		case 46:
+			Next_Li(&lex, &(*s), s_tag, (char unsigned)'.', Scanner_Range_cnst, Scanner_Dot_cnst);
+			break;
+		case 44:
+			Next_L(&lex, &(*s), s_tag, Scanner_Comma_cnst);
+			break;
+		case 58:
+			Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_Assign_cnst, Scanner_Colon_cnst);
+			break;
+		case 59:
+			Next_L(&lex, &(*s), s_tag, Scanner_Semicolon_cnst);
+			break;
+		case 94:
+			Next_L(&lex, &(*s), s_tag, Scanner_Dereference_cnst);
+			break;
+		case 61:
+			Next_L(&lex, &(*s), s_tag, Scanner_Equal_cnst);
+			break;
+		case 35:
+			Next_L(&lex, &(*s), s_tag, Scanner_Inequal_cnst);
+			break;
+		case 126:
+			Next_L(&lex, &(*s), s_tag, Scanner_Negate_cnst);
+			break;
+		case 60:
+			Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_LessEqual_cnst, Scanner_Less_cnst);
+			break;
+		case 62:
+			Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_GreaterEqual_cnst, Scanner_Greater_cnst);
+			break;
+		case 38:
+			Next_L(&lex, &(*s), s_tag, Scanner_And_cnst);
+			break;
+		case 124:
+			Next_L(&lex, &(*s), s_tag, Scanner_Alternative_cnst);
+			break;
+		case 40:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace1Open_cnst);
+			break;
+		case 41:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace1Close_cnst);
+			break;
+		case 91:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace2Open_cnst);
+			break;
+		case 93:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace2Close_cnst);
+			break;
+		case 123:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace3Open_cnst);
+			break;
+		case 125:
+			Next_L(&lex, &(*s), s_tag, Scanner_Brace3Close_cnst);
+			break;
+		case 34:
+			lex = ScanString(&(*s), s_tag);
+			break;
+		default:
+			if (((*s).buf[(*s).ind] == 0)) {
 				lex = Scanner_End_cnst;
-			} else if ((1 <= o7_case_expr && o7_case_expr <= 33) || (o7_case_expr == 36) || (o7_case_expr == 37) || (o7_case_expr == 39) || (o7_case_expr == 63) || (o7_case_expr == 64) || (o7_case_expr == 92) || (o7_case_expr == 95) || (o7_case_expr == 96) || (127 <= o7_case_expr && o7_case_expr <= 255)) {
+			} else if ((1 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 33) || ((*s).buf[(*s).ind] == 36) || ((*s).buf[(*s).ind] == 37) || ((*s).buf[(*s).ind] == 39) || ((*s).buf[(*s).ind] == 63) || ((*s).buf[(*s).ind] == 64) || ((*s).buf[(*s).ind] == 92) || ((*s).buf[(*s).ind] == 95) || ((*s).buf[(*s).ind] == 96) || (127 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 255)) {
 				lex = Scanner_UnexpectChar_cnst;
-			} else if ((48 <= o7_case_expr && o7_case_expr <= 57)) {
+			} else if ((48 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 57)) {
 				lex = SNumber(&(*s), s_tag);
-			} else if ((97 <= o7_case_expr && o7_case_expr <= 122) || (65 <= o7_case_expr && o7_case_expr <= 90)) {
+			} else if ((97 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 122) || (65 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 90)) {
 				lex = SWord(&(*s), s_tag);
-			} else if ((o7_case_expr == 43)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Plus_cnst);
-			} else if ((o7_case_expr == 45)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Minus_cnst);
-			} else if ((o7_case_expr == 42)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Asterisk_cnst);
-			} else if ((o7_case_expr == 47)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Slash_cnst);
-			} else if ((o7_case_expr == 46)) {
-				Next_Li(&lex, &(*s), s_tag, (char unsigned)'.', Scanner_Range_cnst, Scanner_Dot_cnst);
-			} else if ((o7_case_expr == 44)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Comma_cnst);
-			} else if ((o7_case_expr == 58)) {
-				Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_Assign_cnst, Scanner_Colon_cnst);
-			} else if ((o7_case_expr == 59)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Semicolon_cnst);
-			} else if ((o7_case_expr == 94)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Dereference_cnst);
-			} else if ((o7_case_expr == 61)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Equal_cnst);
-			} else if ((o7_case_expr == 35)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Inequal_cnst);
-			} else if ((o7_case_expr == 126)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Negate_cnst);
-			} else if ((o7_case_expr == 60)) {
-				Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_LessEqual_cnst, Scanner_Less_cnst);
-			} else if ((o7_case_expr == 62)) {
-				Next_Li(&lex, &(*s), s_tag, (char unsigned)'=', Scanner_GreaterEqual_cnst, Scanner_Greater_cnst);
-			} else if ((o7_case_expr == 38)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_And_cnst);
-			} else if ((o7_case_expr == 124)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Alternative_cnst);
-			} else if ((o7_case_expr == 40)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace1Open_cnst);
-			} else if ((o7_case_expr == 41)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace1Close_cnst);
-			} else if ((o7_case_expr == 91)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace2Open_cnst);
-			} else if ((o7_case_expr == 93)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace2Close_cnst);
-			} else if ((o7_case_expr == 123)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace3Open_cnst);
-			} else if ((o7_case_expr == 125)) {
-				Next_L(&lex, &(*s), s_tag, Scanner_Brace3Close_cnst);
-			} else if ((o7_case_expr == 34)) {
-				lex = ScanString(&(*s), s_tag);
-			} else assert(0); 
+			} else abort();
+			break;
 		}
 		(*s).lexEnd = (*s).ind;
 		(*s).lexLen = (*s).lexEnd + (int)((*s).lexEnd < (*s).lexStart) * (sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1) - (*s).lexStart;

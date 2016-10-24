@@ -24,8 +24,7 @@ typedef struct GeneratorC_Options_s {
 	struct V_Base *recordLast;
 	bool lastSelectorDereference;
 } *GeneratorC_Options;
-extern int GeneratorC_Options_s_tag[15];
-
+extern o7c_tag_t GeneratorC_Options_s_tag;
 typedef struct GeneratorC_Generator {
 	struct V_Base _;
 	struct VDataStream_Out *out;
@@ -38,14 +37,13 @@ typedef struct GeneratorC_Generator {
 	struct GeneratorC_Options_s *opt;
 	bool expressionSemicolon;
 } GeneratorC_Generator;
-extern int GeneratorC_Generator_tag[15];
-
+extern o7c_tag_t GeneratorC_Generator_tag;
 
 extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void);
 
-extern void GeneratorC_Init(struct GeneratorC_Generator *g, int *g_tag, struct VDataStream_Out *out, int *out_tag);
+extern void GeneratorC_Init(struct GeneratorC_Generator *g, o7c_tag_t g_tag, struct VDataStream_Out *out, o7c_tag_t out_tag);
 
-extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, int *interface__tag, struct GeneratorC_Generator *implementation, int *implementation_tag, struct Ast_RModule *module, int *module_tag, struct GeneratorC_Options_s *opt, int *opt_tag);
+extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag_t interface__tag, struct GeneratorC_Generator *implementation, o7c_tag_t implementation_tag, struct Ast_RModule *module, o7c_tag_t module_tag, struct GeneratorC_Options_s *opt, o7c_tag_t opt_tag);
 
 extern void GeneratorC_init_(void);
 #endif

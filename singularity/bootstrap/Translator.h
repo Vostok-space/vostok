@@ -13,7 +13,6 @@
 #include "GeneratorC.h"
 #include "TranslatorLimits.h"
 
-extern int Translator_ModuleProvider_s_tag[15];
-
+extern o7c_tag_t Translator_ModuleProvider_s_tag;
 
 #endif

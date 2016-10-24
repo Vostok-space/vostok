@@ -129,14 +129,13 @@ typedef struct Scanner_Scanner {
 	int integer;
 	double real;
 } Scanner_Scanner;
-extern int Scanner_Scanner_tag[15];
+extern o7c_tag_t Scanner_Scanner_tag;
 
-
-extern void Scanner_Init(struct Scanner_Scanner *s, int *s_tag, struct VDataStream_In *in_, int *in__tag);
+extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_, o7c_tag_t in__tag);
 
 extern int Scanner_CheckPredefined(char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
 
-extern int Scanner_Next(struct Scanner_Scanner *s, int *s_tag);
+extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag);
 
 extern void Scanner_init_(void);
 #endif

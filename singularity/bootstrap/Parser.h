@@ -61,12 +61,11 @@ typedef struct Parser_Options {
 	bool strictReturn;
 	void (*printError)(int code);
 } Parser_Options;
-extern int Parser_Options_tag[15];
+extern o7c_tag_t Parser_Options_tag;
 
+extern void Parser_DefaultOptions(struct Parser_Options *opt, o7c_tag_t opt_tag);
 
-extern void Parser_DefaultOptions(struct Parser_Options *opt, int *opt_tag);
-
-extern struct Ast_RModule *Parser_Parse(struct VDataStream_In *in_, int *in__tag, struct Ast_RProvider *prov, int *prov_tag, struct Parser_Options *opt, int *opt_tag);
+extern struct Ast_RModule *Parser_Parse(struct VDataStream_In *in_, o7c_tag_t in__tag, struct Ast_RProvider *prov, o7c_tag_t prov_tag, struct Parser_Options *opt, o7c_tag_t opt_tag);
 
 extern void Parser_init_(void);
 #endif

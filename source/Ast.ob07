@@ -1099,20 +1099,23 @@ VAR comp: BOOLEAN;
 		RETURN comp
 	END EqualProcTypes;
 BEGIN
-	comp := t1 = t2;
-	Log.Str("Идентификаторы типов : ");
-	Log.Int(t1.id); Log.Str(" : ");
-	Log.Int(t2.id); Log.Ln;
-	distance := 0;
-	IF ~comp & (t1.id = t2.id)
-	 & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
-	THEN
-		CASE t1.id OF
-		  IdArray	: comp := CompatibleTypes(distance, t1.type, t2.type)
-		| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL) 
-						   OR IsRecordExtension(distance, t1.type(Record), t2.type(Record))
-		| IdRecord	: comp := IsRecordExtension(distance, t1(Record), t2(Record))
-		| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
+	comp := (t1 = NIL) OR (t2 = NIL); (* совместимы, если ошибка в разборе *)
+	IF ~comp THEN
+		comp := t1 = t2;
+		Log.Str("Идентификаторы типов : ");
+		Log.Int(t1.id); Log.Str(" : ");
+		Log.Int(t2.id); Log.Ln;
+		distance := 0;
+		IF ~comp & (t1.id = t2.id)
+		 & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
+		THEN
+			CASE t1.id OF
+			  IdArray	: comp := CompatibleTypes(distance, t1.type, t2.type)
+			| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL) 
+							   OR IsRecordExtension(distance, t1.type(Record), t2.type(Record))
+			| IdRecord	: comp := IsRecordExtension(distance, t1(Record), t2(Record))
+			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
+			END
 		END
 	END
 	RETURN comp
@@ -1315,30 +1318,32 @@ BEGIN
 	ASSERT((add = -1) OR (add = Scanner.Plus) OR (add = Scanner.Minus));
 	ExprSumCreate(e, add, NIL, term);
 	err := ErrNo;
-	IF ~(e.type.id IN {IdInteger, IdReal, IdSet}) & (add # -1) THEN
-		IF e.type.id # IdBoolean THEN
-			err := ErrNotNumberAndNotSetInAdd
-		ELSE
-			err := ErrSignForBool
-		END
-	ELSIF term.value # NIL THEN
-		CASE e.type.id OF
-		  IdInteger:
-			e.value := ExprIntegerNew(
-				term.value(ExprInteger).int * LexToSign(add)
-			)
-		| IdReal:
-			e.value := ExprRealNewByValue(
-				term.value(ExprReal).real * FLT(LexToSign(add))
-			)
-		| IdSet:
-			IF add # Scanner.Minus THEN
-				e.value := ExprSetByValue(term.value(ExprSet).set)
+	IF e.type # NIL THEN
+		IF ~(e.type.id IN {IdInteger, IdReal, IdSet}) & (add # -1) THEN
+			IF e.type.id # IdBoolean THEN
+				err := ErrNotNumberAndNotSetInAdd
 			ELSE
-				e.value := ExprSetByValue(-term.value(ExprSet).set)
+				err := ErrSignForBool
 			END
-		| IdBoolean:
-			e.value := ExprBooleanNew(term.value(ExprBoolean).bool)
+		ELSIF term.value # NIL THEN
+			CASE e.type.id OF
+			  IdInteger:
+				e.value := ExprIntegerNew(
+					term.value(ExprInteger).int * LexToSign(add)
+				)
+			| IdReal:
+				e.value := ExprRealNewByValue(
+					term.value(ExprReal).real * FLT(LexToSign(add))
+				)
+			| IdSet:
+				IF add # Scanner.Minus THEN
+					e.value := ExprSetByValue(term.value(ExprSet).set)
+				ELSE
+					e.value := ExprSetByValue(-term.value(ExprSet).set)
+				END
+			| IdBoolean:
+				e.value := ExprBooleanNew(term.value(ExprBoolean).bool)
+			END
 		END
 	END
 	RETURN err

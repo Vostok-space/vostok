@@ -9,39 +9,30 @@
 
 #include "V.h"
 
-int V_Message_tag[15];
+o7c_tag_t V_Message_tag;
+o7c_tag_t V_Base_tag;
+o7c_tag_t V_Error_tag;
+o7c_tag_t V_MsgFinalize_tag;
+o7c_tag_t V_MsgNeedMemory_tag;
+o7c_tag_t V_MsgCopy_tag;
+o7c_tag_t V_MsgLinks_tag;
+o7c_tag_t V_MsgContentPass_tag;
+o7c_tag_t V_MsgHash_tag;
 
-int V_Base_tag[15];
-
-int V_Error_tag[15];
-
-int V_MsgFinalize_tag[15];
-
-int V_MsgNeedMemory_tag[15];
-
-int V_MsgCopy_tag[15];
-
-int V_MsgLinks_tag[15];
-
-int V_MsgContentPass_tag[15];
-
-int V_MsgHash_tag[15];
-
-
-static bool Nothing(struct V_Base *this_, int *this__tag, struct V_Message *mes, int *mes_tag) {
+static bool Nothing(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag) {
 	return false;
 }
 
-extern void V_Init(struct V_Base *base, int *base_tag) {
+extern void V_Init(struct V_Base *base, o7c_tag_t base_tag) {
 	(*base).do_ = Nothing;
 }
 
-extern void V_SetDo(struct V_Base *base, int *base_tag, V_Handle do_) {
+extern void V_SetDo(struct V_Base *base, o7c_tag_t base_tag, V_Handle do_) {
 	assert((*base).do_ == Nothing);
 	(*base).do_ = do_;
 }
 
-extern bool V_Do(struct V_Base *handler, int *handler_tag, struct V_Message *message, int *message_tag) {
+extern bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag) {
 	return (*handler).do_(&(*handler), handler_tag, &(*message), message_tag);
 }
 
