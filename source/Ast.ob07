@@ -73,10 +73,15 @@ CONST
 	ErrConstRecursive*				= -44;
 	ErrImportModuleNotFound*		= -45;
 	ErrImportModuleWithError*		= -46;
+	ErrDerefToNotPointer*			= -47;
+	ErrArrayItemToNotArray*			= -48;
+	ErrArrayIndexNotInt*			= -49;
+	ErrArrayIndexNegative*			= -50;
+	ErrArrayIndexOutOfRange*		= -51;
 
-	ErrNotImplemented*				= -49;
+	ErrNotImplemented*				= -99;
 
-	ErrMin* 						= -50;
+	ErrMin* 						= -100;
 
 	NoId*				=-1;
 	IdInteger*			= 0;
@@ -1027,19 +1032,45 @@ BEGIN
 	s.next := NIL
 END SelInit;
 
-PROCEDURE SelPointerNew*(): SelPointer;
-VAR s: SelPointer;
+PROCEDURE SelPointerNew*(VAR sel: Selector; VAR type: Type): INTEGER;
+VAR sp: SelPointer;
+	err: INTEGER;
 BEGIN
-	NEW(s); SelInit(s)
-	RETURN s
+	NEW(sp); SelInit(sp);
+	sel := sp;
+	IF type IS Pointer THEN
+		err := ErrNo;
+		type := type.type
+	ELSE
+		err := ErrDerefToNotPointer
+	END
+	RETURN err
 END SelPointerNew;
 
-PROCEDURE SelArrayNew*(index: Expression): SelArray;
-VAR s: SelArray;
+PROCEDURE SelArrayNew*(VAR sel: Selector; VAR type: Type; index: Expression)
+					  : INTEGER;
+VAR sa: SelArray;
+	err: INTEGER;
 BEGIN
-	NEW(s); SelInit(s);
-	s.index := index
-	RETURN s
+	NEW(sa); SelInit(sa);
+	sa.index := index;
+	sel := sa;
+	IF ~(type IS Array) THEN
+		err := ErrArrayItemToNotArray
+	ELSIF index.type.id # IdInteger THEN
+		err := ErrArrayIndexNotInt
+	ELSIF (index.value # NIL) & (index.value(ExprInteger).int < 0) THEN
+		err := ErrArrayIndexNegative
+	ELSIF (index.value # NIL)
+		& (type(Array).count # NIL) & (type(Array).count.value # NIL)
+		& (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
+	THEN
+		err := ErrArrayIndexOutOfRange
+	ELSE
+		err := ErrNo
+	END;
+	type := type.type
+	RETURN err
 END SelArrayNew;
 
 PROCEDURE SelRecordNew*(var: Var): SelRecord;

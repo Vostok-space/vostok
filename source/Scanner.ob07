@@ -139,7 +139,7 @@ CONST
 	ErrExpectDigitInScale*	= -7;
 	ErrUnclosedComment*		= -8;
 
-	ErrMin*				= -20;
+	ErrMin*				= -100;
 
 	BlockSize = 4096 * 8;
 

@@ -150,7 +150,17 @@ BEGIN
 			O("Импортированный модуль не был найден")
 		| Ast.ErrImportModuleWithError		:
 			O("Импортированный модуль содержит ошибки")
-
+		| Ast.ErrDerefToNotPointer			:
+			O("Разыменовывание применено не к указателю")
+		| Ast.ErrArrayItemToNotArray		:
+			O("Получение элемента не массива")
+		| Ast.ErrArrayIndexNotInt			:
+			O("Индекс массива не целочисленный")
+		| Ast.ErrArrayIndexNegative			:
+			O("Отрицательный индекс массива")
+		| Ast.ErrArrayIndexOutOfRange		:
+			O("Индекс массива выходит за его границы")
+			
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END
@@ -215,16 +225,12 @@ BEGIN
 			O("ErrExpectAssignOrBrace1Open")
 		| Parser.ErrExpectVarRecordOrPointer:
 			O("Ожидается переменная типа запись либо указателя на неё")
-		| Parser.ErrExpectPointer			:
-			O("ErrExpectPointer")
 		| Parser.ErrExpectType				:
 			O("Ожидается тип")
 		| Parser.ErrExpectUntil				:
 			O("Ожидается UNTIL")
 		| Parser.ErrExpectDo				:
 			O("ErrExpectDo")
-		| Parser.ErrExpectVarArray			:
-			O("ErrExpectVarArray")
 		| Parser.ErrExpectDesignator		:
 			O("ErrExpectDesignator")
 		| Parser.ErrExpectVar				:

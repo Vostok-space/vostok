@@ -52,11 +52,9 @@ CONST
 	ErrExpectAssign*				= Err - 20;
 	ErrExpectAssignOrBrace1Open*	= Err - 21;
 	ErrExpectVarRecordOrPointer*	= Err - 22;
-	ErrExpectPointer*				= Err - 23;
 	ErrExpectType*					= Err - 24;
 	ErrExpectUntil*					= Err - 25;
 	ErrExpectDo*					= Err - 26;
-	ErrExpectVarArray*				= Err - 27;
 	ErrExpectDesignator*			= Err - 28;
 	ErrExpectVar*					= Err - 29;
 	ErrExpectProcedure*				= Err - 30;
@@ -65,7 +63,7 @@ CONST
 	ErrExpectExpression*			= Err - 33;
 	ErrExpectIntOrStrOrQualident*	= Err - 34;
 	ErrExcessSemicolon*				= Err - 35;
-	
+
 	ErrEndModuleNameNotMatch*		= Err - 50;
 	ErrDeclarationNotVar*			= Err - 51;
 	ErrArrayDimensionsTooMany*		= Err - 52;
@@ -75,7 +73,7 @@ CONST
 
 	ErrNotImplemented* = Err - 70;
 
-	ErrAstBegin* = Err - 80;
+	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
 
 	ErrMin = ErrAstEnd;
@@ -333,26 +331,16 @@ BEGIN
 						AddError(p, ErrExpectVarRecordOrPointer)
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
-					IF ~(type IS Ast.Array) THEN
-						AddError(p, ErrExpectVarArray)
-					END;
 					Scan(p);
-					sel := Ast.SelArrayNew(expression(p, ds));
-					type := type.type;
+					CheckAst(p, Ast.SelArrayNew(sel, type, expression(p, ds)));
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
-						type := type.type;
 						SetSel(prev, sel, des);
-						sel := Ast.SelArrayNew(expression(p, ds))
+						CheckAst(p, Ast.SelArrayNew(sel, type, expression(p, ds)))
 					END;
 					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
 				ELSIF p.l = Scanner.Dereference THEN
-					IF ~(type IS Ast.Pointer) THEN
-						AddError(p, ErrExpectPointer)
-					ELSE
-						sel := Ast.SelPointerNew();
-						type := type.type;
-						Scan(p)
-					END
+					CheckAst(p, Ast.SelPointerNew(sel, type));
+					Scan(p)
 				ELSE
 					sel := NIL
 				END;
