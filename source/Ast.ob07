@@ -1299,7 +1299,8 @@ PROCEDURE ExprSumCreate(VAR e: ExprSum; add: INTEGER; sum, term: Expression);
 VAR t: Type;
 BEGIN
 	NEW(e);
-	IF (sum # NIL) & (sum.type # NIL) & (sum.type.id IN {IdReal, IdInteger}) THEN
+	IF (sum # NIL) & (sum.type # NIL) & (sum.type.id IN {IdReal, IdInteger})
+	THEN
 		t := sum.type
 	ELSIF term # NIL THEN
 		t := term.type

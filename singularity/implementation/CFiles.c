@@ -43,9 +43,11 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 }
 
 extern void CFiles_Close(CFiles_File *file, int *file_tag) {
-	fclose((*file)->file);
-	free(*file);
-	*file = NULL;
+	if (*file != NULL) {
+		fclose((*file)->file);
+		free(*file);
+		*file = NULL;
+	}
 }
 
 extern int CFiles_Read(CFiles_File file, int *file_tag,

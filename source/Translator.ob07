@@ -396,10 +396,12 @@ BEGIN
 			DEC(destLen, 2)
 		END;
 		dest[destLen - 1] := ".";
-		dest[destLen    ] := "h";
 		dest[destLen + 1] := Utf8.Null;
-		interface := File.OpenOut(dest);
-		IF interface = NIL THEN
+		IF ~isMain THEN
+			dest[destLen] := "h";
+			interface := File.OpenOut(dest)
+		END;
+		IF (interface = NIL) & ~isMain THEN
 			ret := ErrOpenH
 		ELSE
 			dest[destLen] := "c";
@@ -408,7 +410,7 @@ BEGIN
 				File.CloseOut(interface);
 				ret := ErrOpenC
 			ELSE
-				ret := 0
+				ret := ErrNo
 			END
 		END
 	END
@@ -435,11 +437,10 @@ BEGIN
 		Out.String("Модуль переведён без ошибок"); Out.Ln;
 
 		ret := OpenOutput(interface, implementation, isMain);
-		IF ret = 0 THEN
+		IF ret = ErrNo THEN
 			GeneratorC.Init(intGen, interface);
 			GeneratorC.Init(realGen, implementation);
 			opt := GeneratorC.DefaultOptions();
-			opt.main := isMain;
 			GeneratorC.Generate(intGen, realGen, module, opt);
 
 			File.CloseOut(interface);

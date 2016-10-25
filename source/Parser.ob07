@@ -1187,12 +1187,6 @@ BEGIN
 	ELSE
 		CheckAst(p, Ast.ProcedureEnd(proc))
 	END
-	(*ELSIF p.l = Scanner.Return	THEN
-	st := Return(p, ds(Ast.Procedure));
-	IF ~(ds IS Ast.Procedure) THEN
-		CheckAst(p, Ast.ErrReturnInModuleInit)
-	END*)
-
 END Return;
 
 PROCEDURE ProcBody(VAR p: Parser; proc: Ast.Procedure);

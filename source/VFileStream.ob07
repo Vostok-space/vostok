@@ -82,8 +82,10 @@ END OpenOut;
 
 PROCEDURE CloseOut*(VAR out: Out);
 BEGIN
-	CFiles.Close(out.file);
-	out := NIL
+	IF out # NIL THEN
+		CFiles.Close(out.file);
+		out := NIL
+	END
 END CloseOut;
 
 END VFileStream.

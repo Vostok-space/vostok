@@ -39,7 +39,7 @@ TYPE
 		gnu*,
 		procLocal*: BOOLEAN;
 
-		main*: BOOLEAN;
+		main: BOOLEAN;
 
 		index: INTEGER;
 		records, recordLast: V.PBase; (* для генерации тэгов *)
@@ -1405,7 +1405,7 @@ END Type;
 
 PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
 BEGIN
-	IF ~rec.mark THEN
+	IF ~rec.mark OR gen.opt.main THEN
 		Str(gen, "static o7c_tag_t ")
 	ELSIF gen.interface THEN
 		Str(gen, "extern o7c_tag_t ")
@@ -1437,7 +1437,7 @@ PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 		ASSERT(rec.ext = NIL)
 	END LinkRecord;
 BEGIN
-	Typedef(out.g[ORD(type.mark)], type);
+	Typedef(out.g[ORD(type.mark & ~out.opt.main)], type);
 	IF (type.id = Ast.IdRecord)
 	OR (type.id = Ast.IdPointer) & (type.type.next = NIL)
 	THEN
@@ -1445,11 +1445,12 @@ BEGIN
 			type := type.type
 		END;
 		type.mark := type.mark
-				OR (type(Ast.Record).pointer # NIL) & (type(Ast.Record).pointer.mark);
-		RecordTag(out.g[ORD(type.mark)], type(Ast.Record));
-		IF type.mark THEN
-			RecordTag(out.g[Implementation], type(Ast.Record))
+				 OR (type(Ast.Record).pointer # NIL)
+				  & (type(Ast.Record).pointer.mark);
+		IF type.mark & ~out.opt.main THEN
+			RecordTag(out.g[Interface], type(Ast.Record))
 		END;
+		RecordTag(out.g[Implementation], type(Ast.Record));
 		LinkRecord(out.opt, type(Ast.Record))
 	END
 END TypeDecl;
@@ -1457,7 +1458,7 @@ END TypeDecl;
 PROCEDURE Mark(VAR gen: Generator; mark: BOOLEAN);
 BEGIN
 	IF gen.localDeep = 0 THEN
-		IF mark THEN
+		IF mark & ~gen.opt.main THEN
 			Str(gen, "extern ")
 		ELSE
 			Str(gen, "static ")
@@ -1479,19 +1480,20 @@ BEGIN
 END Const;
 
 PROCEDURE Var(VAR out: MOut; prev, var: Ast.Declaration; last: BOOLEAN);
-VAR same: BOOLEAN;
+VAR same, mark: BOOLEAN;
 BEGIN
-	same := (prev # NIL) & (prev.mark = var.mark) & (prev.type = var.type);
+	mark := var.mark & ~out.opt.main;
+	same := (prev # NIL) & (prev.mark = mark) & (prev.type = var.type);
 	IF ~same THEN
 		IF prev # NIL THEN
-			StrLn(out.g[ORD(var.mark)], ";")
+			StrLn(out.g[ORD(mark)], ";")
 		END;
-		Tabs(out.g[ORD(var.mark)], 0);
-		Mark(out.g[ORD(var.mark)], var.mark)
+		Tabs(out.g[ORD(mark)], 0);
+		Mark(out.g[ORD(mark)], mark)
 	ELSE
-		Str(out.g[ORD(var.mark)], ", ")
+		Str(out.g[ORD(mark)], ", ")
 	END;
-	IF var.mark THEN
+	IF mark THEN
 		Declarator(out.g[Interface], var, FALSE, same, TRUE);
 		IF last THEN
 			StrLn(out.g[Interface], ";")
@@ -1851,7 +1853,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 	PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
 	BEGIN
 		Tabs(gen, 0);
-		IF proc.mark THEN
+		IF proc.mark & ~gen.opt.main THEN
 			Str(gen, "extern ")
 		ELSE
 			Str(gen, "static ")
@@ -1885,7 +1887,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 	END LocalProcs;
 BEGIN
 	LocalProcs(out, proc);
-	IF proc.mark THEN
+	IF proc.mark & ~out.opt.main THEN
 		ProcDecl(out.g[Interface], proc)
 	END;
 	Implement(out, out.g[Implementation], proc)
@@ -1911,12 +1913,12 @@ BEGIN
 	d := ds.start;
 	ASSERT(~(d IS Ast.Module));
 	WHILE (d # NIL) & (d IS Ast.Import) DO
-		Import(out.g[Interface], d);
+		Import(out.g[ORD(~out.opt.main)], d);
 		d := d.next
 	END;
 	LnIfWrote(out);
 	WHILE (d # NIL) & (d IS Ast.Const) DO
-		Const(out.g[d.mark], d(Ast.Const));
+		Const(out.g[ORD(d.mark & ~out.opt.main)], d(Ast.Const));
 		d := d.next
 	END;
 	LnIfWrote(out);
@@ -2198,6 +2200,7 @@ BEGIN
 	IF opt = NIL THEN
 		opt := DefaultOptions()
 	END;
+	opt.main := interface.out = NIL;
 
 	IF ~opt.main THEN
 		MarkUsedInMarked(module)
@@ -2208,22 +2211,22 @@ BEGIN
 	Init(out.g[Interface], interface.out, module, opt);
 	opt.index := 0;
 
-	HeaderGuard(out.g[Interface]);
-
 	out.g[Implementation].interface := FALSE;
 	Init(out.g[Implementation], implementation.out, module, opt);
 
-	Import(out.g[Implementation], module);
+	IF ~opt.main THEN
+		HeaderGuard(out.g[Interface]);
+		Import(out.g[Implementation], module)
+	END;
 
 	Declarations(out, module);
 
 	IF opt.main THEN
 		Main(out.g[Implementation], module)
 	ELSE
-		ModuleInit(out.g[Interface], out.g[Implementation], module)
+		ModuleInit(out.g[Interface], out.g[Implementation], module);
+		StrLn(out.g[Interface], "#endif")
 	END;
-
-	StrLn(out.g[Interface], "#endif");
 
 	interface.len := out.g[Interface].len;
 	implementation.len := out.g[Implementation].len
