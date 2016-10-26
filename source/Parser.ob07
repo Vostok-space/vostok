@@ -320,12 +320,7 @@ BEGIN
 					IF (type IS Ast.Record) OR (type IS Ast.Pointer) THEN
 						Scan(p);
 						var := ExpectRecordExtend(p, ds, type(Ast.Construct));
-						IF type IS Ast.Record THEN
-							sel := Ast.SelGuardNew(var(Ast.Record))
-						ELSE
-							sel := Ast.SelGuardNew(var(Ast.Pointer))
-						END;
-						type := sel(Ast.SelGuard).type;
+						CheckAst(p, Ast.SelGuardNew(sel, type, var));
 						Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 					ELSIF ~(type IS Ast.ProcType) THEN
 						AddError(p, ErrExpectVarRecordOrPointer)

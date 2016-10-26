@@ -78,6 +78,9 @@ CONST
 	ErrArrayIndexNotInt*			= -49;
 	ErrArrayIndexNegative*			= -50;
 	ErrArrayIndexOutOfRange*		= -51;
+	ErrGuardExpectRecordExt*		= -52;
+	ErrGuardExpectPointerExt*		= -53;
+	ErrGuardedTypeNotExtensible*	= -54;
 
 	ErrNotImplemented*				= -99;
 
@@ -1026,6 +1029,21 @@ BEGIN
 	RETURN d
 END DesignatorNew;
 
+PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
+BEGIN
+	Log.Str("IsRecordExtension ");
+	distance := 0;
+	IF (t0 # NIL) & (t1 # NIL) THEN
+		REPEAT
+			t1 := t1.base;
+			INC(distance)
+		UNTIL (t0 = t1) OR (t1 = NIL)
+	END;
+	Log.Int(ORD(t0 = t1));
+	Log.Ln
+	RETURN t0 = t1
+END IsRecordExtension;
+
 PROCEDURE SelInit(s: Selector);
 BEGIN
 	NodeInit(s^);
@@ -1081,29 +1099,35 @@ BEGIN
 	RETURN s
 END SelRecordNew;
 
-PROCEDURE SelGuardNew*(t: Type): SelGuard;
-VAR s: SelGuard;
+PROCEDURE SelGuardNew*(VAR sel: Selector; VAR type: Type; guard: Declaration): INTEGER;
+VAR sg: SelGuard;
+	err, dist: INTEGER;
 BEGIN
-	NEW(s); SelInit(s);
-	s.type := t
-	RETURN s
+	NEW(sg); SelInit(sg);
+	err := ErrNo;
+	IF ~(type.id IN {IdRecord, IdPointer}) THEN
+		err := ErrGuardedTypeNotExtensible
+	ELSIF type.id = IdRecord THEN
+		IF ~(guard IS Record)
+		OR ~IsRecordExtension(dist, type(Record), guard(Record))
+		THEN
+			err := ErrGuardExpectRecordExt
+		ELSE
+			type := guard(Record)
+		END
+	ELSE
+		IF ~(guard IS Pointer)
+		OR ~IsRecordExtension(dist, type(Pointer).type(Record), guard(Pointer).type(Record))
+		THEN
+			err := ErrGuardExpectPointerExt
+		ELSE
+			type := guard(Pointer)
+		END
+	END;
+	sg.type := type;
+	sel := sg
+	RETURN err
 END SelGuardNew;
-
-PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
-BEGIN
-	Log.Str("IsRecordExtension ");
-	distance := 0;
-	WHILE (t0 # t1) & (t1.base # NIL) DO
-		INC(distance);
-		t1 := t1.base
-	END;
-	IF t0 # t1 THEN
-		distance := 0
-	END;
-	Log.Int(ORD(t0 = t1));
-	Log.Ln
-	RETURN t0 = t1
-END IsRecordExtension;
 
 PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type): BOOLEAN;
 VAR comp: BOOLEAN;

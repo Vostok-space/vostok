@@ -160,7 +160,13 @@ BEGIN
 			O("Отрицательный индекс массива")
 		| Ast.ErrArrayIndexOutOfRange		:
 			O("Индекс массива выходит за его границы")
-			
+		| Ast.ErrGuardExpectRecordExt		:
+			O("В защите типа ожидается расширенная запись")
+		| Ast.ErrGuardExpectPointerExt		:
+			O("В защите типа ожидается указатель на расширенную запись")
+		| Ast.ErrGuardedTypeNotExtensible	:
+			O("В защите типа переменная должна быть либо записью, либо указателем на запись")
+
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END
