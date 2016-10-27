@@ -141,7 +141,7 @@ CONST
 
 	ErrMin*				= -100;
 
-	BlockSize = 4096 * 8;
+	BlockSize = 4096 * 16;
 
 	IntMax = 07FFFFFFFH;
 	CharMax = 0FFX;
@@ -405,7 +405,7 @@ BEGIN
 	RETURN (buf[i] = Utf8.BackSpace) & (str[j] = 0X)
 END IsWordEqual;
 
-PROCEDURE CheckPredefined*(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE CheckPredefined*(buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR id: INTEGER;
 	save: CHAR;
 

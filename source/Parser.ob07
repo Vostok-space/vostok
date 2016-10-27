@@ -273,6 +273,7 @@ VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
 	prev, sel: Ast.Selector;
 	type: Ast.Type;
+	nameBegin, nameEnd: INTEGER; 
 
 	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector; des: Ast.Designator);
 	BEGIN
@@ -297,27 +298,15 @@ BEGIN
 			REPEAT
 				sel := NIL;
 				IF p.l = Scanner.Dot THEN
-					IF (type # NIL) & (type.id = Ast.IdPointer) THEN
-						type := type.type
-					END;
 					Scan(p);
-					var := NIL;
-					IF type # NIL THEN
-						IF type.id = Ast.IdRecord THEN
-							var := ExpectVar(p, type(Ast.Record).vars)
-						ELSE
-							AddError(p, ErrExpectVarRecordOrPointer);
-							Scan(p)
-						END
-					END;
-					IF var # NIL THEN
-						sel := Ast.SelRecordNew(var(Ast.Var));
-						type := var.type
-					ELSE
-						type := NIL
+					ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
+					IF nameBegin >= 0 THEN
+						CheckAst(p,
+							Ast.SelRecordNew(sel, type, p.s.buf, nameBegin, nameEnd)
+						)
 					END
 				ELSIF p.l = Scanner.Brace1Open THEN
-					IF (type IS Ast.Record) OR (type IS Ast.Pointer) THEN
+					IF type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
 						Scan(p);
 						var := ExpectRecordExtend(p, ds, type(Ast.Construct));
 						CheckAst(p, Ast.SelGuardNew(sel, type, var));
@@ -336,8 +325,6 @@ BEGIN
 				ELSIF p.l = Scanner.Dereference THEN
 					CheckAst(p, Ast.SelPointerNew(sel, type));
 					Scan(p)
-				ELSE
-					sel := NIL
 				END;
 				SetSel(prev, sel, des)
 			UNTIL sel = NIL;

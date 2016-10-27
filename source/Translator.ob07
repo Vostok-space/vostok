@@ -166,6 +166,8 @@ BEGIN
 			O("В защите типа ожидается указатель на расширенную запись")
 		| Ast.ErrGuardedTypeNotExtensible	:
 			O("В защите типа переменная должна быть либо записью, либо указателем на запись")
+		| Ast.ErrDotSelectorToNotRecord		:
+			O("Селектор элемента записи применён не к записи")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")

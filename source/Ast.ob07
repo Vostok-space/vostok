@@ -81,6 +81,7 @@ CONST
 	ErrGuardExpectRecordExt*		= -52;
 	ErrGuardExpectPointerExt*		= -53;
 	ErrGuardedTypeNotExtensible*	= -54;
+	ErrDotSelectorToNotRecord*		= -55;
 
 	ErrNotImplemented*				= -99;
 
@@ -801,7 +802,7 @@ BEGIN
 	RETURN r
 END RecordNew;
 
-PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
+PROCEDURE SearchPredefined(buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 	l: INTEGER;
 BEGIN
@@ -816,7 +817,7 @@ BEGIN
 	RETURN d
 END SearchPredefined;
 
-PROCEDURE DeclarationSearch*(ds: Declarations; VAR buf: ARRAY OF CHAR;
+PROCEDURE DeclarationSearch*(ds: Declarations; buf: ARRAY OF CHAR;
 							 begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 BEGIN
@@ -839,7 +840,7 @@ BEGIN
 END DeclarationSearch;
 
 PROCEDURE DeclarationGet*(VAR d: Declaration; ds: Declarations;
-						  VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+						  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
@@ -1091,12 +1092,40 @@ BEGIN
 	RETURN err
 END SelArrayNew;
 
-PROCEDURE SelRecordNew*(var: Var): SelRecord;
-VAR s: SelRecord;
+PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
+						name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR sr: SelRecord;
+	err: INTEGER;
+	var: Declaration;
+	vars: Declarations;
 BEGIN
-	NEW(s); SelInit(s);
-	s.var := var
-	RETURN s
+	NEW(sr); SelInit(sr);
+	var := NIL;
+	err := ErrNo;
+	IF type # NIL THEN
+		IF ~(type.id IN {IdRecord, IdPointer}) THEN
+			err := ErrDotSelectorToNotRecord
+		ELSE
+			IF type.id = IdRecord THEN
+				vars := type(Record).vars
+			ELSIF type.type = NIL THEN
+				vars := NIL
+			ELSE
+				vars := type.type(Record).vars
+			END;
+			IF vars # NIL THEN
+				err := DeclarationGet(var, vars, name, begin, end);
+				IF var # NIL THEN
+					type := var.type
+				ELSE
+					type := NIL
+				END
+			END
+		END
+	END;
+	sr.var := var(Var);
+	sel := sr
+	RETURN err
 END SelRecordNew;
 
 PROCEDURE SelGuardNew*(VAR sel: Selector; VAR type: Type; guard: Declaration): INTEGER;
