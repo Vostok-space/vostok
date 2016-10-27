@@ -1696,11 +1696,13 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END CaseElementAsIf;
 
 	PROCEDURE IsCaseElementWithRange(elem: Ast.CaseElement): BOOLEAN;
+	VAR r: Ast.CaseLabelRange;
 	BEGIN
-		WHILE (elem # NIL) & (elem.range.right = NIL) DO
-			elem := elem.next
+		r := elem.range;
+		WHILE (r # NIL) & (r.right = NIL) DO
+			r := r.next
 		END
-		RETURN elem # NIL
+		RETURN r # NIL
 	END IsCaseElementWithRange;
 
 	PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
@@ -1712,6 +1714,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Tabs(gen, 0);
 				Str(gen, "case ");
 				Int(gen, r.left.value);
+				ASSERT(r.right = NIL);
 				StrLn(gen, ":");
 
 				r := r.next

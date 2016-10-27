@@ -60,8 +60,10 @@ extern struct VFileStream_ROut *VFileStream_OpenOut(char unsigned name[/*len0*/]
 }
 
 extern void VFileStream_CloseOut(struct VFileStream_ROut **out, o7c_tag_t out_tag) {
-	CFiles_Close(&(*out)->file, NULL);
-	(*out) = NULL;
+	if ((*out) != NULL) {
+		CFiles_Close(&(*out)->file, NULL);
+		(*out) = NULL;
+	}
 }
 
 extern void VFileStream_init_(void) {

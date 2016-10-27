@@ -1239,7 +1239,7 @@ static void Type(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast
 }
 
 static void RecordTag(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_Record_s *rec, o7c_tag_t rec_tag) {
-	if (!rec->_._._.mark) {
+	if (!rec->_._._.mark || (*gen).opt->main_) {
 		Str(&(*gen), gen_tag, "static o7c_tag_t ", 18);
 	} else if ((*gen).interface_) {
 		Str(&(*gen), gen_tag, "extern o7c_tag_t ", 18);
@@ -1269,23 +1269,23 @@ static void TypeDecl_LinkRecord(struct GeneratorC_Options_s *opt, o7c_tag_t opt_
 }
 
 static void TypeDecl(struct MOut *out, o7c_tag_t out_tag, struct Ast_RType *type, o7c_tag_t type_tag) {
-	TypeDecl_Typedef(&(*out).g[(int)type->_.mark], GeneratorC_Generator_tag, type, NULL);
+	TypeDecl_Typedef(&(*out).g[(int)(type->_.mark && !(*out).opt->main_)], GeneratorC_Generator_tag, type, NULL);
 	if ((type->_._.id == Ast_IdRecord_cnst) || (type->_._.id == Ast_IdPointer_cnst) && (type->_.type->_.next == NULL)) {
 		if (type->_._.id == Ast_IdPointer_cnst) {
 			type = type->_.type;
 		}
 		type->_.mark = type->_.mark || ((&O7C_GUARD(Ast_Record_s, type, NULL))->pointer != NULL) && ((&O7C_GUARD(Ast_Record_s, type, NULL))->pointer->_._._.mark);
-		RecordTag(&(*out).g[(int)type->_.mark], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
-		if (type->_.mark) {
-			RecordTag(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
+		if (type->_.mark && !(*out).opt->main_) {
+			RecordTag(&(*out).g[Interface_cnst], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 		}
+		RecordTag(&(*out).g[Implementation_cnst], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 		TypeDecl_LinkRecord((*out).opt, NULL, (&O7C_GUARD(Ast_Record_s, type, NULL)), NULL);
 	}
 }
 
 static void Mark(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, bool mark) {
 	if ((*gen).localDeep == 0) {
-		if (mark) {
+		if (mark && !(*gen).opt->main_) {
 			Str(&(*gen), gen_tag, "extern ", 8);
 		} else {
 			Str(&(*gen), gen_tag, "static ", 8);
@@ -1307,18 +1307,20 @@ static void Const(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct As
 
 static void Var(struct MOut *out, o7c_tag_t out_tag, struct Ast_RDeclaration *prev, o7c_tag_t prev_tag, struct Ast_RDeclaration *var_, o7c_tag_t var__tag, bool last) {
 	bool same;
+	bool mark;
 
-	same = (prev != NULL) && (prev->mark == var_->mark) && (prev->type == var_->type);
+	mark = var_->mark && !(*out).opt->main_;
+	same = (prev != NULL) && (prev->mark == mark) && (prev->type == var_->type);
 	if (!same) {
 		if (prev != NULL) {
-			StrLn(&(*out).g[(int)var_->mark], GeneratorC_Generator_tag, ";", 2);
+			StrLn(&(*out).g[(int)mark], GeneratorC_Generator_tag, ";", 2);
 		}
-		Tabs(&(*out).g[(int)var_->mark], GeneratorC_Generator_tag, 0);
-		Mark(&(*out).g[(int)var_->mark], GeneratorC_Generator_tag, var_->mark);
+		Tabs(&(*out).g[(int)mark], GeneratorC_Generator_tag, 0);
+		Mark(&(*out).g[(int)mark], GeneratorC_Generator_tag, mark);
 	} else {
-		Str(&(*out).g[(int)var_->mark], GeneratorC_Generator_tag, ", ", 3);
+		Str(&(*out).g[(int)mark], GeneratorC_Generator_tag, ", ", 3);
 	}
-	if (var_->mark) {
+	if (mark) {
 		Declarator(&(*out).g[Interface_cnst], GeneratorC_Generator_tag, var_, NULL, false, same, true);
 		if (last) {
 			StrLn(&(*out).g[Interface_cnst], GeneratorC_Generator_tag, ";", 2);
@@ -1506,10 +1508,13 @@ static void Statement_CaseElementAsIf(struct GeneratorC_Generator *gen, o7c_tag_
 }
 
 static bool Statement_IsCaseElementWithRange(Ast_CaseElement elem, o7c_tag_t elem_tag) {
-	while ((elem != NULL) && (elem->range->right == NULL)) {
-		elem = elem->next;
+	Ast_CaseLabelRange r;
+
+	r = elem->range;
+	while ((r != NULL) && (r->right == NULL)) {
+		r = r->next;
 	}
-	return elem != NULL;
+	return r != NULL;
 }
 
 static void Statement_CaseElement(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_CaseElement elem, o7c_tag_t elem_tag) {
@@ -1521,6 +1526,7 @@ static void Statement_CaseElement(struct GeneratorC_Generator *gen, o7c_tag_t ge
 			Tabs(&(*gen), gen_tag, 0);
 			Str(&(*gen), gen_tag, "case ", 6);
 			Int(&(*gen), gen_tag, r->left->value_);
+			assert(r->right == NULL);
 			StrLn(&(*gen), gen_tag, ":", 2);
 			r = r->next;
 		}
@@ -1654,7 +1660,7 @@ static void Procedure_Implement(struct MOut *out, o7c_tag_t out_tag, struct Gene
 
 static void Procedure_ProcDecl(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RProcedure *proc, o7c_tag_t proc_tag) {
 	Tabs(&(*gen), gen_tag, 0);
-	if (proc->_._._.mark) {
+	if (proc->_._._.mark && !(*gen).opt->main_) {
 		Str(&(*gen), gen_tag, "extern ", 8);
 	} else {
 		Str(&(*gen), gen_tag, "static ", 8);
@@ -1686,7 +1692,7 @@ static void Procedure_LocalProcs(struct MOut *out, o7c_tag_t out_tag, struct Ast
 
 static void Procedure(struct MOut *out, o7c_tag_t out_tag, struct Ast_RProcedure *proc, o7c_tag_t proc_tag) {
 	Procedure_LocalProcs(&(*out), out_tag, proc, NULL);
-	if (proc->_._._.mark) {
+	if (proc->_._._.mark && !(*out).opt->main_) {
 		Procedure_ProcDecl(&(*out).g[Interface_cnst], GeneratorC_Generator_tag, proc, NULL);
 	}
 	Procedure_Implement(&(*out), out_tag, &(*out).g[Implementation_cnst], GeneratorC_Generator_tag, proc, NULL);
@@ -1712,12 +1718,12 @@ static void Declarations(struct MOut *out, o7c_tag_t out_tag, struct Ast_RDeclar
 	d = ds->start;
 	assert(!(o7c_is(NULL, d, Ast_RModule_tag)));
 	while ((d != NULL) && (o7c_is(NULL, d, Ast_Import_s_tag))) {
-		Import(&(*out).g[Interface_cnst], GeneratorC_Generator_tag, d, NULL);
+		Import(&(*out).g[(int)!(*out).opt->main_], GeneratorC_Generator_tag, d, NULL);
 		d = d->next;
 	}
 	LnIfWrote(&(*out), out_tag);
 	while ((d != NULL) && (o7c_is(NULL, d, Ast_Const_s_tag))) {
-		Const(&(*out).g[d->mark], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Const_s, d, NULL)), NULL);
+		Const(&(*out).g[(int)(d->mark && !(*out).opt->main_)], GeneratorC_Generator_tag, (&O7C_GUARD(Ast_Const_s, d, NULL)), NULL);
 		d = d->next;
 	}
 	LnIfWrote(&(*out), out_tag);
@@ -1976,6 +1982,7 @@ extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag
 	if (opt == NULL) {
 		opt = GeneratorC_DefaultOptions();
 	}
+	opt->main_ = (*interface_).out == NULL;
 	if (!opt->main_) {
 		MarkUsedInMarked(module, NULL);
 	}
@@ -1983,17 +1990,19 @@ extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag
 	out.g[Interface_cnst].interface_ = true;
 	Generate_Init(&out.g[Interface_cnst], GeneratorC_Generator_tag, (*interface_).out, NULL, module, NULL, opt, NULL);
 	opt->index = 0;
-	Generate_HeaderGuard(&out.g[Interface_cnst], GeneratorC_Generator_tag);
 	out.g[Implementation_cnst].interface_ = false;
 	Generate_Init(&out.g[Implementation_cnst], GeneratorC_Generator_tag, (*implementation).out, NULL, module, NULL, opt, NULL);
-	Import(&out.g[Implementation_cnst], GeneratorC_Generator_tag, &module->_._, NULL);
+	if (!opt->main_) {
+		Generate_HeaderGuard(&out.g[Interface_cnst], GeneratorC_Generator_tag);
+		Import(&out.g[Implementation_cnst], GeneratorC_Generator_tag, &module->_._, NULL);
+	}
 	Declarations(&out, MOut_tag, &module->_, NULL);
 	if (opt->main_) {
 		Generate_Main(&out.g[Implementation_cnst], GeneratorC_Generator_tag, module, NULL);
 	} else {
 		Generate_ModuleInit(&out.g[Interface_cnst], GeneratorC_Generator_tag, &out.g[Implementation_cnst], GeneratorC_Generator_tag, module, NULL);
+		StrLn(&out.g[Interface_cnst], GeneratorC_Generator_tag, "#endif", 7);
 	}
-	StrLn(&out.g[Interface_cnst], GeneratorC_Generator_tag, "#endif", 7);
 	(*interface_).len = out.g[Interface_cnst].len;
 	(*implementation).len = out.g[Implementation_cnst].len;
 }

@@ -7,7 +7,17 @@
 
 #include <o7c.h>
 
-#include "Translator.h"
+#include "Log.h"
+#include "Out.h"
+#include "CLI.h"
+#include "VFileStream.h"
+#include "Utf8.h"
+#include "StringStore.h"
+#include "Parser.h"
+#include "Scanner.h"
+#include "Ast.h"
+#include "GeneratorC.h"
+#include "TranslatorLimits.h"
 
 #define ErrNo_cnst 0
 #define ErrWrongArgs_cnst ( - 1)
@@ -27,7 +37,7 @@ typedef struct Translator_ModuleProvider_s {
 		struct Ast_RModule *last;
 	} modules;
 } *ModuleProvider;
-o7c_tag_t Translator_ModuleProvider_s_tag;
+static o7c_tag_t Translator_ModuleProvider_s_tag;
 
 static void ErrorMessage(int code);
 static void ErrorMessage_O(char unsigned s[/*len0*/], int s_len0) {
@@ -178,7 +188,31 @@ static void ErrorMessage(int code) {
 			case -46:
 				ErrorMessage_O("Импортированный модуль содержит ошибки", 74);
 				break;
+			case -47:
+				ErrorMessage_O("Разыменовывание применено не к указателю", 77);
+				break;
+			case -48:
+				ErrorMessage_O("Получение элемента не массива", 56);
+				break;
 			case -49:
+				ErrorMessage_O("Индекс массива не целочисленный", 60);
+				break;
+			case -50:
+				ErrorMessage_O("Отрицательный индекс массива", 55);
+				break;
+			case -51:
+				ErrorMessage_O("Индекс массива выходит за его границы", 70);
+				break;
+			case -52:
+				ErrorMessage_O("В защите типа ожидается расширенная запись", 80);
+				break;
+			case -53:
+				ErrorMessage_O("В защите типа ожидается указатель на расширенную запись", 104);
+				break;
+			case -54:
+				ErrorMessage_O("В защите типа переменная должна быть либо записью, либо указателем на запись", 141);
+				break;
+			case -99:
 				ErrorMessage_O("Ast.ErrNotImplemented", 22);
 				break;
 			default:
@@ -212,124 +246,118 @@ static void ErrorMessage(int code) {
 		case -8:
 			ErrorMessage_O("Незакрытый комментарий", 44);
 			break;
-		case -21:
+		case -101:
 			ErrorMessage_O("Ожидается 'MODULE'", 28);
 			break;
-		case -22:
+		case -102:
 			ErrorMessage_O("Ожидается имя", 26);
 			break;
-		case -23:
+		case -103:
 			ErrorMessage_O("Ожидается ':'", 23);
 			break;
-		case -24:
+		case -104:
 			ErrorMessage_O("Ожидается ';'", 23);
 			break;
-		case -25:
+		case -105:
 			ErrorMessage_O("Ожидается 'END'", 25);
 			break;
-		case -26:
+		case -106:
 			ErrorMessage_O("Ожидается '.'", 23);
 			break;
-		case -27:
+		case -107:
 			ErrorMessage_O("Ожидается имя модуля", 39);
 			break;
-		case -28:
+		case -108:
 			ErrorMessage_O("Ожидается '='", 23);
 			break;
-		case -29:
+		case -109:
 			ErrorMessage_O("Ожидается ')'", 23);
 			break;
-		case -30:
+		case -110:
 			ErrorMessage_O("Ожидается ']'", 23);
 			break;
-		case -31:
+		case -111:
 			ErrorMessage_O("Ожидается '}'", 23);
 			break;
-		case -32:
+		case -112:
 			ErrorMessage_O("Ожидается OF", 22);
 			break;
-		case -34:
+		case -114:
 			ErrorMessage_O("Ожидается константное целочисленное выражение", 88);
 			break;
-		case -35:
+		case -115:
 			ErrorMessage_O("ErrExpectTo", 12);
 			break;
-		case -36:
+		case -116:
 			ErrorMessage_O("ErrExpectNamedType", 19);
 			break;
-		case -37:
+		case -117:
 			ErrorMessage_O("Ожидается запись", 32);
 			break;
-		case -38:
+		case -118:
 			ErrorMessage_O("Ожидается оператор", 36);
 			break;
-		case -39:
+		case -119:
 			ErrorMessage_O("ErrExpectThen", 14);
 			break;
-		case -40:
+		case -120:
 			ErrorMessage_O("ErrExpectAssign", 16);
 			break;
-		case -41:
+		case -121:
 			ErrorMessage_O("ErrExpectAssignOrBrace1Open", 28);
 			break;
-		case -42:
+		case -122:
 			ErrorMessage_O("Ожидается переменная типа запись либо указателя на неё", 102);
 			break;
-		case -43:
-			ErrorMessage_O("ErrExpectPointer", 17);
-			break;
-		case -44:
+		case -124:
 			ErrorMessage_O("Ожидается тип", 26);
 			break;
-		case -45:
+		case -125:
 			ErrorMessage_O("Ожидается UNTIL", 25);
 			break;
-		case -46:
+		case -126:
 			ErrorMessage_O("ErrExpectDo", 12);
 			break;
-		case -47:
-			ErrorMessage_O("ErrExpectVarArray", 18);
-			break;
-		case -48:
+		case -128:
 			ErrorMessage_O("ErrExpectDesignator", 20);
 			break;
-		case -49:
+		case -129:
 			ErrorMessage_O("ErrExpectVar", 13);
 			break;
-		case -50:
+		case -130:
 			ErrorMessage_O("Ожидается процедура", 38);
 			break;
-		case -51:
+		case -131:
 			ErrorMessage_O("ErrExpectConstName", 19);
 			break;
-		case -52:
+		case -132:
 			ErrorMessage_O("Ожидается завершающее имя процедуры", 68);
 			break;
-		case -53:
+		case -133:
 			ErrorMessage_O("Ожидается выражение", 38);
 			break;
-		case -55:
+		case -135:
 			ErrorMessage_O("Лишняя ';'", 17);
 			break;
-		case -70:
+		case -150:
 			ErrorMessage_O("Завершающее имя в конце модуля не совпадает с его именем", 104);
 			break;
-		case -71:
+		case -151:
 			ErrorMessage_O("ErrDeclarationNotVar", 21);
 			break;
-		case -72:
+		case -152:
 			ErrorMessage_O("ErrArrayDimensionsTooMany", 26);
 			break;
-		case -73:
+		case -153:
 			ErrorMessage_O("Завершающее имя в теле процедуры не совпадает с её именем", 106);
 			break;
-		case -74:
+		case -154:
 			ErrorMessage_O("Объявление процедуры с возвращаемым значением не содержит скобки", 122);
 			break;
-		case -75:
+		case -155:
 			ErrorMessage_O("Длина массива должна быть > 0", 52);
 			break;
-		case -90:
+		case -170:
 			ErrorMessage_O("Не реализовано", 28);
 			break;
 		default:
@@ -472,10 +500,12 @@ static int OpenOutput(struct VFileStream_ROut **interface_, o7c_tag_t interface_
 			destLen -= 2;
 		}
 		dest[destLen - 1] = (char unsigned)'.';
-		dest[destLen] = (char unsigned)'h';
 		dest[destLen + 1] = 0x00u;
-		(*interface_) = VFileStream_OpenOut(dest, 1024);
-		if ((*interface_) == NULL) {
+		if (!(*isMain)) {
+			dest[destLen] = (char unsigned)'h';
+			(*interface_) = VFileStream_OpenOut(dest, 1024);
+		}
+		if (((*interface_) == NULL) && !(*isMain)) {
 			ret = ErrOpenH_cnst;
 		} else {
 			dest[destLen] = (char unsigned)'c';
@@ -484,7 +514,7 @@ static int OpenOutput(struct VFileStream_ROut **interface_, o7c_tag_t interface_
 				VFileStream_CloseOut(&(*interface_), NULL);
 				ret = ErrOpenC_cnst;
 			} else {
-				ret = 0;
+				ret = ErrNo_cnst;
 			}
 		}
 	}
@@ -514,11 +544,10 @@ static int Compile(struct Translator_ModuleProvider_s *mp, o7c_tag_t mp_tag, str
 		Out_String("Модуль переведён без ошибок", 52);
 		Out_Ln();
 		ret = OpenOutput(&interface_, NULL, &implementation, NULL, &isMain);
-		if (ret == 0) {
+		if (ret == ErrNo_cnst) {
 			GeneratorC_Init(&intGen, GeneratorC_Generator_tag, &interface_->_, NULL);
 			GeneratorC_Init(&realGen, GeneratorC_Generator_tag, &implementation->_, NULL);
 			opt = GeneratorC_DefaultOptions();
-			opt->main_ = isMain;
 			GeneratorC_Generate(&intGen, GeneratorC_Generator_tag, &realGen, GeneratorC_Generator_tag, module, NULL, opt, NULL);
 			VFileStream_CloseOut(&interface_, NULL);
 			VFileStream_CloseOut(&implementation, NULL);

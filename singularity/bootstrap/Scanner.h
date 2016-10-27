@@ -110,7 +110,7 @@
 #define Scanner_ErrExpectDQuote_cnst (-6)
 #define Scanner_ErrExpectDigitInScale_cnst (-7)
 #define Scanner_ErrUnclosedComment_cnst (-8)
-#define Scanner_ErrMin_cnst (-20)
+#define Scanner_ErrMin_cnst (-100)
 #define Scanner_BlockSize_cnst 32768
 
 typedef struct Scanner_Scanner {

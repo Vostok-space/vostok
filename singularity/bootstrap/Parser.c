@@ -244,37 +244,22 @@ static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_R
 					if ((o7c_is(NULL, type, Ast_Record_s_tag)) || (o7c_is(NULL, type, Ast_RPointer_tag))) {
 						Scan(&(*p), p_tag);
 						var_ = ExpectRecordExtend(&(*p), p_tag, ds, NULL, (&O7C_GUARD(Ast_RConstruct, type, NULL)), NULL);
-						if (o7c_is(NULL, type, Ast_Record_s_tag)) {
-							sel = (&(Ast_SelGuardNew(&(&O7C_GUARD(Ast_Record_s, var_, NULL))->_._, NULL))->_);
-						} else {
-							sel = (&(Ast_SelGuardNew(&(&O7C_GUARD(Ast_RPointer, var_, NULL))->_._, NULL))->_);
-						}
-						type = (&O7C_GUARD(Ast_SelGuard_s, sel, NULL))->type;
+						CheckAst(&(*p), p_tag, Ast_SelGuardNew(&sel, NULL, &type, NULL, var_, NULL));
 						Expect(&(*p), p_tag, Scanner_Brace1Close_cnst, Parser_ErrExpectBrace1Close_cnst);
 					} else if (!(o7c_is(NULL, type, Ast_ProcType_s_tag))) {
 						AddError(&(*p), p_tag, Parser_ErrExpectVarRecordOrPointer_cnst);
 					}
 				} else if ((*p).l == Scanner_Brace2Open_cnst) {
-					if (!(o7c_is(NULL, type, Ast_RArray_tag))) {
-						AddError(&(*p), p_tag, Parser_ErrExpectVarArray_cnst);
-					}
 					Scan(&(*p), p_tag);
-					sel = (&(Ast_SelArrayNew(expression(&(*p), p_tag, ds, NULL), NULL))->_);
-					type = type->_.type;
+					CheckAst(&(*p), p_tag, Ast_SelArrayNew(&sel, NULL, &type, NULL, expression(&(*p), p_tag, ds, NULL), NULL));
 					while (ScanIfEqual(&(*p), p_tag, Scanner_Comma_cnst)) {
-						type = type->_.type;
 						Designator_SetSel(&prev, NULL, sel, NULL, des, NULL);
-						sel = (&(Ast_SelArrayNew(expression(&(*p), p_tag, ds, NULL), NULL))->_);
+						CheckAst(&(*p), p_tag, Ast_SelArrayNew(&sel, NULL, &type, NULL, expression(&(*p), p_tag, ds, NULL), NULL));
 					}
 					Expect(&(*p), p_tag, Scanner_Brace2Close_cnst, Parser_ErrExpectBrace2Close_cnst);
 				} else if ((*p).l == Scanner_Dereference_cnst) {
-					if (!(o7c_is(NULL, type, Ast_RPointer_tag))) {
-						AddError(&(*p), p_tag, Parser_ErrExpectPointer_cnst);
-					} else {
-						sel = (&(Ast_SelPointerNew())->_);
-						type = type->_.type;
-						Scan(&(*p), p_tag);
-					}
+					CheckAst(&(*p), p_tag, Ast_SelPointerNew(&sel, NULL, &type, NULL));
+					Scan(&(*p), p_tag);
 				} else {
 					sel = NULL;
 				}

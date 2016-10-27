@@ -15,4 +15,5 @@
 
 extern o7c_tag_t Translator_ModuleProvider_s_tag;
 
+extern void Translator_init_(void);
 #endif

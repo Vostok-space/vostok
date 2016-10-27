@@ -673,26 +673,62 @@ extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl,
 	return d;
 }
 
+extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_tag_t t0_tag, struct Ast_Record_s *t1, o7c_tag_t t1_tag) {
+	Log_Str("IsRecordExtension ", 19);
+	(*distance) = 0;
+	if ((t0 != NULL) && (t1 != NULL)) {
+		do {
+			t1 = t1->base;
+			(*distance)++;
+		} while (!((t0 == t1) || (t1 == NULL)));
+	}
+	Log_Int((int)(t0 == t1));
+	Log_Ln();
+	return t0 == t1;
+}
+
 static void SelInit(struct Ast_RSelector *s, o7c_tag_t s_tag) {
 	NodeInit(&(*s)._, Ast_RSelector_tag);
 	s->next = NULL;
 }
 
-extern struct Ast_SelPointer_s *Ast_SelPointerNew(void) {
-	struct Ast_SelPointer_s *s;
+extern int Ast_SelPointerNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag) {
+	struct Ast_SelPointer_s *sp;
+	int err;
 
-	s = o7c_new(sizeof(*s), Ast_SelPointer_s_tag);
-	SelInit(&s->_, NULL);
-	return s;
+	sp = o7c_new(sizeof(*sp), Ast_SelPointer_s_tag);
+	SelInit(&sp->_, NULL);
+	(*sel) = (&(sp)->_);
+	if (o7c_is(NULL, (*type), Ast_RPointer_tag)) {
+		err = Ast_ErrNo_cnst;
+		(*type) = (*type)->_.type;
+	} else {
+		err = Ast_ErrDerefToNotPointer_cnst;
+	}
+	return err;
 }
 
-extern struct Ast_SelArray_s *Ast_SelArrayNew(struct Ast_RExpression *index, o7c_tag_t index_tag) {
-	struct Ast_SelArray_s *s;
+extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RExpression *index, o7c_tag_t index_tag) {
+	struct Ast_SelArray_s *sa;
+	int err;
 
-	s = o7c_new(sizeof(*s), Ast_SelArray_s_tag);
-	SelInit(&s->_, NULL);
-	s->index = index;
-	return s;
+	sa = o7c_new(sizeof(*sa), Ast_SelArray_s_tag);
+	SelInit(&sa->_, NULL);
+	sa->index = index;
+	(*sel) = (&(sa)->_);
+	if (!(o7c_is(NULL, (*type), Ast_RArray_tag))) {
+		err = Ast_ErrArrayItemToNotArray_cnst;
+	} else if (index->type->_._.id != Ast_IdInteger_cnst) {
+		err = Ast_ErrArrayIndexNotInt_cnst;
+	} else if ((index->value_ != NULL) && ((&O7C_GUARD(Ast_RExprInteger, index->value_, NULL))->int_ < 0)) {
+		err = Ast_ErrArrayIndexNegative_cnst;
+	} else if ((index->value_ != NULL) && ((&O7C_GUARD(Ast_RArray, (*type), NULL))->count != NULL) && ((&O7C_GUARD(Ast_RArray, (*type), NULL))->count->value_ != NULL) && ((&O7C_GUARD(Ast_RExprInteger, index->value_, NULL))->int_ >= (&O7C_GUARD(Ast_RExprInteger, (&O7C_GUARD(Ast_RArray, (*type), NULL))->count->value_, NULL))->int_)) {
+		err = Ast_ErrArrayIndexOutOfRange_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
+	(*type) = (*type)->_.type;
+	return err;
 }
 
 extern struct Ast_SelRecord_s *Ast_SelRecordNew(struct Ast_RVar *var_, o7c_tag_t var__tag) {
@@ -704,28 +740,32 @@ extern struct Ast_SelRecord_s *Ast_SelRecordNew(struct Ast_RVar *var_, o7c_tag_t
 	return s;
 }
 
-extern struct Ast_SelGuard_s *Ast_SelGuardNew(struct Ast_RType *t, o7c_tag_t t_tag) {
-	struct Ast_SelGuard_s *s;
+extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RDeclaration *guard, o7c_tag_t guard_tag) {
+	struct Ast_SelGuard_s *sg;
+	int err;
+	int dist;
 
-	s = o7c_new(sizeof(*s), Ast_SelGuard_s_tag);
-	SelInit(&s->_, NULL);
-	s->type = t;
-	return s;
-}
-
-extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_tag_t t0_tag, struct Ast_Record_s *t1, o7c_tag_t t1_tag) {
-	Log_Str("IsRecordExtension ", 19);
-	(*distance) = 0;
-	while ((t0 != t1) && (t1->base != NULL)) {
-		(*distance)++;
-		t1 = t1->base;
+	sg = o7c_new(sizeof(*sg), Ast_SelGuard_s_tag);
+	SelInit(&sg->_, NULL);
+	err = Ast_ErrNo_cnst;
+	if (!(( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
+		err = Ast_ErrGuardedTypeNotExtensible_cnst;
+	} else if ((*type)->_._.id == Ast_IdRecord_cnst) {
+		if (!(o7c_is(NULL, guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (*type), NULL)), NULL, (&O7C_GUARD(Ast_Record_s, guard, NULL)), NULL)) {
+			err = Ast_ErrGuardExpectRecordExt_cnst;
+		} else {
+			(*type) = (&((&O7C_GUARD(Ast_Record_s, guard, NULL)))->_._);
+		}
+	} else {
+		if (!(o7c_is(NULL, guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, (*type), NULL))->_._._.type, NULL)), NULL, (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, guard, NULL))->_._._.type, NULL)), NULL)) {
+			err = Ast_ErrGuardExpectPointerExt_cnst;
+		} else {
+			(*type) = (&((&O7C_GUARD(Ast_RPointer, guard, NULL)))->_._);
+		}
 	}
-	if (t0 != t1) {
-		(*distance) = 0;
-	}
-	Log_Int((int)(t0 == t1));
-	Log_Ln();
-	return t0 == t1;
+	sg->type = (*type);
+	(*sel) = (&(sg)->_);
+	return err;
 }
 
 static bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, o7c_tag_t t1_tag, struct Ast_ProcType_s *t2, o7c_tag_t t2_tag) {

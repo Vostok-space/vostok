@@ -56,8 +56,16 @@
 #define Ast_ErrConstRecursive_cnst (-44)
 #define Ast_ErrImportModuleNotFound_cnst (-45)
 #define Ast_ErrImportModuleWithError_cnst (-46)
-#define Ast_ErrNotImplemented_cnst (-49)
-#define Ast_ErrMin_cnst (-50)
+#define Ast_ErrDerefToNotPointer_cnst (-47)
+#define Ast_ErrArrayItemToNotArray_cnst (-48)
+#define Ast_ErrArrayIndexNotInt_cnst (-49)
+#define Ast_ErrArrayIndexNegative_cnst (-50)
+#define Ast_ErrArrayIndexOutOfRange_cnst (-51)
+#define Ast_ErrGuardExpectRecordExt_cnst (-52)
+#define Ast_ErrGuardExpectPointerExt_cnst (-53)
+#define Ast_ErrGuardedTypeNotExtensible_cnst (-54)
+#define Ast_ErrNotImplemented_cnst (-99)
+#define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
 #define Ast_IdInteger_cnst 0
 #define Ast_IdBoolean_cnst 1
@@ -484,15 +492,15 @@ extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr, 
 
 extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl, o7c_tag_t decl_tag);
 
-extern struct Ast_SelPointer_s *Ast_SelPointerNew(void);
+extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_tag_t t0_tag, struct Ast_Record_s *t1, o7c_tag_t t1_tag);
 
-extern struct Ast_SelArray_s *Ast_SelArrayNew(struct Ast_RExpression *index, o7c_tag_t index_tag);
+extern int Ast_SelPointerNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag);
+
+extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RExpression *index, o7c_tag_t index_tag);
 
 extern struct Ast_SelRecord_s *Ast_SelRecordNew(struct Ast_RVar *var_, o7c_tag_t var__tag);
 
-extern struct Ast_SelGuard_s *Ast_SelGuardNew(struct Ast_RType *t, o7c_tag_t t_tag);
-
-extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_tag_t t0_tag, struct Ast_Record_s *t1, o7c_tag_t t1_tag);
+extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RDeclaration *guard, o7c_tag_t guard_tag);
 
 extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, o7c_tag_t t1_tag, struct Ast_RType *t2, o7c_tag_t t2_tag);
 
