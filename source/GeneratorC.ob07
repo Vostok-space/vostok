@@ -193,7 +193,7 @@ BEGIN
 		len := len + Stream.Write(gen.out^, "\", 0, 1);
 		INC(i);
 		last := i
-	ELSIF block.s[i] > Utf8.NewPage DO
+	ELSIF block.s[i] # Utf8.Null DO
 		INC(i)
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
@@ -1297,11 +1297,13 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 		ELSE
 			StrLn(gen, " {");
 
-			Tabs(gen, +1);
 			IF rec.base # NIL THEN
+				Tabs(gen, +1);
 				Str(gen, "struct ");
 				GlobalName(gen, rec.base);
 				StrLn(gen, " _;")
+			ELSE
+				INC(gen.tabs)
 			END;
 			
 			WHILE v # NIL DO

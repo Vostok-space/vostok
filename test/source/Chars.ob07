@@ -4,6 +4,7 @@ IMPORT O := Out;
 
 CONST
 	c2 = 030X;
+	str = "12	";
 
 TYPE
 

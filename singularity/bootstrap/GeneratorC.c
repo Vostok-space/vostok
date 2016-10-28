@@ -134,7 +134,7 @@ static void ScreeningString(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag,
 		len = len + VDataStream_Write(&(*(*gen).out), NULL, "\\", 2, 0, 1);
 		i++;
 		last = i;
-	} else if (block->s[i] > 0x0Cu) {
+	} else if (block->s[i] != 0x00u) {
 		i++;
 	} else break;
 	assert(block->s[i] == 0x00u);

@@ -20,8 +20,11 @@ RM := trash
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.ob07))))
 
 result/o7c : $(patsubst source/%.ob07,result/%.c, $(SRC)) Makefile
-	$(O7CI) source/Translator.ob07 result/Translator.c source $(SING_O7)
 	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c -o $@
+
+result/Translator.c : source/Translator.ob07 Makefile $(O7CI)
+	@mkdir -p result
+	$(O7CI) source/Translator.ob07 result/Translator.c source $(SING_O7)
 
 result/%.c : source/%.ob07 Makefile $(O7CI)
 	@mkdir -p result
@@ -41,8 +44,10 @@ $(SELF)/%.c : source/%.ob07 Makefile
 	@mkdir -p $(SELF)
 	$(O7C) $< $(basename $@) source $(SING_O7)
 
+$(SELF)/Translator.c : source/Translator.ob07 Makefile
+	$(O7C) source/Translator.ob07 $@ source $(SING_O7)
+
 $(SELF)/o7c : result/o7c $(patsubst source/%.ob07,$(SELF)/%.c, $(SRC)) Makefile
-	$(O7C) source/Translator.ob07 $(SELF)/Translator.c source $(SING_O7)
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c -o $@
 
 self : $(SELF)/o7c

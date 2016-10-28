@@ -148,7 +148,6 @@ CONST
 	RealScaleMax = 512;
 
 TYPE
-
 	Scanner* = RECORD(V.Base)
 		in: Stream.PIn;
 		line*, column*, tabs*: INTEGER;
