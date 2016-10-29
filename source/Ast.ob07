@@ -82,6 +82,8 @@ CONST
 	ErrGuardExpectPointerExt*		= -53;
 	ErrGuardedTypeNotExtensible*	= -54;
 	ErrDotSelectorToNotRecord*		= -55;
+	ErrDeclarationNotVar*			= -56;
+	ErrForIteratorNotInteger*		= -57;
 
 	ErrNotImplemented*				= -99;
 
@@ -659,7 +661,19 @@ BEGIN
 	RETURN err
 END TypeAdd;
 
-PROCEDURE VarAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
+						  buf: ARRAY OF CHAR; begin, end: INTEGER);
+BEGIN
+	NEW(v); v.id := IdVar;
+	DeclConnect(v, ds, buf, begin, end);
+	v.type := NIL;
+	IF ds.vars = NIL THEN
+		ds.vars := v
+	END
+END ChecklessVarAdd;
+
+PROCEDURE VarAdd*(ds: Declarations;
+				  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR v: Var;
 	err: INTEGER;
 BEGIN
@@ -668,12 +682,7 @@ BEGIN
 	ELSE
 		err := ErrDeclarationNameDuplicate
 	END;
-	NEW(v); v.id := IdVar;
-	DeclConnect(v, ds, buf, begin, end);
-	v.type := NIL;
-	IF ds.vars = NIL THEN
-		ds.vars := v
-	END
+	ChecklessVarAdd(v, ds, buf, begin, end)
 	RETURN err
 END VarAdd;
 
@@ -856,6 +865,42 @@ BEGIN
 	END
 	RETURN err
 END DeclarationGet;
+
+PROCEDURE VarGet*(VAR v: Var; ds: Declarations;
+				  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err: INTEGER;
+	d: Declaration;
+BEGIN
+	d := DeclarationSearch(ds, buf, begin, end);
+	IF d = NIL THEN
+		err := ErrDeclarationNotFound
+	ELSIF d.id # IdVar THEN
+		err := ErrDeclarationNotVar
+	ELSE
+		err := ErrNo
+	END;
+	IF err = ErrNo THEN
+		v := d(Var)
+	ELSE
+		ChecklessVarAdd(v, ds, buf, begin, end)
+	END
+	RETURN err
+END VarGet;
+
+PROCEDURE ForIteratorGet*(VAR v: Var; ds: Declarations;
+						  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	err := VarGet(v, ds, buf, begin, end);
+	IF v # NIL THEN
+		IF v.type = NIL THEN
+			v.type := TypeGet(IdInteger)
+		ELSIF v.type.id # IdInteger THEN
+			err := ErrForIteratorNotInteger
+		END
+	END
+	RETURN err
+END ForIteratorGet;
 
 PROCEDURE ExprInit(e: Expression; id: INTEGER; t: Type);
 BEGIN
@@ -1968,6 +2013,7 @@ BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
 	f.to := to;
+	(* TODO check type of expression *)
 	f.by := by;
 	f.stats := stats
 	RETURN f

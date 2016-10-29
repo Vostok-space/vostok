@@ -24,6 +24,7 @@ IMPORT
 	Log;
 
 CONST
+	NewPage = Utf8.NewPage;
 
 	EndOfFile*		= 00;
 	UnexpectChar*	= 01;
@@ -174,23 +175,23 @@ BEGIN
 	s.line := 0;
 	s.in := in;
 	s.ind := LEN(s.buf) - 1;
-	s.buf[s.ind] := Utf8.NewPage
+	s.buf[s.ind] := NewPage
 END Init;
 
 PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
 VAR size: INTEGER;
 BEGIN
 	IF ind MOD (LEN(buf) DIV 2) # 0 THEN
-		ASSERT(buf[ind] = Utf8.NewPage);
+		ASSERT(buf[ind] = NewPage);
 		buf[ind] := Utf8.Null
 	ELSE
-		buf[ind] := Utf8.NewPage;
+		buf[ind] := NewPage;
 		ind := ind MOD (LEN(buf) - 1);
 		size := Stream.Read(in, buf, ind, LEN(buf) DIV 2);
-		IF buf[ind] = Utf8.NewPage THEN
+		IF buf[ind] = NewPage THEN
 			buf[ind] := Utf8.Null
 		ELSIF size = LEN(buf) DIV 2 THEN
-			buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := Utf8.NewPage
+			buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage
 		ELSE
 			buf[ind + size] := Utf8.Null
 		END
@@ -203,7 +204,7 @@ VAR
 BEGIN
 	INC(s.ind);
 	ch := s.buf[s.ind];
-	IF ch = Utf8.NewPage THEN
+	IF ch = NewPage THEN
 		FillBuf(s.buf, s.ind, s.in^);
 		ch := s.buf[s.ind]
 	END
@@ -215,7 +216,7 @@ PROCEDURE ScanChars(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; suit: Suit;
 BEGIN
 	WHILE suit(buf[i]) DO
 		INC(i)
-	ELSIF buf[i] = Utf8.NewPage DO
+	ELSIF buf[i] = NewPage DO
 		FillBuf(buf, i, in)
 	END
 END ScanChars;
@@ -277,7 +278,7 @@ VAR
 			END;
 			INC(i);
 			d := valDigit(s.buf[i])
-		ELSIF s.buf[i] = Utf8.NewPage DO
+		ELSIF s.buf[i] = NewPage DO
 			i := 0;
 			d := valDigit(s.buf[i])
 		END;
@@ -298,7 +299,7 @@ VAR
 			val := val * 10.0 + FLT(d);
 			INC(i);
 			d := ValDigit(s.buf[i])
-		ELSIF s.buf[i] = Utf8.NewPage DO
+		ELSIF s.buf[i] = NewPage DO
 			i := 0;
 			d := ValDigit(s.buf[i])
 		END;
@@ -310,19 +311,19 @@ VAR
 			t := t * 10.0;
 			INC(i);
 			d := ValDigit(s.buf[i])
-		ELSIF s.buf[i] = Utf8.NewPage DO
+		ELSIF s.buf[i] = NewPage DO
 			FillBuf(s.buf, i, s.in^);
 			d := ValDigit(s.buf[i])
 		END;
 		IF s.buf[i] = "E" THEN
 			INC(i);
-			IF s.buf[i] = Utf8.NewPage THEN
+			IF s.buf[i] = NewPage THEN
 				FillBuf(s.buf, i, s.in^)
 			END;
 			scMinus := s.buf[i] = "-";
 			IF scMinus OR (s.buf[i] = "+") THEN
 				INC(i);
-				IF s.buf[i] = Utf8.NewPage THEN
+				IF s.buf[i] = NewPage THEN
 					FillBuf(s.buf, i, s.in^)
 				END
 			END;
@@ -335,7 +336,7 @@ VAR
 					END;
 					INC(i);
 					d := ValDigit(s.buf[i])
-				ELSIF s.buf[i] = Utf8.NewPage DO
+				ELSIF s.buf[i] = NewPage DO
 					FillBuf(s.buf, i, s.in^);
 					d := ValDigit(s.buf[i])
 				END;
@@ -398,7 +399,7 @@ BEGIN
 	i := ind + 1;
 	WHILE buf[i] = str[j] DO
 		INC(i); INC(j)
-	ELSIF buf[i] = Utf8.NewPage DO
+	ELSIF buf[i] = NewPage DO
 		i := 0
 	END
 	RETURN (buf[i] = Utf8.BackSpace) & (str[j] = 0X)
@@ -586,7 +587,7 @@ BEGIN
 		s.column := 0; s.tabs := 0;
 		INC(i);
 		start := i
-	ELSIF s.buf[i] = Utf8.NewPage DO
+	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^);
 		start := start - ORD(i = 0) * (LEN(s.buf) - 1)
 	ELSIF (s.buf[i] = "(") & (comment >= 0) DO
@@ -623,7 +624,7 @@ PROCEDURE ScanString(VAR s: Scanner): INTEGER;
 VAR l, i, j, count: INTEGER;
 BEGIN
 	i := s.ind + 1;
-	IF s.buf[i] = Utf8.NewPage THEN
+	IF s.buf[i] = NewPage THEN
 		FillBuf(s.buf, i, s.in^)
 	END;
 	j := i;
@@ -631,7 +632,7 @@ BEGIN
 	WHILE (s.buf[i] # Utf8.DQuote) & ((s.buf[i] >= " ") OR (s.buf[i] = Utf8.Tab)) DO
 		INC(i);
 		INC(count)
-	ELSIF s.buf[i] = Utf8.NewPage DO
+	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
 	END;
 	s.isChar := FALSE;
@@ -662,7 +663,7 @@ VAR
 	PROCEDURE Li(VAR lex: INTEGER; VAR s: Scanner; ch: CHAR; then, else: INTEGER);
 	BEGIN
 		INC(s.ind);
-		IF s.buf[s.ind] = Utf8.NewPage THEN
+		IF s.buf[s.ind] = NewPage THEN
 			FillBuf(s.buf, s.ind, s.in^)
 		END;
 		IF s.buf[s.ind] = ch THEN

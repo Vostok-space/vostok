@@ -65,11 +65,10 @@ CONST
 	ErrExcessSemicolon*				= Err - 35;
 
 	ErrEndModuleNameNotMatch*		= Err - 50;
-	ErrDeclarationNotVar*			= Err - 51;
-	ErrArrayDimensionsTooMany*		= Err - 52;
-	ErrEndProcedureNameNotMatch*	= Err - 53;
-	ErrFunctionWithoutBraces*		= Err - 54;
-	ErrArrayLenLess1*				= Err - 55;
+	ErrArrayDimensionsTooMany*		= Err - 51;
+	ErrEndProcedureNameNotMatch*	= Err - 52;
+	ErrFunctionWithoutBraces*		= Err - 53;
+	ErrArrayLenLess1*				= Err - 54;
 
 	ErrNotImplemented* = Err - 70;
 
@@ -1002,31 +1001,28 @@ END Repeat;
 
 PROCEDURE For(VAR p: Parser; ds: Ast.Declarations): Ast.For;
 VAR f: Ast.For;
-	d: Ast.Declaration;
+	v: Ast.Var;
 BEGIN
 	ASSERT(p.l = Scanner.For);
 	Scan(p);
 	IF p.l # Scanner.Ident THEN
-		AddError(p, ErrExpectIdent)
+		AddError(p, ErrExpectIdent +
+			Ast.ForIteratorGet(v, ds, "FORITERATOR", 0, 10) * 0
+		)
 	ELSE
-		CheckAst(p, Ast.DeclarationGet(d, ds, p.s.buf, p.s.lexStart, p.s.lexEnd));
-		IF ~(d IS Ast.Var) THEN
-			AddError(p, ErrDeclarationNotVar)
-		ELSE
-			Scan(p);
-			Expect(p, Scanner.Assign, ErrExpectAssign);
-			f := Ast.ForNew(d(Ast.Var), Expression(p, ds), NIL, 1, NIL);
-			(* TODO check type of expression *)
-			Expect(p, Scanner.To, ErrExpectTo);
-			f.to := Expression(p, ds);
-			IF ScanIfEqual(p, Scanner.By) THEN
-				f.by := ExprToInteger(p, Expression(p, ds))
-			END;
-			Expect(p, Scanner.Do, ErrExpectDo);
-			f.stats := statements(p, ds);
-			Expect(p, Scanner.End, ErrExpectEnd)
-		END
-	END
+		CheckAst(p, Ast.ForIteratorGet(v, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
+	END;
+	Scan(p);
+	Expect(p, Scanner.Assign, ErrExpectAssign);
+	f := Ast.ForNew(v, Expression(p, ds), NIL, 1, NIL);
+	Expect(p, Scanner.To, ErrExpectTo);
+	f.to := Expression(p, ds);
+	IF ScanIfEqual(p, Scanner.By) THEN
+		f.by := ExprToInteger(p, Expression(p, ds))
+	END;
+	Expect(p, Scanner.Do, ErrExpectDo);
+	f.stats := statements(p, ds);
+	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN f
 END For;
 

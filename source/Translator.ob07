@@ -168,6 +168,10 @@ BEGIN
 			O("В защите типа переменная должна быть либо записью, либо указателем на запись")
 		| Ast.ErrDotSelectorToNotRecord		:
 			O("Селектор элемента записи применён не к записи")
+		| Ast.ErrDeclarationNotVar			:
+			O("Ожидалась переменная")
+		| Ast.ErrForIteratorNotInteger		:
+			O("Итератор FOR не целочисленного типа")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
@@ -255,8 +259,6 @@ BEGIN
 			O("Лишняя ';'")
 		| Parser.ErrEndModuleNameNotMatch	:
 			O("Завершающее имя в конце модуля не совпадает с его именем")
-		| Parser.ErrDeclarationNotVar		:
-			O("ErrDeclarationNotVar")
 		| Parser.ErrArrayDimensionsTooMany	:
 			O("ErrArrayDimensionsTooMany")
 		| Parser.ErrEndProcedureNameNotMatch:

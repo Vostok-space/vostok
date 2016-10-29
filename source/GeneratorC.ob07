@@ -1415,7 +1415,10 @@ BEGIN
 		Str(gen, "o7c_tag_t ")
 	END;
 	GlobalName(gen, rec);
-	StrLn(gen, "_tag;")
+	StrLn(gen, "_tag;");
+	IF ~rec.mark OR gen.opt.main OR gen.interface THEN
+		Ln(gen)
+	END
 END RecordTag;
 
 PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
