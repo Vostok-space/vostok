@@ -31,6 +31,8 @@
 typedef struct Translator_ModuleProvider_s {
 	struct Ast_RProvider _;
 	struct Parser_Options opt;
+	char unsigned fileExt[32];
+	int extLen;
 	char unsigned path[4096];
 	struct Translator_anon_0000 {
 		struct Ast_RModule *first;
@@ -452,7 +454,7 @@ static struct VFileStream_RIn *GetModule_Open(struct Translator_ModuleProvider_s
 
 	len = LenStr(p->path, 4096, (*pathOfs));
 	l = 0;
-	if ((len > 0) && StringStore_CopyChars(n, 1024, &l, p->path, 4096, (*pathOfs), (*pathOfs) + len) && StringStore_CopyChars(n, 1024, &l, "/", 2, 0, 1) && StringStore_CopyChars(n, 1024, &l, name, name_len0, ofs, end) && StringStore_CopyChars(n, 1024, &l, ".ob07", 6, 0, 5)) {
+	if ((len > 0) && StringStore_CopyChars(n, 1024, &l, p->path, 4096, (*pathOfs), (*pathOfs) + len) && StringStore_CopyChars(n, 1024, &l, "/", 2, 0, 1) && StringStore_CopyChars(n, 1024, &l, name, name_len0, ofs, end) && StringStore_CopyChars(n, 1024, &l, p->fileExt, 32, 0, p->extLen)) {
 		Log_Str("Открыть ", 16);
 		Log_Str(n, 1024);
 		Log_Ln();
@@ -563,8 +565,9 @@ static int Compile(struct Translator_ModuleProvider_s *mp, o7c_tag_t mp_tag, str
 	return ret;
 }
 
-static struct Translator_ModuleProvider_s *NewProvider(void) {
+static struct Translator_ModuleProvider_s *NewProvider(char unsigned fileExt[/*len0*/], int fileExt_len0, int extLen) {
 	struct Translator_ModuleProvider_s *mp;
+	bool ret;
 
 	mp = o7c_new(sizeof(*mp), Translator_ModuleProvider_s_tag);
 	Ast_ProviderInit(&mp->_, NULL, GetModule);
@@ -573,6 +576,9 @@ static struct Translator_ModuleProvider_s *NewProvider(void) {
 	CopyPath(mp->path, 4096, 3);
 	mp->modules.first = NULL;
 	mp->modules.last = NULL;
+	mp->extLen = 0;
+	ret = StringStore_CopyChars(mp->fileExt, 32, &mp->extLen, fileExt, fileExt_len0, 0, extLen);
+	assert(ret);
 	return mp;
 }
 
@@ -617,9 +623,32 @@ static void ErrMessage(int err) {
 	Out_Ln();
 }
 
+static int CopyExt(char unsigned ext[/*len0*/], int ext_len0, char unsigned name[/*len0*/], int name_len0) {
+	int i;
+	int dot;
+	int len;
+
+	i = 0;
+	dot =  - 1;
+	while (name[i] != 0x00u) {
+		if (name[i] == (char unsigned)'.') {
+			dot = i;
+		}
+		i++;
+	}
+	len = 0;
+	if (!((dot >= 0) && StringStore_CopyChars(ext, ext_len0, &len, name, name_len0, dot, i)) && !StringStore_CopyChars(ext, ext_len0, &len, ".mod", 5, 0, 4)) {
+		len =  - 1;
+	}
+	assert(len >= 0);
+	return len;
+}
+
 static void Main(void) {
 	char unsigned src[1024];
+	char unsigned ext[32];
 	int srcLen;
+	int extLen;
 	int ret;
 	struct VFileStream_RIn *source;
 
@@ -632,11 +661,12 @@ static void Main(void) {
 		if (!CLI_Get(src, 1024, &srcLen, 1)) {
 			ret = ErrTooLongSourceName_cnst;
 		} else {
+			extLen = CopyExt(ext, 32, src, 1024);
 			source = VFileStream_OpenIn(src, 1024);
 			if (source == NULL) {
 				ret = ErrOpenSource_cnst;
 			} else {
-				ret = Compile(NewProvider(), NULL, source, NULL);
+				ret = Compile(NewProvider(ext, 32, extLen), NULL, source, NULL);
 			}
 		}
 	}

@@ -8,7 +8,7 @@ SING_BS := singularity/bootstrap
 
 SELF := result/self
 
-SRC := $(filter-out $(wildcard source/VFileStream.*.ob07),$(wildcard source/*.ob07))
+SRC := $(filter-out $(wildcard source/VFileStream.*.mod),$(wildcard source/*.mod))
 SANITIZE :=  -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
 DEBUG := -g
@@ -17,16 +17,16 @@ CC_OPT:= $(WARN) $(OPTIM) $(DEBUG)
 
 RM := trash
 
-TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.ob07))))
+TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
-result/o7c : $(patsubst source/%.ob07,result/%.c, $(SRC)) Makefile
+result/o7c : $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
 	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c -o $@
 
-result/Translator.c : source/Translator.ob07 Makefile $(O7CI)
+result/Translator.c : source/Translator.mod Makefile $(O7CI)
 	@mkdir -p result
-	$(O7CI) source/Translator.ob07 result/Translator.c source $(SING_O7)
+	$(O7CI) source/Translator.mod result/Translator.c source $(SING_O7)
 
-result/%.c : source/%.ob07 Makefile $(O7CI)
+result/%.c : source/%.mod Makefile $(O7CI)
 	@mkdir -p result
 	$(O7CI) $< $(basename $@) source $(SING_O7)
 
@@ -34,20 +34,20 @@ result/bs-o7c:
 	@mkdir -p result
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SING_BS) -I$(SING_BS)/singularity $(SING_BS)/*.c $(SING_BS)/singularity/*.c -o $@
 
-result/test/% : test/source/%.ob07 always
+result/test/% : test/source/%.mod always
 	@mkdir -p result/test
 	$(O7C) $< $@.c $(SING_O7) test/source
 	$(CC) $@.c $(SING_C)/*.c -I $(SING_C) -o $@
 	$@
 
-$(SELF)/%.c : source/%.ob07 Makefile
+$(SELF)/%.c : source/%.mod Makefile
 	@mkdir -p $(SELF)
 	$(O7C) $< $(basename $@) source $(SING_O7)
 
-$(SELF)/Translator.c : source/Translator.ob07 Makefile
-	$(O7C) source/Translator.ob07 $@ source $(SING_O7)
+$(SELF)/Translator.c : source/Translator.mod Makefile
+	$(O7C) source/Translator.mod $@ source $(SING_O7)
 
-$(SELF)/o7c : result/o7c $(patsubst source/%.ob07,$(SELF)/%.c, $(SRC)) Makefile
+$(SELF)/o7c : result/o7c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c -o $@
 
 self : $(SELF)/o7c
