@@ -64,7 +64,7 @@ CONST
 	ErrCaseElemExprNotConst*		= -35;
 	ErrCaseElemDuplicate*			= -36;
 	ErrCaseRangeLabelsTypeMismatch*	= -37;
-	ErrCaseLabelLeftGreaterRight*	= -38;
+	ErrCaseLabelLeftNotLessRight*	= -38;
 	ErrCaseLabelNotConst*			= -39;
 	ErrProcHasNoReturn*				= -40;
 	ErrReturnIncompatibleType*		= -41;
@@ -369,14 +369,13 @@ TYPE
 
 	CaseLabel* = POINTER TO RECORD(Node)
 		value*: INTEGER;
-		qual*: Declaration
-	END;
-	CaseLabelRange* = POINTER TO RECORD(Node)
-		left*, right*: CaseLabel;
-		next*: CaseLabelRange
+		qual*: Declaration;
+	
+		right*, (* правая часть диапазона *)
+		next*: CaseLabel (* следующий элемент списка меток *)
 	END;
 	CaseElement* = POINTER TO RECORD(Node)
-		range*: CaseLabelRange;
+		labels*: CaseLabel;
 		stats*: Statement; 
 		next*: CaseElement
 	END;
@@ -2020,16 +2019,16 @@ BEGIN
 END ForNew;
 
 PROCEDURE CaseNew*(VAR case: Case; expr: Expression): INTEGER;
-VAR code: INTEGER;
+VAR err: INTEGER;
 BEGIN
 	NEW(case); StatInit(case, expr);
 	case.elements := NIL;
 	IF (expr.type # NIL) & ~(expr.type.id IN {IdInteger, IdChar}) THEN
-		code := ErrCaseExprNotIntOrChar
+		err := ErrCaseExprNotIntOrChar
 	ELSE
-		code := ErrNo
+		err := ErrNo
 	END
-	RETURN code
+	RETURN err
 END CaseNew;
 
 PROCEDURE CaseRangeSearch(case: Case; int: INTEGER): INTEGER;
@@ -2050,11 +2049,13 @@ END CaseRangeSearch;
 PROCEDURE CaseLabelNew*(VAR label: CaseLabel; id, value: INTEGER): INTEGER;
 BEGIN
 	ASSERT(id IN {IdInteger, IdChar});
-	
+
 	NEW(label); NodeInit(label^);
 	label.qual := NIL;
 	label.id := id;
-	label.value := value
+	label.value := value;
+	label.right := NIL;
+	label.next := NIL
 	RETURN ErrNo
 END CaseLabelNew;
 
@@ -2080,36 +2081,70 @@ BEGIN
 			END;
 			err := CaseLabelNew(label, IdChar, i)
 		END;
-		label.qual := decl
+		IF label # NIL THEN
+			label.qual := decl
+		END
 	END
 	RETURN err
 END CaseLabelQualNew;
 
-PROCEDURE CaseRangeNew*(VAR range: CaseLabelRange; label1, label2: CaseLabel): INTEGER;
+PROCEDURE CaseRangeNew*(left, right: CaseLabel): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	ASSERT(label1 # NIL);
-	NEW(range); NodeInit(range^);
-	range.left := label1;
-	range.right := label2;
-	range.next := NIL;
-	IF (label2 # NIL) & (label1.id # label2.id) THEN
+	ASSERT((left.right = NIL) & (left.next = NIL));
+	ASSERT((right = NIL) OR (right.right = NIL) & (right.next = NIL));
+
+	left.right := right;
+	IF (right # NIL) & (left.id # right.id) THEN
 		err := ErrCaseRangeLabelsTypeMismatch
+	ELSIF left.value >= right.value THEN
+		err := ErrCaseLabelLeftNotLessRight
 	ELSE
 		err := ErrNo
 	END
 	RETURN err
 END CaseRangeNew;
 
-PROCEDURE CaseRangeListAdd*(case: Case; first, new: CaseLabelRange): INTEGER;
+PROCEDURE IsRangesCross(l1, l2: CaseLabel): BOOLEAN;
+VAR cross: BOOLEAN;
+BEGIN
+	IF l1.value < l2.value THEN
+		cross := (l1.right # NIL) & (l1.right.value >= l2.value)
+	ELSE
+		cross := (l1.value = l2.value)
+			  OR (l2.right # NIL) & (l2.right.value >= l1.value)
+	END
+	RETURN cross
+END IsRangesCross;
+
+PROCEDURE IsListCrossRange(list, range: CaseLabel): BOOLEAN;
+BEGIN
+	WHILE (list # NIL) & ~IsRangesCross(list, range) DO
+		list := list.next
+	END
+	RETURN list # NIL
+END IsListCrossRange;
+
+PROCEDURE IsElementsCrossRange(elem: CaseElement; range: CaseLabel): BOOLEAN;
+BEGIN
+	WHILE (elem # NIL) & ~IsListCrossRange(elem.labels, range) DO
+		elem := elem.next
+	END
+	RETURN elem # NIL
+END IsElementsCrossRange;
+
+PROCEDURE CaseRangeListAdd*(case: Case; first, new: CaseLabel): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	ASSERT(new.next = NIL);
-	IF case.expr.type.id # new.left.id THEN
+	IF case.expr.type.id # new.id THEN
 		err := ErrCaseRangeLabelsTypeMismatch
 	ELSE
-		err := ErrNo;
-		(* TODO проверить пересечение значений *)
+		IF IsElementsCrossRange(case.elements, new) THEN
+			err := ErrCaseElemDuplicate
+		ELSE
+			err := ErrNo
+		END;
 		WHILE first.next # NIL DO
 			first := first.next
 		END;
@@ -2118,12 +2153,12 @@ BEGIN
 	RETURN err
 END CaseRangeListAdd;
 
-PROCEDURE CaseElementNew*(): CaseElement;
+PROCEDURE CaseElementNew*(labels: CaseLabel): CaseElement;
 VAR elem: CaseElement;
 BEGIN
 	NEW(elem); NodeInit(elem^);
 	elem.next := NIL;
-	elem.range := NIL;
+	elem.labels := labels;
 	elem.stats := NIL
 	RETURN elem
 END CaseElementNew;
@@ -2136,7 +2171,6 @@ BEGIN
 		case.elements := elem
 	ELSE
 		last := case.elements;
-		(* TODO check values *)
 		WHILE last.next # NIL DO
 			last := last.next
 		END;

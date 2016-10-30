@@ -1650,7 +1650,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Assign;
 
-	PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabelRange;
+	PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabel;
 						caseExpr: Ast.Expression);
 	BEGIN
 		IF r.right = NIL THEN
@@ -1661,11 +1661,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Expression(gen, caseExpr);
 				Str(gen, " == ")
 			END;
-			Int(gen, r.left.value)
+			Int(gen, r.value)
 		ELSE
-			ASSERT(r.left.value <= r.right.value);
+			ASSERT(r.value <= r.right.value);
 			Str(gen, "(");
-			Int(gen, r.left.value);
+			Int(gen, r.value);
 			IF caseExpr = NIL THEN
 				Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
 			ELSE
@@ -1682,10 +1682,10 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
 							  caseExpr: Ast.Expression);
-	VAR r: Ast.CaseLabelRange;
+	VAR r: Ast.CaseLabel;
 	BEGIN
 		Str(gen, "if (");
-		r := elem.range;
+		r := elem.labels;
 		ASSERT(r # NIL);
 		CaseRange(gen, r, caseExpr);
 		WHILE r.next # NIL DO
@@ -1701,9 +1701,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END CaseElementAsIf;
 
 	PROCEDURE IsCaseElementWithRange(elem: Ast.CaseElement): BOOLEAN;
-	VAR r: Ast.CaseLabelRange;
+	VAR r: Ast.CaseLabel;
 	BEGIN
-		r := elem.range;
+		r := elem.labels;
 		WHILE (r # NIL) & (r.right = NIL) DO
 			r := r.next
 		END
@@ -1711,14 +1711,14 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END IsCaseElementWithRange;
 
 	PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
-	VAR r: Ast.CaseLabelRange;
+	VAR r: Ast.CaseLabel;
 	BEGIN
 		IF ~IsCaseElementWithRange(elem) THEN
-			r := elem.range;
+			r := elem.labels;
 			WHILE r # NIL DO
 				Tabs(gen, 0);
 				Str(gen, "case ");
-				Int(gen, r.left.value);
+				Int(gen, r.value);
 				ASSERT(r.right = NIL);
 				StrLn(gen, ":");
 

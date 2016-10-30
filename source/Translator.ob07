@@ -129,11 +129,11 @@ BEGIN
 		| Ast.ErrCaseElemExprNotConst		:
 			O("Ast.ErrCaseElemExprNotConst")
 		| Ast.ErrCaseElemDuplicate			:
-			O("Ast.ErrCaseElemDuplicate")
+			O("Дублирование значения меток в CASE")
 		| Ast.ErrCaseRangeLabelsTypeMismatch:
 			O("Не совпадает тип меток CASE")
-		| Ast.ErrCaseLabelLeftGreaterRight	:
-			O("Ast.ErrCaseLabelLeftGreaterRight")
+		| Ast.ErrCaseLabelLeftNotLessRight	:
+			O("Ast.ErrCaseLabelLeftNotLessRight")
 		| Ast.ErrCaseLabelNotConst			:
 			O("Ast.ErrCaseLabelNotConst")
 		| Ast.ErrProcHasNoReturn			:

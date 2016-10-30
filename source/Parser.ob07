@@ -266,7 +266,6 @@ BEGIN
 	RETURN v
 END ExpectVar;
 
-(* TODO переделать создание селекторов, перенеся большую часть кода в Ast *)
 PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations): Ast.Designator;
 VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
@@ -925,7 +924,6 @@ VAR case: Ast.Case;
 			qual := TRUE;
 			err := Ast.CaseLabelQualNew(l, Qualident(p, ds))
 		ELSE
-			(*AddError(p, ErrExpectIntOrStrOrQualident);*)
 			err := ErrExpectIntOrStrOrQualident
 		END;
 		CheckAst(p, err);
@@ -935,24 +933,20 @@ VAR case: Ast.Case;
 		RETURN l
 	END Label;
 
-	PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabelRange;
-	VAR l1, l2: Ast.CaseLabel;
-		r: Ast.CaseLabelRange;
+	PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
+	VAR r: Ast.CaseLabel;
 	BEGIN
-		l1 := Label(p, ds);
+		r := Label(p, ds);
 		IF p.l = Scanner.Range THEN
 			Scan(p);
-			l2 := Label(p, ds)
-		ELSE
-			l2 := NIL
-		END;
-		CheckAst(p, Ast.CaseRangeNew(r, l1, l2))
+			CheckAst(p, Ast.CaseRangeNew(r, Label(p, ds)))
+		END
 		RETURN r
 	END LabelRange;
 
 	PROCEDURE LabelList(VAR p: Parser; case: Ast.Case;
-						ds: Ast.Declarations): Ast.CaseLabelRange;
-	VAR first, last: Ast.CaseLabelRange;
+						ds: Ast.Declarations): Ast.CaseLabel;
+	VAR first, last: Ast.CaseLabel;
 	BEGIN
 		first := LabelRange(p, ds);
 		WHILE p.l = Scanner.Comma DO
@@ -966,10 +960,8 @@ VAR case: Ast.Case;
 	PROCEDURE Element(VAR p: Parser; ds: Ast.Declarations; case: Ast.Case);
 	VAR elem: Ast.CaseElement;
 	BEGIN
-		elem := Ast.CaseElementNew();
-		elem.range := LabelList(p, case, ds);
-		ASSERT(elem.range # NIL);
-		ASSERT(elem.range.left # NIL);
+		elem := Ast.CaseElementNew(LabelList(p, case, ds));
+		ASSERT(elem.labels # NIL);
 		Expect(p, Scanner.Colon, ErrExpectColon);
 		elem.stats := statements(p, ds);
 
