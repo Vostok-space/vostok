@@ -42,6 +42,8 @@ CONST
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
+		fileExt: ARRAY 32 OF CHAR;
+		extLen: INTEGER;
 		path: ARRAY 4096 OF CHAR;
 		modules: RECORD
 			first, last: Ast.Module
@@ -362,7 +364,7 @@ VAR m: Ast.Module;
 		 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
 		 & Strings.CopyChars(n, l, "/", 0, 1)
 		 & Strings.CopyChars(n, l, name, ofs, end)
-		 & Strings.CopyChars(n, l, ".ob07", 0, 5)
+		 & Strings.CopyChars(n, l, p.fileExt, 0, p.extLen)
 		THEN
 			Log.Str("Открыть "); Log.Str(n); Log.Ln;
 			in := File.OpenIn(n)
@@ -466,15 +468,21 @@ BEGIN
 	RETURN ret
 END Compile;
 
-PROCEDURE NewProvider(): ModuleProvider;
+PROCEDURE NewProvider(fileExt: ARRAY OF CHAR; extLen: INTEGER): ModuleProvider;
 VAR mp: ModuleProvider;
+	ret: BOOLEAN;
 BEGIN
 	NEW(mp); Ast.ProviderInit(mp, GetModule);
 	Parser.DefaultOptions(mp.opt);
 	mp.opt.printError := ErrorMessage;
 	CopyPath(mp.path, 3);
 	mp.modules.first := NIL;
-	mp.modules.last := NIL
+	mp.modules.last := NIL;
+
+	mp.extLen := 0;
+	ret := Strings.CopyChars(mp.fileExt, mp.extLen, fileExt, 0, extLen);
+	ASSERT(ret)
+
 	RETURN mp
 END NewProvider;
 
@@ -508,9 +516,31 @@ BEGIN
 	Out.Ln
 END ErrMessage;
 
+PROCEDURE CopyExt(VAR ext: ARRAY OF CHAR; name: ARRAY OF CHAR): INTEGER;
+VAR i, dot, len: INTEGER;
+BEGIN
+	i := 0;
+	dot := -1;
+	WHILE name[i] # Utf8.Null DO
+		IF name[i] = "." THEN
+			dot := i
+		END;
+		INC(i)
+	END;
+	len := 0;
+	IF ~((dot >= 0) & Strings.CopyChars(ext, len, name, dot, i))
+	 & ~Strings.CopyChars(ext, len, ".mod", 0, 4)
+	THEN
+		len := -1
+	END;
+	ASSERT(len >= 0)
+	RETURN len
+END CopyExt;
+
 PROCEDURE Main;
 VAR src: ARRAY 1024 OF CHAR;
-	srcLen: INTEGER;
+	ext: ARRAY 32 OF CHAR;
+	srcLen, extLen: INTEGER;
 	ret: INTEGER;
 	source: File.In;
 BEGIN
@@ -524,11 +554,12 @@ BEGIN
 		IF ~CLI.Get(src, srcLen, 1) THEN
 			ret := ErrTooLongSourceName
 		ELSE
+			extLen := CopyExt(ext, src);
 			source := File.OpenIn(src);
 			IF source = NIL THEN
 				ret := ErrOpenSource
 			ELSE
-				ret := Compile(NewProvider(), source)
+				ret := Compile(NewProvider(ext, extLen), source)
 			END
 		END
 	END;
