@@ -10,12 +10,14 @@ typedef struct VFileStream_RIn {
 	CFiles_File file;
 } VFileStream_RIn;
 extern o7c_tag_t VFileStream_RIn_tag;
+
 typedef struct VFileStream_ROut *VFileStream_Out;
 typedef struct VFileStream_ROut {
 	struct VDataStream_Out _;
 	CFiles_File file;
 } VFileStream_ROut;
 extern o7c_tag_t VFileStream_ROut_tag;
+
 
 extern struct VFileStream_RIn *VFileStream_OpenIn(char unsigned name[/*len0*/], int name_len0);
 

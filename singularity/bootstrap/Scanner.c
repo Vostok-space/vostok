@@ -9,6 +9,7 @@
 
 #include "Scanner.h"
 
+#define NewPage_cnst "\x0C"
 #define IntMax_cnst 2147483647
 #define CharMax_cnst "\xFF"
 #define RealScaleMax_cnst 512

@@ -17,18 +17,20 @@ o7c_tag_t GeneratorC_Generator_tag;
 typedef struct MemoryOut {
 	struct VDataStream_Out _;
 	struct GeneratorC_anon_0000 {
-				char unsigned buf[4096];
+		char unsigned buf[4096];
 		int len;
 	} mem[2];
 	bool invert;
 } MemoryOut;
 static o7c_tag_t MemoryOut_tag;
+
 typedef struct MemoryOut *PMemoryOut;
 typedef struct MOut {
-		struct GeneratorC_Generator g[2];
+	struct GeneratorC_Generator g[2];
 	struct GeneratorC_Options_s *opt;
 } MOut;
 static o7c_tag_t MOut_tag;
+
 
 static void (*type)(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RType *type, o7c_tag_t type_tag, bool typeDecl, bool sameType);
 static void (*declarator)(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RDeclaration *decl, o7c_tag_t decl_tag, bool typeDecl, bool sameType, bool global);
@@ -268,11 +270,12 @@ static bool CheckStructName(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag,
 }
 
 typedef struct Designator_Selectors {
-		struct Ast_RDeclaration *decl;
+	struct Ast_RDeclaration *decl;
 	struct Ast_RSelector *list[TranslatorLimits_MaxSelectors_cnst];
 	int i;
 } Designator_Selectors;
 static o7c_tag_t Designator_Selectors_tag;
+
 static void Designator(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_Designator des, o7c_tag_t des_tag);
 static void Designator_Put(struct Designator_Selectors *sels, o7c_tag_t sels_tag, struct Ast_RSelector *sel, o7c_tag_t sel_tag) {
 	(*sels).i =  - 1;
@@ -1117,11 +1120,13 @@ static void Type_Record(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, str
 		Str(&(*gen), gen_tag, " { int nothing; } ", 19);
 	} else {
 		StrLn(&(*gen), gen_tag, " {", 3);
-		Tabs(&(*gen), gen_tag,  + 1);
 		if (rec->base != NULL) {
+			Tabs(&(*gen), gen_tag,  + 1);
 			Str(&(*gen), gen_tag, "struct ", 8);
 			GlobalName(&(*gen), gen_tag, &rec->base->_._._, NULL);
 			StrLn(&(*gen), gen_tag, " _;", 4);
+		} else {
+			(*gen).tabs++;
 		}
 		while (v != NULL) {
 			Tabs(&(*gen), gen_tag, 0);
@@ -1248,6 +1253,9 @@ static void RecordTag(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struc
 	}
 	GlobalName(&(*gen), gen_tag, &rec->_._._, NULL);
 	StrLn(&(*gen), gen_tag, "_tag;", 6);
+	if (!rec->_._._.mark || (*gen).opt->main_ || (*gen).interface_) {
+		Ln(&(*gen), gen_tag);
+	}
 }
 
 static void TypeDecl(struct MOut *out, o7c_tag_t out_tag, struct Ast_RType *type, o7c_tag_t type_tag);
@@ -1460,7 +1468,7 @@ static void Statement_Assign(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag
 	}
 }
 
-static void Statement_CaseRange(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_CaseLabelRange r, o7c_tag_t r_tag, struct Ast_RExpression *caseExpr, o7c_tag_t caseExpr_tag) {
+static void Statement_CaseRange(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_CaseLabel r, o7c_tag_t r_tag, struct Ast_RExpression *caseExpr, o7c_tag_t caseExpr_tag) {
 	if (r->right == NULL) {
 		if (caseExpr == NULL) {
 			Str(&(*gen), gen_tag, "(o7c_case_expr == ", 19);
@@ -1469,11 +1477,11 @@ static void Statement_CaseRange(struct GeneratorC_Generator *gen, o7c_tag_t gen_
 			Expression(&(*gen), gen_tag, caseExpr, NULL);
 			Str(&(*gen), gen_tag, " == ", 5);
 		}
-		Int(&(*gen), gen_tag, r->left->value_);
+		Int(&(*gen), gen_tag, r->value_);
 	} else {
-		assert(r->left->value_ <= r->right->value_);
+		assert(r->value_ <= r->right->value_);
 		Str(&(*gen), gen_tag, "(", 2);
-		Int(&(*gen), gen_tag, r->left->value_);
+		Int(&(*gen), gen_tag, r->value_);
 		if (caseExpr == NULL) {
 			Str(&(*gen), gen_tag, " <= o7c_case_expr && o7c_case_expr <= ", 39);
 		} else {
@@ -1489,10 +1497,10 @@ static void Statement_CaseRange(struct GeneratorC_Generator *gen, o7c_tag_t gen_
 }
 
 static void Statement_CaseElementAsIf(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_CaseElement elem, o7c_tag_t elem_tag, struct Ast_RExpression *caseExpr, o7c_tag_t caseExpr_tag) {
-	Ast_CaseLabelRange r;
+	Ast_CaseLabel r;
 
 	Str(&(*gen), gen_tag, "if (", 5);
-	r = elem->range;
+	r = elem->labels;
 	assert(r != NULL);
 	Statement_CaseRange(&(*gen), gen_tag, r, NULL, caseExpr, NULL);
 	while (r->next != NULL) {
@@ -1508,9 +1516,9 @@ static void Statement_CaseElementAsIf(struct GeneratorC_Generator *gen, o7c_tag_
 }
 
 static bool Statement_IsCaseElementWithRange(Ast_CaseElement elem, o7c_tag_t elem_tag) {
-	Ast_CaseLabelRange r;
+	Ast_CaseLabel r;
 
-	r = elem->range;
+	r = elem->labels;
 	while ((r != NULL) && (r->right == NULL)) {
 		r = r->next;
 	}
@@ -1518,14 +1526,14 @@ static bool Statement_IsCaseElementWithRange(Ast_CaseElement elem, o7c_tag_t ele
 }
 
 static void Statement_CaseElement(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_CaseElement elem, o7c_tag_t elem_tag) {
-	Ast_CaseLabelRange r;
+	Ast_CaseLabel r;
 
 	if (!Statement_IsCaseElementWithRange(elem, NULL)) {
-		r = elem->range;
+		r = elem->labels;
 		while (r != NULL) {
 			Tabs(&(*gen), gen_tag, 0);
 			Str(&(*gen), gen_tag, "case ", 6);
-			Int(&(*gen), gen_tag, r->left->value_);
+			Int(&(*gen), gen_tag, r->value_);
 			assert(r->right == NULL);
 			StrLn(&(*gen), gen_tag, ":", 2);
 			r = r->next;

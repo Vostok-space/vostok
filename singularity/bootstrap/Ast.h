@@ -47,7 +47,7 @@
 #define Ast_ErrCaseElemExprNotConst_cnst (-35)
 #define Ast_ErrCaseElemDuplicate_cnst (-36)
 #define Ast_ErrCaseRangeLabelsTypeMismatch_cnst (-37)
-#define Ast_ErrCaseLabelLeftGreaterRight_cnst (-38)
+#define Ast_ErrCaseLabelLeftNotLessRight_cnst (-38)
 #define Ast_ErrCaseLabelNotConst_cnst (-39)
 #define Ast_ErrProcHasNoReturn_cnst (-40)
 #define Ast_ErrReturnIncompatibleType_cnst (-41)
@@ -64,6 +64,9 @@
 #define Ast_ErrGuardExpectRecordExt_cnst (-52)
 #define Ast_ErrGuardExpectPointerExt_cnst (-53)
 #define Ast_ErrGuardedTypeNotExtensible_cnst (-54)
+#define Ast_ErrDotSelectorToNotRecord_cnst (-55)
+#define Ast_ErrDeclarationNotVar_cnst (-56)
+#define Ast_ErrForIteratorNotInteger_cnst (-57)
 #define Ast_ErrNotImplemented_cnst (-99)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
@@ -102,12 +105,14 @@ typedef struct Ast_RProvider {
 	Ast_Provide get;
 } Ast_RProvider;
 extern o7c_tag_t Ast_RProvider_tag;
+
 typedef struct Ast_Node {
 	struct V_Base _;
 	int id;
 	struct V_Base *ext;
 } Ast_Node;
 extern o7c_tag_t Ast_Node_tag;
+
 typedef struct Ast_Error_s {
 	struct Ast_Node _;
 	int code;
@@ -118,6 +123,7 @@ typedef struct Ast_Error_s {
 	struct Ast_Error_s *next;
 } *Ast_Error;
 extern o7c_tag_t Ast_Error_s_tag;
+
 typedef struct Ast_RType *Ast_Type;
 typedef struct Ast_RDeclaration *Ast_Declaration;
 typedef struct Ast_RDeclarations *Ast_Declarations;
@@ -131,16 +137,19 @@ typedef struct Ast_RDeclaration {
 	struct Ast_RDeclaration *next;
 } Ast_RDeclaration;
 extern o7c_tag_t Ast_RDeclaration_tag;
+
 typedef struct Ast_RArray *Ast_Array;
 typedef struct Ast_RType {
 	struct Ast_RDeclaration _;
 	struct Ast_RArray *array_;
 } Ast_RType;
 extern o7c_tag_t Ast_RType_tag;
+
 typedef struct Ast_Byte_s {
 	struct Ast_RType _;
 } *Ast_Byte;
 extern o7c_tag_t Ast_Byte_s_tag;
+
 typedef struct Ast_RExpression *Ast_Expression;
 typedef struct Ast_Const_s {
 	struct Ast_RDeclaration _;
@@ -148,16 +157,19 @@ typedef struct Ast_Const_s {
 	bool finished;
 } *Ast_Const;
 extern o7c_tag_t Ast_Const_s_tag;
+
 typedef struct Ast_RConstruct *Ast_Construct;
 typedef struct Ast_RConstruct {
 	struct Ast_RType _;
 } Ast_RConstruct;
 extern o7c_tag_t Ast_RConstruct_tag;
+
 typedef struct Ast_RArray {
 	struct Ast_RConstruct _;
 	struct Ast_RExpression *count;
 } Ast_RArray;
 extern o7c_tag_t Ast_RArray_tag;
+
 typedef struct Ast_RPointer *Ast_Pointer;
 typedef struct Ast_Record_s {
 	struct Ast_RConstruct _;
@@ -166,26 +178,31 @@ typedef struct Ast_Record_s {
 	struct Ast_RPointer *pointer;
 } *Ast_Record;
 extern o7c_tag_t Ast_Record_s_tag;
+
 typedef struct Ast_RPointer {
 	struct Ast_RConstruct _;
 } Ast_RPointer;
 extern o7c_tag_t Ast_RPointer_tag;
+
 typedef struct Ast_RVar *Ast_Var;
 typedef struct Ast_RVar {
 	struct Ast_RDeclaration _;
 } Ast_RVar;
 extern o7c_tag_t Ast_RVar_tag;
+
 typedef struct Ast_FormalParam_s {
 	struct Ast_RVar _;
 	bool isVar;
 } *Ast_FormalParam;
 extern o7c_tag_t Ast_FormalParam_s_tag;
+
 typedef struct Ast_ProcType_s {
 	struct Ast_RConstruct _;
 	struct Ast_FormalParam_s *params;
 	struct Ast_FormalParam_s *end;
 } *Ast_ProcType;
 extern o7c_tag_t Ast_ProcType_s_tag;
+
 typedef struct Ast_RStatement *Ast_Statement;
 typedef struct Ast_RProcedure *Ast_Procedure;
 typedef struct Ast_RDeclarations {
@@ -200,10 +217,12 @@ typedef struct Ast_RDeclarations {
 	struct Ast_RStatement *stats;
 } Ast_RDeclarations;
 extern o7c_tag_t Ast_RDeclarations_tag;
+
 typedef struct Ast_Import_s {
 	struct Ast_RDeclaration _;
 } *Ast_Import;
 extern o7c_tag_t Ast_Import_s_tag;
+
 typedef struct Ast_RModule {
 	struct Ast_RDeclarations _;
 	struct StringStore_Store store;
@@ -212,6 +231,7 @@ typedef struct Ast_RModule {
 	struct Ast_Error_s *errLast;
 } Ast_RModule;
 extern o7c_tag_t Ast_RModule_tag;
+
 typedef struct Ast_RGeneralProcedure *Ast_GeneralProcedure;
 typedef struct Ast_RGeneralProcedure {
 	struct Ast_RDeclarations _;
@@ -219,15 +239,18 @@ typedef struct Ast_RGeneralProcedure {
 	struct Ast_RExpression *return_;
 } Ast_RGeneralProcedure;
 extern o7c_tag_t Ast_RGeneralProcedure_tag;
+
 typedef struct Ast_RProcedure {
 	struct Ast_RGeneralProcedure _;
 	int distance;
 } Ast_RProcedure;
 extern o7c_tag_t Ast_RProcedure_tag;
+
 typedef struct Ast_PredefinedProcedure_s {
 	struct Ast_RGeneralProcedure _;
 } *Ast_PredefinedProcedure;
 extern o7c_tag_t Ast_PredefinedProcedure_s_tag;
+
 typedef struct Ast_RFactor *Ast_Factor;
 typedef struct Ast_RExpression {
 	struct Ast_Node _;
@@ -235,50 +258,60 @@ typedef struct Ast_RExpression {
 	struct Ast_RFactor *value_;
 } Ast_RExpression;
 extern o7c_tag_t Ast_RExpression_tag;
+
 typedef struct Ast_RSelector *Ast_Selector;
 typedef struct Ast_RSelector {
 	struct Ast_Node _;
 	struct Ast_RSelector *next;
 } Ast_RSelector;
 extern o7c_tag_t Ast_RSelector_tag;
+
 typedef struct Ast_SelPointer_s {
 	struct Ast_RSelector _;
 } *Ast_SelPointer;
 extern o7c_tag_t Ast_SelPointer_s_tag;
+
 typedef struct Ast_SelGuard_s {
 	struct Ast_RSelector _;
 	struct Ast_RType *type;
 } *Ast_SelGuard;
 extern o7c_tag_t Ast_SelGuard_s_tag;
+
 typedef struct Ast_SelArray_s {
 	struct Ast_RSelector _;
 	struct Ast_RExpression *index;
 } *Ast_SelArray;
 extern o7c_tag_t Ast_SelArray_s_tag;
+
 typedef struct Ast_SelRecord_s {
 	struct Ast_RSelector _;
 	struct Ast_RVar *var_;
 } *Ast_SelRecord;
 extern o7c_tag_t Ast_SelRecord_s_tag;
+
 typedef struct Ast_RFactor {
 	struct Ast_RExpression _;
 } Ast_RFactor;
 extern o7c_tag_t Ast_RFactor_tag;
+
 typedef struct Ast_Designator_s {
 	struct Ast_RFactor _;
 	struct Ast_RDeclaration *decl;
 	struct Ast_RSelector *sel;
 } *Ast_Designator;
 extern o7c_tag_t Ast_Designator_s_tag;
+
 typedef struct Ast_ExprNumber {
 	struct Ast_RFactor _;
 } Ast_ExprNumber;
 extern o7c_tag_t Ast_ExprNumber_tag;
+
 typedef struct Ast_RExprInteger {
 	struct Ast_ExprNumber _;
 	int int_;
 } Ast_RExprInteger;
 extern o7c_tag_t Ast_RExprInteger_tag;
+
 typedef struct Ast_RExprInteger *Ast_ExprInteger;
 typedef struct Ast_ExprReal_s {
 	struct Ast_ExprNumber _;
@@ -286,21 +319,25 @@ typedef struct Ast_ExprReal_s {
 	struct StringStore_String str;
 } *Ast_ExprReal;
 extern o7c_tag_t Ast_ExprReal_s_tag;
+
 typedef struct Ast_ExprBoolean_s {
 	struct Ast_RFactor _;
 	bool bool_;
 } *Ast_ExprBoolean;
 extern o7c_tag_t Ast_ExprBoolean_s_tag;
+
 typedef struct Ast_ExprString_s {
 	struct Ast_RExprInteger _;
 	struct StringStore_String string;
 	bool asChar;
 } *Ast_ExprString;
 extern o7c_tag_t Ast_ExprString_s_tag;
+
 typedef struct Ast_ExprNil_s {
 	struct Ast_RFactor _;
 } *Ast_ExprNil;
 extern o7c_tag_t Ast_ExprNil_s_tag;
+
 typedef struct Ast_ExprSet_s {
 	struct Ast_RFactor _;
 	int set;
@@ -308,16 +345,19 @@ typedef struct Ast_ExprSet_s {
 	struct Ast_ExprSet_s *next;
 } *Ast_ExprSet;
 extern o7c_tag_t Ast_ExprSet_s_tag;
+
 typedef struct Ast_ExprNegate_s {
 	struct Ast_RFactor _;
 	struct Ast_RExpression *expr;
 } *Ast_ExprNegate;
 extern o7c_tag_t Ast_ExprNegate_s_tag;
+
 typedef struct Ast_ExprBraces_s {
 	struct Ast_RFactor _;
 	struct Ast_RExpression *expr;
 } *Ast_ExprBraces;
 extern o7c_tag_t Ast_ExprBraces_s_tag;
+
 typedef struct Ast_ExprRelation_s {
 	struct Ast_RExpression _;
 	int relation;
@@ -325,12 +365,14 @@ typedef struct Ast_ExprRelation_s {
 	struct Ast_RExpression *exprs[2];
 } *Ast_ExprRelation;
 extern o7c_tag_t Ast_ExprRelation_s_tag;
+
 typedef struct Ast_ExprIsExtension_s {
 	struct Ast_RExpression _;
 	struct Ast_Designator_s *designator;
 	struct Ast_RType *extType;
 } *Ast_ExprIsExtension;
 extern o7c_tag_t Ast_ExprIsExtension_s_tag;
+
 typedef struct Ast_ExprSum_s {
 	struct Ast_RExpression _;
 	int add;
@@ -338,6 +380,7 @@ typedef struct Ast_ExprSum_s {
 	struct Ast_ExprSum_s *next;
 } *Ast_ExprSum;
 extern o7c_tag_t Ast_ExprSum_s_tag;
+
 typedef struct Ast_ExprTerm_s {
 	struct Ast_RExpression _;
 	struct Ast_RFactor *factor;
@@ -345,6 +388,7 @@ typedef struct Ast_ExprTerm_s {
 	struct Ast_RExpression *expr;
 } *Ast_ExprTerm;
 extern o7c_tag_t Ast_ExprTerm_s_tag;
+
 typedef struct Ast_Parameter_s {
 	struct Ast_Node _;
 	struct Ast_RExpression *expr;
@@ -352,18 +396,21 @@ typedef struct Ast_Parameter_s {
 	int distance;
 } *Ast_Parameter;
 extern o7c_tag_t Ast_Parameter_s_tag;
+
 typedef struct Ast_ExprCall_s {
 	struct Ast_RFactor _;
 	struct Ast_Designator_s *designator;
 	struct Ast_Parameter_s *params;
 } *Ast_ExprCall;
 extern o7c_tag_t Ast_ExprCall_s_tag;
+
 typedef struct Ast_RStatement {
 	struct Ast_Node _;
 	struct Ast_RExpression *expr;
 	struct Ast_RStatement *next;
 } Ast_RStatement;
 extern o7c_tag_t Ast_RStatement_tag;
+
 typedef struct Ast_RWhileIf *Ast_WhileIf;
 typedef struct Ast_RWhileIf {
 	struct Ast_RStatement _;
@@ -371,40 +418,41 @@ typedef struct Ast_RWhileIf {
 	struct Ast_RWhileIf *elsif;
 } Ast_RWhileIf;
 extern o7c_tag_t Ast_RWhileIf_tag;
+
 typedef struct Ast_If_s {
 	struct Ast_RWhileIf _;
 } *Ast_If;
 extern o7c_tag_t Ast_If_s_tag;
+
 typedef struct Ast_CaseLabel_s {
 	struct Ast_Node _;
 	int value_;
 	struct Ast_RDeclaration *qual;
+	struct Ast_CaseLabel_s *right;
+	struct Ast_CaseLabel_s *next;
 } *Ast_CaseLabel;
 extern o7c_tag_t Ast_CaseLabel_s_tag;
-typedef struct Ast_CaseLabelRange_s {
-	struct Ast_Node _;
-	struct Ast_CaseLabel_s *left;
-	struct Ast_CaseLabel_s *right;
-	struct Ast_CaseLabelRange_s *next;
-} *Ast_CaseLabelRange;
-extern o7c_tag_t Ast_CaseLabelRange_s_tag;
+
 typedef struct Ast_CaseElement_s {
 	struct Ast_Node _;
-	struct Ast_CaseLabelRange_s *range;
+	struct Ast_CaseLabel_s *labels;
 	struct Ast_RStatement *stats;
 	struct Ast_CaseElement_s *next;
 } *Ast_CaseElement;
 extern o7c_tag_t Ast_CaseElement_s_tag;
+
 typedef struct Ast_Case_s {
 	struct Ast_RStatement _;
 	struct Ast_CaseElement_s *elements;
 } *Ast_Case;
 extern o7c_tag_t Ast_Case_s_tag;
+
 typedef struct Ast_Repeat_s {
 	struct Ast_RStatement _;
 	struct Ast_RStatement *stats;
 } *Ast_Repeat;
 extern o7c_tag_t Ast_Repeat_s_tag;
+
 typedef struct Ast_For_s {
 	struct Ast_RStatement _;
 	struct Ast_RExpression *to;
@@ -413,24 +461,29 @@ typedef struct Ast_For_s {
 	struct Ast_RStatement *stats;
 } *Ast_For;
 extern o7c_tag_t Ast_For_s_tag;
+
 typedef struct Ast_While_s {
 	struct Ast_RWhileIf _;
 } *Ast_While;
 extern o7c_tag_t Ast_While_s_tag;
+
 typedef struct Ast_Assign_s {
 	struct Ast_RStatement _;
 	struct Ast_Designator_s *designator;
 	int distance;
 } *Ast_Assign;
 extern o7c_tag_t Ast_Assign_s_tag;
+
 typedef struct Ast_Call_s {
 	struct Ast_RStatement _;
 } *Ast_Call;
 extern o7c_tag_t Ast_Call_s_tag;
+
 typedef struct Ast_StatementError_s {
 	struct Ast_RStatement _;
 } *Ast_StatementError;
 extern o7c_tag_t Ast_StatementError_s_tag;
+
 
 extern void Ast_PutChars(struct Ast_RModule *m, o7c_tag_t m_tag, struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0, int begin, int end);
 
@@ -468,6 +521,10 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 
 extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, o7c_tag_t d_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
 
+extern int Ast_VarGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
+
+extern int Ast_ForIteratorGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
+
 extern struct Ast_RExprInteger *Ast_ExprIntegerNew(int int_);
 
 extern struct Ast_ExprReal_s *Ast_ExprRealNew(double real, struct Ast_RModule *m, o7c_tag_t m_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
@@ -498,7 +555,7 @@ extern int Ast_SelPointerNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, stru
 
 extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RExpression *index, o7c_tag_t index_tag);
 
-extern struct Ast_SelRecord_s *Ast_SelRecordNew(struct Ast_RVar *var_, o7c_tag_t var__tag);
+extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, char unsigned name[/*len0*/], int name_len0, int begin, int end);
 
 extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RDeclaration *guard, o7c_tag_t guard_tag);
 
@@ -548,11 +605,11 @@ extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag,
 
 extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag, struct Ast_RDeclaration *decl, o7c_tag_t decl_tag);
 
-extern int Ast_CaseRangeNew(struct Ast_CaseLabelRange_s **range, o7c_tag_t range_tag, struct Ast_CaseLabel_s *label1, o7c_tag_t label1_tag, struct Ast_CaseLabel_s *label2, o7c_tag_t label2_tag);
+extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, o7c_tag_t left_tag, struct Ast_CaseLabel_s *right, o7c_tag_t right_tag);
 
-extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseLabelRange_s *first, o7c_tag_t first_tag, struct Ast_CaseLabelRange_s *new_, o7c_tag_t new__tag);
+extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseLabel_s *first, o7c_tag_t first_tag, struct Ast_CaseLabel_s *new_, o7c_tag_t new__tag);
 
-extern struct Ast_CaseElement_s *Ast_CaseElementNew(void);
+extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labels, o7c_tag_t labels_tag);
 
 extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseElement_s *elem, o7c_tag_t elem_tag);
 

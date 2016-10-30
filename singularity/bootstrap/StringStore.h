@@ -15,12 +15,14 @@ typedef struct StringStore_Block_s {
 	int num;
 } *StringStore_Block;
 extern o7c_tag_t StringStore_Block_s_tag;
+
 typedef struct StringStore_String {
 	struct V_Base _;
 	struct StringStore_Block_s *block;
 	int ofs;
 } StringStore_String;
 extern o7c_tag_t StringStore_String_tag;
+
 typedef struct StringStore_Store {
 	struct V_Base _;
 	struct StringStore_Block_s *first;
@@ -28,6 +30,7 @@ typedef struct StringStore_Store {
 	int ofs;
 } StringStore_Store;
 extern o7c_tag_t StringStore_Store_tag;
+
 
 extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag, struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0, int j, int end);
 

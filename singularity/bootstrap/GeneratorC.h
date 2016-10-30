@@ -25,6 +25,7 @@ typedef struct GeneratorC_Options_s {
 	bool lastSelectorDereference;
 } *GeneratorC_Options;
 extern o7c_tag_t GeneratorC_Options_s_tag;
+
 typedef struct GeneratorC_Generator {
 	struct V_Base _;
 	struct VDataStream_Out *out;
@@ -38,6 +39,7 @@ typedef struct GeneratorC_Generator {
 	bool expressionSemicolon;
 } GeneratorC_Generator;
 extern o7c_tag_t GeneratorC_Generator_tag;
+
 
 extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void);
 

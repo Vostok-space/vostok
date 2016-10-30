@@ -111,7 +111,7 @@
 #define Scanner_ErrExpectDigitInScale_cnst (-7)
 #define Scanner_ErrUnclosedComment_cnst (-8)
 #define Scanner_ErrMin_cnst (-100)
-#define Scanner_BlockSize_cnst 32768
+#define Scanner_BlockSize_cnst 65536
 
 typedef struct Scanner_Scanner {
 	struct V_Base _;
@@ -130,6 +130,7 @@ typedef struct Scanner_Scanner {
 	double real;
 } Scanner_Scanner;
 extern o7c_tag_t Scanner_Scanner_tag;
+
 
 extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_, o7c_tag_t in__tag);
 

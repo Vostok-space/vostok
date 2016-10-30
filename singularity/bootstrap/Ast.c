@@ -56,7 +56,6 @@ o7c_tag_t Ast_RStatement_tag;
 o7c_tag_t Ast_RWhileIf_tag;
 o7c_tag_t Ast_If_s_tag;
 o7c_tag_t Ast_CaseLabel_s_tag;
-o7c_tag_t Ast_CaseLabelRange_s_tag;
 o7c_tag_t Ast_CaseElement_s_tag;
 o7c_tag_t Ast_Case_s_tag;
 o7c_tag_t Ast_Repeat_s_tag;
@@ -297,6 +296,16 @@ extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsi
 	return err;
 }
 
+static void ChecklessVarAdd(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
+	(*v) = o7c_new(sizeof(*(*v)), Ast_RVar_tag);
+	(*v)->_._.id = Ast_IdVar_cnst;
+	DeclConnect(&(*v)->_, NULL, ds, NULL, buf, buf_len0, begin, end);
+	(*v)->_.type = NULL;
+	if (ds->vars == NULL) {
+		ds->vars = (*v);
+	}
+}
+
 extern int Ast_VarAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
 	struct Ast_RVar *v;
 	int err;
@@ -306,13 +315,7 @@ extern int Ast_VarAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsig
 	} else {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	}
-	v = o7c_new(sizeof(*v), Ast_RVar_tag);
-	v->_._.id = Ast_IdVar_cnst;
-	DeclConnect(&v->_, NULL, ds, NULL, buf, buf_len0, begin, end);
-	v->_.type = NULL;
-	if (ds->vars == NULL) {
-		ds->vars = v;
-	}
+	ChecklessVarAdd(&v, NULL, ds, NULL, buf, buf_len0, begin, end);
 	return err;
 }
 
@@ -493,6 +496,40 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, o7c_tag_t d_tag, stru
 		(&O7C_GUARD(Ast_Const_s, (*d), NULL))->finished = true;
 	} else {
 		err = Ast_ErrNo_cnst;
+	}
+	return err;
+}
+
+extern int Ast_VarGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err;
+	struct Ast_RDeclaration *d;
+
+	d = Ast_DeclarationSearch(ds, NULL, buf, buf_len0, begin, end);
+	if (d == NULL) {
+		err = Ast_ErrDeclarationNotFound_cnst;
+	} else if (d->_.id != Ast_IdVar_cnst) {
+		err = Ast_ErrDeclarationNotVar_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
+	if (err == Ast_ErrNo_cnst) {
+		(*v) = (&O7C_GUARD(Ast_RVar, d, NULL));
+	} else {
+		ChecklessVarAdd(&(*v), NULL, ds, NULL, buf, buf_len0, begin, end);
+	}
+	return err;
+}
+
+extern int Ast_ForIteratorGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err;
+
+	err = Ast_VarGet(&(*v), NULL, ds, NULL, buf, buf_len0, begin, end);
+	if ((*v) != NULL) {
+		if ((*v)->_.type == NULL) {
+			(*v)->_.type = Ast_TypeGet(Ast_IdInteger_cnst);
+		} else if ((*v)->_.type->_._.id != Ast_IdInteger_cnst) {
+			err = Ast_ErrForIteratorNotInteger_cnst;
+		}
 	}
 	return err;
 }
@@ -731,13 +768,40 @@ extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct
 	return err;
 }
 
-extern struct Ast_SelRecord_s *Ast_SelRecordNew(struct Ast_RVar *var_, o7c_tag_t var__tag) {
-	struct Ast_SelRecord_s *s;
+extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, char unsigned name[/*len0*/], int name_len0, int begin, int end) {
+	struct Ast_SelRecord_s *sr;
+	int err;
+	struct Ast_RDeclaration *var_;
+	struct Ast_RDeclarations *vars;
 
-	s = o7c_new(sizeof(*s), Ast_SelRecord_s_tag);
-	SelInit(&s->_, NULL);
-	s->var_ = var_;
-	return s;
+	sr = o7c_new(sizeof(*sr), Ast_SelRecord_s_tag);
+	SelInit(&sr->_, NULL);
+	var_ = NULL;
+	err = Ast_ErrNo_cnst;
+	if ((*type) != NULL) {
+		if (!(( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
+			err = Ast_ErrDotSelectorToNotRecord_cnst;
+		} else {
+			if ((*type)->_._.id == Ast_IdRecord_cnst) {
+				vars = (&O7C_GUARD(Ast_Record_s, (*type), NULL))->vars;
+			} else if ((*type)->_.type == NULL) {
+				vars = NULL;
+			} else {
+				vars = (&O7C_GUARD(Ast_Record_s, (*type)->_.type, NULL))->vars;
+			}
+			if (vars != NULL) {
+				err = Ast_DeclarationGet(&var_, NULL, vars, NULL, name, name_len0, begin, end);
+				if (var_ != NULL) {
+					(*type) = var_->type;
+				} else {
+					(*type) = NULL;
+				}
+			}
+		}
+	}
+	sr->var_ = (&O7C_GUARD(Ast_RVar, var_, NULL));
+	(*sel) = (&(sr)->_);
+	return err;
 }
 
 extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RDeclaration *guard, o7c_tag_t guard_tag) {
@@ -1651,17 +1715,17 @@ extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, o7c_tag_t var__tag, s
 }
 
 extern int Ast_CaseNew(struct Ast_Case_s **case_, o7c_tag_t case__tag, struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	int code;
+	int err;
 
 	(*case_) = o7c_new(sizeof(*(*case_)), Ast_Case_s_tag);
 	StatInit(&(*case_)->_, NULL, expr, NULL);
 	(*case_)->elements = NULL;
 	if ((expr->type != NULL) && !(( (1u << expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))))) {
-		code = Ast_ErrCaseExprNotIntOrChar_cnst;
+		err = Ast_ErrCaseExprNotIntOrChar_cnst;
 	} else {
-		code = Ast_ErrNo_cnst;
+		err = Ast_ErrNo_cnst;
 	}
-	return code;
+	return err;
 }
 
 static int CaseRangeSearch(struct Ast_Case_s *case_, o7c_tag_t case__tag, int int_) {
@@ -1686,6 +1750,8 @@ extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag,
 	(*label)->qual = NULL;
 	(*label)->_.id = id;
 	(*label)->value_ = value_;
+	(*label)->right = NULL;
+	(*label)->next = NULL;
 	return Ast_ErrNo_cnst;
 }
 
@@ -1707,36 +1773,66 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_
 			}
 			err = Ast_CaseLabelNew(&(*label), NULL, Ast_IdChar_cnst, i);
 		}
-		(*label)->qual = decl;
+		if ((*label) != NULL) {
+			(*label)->qual = decl;
+		}
 	}
 	return err;
 }
 
-extern int Ast_CaseRangeNew(struct Ast_CaseLabelRange_s **range, o7c_tag_t range_tag, struct Ast_CaseLabel_s *label1, o7c_tag_t label1_tag, struct Ast_CaseLabel_s *label2, o7c_tag_t label2_tag) {
+extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, o7c_tag_t left_tag, struct Ast_CaseLabel_s *right, o7c_tag_t right_tag) {
 	int err;
 
-	assert(label1 != NULL);
-	(*range) = o7c_new(sizeof(*(*range)), Ast_CaseLabelRange_s_tag);
-	NodeInit(&(*(*range))._, Ast_CaseLabelRange_s_tag);
-	(*range)->left = label1;
-	(*range)->right = label2;
-	(*range)->next = NULL;
-	if ((label2 != NULL) && (label1->_.id != label2->_.id)) {
+	assert((left->right == NULL) && (left->next == NULL));
+	assert((right == NULL) || (right->right == NULL) && (right->next == NULL));
+	left->right = right;
+	if ((right != NULL) && (left->_.id != right->_.id)) {
 		err = Ast_ErrCaseRangeLabelsTypeMismatch_cnst;
+	} else if (left->value_ >= right->value_) {
+		err = Ast_ErrCaseLabelLeftNotLessRight_cnst;
 	} else {
 		err = Ast_ErrNo_cnst;
 	}
 	return err;
 }
 
-extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseLabelRange_s *first, o7c_tag_t first_tag, struct Ast_CaseLabelRange_s *new_, o7c_tag_t new__tag) {
+static bool IsRangesCross(struct Ast_CaseLabel_s *l1, o7c_tag_t l1_tag, struct Ast_CaseLabel_s *l2, o7c_tag_t l2_tag) {
+	bool cross;
+
+	if (l1->value_ < l2->value_) {
+		cross = (l1->right != NULL) && (l1->right->value_ >= l2->value_);
+	} else {
+		cross = (l1->value_ == l2->value_) || (l2->right != NULL) && (l2->right->value_ >= l1->value_);
+	}
+	return cross;
+}
+
+static bool IsListCrossRange(struct Ast_CaseLabel_s *list, o7c_tag_t list_tag, struct Ast_CaseLabel_s *range, o7c_tag_t range_tag) {
+	while ((list != NULL) && !IsRangesCross(list, NULL, range, NULL)) {
+		list = list->next;
+	}
+	return list != NULL;
+}
+
+static bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, o7c_tag_t elem_tag, struct Ast_CaseLabel_s *range, o7c_tag_t range_tag) {
+	while ((elem != NULL) && !IsListCrossRange(elem->labels, NULL, range, NULL)) {
+		elem = elem->next;
+	}
+	return elem != NULL;
+}
+
+extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseLabel_s *first, o7c_tag_t first_tag, struct Ast_CaseLabel_s *new_, o7c_tag_t new__tag) {
 	int err;
 
 	assert(new_->next == NULL);
-	if (case_->_.expr->type->_._.id != new_->left->_.id) {
+	if (case_->_.expr->type->_._.id != new_->_.id) {
 		err = Ast_ErrCaseRangeLabelsTypeMismatch_cnst;
 	} else {
-		err = Ast_ErrNo_cnst;
+		if (IsElementsCrossRange(case_->elements, NULL, new_, NULL)) {
+			err = Ast_ErrCaseElemDuplicate_cnst;
+		} else {
+			err = Ast_ErrNo_cnst;
+		}
 		while (first->next != NULL) {
 			first = first->next;
 		}
@@ -1745,13 +1841,13 @@ extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, s
 	return err;
 }
 
-extern struct Ast_CaseElement_s *Ast_CaseElementNew(void) {
+extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labels, o7c_tag_t labels_tag) {
 	struct Ast_CaseElement_s *elem;
 
 	elem = o7c_new(sizeof(*elem), Ast_CaseElement_s_tag);
 	NodeInit(&(*elem)._, Ast_CaseElement_s_tag);
 	elem->next = NULL;
-	elem->range = NULL;
+	elem->labels = labels;
 	elem->stats = NULL;
 	return elem;
 }
@@ -1954,7 +2050,6 @@ extern void Ast_init_(void) {
 		o7c_tag_init(Ast_RWhileIf_tag, Ast_RStatement_tag);
 		o7c_tag_init(Ast_If_s_tag, Ast_RWhileIf_tag);
 		o7c_tag_init(Ast_CaseLabel_s_tag, Ast_Node_tag);
-		o7c_tag_init(Ast_CaseLabelRange_s_tag, Ast_Node_tag);
 		o7c_tag_init(Ast_CaseElement_s_tag, Ast_Node_tag);
 		o7c_tag_init(Ast_Case_s_tag, Ast_RStatement_tag);
 		o7c_tag_init(Ast_Repeat_s_tag, Ast_RStatement_tag);

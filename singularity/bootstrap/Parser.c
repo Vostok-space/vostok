@@ -24,6 +24,7 @@ typedef struct Parser {
 } Parser;
 static o7c_tag_t Parser_tag;
 
+
 static void (*declarations)(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag);
 static struct Ast_RType *(*type)(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, int nameBegin, int nameEnd);
 static struct Ast_RStatement *(*statements)(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag);
@@ -208,6 +209,8 @@ static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_R
 	struct Ast_RSelector *prev;
 	struct Ast_RSelector *sel;
 	struct Ast_RType *type;
+	int nameBegin;
+	int nameEnd;
 
 	Log_StrLn("Designator", 11);
 	assert((*p).l == Scanner_Ident_cnst);
@@ -221,27 +224,13 @@ static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_R
 			do {
 				sel = NULL;
 				if ((*p).l == Scanner_Dot_cnst) {
-					if ((type != NULL) && (type->_._.id == Ast_IdPointer_cnst)) {
-						type = type->_.type;
-					}
 					Scan(&(*p), p_tag);
-					var_ = NULL;
-					if (type != NULL) {
-						if (type->_._.id == Ast_IdRecord_cnst) {
-							var_ = (&(ExpectVar(&(*p), p_tag, (&O7C_GUARD(Ast_Record_s, type, NULL))->vars, NULL))->_);
-						} else {
-							AddError(&(*p), p_tag, Parser_ErrExpectVarRecordOrPointer_cnst);
-							Scan(&(*p), p_tag);
-						}
-					}
-					if (var_ != NULL) {
-						sel = (&(Ast_SelRecordNew((&O7C_GUARD(Ast_RVar, var_, NULL)), NULL))->_);
-						type = var_->type;
-					} else {
-						type = NULL;
+					ExpectIdent(&(*p), p_tag, &nameBegin, &nameEnd, Parser_ErrExpectIdent_cnst);
+					if (nameBegin >= 0) {
+						CheckAst(&(*p), p_tag, Ast_SelRecordNew(&sel, NULL, &type, NULL, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, nameBegin, nameEnd));
 					}
 				} else if ((*p).l == Scanner_Brace1Open_cnst) {
-					if ((o7c_is(NULL, type, Ast_Record_s_tag)) || (o7c_is(NULL, type, Ast_RPointer_tag))) {
+					if (( (1u << type->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst)))) {
 						Scan(&(*p), p_tag);
 						var_ = ExpectRecordExtend(&(*p), p_tag, ds, NULL, (&O7C_GUARD(Ast_RConstruct, type, NULL)), NULL);
 						CheckAst(&(*p), p_tag, Ast_SelGuardNew(&sel, NULL, &type, NULL, var_, NULL));
@@ -260,8 +249,6 @@ static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_R
 				} else if ((*p).l == Scanner_Dereference_cnst) {
 					CheckAst(&(*p), p_tag, Ast_SelPointerNew(&sel, NULL, &type, NULL));
 					Scan(&(*p), p_tag);
-				} else {
-					sel = NULL;
 				}
 				Designator_SetSel(&prev, NULL, sel, NULL, des, NULL);
 			} while (!(sel == NULL));
@@ -581,7 +568,7 @@ static void Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds
 	}
 }
 
-static struct Ast_Record_s *Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, int nameBegin, int nameEnd);
+static Ast_Record Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, int nameBegin, int nameEnd);
 static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *dsAdd, o7c_tag_t dsAdd_tag, struct Ast_RDeclarations *dsTypes, o7c_tag_t dsTypes_tag) {
 	if ((*p).l == Scanner_Ident_cnst) {
 		VarDeclaration(&(*p), p_tag, dsAdd, NULL, dsTypes, NULL);
@@ -596,9 +583,9 @@ static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarati
 	}
 }
 
-static struct Ast_Record_s *Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, int nameBegin, int nameEnd) {
-	struct Ast_Record_s *rec;
-	struct Ast_Record_s *base;
+static Ast_Record Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, int nameBegin, int nameEnd) {
+	Ast_Record rec;
+	Ast_Record base;
 	struct Ast_RType *t;
 	struct Ast_RDeclaration *decl;
 
@@ -860,25 +847,20 @@ static Ast_CaseLabel Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RD
 	return l;
 }
 
-static Ast_CaseLabelRange Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
-	Ast_CaseLabel l1;
-	Ast_CaseLabel l2;
-	Ast_CaseLabelRange r;
+static Ast_CaseLabel Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+	Ast_CaseLabel r;
 
-	l1 = Case_Label(&(*p), p_tag, ds, NULL);
+	r = Case_Label(&(*p), p_tag, ds, NULL);
 	if ((*p).l == Scanner_Range_cnst) {
 		Scan(&(*p), p_tag);
-		l2 = Case_Label(&(*p), p_tag, ds, NULL);
-	} else {
-		l2 = NULL;
+		CheckAst(&(*p), p_tag, Ast_CaseRangeNew(r, NULL, Case_Label(&(*p), p_tag, ds, NULL), NULL));
 	}
-	CheckAst(&(*p), p_tag, Ast_CaseRangeNew(&r, NULL, l1, NULL, l2, NULL));
 	return r;
 }
 
-static Ast_CaseLabelRange Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, o7c_tag_t case__tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
-	Ast_CaseLabelRange first;
-	Ast_CaseLabelRange last;
+static Ast_CaseLabel Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, o7c_tag_t case__tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+	Ast_CaseLabel first;
+	Ast_CaseLabel last;
 
 	first = Case_LabelRange(&(*p), p_tag, ds, NULL);
 	while ((*p).l == Scanner_Comma_cnst) {
@@ -892,10 +874,8 @@ static Ast_CaseLabelRange Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_
 static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, Ast_Case case_, o7c_tag_t case__tag) {
 	Ast_CaseElement elem;
 
-	elem = Ast_CaseElementNew();
-	elem->range = Case_LabelList(&(*p), p_tag, case_, NULL, ds, NULL);
-	assert(elem->range != NULL);
-	assert(elem->range->left != NULL);
+	elem = Ast_CaseElementNew(Case_LabelList(&(*p), p_tag, case_, NULL, ds, NULL), NULL);
+	assert(elem->labels != NULL);
 	Expect(&(*p), p_tag, Scanner_Colon_cnst, Parser_ErrExpectColon_cnst);
 	elem->stats = statements(&(*p), p_tag, ds, NULL);
 	CheckAst(&(*p), p_tag, Ast_CaseElementAdd(case_, NULL, elem, NULL));
@@ -929,30 +909,26 @@ static Ast_Repeat Repeat(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 
 static Ast_For For(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
 	Ast_For f;
-	struct Ast_RDeclaration *d;
+	struct Ast_RVar *v;
 
 	assert((*p).l == Scanner_For_cnst);
 	Scan(&(*p), p_tag);
 	if ((*p).l != Scanner_Ident_cnst) {
-		AddError(&(*p), p_tag, Parser_ErrExpectIdent_cnst);
+		AddError(&(*p), p_tag, Parser_ErrExpectIdent_cnst + Ast_ForIteratorGet(&v, NULL, ds, NULL, "FORITERATOR", 12, 0, 10) * 0);
 	} else {
-		CheckAst(&(*p), p_tag, Ast_DeclarationGet(&d, NULL, ds, NULL, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd));
-		if (!(o7c_is(NULL, d, Ast_RVar_tag))) {
-			AddError(&(*p), p_tag, Parser_ErrDeclarationNotVar_cnst);
-		} else {
-			Scan(&(*p), p_tag);
-			Expect(&(*p), p_tag, Scanner_Assign_cnst, Parser_ErrExpectAssign_cnst);
-			f = Ast_ForNew((&O7C_GUARD(Ast_RVar, d, NULL)), NULL, Expression(&(*p), p_tag, ds, NULL), NULL, NULL, NULL, 1, NULL, NULL);
-			Expect(&(*p), p_tag, Scanner_To_cnst, Parser_ErrExpectTo_cnst);
-			f->to = Expression(&(*p), p_tag, ds, NULL);
-			if (ScanIfEqual(&(*p), p_tag, Scanner_By_cnst)) {
-				f->by = ExprToInteger(&(*p), p_tag, Expression(&(*p), p_tag, ds, NULL), NULL);
-			}
-			Expect(&(*p), p_tag, Scanner_Do_cnst, Parser_ErrExpectDo_cnst);
-			f->stats = statements(&(*p), p_tag, ds, NULL);
-			Expect(&(*p), p_tag, Scanner_End_cnst, Parser_ErrExpectEnd_cnst);
-		}
+		CheckAst(&(*p), p_tag, Ast_ForIteratorGet(&v, NULL, ds, NULL, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd));
 	}
+	Scan(&(*p), p_tag);
+	Expect(&(*p), p_tag, Scanner_Assign_cnst, Parser_ErrExpectAssign_cnst);
+	f = Ast_ForNew(v, NULL, Expression(&(*p), p_tag, ds, NULL), NULL, NULL, NULL, 1, NULL, NULL);
+	Expect(&(*p), p_tag, Scanner_To_cnst, Parser_ErrExpectTo_cnst);
+	f->to = Expression(&(*p), p_tag, ds, NULL);
+	if (ScanIfEqual(&(*p), p_tag, Scanner_By_cnst)) {
+		f->by = ExprToInteger(&(*p), p_tag, Expression(&(*p), p_tag, ds, NULL), NULL);
+	}
+	Expect(&(*p), p_tag, Scanner_Do_cnst, Parser_ErrExpectDo_cnst);
+	f->stats = statements(&(*p), p_tag, ds, NULL);
+	Expect(&(*p), p_tag, Scanner_End_cnst, Parser_ErrExpectEnd_cnst);
 	return f;
 }
 

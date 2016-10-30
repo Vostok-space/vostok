@@ -33,11 +33,12 @@ typedef struct Translator_ModuleProvider_s {
 	struct Parser_Options opt;
 	char unsigned path[4096];
 	struct Translator_anon_0000 {
-				struct Ast_RModule *first;
+		struct Ast_RModule *first;
 		struct Ast_RModule *last;
 	} modules;
 } *ModuleProvider;
 static o7c_tag_t Translator_ModuleProvider_s_tag;
+
 
 static void ErrorMessage(int code);
 static void ErrorMessage_O(char unsigned s[/*len0*/], int s_len0) {
@@ -156,13 +157,13 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Ast.ErrCaseElemExprNotConst", 28);
 				break;
 			case -36:
-				ErrorMessage_O("Ast.ErrCaseElemDuplicate", 25);
+				ErrorMessage_O("Дублирование значения меток в CASE", 61);
 				break;
 			case -37:
 				ErrorMessage_O("Не совпадает тип меток CASE", 47);
 				break;
 			case -38:
-				ErrorMessage_O("Ast.ErrCaseLabelLeftGreaterRight", 33);
+				ErrorMessage_O("Ast.ErrCaseLabelLeftNotLessRight", 33);
 				break;
 			case -39:
 				ErrorMessage_O("Ast.ErrCaseLabelNotConst", 25);
@@ -211,6 +212,15 @@ static void ErrorMessage(int code) {
 				break;
 			case -54:
 				ErrorMessage_O("В защите типа переменная должна быть либо записью, либо указателем на запись", 141);
+				break;
+			case -55:
+				ErrorMessage_O("Селектор элемента записи применён не к записи", 85);
+				break;
+			case -56:
+				ErrorMessage_O("Ожидалась переменная", 40);
+				break;
+			case -57:
+				ErrorMessage_O("Итератор FOR не целочисленного типа", 64);
 				break;
 			case -99:
 				ErrorMessage_O("Ast.ErrNotImplemented", 22);
@@ -343,18 +353,15 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("Завершающее имя в конце модуля не совпадает с его именем", 104);
 			break;
 		case -151:
-			ErrorMessage_O("ErrDeclarationNotVar", 21);
-			break;
-		case -152:
 			ErrorMessage_O("ErrArrayDimensionsTooMany", 26);
 			break;
-		case -153:
+		case -152:
 			ErrorMessage_O("Завершающее имя в теле процедуры не совпадает с её именем", 106);
 			break;
-		case -154:
+		case -153:
 			ErrorMessage_O("Объявление процедуры с возвращаемым значением не содержит скобки", 122);
 			break;
-		case -155:
+		case -154:
 			ErrorMessage_O("Длина массива должна быть > 0", 52);
 			break;
 		case -170:

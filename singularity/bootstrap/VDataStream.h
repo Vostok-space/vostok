@@ -9,12 +9,14 @@ typedef struct VDataStream_In {
 	int (*read)(struct VDataStream_In *in_, o7c_tag_t in__tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count);
 } VDataStream_In;
 extern o7c_tag_t VDataStream_In_tag;
+
 typedef struct VDataStream_Out *VDataStream_POut;
 typedef struct VDataStream_Out {
 	struct V_Base _;
 	int (*write)(struct VDataStream_Out *out, o7c_tag_t out_tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count);
 } VDataStream_Out;
 extern o7c_tag_t VDataStream_Out_tag;
+
 typedef int (*VDataStream_ReadProc)(struct VDataStream_In *in_, o7c_tag_t in__tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count);
 typedef int (*VDataStream_WriteProc)(struct VDataStream_Out *out, o7c_tag_t out_tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count);
 

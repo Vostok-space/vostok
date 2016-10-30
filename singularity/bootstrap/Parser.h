@@ -44,11 +44,10 @@
 #define Parser_ErrExpectIntOrStrOrQualident_cnst (-134)
 #define Parser_ErrExcessSemicolon_cnst (-135)
 #define Parser_ErrEndModuleNameNotMatch_cnst (-150)
-#define Parser_ErrDeclarationNotVar_cnst (-151)
-#define Parser_ErrArrayDimensionsTooMany_cnst (-152)
-#define Parser_ErrEndProcedureNameNotMatch_cnst (-153)
-#define Parser_ErrFunctionWithoutBraces_cnst (-154)
-#define Parser_ErrArrayLenLess1_cnst (-155)
+#define Parser_ErrArrayDimensionsTooMany_cnst (-151)
+#define Parser_ErrEndProcedureNameNotMatch_cnst (-152)
+#define Parser_ErrFunctionWithoutBraces_cnst (-153)
+#define Parser_ErrArrayLenLess1_cnst (-154)
 #define Parser_ErrNotImplemented_cnst (-170)
 #define Parser_ErrAstBegin_cnst (-200)
 #define Parser_ErrAstEnd_cnst (-300)
@@ -60,6 +59,7 @@ typedef struct Parser_Options {
 	void (*printError)(int code);
 } Parser_Options;
 extern o7c_tag_t Parser_Options_tag;
+
 
 extern void Parser_DefaultOptions(struct Parser_Options *opt, o7c_tag_t opt_tag);
 
