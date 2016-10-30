@@ -115,11 +115,11 @@ CONST
 	IdBraces*			= 26;
 	IdIsExtension*		= 27;
 
+	IdError*			= 31;
+
 	IdImport*			= 32;
 	IdConst*			= 33;
 	IdVar*				= 34;
-
-	IdError*			= 35;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -864,7 +864,8 @@ BEGIN
 	IF d = NIL THEN
 		err := ErrDeclarationNotFound;
 		NEW(d); d.id := IdError;
-		DeclConnect(d, ds, buf, begin, end)
+		DeclConnect(d, ds, buf, begin, end);
+		NEW(d.type); DeclInit(d.type, NIL); d.type.id := IdError
 	ELSIF (d IS Const) & ~d(Const).finished THEN
 		err := ErrConstRecursive;
 		d(Const).finished := TRUE
@@ -1092,6 +1093,8 @@ BEGIN
 			t1 := t1.base;
 			INC(distance)
 		UNTIL (t0 = t1) OR (t1 = NIL)
+	ELSE
+		t0 := NIL; t1 := NIL
 	END;
 	Log.Int(ORD(t0 = t1));
 	Log.Ln
@@ -1271,7 +1274,7 @@ BEGIN
 	ELSIF des # NIL THEN
 		IF des IS Designator THEN
 			e.designator := des(Designator);
-			IF ~(des.type.id IN {IdPointer, IdRecord}) THEN
+			IF (des.type # NIL) & ~(des.type.id IN {IdPointer, IdRecord}) THEN
 				err := ErrIsExtVarNotRecord
 			END
 		ELSE 

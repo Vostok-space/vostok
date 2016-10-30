@@ -604,7 +604,7 @@ BEGIN
 	IF d # NIL THEN
 		IF d IS Ast.Type THEN
 			t := d(Ast.Type)
-		ELSE
+		ELSIF d.id # Ast.IdError THEN
 			AddError(p, ErrExpectType)
 		END
 	END
@@ -717,7 +717,9 @@ BEGIN
 		decl := Ast.DeclarationSearch(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
 		IF decl = NIL THEN (* опережающее объявление записи *)
 			typeDecl := Ast.RecordNew(ds, NIL);
-			CheckAst(p, Ast.TypeAdd(ds, p.s.buf, p.s.lexStart, p.s.lexEnd, typeDecl));
+			CheckAst(p,
+				Ast.TypeAdd(ds, p.s.buf, p.s.lexStart, p.s.lexEnd, typeDecl)
+			);
 			ASSERT(tp.next = typeDecl);
 			typeDecl.id := Ast.IdRecordForward; 
 			tp.type := typeDecl;
@@ -727,8 +729,8 @@ BEGIN
 			decl(Ast.Record).pointer := tp
 		ELSE
 			tp.type := TypeNamed(p, ds);
-			
-			IF (tp.type # NIL) THEN
+
+			IF tp.type # NIL THEN
 				IF tp.type IS Ast.Record THEN
 					tp.type(Ast.Record).pointer := tp
 				ELSE
