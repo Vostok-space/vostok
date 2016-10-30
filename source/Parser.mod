@@ -909,56 +909,56 @@ END If;
 PROCEDURE Case(VAR p: Parser; ds: Ast.Declarations): Ast.Case;
 VAR case: Ast.Case;
 
-	PROCEDURE Label(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
-	VAR err: INTEGER;
-		l: Ast.CaseLabel;
-		qual: BOOLEAN;
-	BEGIN
-		qual := FALSE;
-		IF (p.l = Scanner.Number) & ~p.s.isReal THEN
-			err := Ast.CaseLabelNew(l, Ast.IdInteger, p.s.integer)
-		ELSIF p.l = Scanner.String THEN
-			ASSERT(p.s.isChar);
-			err := Ast.CaseLabelNew(l, Ast.IdChar, p.s.integer)
-		ELSIF p.l = Scanner.Ident THEN
-			qual := TRUE;
-			err := Ast.CaseLabelQualNew(l, Qualident(p, ds))
-		ELSE
-			err := ErrExpectIntOrStrOrQualident
-		END;
-		CheckAst(p, err);
-		IF ~qual & (err # ErrExpectIntOrStrOrQualident) THEN
-			Scan(p)
-		END
-		RETURN l
-	END Label;
-
-	PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
-	VAR r: Ast.CaseLabel;
-	BEGIN
-		r := Label(p, ds);
-		IF p.l = Scanner.Range THEN
-			Scan(p);
-			CheckAst(p, Ast.CaseRangeNew(r, Label(p, ds)))
-		END
-		RETURN r
-	END LabelRange;
-
-	PROCEDURE LabelList(VAR p: Parser; case: Ast.Case;
-						ds: Ast.Declarations): Ast.CaseLabel;
-	VAR first, last: Ast.CaseLabel;
-	BEGIN
-		first := LabelRange(p, ds);
-		WHILE p.l = Scanner.Comma DO
-			Scan(p);
-			last := LabelRange(p, ds);
-			CheckAst(p, Ast.CaseRangeListAdd(case, first, last))
-		END
-		RETURN first 
-	END LabelList;
-	
 	PROCEDURE Element(VAR p: Parser; ds: Ast.Declarations; case: Ast.Case);
 	VAR elem: Ast.CaseElement;
+
+		PROCEDURE LabelList(VAR p: Parser; case: Ast.Case;
+							ds: Ast.Declarations): Ast.CaseLabel;
+		VAR first, last: Ast.CaseLabel;
+		
+			PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
+			VAR r: Ast.CaseLabel;
+			
+				PROCEDURE Label(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
+				VAR err: INTEGER;
+					l: Ast.CaseLabel;
+					qual: BOOLEAN;
+				BEGIN
+					qual := FALSE;
+					IF (p.l = Scanner.Number) & ~p.s.isReal THEN
+						err := Ast.CaseLabelNew(l, Ast.IdInteger, p.s.integer)
+					ELSIF p.l = Scanner.String THEN
+						ASSERT(p.s.isChar);
+						err := Ast.CaseLabelNew(l, Ast.IdChar, p.s.integer)
+					ELSIF p.l = Scanner.Ident THEN
+						qual := TRUE;
+						err := Ast.CaseLabelQualNew(l, Qualident(p, ds))
+					ELSE
+						err := ErrExpectIntOrStrOrQualident
+					END;
+					CheckAst(p, err);
+					IF ~qual & (err # ErrExpectIntOrStrOrQualident) THEN
+						Scan(p)
+					END
+					RETURN l
+				END Label;
+			BEGIN
+				r := Label(p, ds);
+				IF p.l = Scanner.Range THEN
+					Scan(p);
+					CheckAst(p, Ast.CaseRangeNew(r, Label(p, ds)))
+				END
+				RETURN r
+			END LabelRange;
+		BEGIN
+			first := LabelRange(p, ds);
+			WHILE p.l = Scanner.Comma DO
+				Scan(p);
+				last := LabelRange(p, ds);
+				CheckAst(p, Ast.CaseRangeListAdd(case, first, last))
+			END
+			RETURN first 
+		END LabelList;
 	BEGIN
 		elem := Ast.CaseElementNew(LabelList(p, case, ds));
 		ASSERT(elem.labels # NIL);

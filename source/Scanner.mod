@@ -415,7 +415,7 @@ VAR id: INTEGER;
 	
 	PROCEDURE O(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end, id: INTEGER): INTEGER;
 	BEGIN
-		IF ~Eq(str, buf, begin, end) THEN
+		IF ~IsWordEqual(str, buf, begin, end) THEN
 			id := Ident
 		END
 		RETURN id
@@ -425,8 +425,8 @@ VAR id: INTEGER;
 				buf: ARRAY OF CHAR; begin, end: INTEGER;
 				id1: INTEGER; s2: ARRAY OF CHAR; id2: INTEGER): INTEGER;
 	BEGIN
-		IF     Eq(s1, buf, begin, end) THEN id2 := id1
-		ELSIF ~Eq(s2, buf, begin, end) THEN id2 := Ident
+		IF     IsWordEqual(s1, buf, begin, end) THEN id2 := id1
+		ELSIF ~IsWordEqual(s2, buf, begin, end) THEN id2 := Ident
 		END
 		RETURN id2
 	END T;
@@ -475,16 +475,16 @@ VAR lex: INTEGER;
 
 	PROCEDURE O(VAR lex: INTEGER; str, buf: ARRAY OF CHAR; ind, end, l: INTEGER);
 	BEGIN
-		IF Eq(str, buf, ind, end) THEN lex := l ELSE lex := Ident END
+		IF IsWordEqual(str, buf, ind, end) THEN lex := l ELSE lex := Ident END
 	END O;
 	PROCEDURE T(VAR lex: INTEGER;
 				s1: ARRAY OF CHAR; l1: INTEGER;
 				s2: ARRAY OF CHAR; l2: INTEGER;
 				buf: ARRAY OF CHAR; ind, end: INTEGER);
 	BEGIN
-		IF Eq(s1, buf, ind, end) THEN
+		IF IsWordEqual(s1, buf, ind, end) THEN
 			lex := l1
-		ELSIF Eq(s2, buf, ind, end) THEN
+		ELSIF IsWordEqual(s2, buf, ind, end) THEN
 			lex := l2
 		ELSE
 			lex := Ident

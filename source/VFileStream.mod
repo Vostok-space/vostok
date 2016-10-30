@@ -21,7 +21,6 @@ IMPORT
 	CFiles;
 
 TYPE
-
 	In* = POINTER TO RIn;
 	RIn = RECORD(Stream.In)
 		file: CFiles.File

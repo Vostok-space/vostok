@@ -39,8 +39,7 @@ VAR r: R;
 	PROCEDURE Check(r: R1);
 	BEGIN
 		ASSERT(r IS R2);
-		ASSERT(r IS R3);
-		ASSERT(r IS R)
+		ASSERT(r IS R3)
 	END Check;
 BEGIN
 	r.r := 0.1;

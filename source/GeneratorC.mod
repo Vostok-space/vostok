@@ -78,6 +78,12 @@ TYPE
 		opt: Options
 	END;
 
+	Selectors = RECORD
+		decl: Ast.Declaration;
+		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
+		i: INTEGER
+	END;
+
 VAR
 	type: PROCEDURE(VAR gen: Generator; type: Ast.Type;
 					typeDecl, sameType: BOOLEAN);
@@ -460,88 +466,24 @@ BEGIN
 	RETURN rec.name.block # NIL
 END CheckStructName;
 
-PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
-TYPE
-	Selectors = RECORD
-		decl: Ast.Declaration;
-		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
-		i: INTEGER
-	END;
-VAR 
-	sels: Selectors;
-	typ: Ast.Type;
-
-	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
-	BEGIN
-		sels.i := -1;
-		WHILE sel # NIL DO
-			INC(sels.i);
-			sels.list[sels.i] := sel;
-			IF sel IS Ast.SelArray THEN
-				WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
-					sel := sel.next
-				END
-			ELSE
-				sel := sel.next
-			END
-		END
-	END Put;
-
-	PROCEDURE Array(VAR gen: Generator; VAR type: Ast.Type;
-					VAR sel: Ast.Selector; decl: Ast.Declaration);
-	VAR s: Ast.Selector;
-		i, j: INTEGER;
-	BEGIN
-		Str(gen, "[");
-		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL) THEN
-			expression(gen, sel(Ast.SelArray).index);
-			type := type.type;
-			
-			sel := sel.next;
-			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
-				Str(gen, "][");
-				expression(gen, sel(Ast.SelArray).index);
-				sel := sel.next;
-				type := type.type
-			END
-		ELSE
-			i := 0;
-			WHILE (sel.next # NIL) & (sel.next IS Ast.SelArray) DO
-				Factor(gen, sel(Ast.SelArray).index);
-				sel := sel.next;
-				s := sel;
-				j := i;
-				WHILE (s # NIL) & (s IS Ast.SelArray) DO
-					Str(gen, " * ");
-					Name(gen, decl);
-					Str(gen, "_len");
-					Int(gen, j);
-					INC(j);
-					s := s.next
-				END;
-				INC(i);
-				type := type.type;
-				Str(gen, " + ")
-			END;
-			Factor(gen, sel(Ast.SelArray).index)
-		END;
-		Str(gen, "]")
-	END Array;
-
-	PROCEDURE Search(ds: Ast.Declarations; d: Ast.Declaration): BOOLEAN;
-	VAR c: Ast.Declaration;
-	BEGIN
-		c := ds.vars;
-		WHILE (c # NIL) & (c # d) DO
-			c := c.next
-		END
-		RETURN c # NIL
-	END Search;
+PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER; VAR typ: Ast.Type);
+VAR sel: Ast.Selector;
+	ret: BOOLEAN;
 
 	PROCEDURE Record(VAR gen: Generator; VAR type: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
 		up: Ast.Declarations;
 		i: INTEGER;
+
+		PROCEDURE Search(ds: Ast.Declarations; d: Ast.Declaration): BOOLEAN;
+		VAR c: Ast.Declaration;
+		BEGIN
+			c := ds.vars;
+			WHILE (c # NIL) & (c # d) DO
+				c := c.next
+			END
+			RETURN c # NIL
+		END Search;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
 		IF type IS Ast.Pointer THEN
@@ -584,59 +526,119 @@ VAR
 			GlobalName(gen, decl)
 		END
 	END Declarator;
-	
-	PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER; VAR typ: Ast.Type);
-	VAR sel: Ast.Selector;
-		ret: BOOLEAN;
+
+	PROCEDURE Array(VAR gen: Generator; VAR type: Ast.Type;
+					VAR sel: Ast.Selector; decl: Ast.Declaration);
+	VAR s: Ast.Selector;
+		i, j: INTEGER;
 	BEGIN
-		IF i < 0 THEN
-			Declarator(gen, sels.decl)
+		Str(gen, "[");
+		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
+		THEN
+			expression(gen, sel(Ast.SelArray).index);
+			type := type.type;
+			
+			sel := sel.next;
+			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
+				Str(gen, "][");
+				expression(gen, sel(Ast.SelArray).index);
+				sel := sel.next;
+				type := type.type
+			END
 		ELSE
-			sel := sels.list[i];
-			DEC(i);
-			IF sel IS Ast.SelRecord THEN
-				Selector(gen, sels, i, typ);
-				Record(gen, typ, sel)
-			ELSIF sel IS Ast.SelArray THEN
-				Selector(gen, sels, i, typ);
-				Array(gen, typ, sel, sels.decl)
-			ELSIF sel IS Ast.SelPointer THEN
-				IF (sel.next = NIL) OR ~(sel.next IS Ast.SelRecord) THEN
-					Str(gen, "(*");
-					Selector(gen, sels, i, typ);
-					Str(gen, ")")
-				ELSE
-					Selector(gen, sels, i, typ)
-				END
-			ELSIF sel IS Ast.SelGuard THEN
-				IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-					Str(gen, "(&O7C_GUARD(");
-					ret := CheckStructName(gen, sel(Ast.SelGuard).type.type(Ast.Record));
-					ASSERT(ret);
-					GlobalName(gen, sel(Ast.SelGuard).type.type)
-				ELSE
-					Str(gen, "(O7C_GUARD(");
-					GlobalName(gen, sel(Ast.SelGuard).type)
+			i := 0;
+			WHILE (sel.next # NIL) & (sel.next IS Ast.SelArray) DO
+				Factor(gen, sel(Ast.SelArray).index);
+				sel := sel.next;
+				s := sel;
+				j := i;
+				WHILE (s # NIL) & (s IS Ast.SelArray) DO
+					Str(gen, " * ");
+					Name(gen, decl);
+					Str(gen, "_len");
+					Int(gen, j);
+					INC(j);
+					s := s.next
 				END;
-				IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-					Str(gen, ", ")
-				ELSE
-					Str(gen, ", &")
-				END;
+				INC(i);
+				type := type.type;
+				Str(gen, " + ")
+			END;
+			Factor(gen, sel(Ast.SelArray).index)
+		END;
+		Str(gen, "]")
+	END Array;
+BEGIN
+	IF i < 0 THEN
+		Declarator(gen, sels.decl)
+	ELSE
+		sel := sels.list[i];
+		DEC(i);
+		IF sel IS Ast.SelRecord THEN
+			Selector(gen, sels, i, typ);
+			Record(gen, typ, sel)
+		ELSIF sel IS Ast.SelArray THEN
+			Selector(gen, sels, i, typ);
+			Array(gen, typ, sel, sels.decl)
+		ELSIF sel IS Ast.SelPointer THEN
+			IF (sel.next = NIL) OR ~(sel.next IS Ast.SelRecord) THEN
+				Str(gen, "(*");
 				Selector(gen, sels, i, typ);
-				IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-					Str(gen, ", NULL))")
-				ELSE
-					Str(gen, ", ");
-					GlobalName(gen, sels.decl);
-					Str(gen, "_tag))")
-				END;
-				typ := sel(Ast.SelGuard).type
+				Str(gen, ")")
 			ELSE
-				ASSERT(FALSE)
+				Selector(gen, sels, i, typ)
+			END
+		ELSIF sel IS Ast.SelGuard THEN
+			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
+				Str(gen, "(&O7C_GUARD(");
+				ret := CheckStructName(gen, sel(Ast.SelGuard).type.type(Ast.Record));
+				ASSERT(ret);
+				GlobalName(gen, sel(Ast.SelGuard).type.type)
+			ELSE
+				Str(gen, "(O7C_GUARD(");
+				GlobalName(gen, sel(Ast.SelGuard).type)
+			END;
+			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
+				Str(gen, ", ")
+			ELSE
+				Str(gen, ", &")
+			END;
+			Selector(gen, sels, i, typ);
+			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
+				Str(gen, ", NULL))")
+			ELSE
+				Str(gen, ", ");
+				GlobalName(gen, sels.decl);
+				Str(gen, "_tag))")
+			END;
+			typ := sel(Ast.SelGuard).type
+		ELSE
+			ASSERT(FALSE)
+		END
+	END
+END Selector;
+
+PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
+VAR 
+	sels: Selectors;
+	typ: Ast.Type;
+
+	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
+	BEGIN
+		sels.i := -1;
+		WHILE sel # NIL DO
+			INC(sels.i);
+			sels.list[sels.i] := sel;
+			IF sel IS Ast.SelArray THEN
+				WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
+					sel := sel.next
+				END
+			ELSE
+				sel := sel.next
 			END
 		END
-	END Selector;
+	END Put;
+
 BEGIN
 	Put(sels, des.sel);
 	typ := des.decl.type;
@@ -648,145 +650,145 @@ END Designator;
 
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
-	PROCEDURE Predefined(VAR gen: Generator; call: Ast.ExprCall);
-	VAR e1: Ast.Expression;
-		p2: Ast.Parameter;
-
-		PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR; ps: Ast.Parameter);
-		BEGIN
-			Str(gen, "(int)((unsigned)");
-			Factor(gen, ps.expr);
-			Str(gen, shift);
-			Factor(gen, ps.next.expr);
-			Str(gen, ")")
-		END Shift;
-
-		PROCEDURE Len(VAR gen: Generator; des: Ast.Designator);
-		VAR sel: Ast.Selector;
-			i: INTEGER;
-		BEGIN
-			IF (des.decl.type.id # Ast.IdArray) OR ~(des.decl IS Ast.FormalParam)
-			THEN
-				Str(gen, "sizeof(");
-				Designator(gen, des);
-				Str(gen, ") / sizeof (");
-				Designator(gen, des);
-				Str(gen, "[0])")
-			ELSE
-				GlobalName(gen, des.decl);
-				Str(gen, "_len");
-				i := 0;
-				sel := des.sel;
-				WHILE sel # NIL DO
-					INC(i);
-					sel := sel.next
-				END;
-				Int(gen, i)
-			END
-		END Len;
-
-		PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
-		VAR ret: BOOLEAN;
-		BEGIN
-			Expression(gen, e);
-			Str(gen, " = o7c_new(sizeof(*");
-			Expression(gen, e);
-			Str(gen, "), ");
-			ret := CheckStructName(gen, e.type.type(Ast.Record));
-			ASSERT(ret);
-			GlobalName(gen, e.type.type);
-			Str(gen, "_tag)")
-		END New;
-
-		PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
-		BEGIN
-			Str(gen, "(int)");
-			Factor(gen, e)
-		END Ord;
-	BEGIN
-		e1 := call.params.expr;
-		p2 := call.params.next;
-		CASE call.designator.decl.id OF
-		  Scanner.Abs:
-			IF call.type.id = Ast.IdInteger THEN
-				Str(gen, "abs(")
-			ELSE
-				Str(gen, "fabs(")
-			END;
-			Expression(gen, e1);
-			Str(gen, ")")
-		| Scanner.Odd:
-			Str(gen, "(");
-			Factor(gen, e1);
-			Str(gen, " % 2 == 1)")
-		| Scanner.Len:
-			Len(gen, e1(Ast.Designator))
-		| Scanner.Lsl:
-			Shift(gen, " << ", call.params)
-		| Scanner.Asr:
-			Shift(gen, " >> ", call.params)
-		| Scanner.Ror:
-			Str(gen, "o7_ror(");
-			Expression(gen, e1);
-			Str(gen, ", ");
-			Expression(gen, p2.expr);
-			Str(gen, ")")
-		| Scanner.Floor:
-			Str(gen, "(int)");
-			Factor(gen, e1)
-		| Scanner.Flt:
-			Str(gen, "(double)");
-			Factor(gen, e1)
-		| Scanner.Ord:
-			Ord(gen, e1)
-		| Scanner.Chr:
-			Str(gen, "(char unsigned)");
-			Factor(gen, e1)
-		| Scanner.Inc:
-			Expression(gen, e1);
-			IF p2 = NIL THEN
-				Str(gen, "++")
-			ELSE
-				Str(gen, " += ");
-				Expression(gen, p2.expr)
-			END
-		| Scanner.Dec:
-			Expression(gen, e1);
-			IF p2 = NIL THEN
-				Str(gen, "--")
-			ELSE
-				Str(gen, " -= ");
-				Expression(gen, p2.expr)
-			END
-		| Scanner.Incl:
-			Expression(gen, e1);
-			Str(gen, " |= 1u << ");
-			Factor(gen, p2.expr)
-		| Scanner.Excl:
-			Expression(gen, e1);
-			Str(gen, " &= ~(1u << ");
-			Factor(gen, p2.expr);
-			Str(gen, ")")
-		| Scanner.New:
-			New(gen, e1)
-		| Scanner.Assert:
-			Str(gen, "assert(");
-			Expression(gen, e1);
-			Str(gen, ")")
-		| Scanner.Pack:
-			Expression(gen, e1);
-			Str(gen, " *= 1 << ");
-			Expression(gen, p2.expr)
-		| Scanner.Unpk:
-			Expression(gen, e1);
-			Str(gen, " /= 1 << ");
-			Expression(gen, p2.expr)
-		END
-	END Predefined;
-
 	PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
 	VAR p: Ast.Parameter;
 		fp: Ast.FormalParam;
+
+		PROCEDURE Predefined(VAR gen: Generator; call: Ast.ExprCall);
+		VAR e1: Ast.Expression;
+			p2: Ast.Parameter;
+	
+			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR; ps: Ast.Parameter);
+			BEGIN
+				Str(gen, "(int)((unsigned)");
+				Factor(gen, ps.expr);
+				Str(gen, shift);
+				Factor(gen, ps.next.expr);
+				Str(gen, ")")
+			END Shift;
+	
+			PROCEDURE Len(VAR gen: Generator; des: Ast.Designator);
+			VAR sel: Ast.Selector;
+				i: INTEGER;
+			BEGIN
+				IF (des.decl.type.id # Ast.IdArray) OR ~(des.decl IS Ast.FormalParam)
+				THEN
+					Str(gen, "sizeof(");
+					Designator(gen, des);
+					Str(gen, ") / sizeof (");
+					Designator(gen, des);
+					Str(gen, "[0])")
+				ELSE
+					GlobalName(gen, des.decl);
+					Str(gen, "_len");
+					i := 0;
+					sel := des.sel;
+					WHILE sel # NIL DO
+						INC(i);
+						sel := sel.next
+					END;
+					Int(gen, i)
+				END
+			END Len;
+	
+			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
+			VAR ret: BOOLEAN;
+			BEGIN
+				Expression(gen, e);
+				Str(gen, " = o7c_new(sizeof(*");
+				Expression(gen, e);
+				Str(gen, "), ");
+				ret := CheckStructName(gen, e.type.type(Ast.Record));
+				ASSERT(ret);
+				GlobalName(gen, e.type.type);
+				Str(gen, "_tag)")
+			END New;
+	
+			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
+			BEGIN
+				Str(gen, "(int)");
+				Factor(gen, e)
+			END Ord;
+		BEGIN
+			e1 := call.params.expr;
+			p2 := call.params.next;
+			CASE call.designator.decl.id OF
+			  Scanner.Abs:
+				IF call.type.id = Ast.IdInteger THEN
+					Str(gen, "abs(")
+				ELSE
+					Str(gen, "fabs(")
+				END;
+				Expression(gen, e1);
+				Str(gen, ")")
+			| Scanner.Odd:
+				Str(gen, "(");
+				Factor(gen, e1);
+				Str(gen, " % 2 == 1)")
+			| Scanner.Len:
+				Len(gen, e1(Ast.Designator))
+			| Scanner.Lsl:
+				Shift(gen, " << ", call.params)
+			| Scanner.Asr:
+				Shift(gen, " >> ", call.params)
+			| Scanner.Ror:
+				Str(gen, "o7_ror(");
+				Expression(gen, e1);
+				Str(gen, ", ");
+				Expression(gen, p2.expr);
+				Str(gen, ")")
+			| Scanner.Floor:
+				Str(gen, "(int)");
+				Factor(gen, e1)
+			| Scanner.Flt:
+				Str(gen, "(double)");
+				Factor(gen, e1)
+			| Scanner.Ord:
+				Ord(gen, e1)
+			| Scanner.Chr:
+				Str(gen, "(char unsigned)");
+				Factor(gen, e1)
+			| Scanner.Inc:
+				Expression(gen, e1);
+				IF p2 = NIL THEN
+					Str(gen, "++")
+				ELSE
+					Str(gen, " += ");
+					Expression(gen, p2.expr)
+				END
+			| Scanner.Dec:
+				Expression(gen, e1);
+				IF p2 = NIL THEN
+					Str(gen, "--")
+				ELSE
+					Str(gen, " -= ");
+					Expression(gen, p2.expr)
+				END
+			| Scanner.Incl:
+				Expression(gen, e1);
+				Str(gen, " |= 1u << ");
+				Factor(gen, p2.expr)
+			| Scanner.Excl:
+				Expression(gen, e1);
+				Str(gen, " &= ~(1u << ");
+				Factor(gen, p2.expr);
+				Str(gen, ")")
+			| Scanner.New:
+				New(gen, e1)
+			| Scanner.Assert:
+				Str(gen, "assert(");
+				Expression(gen, e1);
+				Str(gen, ")")
+			| Scanner.Pack:
+				Expression(gen, e1);
+				Str(gen, " *= 1 << ");
+				Expression(gen, p2.expr)
+			| Scanner.Unpk:
+				Expression(gen, e1);
+				Str(gen, " /= 1 << ");
+				Expression(gen, p2.expr)
+			END
+		END Predefined;
 
 		PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
 							  VAR fp: Ast.FormalParam);
@@ -878,26 +880,26 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Relation(VAR gen: Generator; rel: Ast.ExprRelation);
 
-		PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
-		BEGIN
-			IF (dist > 0) & (e.type.id = Ast.IdPointer) THEN
-				Str(gen, "&")
-			END;
-			Expression(gen, e);
-			IF dist > 0 THEN
-				IF e.type.id = Ast.IdPointer THEN
-					DEC(dist);
-					Str(gen, "->_")
-				END;
-				WHILE dist > 0 DO
-					DEC(dist);
-					Str(gen, "._")
-				END
-			END
-		END Expr;
-
 		PROCEDURE Simple(VAR gen: Generator; rel: Ast.ExprRelation;
 						 str: ARRAY OF CHAR);
+
+			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
+			BEGIN
+				IF (dist > 0) & (e.type.id = Ast.IdPointer) THEN
+					Str(gen, "&")
+				END;
+				Expression(gen, e);
+				IF dist > 0 THEN
+					IF e.type.id = Ast.IdPointer THEN
+						DEC(dist);
+						Str(gen, "->_")
+					END;
+					WHILE dist > 0 DO
+						DEC(dist);
+						Str(gen, "._")
+					END
+				END
+			END Expr;
 		BEGIN
 			IF (rel.exprs[0].type.id = Ast.IdArray)
 			 & ((rel.exprs[0].value = NIL)
@@ -925,7 +927,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		| Scanner.LessEqual		: Simple(gen, rel, " <= ")
 		| Scanner.Greater		: Simple(gen, rel, " > ")
 		| Scanner.GreaterEqual	: Simple(gen, rel, " >= ")
-		| Scanner.In			: 
+		| Scanner.In			:
 			Str(gen, "(");
 			Str(gen, " (1u << ");
 			Factor(gen, rel.exprs[0]);
@@ -1002,22 +1004,22 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END
 	END Boolean;
 
-	PROCEDURE ToHex(d: INTEGER): CHAR;
-	BEGIN
-		ASSERT((d >= 0) & (d < 16));
-		IF d < 10 THEN
-			INC(d, ORD("0"))
-		ELSE
-			INC(d, ORD("A") - 10)
-		END
-		RETURN CHR(d)
-	END ToHex;
-
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
 	VAR s1: ARRAY 7 OF CHAR;
 		s2: ARRAY 4 OF CHAR;
 		ch: CHAR;
 		w: Strings.String;
+
+		PROCEDURE ToHex(d: INTEGER): CHAR;
+		BEGIN
+			ASSERT((d >= 0) & (d < 16));
+			IF d < 10 THEN
+				INC(d, ORD("0"))
+			ELSE
+				INC(d, ORD("A") - 10)
+			END
+			RETURN CHR(d)
+		END ToHex;
 	BEGIN
 		w := e.string;
 		IF e.asChar THEN
@@ -1519,18 +1521,28 @@ BEGIN
 	END
 END Var;
 
+PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
+BEGIN
+	Expression(gen, wi.expr);
+	StrLn(gen, ") {"); 
+	INC(gen.tabs);
+	statements(gen, wi.stats);
+	wi := wi.elsif
+END ExprThenStats;
+
+PROCEDURE IsCaseElementWithRange(elem: Ast.CaseElement): BOOLEAN;
+VAR r: Ast.CaseLabel;
+BEGIN
+	r := elem.labels;
+	WHILE (r # NIL) & (r.right = NIL) DO
+		r := r.next
+	END
+	RETURN r # NIL
+END IsCaseElementWithRange;
+
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR gen: Generator; wi: Ast.WhileIf);
-
-		PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
-		BEGIN
-			Expression(gen, wi.expr);
-			StrLn(gen, ") {"); 
-			INC(gen.tabs);
-			statements(gen, wi.stats);
-			wi := wi.elsif
-		END ExprThenStats;
 
 		PROCEDURE Elsif(VAR gen: Generator; VAR wi: Ast.WhileIf);
 		BEGIN
@@ -1650,91 +1662,82 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Assign;
 
-	PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabel;
-						caseExpr: Ast.Expression);
-	BEGIN
-		IF r.right = NIL THEN
-			IF caseExpr = NIL THEN
-				Str(gen, "(o7c_case_expr == ")
-			ELSE
-				Str(gen, "(");
-				Expression(gen, caseExpr);
-				Str(gen, " == ")
-			END;
-			Int(gen, r.value)
-		ELSE
-			ASSERT(r.value <= r.right.value);
-			Str(gen, "(");
-			Int(gen, r.value);
-			IF caseExpr = NIL THEN
-				Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
-			ELSE
-				Str(gen, " <= ");
-				Expression(gen, caseExpr);
-				Str(gen, " && ");
-				Expression(gen, caseExpr);
-				Str(gen, " <= ")
-			END;
-			Int(gen, r.right.value)
-		END;
-		Str(gen, ")")
-	END CaseRange;
-
-	PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
-							  caseExpr: Ast.Expression);
-	VAR r: Ast.CaseLabel;
-	BEGIN
-		Str(gen, "if (");
-		r := elem.labels;
-		ASSERT(r # NIL);
-		CaseRange(gen, r, caseExpr);
-		WHILE r.next # NIL DO
-			r := r.next;
-			Str(gen, " || ");
-			CaseRange(gen, r, caseExpr)
-		END;
-		StrLn(gen, ") {");
-		INC(gen.tabs);
-		statements(gen, elem.stats);
-		Tabs(gen, -1);
-		Str(gen, "}")
-	END CaseElementAsIf;
-
-	PROCEDURE IsCaseElementWithRange(elem: Ast.CaseElement): BOOLEAN;
-	VAR r: Ast.CaseLabel;
-	BEGIN
-		r := elem.labels;
-		WHILE (r # NIL) & (r.right = NIL) DO
-			r := r.next
-		END
-		RETURN r # NIL
-	END IsCaseElementWithRange;
-
-	PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
-	VAR r: Ast.CaseLabel;
-	BEGIN
-		IF ~IsCaseElementWithRange(elem) THEN
-			r := elem.labels;
-			WHILE r # NIL DO
-				Tabs(gen, 0);
-				Str(gen, "case ");
-				Int(gen, r.value);
-				ASSERT(r.right = NIL);
-				StrLn(gen, ":");
-
-				r := r.next
-			END;
-			INC(gen.tabs);
-			statements(gen, elem.stats);
-			Tabs(gen, 0);
-			StrLn(gen, "break;");
-			DEC(gen.tabs, 1)
-		END
-	END CaseElement;
 
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
 	VAR elem, elemWithRange: Ast.CaseElement;
 		caseExpr: Ast.Expression;
+		
+		PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
+		VAR r: Ast.CaseLabel;
+		BEGIN
+			IF ~IsCaseElementWithRange(elem) THEN
+				r := elem.labels;
+				WHILE r # NIL DO
+					Tabs(gen, 0);
+					Str(gen, "case ");
+					Int(gen, r.value);
+					ASSERT(r.right = NIL);
+					StrLn(gen, ":");
+		
+					r := r.next
+				END;
+				INC(gen.tabs);
+				statements(gen, elem.stats);
+				Tabs(gen, 0);
+				StrLn(gen, "break;");
+				DEC(gen.tabs, 1)
+			END
+		END CaseElement;
+		
+		PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
+								  caseExpr: Ast.Expression);
+		VAR r: Ast.CaseLabel;
+	
+			PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabel;
+								caseExpr: Ast.Expression);
+			BEGIN
+				IF r.right = NIL THEN
+					IF caseExpr = NIL THEN
+						Str(gen, "(o7c_case_expr == ")
+					ELSE
+						Str(gen, "(");
+						Expression(gen, caseExpr);
+						Str(gen, " == ")
+					END;
+					Int(gen, r.value)
+				ELSE
+					ASSERT(r.value <= r.right.value);
+					Str(gen, "(");
+					Int(gen, r.value);
+					IF caseExpr = NIL THEN
+						Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
+					ELSE
+						Str(gen, " <= ");
+						Expression(gen, caseExpr);
+						Str(gen, " && ");
+						Expression(gen, caseExpr);
+						Str(gen, " <= ")
+					END;
+					Int(gen, r.right.value)
+				END;
+				Str(gen, ")")
+			END CaseRange;
+		BEGIN
+			Str(gen, "if (");
+			r := elem.labels;
+			ASSERT(r # NIL);
+			CaseRange(gen, r, caseExpr);
+			WHILE r.next # NIL DO
+				r := r.next;
+				Str(gen, " || ");
+				CaseRange(gen, r, caseExpr)
+			END;
+			StrLn(gen, ") {");
+			INC(gen.tabs);
+			statements(gen, elem.stats);
+			Tabs(gen, -1);
+			Str(gen, "}")
+		END CaseElementAsIf;
 	BEGIN
 		elemWithRange := st.elements;
 		WHILE (elemWithRange # NIL) & ~IsCaseElementWithRange(elemWithRange) DO
@@ -1820,19 +1823,31 @@ BEGIN
 	END
 END Statements;
 
+PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
+BEGIN
+	Tabs(gen, 0);
+	IF proc.mark & ~gen.opt.main THEN
+		Str(gen, "extern ")
+	ELSE
+		Str(gen, "static ")
+	END;
+	Declarator(gen, proc, FALSE, FALSE, TRUE);
+	StrLn(gen, ";")
+END ProcDecl;
+
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
-	PROCEDURE CloseConsts(VAR gen: Generator; consts: Ast.Declaration);
-	BEGIN
-		WHILE (consts # NIL) & (consts IS Ast.Const) DO
-			Str(gen, "#undef ");
-			Name(gen, consts);
-			Ln(gen);
-			consts := consts.next
-		END
-	END CloseConsts;
-
 	PROCEDURE Implement(VAR out: MOut; VAR gen: Generator; proc: Ast.Procedure);
+
+		PROCEDURE CloseConsts(VAR gen: Generator; consts: Ast.Declaration);
+		BEGIN
+			WHILE (consts # NIL) & (consts IS Ast.Const) DO
+				Str(gen, "#undef ");
+				Name(gen, consts);
+				Ln(gen);
+				consts := consts.next
+			END
+		END CloseConsts;
 	BEGIN
 		Tabs(gen, 0);
 		Mark(gen, proc.mark);
@@ -1857,18 +1872,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		StrLn(gen, "}");
 		Ln(gen)
 	END Implement;
-
-	PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
-	BEGIN
-		Tabs(gen, 0);
-		IF proc.mark & ~gen.opt.main THEN
-			Str(gen, "extern ")
-		ELSE
-			Str(gen, "static ")
-		END;
-		Declarator(gen, proc, FALSE, FALSE, TRUE);
-		StrLn(gen, ";")
-	END ProcDecl;
 
 	PROCEDURE LocalProcs(VAR out: MOut; proc: Ast.Procedure);
 	VAR p, t: Ast.Declaration;
@@ -1975,35 +1978,65 @@ BEGIN
 	g.out := out
 END Init;
 
+PROCEDURE MarkExpression(e: Ast.Expression);
+BEGIN
+	IF e # NIL THEN
+		IF e.id = Ast.IdRelation THEN
+			MarkExpression(e(Ast.ExprRelation).exprs[0]);
+			MarkExpression(e(Ast.ExprRelation).exprs[1])
+		ELSIF e.id = Ast.IdTerm THEN
+			MarkExpression(e(Ast.ExprTerm).factor);
+			MarkExpression(e(Ast.ExprTerm).expr)
+		ELSIF e.id = Ast.IdSum THEN
+			MarkExpression(e(Ast.ExprSum).term);
+			MarkExpression(e(Ast.ExprSum).next)
+		ELSIF (e.id = Ast.IdDesignator)
+			& ~e(Ast.Designator).decl.mark
+		THEN
+			e(Ast.Designator).decl.mark := TRUE;
+			MarkExpression(e(Ast.Designator).decl(Ast.Const).expr)
+		END
+	END
+END MarkExpression;
+
+PROCEDURE MarkType(t: Ast.Type);
+VAR d: Ast.Declaration;
+BEGIN
+	Log.StrLn("MarkType !!!!");
+	WHILE (t # NIL) & ~t.mark DO
+		t.mark := TRUE;
+		IF t.id = Ast.IdArray THEN
+			MarkExpression(t(Ast.Array).count);
+			t := t.type
+		ELSIF t.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+			IF t.id = Ast.IdPointer THEN
+				t := t.type;
+				t.mark := TRUE;
+				ASSERT(t.module # NIL) 
+			END;
+			d := t(Ast.Record).vars.vars;
+			WHILE d # NIL DO
+				MarkType(d.type);
+				IF d.name.block # NIL THEN
+					Log.StrLn(d.name.block.s)
+				END;
+				d := d.next
+			END;
+			t := t(Ast.Record).base
+		ELSE
+			t := NIL
+		END
+	END
+END MarkType;
+
 PROCEDURE MarkUsedInMarked(m: Ast.Module);
 VAR imp: Ast.Declaration;
-
-	PROCEDURE Expression(e: Ast.Expression);
-	BEGIN
-		IF e # NIL THEN
-			IF e.id = Ast.IdRelation THEN
-				Expression(e(Ast.ExprRelation).exprs[0]);
-				Expression(e(Ast.ExprRelation).exprs[1])
-			ELSIF e.id = Ast.IdTerm THEN
-				Expression(e(Ast.ExprTerm).factor);
-				Expression(e(Ast.ExprTerm).expr)
-			ELSIF e.id = Ast.IdSum THEN
-				Expression(e(Ast.ExprSum).term);
-				Expression(e(Ast.ExprSum).next)
-			ELSIF (e.id = Ast.IdDesignator)
-				& ~e(Ast.Designator).decl.mark
-			THEN
-				e(Ast.Designator).decl.mark := TRUE;
-				Expression(e(Ast.Designator).decl(Ast.Const).expr)
-			END
-		END
-	END Expression;
 
 	PROCEDURE Consts(c: Ast.Const);
 	BEGIN
 		WHILE c # NIL DO
 			IF c.mark THEN
-				Expression(c.expr)
+				MarkExpression(c.expr)
 			END;
 			IF (c.next # NIL) & (c.next IS Ast.Const) THEN
 				c := c.next(Ast.Const)
@@ -2013,42 +2046,12 @@ VAR imp: Ast.Declaration;
 		END
 	END Consts;
 
-	PROCEDURE Type(t: Ast.Type);
-	VAR d: Ast.Declaration;
-	BEGIN
-		Log.StrLn("Type !!!!");
-		WHILE (t # NIL) & ~t.mark DO
-			t.mark := TRUE;
-			IF t.id = Ast.IdArray THEN
-				Expression(t(Ast.Array).count);
-				t := t.type
-			ELSIF t.id IN {Ast.IdRecord, Ast.IdPointer} THEN
-				IF t.id = Ast.IdPointer THEN
-					t := t.type;
-					t.mark := TRUE;
-					ASSERT(t.module # NIL) 
-				END;
-				d := t(Ast.Record).vars.vars;
-				WHILE d # NIL DO
-					Type(d.type);
-					IF d.name.block # NIL THEN
-						Log.StrLn(d.name.block.s)
-					END;
-					d := d.next
-				END;
-				t := t(Ast.Record).base
-			ELSE
-				t := NIL
-			END
-		END
-	END Type;
-
 	PROCEDURE Types(t: Ast.Declaration);
 	BEGIN
 		WHILE (t # NIL) & (t IS Ast.Type) DO
 			IF t.mark THEN
 				t.mark := FALSE;
-				Type(t(Ast.Type))
+				MarkType(t(Ast.Type))
 			END;
 			t := t.next
 		END
@@ -2063,6 +2066,47 @@ BEGIN
 	Consts(m.consts);
 	Types(m.types)
 END MarkUsedInMarked;
+
+PROCEDURE ImportInit(VAR gen: Generator; imp: Ast.Declaration);
+BEGIN
+	IF imp # NIL THEN
+		ASSERT(imp IS Ast.Import);
+
+		REPEAT
+			Tabs(gen, 0);
+			String(gen, imp.module.name);
+			StrLn(gen, "_init_();");
+
+			imp := imp.next
+		UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
+		Ln(gen)
+	END
+END ImportInit;
+
+PROCEDURE TagsInit(VAR gen: Generator);
+VAR r: Ast.Record;
+BEGIN
+	r := NIL; 
+	WHILE gen.opt.records # NIL DO
+		r := gen.opt.records(Ast.Record);
+		gen.opt.records := r.ext;
+		r.ext := NIL;
+
+		Tabs(gen, 0);
+		Str(gen, "o7c_tag_init(");
+		GlobalName(gen, r);
+		IF r.base = NIL THEN
+			StrLn(gen, "_tag, NULL);")
+		ELSE
+			Str(gen, "_tag, ");
+			GlobalName(gen, r.base);
+			StrLn(gen, "_tag);")
+		END
+	END;
+	IF r # NIL THEN
+		Ln(gen)
+	END
+END TagsInit;
 
 PROCEDURE Generate*(VAR interface, implementation: Generator;
 					module: Ast.Module; opt: Options);
@@ -2108,47 +2152,6 @@ VAR out: MOut;
 		Ln(gen); Ln(gen)
 	END HeaderGuard;
 
-	PROCEDURE Tags(VAR gen: Generator);
-	VAR r: Ast.Record;
-	BEGIN
-		r := NIL; 
-		WHILE gen.opt.records # NIL DO
-			r := gen.opt.records(Ast.Record);
-			gen.opt.records := r.ext;
-			r.ext := NIL;
-
-			Tabs(gen, 0);
-			Str(gen, "o7c_tag_init(");
-			GlobalName(gen, r);
-			IF r.base = NIL THEN
-				StrLn(gen, "_tag, NULL);")
-			ELSE
-				Str(gen, "_tag, ");
-				GlobalName(gen, r.base);
-				StrLn(gen, "_tag);")
-			END
-		END;
-		IF r # NIL THEN
-			Ln(gen)
-		END
-	END Tags;
-
-	PROCEDURE ImportInit(VAR gen: Generator; imp: Ast.Declaration);
-	BEGIN
-		IF imp # NIL THEN
-			ASSERT(imp IS Ast.Import);
-
-			REPEAT
-				Tabs(gen, 0);
-				String(gen, imp.module.name);
-				StrLn(gen, "_init_();");
-
-				imp := imp.next
-			UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
-			Ln(gen)
-		END
-	END ImportInit;
-
 	PROCEDURE ModuleInit(VAR interf, impl: Generator; module: Ast.Module);
 	BEGIN
 		IF (module.import = NIL)
@@ -2176,7 +2179,7 @@ VAR out: MOut;
 			StrLn(impl, "if (0 == initialized__) {");
 			INC(impl.tabs, 1);
 			ImportInit(impl, module.import);
-			Tags(impl);
+			TagsInit(impl);
 			Statements(impl, module.stats);
 			Tabs(impl, -1);
 			StrLn(impl, "}");
@@ -2193,7 +2196,7 @@ VAR out: MOut;
 		Tabs(gen, +1);
 		StrLn(gen, "o7c_init(argc, argv);");
 		ImportInit(gen, module.import);
-		Tags(gen);
+		TagsInit(gen);
 		IF module.stats # NIL THEN
 			Statements(gen, module.stats)
 		END;

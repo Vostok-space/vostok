@@ -836,9 +836,18 @@ BEGIN
 	END;
 	IF d = NIL THEN
 		d := SearchName(ds.start, buf, begin, end);
-		WHILE (d = NIL) & (ds.up # NIL) DO
-			ds := ds.up;
-			d := SearchName(ds.start, buf, begin, end)
+		IF ds IS Procedure THEN
+			IF d = NIL THEN
+				REPEAT
+					ds := ds.up
+				UNTIL (ds = NIL) OR (ds IS Module);
+				d := SearchName(ds.start, buf, begin, end)
+			END
+		ELSE
+			WHILE (d = NIL) & (ds.up # NIL) DO
+				ds := ds.up;
+				d := SearchName(ds.start, buf, begin, end)
+			END
 		END;
 		IF d = NIL THEN
 			d := SearchPredefined(buf, begin, end)
