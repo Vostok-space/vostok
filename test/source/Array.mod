@@ -9,13 +9,14 @@ VAR
 	a: ARRAY Len OF CHAR;
 	p: PROCEDURE(a: ARRAY OF CHAR);
 	aaa: ARRAY 4, 4, 4 OF INTEGER;
+	bb: ARRAY 4, 5, 6 OF INTEGER;
 
 
 PROCEDURE B(b: ARRAY OF CHAR);
 VAR c: CHAR;
 	l: INTEGER;
 BEGIN
-	c := b[0];
+	c := b[32];
 	l := LEN(b);
 	ASSERT(Len = l)
 END B;
@@ -43,5 +44,8 @@ BEGIN
 	p := A;
 	p(a);
 	A(a);
-	C
+	C;
+	ASSERT(LEN(bb) = 4);
+	ASSERT(LEN(bb[0]) = 5);
+	ASSERT(LEN(bb[0, 0]) = 6)
 END Array.

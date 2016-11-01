@@ -537,7 +537,7 @@ BEGIN
 	RETURN len
 END CopyExt;
 
-PROCEDURE Main;
+PROCEDURE Start*;
 VAR src: ARRAY 1024 OF CHAR;
 	ext: ARRAY 32 OF CHAR;
 	srcLen, extLen: INTEGER;
@@ -567,8 +567,8 @@ BEGIN
 		ErrMessage(ret);
 		CLI.SetExitCode(1)
 	END
-END Main;
+END Start;
 
 BEGIN
-	Main
+	Start
 END Translator.

@@ -37,7 +37,8 @@ TYPE
 	Options* = POINTER TO RECORD(V.Base)
 		std*: INTEGER;
 		gnu*,
-		procLocal*: BOOLEAN;
+		procLocal*,
+		checkIndex*: BOOLEAN;
 
 		main: BOOLEAN;
 
@@ -79,6 +80,7 @@ TYPE
 	END;
 
 	Selectors = RECORD
+		des: Ast.Designator;
 		decl: Ast.Declaration;
 		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
 		i: INTEGER
@@ -531,17 +533,58 @@ VAR sel: Ast.Selector;
 					VAR sel: Ast.Selector; decl: Ast.Declaration);
 	VAR s: Ast.Selector;
 		i, j: INTEGER;
+
+		PROCEDURE Len(VAR gen: Generator; type: Ast.Type;
+					  decl: Ast.Declaration; sel: Ast.Selector);
+		VAR i: INTEGER;
+		BEGIN
+			IF type(Ast.Array).count # NIL THEN
+				expression(gen, type(Ast.Array).count)
+			ELSE
+				GlobalName(gen, decl);
+				Str(gen, "_len");
+				i := -1;
+				WHILE sel # NIL DO
+					INC(i);
+					sel := sel.next
+				END;
+				Int(gen, i)
+			END
+		END Len;
 	BEGIN
 		Str(gen, "[");
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
 		THEN
-			expression(gen, sel(Ast.SelArray).index);
+			IF gen.opt.checkIndex
+			&	((type(Ast.Array).count = NIL)
+			  OR (sel(Ast.SelArray).index.value = NIL)
+				)
+			THEN
+				Str(gen, "o7c_index(");
+				Len(gen, type, decl, sel);
+				Str(gen, ", ");
+				expression(gen, sel(Ast.SelArray).index);
+				Str(gen, ")")
+			ELSE
+				expression(gen, sel(Ast.SelArray).index)
+			END;
 			type := type.type;
-			
 			sel := sel.next;
 			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
-				Str(gen, "][");
-				expression(gen, sel(Ast.SelArray).index);
+				IF gen.opt.checkIndex
+				&	((type(Ast.Array).count = NIL)
+				  OR (sel(Ast.SelArray).index.value = NIL)
+					)
+				THEN
+					Str(gen, "][o7c_index(");
+					Len(gen, type, decl, sel);
+					Str(gen, ", ");
+					expression(gen, sel(Ast.SelArray).index);
+					Str(gen, ")")
+				ELSE
+					Str(gen, "][");
+					expression(gen, sel(Ast.SelArray).index)
+				END;
 				sel := sel.next;
 				type := type.type
 			END
@@ -642,7 +685,8 @@ VAR
 BEGIN
 	Put(sels, des.sel);
 	typ := des.decl.type;
-	sels.decl := des.decl;
+	sels.des := des;
+	sels.decl := des.decl;(* TODO *)
 	gen.opt.lastSelectorDereference := (sels.i > 0)
 									 & (sels.list[sels.i] IS Ast.SelPointer);
 	Selector(gen, sels, sels.i, typ)
@@ -666,7 +710,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Factor(gen, ps.next.expr);
 				Str(gen, ")")
 			END Shift;
-	
+
 			PROCEDURE Len(VAR gen: Generator; des: Ast.Designator);
 			VAR sel: Ast.Selector;
 				i: INTEGER;
@@ -690,7 +734,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Int(gen, i)
 				END
 			END Len;
-	
+
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
 			VAR ret: BOOLEAN;
 			BEGIN
@@ -703,7 +747,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				GlobalName(gen, e.type.type);
 				Str(gen, "_tag)")
 			END New;
-	
+
 			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
 				Str(gen, "(int)");
@@ -1967,6 +2011,7 @@ BEGIN
 		o.std := IsoC99;
 		o.gnu := FALSE;
 		o.procLocal := FALSE;
+		o.checkIndex := TRUE;
 		o.main := FALSE
 	END
 	RETURN o

@@ -36,10 +36,12 @@ TYPE
 	END;
 VAR r: R;
 
-	PROCEDURE Check(r: R1);
+	PROCEDURE Check(r: R);
 	BEGIN
-		ASSERT(r IS R2);
-		ASSERT(r IS R3)
+		IF (r.r = 0.0) OR TRUE THEN
+			ASSERT(r IS R2);
+			ASSERT(r IS R3)
+		END
 	END Check;
 BEGIN
 	r.r := 0.1;
