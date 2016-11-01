@@ -35,7 +35,7 @@ extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag
 	while (j != end) {
 		if (i == sizeof(b->s) / sizeof (b->s[0]) - 1) {
 			if (i != (*w).ofs) {
-				b->s[i] = 0x0Cu;
+				b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] = 0x0Cu;
 				Put_AddBlock(&b, NULL, &i);
 			} else {
 				Put_AddBlock(&b, NULL, &i);
@@ -43,11 +43,11 @@ extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag
 				(*w).ofs = 0;
 			}
 		}
-		b->s[i] = s[j];
+		b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] = s[o7c_index(s_len0, j)];
 		i++;
 		j = (j + 1) % (s_len0 - 1);
 	}
-	b->s[i] = 0x00u;
+	b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] = 0x00u;
 	if (i < sizeof(b->s) / sizeof (b->s[0]) - 1) {
 		i++;
 	} else {
@@ -64,14 +64,14 @@ extern bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w
 	assert((end >= 0) && (end < s_len0 - 1));
 	i = (*w).ofs;
 	b = (*w).block;
-	while (1) if (b->s[i] == s[j]) {
+	while (1) if (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == s[o7c_index(s_len0, j)]) {
 		i++;
 		j = (j + 1) % (s_len0 - 1);
-	} else if (b->s[i] == 0x0Cu) {
+	} else if (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
 		b = b->next;
 		i = 0;
 	} else break;
-	return (b->s[i] == 0x00u) && (j == end);
+	return (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x00u) && (j == end);
 }
 
 extern bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0) {
@@ -82,14 +82,14 @@ extern bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t 
 	j = 0;
 	i = (*w).ofs;
 	b = (*w).block;
-	while (1) if ((b->s[i] == s[j]) && (s[j] != 0x00u)) {
+	while (1) if ((b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == s[o7c_index(s_len0, j)]) && (s[o7c_index(s_len0, j)] != 0x00u)) {
 		i++;
 		j++;
-	} else if (b->s[i] == 0x0Cu) {
+	} else if (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
 		b = b->next;
 		i = 0;
 	} else break;
-	return b->s[i] == s[j];
+	return b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == s[o7c_index(s_len0, j)];
 }
 
 extern void StringStore_CopyToChars(char unsigned d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, o7c_tag_t w_tag) {
@@ -98,16 +98,16 @@ extern void StringStore_CopyToChars(char unsigned d[/*len0*/], int d_len0, int *
 
 	b = (*w).block;
 	i = (*w).ofs;
-	while (1) if (b->s[i] > 0x0Cu) {
-		d[(*dofs)] = b->s[i];
+	while (1) if (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] > 0x0Cu) {
+		d[o7c_index(d_len0, (*dofs))] = b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)];
 		(*dofs)++;
 		i++;
-	} else if (b->s[i] != 0x00u) {
-		assert(b->s[i] == 0x0Cu);
+	} else if (b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
+		assert(b->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu);
 		b = b->next;
 		i = 0;
 	} else break;
-	d[(*dofs)] = 0x00u;
+	d[o7c_index(d_len0, (*dofs))] = 0x00u;
 }
 
 extern void StringStore_StoreInit(struct StringStore_Store *s, o7c_tag_t s_tag) {
@@ -132,12 +132,12 @@ extern bool StringStore_CopyChars(char unsigned dest[/*len0*/], int dest_len0, i
 	ret = (*destOfs) + srcEnd - srcOfs < dest_len0 - 1;
 	if (ret) {
 		while (srcOfs < srcEnd) {
-			dest[(*destOfs)] = src[srcOfs];
+			dest[o7c_index(dest_len0, (*destOfs))] = src[o7c_index(src_len0, srcOfs)];
 			(*destOfs)++;
 			srcOfs++;
 		}
 	}
-	dest[(*destOfs)] = 0x00u;
+	dest[o7c_index(dest_len0, (*destOfs))] = 0x00u;
 	return ret;
 }
 
@@ -149,16 +149,16 @@ extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, str
 	block = (*str).block;
 	i = (*str).ofs;
 	len = 0;
-	while (1) if (block->s[i] > 0x0Cu) {
+	while (1) if (block->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] > 0x0Cu) {
 		i++;
-	} else if (block->s[i] == 0x0Cu) {
+	} else if (block->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
 		assert(len == 0);
 		assert(i > (*str).ofs);
 		len = len + VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, (*str).ofs, i - (*str).ofs);
 		block = block->next;
 		i = 0;
 	} else break;
-	assert(block->s[i] == 0x00u);
+	assert(block->s[o7c_index(StringStore_BlockSize_cnst + 1, i)] == 0x00u);
 	if (len == 0) {
 		len = VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, (*str).ofs, i - (*str).ofs);
 	} else {

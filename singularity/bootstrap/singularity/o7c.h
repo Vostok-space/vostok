@@ -49,6 +49,11 @@
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
+static O7C_INLINE int o7c_index(int len, int ind) {
+	assert((unsigned)ind < (unsigned)len);
+	return ind;
+}
+
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
 
 static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
@@ -68,10 +73,8 @@ static O7C_INLINE o7c_id_t const * o7c_dynamic_tag(void const *mem) {
 static O7C_INLINE int
 	o7c_is(o7c_tag_t const base, void const *strct, o7c_tag_t const ext)
 {
-	if (NULL != strct) {
-		if (NULL == base) {
-			base = o7c_dynamic_tag(strct);
-		}
+	if ((NULL == base) && (NULL != strct)) {
+		base = o7c_dynamic_tag(strct);
 	}
 	return (NULL != strct) && (base[ext[0]] == ext[ext[0]]);
 }

@@ -26,25 +26,25 @@ extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDat
 	(*s).line = 0;
 	(*s).in_ = in_;
 	(*s).ind = sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1;
-	(*s).buf[(*s).ind] = 0x0Cu;
+	(*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] = 0x0Cu;
 }
 
 static void FillBuf(char unsigned buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, o7c_tag_t in__tag) {
 	int size;
 
 	if ((*ind) % (buf_len0 / 2) != 0) {
-		assert(buf[(*ind)] == 0x0Cu);
-		buf[(*ind)] = 0x00u;
+		assert(buf[o7c_index(buf_len0, (*ind))] == 0x0Cu);
+		buf[o7c_index(buf_len0, (*ind))] = 0x00u;
 	} else {
-		buf[(*ind)] = 0x0Cu;
+		buf[o7c_index(buf_len0, (*ind))] = 0x0Cu;
 		(*ind) = (*ind) % (buf_len0 - 1);
 		size = VDataStream_Read(&(*in_), in__tag, buf, buf_len0, (*ind), buf_len0 / 2);
-		if (buf[(*ind)] == 0x0Cu) {
-			buf[(*ind)] = 0x00u;
+		if (buf[o7c_index(buf_len0, (*ind))] == 0x0Cu) {
+			buf[o7c_index(buf_len0, (*ind))] = 0x00u;
 		} else if (size == buf_len0 / 2) {
-			buf[((*ind) + buf_len0 / 2) % (buf_len0 - 1)] = 0x0Cu;
+			buf[o7c_index(buf_len0, ((*ind) + buf_len0 / 2) % (buf_len0 - 1))] = 0x0Cu;
 		} else {
-			buf[(*ind) + size] = 0x00u;
+			buf[o7c_index(buf_len0, (*ind) + size)] = 0x00u;
 		}
 	}
 }
@@ -53,18 +53,18 @@ static char unsigned ScanChar(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	char unsigned ch;
 
 	(*s).ind++;
-	ch = (*s).buf[(*s).ind];
+	ch = (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 	if (ch == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, &(*(*s).in_), NULL);
-		ch = (*s).buf[(*s).ind];
+		ch = (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 	}
 	return ch;
 }
 
 static void ScanChars(char unsigned buf[/*len0*/], int buf_len0, int *i, Suit suit, struct VDataStream_In *in_, o7c_tag_t in__tag) {
-	while (1) if (suit(buf[(*i)])) {
+	while (1) if (suit(buf[o7c_index(buf_len0, (*i))])) {
 		(*i)++;
-	} else if (buf[(*i)] == 0x0Cu) {
+	} else if (buf[o7c_index(buf_len0, (*i))] == 0x0Cu) {
 		FillBuf(buf, buf_len0, &(*i), &(*in_), in__tag);
 	} else break;
 }
@@ -109,7 +109,7 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, in
 
 	val = 0;
 	i = (*s).lexStart;
-	d = valDigit((*s).buf[i]);
+	d = valDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (d >= 0) {
 		if (IntMax_cnst / capacity >= val) {
 			val = val * capacity;
@@ -122,10 +122,10 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, in
 			(*lex) = Scanner_ErrNumberTooBig_cnst;
 		}
 		i++;
-		d = valDigit((*s).buf[i]);
-	} else if ((*s).buf[i] == 0x0Cu) {
+		d = valDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		i = 0;
-		d = valDigit((*s).buf[i]);
+		d = valDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
 	(*s).integer = val;
 }
@@ -140,40 +140,40 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 
 	val = 1.0;
 	i = (*s).lexStart;
-	d = ValDigit((*s).buf[i]);
+	d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (d >= 0) {
 		val = val * 10.0 + (double)d;
 		i++;
-		d = ValDigit((*s).buf[i]);
-	} else if ((*s).buf[i] == 0x0Cu) {
+		d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		i = 0;
-		d = ValDigit((*s).buf[i]);
+		d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
 	i++;
 	t = 10.0;
-	d = ValDigit((*s).buf[i]);
+	d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (d >= 0) {
 		val = val + (double)d / t;
 		t = t * 10.0;
 		i++;
-		d = ValDigit((*s).buf[i]);
-	} else if ((*s).buf[i] == 0x0Cu) {
+		d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
-		d = ValDigit((*s).buf[i]);
+		d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
-	if ((*s).buf[i] == (char unsigned)'E') {
+	if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'E') {
 		i++;
-		if ((*s).buf[i] == 0x0Cu) {
+		if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 			FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 		}
-		scMinus = (*s).buf[i] == (char unsigned)'-';
-		if (scMinus || ((*s).buf[i] == (char unsigned)'+')) {
+		scMinus = (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'-';
+		if (scMinus || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'+')) {
 			i++;
-			if ((*s).buf[i] == 0x0Cu) {
+			if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 				FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 			}
 		}
-		d = ValDigit((*s).buf[i]);
+		d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 		if (d >= 0) {
 			scale = 0;
 			while (1) if (d >= 0) {
@@ -181,10 +181,10 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 					scale = scale * 10 + d;
 				}
 				i++;
-				d = ValDigit((*s).buf[i]);
-			} else if ((*s).buf[i] == 0x0Cu) {
+				d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
+			} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 				FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
-				d = ValDigit((*s).buf[i]);
+				d = ValDigit((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)]);
 			} else break;
 			if (scale <= RealScaleMax_cnst) {
 				while (scale > 0) {
@@ -212,14 +212,14 @@ static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 
 	lex = Scanner_Number_cnst;
 	ScanChars((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, IsDigit, &(*(*s).in_), NULL);
-	ch = (*s).buf[(*s).ind];
+	ch = (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 	(*s).isReal = ch == (char unsigned)'.';
 	if ((*s).isReal) {
 		(*s).ind++;
 		SNumber_ValReal(&(*s), s_tag, &lex);
 	} else if ((ch >= (char unsigned)'A') && (ch <= (char unsigned)'F') || (ch == (char unsigned)'H') || (ch == (char unsigned)'X')) {
 		ScanChars((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, IsHexDigit, &(*(*s).in_), NULL);
-		ch = (*s).buf[(*s).ind];
+		ch = (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 		SNumber_Val(&(*s), s_tag, &lex, 16, ValHexDigit);
 		if (ch == (char unsigned)'X') {
 			if ((*s).integer <= (int)0xFFu) {
@@ -250,13 +250,13 @@ static bool IsWordEqual(char unsigned str[/*len0*/], int str_len0, char unsigned
 	assert(str_len0 <= buf_len0 / 2);
 	j = 1;
 	i = ind + 1;
-	while (1) if (buf[i] == str[j]) {
+	while (1) if (buf[o7c_index(buf_len0, i)] == str[o7c_index(str_len0, j)]) {
 		i++;
 		j++;
-	} else if (buf[i] == 0x0Cu) {
+	} else if (buf[o7c_index(buf_len0, i)] == 0x0Cu) {
 		i = 0;
 	} else break;
-	return (buf[i] == 0x08u) && (str[j] == 0x00u);
+	return (buf[o7c_index(buf_len0, i)] == 0x08u) && (str[o7c_index(str_len0, j)] == 0x00u);
 }
 
 static bool CheckPredefined_Eq(char unsigned str[/*len0*/], int str_len0, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
@@ -264,16 +264,16 @@ static bool CheckPredefined_Eq(char unsigned str[/*len0*/], int str_len0, char u
 }
 
 static int CheckPredefined_O(char unsigned str[/*len0*/], int str_len0, char unsigned buf[/*len0*/], int buf_len0, int begin, int end, int id) {
-	if (!CheckPredefined_Eq(str, str_len0, buf, buf_len0, begin, end)) {
+	if (!IsWordEqual(str, str_len0, buf, buf_len0, begin, end)) {
 		id = Scanner_Ident_cnst;
 	}
 	return id;
 }
 
 static int CheckPredefined_T(char unsigned s1[/*len0*/], int s1_len0, char unsigned buf[/*len0*/], int buf_len0, int begin, int end, int id1, char unsigned s2[/*len0*/], int s2_len0, int id2) {
-	if (CheckPredefined_Eq(s1, s1_len0, buf, buf_len0, begin, end)) {
+	if (IsWordEqual(s1, s1_len0, buf, buf_len0, begin, end)) {
 		id2 = id1;
-	} else if (!CheckPredefined_Eq(s2, s2_len0, buf, buf_len0, begin, end)) {
+	} else if (!IsWordEqual(s2, s2_len0, buf, buf_len0, begin, end)) {
 		id2 = Scanner_Ident_cnst;
 	}
 	return id2;
@@ -283,9 +283,9 @@ extern int Scanner_CheckPredefined(char unsigned buf[/*len0*/], int buf_len0, in
 	int id;
 	char unsigned save;
 
-	save = buf[end];
-	buf[end] = 0x08u;
-	switch (buf[begin]) {
+	save = buf[o7c_index(buf_len0, end)];
+	buf[o7c_index(buf_len0, end)] = 0x08u;
+	switch (buf[o7c_index(buf_len0, begin)]) {
 	case 65:
 		if (CheckPredefined_Eq("ABS", 4, buf, buf_len0, begin, end)) {
 			id = Scanner_Abs_cnst;
@@ -337,12 +337,12 @@ extern int Scanner_CheckPredefined(char unsigned buf[/*len0*/], int buf_len0, in
 		id = CheckPredefined_O("UNPK", 5, buf, buf_len0, begin, end, Scanner_Unpk_cnst);
 		break;
 	default:
-		if ((buf[begin] == 71) || (buf[begin] == 72) || (buf[begin] == 74) || (buf[begin] == 75) || (buf[begin] == 77) || (buf[begin] == 84) || (86 <= buf[begin] && buf[begin] <= 90) || (97 <= buf[begin] && buf[begin] <= 122)) {
+		if ((buf[o7c_index(buf_len0, begin)] == 71) || (buf[o7c_index(buf_len0, begin)] == 72) || (buf[o7c_index(buf_len0, begin)] == 74) || (buf[o7c_index(buf_len0, begin)] == 75) || (buf[o7c_index(buf_len0, begin)] == 77) || (buf[o7c_index(buf_len0, begin)] == 84) || (86 <= buf[o7c_index(buf_len0, begin)] && buf[o7c_index(buf_len0, begin)] <= 90) || (97 <= buf[o7c_index(buf_len0, begin)] && buf[o7c_index(buf_len0, begin)] <= 122)) {
 			id = Scanner_Ident_cnst;
 		} else abort();
 		break;
 	}
-	buf[end] = save;
+	buf[o7c_index(buf_len0, end)] = save;
 	return id;
 }
 
@@ -352,7 +352,7 @@ static bool CheckWord_Eq(char unsigned str[/*len0*/], int str_len0, char unsigne
 }
 
 static void CheckWord_O(int *lex, char unsigned str[/*len0*/], int str_len0, char unsigned buf[/*len0*/], int buf_len0, int ind, int end, int l) {
-	if (CheckWord_Eq(str, str_len0, buf, buf_len0, ind, end)) {
+	if (IsWordEqual(str, str_len0, buf, buf_len0, ind, end)) {
 		(*lex) = l;
 	} else {
 		(*lex) = Scanner_Ident_cnst;
@@ -360,9 +360,9 @@ static void CheckWord_O(int *lex, char unsigned str[/*len0*/], int str_len0, cha
 }
 
 static void CheckWord_T(int *lex, char unsigned s1[/*len0*/], int s1_len0, int l1, char unsigned s2[/*len0*/], int s2_len0, int l2, char unsigned buf[/*len0*/], int buf_len0, int ind, int end) {
-	if (CheckWord_Eq(s1, s1_len0, buf, buf_len0, ind, end)) {
+	if (IsWordEqual(s1, s1_len0, buf, buf_len0, ind, end)) {
 		(*lex) = l1;
-	} else if (CheckWord_Eq(s2, s2_len0, buf, buf_len0, ind, end)) {
+	} else if (IsWordEqual(s2, s2_len0, buf, buf_len0, ind, end)) {
 		(*lex) = l2;
 	} else {
 		(*lex) = Scanner_Ident_cnst;
@@ -373,9 +373,9 @@ static int CheckWord(char unsigned buf[/*len0*/], int buf_len0, int ind, int end
 	int lex;
 	char unsigned save;
 
-	save = buf[end];
-	buf[end] = 0x08u;
-	switch (buf[ind]) {
+	save = buf[o7c_index(buf_len0, end)];
+	buf[o7c_index(buf_len0, end)] = 0x08u;
+	switch (buf[o7c_index(buf_len0, ind)]) {
 	case 65:
 		CheckWord_O(&lex, "ARRAY", 6, buf, buf_len0, ind, end, Scanner_Array_cnst);
 		break;
@@ -445,12 +445,12 @@ static int CheckWord(char unsigned buf[/*len0*/], int buf_len0, int ind, int end
 		CheckWord_O(&lex, "WHILE", 6, buf, buf_len0, ind, end, Scanner_While_cnst);
 		break;
 	default:
-		if ((0 <= buf[ind] && buf[ind] <= 64) || (buf[ind] == 71) || (buf[ind] == 72) || (74 <= buf[ind] && buf[ind] <= 76) || (buf[ind] == 81) || (buf[ind] == 83) || (88 <= buf[ind] && buf[ind] <= 255)) {
+		if ((0 <= buf[o7c_index(buf_len0, ind)] && buf[o7c_index(buf_len0, ind)] <= 64) || (buf[o7c_index(buf_len0, ind)] == 71) || (buf[o7c_index(buf_len0, ind)] == 72) || (74 <= buf[o7c_index(buf_len0, ind)] && buf[o7c_index(buf_len0, ind)] <= 76) || (buf[o7c_index(buf_len0, ind)] == 81) || (buf[o7c_index(buf_len0, ind)] == 83) || (88 <= buf[o7c_index(buf_len0, ind)] && buf[o7c_index(buf_len0, ind)] <= 255)) {
 			lex = Scanner_Ident_cnst;
 		} else abort();
 		break;
 	}
-	buf[end] = save;
+	buf[o7c_index(buf_len0, end)] = save;
 	return lex;
 }
 
@@ -482,21 +482,21 @@ static bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	assert(i >= 0);
 	start = i;
 	comment = 0;
-	while (1) if (((*s).buf[i] == (char unsigned)' ') || ((*s).buf[i] == 0x0Du)) {
+	while (1) if (((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)' ') || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Du)) {
 		i++;
-	} else if ((*s).buf[i] == 0x09u) {
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u) {
 		i++;
 		(*s).tabs++;
-	} else if ((*s).buf[i] == 0x0Au) {
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Au) {
 		(*s).line++;
 		(*s).column = 0;
 		(*s).tabs = 0;
 		i++;
 		start = i;
-	} else if ((*s).buf[i] == 0x0Cu) {
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 		start = start - (int)(i == 0) * (sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1);
-	} else if (((*s).buf[i] == (char unsigned)'(') && (comment >= 0)) {
+	} else if (((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'(') && (comment >= 0)) {
 		(*s).ind = i;
 		if (ScanChar(&(*s), s_tag) == (char unsigned)'*') {
 			comment++;
@@ -510,8 +510,8 @@ static bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			comment =  - 1;
 		}
 		i = (*s).ind;
-	} else if ((comment > 0) && ((*s).buf[i] != 0x00u)) {
-		if ((*s).buf[i] == (char unsigned)'*') {
+	} else if ((comment > 0) && ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] != 0x00u)) {
+		if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'*') {
 			(*s).ind = i;
 			if (ScanChar(&(*s), s_tag) == (char unsigned)')') {
 				comment--;
@@ -533,23 +533,23 @@ static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int count;
 
 	i = (*s).ind + 1;
-	if ((*s).buf[i] == 0x0Cu) {
+	if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 	}
 	j = i;
 	count = 0;
-	while (1) if (((*s).buf[i] != (char unsigned)'"') && (((*s).buf[i] >= (char unsigned)' ') || ((*s).buf[i] == 0x09u))) {
+	while (1) if (((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] != (char unsigned)'"') && (((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] >= (char unsigned)' ') || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u))) {
 		i++;
 		count++;
-	} else if ((*s).buf[i] == 0x0Cu) {
+	} else if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 	} else break;
 	(*s).isChar = false;
-	if ((*s).buf[i] == (char unsigned)'"') {
+	if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'"') {
 		l = Scanner_String_cnst;
 		if (count == 1) {
 			(*s).isChar = true;
-			(*s).integer = (int)(*s).buf[j];
+			(*s).integer = (int)(*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, j)];
 		}
 		i++;
 	} else {
@@ -566,10 +566,10 @@ static void Next_L(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, int l) 
 
 static void Next_Li(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, char unsigned ch, int then, int else_) {
 	(*s).ind++;
-	if ((*s).buf[(*s).ind] == 0x0Cu) {
+	if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, &(*(*s).in_), NULL);
 	}
-	if ((*s).buf[(*s).ind] == ch) {
+	if ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == ch) {
 		(*lex) = then;
 		(*s).ind++;
 	} else {
@@ -584,7 +584,7 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		lex = Scanner_ErrUnclosedComment_cnst;
 	} else {
 		(*s).lexStart = (*s).ind;
-		switch ((*s).buf[(*s).ind]) {
+		switch ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)]) {
 		case 0:
 			lex = Scanner_End_cnst;
 			break;
@@ -658,11 +658,11 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			lex = ScanString(&(*s), s_tag);
 			break;
 		default:
-			if ((1 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 33) || ((*s).buf[(*s).ind] == 36) || ((*s).buf[(*s).ind] == 37) || ((*s).buf[(*s).ind] == 39) || ((*s).buf[(*s).ind] == 63) || ((*s).buf[(*s).ind] == 64) || ((*s).buf[(*s).ind] == 92) || ((*s).buf[(*s).ind] == 95) || ((*s).buf[(*s).ind] == 96) || (127 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 255)) {
+			if ((1 <= (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 33) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 36) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 37) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 39) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 63) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 64) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 92) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 95) || ((*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 96) || (127 <= (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 255)) {
 				lex = Scanner_UnexpectChar_cnst;
-			} else if ((48 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 57)) {
+			} else if ((48 <= (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 57)) {
 				lex = SNumber(&(*s), s_tag);
-			} else if ((97 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 122) || (65 <= (*s).buf[(*s).ind] && (*s).buf[(*s).ind] <= 90)) {
+			} else if ((97 <= (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 122) || (65 <= (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_index(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 90)) {
 				lex = SWord(&(*s), s_tag);
 			} else abort();
 			break;

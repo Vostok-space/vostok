@@ -217,7 +217,7 @@ static struct Ast_RDeclaration *SearchName(struct Ast_RDeclaration *d, o7c_tag_t
 	if (d != NULL) {
 		Log_Str("Найдено объявление ", 37);
 		while (begin != end) {
-			Log_Char(buf[begin]);
+			Log_Char(buf[o7c_index(buf_len0, begin)]);
 			begin = (begin + 1) % (buf_len0 - 1);
 		}
 		Log_Str(" id = ", 7);
@@ -386,8 +386,8 @@ extern void Ast_AddError(struct Ast_RModule *m, o7c_tag_t m_tag, int error, int 
 }
 
 extern struct Ast_RType *Ast_TypeGet(int id) {
-	assert(types[id] != NULL);
-	return types[id];
+	assert(types[o7c_index(Ast_PredefinedTypesCount_cnst, id)] != NULL);
+	return types[o7c_index(Ast_PredefinedTypesCount_cnst, id)];
 }
 
 extern struct Ast_RArray *Ast_ArrayGet(struct Ast_RType *t, o7c_tag_t t_tag, struct Ast_RExpression *count, o7c_tag_t count_tag) {
@@ -453,7 +453,7 @@ static struct Ast_RDeclaration *SearchPredefined(char unsigned buf[/*len0*/], in
 	Log_Int(l);
 	Log_Ln();
 	if ((l >= Scanner_PredefinedFirst_cnst) && (l <= Scanner_PredefinedLast_cnst)) {
-		d = predefined[l - Scanner_PredefinedFirst_cnst];
+		d = predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, l - Scanner_PredefinedFirst_cnst)];
 		assert(d != NULL);
 	} else {
 		d = NULL;
@@ -471,9 +471,18 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 	}
 	if (d == NULL) {
 		d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
-		while ((d == NULL) && (ds->_.up != NULL)) {
-			ds = ds->_.up;
-			d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+		if (o7c_is(NULL, ds, Ast_RProcedure_tag)) {
+			if (d == NULL) {
+				do {
+					ds = ds->_.up;
+				} while (!((ds == NULL) || (o7c_is(NULL, ds, Ast_RModule_tag))));
+				d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+			}
+		} else {
+			while ((d == NULL) && (ds->_.up != NULL)) {
+				ds = ds->_.up;
+				d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+			}
 		}
 		if (d == NULL) {
 			d = SearchPredefined(buf, buf_len0, begin, end);
@@ -491,6 +500,9 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, o7c_tag_t d_tag, stru
 		(*d) = o7c_new(sizeof(*(*d)), Ast_RDeclaration_tag);
 		(*d)->_.id = Ast_IdError_cnst;
 		DeclConnect((*d), NULL, ds, NULL, buf, buf_len0, begin, end);
+		(*d)->type = o7c_new(sizeof(*(*d)->type), Ast_RType_tag);
+		DeclInit(&(*d)->type->_, NULL, NULL, NULL);
+		(*d)->type->_._.id = Ast_IdError_cnst;
 	} else if ((o7c_is(NULL, (*d), Ast_Const_s_tag)) && !(&O7C_GUARD(Ast_Const_s, (*d), NULL))->finished) {
 		err = Ast_ErrConstRecursive_cnst;
 		(&O7C_GUARD(Ast_Const_s, (*d), NULL))->finished = true;
@@ -718,6 +730,9 @@ extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_ta
 			t1 = t1->base;
 			(*distance)++;
 		} while (!((t0 == t1) || (t1 == NULL)));
+	} else {
+		t0 = NULL;
+		t1 = NULL;
 	}
 	Log_Int((int)(t0 == t1));
 	Log_Ln();
@@ -771,7 +786,7 @@ extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct
 extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, char unsigned name[/*len0*/], int name_len0, int begin, int end) {
 	struct Ast_SelRecord_s *sr;
 	int err;
-	struct Ast_RDeclaration *var_;
+	struct Ast_RVar *var_;
 	struct Ast_RDeclarations *vars;
 
 	sr = o7c_new(sizeof(*sr), Ast_SelRecord_s_tag);
@@ -790,16 +805,16 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struc
 				vars = (&O7C_GUARD(Ast_Record_s, (*type)->_.type, NULL))->vars;
 			}
 			if (vars != NULL) {
-				err = Ast_DeclarationGet(&var_, NULL, vars, NULL, name, name_len0, begin, end);
+				err = Ast_VarGet(&var_, NULL, vars, NULL, name, name_len0, begin, end);
 				if (var_ != NULL) {
-					(*type) = var_->type;
+					(*type) = var_->_.type;
 				} else {
 					(*type) = NULL;
 				}
 			}
 		}
 	}
-	sr->var_ = (&O7C_GUARD(Ast_RVar, var_, NULL));
+	sr->var_ = var_;
 	(*sel) = (&(sr)->_);
 	return err;
 }
@@ -898,7 +913,7 @@ extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, o7c_tag_t e_
 	} else if ((*des) != NULL) {
 		if (o7c_is(NULL, (*des), Ast_Designator_s_tag)) {
 			(*e)->designator = (&O7C_GUARD(Ast_Designator_s, (*des), NULL));
-			if (!(( (1u << (*des)->type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
+			if (((*des)->type != NULL) && !(( (1u << (*des)->type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
 				err = Ast_ErrIsExtVarNotRecord_cnst;
 			}
 		} else {
@@ -1903,8 +1918,8 @@ static void PredefinedDeclarationsInit_TypeNew(int s, int t) {
 		td = (&(tb)->_);
 	}
 	TInit(td, NULL, t);
-	predefined[s - Scanner_PredefinedFirst_cnst] = (&(td)->_);
-	types[t] = td;
+	predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, s - Scanner_PredefinedFirst_cnst)] = (&(td)->_);
+	types[o7c_index(Ast_PredefinedTypesCount_cnst, t)] = td;
 }
 
 static struct Ast_ProcType_s *PredefinedDeclarationsInit_ProcNew(int s, int t) {
@@ -1913,7 +1928,7 @@ static struct Ast_ProcType_s *PredefinedDeclarationsInit_ProcNew(int s, int t) {
 	td = o7c_new(sizeof(*td), Ast_PredefinedProcedure_s_tag);
 	NodeInit(&(*td)._._._._, Ast_PredefinedProcedure_s_tag);
 	DeclInit(&td->_._._, NULL, NULL, NULL);
-	predefined[s - Scanner_PredefinedFirst_cnst] = (&(td)->_._._);
+	predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, s - Scanner_PredefinedFirst_cnst)] = (&(td)->_._._);
 	td->_.header = Ast_ProcTypeNew();
 	td->_._._.type = (&(td->_.header)->_._);
 	td->_._._._.id = s;

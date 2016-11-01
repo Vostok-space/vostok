@@ -92,10 +92,10 @@
 #define Ast_IdCall_cnst 25
 #define Ast_IdBraces_cnst 26
 #define Ast_IdIsExtension_cnst 27
+#define Ast_IdError_cnst 31
 #define Ast_IdImport_cnst 32
 #define Ast_IdConst_cnst 33
 #define Ast_IdVar_cnst 34
-#define Ast_IdError_cnst 35
 
 typedef struct Ast_RModule *Ast_Module;
 typedef struct Ast_RProvider *Ast_Provider;

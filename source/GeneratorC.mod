@@ -556,8 +556,9 @@ VAR sel: Ast.Selector;
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
 		THEN
 			IF gen.opt.checkIndex
-			&	((type(Ast.Array).count = NIL)
-			  OR (sel(Ast.SelArray).index.value = NIL)
+			&	((sel(Ast.SelArray).index.value = NIL)
+			  OR (type(Ast.Array).count = NIL)
+			  &  (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 				)
 			THEN
 				Str(gen, "o7c_index(");
@@ -572,8 +573,9 @@ VAR sel: Ast.Selector;
 			sel := sel.next;
 			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
 				IF gen.opt.checkIndex
-				&	((type(Ast.Array).count = NIL)
-				  OR (sel(Ast.SelArray).index.value = NIL)
+				&	((sel(Ast.SelArray).index.value = NIL)
+				  OR (type(Ast.Array).count = NIL)
+				  &  (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 					)
 				THEN
 					Str(gen, "][o7c_index(");

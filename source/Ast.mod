@@ -1152,7 +1152,7 @@ PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
 						name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR sr: SelRecord;
 	err: INTEGER;
-	var: Declaration;
+	var: Var;
 	vars: Declarations;
 BEGIN
 	NEW(sr); SelInit(sr);
@@ -1170,7 +1170,7 @@ BEGIN
 				vars := type.type(Record).vars
 			END;
 			IF vars # NIL THEN
-				err := DeclarationGet(var, vars, name, begin, end);
+				err := VarGet(var, vars, name, begin, end);
 				IF var # NIL THEN
 					type := var.type
 				ELSE
@@ -1179,7 +1179,7 @@ BEGIN
 			END
 		END
 	END;
-	sr.var := var(Var);
+	sr.var := var;
 	sel := sr
 	RETURN err
 END SelRecordNew;

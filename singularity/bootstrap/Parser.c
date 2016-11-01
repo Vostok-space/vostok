@@ -502,7 +502,7 @@ static struct Ast_RArray *Array(struct Parser *p, o7c_tag_t p_tag, struct Ast_RD
 		exprLen = Expression(&(*p), p_tag, ds, NULL);
 		size = size * ExprToArrayLen(&(*p), p_tag, exprLen, NULL);
 		if (i < sizeof(lens) / sizeof (lens[0])) {
-			lens[i] = exprLen;
+			lens[o7c_index(16, i)] = exprLen;
 		}
 		i++;
 	}
@@ -513,7 +513,7 @@ static struct Ast_RArray *Array(struct Parser *p, o7c_tag_t p_tag, struct Ast_RD
 	a->_._._.type = type(&(*p), p_tag, ds, NULL,  - 1,  - 1);
 	while (i > 0) {
 		i--;
-		a->_._._.type = (&(Ast_ArrayGet(a->_._._.type, NULL, lens[i], NULL))->_._);
+		a->_._._.type = (&(Ast_ArrayGet(a->_._._.type, NULL, lens[o7c_index(16, i)], NULL))->_._);
 	}
 	return a;
 }
@@ -527,7 +527,7 @@ static struct Ast_RType *TypeNamed(struct Parser *p, o7c_tag_t p_tag, struct Ast
 	if (d != NULL) {
 		if (o7c_is(NULL, d, Ast_RType_tag)) {
 			t = (&O7C_GUARD(Ast_RType, d, NULL));
-		} else {
+		} else if (d->_.id != Ast_IdError_cnst) {
 			AddError(&(*p), p_tag, Parser_ErrExpectType_cnst);
 		}
 	}
@@ -650,7 +650,7 @@ static struct Ast_RPointer *Pointer(struct Parser *p, o7c_tag_t p_tag, struct As
 			(&O7C_GUARD(Ast_Record_s, decl, NULL))->pointer = tp;
 		} else {
 			tp->_._._.type = TypeNamed(&(*p), p_tag, ds, NULL);
-			if ((tp->_._._.type != NULL)) {
+			if (tp->_._._.type != NULL) {
 				if (o7c_is(NULL, tp->_._._.type, Ast_Record_s_tag)) {
 					(&O7C_GUARD(Ast_Record_s, tp->_._._.type, NULL))->pointer = tp;
 				} else {
@@ -823,7 +823,10 @@ static Ast_If If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds
 }
 
 static Ast_Case Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag);
-static Ast_CaseLabel Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, Ast_Case case_, o7c_tag_t case__tag);
+static Ast_CaseLabel Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, o7c_tag_t case__tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag);
+static Ast_CaseLabel LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag);
+static Ast_CaseLabel LabelRange_LabelList_Element_Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
 	int err;
 	Ast_CaseLabel l;
 	bool qual;
@@ -847,25 +850,25 @@ static Ast_CaseLabel Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RD
 	return l;
 }
 
-static Ast_CaseLabel Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+static Ast_CaseLabel LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
 	Ast_CaseLabel r;
 
-	r = Case_Label(&(*p), p_tag, ds, NULL);
+	r = LabelRange_LabelList_Element_Case_Label(&(*p), p_tag, ds, NULL);
 	if ((*p).l == Scanner_Range_cnst) {
 		Scan(&(*p), p_tag);
-		CheckAst(&(*p), p_tag, Ast_CaseRangeNew(r, NULL, Case_Label(&(*p), p_tag, ds, NULL), NULL));
+		CheckAst(&(*p), p_tag, Ast_CaseRangeNew(r, NULL, LabelRange_LabelList_Element_Case_Label(&(*p), p_tag, ds, NULL), NULL));
 	}
 	return r;
 }
 
-static Ast_CaseLabel Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, o7c_tag_t case__tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+static Ast_CaseLabel Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, o7c_tag_t case__tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
 	Ast_CaseLabel first;
 	Ast_CaseLabel last;
 
-	first = Case_LabelRange(&(*p), p_tag, ds, NULL);
+	first = LabelList_Element_Case_LabelRange(&(*p), p_tag, ds, NULL);
 	while ((*p).l == Scanner_Comma_cnst) {
 		Scan(&(*p), p_tag);
-		last = Case_LabelRange(&(*p), p_tag, ds, NULL);
+		last = LabelList_Element_Case_LabelRange(&(*p), p_tag, ds, NULL);
 		CheckAst(&(*p), p_tag, Ast_CaseRangeListAdd(case_, NULL, first, NULL, last, NULL));
 	}
 	return first;
@@ -874,7 +877,7 @@ static Ast_CaseLabel Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case 
 static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, Ast_Case case_, o7c_tag_t case__tag) {
 	Ast_CaseElement elem;
 
-	elem = Ast_CaseElementNew(Case_LabelList(&(*p), p_tag, case_, NULL, ds, NULL), NULL);
+	elem = Ast_CaseElementNew(Element_Case_LabelList(&(*p), p_tag, case_, NULL, ds, NULL), NULL);
 	assert(elem->labels != NULL);
 	Expect(&(*p), p_tag, Scanner_Colon_cnst, Parser_ErrExpectColon_cnst);
 	elem->stats = statements(&(*p), p_tag, ds, NULL);

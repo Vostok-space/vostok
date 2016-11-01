@@ -18,6 +18,7 @@ typedef struct GeneratorC_Options_s {
 	int std;
 	bool gnu;
 	bool procLocal;
+	bool checkIndex;
 	bool main_;
 	int index;
 	struct V_Base *records;

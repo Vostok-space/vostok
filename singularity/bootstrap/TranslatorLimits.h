@@ -20,7 +20,7 @@
 #define TranslatorLimits_MaxConsts_cnst 255
 #define TranslatorLimits_MaxVars_cnst 31
 #define TranslatorLimits_MaxProcedures_cnst 31
-#define TranslatorLimits_MaxDeepProcedures_cnst 3
+#define TranslatorLimits_MaxDeepProcedures_cnst 7
 #define TranslatorLimits_MaxStatements_cnst 255
 #define TranslatorLimits_MaxDeepStatements_cnst 15
 #define TranslatorLimits_MaxIfBranches_cnst 255

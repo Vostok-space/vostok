@@ -400,7 +400,7 @@ static int LenStr(char unsigned str[/*len0*/], int str_len0, int ofs) {
 	int i;
 
 	i = ofs;
-	while (str[i] != 0x00u) {
+	while (str[o7c_index(str_len0, i)] != 0x00u) {
 		i++;
 	}
 	return i - ofs;
@@ -415,11 +415,11 @@ static void CopyPath(char unsigned str[/*len0*/], int str_len0, int arg) {
 		arg++;
 	}
 	if (i + 1 < str_len0) {
-		str[i + 1] = 0x00u;
+		str[o7c_index(str_len0, i + 1)] = 0x00u;
 	} else {
-		str[str_len0 - 1] = 0x00u;
-		str[str_len0 - 2] = 0x00u;
-		str[str_len0 - 3] = (char unsigned)'#';
+		str[o7c_index(str_len0, str_len0 - 1)] = 0x00u;
+		str[o7c_index(str_len0, str_len0 - 2)] = 0x00u;
+		str[o7c_index(str_len0, str_len0 - 3)] = (char unsigned)'#';
 	}
 }
 
@@ -480,7 +480,7 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, o7c_tag_t p_tag, s
 		pathOfs = 0;
 		do {
 			source = GetModule_Open(mp, NULL, &pathOfs, name, name_len0, ofs, end);
-		} while (!((source != NULL) || (mp->path[pathOfs] == 0x00u)));
+		} while (!((source != NULL) || (mp->path[o7c_index(4096, pathOfs)] == 0x00u)));
 		if (source != NULL) {
 			m = Parser_Parse(&source->_, NULL, p, NULL, &mp->opt, Parser_Options_tag);
 			VFileStream_CloseIn(&source, NULL);
@@ -504,20 +504,20 @@ static int OpenOutput(struct VFileStream_ROut **interface_, o7c_tag_t interface_
 	if (!(CLI_Get(dest, 1024, &destLen, 2) && (destLen < sizeof(dest) / sizeof (dest[0]) - 2))) {
 		ret = ErrTooLongOutName_cnst;
 	} else {
-		(*isMain) = (destLen > 3) && (dest[destLen - 3] == (char unsigned)'.') && (dest[destLen - 2] == (char unsigned)'c');
+		(*isMain) = (destLen > 3) && (dest[o7c_index(1024, destLen - 3)] == (char unsigned)'.') && (dest[o7c_index(1024, destLen - 2)] == (char unsigned)'c');
 		if ((*isMain)) {
 			destLen -= 2;
 		}
-		dest[destLen - 1] = (char unsigned)'.';
-		dest[destLen + 1] = 0x00u;
+		dest[o7c_index(1024, destLen - 1)] = (char unsigned)'.';
+		dest[o7c_index(1024, destLen + 1)] = 0x00u;
 		if (!(*isMain)) {
-			dest[destLen] = (char unsigned)'h';
+			dest[o7c_index(1024, destLen)] = (char unsigned)'h';
 			(*interface_) = VFileStream_OpenOut(dest, 1024);
 		}
 		if (((*interface_) == NULL) && !(*isMain)) {
 			ret = ErrOpenH_cnst;
 		} else {
-			dest[destLen] = (char unsigned)'c';
+			dest[o7c_index(1024, destLen)] = (char unsigned)'c';
 			(*implementation) = VFileStream_OpenOut(dest, 1024);
 			if ((*implementation) == NULL) {
 				VFileStream_CloseOut(&(*interface_), NULL);
@@ -630,8 +630,8 @@ static int CopyExt(char unsigned ext[/*len0*/], int ext_len0, char unsigned name
 
 	i = 0;
 	dot =  - 1;
-	while (name[i] != 0x00u) {
-		if (name[i] == (char unsigned)'.') {
+	while (name[o7c_index(name_len0, i)] != 0x00u) {
+		if (name[o7c_index(name_len0, i)] == (char unsigned)'.') {
 			dot = i;
 		}
 		i++;
@@ -644,7 +644,7 @@ static int CopyExt(char unsigned ext[/*len0*/], int ext_len0, char unsigned name
 	return len;
 }
 
-static void Main(void) {
+static void Translator_Start(void) {
 	char unsigned src[1024];
 	char unsigned ext[32];
 	int srcLen;
@@ -692,6 +692,6 @@ extern int main(int argc, char **argv) {
 
 	o7c_tag_init(Translator_ModuleProvider_s_tag, Ast_RProvider_tag);
 
-	Main();
+	Translator_Start();
 	return o7c_exit_code;
 }
