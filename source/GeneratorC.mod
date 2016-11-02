@@ -1126,7 +1126,10 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, "(1 << ");
 					Factor(gen, set.exprs[0])
 				ELSE
-					Str(gen, "O7C_SET(");
+					IF (set.exprs[0].value = NIL) OR (set.exprs[1].value = NIL)
+					THEN Str(gen, "o7c_set(")
+					ELSE Str(gen, "O7C_SET(")
+					END;
 					Expression(gen, set.exprs[0]);
 					Str(gen, ", ");
 					Expression(gen, set.exprs[1])
@@ -1423,12 +1426,12 @@ BEGIN
 				IF gen.opt.std >= IsoC99 THEN
 					Simple(gen, "bool ")
 				ELSE
-					Simple(gen, "int/* bool */ ")
+					Simple(gen, "o7c_bool ")
 				END
 			| Ast.IdByte:
 				Simple(gen, "char unsigned ")
 			| Ast.IdChar:
-				Simple(gen, "char unsigned ")
+				Simple(gen, "o7c_char ")
 			| Ast.IdReal:
 				Simple(gen, "double ")
 			| Ast.IdPointer:
