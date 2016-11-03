@@ -43,5 +43,6 @@ BEGIN
 END Do;
 
 BEGIN
-	Do(11)
+	Do(11);
+	ASSERT(count = 2680)
 END Queens.
