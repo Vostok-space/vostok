@@ -38,7 +38,8 @@ TYPE
 		std*: INTEGER;
 		gnu*,
 		procLocal*,
-		checkIndex*: BOOLEAN;
+		checkIndex*,
+		caseAbort*: BOOLEAN;
 
 		main: BOOLEAN;
 
@@ -1815,9 +1816,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		Tabs(gen, 0);
 		StrLn(gen, "default:");
 		Tabs(gen, +1);
-		IF elemWithRange = NIL THEN
-			StrLn(gen, "abort();")
-		ELSE
+		IF elemWithRange # NIL THEN
 			elem := elemWithRange;
 			CaseElementAsIf(gen, elem, caseExpr);
 			elem := elem.next;
@@ -1828,9 +1827,14 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				END;
 				elem := elem.next
 			END;
-			StrLn(gen, " else abort();")
+			IF gen.opt.caseAbort THEN
+				StrLn(gen, " else abort();");
+				Tabs(gen, 0)
+			END
+		ELSIF gen.opt.caseAbort THEN
+			StrLn(gen, "abort();");
+			Tabs(gen, 0)
 		END;
-		Tabs(gen, 0);
 		StrLn(gen, "break;");
 		Tabs(gen, -1);
 		StrLn(gen, "}");
@@ -2017,6 +2021,7 @@ BEGIN
 		o.gnu := FALSE;
 		o.procLocal := FALSE;
 		o.checkIndex := TRUE;
+		o.caseAbort := TRUE;
 		o.main := FALSE
 	END
 	RETURN o
