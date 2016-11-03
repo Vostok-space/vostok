@@ -866,11 +866,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			
 			t := p.expr.type;
 			i := 0;
-			IF t.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+			IF t.id = Ast.IdRecord THEN
 				(* TODO для указателя надо оформить заполнение TAG *)
-				IF (p.expr IS Ast.ExprNil) OR (t.id = Ast.IdPointer)
-				OR gen.opt.lastSelectorDereference
-				THEN
+				IF gen.opt.lastSelectorDereference THEN
 					Str(gen, ", NULL")
 				ELSE
 					Str(gen, ", ");
@@ -1161,13 +1159,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		decl := is.designator.decl;
 		extType := is.extType;
 		IF is.designator.type.id = Ast.IdPointer THEN
-			(*decl := decl.type;*)
 			extType := extType.type;
 			ret := CheckStructName(gen, extType(Ast.Record));
 			ASSERT(ret);
 			Str(gen, "o7c_is(NULL, ");
 			Expression(gen, is.designator);
-			(*GlobalName(gen, decl);*)
 			Str(gen, ", ")
 		ELSE
 			Str(gen, "o7c_is(");
@@ -1244,7 +1240,7 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE);
 			t := fp.type;
 			i := 0;
-			IF t.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+			IF t.id = Ast.IdRecord THEN
 				Str(gen, ", o7c_tag_t ");
 				Name(gen, fp);
 				Str(gen, "_tag")
