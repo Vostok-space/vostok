@@ -867,7 +867,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			t := p.expr.type;
 			i := 0;
 			IF t.id = Ast.IdRecord THEN
-				(* TODO для указателя надо оформить заполнение TAG *)
 				IF gen.opt.lastSelectorDereference THEN
 					Str(gen, ", NULL")
 				ELSE
@@ -886,7 +885,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, ", ");
 					IF t(Ast.Array).count # NIL THEN
 						Expression(gen, t(Ast.Array).count)
-						(*Int(gen, t(Ast.Array).count(Ast.ExprInteger).int)*)
 					ELSE
 						Name(gen, p.expr(Ast.Designator).decl);
 						Str(gen, "_len");
@@ -1396,7 +1394,11 @@ BEGIN
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	ELSE
 		IF ~typeDecl & (type.name.block # NIL) THEN
-			IF ~sameType THEN
+			IF sameType THEN
+				IF (type IS Ast.Pointer) & (type.type.name.block # NIL) THEN
+					Str(gen, "*")
+				END
+			ELSE
 				IF (type IS Ast.Pointer) & (type.type.name.block # NIL) THEN
 					Str(gen, "struct ");
 					GlobalName(gen, type.type); Str(gen, " *")
@@ -1994,8 +1996,11 @@ BEGIN
 	END;
 	prev := NIL;
 	WHILE (d # NIL) & (d IS Ast.Var) DO
-		(*Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var));*)
-		Var(out, NIL, d, TRUE);
+		IF ds IS Ast.Module THEN
+			Var(out, NIL, d, TRUE)
+		ELSE
+			Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var))
+		END;
 		prev := d;
 		d := d.next
 	END;

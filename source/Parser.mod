@@ -250,22 +250,6 @@ BEGIN
 	RETURN d
 END ExpectRecordExtend;
 
-PROCEDURE ExpectVar(VAR p: Parser; ds: Ast.Declarations): Ast.Var;
-VAR d: Ast.Declaration;
-	v: Ast.Var;
-BEGIN
-	v := NIL;
-	d := Qualident(p, ds);
-	IF d # NIL THEN
-		IF d IS Ast.Var THEN
-			v := d(Ast.Var)
-		ELSE
-			AddError(p, ErrExpectVar)
-		END
-	END
-	RETURN v
-END ExpectVar;
-
 PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations): Ast.Designator;
 VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
@@ -476,7 +460,7 @@ VAR expr: Ast.Expression;
 	rel: INTEGER;
 BEGIN
 	Log.StrLn("Expression");
-	
+
 	expr := Sum(p, ds);
 	IF (p.l >= Scanner.RelationFirst) & (p.l < Scanner.RelationLast) THEN
 		rel := p.l;
@@ -848,6 +832,7 @@ BEGIN
 	ELSIF p.l = Scanner.Ident		THEN
 		t := TypeNamed(p, ds)
 	ELSE
+		t := Ast.TypeGet(Ast.IdInteger);
 		AddError(p, ErrExpectType)
 	END
 	RETURN t

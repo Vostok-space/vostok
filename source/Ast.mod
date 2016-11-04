@@ -1900,7 +1900,6 @@ END CallParamNew;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam): INTEGER;
 VAR v: Factor;
-	ch: CHAR;
 BEGIN
 	IF (currentFormalParam = NIL)
 	 & (call.designator.decl IS PredefinedProcedure)
@@ -1951,7 +1950,7 @@ BEGIN
 					call.value := v
 				ELSIF v IS ExprString THEN
 					IF v(ExprString).int > -1 THEN
-						call.value := ExprIntegerNew(ORD(ch))
+						call.value := ExprIntegerNew(v(ExprString).int)
 					ELSE
 						ASSERT(FALSE) (* TODO *)
 					END
@@ -2043,9 +2042,10 @@ BEGIN
 	RETURN err
 END CaseNew;
 
-PROCEDURE CaseRangeSearch(case: Case; int: INTEGER): INTEGER;
+PROCEDURE CaseRangeSearch*(case: Case; int: INTEGER): INTEGER;
 VAR e: CaseElement;
 BEGIN
+	ASSERT(FALSE);
 	e := case.elements;
 	IF e # NIL THEN 
 		WHILE e.next # NIL DO
