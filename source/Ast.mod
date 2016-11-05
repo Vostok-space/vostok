@@ -59,6 +59,7 @@ CONST
 	ErrCallIncompatibleParamType*	= -30;
 	ErrCallExpectVarParam*			= -31;
 	ErrCallParamsNotEnough*			= -32;
+	ErrCallVarPointerTypeNotSame*	= -58;(*TODO*)
 	ErrCaseExprNotIntOrChar*		= -33;
 	ErrCaseElemExprTypeMismatch*	= -34;
 	ErrCaseElemExprNotConst*		= -35;
@@ -84,7 +85,8 @@ CONST
 	ErrDotSelectorToNotRecord*		= -55;
 	ErrDeclarationNotVar*			= -56;
 	ErrForIteratorNotInteger*		= -57;
-
+									(*-58*)
+	
 	ErrNotImplemented*				= -99;
 
 	ErrMin* 						= -100;
@@ -1864,13 +1866,20 @@ BEGIN
 		 & ~TypeVariation(call, e.type, currentFormalParam)
 		THEN
 			err := ErrCallIncompatibleParamType
-		ELSIF currentFormalParam.isVar
-			& ~(
-				IsVar(e)
-			  & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
-			)
-		THEN
-			err := ErrCallExpectVarParam
+		ELSIF currentFormalParam.isVar THEN
+			IF ~(IsVar(e)
+			   & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
+				)
+			THEN
+				err := ErrCallExpectVarParam
+			ELSIF (e.type # NIL) & (e.type.id = IdPointer)
+				& (e.type # currentFormalParam.type)
+				& (currentFormalParam.type # NIL)
+				& (currentFormalParam.type.type # NIL)
+				& (e.type.type # NIL)
+			THEN
+				err := ErrCallVarPointerTypeNotSame
+			END
 		END;
 		IF (currentFormalParam.next # NIL)
 		 & (currentFormalParam.next IS FormalParam)

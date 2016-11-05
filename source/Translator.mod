@@ -122,6 +122,8 @@ BEGIN
 			O("Несовместимый тип параметра")
 		| Ast.ErrCallExpectVarParam			:
 			O("Параметр должен быть изменяемым значением")
+		| Ast.ErrCallVarPointerTypeNotSame	:
+			O("Для переменного параметра - указателя должен использоваться аргумент того же типа")
 		| Ast.ErrCallParamsNotEnough		:
 			O("Не хватает фактических параметров в вызове процедуры")
 		| Ast.ErrCaseExprNotIntOrChar		:
