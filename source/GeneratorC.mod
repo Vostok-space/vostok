@@ -1644,7 +1644,15 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Repeat;
 
+	(* TODO исправить для st.by < 0 *)
 	PROCEDURE For(VAR gen: Generator; st: Ast.For);
+		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
+		RETURN (sum.next # NIL)
+			 & (sum.next.next = NIL)
+			 & (sum.next.add = Scanner.Minus)
+			 & (sum.next.term.value # NIL)
+			 & (sum.next.term.value(Ast.ExprInteger).int = 1)
+		END IsEndMinus1;
 	BEGIN
 		Str(gen, "for (");
 		GlobalName(gen, st.var);
@@ -1652,8 +1660,13 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		Expression(gen, st.expr);
 		Str(gen, "; ");
 		GlobalName(gen, st.var);
-		Str(gen, " <= ");
-		Expression(gen, st.to);
+		IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
+			Str(gen, " < ");
+			Expression(gen, st.to(Ast.ExprSum).term)
+		ELSE
+			Str(gen, " <= ");
+			Expression(gen, st.to)
+		END;
 		IF st.by = 1 THEN
 			Str(gen, "; ++");
 			GlobalName(gen, st.var)
