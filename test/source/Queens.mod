@@ -11,7 +11,7 @@ VAR count:INTEGER;
 PROCEDURE canplace(row,col:INTEGER):BOOLEAN;
 VAR i:INTEGER;
 BEGIN
-	i:=1; 
+	i:=1;
 	WHILE (i < row) & (board[i] # col) & (ABS(board[i]-col) # ABS(i-row)) DO
 		INC(i)
 	END

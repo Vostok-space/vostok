@@ -22,10 +22,10 @@
 
 #include "Out.h"
 
-extern void Out_String(char s[/*len0*/], int s_len0) {
+extern void Out_String(char s[/*len*/], int s_len) {
 	int wr;
 	wr = printf("%s", s);
-	assert(wr < s_len0);
+	assert(wr < s_len);
 }
 
 extern void Out_Char(char ch) {

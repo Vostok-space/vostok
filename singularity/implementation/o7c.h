@@ -15,6 +15,8 @@
 #if !defined(HEADER_GUARD_o7c)
 #define HEADER_GUARD_o7c
 
+#include <limits.h>
+
 #if !defined(O7C_INLINE)
 #	if __STDC_VERSION__ >= 199901L
 #		define O7C_INLINE inline
@@ -25,12 +27,24 @@
 #	endif
 #endif
 
+#define O7C_INT_UNDEFINED INT_MIN
+
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
 #elif __STDC_VERSION__ >= 199901L
 	typedef _Bool o7c_bool;
 #else
 	typedef int o7c_bool;
+#endif
+
+#if defined(O7C_INT_T)
+	typedef O7C_INT_T o7c_int_t;
+#elif INT_MAX >= 2147483647
+	typedef int o7c_int_t;
+#elif LONG_MAX >= 2147483647
+	typedef int o7c_int_t;
+#else
+#	error
 #endif
 
 typedef char unsigned o7c_char;
@@ -69,8 +83,39 @@ typedef char unsigned o7c_char;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
-static O7C_INLINE int o7c_index(int len, int ind) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE int o7c_index(int len, int ind) {
+static O7C_INLINE int o7c_int(int i) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_int(int i) {
+	assert(i != O7C_INT_UNDEFINED);
+	return i;
+}
+
+static O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_add(int a1, int a2) {
+	return o7c_int(a1) + o7c_int(a2);
+}
+
+static O7C_INLINE int o7c_sub(int m, int s) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_sub(int m, int s) {
+	return o7c_int(m) - o7c_int(s);
+}
+
+static O7C_INLINE int o7c_mul(int m1, int m2) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_mul(int m1, int m2) {
+	return o7c_int(m1) * o7c_int(m2);
+}
+
+static O7C_INLINE int o7c_div(int n, int d) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_div(int n, int d) {
+	return o7c_int(n) / o7c_int(d);
+}
+
+static O7C_INLINE int o7c_mod(int n, int d) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_mod(int n, int d) {
+	return o7c_int(n) % o7c_int(d);
+}
+
+static O7C_INLINE int o7c_ind(int len, int ind) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_ind(int len, int ind) {
 	assert(len > 0);
 	assert((unsigned)ind < (unsigned)len);
 	return ind;

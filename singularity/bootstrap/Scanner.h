@@ -119,7 +119,7 @@ typedef struct Scanner_Scanner {
 	int line;
 	int column;
 	int tabs;
-	char unsigned buf[Scanner_BlockSize_cnst * 2 + 1];
+	o7c_char buf[Scanner_BlockSize_cnst * 2 + 1];
 	int ind;
 	int lexStart;
 	int lexEnd;
@@ -132,9 +132,9 @@ typedef struct Scanner_Scanner {
 extern o7c_tag_t Scanner_Scanner_tag;
 
 
-extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_, o7c_tag_t in__tag);
+extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_);
 
-extern int Scanner_CheckPredefined(char unsigned buf[/*len0*/], int buf_len0, int begin, int end);
+extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int begin, int end);
 
 extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag);
 

@@ -57,5 +57,6 @@ CONST
 
 	(* Выражения *)
 	MaxSelectors*		=  63; (* Цепочка селекторов *)
+	MaxTermsInSum*		= 255; (* Количество подвыражений в одной сумме *)
 
 END TranslatorLimits.

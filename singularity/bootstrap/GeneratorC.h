@@ -12,6 +12,9 @@
 
 #define GeneratorC_IsoC90_cnst 0
 #define GeneratorC_IsoC99_cnst 1
+#define GeneratorC_VarInitUndefined_cnst 0
+#define GeneratorC_VarInitZero_cnst 1
+#define GeneratorC_VarInitNo_cnst 2
 
 typedef struct GeneratorC_Options_s {
 	struct V_Base _;
@@ -19,6 +22,9 @@ typedef struct GeneratorC_Options_s {
 	bool gnu;
 	bool procLocal;
 	bool checkIndex;
+	bool checkArith;
+	bool caseAbort;
+	int varInit;
 	bool main_;
 	int index;
 	struct V_Base *records;
@@ -44,9 +50,9 @@ extern o7c_tag_t GeneratorC_Generator_tag;
 
 extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void);
 
-extern void GeneratorC_Init(struct GeneratorC_Generator *g, o7c_tag_t g_tag, struct VDataStream_Out *out, o7c_tag_t out_tag);
+extern void GeneratorC_Init(struct GeneratorC_Generator *g, o7c_tag_t g_tag, struct VDataStream_Out *out);
 
-extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag_t interface__tag, struct GeneratorC_Generator *implementation, o7c_tag_t implementation_tag, struct Ast_RModule *module, o7c_tag_t module_tag, struct GeneratorC_Options_s *opt, o7c_tag_t opt_tag);
+extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag_t interface__tag, struct GeneratorC_Generator *implementation, o7c_tag_t implementation_tag, struct Ast_RModule *module, struct GeneratorC_Options_s *opt);
 
 extern void GeneratorC_init_(void);
 #endif

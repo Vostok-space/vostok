@@ -33,13 +33,20 @@ CONST
 	IsoC90*	= 0;
 	IsoC99*	= 1;
 
+	VarInitUndefined*	= 0;
+	VarInitZero*		= 1;
+	VarInitNo*			= 2;
+
 TYPE
 	Options* = POINTER TO RECORD(V.Base)
 		std*: INTEGER;
 		gnu*,
 		procLocal*,
 		checkIndex*,
+		checkArith*,
 		caseAbort*: BOOLEAN;
+
+		varInit*: INTEGER;
 
 		main: BOOLEAN;
 
@@ -562,7 +569,7 @@ VAR sel: Ast.Selector;
 			  &  (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 				)
 			THEN
-				Str(gen, "o7c_index(");
+				Str(gen, "o7c_ind(");
 				Len(gen, type, decl, sel);
 				Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
@@ -579,7 +586,7 @@ VAR sel: Ast.Selector;
 				  &  (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 					)
 				THEN
-					Str(gen, "][o7c_index(");
+					Str(gen, "][o7c_ind(");
 					Len(gen, type, decl, sel);
 					Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
@@ -1008,26 +1015,76 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		UNTIL sum = NIL
 	END Sum;
 
+	PROCEDURE SumCheck(VAR gen: Generator; sum: Ast.ExprSum);
+	VAR arr: ARRAY TranLim.MaxTermsInSum OF Ast.ExprSum;
+		i, last: INTEGER;
+	BEGIN
+		i := -1;
+		REPEAT
+			INC(i);
+			arr[i] := sum;
+			sum := sum.next
+		UNTIL sum = NIL;
+		last := i;
+		WHILE i > 0 DO
+			CASE arr[i].add OF
+			  Scanner.Minus:
+				Str(gen, "o7c_sub(")
+			| Scanner.Plus:
+				Str(gen, "o7c_add(")
+			END;
+			DEC(i)
+		END;
+		IF arr[0].add = Scanner.Minus THEN
+			Str(gen, "o7c_sub(0, ");
+			Expression(gen, arr[0].term);
+			Str(gen, ")")
+		ELSE
+			Expression(gen, arr[0].term)
+		END;
+		WHILE i < last DO
+			INC(i);
+			Str(gen, ", ");
+			Expression(gen, arr[i].term);
+			Str(gen, ")")
+		END 
+	END SumCheck;
+
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
 	BEGIN
-		Expression(gen, term.factor);
-		CASE term.mult OF
-		  Scanner.Asterisk				:
-			IF term.type.id = Ast.IdSet THEN
-				Str(gen, " & ")
-			ELSE
-				Str(gen, " * ")
-			END
-		| Scanner.Slash, Scanner.Div	: 
-			IF term.type.id = Ast.IdSet THEN
-				Str(gen, " ^ ")
-			ELSE
-				Str(gen, " / ")
-			END
-		| Scanner.And					: Str(gen, " && ")
-		| Scanner.Mod					: Str(gen, " % ")
-		END;
-		Expression(gen, term.expr)
+		IF gen.opt.checkArith & ~(term.type.id IN {Ast.IdReal, Ast.IdSet, Ast.IdBoolean})
+		 & (term.mult # Scanner.Slash)
+		 & (term.value = NIL)
+		THEN
+			CASE term.mult OF
+			  Scanner.Asterisk	: Str(gen, "o7c_mul(")
+			| Scanner.Div		: Str(gen, "o7c_div(")
+			| Scanner.Mod		: Str(gen, "o7c_mod(")
+			END;
+			Expression(gen, term.factor);
+			Str(gen, ", ");
+			Expression(gen, term.expr);
+			Str(gen, ")")
+		ELSE
+			Expression(gen, term.factor);
+			CASE term.mult OF
+			  Scanner.Asterisk				:
+				IF term.type.id = Ast.IdSet THEN
+					Str(gen, " & ")
+				ELSE
+					Str(gen, " * ")
+				END
+			| Scanner.Slash, Scanner.Div	: 
+				IF term.type.id = Ast.IdSet THEN
+					Str(gen, " ^ ")
+				ELSE
+					Str(gen, " / ")
+				END
+			| Scanner.And					: Str(gen, " && ")
+			| Scanner.Mod					: Str(gen, " % ")
+			END;
+			Expression(gen, term.expr)
+		END
 	END Term;
 
 	PROCEDURE Boolean(VAR gen: Generator; e: Ast.ExprBoolean);
@@ -1180,10 +1237,9 @@ BEGIN
 	| Ast.IdBoolean:
 		Boolean(gen, expr(Ast.ExprBoolean))
 	| Ast.IdReal:
-		IF expr(Ast.ExprReal).str.block # NIL THEN
-			String(gen, expr(Ast.ExprReal).str)
-		ELSE
-			Real(gen, expr(Ast.ExprReal).real)
+		IF		expr(Ast.ExprReal).str.block # NIL
+		THEN	String(gen, expr(Ast.ExprReal).str)
+		ELSE	Real(gen, expr(Ast.ExprReal).real)
 		END
 	| Ast.IdString:
 		CString(gen, expr(Ast.ExprString))
@@ -1192,22 +1248,30 @@ BEGIN
 	| Ast.IdCall:
 		Call(gen, expr(Ast.ExprCall))
 	| Ast.IdDesignator:
-		IF (expr.value # NIL) & (expr.value.id = Ast.IdString) THEN
-			CString(gen, expr.value(Ast.ExprString))
-		ELSE
-			Designator(gen, expr(Ast.Designator))
+		Log.Str("Expr Designator type.id = ");
+		Log.Int(expr.type.id);
+		Log.Str(" (expr.value # NIL) = ");
+		Log.Int(ORD(expr.value # NIL));
+		Log.Ln;
+		IF		(expr.value # NIL) & (expr.value.id = Ast.IdString)
+		THEN	CString(gen, expr.value(Ast.ExprString))
+		ELSE	Designator(gen, expr(Ast.Designator))
 		END
 	| Ast.IdRelation:
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
-		Sum(gen, expr(Ast.ExprSum))
+		IF		gen.opt.checkArith
+			  & (expr.type.id = Ast.IdInteger)
+			  & (expr.value = NIL)
+		THEN	SumCheck(gen, expr(Ast.ExprSum))
+		ELSE	Sum(gen, expr(Ast.ExprSum))
+		END
 	| Ast.IdTerm:
 		Term(gen, expr(Ast.ExprTerm))
 	| Ast.IdNegate:
-		IF expr.type.id = Ast.IdSet THEN
-			Str(gen, "~")
-		ELSE
-			Str(gen, "!")
+		IF		expr.type.id = Ast.IdSet
+		THEN	Str(gen, "~")
+		ELSE	Str(gen, "!")
 		END;
 		Expression(gen, expr(Ast.ExprNegate).expr)
 	| Ast.IdBraces:
@@ -1419,8 +1483,10 @@ BEGIN
 		ELSIF ~sameType OR (type.id IN {Ast.IdPointer, Ast.IdArray, Ast.IdProcType})
 		THEN
 			CASE type.id OF
-			  Ast.IdInteger, Ast.IdSet:
+			  Ast.IdInteger:
 				Simple(gen, "int ")
+			| Ast.IdSet:
+				Simple(gen, "unsigned ")
 			| Ast.IdBoolean:
 				IF gen.opt.std >= IsoC99 THEN
 					Simple(gen, "bool ")
@@ -1564,6 +1630,28 @@ BEGIN
 		END
 	END;
 	Declarator(out.g[Implementation], var, FALSE, same, TRUE);
+	IF out.opt.varInit # VarInitNo THEN
+		CASE var.type.id OF
+		  Ast.IdInteger:
+			Str(out.g[Implementation], " = O7C_INT_UNDEFINED")
+		| Ast.IdBoolean:
+			Str(out.g[Implementation], " = 0 > 1")
+		| Ast.IdByte:
+			Str(out.g[Implementation], " /* byte init */")
+		| Ast.IdChar:
+			Str(out.g[Implementation], " /* char init */")
+		| Ast.IdReal:
+			Str(out.g[Implementation], " = 0./0.")
+		| Ast.IdSet:
+			Str(out.g[Implementation], " = 0")
+		| Ast.IdPointer, Ast.IdProcType:
+			Str(out.g[Implementation], " = NULL")
+		| Ast.IdArray:
+			Str(out.g[Implementation], " /* init array */")
+		| Ast.IdRecord:
+			Str(out.g[Implementation], " /* record init */")
+		END
+	END;
 	IF last THEN
 		StrLn(out.g[Implementation], ";")
 	END
@@ -1739,7 +1827,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 					Int(gen, r.value);
 					ASSERT(r.right = NIL);
 					StrLn(gen, ":");
-		
+
 					r := r.next
 				END;
 				INC(gen.tabs);
@@ -1753,7 +1841,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
 								  caseExpr: Ast.Expression);
 		VAR r: Ast.CaseLabel;
-	
+
 			PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabel;
 								caseExpr: Ast.Expression);
 			BEGIN
@@ -2035,7 +2123,9 @@ BEGIN
 		o.gnu := FALSE;
 		o.procLocal := FALSE;
 		o.checkIndex := TRUE;
+		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
+		o.varInit := VarInitUndefined;
 		o.main := FALSE
 	END
 	RETURN o

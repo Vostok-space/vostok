@@ -9,23 +9,23 @@
 
 #include "Log.h"
 
-bool Log_state;
-static bool init;
+bool Log_state = 0 > 1;
+static bool init = 0 > 1;
 
-extern void Log_Str(char unsigned s[/*len0*/], int s_len0) {
+extern void Log_Str(o7c_char s[/*len0*/], int s_len0) {
 	if (Log_state) {
 		Out_String(s, s_len0);
 	}
 }
 
-extern void Log_StrLn(char unsigned s[/*len0*/], int s_len0) {
+extern void Log_StrLn(o7c_char s[/*len0*/], int s_len0) {
 	if (Log_state) {
 		Out_String(s, s_len0);
 		Out_Ln();
 	}
 }
 
-extern void Log_Char(char unsigned ch) {
+extern void Log_Char(o7c_char ch) {
 	if (Log_state) {
 		Out_Char(ch);
 	}

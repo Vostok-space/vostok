@@ -17,8 +17,8 @@ extern void VDataStream_InitIn(struct VDataStream_In *in_, o7c_tag_t in__tag, VD
 	(*in_).read = read;
 }
 
-extern int VDataStream_Read(struct VDataStream_In *in_, o7c_tag_t in__tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count) {
-	assert((ofs >= 0) && (count > 0) && (buf_len0 - count >= ofs));
+extern int VDataStream_Read(struct VDataStream_In *in_, o7c_tag_t in__tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count) {
+	assert((ofs >= 0) && (count > 0) && (o7c_sub(buf_len0, count) >= ofs));
 	return (*in_).read(&(*in_), in__tag, buf, buf_len0, ofs, count);
 }
 
@@ -27,8 +27,8 @@ extern void VDataStream_InitOut(struct VDataStream_Out *out, o7c_tag_t out_tag, 
 	(*out).write = write;
 }
 
-extern int VDataStream_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, char unsigned buf[/*len0*/], int buf_len0, int ofs, int count) {
-	assert((ofs >= 0) && (count > 0) && (buf_len0 - count >= ofs));
+extern int VDataStream_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count) {
+	assert((ofs >= 0) && (count > 0) && (o7c_sub(buf_len0, count) >= ofs));
 	return (*out).write(&(*out), out_tag, buf, buf_len0, ofs, count);
 }
 

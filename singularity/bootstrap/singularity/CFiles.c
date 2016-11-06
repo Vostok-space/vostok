@@ -42,7 +42,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 	return file;
 }
 
-extern void CFiles_Close(CFiles_File *file, int *file_tag) {
+extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
 		free(*file);
@@ -50,7 +50,7 @@ extern void CFiles_Close(CFiles_File *file, int *file_tag) {
 	}
 }
 
-extern int CFiles_Read(CFiles_File file, int *file_tag,
+extern int CFiles_Read(CFiles_File file,
 					   char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -58,7 +58,7 @@ extern int CFiles_Read(CFiles_File file, int *file_tag,
 	return fread(buf + ofs, 1, count, file->file);
 }
 
-extern int CFiles_Write(CFiles_File file, int *file_tag,
+extern int CFiles_Write(CFiles_File file,
 						char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(ofs >= 0);
 	assert(count >= 0);

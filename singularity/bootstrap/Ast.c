@@ -65,10 +65,10 @@ o7c_tag_t Ast_Assign_s_tag;
 o7c_tag_t Ast_Call_s_tag;
 o7c_tag_t Ast_StatementError_s_tag;
 
-static struct Ast_RType *types[Ast_PredefinedTypesCount_cnst];
-static struct Ast_RDeclaration *predefined[Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1];
+static struct Ast_RType *types[Ast_PredefinedTypesCount_cnst] /* init array */;
+static struct Ast_RDeclaration *predefined[Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1] /* init array */;
 
-extern void Ast_PutChars(struct Ast_RModule *m, o7c_tag_t m_tag, struct StringStore_String *w, o7c_tag_t w_tag, char unsigned s[/*len0*/], int s_len0, int begin, int end) {
+extern void Ast_PutChars(struct Ast_RModule *m, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int begin, int end) {
 	StringStore_Put(&m->store, StringStore_Store_tag, &(*w), w_tag, s, s_len0, begin, end);
 }
 
@@ -78,7 +78,7 @@ static void NodeInit(struct Ast_Node *n, o7c_tag_t n_tag) {
 	(*n).ext = NULL;
 }
 
-static void DeclInit(struct Ast_RDeclaration *d, o7c_tag_t d_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag) {
+static void DeclInit(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds) {
 	if (ds == NULL) {
 		d->module = NULL;
 	} else if (ds->_.module == NULL) {
@@ -94,12 +94,12 @@ static void DeclInit(struct Ast_RDeclaration *d, o7c_tag_t d_tag, struct Ast_RDe
 	d->next = NULL;
 }
 
-static void DeclConnect(struct Ast_RDeclaration *d, o7c_tag_t d_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned name[/*len0*/], int name_len0, int start, int end) {
+static void DeclConnect(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds, o7c_char name[/*len0*/], int name_len0, int start, int end) {
 	assert(d != NULL);
 	assert(name[0] != 0x00u);
 	assert(!(o7c_is(NULL, d, Ast_RModule_tag)));
 	assert(!(o7c_is(NULL, ds->start, Ast_RModule_tag)));
-	DeclInit(d, NULL, ds, NULL);
+	DeclInit(d, ds);
 	if (ds->end != NULL) {
 		assert(ds->end->next == NULL);
 		ds->end->next = d;
@@ -109,11 +109,11 @@ static void DeclConnect(struct Ast_RDeclaration *d, o7c_tag_t d_tag, struct Ast_
 	}
 	assert(!(o7c_is(NULL, ds->start, Ast_RModule_tag)));
 	ds->end = d;
-	Ast_PutChars(d->module, NULL, &d->name, StringStore_String_tag, name, name_len0, start, end);
+	Ast_PutChars(d->module, &d->name, StringStore_String_tag, name, name_len0, start, end);
 }
 
-static void DeclarationsInit(struct Ast_RDeclarations *d, o7c_tag_t d_tag, struct Ast_RDeclarations *up, o7c_tag_t up_tag) {
-	DeclInit(&d->_, NULL, NULL, NULL);
+static void DeclarationsInit(struct Ast_RDeclarations *d, struct Ast_RDeclarations *up) {
+	DeclInit(&d->_, NULL);
 	d->_.up = NULL;
 	d->start = NULL;
 	d->end = NULL;
@@ -126,27 +126,27 @@ static void DeclarationsInit(struct Ast_RDeclarations *d, o7c_tag_t d_tag, struc
 	d->stats = NULL;
 }
 
-static void DeclarationsConnect(struct Ast_RDeclarations *d, o7c_tag_t d_tag, struct Ast_RDeclarations *up, o7c_tag_t up_tag, char unsigned name[/*len0*/], int name_len0, int start, int end) {
-	DeclarationsInit(d, NULL, up, NULL);
+static void DeclarationsConnect(struct Ast_RDeclarations *d, struct Ast_RDeclarations *up, o7c_char name[/*len0*/], int name_len0, int start, int end) {
+	DeclarationsInit(d, up);
 	if (name[0] != 0x00u) {
-		DeclConnect(&d->_, NULL, up, NULL, name, name_len0, start, end);
+		DeclConnect(&d->_, up, name, name_len0, start, end);
 	} else {
-		DeclInit(&d->_, NULL, up, NULL);
+		DeclInit(&d->_, up);
 	}
 	d->_.up = up;
 }
 
-extern struct Ast_RModule *Ast_ModuleNew(char unsigned name[/*len0*/], int name_len0, int begin, int end) {
-	struct Ast_RModule *m;
+extern struct Ast_RModule *Ast_ModuleNew(o7c_char name[/*len0*/], int name_len0, int begin, int end) {
+	struct Ast_RModule *m = NULL;
 
 	m = o7c_new(sizeof(*m), Ast_RModule_tag);
 	NodeInit(&(*m)._._._, Ast_RModule_tag);
-	DeclarationsInit(&m->_, NULL, NULL, NULL);
+	DeclarationsInit(&m->_, NULL);
 	m->import_ = NULL;
 	m->errors = NULL;
 	m->errLast = NULL;
 	StringStore_StoreInit(&m->store, StringStore_Store_tag);
-	Ast_PutChars(m, NULL, &m->_._.name, StringStore_String_tag, name, name_len0, begin, end);
+	Ast_PutChars(m, &m->_._.name, StringStore_String_tag, name, name_len0, begin, end);
 	m->_._.module = m;
 	Log_Str("Module ", 8);
 	Log_Str(m->_._.name.block->s, StringStore_BlockSize_cnst + 1);
@@ -154,21 +154,20 @@ extern struct Ast_RModule *Ast_ModuleNew(char unsigned name[/*len0*/], int name_
 	return m;
 }
 
-extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, o7c_tag_t p_tag, struct Ast_RModule *host, o7c_tag_t host_tag, char unsigned name[/*len0*/], int name_len0, int ofs, int end) {
-	return p->get(p, NULL, host, NULL, name, name_len0, ofs, end);
+extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end) {
+	return p->get(p, host, name, name_len0, ofs, end);
 }
 
-static int ImportAdd_Load(struct Ast_RModule **res, o7c_tag_t res_tag, struct Ast_RModule *host, o7c_tag_t host_tag, char unsigned buf[/*len0*/], int buf_len0, int realOfs, int realEnd, struct Ast_RProvider *p, o7c_tag_t p_tag) {
-	char unsigned n[TranslatorLimits_MaxLenName_cnst];
-	int l;
-	int err;
+static int ImportAdd_Load(struct Ast_RModule **res, struct Ast_RModule *host, o7c_char buf[/*len0*/], int buf_len0, int realOfs, int realEnd, struct Ast_RProvider *p) {
+	o7c_char n[TranslatorLimits_MaxLenName_cnst] /* init array */;
+	int l = O7C_INT_UNDEFINED, err = O7C_INT_UNDEFINED;
 
 	l = 0;
 	assert(StringStore_CopyChars(n, TranslatorLimits_MaxLenName_cnst, &l, buf, buf_len0, realOfs, realEnd));
 	Log_Str("Модуль '", 15);
 	Log_Str(n, TranslatorLimits_MaxLenName_cnst);
 	Log_StrLn("' загружается", 25);
-	(*res) = Ast_GetModuleByName(p, NULL, host, NULL, buf, buf_len0, realOfs, realEnd);
+	(*res) = Ast_GetModuleByName(p, host, buf, buf_len0, realOfs, realEnd);
 	if ((*res) == NULL) {
 		(*res) = Ast_ModuleNew(buf, buf_len0, realOfs, realEnd);
 		err = Ast_ErrImportModuleNotFound_cnst;
@@ -183,17 +182,17 @@ static int ImportAdd_Load(struct Ast_RModule **res, o7c_tag_t res_tag, struct As
 	return err;
 }
 
-static bool ImportAdd_IsDup(struct Ast_Import_s *i, o7c_tag_t i_tag, char unsigned buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd) {
+static bool ImportAdd_IsDup(struct Ast_Import_s *i, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd) {
 	return StringStore_IsEqualToChars(&i->_.name, StringStore_String_tag, buf, buf_len0, nameOfs, nameEnd) || (realOfs != nameOfs) && ((i->_.name.ofs != i->_.module->_._.name.ofs) || (i->_.name.block != i->_.module->_._.name.block)) && StringStore_IsEqualToChars(&i->_.module->_._.name, StringStore_String_tag, buf, buf_len0, realOfs, realEnd);
 }
 
-extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_tag_t m_tag, char unsigned buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd, struct Ast_RProvider *p, o7c_tag_t p_tag) {
-	struct Ast_Import_s *imp;
-	int err;
+extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd, struct Ast_RProvider *p) {
+	struct Ast_Import_s *imp = NULL;
+	int err = O7C_INT_UNDEFINED;
 
 	imp = m->import_;
 	assert((imp == NULL) || (o7c_is(NULL, m->_.end, Ast_Import_s_tag)));
-	while ((imp != NULL) && !ImportAdd_IsDup(imp, NULL, buf, buf_len0, nameOfs, nameEnd, realOfs, realEnd)) {
+	while ((imp != NULL) && !ImportAdd_IsDup(imp, buf, buf_len0, nameOfs, nameEnd, realOfs, realEnd)) {
 		imp = (&O7C_GUARD(Ast_Import_s, imp->_.next, NULL));
 	}
 	if (imp != NULL) {
@@ -201,24 +200,24 @@ extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_tag_t m_tag, char unsigned b
 	} else {
 		imp = o7c_new(sizeof(*imp), Ast_Import_s_tag);
 		imp->_._.id = Ast_IdImport_cnst;
-		DeclConnect(&imp->_, NULL, &m->_, NULL, buf, buf_len0, nameOfs, nameEnd);
+		DeclConnect(&imp->_, &m->_, buf, buf_len0, nameOfs, nameEnd);
 		if (m->import_ == NULL) {
 			m->import_ = imp;
 		}
-		err = ImportAdd_Load(&imp->_.module, NULL, m, NULL, buf, buf_len0, realOfs, realEnd, p, NULL);
+		err = ImportAdd_Load(&imp->_.module, m, buf, buf_len0, realOfs, realEnd, p);
 	}
 	return err;
 }
 
-static struct Ast_RDeclaration *SearchName(struct Ast_RDeclaration *d, o7c_tag_t d_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
+static struct Ast_RDeclaration *SearchName(struct Ast_RDeclaration *d, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	while ((d != NULL) && ((o7c_is(NULL, d, Ast_RModule_tag)) || !StringStore_IsEqualToChars(&d->name, StringStore_String_tag, buf, buf_len0, begin, end))) {
 		d = d->next;
 	}
 	if (d != NULL) {
 		Log_Str("Найдено объявление ", 37);
 		while (begin != end) {
-			Log_Char(buf[o7c_index(buf_len0, begin)]);
-			begin = (begin + 1) % (buf_len0 - 1);
+			Log_Char(buf[o7c_ind(buf_len0, begin)]);
+			begin = o7c_mod((o7c_add(begin, 1)), (o7c_sub(buf_len0, 1)));
 		}
 		Log_Str(" id = ", 7);
 		Log_Int(d->_.id);
@@ -227,18 +226,18 @@ static struct Ast_RDeclaration *SearchName(struct Ast_RDeclaration *d, o7c_tag_t
 	return d;
 }
 
-extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_Const_s *c;
-	int err;
+extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_Const_s *c = NULL;
+	int err = O7C_INT_UNDEFINED;
 
-	if (SearchName(ds->start, NULL, buf, buf_len0, begin, end) != NULL) {
+	if (SearchName(ds->start, buf, buf_len0, begin, end) != NULL) {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	} else {
 		err = Ast_ErrNo_cnst;
 	}
 	c = o7c_new(sizeof(*c), Ast_Const_s_tag);
 	c->_._.id = Ast_IdConst_cnst;
-	DeclConnect(&c->_, NULL, ds, NULL, buf, buf_len0, begin, end);
+	DeclConnect(&c->_, ds, buf, buf_len0, begin, end);
 	c->expr = NULL;
 	c->finished = false;
 	if (ds->consts == NULL) {
@@ -247,8 +246,8 @@ extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char uns
 	return err;
 }
 
-extern int Ast_ConstSetExpression(struct Ast_Const_s *const_, o7c_tag_t const__tag, struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	int err;
+extern int Ast_ConstSetExpression(struct Ast_Const_s *const_, struct Ast_RExpression *expr) {
+	int err = O7C_INT_UNDEFINED;
 
 	const_->finished = true;
 	err = Ast_ErrNo_cnst;
@@ -262,7 +261,7 @@ extern int Ast_ConstSetExpression(struct Ast_Const_s *const_, o7c_tag_t const__t
 	return err;
 }
 
-static void TypeAdd_MoveForwardDeclToLast(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, struct Ast_Record_s *rec, o7c_tag_t rec_tag) {
+static void TypeAdd_MoveForwardDeclToLast(struct Ast_RDeclarations *ds, struct Ast_Record_s *rec) {
 	assert(rec->pointer->_._._.next == &rec->_._._);
 	rec->_._._._.id = Ast_IdRecord_cnst;
 	if (rec->_._._.next != NULL) {
@@ -273,11 +272,11 @@ static void TypeAdd_MoveForwardDeclToLast(struct Ast_RDeclarations *ds, o7c_tag_
 	}
 }
 
-extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end, struct Ast_RType **td, o7c_tag_t td_tag) {
-	struct Ast_RDeclaration *d;
-	int err;
+extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end, struct Ast_RType **td) {
+	struct Ast_RDeclaration *d = NULL;
+	int err = O7C_INT_UNDEFINED;
 
-	d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+	d = SearchName(ds->start, buf, buf_len0, begin, end);
 	if ((d == NULL) || (d->_.id == Ast_IdRecordForward_cnst)) {
 		err = Ast_ErrNo_cnst;
 	} else {
@@ -285,59 +284,59 @@ extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsi
 	}
 	if ((d == NULL) || (err == Ast_ErrDeclarationNameDuplicate_cnst)) {
 		assert((*td) != NULL);
-		DeclConnect(&(*td)->_, NULL, ds, NULL, buf, buf_len0, begin, end);
+		DeclConnect(&(*td)->_, ds, buf, buf_len0, begin, end);
 		if (ds->types == NULL) {
 			ds->types = (*td);
 		}
 	} else {
 		(*td) = (&O7C_GUARD(Ast_RType, d, NULL));
-		TypeAdd_MoveForwardDeclToLast(ds, NULL, (&O7C_GUARD(Ast_Record_s, d, NULL)), NULL);
+		TypeAdd_MoveForwardDeclToLast(ds, (&O7C_GUARD(Ast_Record_s, d, NULL)));
 	}
 	return err;
 }
 
-static void ChecklessVarAdd(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
+static void ChecklessVarAdd(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	(*v) = o7c_new(sizeof(*(*v)), Ast_RVar_tag);
 	(*v)->_._.id = Ast_IdVar_cnst;
-	DeclConnect(&(*v)->_, NULL, ds, NULL, buf, buf_len0, begin, end);
+	DeclConnect(&(*v)->_, ds, buf, buf_len0, begin, end);
 	(*v)->_.type = NULL;
 	if (ds->vars == NULL) {
 		ds->vars = (*v);
 	}
 }
 
-extern int Ast_VarAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_RVar *v;
-	int err;
+extern int Ast_VarAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_RVar *v = NULL;
+	int err = O7C_INT_UNDEFINED;
 
-	if (SearchName(ds->start, NULL, buf, buf_len0, begin, end) == NULL) {
+	if (SearchName(ds->start, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
 	} else {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	}
-	ChecklessVarAdd(&v, NULL, ds, NULL, buf, buf_len0, begin, end);
+	ChecklessVarAdd(&v, ds, buf, buf_len0, begin, end);
 	return err;
 }
 
-static void TInit(struct Ast_RType *t, o7c_tag_t t_tag, int id) {
+static void TInit(struct Ast_RType *t, int id) {
 	NodeInit(&(*t)._._, Ast_RType_tag);
-	DeclInit(&t->_, NULL, NULL, NULL);
+	DeclInit(&t->_, NULL);
 	t->_._.id = id;
 	t->array_ = NULL;
 }
 
 extern struct Ast_ProcType_s *Ast_ProcTypeNew(void) {
-	struct Ast_ProcType_s *p;
+	struct Ast_ProcType_s *p = NULL;
 
 	p = o7c_new(sizeof(*p), Ast_ProcType_s_tag);
-	TInit(&p->_._, NULL, Ast_IdProcType_cnst);
+	TInit(&p->_._, Ast_IdProcType_cnst);
 	p->params = NULL;
 	p->end = NULL;
 	return p;
 }
 
-static void ParamAddPredefined(struct Ast_ProcType_s *proc, o7c_tag_t proc_tag, struct Ast_RType *type, o7c_tag_t type_tag, bool isVar) {
-	struct Ast_FormalParam_s *v;
+static void ParamAddPredefined(struct Ast_ProcType_s *proc, struct Ast_RType *type, bool isVar) {
+	struct Ast_FormalParam_s *v = NULL;
 
 	v = o7c_new(sizeof(*v), Ast_FormalParam_s_tag);
 	NodeInit(&(*v)._._._, Ast_FormalParam_s_tag);
@@ -354,21 +353,21 @@ static void ParamAddPredefined(struct Ast_ProcType_s *proc, o7c_tag_t proc_tag, 
 	v->isVar = isVar;
 }
 
-extern int Ast_ParamAdd(struct Ast_RModule *module, o7c_tag_t module_tag, struct Ast_ProcType_s *proc, o7c_tag_t proc_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err;
+extern int Ast_ParamAdd(struct Ast_RModule *module, struct Ast_ProcType_s *proc, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err = O7C_INT_UNDEFINED;
 
-	if (SearchName(&proc->params->_._, NULL, buf, buf_len0, begin, end) == NULL) {
+	if (SearchName(&proc->params->_._, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
 	} else {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	}
-	ParamAddPredefined(proc, NULL, NULL, NULL, false);
-	Ast_PutChars(module, NULL, &proc->end->_._.name, StringStore_String_tag, buf, buf_len0, begin, end);
+	ParamAddPredefined(proc, NULL, false);
+	Ast_PutChars(module, &proc->end->_._.name, StringStore_String_tag, buf, buf_len0, begin, end);
 	return err;
 }
 
-extern void Ast_AddError(struct Ast_RModule *m, o7c_tag_t m_tag, int error, int line, int column, int tabs) {
-	struct Ast_Error_s *e;
+extern void Ast_AddError(struct Ast_RModule *m, int error, int line, int column, int tabs) {
+	struct Ast_Error_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_Error_s_tag);
 	NodeInit(&(*e)._, Ast_Error_s_tag);
@@ -386,16 +385,16 @@ extern void Ast_AddError(struct Ast_RModule *m, o7c_tag_t m_tag, int error, int 
 }
 
 extern struct Ast_RType *Ast_TypeGet(int id) {
-	assert(types[o7c_index(Ast_PredefinedTypesCount_cnst, id)] != NULL);
-	return types[o7c_index(Ast_PredefinedTypesCount_cnst, id)];
+	assert(types[o7c_ind(Ast_PredefinedTypesCount_cnst, id)] != NULL);
+	return types[o7c_ind(Ast_PredefinedTypesCount_cnst, id)];
 }
 
-extern struct Ast_RArray *Ast_ArrayGet(struct Ast_RType *t, o7c_tag_t t_tag, struct Ast_RExpression *count, o7c_tag_t count_tag) {
-	struct Ast_RArray *a;
+extern struct Ast_RArray *Ast_ArrayGet(struct Ast_RType *t, struct Ast_RExpression *count) {
+	struct Ast_RArray *a = NULL;
 
 	if ((count != NULL) || (t == NULL) || (t->array_ == NULL)) {
 		a = o7c_new(sizeof(*a), Ast_RArray_tag);
-		TInit(&a->_._, NULL, Ast_IdArray_cnst);
+		TInit(&a->_._, Ast_IdArray_cnst);
 		a->count = count;
 		if ((t != NULL) && (count == NULL)) {
 			t->array_ = a;
@@ -407,12 +406,12 @@ extern struct Ast_RArray *Ast_ArrayGet(struct Ast_RType *t, o7c_tag_t t_tag, str
 	return a;
 }
 
-extern struct Ast_RPointer *Ast_PointerGet(struct Ast_Record_s *t, o7c_tag_t t_tag) {
-	struct Ast_RPointer *p;
+extern struct Ast_RPointer *Ast_PointerGet(struct Ast_Record_s *t) {
+	struct Ast_RPointer *p = NULL;
 
 	if ((t == NULL) || (t->pointer == NULL)) {
 		p = o7c_new(sizeof(*p), Ast_RPointer_tag);
-		TInit(&p->_._, NULL, Ast_IdPointer_cnst);
+		TInit(&p->_._, Ast_IdPointer_cnst);
 		p->_._._.type = (&(t)->_._);
 		if (t != NULL) {
 			t->pointer = p;
@@ -423,37 +422,37 @@ extern struct Ast_RPointer *Ast_PointerGet(struct Ast_Record_s *t, o7c_tag_t t_t
 	return p;
 }
 
-extern void Ast_RecordSetBase(struct Ast_Record_s *r, o7c_tag_t r_tag, struct Ast_Record_s *base, o7c_tag_t base_tag) {
+extern void Ast_RecordSetBase(struct Ast_Record_s *r, struct Ast_Record_s *base) {
 	r->base = base;
 	if (base != NULL) {
 		r->vars->_.up = base->vars;
 	}
 }
 
-extern struct Ast_Record_s *Ast_RecordNew(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, struct Ast_Record_s *base, o7c_tag_t base_tag) {
-	struct Ast_Record_s *r;
+extern struct Ast_Record_s *Ast_RecordNew(struct Ast_RDeclarations *ds, struct Ast_Record_s *base) {
+	struct Ast_Record_s *r = NULL;
 
 	r = o7c_new(sizeof(*r), Ast_Record_s_tag);
-	TInit(&r->_._, NULL, Ast_IdRecord_cnst);
+	TInit(&r->_._, Ast_IdRecord_cnst);
 	r->pointer = NULL;
 	r->vars = o7c_new(sizeof(*r->vars), Ast_RDeclarations_tag);
 	NodeInit(&(*r->vars)._._, NULL);
-	DeclarationsConnect(r->vars, NULL, ds, NULL, "", 1,  - 1,  - 1);
+	DeclarationsConnect(r->vars, ds, "", 1,  - 1,  - 1);
 	r->vars->_.up = NULL;
-	Ast_RecordSetBase(r, NULL, base, NULL);
+	Ast_RecordSetBase(r, base);
 	return r;
 }
 
-static struct Ast_RDeclaration *SearchPredefined(char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_RDeclaration *d;
-	int l;
+static struct Ast_RDeclaration *SearchPredefined(o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_RDeclaration *d = NULL;
+	int l = O7C_INT_UNDEFINED;
 
 	l = Scanner_CheckPredefined(buf, buf_len0, begin, end);
 	Log_Str("SearchPredefined ", 18);
 	Log_Int(l);
 	Log_Ln();
 	if ((l >= Scanner_PredefinedFirst_cnst) && (l <= Scanner_PredefinedLast_cnst)) {
-		d = predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, l - Scanner_PredefinedFirst_cnst)];
+		d = predefined[o7c_ind(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, o7c_sub(l, Scanner_PredefinedFirst_cnst))];
 		assert(d != NULL);
 	} else {
 		d = NULL;
@@ -461,27 +460,27 @@ static struct Ast_RDeclaration *SearchPredefined(char unsigned buf[/*len0*/], in
 	return d;
 }
 
-extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_RDeclaration *d;
+extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_RDeclaration *d = NULL;
 
 	if (o7c_is(NULL, ds, Ast_RProcedure_tag)) {
-		d = SearchName(&(&O7C_GUARD(Ast_RProcedure, ds, NULL))->_.header->params->_._, NULL, buf, buf_len0, begin, end);
+		d = SearchName(&(&O7C_GUARD(Ast_RProcedure, ds, NULL))->_.header->params->_._, buf, buf_len0, begin, end);
 	} else {
 		d = NULL;
 	}
 	if (d == NULL) {
-		d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+		d = SearchName(ds->start, buf, buf_len0, begin, end);
 		if (o7c_is(NULL, ds, Ast_RProcedure_tag)) {
 			if (d == NULL) {
 				do {
 					ds = ds->_.up;
 				} while (!((ds == NULL) || (o7c_is(NULL, ds, Ast_RModule_tag))));
-				d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+				d = SearchName(ds->start, buf, buf_len0, begin, end);
 			}
 		} else {
 			while ((d == NULL) && (ds->_.up != NULL)) {
 				ds = ds->_.up;
-				d = SearchName(ds->start, NULL, buf, buf_len0, begin, end);
+				d = SearchName(ds->start, buf, buf_len0, begin, end);
 			}
 		}
 		if (d == NULL) {
@@ -491,17 +490,17 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 	return d;
 }
 
-extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, o7c_tag_t d_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err;
+extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err = O7C_INT_UNDEFINED;
 
-	(*d) = Ast_DeclarationSearch(ds, NULL, buf, buf_len0, begin, end);
+	(*d) = Ast_DeclarationSearch(ds, buf, buf_len0, begin, end);
 	if ((*d) == NULL) {
 		err = Ast_ErrDeclarationNotFound_cnst;
 		(*d) = o7c_new(sizeof(*(*d)), Ast_RDeclaration_tag);
 		(*d)->_.id = Ast_IdError_cnst;
-		DeclConnect((*d), NULL, ds, NULL, buf, buf_len0, begin, end);
+		DeclConnect((*d), ds, buf, buf_len0, begin, end);
 		(*d)->type = o7c_new(sizeof(*(*d)->type), Ast_RType_tag);
-		DeclInit(&(*d)->type->_, NULL, NULL, NULL);
+		DeclInit(&(*d)->type->_, NULL);
 		(*d)->type->_._.id = Ast_IdError_cnst;
 	} else if ((o7c_is(NULL, (*d), Ast_Const_s_tag)) && !(&O7C_GUARD(Ast_Const_s, (*d), NULL))->finished) {
 		err = Ast_ErrConstRecursive_cnst;
@@ -512,11 +511,11 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, o7c_tag_t d_tag, stru
 	return err;
 }
 
-extern int Ast_VarGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err;
-	struct Ast_RDeclaration *d;
+extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err = O7C_INT_UNDEFINED;
+	struct Ast_RDeclaration *d = NULL;
 
-	d = Ast_DeclarationSearch(ds, NULL, buf, buf_len0, begin, end);
+	d = Ast_DeclarationSearch(ds, buf, buf_len0, begin, end);
 	if (d == NULL) {
 		err = Ast_ErrDeclarationNotFound_cnst;
 	} else if (d->_.id != Ast_IdVar_cnst) {
@@ -527,15 +526,15 @@ extern int Ast_VarGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarat
 	if (err == Ast_ErrNo_cnst) {
 		(*v) = (&O7C_GUARD(Ast_RVar, d, NULL));
 	} else {
-		ChecklessVarAdd(&(*v), NULL, ds, NULL, buf, buf_len0, begin, end);
+		ChecklessVarAdd(&(*v), ds, buf, buf_len0, begin, end);
 	}
 	return err;
 }
 
-extern int Ast_ForIteratorGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err;
+extern int Ast_ForIteratorGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err = O7C_INT_UNDEFINED;
 
-	err = Ast_VarGet(&(*v), NULL, ds, NULL, buf, buf_len0, begin, end);
+	err = Ast_VarGet(&(*v), ds, buf, buf_len0, begin, end);
 	if ((*v) != NULL) {
 		if ((*v)->_.type == NULL) {
 			(*v)->_.type = Ast_TypeGet(Ast_IdInteger_cnst);
@@ -546,7 +545,7 @@ extern int Ast_ForIteratorGet(struct Ast_RVar **v, o7c_tag_t v_tag, struct Ast_R
 	return err;
 }
 
-static void ExprInit(struct Ast_RExpression *e, o7c_tag_t e_tag, int id, struct Ast_RType *t, o7c_tag_t t_tag) {
+static void ExprInit(struct Ast_RExpression *e, int id, struct Ast_RType *t) {
 	NodeInit(&(*e)._, Ast_RExpression_tag);
 	e->_.id = id;
 	e->type = t;
@@ -554,32 +553,32 @@ static void ExprInit(struct Ast_RExpression *e, o7c_tag_t e_tag, int id, struct 
 }
 
 extern struct Ast_RExprInteger *Ast_ExprIntegerNew(int int_) {
-	struct Ast_RExprInteger *e;
+	struct Ast_RExprInteger *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_RExprInteger_tag);
-	ExprInit(&e->_._._, NULL, Ast_IdInteger_cnst, Ast_TypeGet(Ast_IdInteger_cnst), NULL);
+	ExprInit(&e->_._._, Ast_IdInteger_cnst, Ast_TypeGet(Ast_IdInteger_cnst));
 	e->int_ = int_;
 	e->_._._.value_ = (&(e)->_._);
 	return e;
 }
 
-extern struct Ast_ExprReal_s *Ast_ExprRealNew(double real, struct Ast_RModule *m, o7c_tag_t m_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_ExprReal_s *e;
+extern struct Ast_ExprReal_s *Ast_ExprRealNew(double real, struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_ExprReal_s *e = NULL;
 
 	assert(m != NULL);
 	e = o7c_new(sizeof(*e), Ast_ExprReal_s_tag);
-	ExprInit(&e->_._._, NULL, Ast_IdReal_cnst, Ast_TypeGet(Ast_IdReal_cnst), NULL);
+	ExprInit(&e->_._._, Ast_IdReal_cnst, Ast_TypeGet(Ast_IdReal_cnst));
 	e->real = real;
 	e->_._._.value_ = (&(e)->_._);
-	Ast_PutChars(m, NULL, &e->str, StringStore_String_tag, buf, buf_len0, begin, end);
+	Ast_PutChars(m, &e->str, StringStore_String_tag, buf, buf_len0, begin, end);
 	return e;
 }
 
 extern struct Ast_ExprReal_s *Ast_ExprRealNewByValue(double real) {
-	struct Ast_ExprReal_s *e;
+	struct Ast_ExprReal_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprReal_s_tag);
-	ExprInit(&e->_._._, NULL, Ast_IdReal_cnst, Ast_TypeGet(Ast_IdReal_cnst), NULL);
+	ExprInit(&e->_._._, Ast_IdReal_cnst, Ast_TypeGet(Ast_IdReal_cnst));
 	e->real = real;
 	e->_._._.value_ = (&(e)->_._);
 	e->str.block = NULL;
@@ -587,38 +586,38 @@ extern struct Ast_ExprReal_s *Ast_ExprRealNewByValue(double real) {
 }
 
 extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(bool bool_) {
-	struct Ast_ExprBoolean_s *e;
+	struct Ast_ExprBoolean_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprBoolean_s_tag);
-	ExprInit(&e->_._, NULL, Ast_IdBoolean_cnst, Ast_TypeGet(Ast_IdBoolean_cnst), NULL);
+	ExprInit(&e->_._, Ast_IdBoolean_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
 	e->bool_ = bool_;
 	e->_._.value_ = (&(e)->_);
 	return e;
 }
 
-extern struct Ast_ExprString_s *Ast_ExprStringNew(struct Ast_RModule *m, o7c_tag_t m_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	struct Ast_ExprString_s *e;
-	int len;
+extern struct Ast_ExprString_s *Ast_ExprStringNew(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	struct Ast_ExprString_s *e = NULL;
+	int len = O7C_INT_UNDEFINED;
 
-	len = end - begin;
+	len = o7c_sub(end, begin);
 	if (len < 0) {
-		len = len + buf_len0 - 1;
+		len = o7c_sub(o7c_add(len, buf_len0), 1);
 	}
 	len -= 2;
 	e = o7c_new(sizeof(*e), Ast_ExprString_s_tag);
-	ExprInit(&e->_._._._, NULL, Ast_IdString_cnst, &Ast_ArrayGet(Ast_TypeGet(Ast_IdChar_cnst), NULL, &Ast_ExprIntegerNew(len + 1)->_._._, NULL)->_._, NULL);
+	ExprInit(&e->_._._._, Ast_IdString_cnst, &Ast_ArrayGet(Ast_TypeGet(Ast_IdChar_cnst), &Ast_ExprIntegerNew(o7c_add(len, 1))->_._._)->_._);
 	e->_.int_ =  - 1;
 	e->asChar = false;
-	Ast_PutChars(m, NULL, &e->string, StringStore_String_tag, buf, buf_len0, begin, end);
+	Ast_PutChars(m, &e->string, StringStore_String_tag, buf, buf_len0, begin, end);
 	e->_._._._.value_ = (&(e)->_._._);
 	return e;
 }
 
 extern struct Ast_ExprString_s *Ast_ExprCharNew(int int_) {
-	struct Ast_ExprString_s *e;
+	struct Ast_ExprString_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprString_s_tag);
-	ExprInit(&e->_._._._, NULL, Ast_IdString_cnst, &Ast_ArrayGet(Ast_TypeGet(Ast_IdChar_cnst), NULL, &Ast_ExprIntegerNew(2)->_._._, NULL)->_._, NULL);
+	ExprInit(&e->_._._._, Ast_IdString_cnst, &Ast_ArrayGet(Ast_TypeGet(Ast_IdChar_cnst), &Ast_ExprIntegerNew(2)->_._._)->_._);
 	e->string.ofs =  - 1;
 	e->string.block = NULL;
 	e->_.int_ = int_;
@@ -628,30 +627,30 @@ extern struct Ast_ExprString_s *Ast_ExprCharNew(int int_) {
 }
 
 extern struct Ast_ExprNil_s *Ast_ExprNilNew(void) {
-	struct Ast_ExprNil_s *e;
+	struct Ast_ExprNil_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprNil_s_tag);
-	ExprInit(&e->_._, NULL, Ast_IdPointer_cnst, Ast_TypeGet(Ast_IdPointer_cnst), NULL);
+	ExprInit(&e->_._, Ast_IdPointer_cnst, Ast_TypeGet(Ast_IdPointer_cnst));
 	assert(e->_._.type->_.type == NULL);
 	e->_._.value_ = (&(e)->_);
 	return e;
 }
 
-extern struct Ast_ExprBraces_s *Ast_ExprBracesNew(struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	struct Ast_ExprBraces_s *e;
+extern struct Ast_ExprBraces_s *Ast_ExprBracesNew(struct Ast_RExpression *expr) {
+	struct Ast_ExprBraces_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprBraces_s_tag);
-	ExprInit(&e->_._, NULL, Ast_IdBraces_cnst, expr->type, NULL);
+	ExprInit(&e->_._, Ast_IdBraces_cnst, expr->type);
 	e->expr = expr;
 	e->_._.value_ = expr->value_;
 	return e;
 }
 
-extern struct Ast_ExprSet_s *Ast_ExprSetByValue(int set) {
-	struct Ast_ExprSet_s *e;
+extern struct Ast_ExprSet_s *Ast_ExprSetByValue(unsigned set) {
+	struct Ast_ExprSet_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprSet_s_tag);
-	ExprInit(&e->_._, NULL, Ast_IdSet_cnst, Ast_TypeGet(Ast_IdSet_cnst), NULL);
+	ExprInit(&e->_._, Ast_IdSet_cnst, Ast_TypeGet(Ast_IdSet_cnst));
 	e->exprs[0] = NULL;
 	e->exprs[1] = NULL;
 	e->set = set;
@@ -663,11 +662,11 @@ static bool ExprSetNew_CheckRange(int int_) {
 	return (int_ >= 0) && (int_ <= Limits_SetMax_cnst);
 }
 
-extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, o7c_tag_t e_tag, struct Ast_RExpression *expr1, o7c_tag_t expr1_tag, struct Ast_RExpression *expr2, o7c_tag_t expr2_tag) {
-	int err;
+extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr1, struct Ast_RExpression *expr2) {
+	int err = O7C_INT_UNDEFINED;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprSet_s_tag);
-	ExprInit(&(*e)->_._, NULL, Ast_IdSet_cnst, Ast_TypeGet(Ast_IdSet_cnst), NULL);
+	ExprInit(&(*e)->_._, Ast_IdSet_cnst, Ast_TypeGet(Ast_IdSet_cnst));
 	(*e)->exprs[0] = expr1;
 	(*e)->exprs[1] = expr2;
 	(*e)->next = NULL;
@@ -686,7 +685,7 @@ extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, o7c_tag_t e_tag, struct Ast_
 			} else if ((&O7C_GUARD(Ast_RExprInteger, expr1->value_, NULL))->int_ > (&O7C_GUARD(Ast_RExprInteger, expr2->value_, NULL))->int_) {
 				err = Ast_ErrSetLeftElemBiggerRightElem_cnst;
 			} else {
-				(*e)->set = O7C_SET((&O7C_GUARD(Ast_RExprInteger, expr1->value_, NULL))->int_, (&O7C_GUARD(Ast_RExprInteger, expr2->value_, NULL))->int_);
+				(*e)->set = o7c_set((&O7C_GUARD(Ast_RExprInteger, expr1->value_, NULL))->int_, (&O7C_GUARD(Ast_RExprInteger, expr2->value_, NULL))->int_);
 				(*e)->_._.value_ = (&((*e))->_);
 			}
 		}
@@ -694,11 +693,11 @@ extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, o7c_tag_t e_tag, struct Ast_
 	return err;
 }
 
-extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	struct Ast_ExprNegate_s *e;
+extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr) {
+	struct Ast_ExprNegate_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprNegate_s_tag);
-	ExprInit(&e->_._, NULL, Ast_IdNegate_cnst, Ast_TypeGet(Ast_IdBoolean_cnst), NULL);
+	ExprInit(&e->_._, Ast_IdNegate_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
 	e->expr = expr;
 	if (expr->value_ != NULL) {
 		e->_._.value_ = (&(Ast_ExprBooleanNew(!(&O7C_GUARD(Ast_ExprBoolean_s, expr->value_, NULL))->bool_))->_);
@@ -706,11 +705,11 @@ extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr, 
 	return e;
 }
 
-extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl, o7c_tag_t decl_tag) {
-	struct Ast_Designator_s *d;
+extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl) {
+	struct Ast_Designator_s *d = NULL;
 
 	d = o7c_new(sizeof(*d), Ast_Designator_s_tag);
-	ExprInit(&d->_._, NULL, Ast_IdDesignator_cnst, NULL, NULL);
+	ExprInit(&d->_._, Ast_IdDesignator_cnst, NULL);
 	d->decl = decl;
 	d->sel = NULL;
 	d->_._.type = decl->type;
@@ -722,7 +721,7 @@ extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl,
 	return d;
 }
 
-extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_tag_t t0_tag, struct Ast_Record_s *t1, o7c_tag_t t1_tag) {
+extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1) {
 	Log_Str("IsRecordExtension ", 19);
 	(*distance) = 0;
 	if ((t0 != NULL) && (t1 != NULL)) {
@@ -739,17 +738,17 @@ extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, o7c_ta
 	return t0 == t1;
 }
 
-static void SelInit(struct Ast_RSelector *s, o7c_tag_t s_tag) {
+static void SelInit(struct Ast_RSelector *s) {
 	NodeInit(&(*s)._, Ast_RSelector_tag);
 	s->next = NULL;
 }
 
-extern int Ast_SelPointerNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag) {
-	struct Ast_SelPointer_s *sp;
-	int err;
+extern int Ast_SelPointerNew(struct Ast_RSelector **sel, struct Ast_RType **type) {
+	struct Ast_SelPointer_s *sp = NULL;
+	int err = O7C_INT_UNDEFINED;
 
 	sp = o7c_new(sizeof(*sp), Ast_SelPointer_s_tag);
-	SelInit(&sp->_, NULL);
+	SelInit(&sp->_);
 	(*sel) = (&(sp)->_);
 	if (o7c_is(NULL, (*type), Ast_RPointer_tag)) {
 		err = Ast_ErrNo_cnst;
@@ -760,12 +759,12 @@ extern int Ast_SelPointerNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, stru
 	return err;
 }
 
-extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RExpression *index, o7c_tag_t index_tag) {
-	struct Ast_SelArray_s *sa;
-	int err;
+extern int Ast_SelArrayNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RExpression *index) {
+	struct Ast_SelArray_s *sa = NULL;
+	int err = O7C_INT_UNDEFINED;
 
 	sa = o7c_new(sizeof(*sa), Ast_SelArray_s_tag);
-	SelInit(&sa->_, NULL);
+	SelInit(&sa->_);
 	sa->index = index;
 	(*sel) = (&(sa)->_);
 	if (!(o7c_is(NULL, (*type), Ast_RArray_tag))) {
@@ -783,14 +782,14 @@ extern int Ast_SelArrayNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct
 	return err;
 }
 
-extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, char unsigned name[/*len0*/], int name_len0, int begin, int end) {
-	struct Ast_SelRecord_s *sr;
-	int err;
-	struct Ast_RVar *var_;
-	struct Ast_RDeclarations *vars;
+extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type, o7c_char name[/*len0*/], int name_len0, int begin, int end) {
+	struct Ast_SelRecord_s *sr = NULL;
+	int err = O7C_INT_UNDEFINED;
+	struct Ast_RVar *var_ = NULL;
+	struct Ast_RDeclarations *vars = NULL;
 
 	sr = o7c_new(sizeof(*sr), Ast_SelRecord_s_tag);
-	SelInit(&sr->_, NULL);
+	SelInit(&sr->_);
 	var_ = NULL;
 	err = Ast_ErrNo_cnst;
 	if ((*type) != NULL) {
@@ -805,7 +804,7 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struc
 				vars = (&O7C_GUARD(Ast_Record_s, (*type)->_.type, NULL))->vars;
 			}
 			if (vars != NULL) {
-				err = Ast_VarGet(&var_, NULL, vars, NULL, name, name_len0, begin, end);
+				err = Ast_VarGet(&var_, vars, name, name_len0, begin, end);
 				if (var_ != NULL) {
 					(*type) = var_->_.type;
 				} else {
@@ -819,24 +818,23 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struc
 	return err;
 }
 
-extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct Ast_RType **type, o7c_tag_t type_tag, struct Ast_RDeclaration *guard, o7c_tag_t guard_tag) {
-	struct Ast_SelGuard_s *sg;
-	int err;
-	int dist;
+extern int Ast_SelGuardNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RDeclaration *guard) {
+	struct Ast_SelGuard_s *sg = NULL;
+	int err = O7C_INT_UNDEFINED, dist = O7C_INT_UNDEFINED;
 
 	sg = o7c_new(sizeof(*sg), Ast_SelGuard_s_tag);
-	SelInit(&sg->_, NULL);
+	SelInit(&sg->_);
 	err = Ast_ErrNo_cnst;
 	if (!(( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
 		err = Ast_ErrGuardedTypeNotExtensible_cnst;
 	} else if ((*type)->_._.id == Ast_IdRecord_cnst) {
-		if (!(o7c_is(NULL, guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (*type), NULL)), NULL, (&O7C_GUARD(Ast_Record_s, guard, NULL)), NULL)) {
+		if (!(o7c_is(NULL, guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (*type), NULL)), (&O7C_GUARD(Ast_Record_s, guard, NULL)))) {
 			err = Ast_ErrGuardExpectRecordExt_cnst;
 		} else {
 			(*type) = (&((&O7C_GUARD(Ast_Record_s, guard, NULL)))->_._);
 		}
 	} else {
-		if (!(o7c_is(NULL, guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, (*type), NULL))->_._._.type, NULL)), NULL, (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, guard, NULL))->_._._.type, NULL)), NULL)) {
+		if (!(o7c_is(NULL, guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, (*type), NULL))->_._._.type, NULL)), (&O7C_GUARD(Ast_Record_s, (&O7C_GUARD(Ast_RPointer, guard, NULL))->_._._.type, NULL)))) {
 			err = Ast_ErrGuardExpectPointerExt_cnst;
 		} else {
 			(*type) = (&((&O7C_GUARD(Ast_RPointer, guard, NULL)))->_._);
@@ -847,10 +845,9 @@ extern int Ast_SelGuardNew(struct Ast_RSelector **sel, o7c_tag_t sel_tag, struct
 	return err;
 }
 
-static bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, o7c_tag_t t1_tag, struct Ast_ProcType_s *t2, o7c_tag_t t2_tag) {
-	bool comp;
-	struct Ast_RDeclaration *fp1;
-	struct Ast_RDeclaration *fp2;
+static bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, struct Ast_ProcType_s *t2) {
+	bool comp = 0 > 1;
+	struct Ast_RDeclaration *fp1 = NULL, *fp2 = NULL;
 
 	comp = t1->_._._.type == t2->_._._.type;
 	if (comp) {
@@ -865,8 +862,8 @@ static bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, o7c_tag_t 
 	return comp;
 }
 
-extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, o7c_tag_t t1_tag, struct Ast_RType *t2, o7c_tag_t t2_tag) {
-	bool comp;
+extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_RType *t2) {
+	bool comp = 0 > 1;
 
 	comp = (t1 == NULL) || (t2 == NULL);
 	if (!comp) {
@@ -880,16 +877,16 @@ extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, o7c_tag_t t
 		if (!comp && (t1->_._.id == t2->_._.id) && (( (1u << t1->_._.id) & ((1 << Ast_IdArray_cnst) | (1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst) | (1 << Ast_IdProcType_cnst))))) {
 			switch (t1->_._.id) {
 			case 7:
-				comp = Ast_CompatibleTypes(&(*distance), t1->_.type, NULL, t2->_.type, NULL);
+				comp = Ast_CompatibleTypes(&(*distance), t1->_.type, t2->_.type);
 				break;
 			case 6:
-				comp = (t1->_.type == NULL) || (t2->_.type == NULL) || Ast_IsRecordExtension(&(*distance), (&O7C_GUARD(Ast_Record_s, t1->_.type, NULL)), NULL, (&O7C_GUARD(Ast_Record_s, t2->_.type, NULL)), NULL);
+				comp = (t1->_.type == NULL) || (t2->_.type == NULL) || Ast_IsRecordExtension(&(*distance), (&O7C_GUARD(Ast_Record_s, t1->_.type, NULL)), (&O7C_GUARD(Ast_Record_s, t2->_.type, NULL)));
 				break;
 			case 8:
-				comp = Ast_IsRecordExtension(&(*distance), (&O7C_GUARD(Ast_Record_s, t1, NULL)), NULL, (&O7C_GUARD(Ast_Record_s, t2, NULL)), NULL);
+				comp = Ast_IsRecordExtension(&(*distance), (&O7C_GUARD(Ast_Record_s, t1, NULL)), (&O7C_GUARD(Ast_Record_s, t2, NULL)));
 				break;
 			case 10:
-				comp = CompatibleTypes_EqualProcTypes((&O7C_GUARD(Ast_ProcType_s, t1, NULL)), NULL, (&O7C_GUARD(Ast_ProcType_s, t2, NULL)), NULL);
+				comp = CompatibleTypes_EqualProcTypes((&O7C_GUARD(Ast_ProcType_s, t1, NULL)), (&O7C_GUARD(Ast_ProcType_s, t2, NULL)));
 				break;
 			default:
 				abort();
@@ -900,11 +897,11 @@ extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, o7c_tag_t t
 	return comp;
 }
 
-extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, o7c_tag_t e_tag, struct Ast_RExpression **des, o7c_tag_t des_tag, struct Ast_RType *type, o7c_tag_t type_tag) {
-	int err;
+extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, struct Ast_RExpression **des, struct Ast_RType *type) {
+	int err = O7C_INT_UNDEFINED;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprIsExtension_s_tag);
-	ExprInit(&(*e)->_, NULL, Ast_IdIsExtension_cnst, Ast_TypeGet(Ast_IdBoolean_cnst), NULL);
+	ExprInit(&(*e)->_, Ast_IdIsExtension_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
 	(*e)->designator = NULL;
 	(*e)->extType = type;
 	err = Ast_ErrNo_cnst;
@@ -923,8 +920,8 @@ extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, o7c_tag_t e_
 	return err;
 }
 
-static bool CompatibleAsCharAndString(struct Ast_RType *t1, o7c_tag_t t1_tag, struct Ast_RExpression **e2, o7c_tag_t e2_tag) {
-	bool ret;
+static bool CompatibleAsCharAndString(struct Ast_RType *t1, struct Ast_RExpression **e2) {
+	bool ret = 0 > 1;
 
 	Log_Str("1 CompatibleAsCharAndString ", 29);
 	Log_Int((int)((*e2)->value_ != NULL));
@@ -941,10 +938,9 @@ static bool CompatibleAsCharAndString(struct Ast_RType *t1, o7c_tag_t t1_tag, st
 	return ret;
 }
 
-static bool ExprRelationNew_CheckType(struct Ast_RType *t1, o7c_tag_t t1_tag, struct Ast_RType *t2, o7c_tag_t t2_tag, struct Ast_RExpression **e1, o7c_tag_t e1_tag, struct Ast_RExpression **e2, o7c_tag_t e2_tag, int relation, int *distance, int *err) {
-	bool continue_;
-	int dist1;
-	int dist2;
+static bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType *t2, struct Ast_RExpression **e1, struct Ast_RExpression **e2, int relation, int *distance, int *err) {
+	bool continue_ = 0 > 1;
+	int dist1 = O7C_INT_UNDEFINED, dist2 = O7C_INT_UNDEFINED;
 
 	dist1 = 0;
 	dist2 = 0;
@@ -953,9 +949,9 @@ static bool ExprRelationNew_CheckType(struct Ast_RType *t1, o7c_tag_t t1_tag, st
 	} else if (relation == Scanner_In_cnst) {
 		continue_ = (t1->_._.id == Ast_IdInteger_cnst) && (t2->_._.id == Ast_IdSet_cnst);
 		if (!continue_) {
-			(*err) = Ast_ErrExprInWrongTypes_cnst - 3 + (int)(t1->_._.id != Ast_IdInteger_cnst) + (int)(t2->_._.id != Ast_IdSet_cnst) * 2;
+			(*err) = o7c_add(o7c_add(o7c_sub(Ast_ErrExprInWrongTypes_cnst, 3), (int)(t1->_._.id != Ast_IdInteger_cnst)), o7c_mul((int)(t2->_._.id != Ast_IdSet_cnst), 2));
 		}
-	} else if (!Ast_CompatibleTypes(&dist1, t1, NULL, t2, NULL) && !Ast_CompatibleTypes(&dist2, t2, NULL, t1, NULL) && !CompatibleAsCharAndString(t1, NULL, &(*e2), NULL) && !CompatibleAsCharAndString(t2, NULL, &(*e1), NULL)) {
+	} else if (!Ast_CompatibleTypes(&dist1, t1, t2) && !Ast_CompatibleTypes(&dist2, t2, t1) && !CompatibleAsCharAndString(t1, &(*e2)) && !CompatibleAsCharAndString(t2, &(*e1))) {
 		(*err) = Ast_ErrRelationExprDifferenTypes_cnst;
 		continue_ = false;
 	} else if ((( (1u << t1->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdChar_cnst)))) || (t1->_._.id == Ast_IdArray_cnst) && (t1->_.type->_._.id == Ast_IdChar_cnst)) {
@@ -969,24 +965,23 @@ static bool ExprRelationNew_CheckType(struct Ast_RType *t1, o7c_tag_t t1_tag, st
 			(*err) = Ast_ErrRelIncompatibleType_cnst;
 		}
 	}
-	(*distance) = dist1 - dist2;
+	(*distance) = o7c_sub(dist1, dist2);
 	return continue_;
 }
 
-extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, o7c_tag_t e_tag, struct Ast_RExpression *expr1, o7c_tag_t expr1_tag, int relation, struct Ast_RExpression *expr2, o7c_tag_t expr2_tag) {
-	int err;
-	bool res;
-	struct Ast_RExpression *v1;
-	struct Ast_RExpression *v2;
+extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpression *expr1, int relation, struct Ast_RExpression *expr2) {
+	int err = O7C_INT_UNDEFINED;
+	bool res = 0 > 1;
+	struct Ast_RExpression *v1 = NULL, *v2 = NULL;
 
 	assert((relation >= Scanner_RelationFirst_cnst) && (relation < Scanner_RelationLast_cnst));
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprRelation_s_tag);
-	ExprInit(&(*e)->_, NULL, Ast_IdRelation_cnst, Ast_TypeGet(Ast_IdBoolean_cnst), NULL);
+	ExprInit(&(*e)->_, Ast_IdRelation_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
 	(*e)->exprs[0] = expr1;
 	(*e)->exprs[1] = expr2;
 	(*e)->relation = relation;
 	err = Ast_ErrNo_cnst;
-	if ((expr1 != NULL) && (expr2 != NULL) && ExprRelationNew_CheckType(expr1->type, NULL, expr2->type, NULL, &(*e)->exprs[0], NULL, &(*e)->exprs[1], NULL, relation, &(*e)->distance, &err) && (expr1->value_ != NULL) && (expr2->value_ != NULL) && (relation != Scanner_Is_cnst)) {
+	if ((expr1 != NULL) && (expr2 != NULL) && ExprRelationNew_CheckType(expr1->type, expr2->type, &(*e)->exprs[0], &(*e)->exprs[1], relation, &(*e)->distance, &err) && (expr1->value_ != NULL) && (expr2->value_ != NULL) && (relation != Scanner_Is_cnst)) {
 		v1 = (&((*e)->exprs[0]->value_)->_);
 		v2 = (&((*e)->exprs[1]->value_)->_);
 		switch (relation) {
@@ -1135,7 +1130,7 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, o7c_tag_t e_tag, s
 }
 
 static int LexToSign(int lex) {
-	int s;
+	int s = O7C_INT_UNDEFINED;
 
 	if ((lex ==  - 1) || (lex == Scanner_Plus_cnst)) {
 		s =  + 1;
@@ -1146,8 +1141,8 @@ static int LexToSign(int lex) {
 	return s;
 }
 
-static void ExprSumCreate(struct Ast_ExprSum_s **e, o7c_tag_t e_tag, int add, struct Ast_RExpression *sum, o7c_tag_t sum_tag, struct Ast_RExpression *term, o7c_tag_t term_tag) {
-	struct Ast_RType *t;
+static void ExprSumCreate(struct Ast_ExprSum_s **e, int add, struct Ast_RExpression *sum, struct Ast_RExpression *term) {
+	struct Ast_RType *t = NULL;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprSum_s_tag);
 	if ((sum != NULL) && (sum->type != NULL) && (( (1u << sum->type->_._.id) & ((1 << Ast_IdReal_cnst) | (1 << Ast_IdInteger_cnst))))) {
@@ -1157,17 +1152,17 @@ static void ExprSumCreate(struct Ast_ExprSum_s **e, o7c_tag_t e_tag, int add, st
 	} else {
 		t = NULL;
 	}
-	ExprInit(&(*e)->_, NULL, Ast_IdSum_cnst, t, NULL);
+	ExprInit(&(*e)->_, Ast_IdSum_cnst, t);
 	(*e)->next = NULL;
 	(*e)->add = add;
 	(*e)->term = term;
 }
 
-extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, o7c_tag_t e_tag, int add, struct Ast_RExpression *term, o7c_tag_t term_tag) {
-	int err;
+extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, int add, struct Ast_RExpression *term) {
+	int err = O7C_INT_UNDEFINED;
 
 	assert((add ==  - 1) || (add == Scanner_Plus_cnst) || (add == Scanner_Minus_cnst));
-	ExprSumCreate(&(*e), NULL, add, NULL, NULL, term, NULL);
+	ExprSumCreate(&(*e), add, NULL, term);
 	err = Ast_ErrNo_cnst;
 	if ((*e)->_.type != NULL) {
 		if (!(( (1u << (*e)->_.type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdSet_cnst)))) && (add !=  - 1)) {
@@ -1179,7 +1174,7 @@ extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, o7c_tag_t e_tag, int add, st
 		} else if (term->value_ != NULL) {
 			switch ((*e)->_.type->_._.id) {
 			case 0:
-				(*e)->_.value_ = (&(Ast_ExprIntegerNew((&O7C_GUARD(Ast_RExprInteger, term->value_, NULL))->int_ * LexToSign(add)))->_._);
+				(*e)->_.value_ = (&(Ast_ExprIntegerNew(o7c_mul((&O7C_GUARD(Ast_RExprInteger, term->value_, NULL))->int_, LexToSign(add))))->_._);
 				break;
 			case 4:
 				(*e)->_.value_ = (&(Ast_ExprRealNewByValue((&O7C_GUARD(Ast_ExprReal_s, term->value_, NULL))->real * (double)LexToSign(add)))->_._);
@@ -1203,8 +1198,8 @@ extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, o7c_tag_t e_tag, int add, st
 	return err;
 }
 
-static bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, o7c_tag_t e1_tag, struct Ast_RExpression *e2, o7c_tag_t e2_tag, int add, int *err) {
-	bool continue_;
+static bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int add, int *err) {
+	bool continue_ = 0 > 1;
 
 	if ((e1->type == NULL) || (e2->type == NULL)) {
 		continue_ = false;
@@ -1225,14 +1220,14 @@ static bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, o7c_tag_t e1_tag, s
 	return continue_;
 }
 
-extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, o7c_tag_t fullSum_tag, struct Ast_ExprSum_s **lastAdder, o7c_tag_t lastAdder_tag, int add, struct Ast_RExpression *term, o7c_tag_t term_tag) {
-	struct Ast_ExprSum_s *e;
-	int err;
+extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, struct Ast_ExprSum_s **lastAdder, int add, struct Ast_RExpression *term) {
+	struct Ast_ExprSum_s *e = NULL;
+	int err = O7C_INT_UNDEFINED;
 
 	assert((add == Scanner_Plus_cnst) || (add == Scanner_Minus_cnst) || (add == Scanner_Or_cnst));
-	ExprSumCreate(&e, NULL, add, fullSum, NULL, term, NULL);
+	ExprSumCreate(&e, add, fullSum, term);
 	err = Ast_ErrNo_cnst;
-	if ((fullSum != NULL) && (term != NULL) && ExprSumAdd_CheckType(fullSum, NULL, term, NULL, add, &err) && (fullSum->value_ != NULL) && (term->value_ != NULL)) {
+	if ((fullSum != NULL) && (term != NULL) && ExprSumAdd_CheckType(fullSum, term, add, &err) && (fullSum->value_ != NULL) && (term->value_ != NULL)) {
 		if (add == Scanner_Or_cnst) {
 			if ((&O7C_GUARD(Ast_ExprBoolean_s, term->value_, NULL))->bool_) {
 				(&O7C_GUARD(Ast_ExprBoolean_s, fullSum->value_, NULL))->bool_ = true;
@@ -1240,7 +1235,7 @@ extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, o7c_tag_t fullSum_tag
 		} else {
 			switch (term->type->_._.id) {
 			case 0:
-				(&O7C_GUARD(Ast_RExprInteger, fullSum->value_, NULL))->int_ = (&O7C_GUARD(Ast_RExprInteger, fullSum->value_, NULL))->int_ + (&O7C_GUARD(Ast_RExprInteger, term->value_, NULL))->int_ * LexToSign(add);
+				(&O7C_GUARD(Ast_RExprInteger, fullSum->value_, NULL))->int_ = o7c_add((&O7C_GUARD(Ast_RExprInteger, fullSum->value_, NULL))->int_, o7c_mul((&O7C_GUARD(Ast_RExprInteger, term->value_, NULL))->int_, LexToSign(add)));
 				break;
 			case 4:
 				(&O7C_GUARD(Ast_ExprReal_s, fullSum->value_, NULL))->real = (&O7C_GUARD(Ast_ExprReal_s, fullSum->value_, NULL))->real + (&O7C_GUARD(Ast_ExprReal_s, term->value_, NULL))->real * (double)LexToSign(add);
@@ -1267,9 +1262,9 @@ extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, o7c_tag_t fullSum_tag
 	return err;
 }
 
-static int MultCalc(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_RExpression *a, o7c_tag_t a_tag, int mult, struct Ast_RExpression *b, o7c_tag_t b_tag);
-static bool MultCalc_CheckType(struct Ast_RExpression *e1, o7c_tag_t e1_tag, struct Ast_RExpression *e2, o7c_tag_t e2_tag, int mult, int *err) {
-	bool continue_;
+static int MultCalc(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b);
+static bool MultCalc_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int mult, int *err) {
+	bool continue_ = 0 > 1;
 
 	if ((e1->type == NULL) || (e2->type == NULL)) {
 		continue_ = false;
@@ -1298,22 +1293,20 @@ static bool MultCalc_CheckType(struct Ast_RExpression *e1, o7c_tag_t e1_tag, str
 	return continue_;
 }
 
-static void MultCalc_Int(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_RExpression *a, o7c_tag_t a_tag, int mult, struct Ast_RExpression *b, o7c_tag_t b_tag, int *err) {
-	int i;
-	int i1;
-	int i2;
+static void MultCalc_Int(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b, int *err) {
+	int i = O7C_INT_UNDEFINED, i1 = O7C_INT_UNDEFINED, i2 = O7C_INT_UNDEFINED;
 
 	i1 = (&O7C_GUARD(Ast_RExprInteger, a->value_, NULL))->int_;
 	i2 = (&O7C_GUARD(Ast_RExprInteger, b->value_, NULL))->int_;
 	if (mult == Scanner_Asterisk_cnst) {
-		i = i1 * i2;
+		i = o7c_mul(i1, i2);
 	} else if (i2 == 0) {
 		(*err) = Ast_ErrIntDivByZero_cnst;
 		res->value_ = NULL;
 	} else if (mult == Scanner_Div_cnst) {
-		i = i1 / i2;
+		i = o7c_div(i1, i2);
 	} else {
-		i = i1 % i2;
+		i = o7c_mod(i1, i2);
 	}
 	if ((*err) == Ast_ErrNo_cnst) {
 		if (res->value_ == NULL) {
@@ -1324,10 +1317,8 @@ static void MultCalc_Int(struct Ast_RExpression *res, o7c_tag_t res_tag, struct 
 	}
 }
 
-static void MultCalc_Rl(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_RExpression *a, o7c_tag_t a_tag, int mult, struct Ast_RExpression *b, o7c_tag_t b_tag) {
-	double r;
-	double r1;
-	double r2;
+static void MultCalc_Rl(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
+	double r = 0./0., r1 = 0./0., r2 = 0./0.;
 
 	r1 = (&O7C_GUARD(Ast_ExprReal_s, a->value_, NULL))->real;
 	r2 = (&O7C_GUARD(Ast_ExprReal_s, b->value_, NULL))->real;
@@ -1343,10 +1334,8 @@ static void MultCalc_Rl(struct Ast_RExpression *res, o7c_tag_t res_tag, struct A
 	}
 }
 
-static void MultCalc_St(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_RExpression *a, o7c_tag_t a_tag, int mult, struct Ast_RExpression *b, o7c_tag_t b_tag) {
-	int s;
-	int s1;
-	int s2;
+static void MultCalc_St(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
+	unsigned s = 0, s1 = 0, s2 = 0;
 
 	s1 = (&O7C_GUARD(Ast_ExprSet_s, a->value_, NULL))->set;
 	s2 = (&O7C_GUARD(Ast_ExprSet_s, b->value_, NULL))->set;
@@ -1362,18 +1351,18 @@ static void MultCalc_St(struct Ast_RExpression *res, o7c_tag_t res_tag, struct A
 	}
 }
 
-static int MultCalc(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_RExpression *a, o7c_tag_t a_tag, int mult, struct Ast_RExpression *b, o7c_tag_t b_tag) {
-	int err;
-	bool bool_;
+static int MultCalc(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
+	int err = O7C_INT_UNDEFINED;
+	bool bool_ = 0 > 1;
 
 	err = Ast_ErrNo_cnst;
-	if (MultCalc_CheckType(a, NULL, b, NULL, mult, &err) && (a->value_ != NULL) && (b->value_ != NULL)) {
+	if (MultCalc_CheckType(a, b, mult, &err) && (a->value_ != NULL) && (b->value_ != NULL)) {
 		switch (a->type->_._.id) {
 		case 0:
-			MultCalc_Int(res, NULL, a, NULL, mult, b, NULL, &err);
+			MultCalc_Int(res, a, mult, b, &err);
 			break;
 		case 4:
-			MultCalc_Rl(res, NULL, a, NULL, mult, b, NULL);
+			MultCalc_Rl(res, a, mult, b);
 			break;
 		case 1:
 			bool_ = (&O7C_GUARD(Ast_ExprBoolean_s, a->value_, NULL))->bool_ && (&O7C_GUARD(Ast_ExprBoolean_s, b->value_, NULL))->bool_;
@@ -1384,7 +1373,7 @@ static int MultCalc(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_R
 			}
 			break;
 		case 5:
-			MultCalc_St(res, NULL, a, NULL, mult, b, NULL);
+			MultCalc_St(res, a, mult, b);
 			break;
 		default:
 			abort();
@@ -1396,11 +1385,11 @@ static int MultCalc(struct Ast_RExpression *res, o7c_tag_t res_tag, struct Ast_R
 	return err;
 }
 
-static int ExprTermGeneral(struct Ast_ExprTerm_s **e, o7c_tag_t e_tag, struct Ast_RExpression *result, o7c_tag_t result_tag, struct Ast_RFactor *factor, o7c_tag_t factor_tag, int mult, struct Ast_RExpression *factorOrTerm, o7c_tag_t factorOrTerm_tag) {
+static int ExprTermGeneral(struct Ast_ExprTerm_s **e, struct Ast_RExpression *result, struct Ast_RFactor *factor, int mult, struct Ast_RExpression *factorOrTerm) {
 	assert((mult >= Scanner_MultFirst_cnst) && (mult <= Scanner_MultLast_cnst));
 	assert((o7c_is(NULL, factorOrTerm, Ast_RFactor_tag)) || (o7c_is(NULL, factorOrTerm, Ast_ExprTerm_s_tag)));
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprTerm_s_tag);
-	ExprInit(&(*e)->_, NULL, Ast_IdTerm_cnst, factorOrTerm->type, NULL);
+	ExprInit(&(*e)->_, Ast_IdTerm_cnst, factorOrTerm->type);
 	(*e)->factor = factor;
 	(*e)->mult = mult;
 	(*e)->expr = factorOrTerm;
@@ -1408,32 +1397,32 @@ static int ExprTermGeneral(struct Ast_ExprTerm_s **e, o7c_tag_t e_tag, struct As
 		result = (&((*e))->_);
 	}
 	(*e)->factor = factor;
-	return MultCalc(result, NULL, &factor->_, NULL, mult, factorOrTerm, NULL);
+	return MultCalc(result, &factor->_, mult, factorOrTerm);
 }
 
-extern int Ast_ExprTermNew(struct Ast_ExprTerm_s **e, o7c_tag_t e_tag, struct Ast_RFactor *factor, o7c_tag_t factor_tag, int mult, struct Ast_RExpression *factorOrTerm, o7c_tag_t factorOrTerm_tag) {
-	return ExprTermGeneral(&(*e), NULL, &(*e)->_, NULL, factor, NULL, mult, factorOrTerm, NULL);
+extern int Ast_ExprTermNew(struct Ast_ExprTerm_s **e, struct Ast_RFactor *factor, int mult, struct Ast_RExpression *factorOrTerm) {
+	return ExprTermGeneral(&(*e), &(*e)->_, factor, mult, factorOrTerm);
 }
 
-extern int Ast_ExprTermAdd(struct Ast_RExpression *fullTerm, o7c_tag_t fullTerm_tag, struct Ast_ExprTerm_s **lastTerm, o7c_tag_t lastTerm_tag, int mult, struct Ast_RExpression *factorOrTerm, o7c_tag_t factorOrTerm_tag) {
-	struct Ast_ExprTerm_s *e;
-	int err;
+extern int Ast_ExprTermAdd(struct Ast_RExpression *fullTerm, struct Ast_ExprTerm_s **lastTerm, int mult, struct Ast_RExpression *factorOrTerm) {
+	struct Ast_ExprTerm_s *e = NULL;
+	int err = O7C_INT_UNDEFINED;
 
 	if ((*lastTerm) != NULL) {
 		assert((*lastTerm)->expr != NULL);
-		err = ExprTermGeneral(&e, NULL, fullTerm, NULL, (&O7C_GUARD(Ast_RFactor, (*lastTerm)->expr, NULL)), NULL, mult, factorOrTerm, NULL);
+		err = ExprTermGeneral(&e, fullTerm, (&O7C_GUARD(Ast_RFactor, (*lastTerm)->expr, NULL)), mult, factorOrTerm);
 		(*lastTerm)->expr = (&(e)->_);
 		(*lastTerm) = e;
 	} else {
-		err = ExprTermGeneral(&(*lastTerm), NULL, fullTerm, NULL, NULL, NULL, mult, factorOrTerm, NULL);
+		err = ExprTermGeneral(&(*lastTerm), fullTerm, NULL, mult, factorOrTerm);
 	}
 	return err;
 }
 
-static int ExprCallCreate(struct Ast_ExprCall_s **e, o7c_tag_t e_tag, struct Ast_Designator_s *des, o7c_tag_t des_tag, bool func_) {
-	int err;
-	struct Ast_RType *t;
-	struct Ast_ProcType_s *pt;
+static int ExprCallCreate(struct Ast_ExprCall_s **e, struct Ast_Designator_s *des, bool func_) {
+	int err = O7C_INT_UNDEFINED;
+	struct Ast_RType *t = NULL;
+	struct Ast_ProcType_s *pt = NULL;
 
 	t = NULL;
 	err = Ast_ErrNo_cnst;
@@ -1449,7 +1438,7 @@ static int ExprCallCreate(struct Ast_ExprCall_s **e, o7c_tag_t e_tag, struct Ast
 			if (o7c_is(NULL, des->_._.type, Ast_ProcType_s_tag)) {
 				t = des->_._.type->_.type;
 				if ((t != NULL) != func_) {
-					err = Ast_ErrCallIgnoredReturn_cnst + (int)func_;
+					err = o7c_add(Ast_ErrCallIgnoredReturn_cnst, (int)func_);
 				}
 			} else {
 				err = Ast_ErrCallNotProc_cnst;
@@ -1457,39 +1446,39 @@ static int ExprCallCreate(struct Ast_ExprCall_s **e, o7c_tag_t e_tag, struct Ast
 		}
 	}
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprCall_s_tag);
-	ExprInit(&(*e)->_._, NULL, Ast_IdCall_cnst, t, NULL);
+	ExprInit(&(*e)->_._, Ast_IdCall_cnst, t);
 	(*e)->designator = des;
 	(*e)->params = NULL;
 	return err;
 }
 
-extern int Ast_ExprCallNew(struct Ast_ExprCall_s **e, o7c_tag_t e_tag, struct Ast_Designator_s *des, o7c_tag_t des_tag) {
-	return ExprCallCreate(&(*e), NULL, des, NULL, true);
+extern int Ast_ExprCallNew(struct Ast_ExprCall_s **e, struct Ast_Designator_s *des) {
+	return ExprCallCreate(&(*e), des, true);
 }
 
-extern bool Ast_IsChangeable(struct Ast_RModule *cur, o7c_tag_t cur_tag, struct Ast_RVar *v, o7c_tag_t v_tag) {
+extern bool Ast_IsChangeable(struct Ast_RModule *cur, struct Ast_RVar *v) {
 	Log_StrLn("IsChangeable", 13);
 	return (!(o7c_is(NULL, v, Ast_FormalParam_s_tag)) || ((&O7C_GUARD(Ast_FormalParam_s, v, NULL))->isVar) || !((o7c_is(NULL, v->_.type, Ast_RArray_tag)) || (o7c_is(NULL, v->_.type, Ast_Record_s_tag))));
 }
 
-extern bool Ast_IsVar(struct Ast_RExpression *e, o7c_tag_t e_tag) {
+extern bool Ast_IsVar(struct Ast_RExpression *e) {
 	Log_Str("IsVar: e.id = ", 15);
 	Log_Int(e->_.id);
 	Log_Ln();
 	return (o7c_is(NULL, e, Ast_Designator_s_tag)) && (o7c_is(NULL, (&O7C_GUARD(Ast_Designator_s, e, NULL))->decl, Ast_RVar_tag));
 }
 
-extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, struct Ast_RProcedure **p, o7c_tag_t p_tag, char unsigned buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err;
+extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, struct Ast_RProcedure **p, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+	int err = O7C_INT_UNDEFINED;
 
-	if (SearchName(ds->start, NULL, buf, buf_len0, begin, end) == NULL) {
+	if (SearchName(ds->start, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
 	} else {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	}
 	(*p) = o7c_new(sizeof(*(*p)), Ast_RProcedure_tag);
 	NodeInit(&(*(*p))._._._._, Ast_RProcedure_tag);
-	DeclarationsConnect(&(*p)->_._, NULL, ds, NULL, buf, buf_len0, begin, end);
+	DeclarationsConnect(&(*p)->_._, ds, buf, buf_len0, begin, end);
 	(*p)->_.header = Ast_ProcTypeNew();
 	(*p)->_._._._.id = Ast_IdProcType_cnst;
 	(*p)->_.return_ = NULL;
@@ -1499,8 +1488,8 @@ extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, o7c_tag_t ds_tag, stru
 	return err;
 }
 
-extern int Ast_ProcedureSetReturn(struct Ast_RProcedure *p, o7c_tag_t p_tag, struct Ast_RExpression *e, o7c_tag_t e_tag) {
-	int err;
+extern int Ast_ProcedureSetReturn(struct Ast_RProcedure *p, struct Ast_RExpression *e) {
+	int err = O7C_INT_UNDEFINED;
 
 	assert(p->_.return_ == NULL);
 	err = Ast_ErrNo_cnst;
@@ -1508,15 +1497,15 @@ extern int Ast_ProcedureSetReturn(struct Ast_RProcedure *p, o7c_tag_t p_tag, str
 		err = Ast_ErrProcHasNoReturn_cnst;
 	} else if (e != NULL) {
 		p->_.return_ = e;
-		if (!Ast_CompatibleTypes(&p->distance, p->_.header->_._._.type, NULL, e->type, NULL) && !CompatibleAsCharAndString(p->_.header->_._._.type, NULL, &p->_.return_, NULL)) {
+		if (!Ast_CompatibleTypes(&p->distance, p->_.header->_._._.type, e->type) && !CompatibleAsCharAndString(p->_.header->_._._.type, &p->_.return_)) {
 			err = Ast_ErrReturnIncompatibleType_cnst;
 		}
 	}
 	return err;
 }
 
-extern int Ast_ProcedureEnd(struct Ast_RProcedure *p, o7c_tag_t p_tag) {
-	int err;
+extern int Ast_ProcedureEnd(struct Ast_RProcedure *p) {
+	int err = O7C_INT_UNDEFINED;
 
 	if ((p->_.header->_._._.type != NULL) && (p->_.return_ == NULL)) {
 		err = Ast_ErrExpectReturn_cnst;
@@ -1526,9 +1515,9 @@ extern int Ast_ProcedureEnd(struct Ast_RProcedure *p, o7c_tag_t p_tag) {
 	return err;
 }
 
-static bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, struct Ast_RType *tp, o7c_tag_t tp_tag, struct Ast_FormalParam_s *fp, o7c_tag_t fp_tag) {
-	bool comp;
-	int id;
+static bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, struct Ast_RType *tp, struct Ast_FormalParam_s *fp) {
+	bool comp = 0 > 1;
+	int id = O7C_INT_UNDEFINED;
 
 	comp = o7c_is(NULL, call->designator->decl, Ast_PredefinedProcedure_s_tag);
 	if (comp) {
@@ -1547,8 +1536,8 @@ static bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, o7c_tag_t ca
 	return comp;
 }
 
-static void CallParamNew_ParamsVariation(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, struct Ast_RExpression *e, o7c_tag_t e_tag, int *err) {
-	int id;
+static void CallParamNew_ParamsVariation(struct Ast_ExprCall_s *call, struct Ast_RExpression *e, int *err) {
+	int id = O7C_INT_UNDEFINED;
 
 	id = call->designator->decl->_.id;
 	if (id != Ast_IdError_cnst) {
@@ -1560,16 +1549,19 @@ static void CallParamNew_ParamsVariation(struct Ast_ExprCall_s *call, o7c_tag_t 
 	}
 }
 
-extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, struct Ast_Parameter_s **lastParam, o7c_tag_t lastParam_tag, struct Ast_RExpression *e, o7c_tag_t e_tag, struct Ast_FormalParam_s **currentFormalParam, o7c_tag_t currentFormalParam_tag) {
-	int err;
-	int distance;
+extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, struct Ast_Parameter_s **lastParam, struct Ast_RExpression *e, struct Ast_FormalParam_s **currentFormalParam) {
+	int err = O7C_INT_UNDEFINED, distance = O7C_INT_UNDEFINED;
 
 	err = Ast_ErrNo_cnst;
 	if ((*currentFormalParam) != NULL) {
-		if (!Ast_CompatibleTypes(&distance, (*currentFormalParam)->_._.type, NULL, e->type, NULL) && !CompatibleAsCharAndString((*currentFormalParam)->_._.type, NULL, &e, NULL) && !CallParamNew_TypeVariation(call, NULL, e->type, NULL, (*currentFormalParam), NULL)) {
+		if (!Ast_CompatibleTypes(&distance, (*currentFormalParam)->_._.type, e->type) && !CompatibleAsCharAndString((*currentFormalParam)->_._.type, &e) && !CallParamNew_TypeVariation(call, e->type, (*currentFormalParam))) {
 			err = Ast_ErrCallIncompatibleParamType_cnst;
-		} else if ((*currentFormalParam)->isVar && !(Ast_IsVar(e, NULL) && Ast_IsChangeable(call->designator->decl->module, NULL, (&O7C_GUARD(Ast_RVar, (&O7C_GUARD(Ast_Designator_s, e, NULL))->decl, NULL)), NULL))) {
-			err = Ast_ErrCallExpectVarParam_cnst;
+		} else if ((*currentFormalParam)->isVar) {
+			if (!(Ast_IsVar(e) && Ast_IsChangeable(call->designator->decl->module, (&O7C_GUARD(Ast_RVar, (&O7C_GUARD(Ast_Designator_s, e, NULL))->decl, NULL))))) {
+				err = Ast_ErrCallExpectVarParam_cnst;
+			} else if ((e->type != NULL) && (e->type->_._.id == Ast_IdPointer_cnst) && (e->type != (*currentFormalParam)->_._.type) && ((*currentFormalParam)->_._.type != NULL) && ((*currentFormalParam)->_._.type->_.type != NULL) && (e->type->_.type != NULL)) {
+				err = Ast_ErrCallVarPointerTypeNotSame_cnst;
+			}
 		}
 		if (((*currentFormalParam)->_._.next != NULL) && (o7c_is(NULL, (*currentFormalParam)->_._.next, Ast_FormalParam_s_tag))) {
 			(*currentFormalParam) = (&O7C_GUARD(Ast_FormalParam_s, (*currentFormalParam)->_._.next, NULL));
@@ -1578,7 +1570,7 @@ extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, str
 		}
 	} else {
 		distance = 0;
-		CallParamNew_ParamsVariation(call, NULL, e, NULL, &err);
+		CallParamNew_ParamsVariation(call, e, &err);
 	}
 	if ((*lastParam) == NULL) {
 		(*lastParam) = o7c_new(sizeof(*(*lastParam)), Ast_Parameter_s_tag);
@@ -1594,9 +1586,8 @@ extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, str
 	return err;
 }
 
-extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, struct Ast_FormalParam_s *currentFormalParam, o7c_tag_t currentFormalParam_tag) {
-	struct Ast_RFactor *v;
-	char unsigned ch;
+extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam_s *currentFormalParam) {
+	struct Ast_RFactor *v = NULL;
 
 	if ((currentFormalParam == NULL) && (o7c_is(NULL, call->designator->decl, Ast_PredefinedProcedure_s_tag)) && (call->designator->decl->type->_.type != NULL)) {
 		v = call->params->expr->value_;
@@ -1643,7 +1634,7 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, st
 					call->_._.value_ = v;
 				} else if (o7c_is(NULL, v, Ast_ExprString_s_tag)) {
 					if ((&O7C_GUARD(Ast_ExprString_s, v, NULL))->_.int_ >  - 1) {
-						call->_._.value_ = (&(Ast_ExprIntegerNew((int)ch))->_._);
+						call->_._.value_ = (&(Ast_ExprIntegerNew((&O7C_GUARD(Ast_ExprString_s, v, NULL))->_.int_))->_._);
 					} else {
 						assert(false);
 					}
@@ -1669,59 +1660,59 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, o7c_tag_t call_tag, st
 			call->_._.value_ = (&O7C_GUARD(Ast_RArray, call->params->expr->type, NULL))->count->value_;
 		}
 	}
-	return (int)(currentFormalParam != NULL) * Ast_ErrCallParamsNotEnough_cnst;
+	return o7c_mul((int)(currentFormalParam != NULL), Ast_ErrCallParamsNotEnough_cnst);
 }
 
-static void StatInit(struct Ast_RStatement *s, o7c_tag_t s_tag, struct Ast_RExpression *e, o7c_tag_t e_tag) {
+static void StatInit(struct Ast_RStatement *s, struct Ast_RExpression *e) {
 	NodeInit(&(*s)._, Ast_RStatement_tag);
 	s->expr = e;
 	s->next = NULL;
 }
 
-extern int Ast_CallNew(struct Ast_Call_s **c, o7c_tag_t c_tag, struct Ast_Designator_s *des, o7c_tag_t des_tag) {
-	int err;
-	struct Ast_ExprCall_s *e;
+extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des) {
+	int err = O7C_INT_UNDEFINED;
+	struct Ast_ExprCall_s *e = NULL;
 
-	err = ExprCallCreate(&e, NULL, des, NULL, false);
+	err = ExprCallCreate(&e, des, false);
 	(*c) = o7c_new(sizeof(*(*c)), Ast_Call_s_tag);
-	StatInit(&(*c)->_, NULL, &e->_._, NULL);
+	StatInit(&(*c)->_, &e->_._);
 	return err;
 }
 
-extern struct Ast_If_s *Ast_IfNew(struct Ast_RExpression *expr, o7c_tag_t expr_tag, struct Ast_RStatement *stats, o7c_tag_t stats_tag) {
-	struct Ast_If_s *if_;
+extern struct Ast_If_s *Ast_IfNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
+	struct Ast_If_s *if_ = NULL;
 
 	if_ = o7c_new(sizeof(*if_), Ast_If_s_tag);
-	StatInit(&if_->_._, NULL, expr, NULL);
+	StatInit(&if_->_._, expr);
 	if_->_.stats = stats;
 	if_->_.elsif = NULL;
 	return if_;
 }
 
-extern struct Ast_While_s *Ast_WhileNew(struct Ast_RExpression *expr, o7c_tag_t expr_tag, struct Ast_RStatement *stats, o7c_tag_t stats_tag) {
-	struct Ast_While_s *w;
+extern struct Ast_While_s *Ast_WhileNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
+	struct Ast_While_s *w = NULL;
 
 	w = o7c_new(sizeof(*w), Ast_While_s_tag);
-	StatInit(&w->_._, NULL, expr, NULL);
+	StatInit(&w->_._, expr);
 	w->_.stats = stats;
 	w->_.elsif = NULL;
 	return w;
 }
 
-extern struct Ast_Repeat_s *Ast_RepeatNew(struct Ast_RExpression *expr, o7c_tag_t expr_tag, struct Ast_RStatement *stats, o7c_tag_t stats_tag) {
-	struct Ast_Repeat_s *r;
+extern struct Ast_Repeat_s *Ast_RepeatNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
+	struct Ast_Repeat_s *r = NULL;
 
 	r = o7c_new(sizeof(*r), Ast_Repeat_s_tag);
-	StatInit(&r->_, NULL, expr, NULL);
+	StatInit(&r->_, expr);
 	r->stats = stats;
 	return r;
 }
 
-extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, o7c_tag_t var__tag, struct Ast_RExpression *init, o7c_tag_t init_tag, struct Ast_RExpression *to, o7c_tag_t to_tag, int by, struct Ast_RStatement *stats, o7c_tag_t stats_tag) {
-	struct Ast_For_s *f;
+extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats) {
+	struct Ast_For_s *f = NULL;
 
 	f = o7c_new(sizeof(*f), Ast_For_s_tag);
-	StatInit(&f->_, NULL, init, NULL);
+	StatInit(&f->_, init);
 	f->var_ = var_;
 	f->to = to;
 	f->by = by;
@@ -1729,11 +1720,11 @@ extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, o7c_tag_t var__tag, s
 	return f;
 }
 
-extern int Ast_CaseNew(struct Ast_Case_s **case_, o7c_tag_t case__tag, struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	int err;
+extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr) {
+	int err = O7C_INT_UNDEFINED;
 
 	(*case_) = o7c_new(sizeof(*(*case_)), Ast_Case_s_tag);
-	StatInit(&(*case_)->_, NULL, expr, NULL);
+	StatInit(&(*case_)->_, expr);
 	(*case_)->elements = NULL;
 	if ((expr->type != NULL) && !(( (1u << expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))))) {
 		err = Ast_ErrCaseExprNotIntOrChar_cnst;
@@ -1743,9 +1734,10 @@ extern int Ast_CaseNew(struct Ast_Case_s **case_, o7c_tag_t case__tag, struct As
 	return err;
 }
 
-static int CaseRangeSearch(struct Ast_Case_s *case_, o7c_tag_t case__tag, int int_) {
-	struct Ast_CaseElement_s *e;
+extern int Ast_CaseRangeSearch(struct Ast_Case_s *case_, int int_) {
+	struct Ast_CaseElement_s *e = NULL;
 
+	assert(false);
 	e = case_->elements;
 	if (e != NULL) {
 		while (e->next != NULL) {
@@ -1758,7 +1750,7 @@ static int CaseRangeSearch(struct Ast_Case_s *case_, o7c_tag_t case__tag, int in
 	return 0;
 }
 
-extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag, int id, int value_) {
+extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_) {
 	assert(( (1u << id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))));
 	(*label) = o7c_new(sizeof(*(*label)), Ast_CaseLabel_s_tag);
 	NodeInit(&(*(*label))._, Ast_CaseLabel_s_tag);
@@ -1770,9 +1762,8 @@ extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag,
 	return Ast_ErrNo_cnst;
 }
 
-extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_tag, struct Ast_RDeclaration *decl, o7c_tag_t decl_tag) {
-	int err;
-	int i;
+extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDeclaration *decl) {
+	int err = O7C_INT_UNDEFINED, i = O7C_INT_UNDEFINED;
 
 	if (!(o7c_is(NULL, decl, Ast_Const_s_tag))) {
 		err = Ast_ErrCaseLabelNotConst_cnst;
@@ -1780,13 +1771,13 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_
 		err = Ast_ErrCaseExprNotIntOrChar_cnst;
 	} else {
 		if ((&O7C_GUARD(Ast_Const_s, decl, NULL))->expr->type->_._.id == Ast_IdInteger_cnst) {
-			err = Ast_CaseLabelNew(&(*label), NULL, Ast_IdInteger_cnst, (&O7C_GUARD(Ast_RExprInteger, (&O7C_GUARD(Ast_Const_s, decl, NULL))->expr->value_, NULL))->int_);
+			err = Ast_CaseLabelNew(&(*label), Ast_IdInteger_cnst, (&O7C_GUARD(Ast_RExprInteger, (&O7C_GUARD(Ast_Const_s, decl, NULL))->expr->value_, NULL))->int_);
 		} else {
 			i = (&O7C_GUARD(Ast_ExprString_s, (&O7C_GUARD(Ast_Const_s, decl, NULL))->expr->value_, NULL))->_.int_;
 			if (i < 0) {
 				i = (int)(&O7C_GUARD(Ast_ExprString_s, (&O7C_GUARD(Ast_Const_s, decl, NULL))->expr->value_, NULL))->string.block->s[0];
 			}
-			err = Ast_CaseLabelNew(&(*label), NULL, Ast_IdChar_cnst, i);
+			err = Ast_CaseLabelNew(&(*label), Ast_IdChar_cnst, i);
 		}
 		if ((*label) != NULL) {
 			(*label)->qual = decl;
@@ -1795,8 +1786,8 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, o7c_tag_t label_
 	return err;
 }
 
-extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, o7c_tag_t left_tag, struct Ast_CaseLabel_s *right, o7c_tag_t right_tag) {
-	int err;
+extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, struct Ast_CaseLabel_s *right) {
+	int err = O7C_INT_UNDEFINED;
 
 	assert((left->right == NULL) && (left->next == NULL));
 	assert((right == NULL) || (right->right == NULL) && (right->next == NULL));
@@ -1811,8 +1802,8 @@ extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, o7c_tag_t left_tag, st
 	return err;
 }
 
-static bool IsRangesCross(struct Ast_CaseLabel_s *l1, o7c_tag_t l1_tag, struct Ast_CaseLabel_s *l2, o7c_tag_t l2_tag) {
-	bool cross;
+static bool IsRangesCross(struct Ast_CaseLabel_s *l1, struct Ast_CaseLabel_s *l2) {
+	bool cross = 0 > 1;
 
 	if (l1->value_ < l2->value_) {
 		cross = (l1->right != NULL) && (l1->right->value_ >= l2->value_);
@@ -1822,28 +1813,28 @@ static bool IsRangesCross(struct Ast_CaseLabel_s *l1, o7c_tag_t l1_tag, struct A
 	return cross;
 }
 
-static bool IsListCrossRange(struct Ast_CaseLabel_s *list, o7c_tag_t list_tag, struct Ast_CaseLabel_s *range, o7c_tag_t range_tag) {
-	while ((list != NULL) && !IsRangesCross(list, NULL, range, NULL)) {
+static bool IsListCrossRange(struct Ast_CaseLabel_s *list, struct Ast_CaseLabel_s *range) {
+	while ((list != NULL) && !IsRangesCross(list, range)) {
 		list = list->next;
 	}
 	return list != NULL;
 }
 
-static bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, o7c_tag_t elem_tag, struct Ast_CaseLabel_s *range, o7c_tag_t range_tag) {
-	while ((elem != NULL) && !IsListCrossRange(elem->labels, NULL, range, NULL)) {
+static bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, struct Ast_CaseLabel_s *range) {
+	while ((elem != NULL) && !IsListCrossRange(elem->labels, range)) {
 		elem = elem->next;
 	}
 	return elem != NULL;
 }
 
-extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseLabel_s *first, o7c_tag_t first_tag, struct Ast_CaseLabel_s *new_, o7c_tag_t new__tag) {
-	int err;
+extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, struct Ast_CaseLabel_s *first, struct Ast_CaseLabel_s *new_) {
+	int err = O7C_INT_UNDEFINED;
 
 	assert(new_->next == NULL);
 	if (case_->_.expr->type->_._.id != new_->_.id) {
 		err = Ast_ErrCaseRangeLabelsTypeMismatch_cnst;
 	} else {
-		if (IsElementsCrossRange(case_->elements, NULL, new_, NULL)) {
+		if (IsElementsCrossRange(case_->elements, new_)) {
 			err = Ast_ErrCaseElemDuplicate_cnst;
 		} else {
 			err = Ast_ErrNo_cnst;
@@ -1856,8 +1847,8 @@ extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, s
 	return err;
 }
 
-extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labels, o7c_tag_t labels_tag) {
-	struct Ast_CaseElement_s *elem;
+extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labels) {
+	struct Ast_CaseElement_s *elem = NULL;
 
 	elem = o7c_new(sizeof(*elem), Ast_CaseElement_s_tag);
 	NodeInit(&(*elem)._, Ast_CaseElement_s_tag);
@@ -1867,9 +1858,9 @@ extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labe
 	return elem;
 }
 
-extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, struct Ast_CaseElement_s *elem, o7c_tag_t elem_tag) {
-	int err;
-	struct Ast_CaseElement_s *last;
+extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, struct Ast_CaseElement_s *elem) {
+	int err = O7C_INT_UNDEFINED;
+	struct Ast_CaseElement_s *last = NULL;
 
 	if (case_->elements == NULL) {
 		case_->elements = elem;
@@ -1884,13 +1875,13 @@ extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, o7c_tag_t case__tag, str
 	return err;
 }
 
-extern int Ast_AssignNew(struct Ast_Assign_s **a, o7c_tag_t a_tag, struct Ast_Designator_s *des, o7c_tag_t des_tag, struct Ast_RExpression *expr, o7c_tag_t expr_tag) {
-	int err;
+extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, struct Ast_RExpression *expr) {
+	int err = O7C_INT_UNDEFINED;
 
 	(*a) = o7c_new(sizeof(*(*a)), Ast_Assign_s_tag);
-	StatInit(&(*a)->_, NULL, expr, NULL);
+	StatInit(&(*a)->_, expr);
 	(*a)->designator = des;
-	if ((expr != NULL) && (des != NULL) && !Ast_CompatibleTypes(&(*a)->distance, des->_._.type, NULL, expr->type, NULL) && !CompatibleAsCharAndString(des->_._.type, NULL, &(*a)->_.expr, NULL)) {
+	if ((expr != NULL) && (des != NULL) && !Ast_CompatibleTypes(&(*a)->distance, des->_._.type, expr->type) && !CompatibleAsCharAndString(des->_._.type, &(*a)->_.expr)) {
 		err = Ast_ErrAssignIncompatibleType_cnst;
 	} else {
 		err = Ast_ErrNo_cnst;
@@ -1899,17 +1890,17 @@ extern int Ast_AssignNew(struct Ast_Assign_s **a, o7c_tag_t a_tag, struct Ast_De
 }
 
 extern struct Ast_StatementError_s *Ast_StatementErrorNew(void) {
-	struct Ast_StatementError_s *s;
+	struct Ast_StatementError_s *s = NULL;
 
 	s = o7c_new(sizeof(*s), Ast_StatementError_s_tag);
-	StatInit(&s->_, NULL, NULL, NULL);
+	StatInit(&s->_, NULL);
 	return s;
 }
 
 static void PredefinedDeclarationsInit(void);
 static void PredefinedDeclarationsInit_TypeNew(int s, int t) {
-	struct Ast_RType *td;
-	struct Ast_Byte_s *tb;
+	struct Ast_RType *td = NULL;
+	struct Ast_Byte_s *tb = NULL;
 
 	if (true || (s != Scanner_Byte_cnst)) {
 		td = o7c_new(sizeof(*td), Ast_RType_tag);
@@ -1917,18 +1908,18 @@ static void PredefinedDeclarationsInit_TypeNew(int s, int t) {
 		tb = o7c_new(sizeof(*tb), Ast_Byte_s_tag);
 		td = (&(tb)->_);
 	}
-	TInit(td, NULL, t);
-	predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, s - Scanner_PredefinedFirst_cnst)] = (&(td)->_);
-	types[o7c_index(Ast_PredefinedTypesCount_cnst, t)] = td;
+	TInit(td, t);
+	predefined[o7c_ind(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, o7c_sub(s, Scanner_PredefinedFirst_cnst))] = (&(td)->_);
+	types[o7c_ind(Ast_PredefinedTypesCount_cnst, t)] = td;
 }
 
 static struct Ast_ProcType_s *PredefinedDeclarationsInit_ProcNew(int s, int t) {
-	struct Ast_PredefinedProcedure_s *td;
+	struct Ast_PredefinedProcedure_s *td = NULL;
 
 	td = o7c_new(sizeof(*td), Ast_PredefinedProcedure_s_tag);
 	NodeInit(&(*td)._._._._, Ast_PredefinedProcedure_s_tag);
-	DeclInit(&td->_._._, NULL, NULL, NULL);
-	predefined[o7c_index(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, s - Scanner_PredefinedFirst_cnst)] = (&(td)->_._._);
+	DeclInit(&td->_._._, NULL);
+	predefined[o7c_ind(Scanner_PredefinedLast_cnst - Scanner_PredefinedFirst_cnst + 1, o7c_sub(s, Scanner_PredefinedFirst_cnst))] = (&(td)->_._._);
 	td->_.header = Ast_ProcTypeNew();
 	td->_._._.type = (&(td->_.header)->_._);
 	td->_._._._.id = s;
@@ -1939,9 +1930,8 @@ static struct Ast_ProcType_s *PredefinedDeclarationsInit_ProcNew(int s, int t) {
 }
 
 static void PredefinedDeclarationsInit(void) {
-	struct Ast_ProcType_s *tp;
-	struct Ast_RType *typeInt;
-	struct Ast_RType *typeReal;
+	struct Ast_ProcType_s *tp = NULL;
+	struct Ast_RType *typeInt = NULL, *typeReal = NULL;
 
 	PredefinedDeclarationsInit_TypeNew(Scanner_Byte_cnst, Ast_IdByte_cnst);
 	PredefinedDeclarationsInit_TypeNew(Scanner_Integer_cnst, Ast_IdInteger_cnst);
@@ -1951,58 +1941,58 @@ static void PredefinedDeclarationsInit(void) {
 	PredefinedDeclarationsInit_TypeNew(Scanner_Real_cnst, Ast_IdReal_cnst);
 	types[Ast_IdPointer_cnst] = o7c_new(sizeof(*types[Ast_IdPointer_cnst]), Ast_RType_tag);
 	NodeInit(&(*types[Ast_IdPointer_cnst])._._, Ast_RType_tag);
-	DeclInit(&types[Ast_IdPointer_cnst]->_, NULL, NULL, NULL);
+	DeclInit(&types[Ast_IdPointer_cnst]->_, NULL);
 	types[Ast_IdPointer_cnst]->_._.id = Ast_IdPointer_cnst;
 	typeInt = Ast_TypeGet(Ast_IdInteger_cnst);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Abs_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Asr_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Assert_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, Ast_TypeGet(Ast_IdBoolean_cnst), NULL, false);
+	ParamAddPredefined(tp, Ast_TypeGet(Ast_IdBoolean_cnst), false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Chr_cnst, Ast_IdChar_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Dec_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Excl_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, Ast_TypeGet(Ast_IdSet_cnst), NULL, true);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, Ast_TypeGet(Ast_IdSet_cnst), true);
+	ParamAddPredefined(tp, typeInt, false);
 	typeReal = Ast_TypeGet(Ast_IdReal_cnst);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Floor_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, typeReal, NULL, false);
+	ParamAddPredefined(tp, typeReal, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Flt_cnst, Ast_IdReal_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Inc_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, true);
+	ParamAddPredefined(tp, typeInt, true);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Incl_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, Ast_TypeGet(Ast_IdSet_cnst), NULL, true);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, Ast_TypeGet(Ast_IdSet_cnst), true);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Len_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, &Ast_ArrayGet(typeInt, NULL, NULL, NULL)->_._, NULL, false);
+	ParamAddPredefined(tp, &Ast_ArrayGet(typeInt, NULL)->_._, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Lsl_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_New_cnst, Ast_NoId_cnst);
-	ParamAddPredefined(tp, NULL, Ast_TypeGet(Ast_IdPointer_cnst), NULL, true);
+	ParamAddPredefined(tp, Ast_TypeGet(Ast_IdPointer_cnst), true);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Odd_cnst, Ast_IdBoolean_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Ord_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, Ast_TypeGet(Ast_IdChar_cnst), NULL, false);
+	ParamAddPredefined(tp, Ast_TypeGet(Ast_IdChar_cnst), false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Pack_cnst, Ast_IdReal_cnst);
-	ParamAddPredefined(tp, NULL, typeReal, NULL, true);
+	ParamAddPredefined(tp, typeReal, true);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Ror_cnst, Ast_IdInteger_cnst);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
-	ParamAddPredefined(tp, NULL, typeInt, NULL, false);
+	ParamAddPredefined(tp, typeInt, false);
+	ParamAddPredefined(tp, typeInt, false);
 	tp = PredefinedDeclarationsInit_ProcNew(Scanner_Unpk_cnst, Ast_IdReal_cnst);
-	ParamAddPredefined(tp, NULL, typeReal, NULL, true);
+	ParamAddPredefined(tp, typeReal, true);
 }
 
-extern bool Ast_HasError(struct Ast_RModule *m, o7c_tag_t m_tag) {
+extern bool Ast_HasError(struct Ast_RModule *m) {
 	return m->errLast != NULL;
 }
 
-extern void Ast_ProviderInit(struct Ast_RProvider *p, o7c_tag_t p_tag, Ast_Provide get) {
+extern void Ast_ProviderInit(struct Ast_RProvider *p, Ast_Provide get) {
 	V_Init(&(*p)._, Ast_RProvider_tag);
 	p->get = get;
 }
