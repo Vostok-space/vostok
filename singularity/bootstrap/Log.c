@@ -10,7 +10,7 @@
 #include "Log.h"
 
 bool Log_state = 0 > 1;
-static bool init = 0 > 1;
+static bool init_ = 0 > 1;
 
 extern void Log_Str(o7c_char s[/*len0*/], int s_len0) {
 	if (Log_state) {
@@ -50,21 +50,21 @@ extern void Log_Real(double x) {
 }
 
 extern void Log_Turn(bool st) {
-	if (st && !init) {
-		init = true;
+	if (st && !init_) {
+		init_ = true;
 		Out_Open();
 	}
 	Log_state = st;
 }
 
-extern void Log_init_(void) {
-	static int initialized__ = 0;
-	if (0 == initialized__) {
-		Out_init_();
+extern void Log_init(void) {
+	static int initialized = 0;
+	if (0 == initialized) {
+		Out_init();
 
-		init = false;
+		init_ = false;
 		Log_state = false;
 	}
-	++initialized__;
+	++initialized;
 }
 

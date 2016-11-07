@@ -152,17 +152,30 @@ static O7C_INLINE o7c_bool
 	return (NULL != strct) && (base[ext[0]] == ext[ext[0]]);
 }
 
-static O7C_INLINE void const* o7c_must(o7c_tag_t const base, void const *strct,
+static O7C_INLINE void ** o7c_must(o7c_tag_t const base, void **strct,
 	o7c_tag_t const ext) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void const*
-	o7c_must(o7c_tag_t const base, void const *strct, o7c_tag_t const ext)
+static O7C_INLINE void **
+	o7c_must(o7c_tag_t const base, void **strct, o7c_tag_t const ext)
+{
+	assert((NULL == *strct) || o7c_is(base, *strct, ext));
+	return strct;
+}
+
+#define O7C_GUARD(ExtType, strct, base) \
+	(*(struct ExtType **)o7c_must(base, (void **)strct, ExtType##_tag))
+
+
+static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,
+	o7c_tag_t const ext) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void *
+	o7c_must_r(o7c_tag_t const base, void *strct, o7c_tag_t const ext)
 {
 	assert((NULL == strct) || o7c_is(base, strct, ext));
 	return strct;
 }
 
-#define O7C_GUARD(ExtType, strct, base) \
-	(*(struct ExtType *)o7c_must(base, strct, ExtType##_tag))
+#define O7C_GUARD_R(ExtType, strct, base) \
+	(*(struct ExtType *)o7c_must_r(base, strct, ExtType##_tag))
 
 static O7C_INLINE unsigned o7c_set(int low, int high) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE unsigned o7c_set(int low, int high) {

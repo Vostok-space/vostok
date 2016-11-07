@@ -10,5 +10,5 @@
 #define Utf8_CarRet_cnst "\x0D"
 #define Utf8_DQuote_cnst "\x22"
 
-static inline void Utf8_init_(void) { ; }
+static inline void Utf8_init(void) { ; }
 #endif

@@ -32,15 +32,15 @@ extern int VDataStream_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, o7c
 	return (*out).write(&(*out), out_tag, buf, buf_len0, ofs, count);
 }
 
-extern void VDataStream_init_(void) {
-	static int initialized__ = 0;
-	if (0 == initialized__) {
-		V_init_();
+extern void VDataStream_init(void) {
+	static int initialized = 0;
+	if (0 == initialized) {
+		V_init();
 
 		o7c_tag_init(VDataStream_In_tag, V_Base_tag);
 		o7c_tag_init(VDataStream_Out_tag, V_Base_tag);
 
 	}
-	++initialized__;
+	++initialized;
 }
 

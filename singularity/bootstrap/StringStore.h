@@ -48,5 +48,5 @@ extern bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, int *d
 
 extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, struct StringStore_String *str, o7c_tag_t str_tag);
 
-extern void StringStore_init_(void);
+extern void StringStore_init(void);
 #endif

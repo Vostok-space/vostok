@@ -165,19 +165,19 @@ extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, str
 	return len;
 }
 
-extern void StringStore_init_(void) {
-	static int initialized__ = 0;
-	if (0 == initialized__) {
-		Log_init_();
-		Utf8_init_();
-		V_init_();
-		VDataStream_init_();
+extern void StringStore_init(void) {
+	static int initialized = 0;
+	if (0 == initialized) {
+		Log_init();
+		Utf8_init();
+		V_init();
+		VDataStream_init();
 
 		o7c_tag_init(StringStore_Block_s_tag, V_Base_tag);
 		o7c_tag_init(StringStore_String_tag, V_Base_tag);
 		o7c_tag_init(StringStore_Store_tag, V_Base_tag);
 
 	}
-	++initialized__;
+	++initialized;
 }
 

@@ -664,19 +664,19 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	return lex;
 }
 
-extern void Scanner_init_(void) {
-	static int initialized__ = 0;
-	if (0 == initialized__) {
-		V_init_();
-		VDataStream_init_();
-		Utf8_init_();
-		TranslatorLimits_init_();
-		Log_init_();
+extern void Scanner_init(void) {
+	static int initialized = 0;
+	if (0 == initialized) {
+		V_init();
+		VDataStream_init();
+		Utf8_init();
+		TranslatorLimits_init();
+		Log_init();
 
 		o7c_tag_init(Scanner_Scanner_tag, V_Base_tag);
 
 		assert(TranslatorLimits_MaxLenName_cnst < Scanner_BlockSize_cnst);
 	}
-	++initialized__;
+	++initialized;
 }
 

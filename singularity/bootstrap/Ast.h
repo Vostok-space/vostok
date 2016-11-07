@@ -598,7 +598,7 @@ extern struct Ast_While_s *Ast_WhileNew(struct Ast_RExpression *expr, struct Ast
 
 extern struct Ast_Repeat_s *Ast_RepeatNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats);
 
-extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats);
+extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats);
 
 extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr);
 
@@ -624,5 +624,5 @@ extern bool Ast_HasError(struct Ast_RModule *m);
 
 extern void Ast_ProviderInit(struct Ast_RProvider *p, Ast_Provide get);
 
-extern void Ast_init_(void);
+extern void Ast_init(void);
 #endif

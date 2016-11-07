@@ -19,5 +19,5 @@ extern void Log_Real(double x);
 
 extern void Log_Turn(bool st);
 
-extern void Log_init_(void);
+extern void Log_init(void);
 #endif

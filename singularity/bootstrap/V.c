@@ -36,9 +36,9 @@ extern bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message
 	return (*handler).do_(&(*handler), handler_tag, &(*message), message_tag);
 }
 
-extern void V_init_(void) {
-	static int initialized__ = 0;
-	if (0 == initialized__) {
+extern void V_init(void) {
+	static int initialized = 0;
+	if (0 == initialized) {
 		o7c_tag_init(V_Message_tag, NULL);
 		o7c_tag_init(V_Base_tag, V_Message_tag);
 		o7c_tag_init(V_Error_tag, V_Base_tag);
@@ -50,6 +50,6 @@ extern void V_init_(void) {
 		o7c_tag_init(V_MsgHash_tag, V_Base_tag);
 
 	}
-	++initialized__;
+	++initialized;
 }
 

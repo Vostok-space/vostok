@@ -66,6 +66,6 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
-extern void CFiles_init_(void) {
+extern void CFiles_init(void) {
 	;
 }

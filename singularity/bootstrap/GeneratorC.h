@@ -54,5 +54,5 @@ extern void GeneratorC_Init(struct GeneratorC_Generator *g, o7c_tag_t g_tag, str
 
 extern void GeneratorC_Generate(struct GeneratorC_Generator *interface_, o7c_tag_t interface__tag, struct GeneratorC_Generator *implementation, o7c_tag_t implementation_tag, struct Ast_RModule *module, struct GeneratorC_Options_s *opt);
 
-extern void GeneratorC_init_(void);
+extern void GeneratorC_init(void);
 #endif

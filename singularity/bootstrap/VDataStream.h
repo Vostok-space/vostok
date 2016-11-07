@@ -28,5 +28,5 @@ extern void VDataStream_InitOut(struct VDataStream_Out *out, o7c_tag_t out_tag, 
 
 extern int VDataStream_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count);
 
-extern void VDataStream_init_(void);
+extern void VDataStream_init(void);
 #endif

@@ -138,5 +138,5 @@ extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int beg
 
 extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag);
 
-extern void Scanner_init_(void);
+extern void Scanner_init(void);
 #endif

@@ -27,6 +27,7 @@ extern void o7c_init(int argc, char *argv[]) {
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
 	assert(INT_MIN < -INT_MAX);
+	assert((argc > 0) == (argv != NULL));
 
 	o7c_exit_code = 0;
 
@@ -37,17 +38,24 @@ extern void o7c_init(int argc, char *argv[]) {
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 	static int id = 1;
 	int i;
+	i = 1;
 	if (NULL == base) {
 		ext[0] = 0;
 	} else {
 		ext[0] = base[0] + 1;
 		assert(ext[0] <= O7C_MAX_RECORD_EXT);
-		i = 1;
 		while (i < ext[0]) {
 			ext[i] = base[i];
 			++i;
 		}
 		ext[i] = id;
+		++i;
 		++id;
+	}
+	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
+	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
+	while (i <= O7C_MAX_RECORD_EXT) {
+		ext[i] = 0;
+		++i;
 	}
 }

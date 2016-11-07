@@ -10,5 +10,5 @@
 
 extern bool Limits_IsNan(double r);
 
-static inline void Limits_init_(void) { ; }
+static inline void Limits_init(void) { ; }
 #endif

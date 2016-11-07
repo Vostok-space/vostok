@@ -27,5 +27,5 @@ extern struct VFileStream_ROut *VFileStream_OpenOut(o7c_char name[/*len0*/], int
 
 extern void VFileStream_CloseOut(struct VFileStream_ROut **out);
 
-extern void VFileStream_init_(void);
+extern void VFileStream_init(void);
 #endif

@@ -67,5 +67,5 @@ extern void V_SetDo(struct V_Base *base, o7c_tag_t base_tag, V_Handle do_);
 
 extern bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag);
 
-extern void V_init_(void);
+extern void V_init(void);
 #endif

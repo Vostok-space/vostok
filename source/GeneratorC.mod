@@ -59,6 +59,7 @@ TYPE
 	Generator* = RECORD(V.Base)
 		out*: Stream.POut;
 		len*: INTEGER;
+
 		module: Ast.Module;
 
 		localDeep: INTEGER;(* Вложенность процедур *)
@@ -377,6 +378,11 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		OR Eq(n, "var")
 
 		OR Eq(n, "func")
+
+		OR Eq(n, "o7c")
+		OR Eq(n, "O7C")
+		OR Eq(n, "initialized")
+		OR Eq(n, "init")
 END IsNameOccupied;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
@@ -643,26 +649,22 @@ BEGIN
 			END
 		ELSIF sel IS Ast.SelGuard THEN
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, "(&O7C_GUARD(");
+				Str(gen, "O7C_GUARD(");
 				ret := CheckStructName(gen, sel(Ast.SelGuard).type.type(Ast.Record));
 				ASSERT(ret);
 				GlobalName(gen, sel(Ast.SelGuard).type.type)
 			ELSE
-				Str(gen, "(O7C_GUARD(");
+				Str(gen, "O7C_GUARD_R(");
 				GlobalName(gen, sel(Ast.SelGuard).type)
 			END;
-			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, ", ")
-			ELSE
-				Str(gen, ", &")
-			END;
+			Str(gen, ", &");
 			Selector(gen, sels, i, typ);
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, ", NULL))")
+				Str(gen, ", NULL)")
 			ELSE
 				Str(gen, ", ");
 				GlobalName(gen, sels.decl);
-				Str(gen, "_tag))")
+				Str(gen, "_tag)")
 			END;
 			typ := sel(Ast.SelGuard).type
 		ELSE
@@ -2234,7 +2236,7 @@ BEGIN
 		REPEAT
 			Tabs(gen, 0);
 			String(gen, imp.module.name);
-			StrLn(gen, "_init_();");
+			StrLn(gen, "_init();");
 
 			imp := imp.next
 		UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
@@ -2323,19 +2325,19 @@ VAR out: MOut;
 				Str(interf, "static void ")
 			END;
 			Name(interf, module);
-			StrLn(interf, "_init_(void) { ; }")
+			StrLn(interf, "_init(void) { ; }")
 		ELSE
 			Str(interf, "extern void ");
 			Name(interf, module);
-			StrLn(interf, "_init_(void);");
+			StrLn(interf, "_init(void);");
 
 			Str(impl, "extern void ");
 			Name(impl, module);
-			StrLn(impl, "_init_(void) {");
+			StrLn(impl, "_init(void) {");
 			Tabs(impl, +1);
-			StrLn(impl, "static int initialized__ = 0;");
+			StrLn(impl, "static int initialized = 0;");
 			Tabs(impl, 0);
-			StrLn(impl, "if (0 == initialized__) {");
+			StrLn(impl, "if (0 == initialized) {");
 			INC(impl.tabs, 1);
 			ImportInit(impl, module.import);
 			TagsInit(impl);
@@ -2343,7 +2345,7 @@ VAR out: MOut;
 			Tabs(impl, -1);
 			StrLn(impl, "}");
 			Tabs(impl, 0);
-			StrLn(impl, "++initialized__;");
+			StrLn(impl, "++initialized;");
 			Tabs(impl, -1);
 			StrLn(impl, "}"); Ln(impl)
 		END

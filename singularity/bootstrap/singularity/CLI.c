@@ -22,11 +22,11 @@ int CLI_count;
 
 static char **CLI_argv;
 
-extern bool CLI_Get(char str[/*len0*/], int str_len0, int *ofs, int arg) {
+extern bool CLI_Get(char str[/*len*/], int str_len, int *ofs, int arg) {
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));
 	i = 0;
-	while ((*ofs < str_len0 - 1) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < str_len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
 		++i;
 		++*ofs;
@@ -41,7 +41,7 @@ extern void CLI_SetExitCode(int code) {
 	o7c_exit_code = code;
 }
 
-extern void CLI_init_(void) {
+extern void CLI_init(void) {
 	extern int o7c_cli_argc;
 	extern char **o7c_cli_argv;
 	

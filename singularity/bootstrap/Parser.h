@@ -65,5 +65,5 @@ extern void Parser_DefaultOptions(struct Parser_Options *opt, o7c_tag_t opt_tag)
 
 extern struct Ast_RModule *Parser_Parse(struct VDataStream_In *in_, struct Ast_RProvider *prov, struct Parser_Options *opt, o7c_tag_t opt_tag);
 
-extern void Parser_init_(void);
+extern void Parser_init(void);
 #endif

@@ -474,7 +474,7 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 	struct Translator_ModuleProvider_s *mp = NULL;
 	int pathOfs = O7C_INT_UNDEFINED;
 
-	mp = (&O7C_GUARD(Translator_ModuleProvider_s, p, NULL));
+	mp = O7C_GUARD(Translator_ModuleProvider_s, &p, NULL);
 	m = SearchModule(mp, name, name_len0, ofs, end);
 	if (m != NULL) {
 		Log_StrLn("Найден уже разобранный модуль", 56);
@@ -673,17 +673,17 @@ static void Translator_Start(void) {
 
 extern int main(int argc, char **argv) {
 	o7c_init(argc, argv);
-	Log_init_();
-	Out_init_();
-	CLI_init_();
-	VFileStream_init_();
-	Utf8_init_();
-	StringStore_init_();
-	Parser_init_();
-	Scanner_init_();
-	Ast_init_();
-	GeneratorC_init_();
-	TranslatorLimits_init_();
+	Log_init();
+	Out_init();
+	CLI_init();
+	VFileStream_init();
+	Utf8_init();
+	StringStore_init();
+	Parser_init();
+	Scanner_init();
+	Ast_init();
+	GeneratorC_init();
+	TranslatorLimits_init();
 
 	o7c_tag_init(Translator_ModuleProvider_s_tag, Ast_RProvider_tag);
 
