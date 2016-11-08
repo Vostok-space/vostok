@@ -1028,17 +1028,33 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			sum := sum.next
 		UNTIL sum = NIL;
 		last := i;
-		WHILE i > 0 DO
-			CASE arr[i].add OF
-			  Scanner.Minus:
-				Str(gen, "o7c_sub(")
-			| Scanner.Plus:
-				Str(gen, "o7c_add(")
-			END;
-			DEC(i)
+		IF arr[0].type.id = Ast.IdInteger THEN
+			WHILE i > 0 DO
+				CASE arr[i].add OF
+				  Scanner.Minus:
+					Str(gen, "o7c_sub(")
+				| Scanner.Plus:
+					Str(gen, "o7c_add(")
+				END;
+				DEC(i)
+			END
+		ELSE
+			WHILE i > 0 DO
+				CASE arr[i].add OF
+				  Scanner.Minus:
+					Str(gen, "o7c_fsub(")
+				| Scanner.Plus:
+					Str(gen, "o7c_fadd(")
+				END;
+				DEC(i)
+			END
 		END;
 		IF arr[0].add = Scanner.Minus THEN
-			Str(gen, "o7c_sub(0, ");
+			IF arr[0].type.id = Ast.IdInteger THEN
+				Str(gen, "o7c_sub(0, ")
+			ELSE
+				Str(gen, "o7c_fsub(0, ")
+			END;
 			Expression(gen, arr[0].term);
 			Str(gen, ")")
 		ELSE
@@ -1054,14 +1070,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
 	BEGIN
-		IF gen.opt.checkArith & ~(term.type.id IN {Ast.IdReal, Ast.IdSet, Ast.IdBoolean})
+		IF gen.opt.checkArith & ~(term.type.id IN {Ast.IdSet, Ast.IdBoolean})
 		 & (term.mult # Scanner.Slash)
 		 & (term.value = NIL)
 		THEN
-			CASE term.mult OF
-			  Scanner.Asterisk	: Str(gen, "o7c_mul(")
-			| Scanner.Div		: Str(gen, "o7c_div(")
-			| Scanner.Mod		: Str(gen, "o7c_mod(")
+			IF term.type.id = Ast.IdInteger THEN
+				CASE term.mult OF
+				  Scanner.Asterisk	: Str(gen, "o7c_mul(")
+				| Scanner.Div		: Str(gen, "o7c_div(")
+				| Scanner.Mod		: Str(gen, "o7c_mod(")
+				END
+			ELSE
+				CASE term.mult OF
+				  Scanner.Asterisk	: Str(gen, "o7c_fmul(")
+				| Scanner.Div		: Str(gen, "o7c_fdiv(")
+				END
 			END;
 			Expression(gen, term.factor);
 			Str(gen, ", ");
@@ -1263,7 +1286,7 @@ BEGIN
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
 		IF		gen.opt.checkArith
-			  & (expr.type.id = Ast.IdInteger)
+			  & (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
 			  & (expr.value = NIL)
 		THEN	SumCheck(gen, expr(Ast.ExprSum))
 		ELSE	Sum(gen, expr(Ast.ExprSum))
@@ -1643,7 +1666,7 @@ BEGIN
 		| Ast.IdChar:
 			Str(out.g[Implementation], " /* char init */")
 		| Ast.IdReal:
-			Str(out.g[Implementation], " = 0./0.")
+			Str(out.g[Implementation], " = O7C_DBL_UNDEF")
 		| Ast.IdSet:
 			Str(out.g[Implementation], " = 0")
 		| Ast.IdPointer, Ast.IdProcType:

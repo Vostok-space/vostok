@@ -24,9 +24,16 @@ char**	o7c_cli_argv;
 int o7c_exit_code;
 
 extern void o7c_init(int argc, char *argv[]) {
+	double undefined;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
 	assert(INT_MIN < -INT_MAX);
+
+	assert((sizeof(int ) * 2 == sizeof(double))
+		|| (sizeof(long) * 2 == sizeof(double)));
+	undefined = o7c_dbl_undef();
+	assert(undefined != undefined);
+
 	assert((argc > 0) == (argv != NULL));
 
 	o7c_exit_code = 0;
