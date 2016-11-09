@@ -27,16 +27,17 @@
 #	endif
 #endif
 
-#define O7C_INT_UNDEFINED INT_MIN
+#define O7C_INT_UNDEF INT_MIN
 
 #define O7C_DBL_UNDEF o7c_dbl_undef()
 
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
-#elif __STDC_VERSION__ >= 199901L
+#elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
 	typedef _Bool o7c_bool;
 #else
-	typedef int o7c_bool;
+#	define O7C_BOOL_UNDEF 0xFF
+	typedef char unsigned o7c_bool;
 #endif
 
 #if defined(O7C_INT_T)
@@ -85,6 +86,12 @@ typedef char unsigned o7c_char;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
+static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
+	assert(b < 2);
+	return b;
+}
+
 static O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_dbl_undef(void) {
 	double undef;
@@ -128,7 +135,7 @@ static O7C_INLINE double o7c_fdiv(double n, double d) {
 
 static O7C_INLINE int o7c_int(int i) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_int(int i) {
-	assert(i != O7C_INT_UNDEFINED);
+	assert(i != O7C_INT_UNDEF);
 	return i;
 }
 

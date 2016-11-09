@@ -704,6 +704,21 @@ BEGIN
 	Selector(gen, sels, sels.i, typ)
 END Designator;
 
+PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
+BEGIN
+	IF (gen.opt.varInit = VarInitUndefined)
+	 & (e IS Ast.Designator)
+	 & (e.type.id = Ast.IdBoolean)
+	 & (e.value = NIL)
+	THEN
+		Str(gen, "o7c_bl(");
+		expression(gen, e);
+		Str(gen, ")")
+	ELSE
+		expression(gen, e)
+	END
+END CheckExpr;
+
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
@@ -713,7 +728,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		PROCEDURE Predefined(VAR gen: Generator; call: Ast.ExprCall);
 		VAR e1: Ast.Expression;
 			p2: Ast.Parameter;
-	
+
 			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR; ps: Ast.Parameter);
 			BEGIN
 				Str(gen, "(int)((unsigned)");
@@ -833,7 +848,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				New(gen, e1)
 			| Scanner.Assert:
 				Str(gen, "assert(");
-				Expression(gen, e1);
+				CheckExpr(gen, e1);
 				Str(gen, ")")
 			| Scanner.Pack:
 				Expression(gen, e1);
@@ -980,7 +995,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		| Scanner.Greater		: Simple(gen, rel, " > ")
 		| Scanner.GreaterEqual	: Simple(gen, rel, " >= ")
 		| Scanner.In			:
-			Str(gen, "(");
+			Str(gen, "!!(");
 			Str(gen, " (1u << ");
 			Factor(gen, rel.exprs[0]);
 			Str(gen, ") & ");
@@ -1011,7 +1026,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			ELSIF sum.add = Scanner.Or THEN
 				Str(gen, " || ")
 			END;
-			Expression(gen, sum.term);
+			CheckExpr(gen, sum.term);
 			sum := sum.next;
 			first := FALSE
 		UNTIL sum = NIL
@@ -1091,7 +1106,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			Expression(gen, term.expr);
 			Str(gen, ")")
 		ELSE
-			Expression(gen, term.factor);
+			CheckExpr(gen, term.factor);
 			CASE term.mult OF
 			  Scanner.Asterisk				:
 				IF term.type.id = Ast.IdSet THEN
@@ -1108,7 +1123,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.And					: Str(gen, " && ")
 			| Scanner.Mod					: Str(gen, " % ")
 			END;
-			Expression(gen, term.expr)
+			CheckExpr(gen, term.expr)
 		END
 	END Term;
 
@@ -1513,10 +1528,10 @@ BEGIN
 			| Ast.IdSet:
 				Simple(gen, "unsigned ")
 			| Ast.IdBoolean:
-				IF gen.opt.std >= IsoC99 THEN
-					Simple(gen, "bool ")
-				ELSE
-					Simple(gen, "o7c_bool ")
+				IF (gen.opt.std >= IsoC99)
+				 & (gen.opt.varInit # VarInitUndefined)
+				THEN	Simple(gen, "bool ")
+				ELSE	Simple(gen, "o7c_bool ")
 				END
 			| Ast.IdByte:
 				Simple(gen, "char unsigned ")
@@ -1658,11 +1673,11 @@ BEGIN
 	IF out.opt.varInit # VarInitNo THEN
 		CASE var.type.id OF
 		  Ast.IdInteger:
-			Str(out.g[Implementation], " = O7C_INT_UNDEFINED")
+			Str(out.g[Implementation], " = O7C_INT_UNDEF")
 		| Ast.IdBoolean:
-			Str(out.g[Implementation], " = 0 > 1")
+			Str(out.g[Implementation], " = O7C_BOOL_UNDEF")
 		| Ast.IdByte:
-			Str(out.g[Implementation], " /* byte init */")
+			Str(out.g[Implementation], " = 0")
 		| Ast.IdChar:
 			Str(out.g[Implementation], " /* char init */")
 		| Ast.IdReal:
@@ -1798,13 +1813,14 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 	VAR type, base: Ast.Record;
+		reref: BOOLEAN;
 	BEGIN
 		Designator(gen, st.designator);
 		Str(gen, " = ");
-		IF (st.expr.type.id = Ast.IdPointer)
-		 & (st.expr.type.type # st.designator.type.type)
-		 & ~(st.expr IS Ast.ExprNil)
-		THEN
+		reref :=  (st.expr.type.id = Ast.IdPointer)
+			   &  (st.expr.type.type # st.designator.type.type)
+			   & ~(st.expr IS Ast.ExprNil);
+		IF reref THEN
 			base := st.designator.type.type(Ast.Record);
 			type := st.expr.type.type(Ast.Record).base;
 			Str(gen, "(&(");
@@ -1826,16 +1842,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			END;
 			Log.StrLn("Assign record")
 		END;
-		IF (st.expr.type.id = Ast.IdPointer)
-		 & (st.expr.type.type # st.designator.type.type)
-		 & ~(st.expr IS Ast.ExprNil)
-		THEN
-			StrLn(gen, ");")
-		ELSE
-			StrLn(gen, ";")
+		IF	reref
+		THEN	StrLn(gen, ");")
+		ELSE	StrLn(gen, ";")
 		END
 	END Assign;
-
 
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
 	VAR elem, elemWithRange: Ast.CaseElement;
@@ -2030,7 +2041,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		Mark(gen, proc.mark);
 		Declarator(gen, proc, FALSE, FALSE(*TODO*), TRUE);
 		StrLn(gen, " {");
-		
+
 		INC(gen.localDeep);
 		INC(gen.tabs);
 		gen.fixedLen := gen.len;
@@ -2040,7 +2051,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		IF proc.return # NIL THEN
 			Tabs(gen, 0);
 			Str(gen, "return ");
-			Expression(gen, proc.return);
+			CheckExpr(gen, proc.return);
 			StrLn(gen, ";")
 		END;
 		DEC(gen.localDeep);
@@ -2319,6 +2330,9 @@ VAR out: MOut;
 				StrLn(gen, "#include <stdbool.h>")
 			END;
 			Ln(gen);
+			IF opt.varInit = VarInitUndefined THEN
+				StrLn(gen, "#define O7C_BOOL_UNDEFINED")
+			END;
 			StrLn(gen, "#include <o7c.h>");
 			Ln(gen)
 		END;

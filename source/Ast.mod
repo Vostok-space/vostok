@@ -1511,9 +1511,7 @@ VAR e: ExprSum;
 				err := ErrNotBoolInLogicExpr
 			END
 		ELSE
-			continue := (e1.type.id = IdInteger)
-					 OR (e1.type.id = IdReal)
-					 OR (e1.type.id = IdSet);
+			continue := e1.type.id IN {IdInteger, IdReal, IdSet};
 			IF ~continue THEN
 				err := ErrNotNumberAndNotSetInAdd
 			END
