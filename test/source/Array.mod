@@ -26,6 +26,8 @@ CONST TYPE VAR
 BEGIN
 	IF FALSE THEN
 		p(a)
+	ELSIF 5 * 6 = 11 THEN
+		p("11")
 	ELSE
 		B(a)
 	END

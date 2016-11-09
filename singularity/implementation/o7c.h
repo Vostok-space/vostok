@@ -88,7 +88,9 @@ typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
 static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
-	assert(b < 2);
+	if (sizeof(b) == sizeof(o7c_char)) {
+		assert(*(o7c_char *)&b < 2);
+	}
 	return b;
 }
 

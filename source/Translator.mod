@@ -176,7 +176,11 @@ BEGIN
 			O("Ожидалась переменная")
 		| Ast.ErrForIteratorNotInteger		:
 			O("Итератор FOR не целочисленного типа")
-
+		| Ast.ErrNotBoolInIfCondition		:
+			O("Выражение в охране условного оператора должно быть логическим")
+		| Ast.ErrNotBoolInWhileCondition	:
+			O("Выражение в охране цикла должно быть логическим")
+		
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END

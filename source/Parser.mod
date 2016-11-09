@@ -866,14 +866,14 @@ BEGIN
 END Types;
 
 PROCEDURE If(VAR p: Parser; ds: Ast.Declarations): Ast.If;
-VAR if: Ast.If;
+VAR if, else: Ast.If;
 	elsif: Ast.WhileIf;
 
 	PROCEDURE Branch(VAR p: Parser; ds: Ast.Declarations): Ast.If;
 	VAR if: Ast.If;
 	BEGIN
 		Scan(p);
-		if := Ast.IfNew(Expression(p, ds), NIL);
+		CheckAst(p, Ast.IfNew(if, Expression(p, ds), NIL));
 		Expect(p, Scanner.Then, ErrExpectThen);
 		if.stats := statements(p, ds)
 		RETURN if
@@ -887,7 +887,8 @@ BEGIN
 		elsif := elsif.elsif
 	END;
 	IF ScanIfEqual(p, Scanner.Else) THEN
-		elsif.elsif := Ast.IfNew(NIL, statements(p, ds))
+		CheckAst(p, Ast.IfNew(else, NIL, statements(p, ds)));
+		elsif.elsif := else
 	END;
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN if
@@ -1006,19 +1007,20 @@ BEGIN
 END For;
 
 PROCEDURE While(VAR p: Parser; ds: Ast.Declarations): Ast.While;
-VAR w: Ast.While;
+VAR w, br: Ast.While;
 	elsif: Ast.WhileIf;
 BEGIN
 	ASSERT(p.l = Scanner.While);
 	Scan(p);
-	w := Ast.WhileNew(Expression(p, ds), NIL);
+	CheckAst(p, Ast.WhileNew(w, Expression(p, ds), NIL));
 	elsif := w;
 	Expect(p, Scanner.Do, ErrExpectDo);
 	w.stats := statements(p, ds);
 
 	WHILE ScanIfEqual(p, Scanner.Elsif) DO
-		elsif.elsif := Ast.WhileNew(Expression(p, ds), NIL);
-		elsif := elsif.elsif;
+		CheckAst(p, Ast.WhileNew(br, Expression(p, ds), NIL));
+		elsif.elsif := br;
+		elsif := br;
 		Expect(p, Scanner.Do, ErrExpectDo);
 		elsif.stats := statements(p, ds)
 	END;

@@ -86,6 +86,8 @@ CONST
 	ErrDeclarationNotVar*			= -56;
 	ErrForIteratorNotInteger*		= -57;
 									(*-58*)
+	ErrNotBoolInIfCondition*		= -59;
+	ErrNotBoolInWhileCondition*		= -60;
 	
 	ErrNotImplemented*				= -99;
 
@@ -1998,22 +2000,32 @@ BEGIN
 	RETURN err
 END CallNew;
 
-PROCEDURE IfNew*(expr: Expression; stats: Statement): If;
-VAR if: If;
+PROCEDURE IfNew*(VAR if: If; expr: Expression; stats: Statement): INTEGER;
+VAR err: INTEGER;
 BEGIN
 	NEW(if); StatInit(if, expr);
 	if.stats := stats;
-	if.elsif := NIL
-	RETURN if
+	if.elsif := NIL;
+	IF (expr # NIL) & (expr.type.id # IdBoolean) THEN
+		err := ErrNotBoolInIfCondition
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
 END IfNew;
 
-PROCEDURE WhileNew*(expr: Expression; stats: Statement): While;
-VAR w: While;
+PROCEDURE WhileNew*(VAR w: While; expr: Expression; stats: Statement): INTEGER;
+VAR err: INTEGER;
 BEGIN
 	NEW(w); StatInit(w, expr);
 	w.stats := stats;
-	w.elsif := NIL
-	RETURN w
+	w.elsif := NIL;
+	IF (expr # NIL) & (expr.type.id # IdBoolean) THEN
+		err := ErrNotBoolInWhileCondition
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
 END WhileNew;
 
 PROCEDURE RepeatNew*(expr: Expression; stats: Statement): Repeat;
