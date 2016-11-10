@@ -973,9 +973,9 @@ VAR r: Ast.Repeat;
 BEGIN
 	ASSERT(p.l = Scanner.Repeat);
 	Scan(p);
-	r := Ast.RepeatNew(NIL, statements(p, ds));
+	CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
 	Expect(p, Scanner.Until, ErrExpectUntil);
-	r.expr := Expression(p, ds)
+	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds)))
 	RETURN r
 END Repeat;
 

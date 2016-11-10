@@ -88,6 +88,7 @@ CONST
 									(*-58*)
 	ErrNotBoolInIfCondition*		= -59;
 	ErrNotBoolInWhileCondition*		= -60;
+	ErrNotBoolInUntil*				= -61;
 	
 	ErrNotImplemented*				= -99;
 
@@ -2028,13 +2029,25 @@ BEGIN
 	RETURN err
 END WhileNew;
 
-PROCEDURE RepeatNew*(expr: Expression; stats: Statement): Repeat;
-VAR r: Repeat;
+PROCEDURE RepeatNew*(VAR r: Repeat; stats: Statement): INTEGER;
 BEGIN
-	NEW(r); StatInit(r, expr);
+	NEW(r); StatInit(r, NIL);
 	r.stats := stats
-	RETURN r
+	RETURN ErrNo
 END RepeatNew;
+
+PROCEDURE RepeatSetUntil*(r: Repeat; e: Expression): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	ASSERT(r.expr = NIL);
+	r.expr := e;
+	IF (e # NIL) & (e.type.id # IdBoolean) THEN
+		err := ErrNotBoolInUntil
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
+END RepeatSetUntil;
 
 PROCEDURE ForNew*(var: Var; init, to: Expression; by: INTEGER; stats: Statement): For;
 VAR f: For;

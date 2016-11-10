@@ -179,8 +179,10 @@ BEGIN
 		| Ast.ErrNotBoolInIfCondition		:
 			O("Выражение в охране условного оператора должно быть логическим")
 		| Ast.ErrNotBoolInWhileCondition	:
-			O("Выражение в охране цикла должно быть логическим")
-		
+			O("Выражение в охране цикла WHILE должно быть логическим")
+		| Ast.ErrNotBoolInUntil:
+			O("Выражение в условии завершения цикла REPEAT должно быть логическим")
+
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END
