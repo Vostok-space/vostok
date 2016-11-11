@@ -1050,6 +1050,15 @@ BEGIN
 	RETURN st
 END Call;
 
+PROCEDURE NotEnd(l: INTEGER): BOOLEAN;
+RETURN (l # Scanner.End)
+	 & (l # Scanner.Return)
+	 & (l # Scanner.Else)
+	 & (l # Scanner.Elsif)
+	 & (l # Scanner.Until)
+	 & (l # Scanner.Alternative)
+END NotEnd;
+
 PROCEDURE Statements(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
 VAR stats, last: Ast.Statement;
 
@@ -1077,18 +1086,15 @@ VAR stats, last: Ast.Statement;
 		ELSIF p.l = Scanner.While	THEN
 			st := While(p, ds)
 		ELSE
-			st := Ast.StatementErrorNew();
+			st := NIL;
 			AddError(p, ErrExpectStatement)
+		END;
+		IF st = NIL THEN
+			st := Ast.StatementErrorNew()
 		END;
 		IF p.err THEN
 			Log.StrLn("Error");
-			WHILE (p.l # Scanner.Semicolon)
-				& (p.l # Scanner.Until)
-				& (p.l # Scanner.Elsif)
-				& (p.l # Scanner.Else)
-				& (p.l # Scanner.End)
-				& (p.l # Scanner.Return)
-			DO
+			WHILE (p.l # Scanner.Semicolon) & NotEnd(p.l) DO
 				Scan(p)
 			END;
 			p.err := FALSE
@@ -1100,19 +1106,20 @@ BEGIN
 
 	stats := Statement(p, ds);
 	last := stats;
+
 	WHILE ScanIfEqual(p, Scanner.Semicolon) DO
-		IF (p.l # Scanner.End)
-		 & (p.l # Scanner.Return)
-		 & (p.l # Scanner.Else)
-		 & (p.l # Scanner.Elsif)
-		 & (p.l # Scanner.Until)
-		THEN
+		IF NotEnd(p.l) THEN
 			last.next := Statement(p, ds);
 			last := last.next
 		ELSIF p.settings.strictSemicolon THEN
 			AddError(p, ErrExcessSemicolon);
 			p.err := FALSE
 		END
+	ELSIF NotEnd(p.l) DO
+		AddError(p, ErrExpectSemicolon);
+		p.err := FALSE;
+		last.next := Statement(p, ds);
+		last := last.next
 	END
 	RETURN stats
 END Statements;
