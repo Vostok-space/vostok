@@ -180,9 +180,16 @@ BEGIN
 			O("Выражение в охране условного оператора должно быть логическим")
 		| Ast.ErrNotBoolInWhileCondition	:
 			O("Выражение в охране цикла WHILE должно быть логическим")
+		| Ast.ErrWhileConditionAlwaysFalse	:
+			O("Охрана цикла WHILE всегда ложна")
+		| Ast.ErrWhileConditionAlwaysTrue	:
+			O("Цикл бесконечен, так как охрана WHILE всегда истинна")
 		| Ast.ErrNotBoolInUntil:
 			O("Выражение в условии завершения цикла REPEAT должно быть логическим")
-
+		| Ast.ErrUntilAlwaysFalse			:
+			O("Цикл бесконечен, так как условие завершения всегда ложно")
+		| Ast.ErrUntilAlwaysTrue			:
+			O("Условие завершения всегда истинно")
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END

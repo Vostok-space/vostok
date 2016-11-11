@@ -88,7 +88,11 @@ CONST
 									(*-58*)
 	ErrNotBoolInIfCondition*		= -59;
 	ErrNotBoolInWhileCondition*		= -60;
-	ErrNotBoolInUntil*				= -61;
+	ErrWhileConditionAlwaysFalse*	= -61;
+	ErrWhileConditionAlwaysTrue*	= -62;
+	ErrNotBoolInUntil*				= -63;
+	ErrUntilAlwaysFalse*			= -64;
+	ErrUntilAlwaysTrue*				= -65;
 	
 	ErrNotImplemented*				= -99;
 
@@ -2015,17 +2019,26 @@ BEGIN
 	RETURN err
 END IfNew;
 
+PROCEDURE CheckCondition(VAR err: INTEGER; expr: Expression; adder: INTEGER);
+BEGIN
+	err := ErrNo;
+	IF expr # NIL THEN
+		IF expr.type.id # IdBoolean THEN
+			err := ErrNotBoolInWhileCondition + adder
+		ELSIF expr.value # NIL THEN
+			err := ErrWhileConditionAlwaysFalse + adder
+				 - ORD(expr.value(ExprBoolean).bool)
+		END
+	END
+END CheckCondition;
+
 PROCEDURE WhileNew*(VAR w: While; expr: Expression; stats: Statement): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	NEW(w); StatInit(w, expr);
 	w.stats := stats;
 	w.elsif := NIL;
-	IF (expr # NIL) & (expr.type.id # IdBoolean) THEN
-		err := ErrNotBoolInWhileCondition
-	ELSE
-		err := ErrNo
-	END
+	CheckCondition(err, expr, 0)
 	RETURN err
 END WhileNew;
 
@@ -2041,11 +2054,7 @@ VAR err: INTEGER;
 BEGIN
 	ASSERT(r.expr = NIL);
 	r.expr := e;
-	IF (e # NIL) & (e.type.id # IdBoolean) THEN
-		err := ErrNotBoolInUntil
-	ELSE
-		err := ErrNo
-	END
+	CheckCondition(err, e, ErrNotBoolInUntil - ErrNotBoolInWhileCondition)
 	RETURN err
 END RepeatSetUntil;
 
