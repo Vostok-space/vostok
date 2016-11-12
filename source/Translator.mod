@@ -192,6 +192,8 @@ BEGIN
 			O("Условие завершения всегда истинно")
 		| Ast.ErrDeclarationIsPrivate:
 			O("Объявление не экспортировано")
+		| Ast.ErrNegateNotBool:
+			O("Логическое отрицание применено не к логическому типу")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")

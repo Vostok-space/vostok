@@ -202,10 +202,12 @@ BEGIN
 END Set;
 
 PROCEDURE Negate(VAR p: Parser; ds: Ast.Declarations): Ast.ExprNegate;
+VAR neg: Ast.ExprNegate;
 BEGIN
 	ASSERT(p.l = Scanner.Negate);
-	Scan(p)
-	RETURN Ast.ExprNegateNew(expression(p, ds))
+	Scan(p);
+	CheckAst(p, Ast.ExprNegateNew(neg, expression(p, ds)))
+	RETURN neg
 END Negate;
 
 PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;

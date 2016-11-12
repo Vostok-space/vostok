@@ -95,6 +95,7 @@ CONST
 	ErrUntilAlwaysFalse*			= -64;
 	ErrUntilAlwaysTrue*				= -65;
 									(*-66*)
+	ErrNegateNotBool*				= -67;
 
 	ErrNotImplemented*				= -99;
 
@@ -1094,15 +1095,20 @@ BEGIN
 	RETURN err
 END ExprSetNew;
 
-PROCEDURE ExprNegateNew*(expr: Expression): ExprNegate;
-VAR e: ExprNegate;
+PROCEDURE ExprNegateNew*(VAR neg: ExprNegate; expr: Expression): INTEGER;
+VAR err: INTEGER;
 BEGIN
-	NEW(e); ExprInit(e, IdNegate, TypeGet(IdBoolean));
-	e.expr := expr;
-	IF expr.value # NIL THEN
-		e.value := ExprBooleanNew(~expr.value(ExprBoolean).bool)
+	NEW(neg); ExprInit(neg, IdNegate, TypeGet(IdBoolean));
+	neg.expr := expr;
+	IF expr.type.id # IdBoolean THEN
+		err := ErrNegateNotBool
+	ELSE
+		err := ErrNo;
+		IF expr.value # NIL THEN
+			neg.value := ExprBooleanNew(~expr.value(ExprBoolean).bool)
+		END
 	END
-	RETURN e
+	RETURN err
 END ExprNegateNew;
 
 PROCEDURE DesignatorNew*(decl: Declaration): Designator;

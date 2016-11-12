@@ -15,7 +15,10 @@ BEGIN
 
 	c := a OR FALSE;
 	a := b OR c & a;
-	ASSERT(a)
+	ASSERT(a);
+
+	b := ~a;
+	ASSERT(~b = a)
 END Go;
 
 BEGIN
