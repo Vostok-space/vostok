@@ -474,14 +474,9 @@ BEGIN
 	RETURN expr
 END Expression;
 
-PROCEDURE Mark(VAR p: Parser): BOOLEAN;
-VAR m: BOOLEAN;
+PROCEDURE Mark(VAR p: Parser; d: Ast.Declaration);
 BEGIN
-	m := ScanIfEqual(p, Scanner.Asterisk);
-	IF m THEN
-		Log.StrLn("Mark")
-	END
-	RETURN m
+	d.mark := ScanIfEqual(p, Scanner.Asterisk)
 END Mark;
 
 PROCEDURE Consts(VAR p: Parser; ds: Ast.Declarations);
@@ -494,7 +489,7 @@ BEGIN
 			ExpectIdent(p, begin, end, ErrExpectConstName);
 			CheckAst(p, Ast.ConstAdd(ds, p.s.buf, begin, end));
 			const := ds.end(Ast.Const);
-			const.mark := Mark(p);
+			Mark(p, const);
 			Expect(p, Scanner.Equal, ErrExpectEqual);
 			CheckAst(p, Ast.ConstSetExpression(const, Expression(p, ds)));
 			Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
@@ -604,7 +599,7 @@ VAR var: Ast.Declaration;
 	BEGIN
 		ExpectIdent(p, begin, end, ErrExpectIdent);
 		CheckAst(p, Ast.VarAdd(ds, p.s.buf, begin, end));
-		ds.end.mark := Mark(p)
+		Mark(p, ds.end)
 	END Name;
 BEGIN
 	Name(p, dsAdd);
@@ -1175,7 +1170,7 @@ BEGIN
 	CheckAst(p,
 		Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd)
 	);
-	proc.mark := Mark(p);
+	Mark(p, proc);
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
 	ProcBody(p, proc)
@@ -1264,7 +1259,8 @@ BEGIN
 		END;
 		IF p.l # Scanner.Dot THEN
 			AddError(p, ErrExpectDot)
-		END
+		END;
+		CheckAst(p, Ast.ModuleEnd(p.module))
 	END
 END Module;
 

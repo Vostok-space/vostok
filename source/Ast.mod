@@ -71,6 +71,7 @@ CONST
 	ErrReturnIncompatibleType*		= -41;
 	ErrExpectReturn*				= -42;
 	ErrDeclarationNotFound*			= -43;
+	ErrDeclarationIsPrivate*		= -66;(*TODO*)
 	ErrConstRecursive*				= -44;
 	ErrImportModuleNotFound*		= -45;
 	ErrImportModuleWithError*		= -46;
@@ -93,7 +94,8 @@ CONST
 	ErrNotBoolInUntil*				= -63;
 	ErrUntilAlwaysFalse*			= -64;
 	ErrUntilAlwaysTrue*				= -65;
-	
+									(*-66*)
+
 	ErrNotImplemented*				= -99;
 
 	ErrMin* 						= -100;
@@ -236,6 +238,8 @@ TYPE
 		store: Strings.Store;
 
 		import*: Import;
+
+		fixed: BOOLEAN;
 
 		errors*, errLast: Error
 	END;
@@ -506,6 +510,7 @@ BEGIN
 	NEW(m);
 	NodeInit(m^);
 	DeclarationsInit(m, NIL);
+	m.fixed := FALSE;
 	m.import := NIL;
 	m.errors := NIL; m.errLast := NIL;
 	Strings.StoreInit(m.store);
@@ -520,6 +525,13 @@ PROCEDURE GetModuleByName*(p: Provider; host: Module;
 						   name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
 	RETURN p.get(p, host, name, ofs, end)
 END GetModuleByName;
+
+PROCEDURE ModuleEnd*(m: Module): INTEGER;
+BEGIN
+	ASSERT(~m.fixed);
+	m.fixed := TRUE
+	RETURN ErrNo
+END ModuleEnd;
 
 PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
 					 nameOfs, nameEnd, realOfs, realEnd: INTEGER;
@@ -560,6 +572,8 @@ VAR imp: Import;
 				& Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
 	END IsDup;
 BEGIN
+	ASSERT(~m.fixed);
+
 	imp := m.import;
 	ASSERT((imp = NIL) OR (m.end IS Import));
 	WHILE (imp # NIL) & ~IsDup(imp, buf, nameOfs, nameEnd, realOfs, realEnd) DO
@@ -570,6 +584,7 @@ BEGIN
 	ELSE
 		NEW(imp); imp.id := IdImport;
 		DeclConnect(imp, m, buf, nameOfs, nameEnd);
+		imp.mark := TRUE;
 		IF m.import = NIL THEN
 			m.import := imp
 		END;
@@ -601,6 +616,8 @@ PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER): 
 VAR c: Const;
 	err: INTEGER;
 BEGIN
+	ASSERT(~ds.module.fixed);
+
 	IF SearchName(ds.start, buf, begin, end) # NIL THEN
 		err := ErrDeclarationNameDuplicate
 	ELSE
@@ -650,6 +667,8 @@ VAR d: Declaration;
 		END
 	END MoveForwardDeclToLast;
 BEGIN
+	ASSERT(~ds.module.fixed);
+
 	d := SearchName(ds.start, buf, begin, end);
 	IF (d = NIL) OR (d.id = IdRecordForward) THEN
 		err := ErrNo
@@ -672,6 +691,8 @@ END TypeAdd;
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
 						  buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
+	ASSERT(~ds.module.fixed);
+
 	NEW(v); v.id := IdVar;
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
@@ -875,6 +896,8 @@ BEGIN
 		NEW(d); d.id := IdError;
 		DeclConnect(d, ds, buf, begin, end);
 		NEW(d.type); DeclInit(d.type, NIL); d.type.id := IdError
+	ELSIF ~d.mark & (d.module # NIL) & d.module.fixed THEN
+		err := ErrDeclarationIsPrivate
 	ELSIF (d IS Const) & ~d(Const).finished THEN
 		err := ErrConstRecursive;
 		d(Const).finished := TRUE
@@ -898,13 +921,17 @@ BEGIN
 		err := ErrNo
 	END;
 	IF err = ErrNo THEN
-		v := d(Var)
+		v := d(Var);
+		IF ~d.mark & d.module.fixed THEN
+			err := ErrDeclarationIsPrivate
+		END
 	ELSE
 		ChecklessVarAdd(v, ds, buf, begin, end)
 	END
 	RETURN err
 END VarGet;
 
+(* TODO итератор должен быть только локальным? *)
 PROCEDURE ForIteratorGet*(VAR v: Var; ds: Declarations;
 						  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;

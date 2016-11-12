@@ -190,6 +190,9 @@ BEGIN
 			O("Цикл бесконечен, так как условие завершения всегда ложно")
 		| Ast.ErrUntilAlwaysTrue			:
 			O("Условие завершения всегда истинно")
+		| Ast.ErrDeclarationIsPrivate:
+			O("Объявление не экспортировано")
+
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
 		END
