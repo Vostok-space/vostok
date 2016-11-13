@@ -61,37 +61,35 @@ BEGIN
 	IF code <= Parser.ErrAstBegin THEN
 		CASE code - Parser.ErrAstBegin OF
 		  Ast.ErrImportNameDuplicate		:
-			O("Ast.ErrImportNameDuplicate")
+			O("Имя модуля уже встречается в списке импорта")
 		| Ast.ErrDeclarationNameDuplicate	:
 			O("Повторное объявление имени в той же области видимости")
-		| Ast.ErrReturnInModuleInit			:
-			O("Ast.ErrReturnInModuleInit")
-		| Ast.ErrMultExprDifferenTypes		:
-			O("st.ErrMultExprDifferenTypes")
+		| Ast.ErrMultExprDifferentTypes		:
+			O("Типы подвыражений в умножении несовместимы")
+		| Ast.ErrDivExprDifferentTypes		:
+			O("Типы подвыражений в делении несовместимы")
 		| Ast.ErrNotBoolInLogicExpr			:
-			O("Ast.ErrNotBoolInLogicExpr")
+			O("В логическом выражении должны использоваться подвыражении логического типа")
 		| Ast.ErrNotIntInDivOrMod			:
-			O("Ast.ErrNotIntInDivOrMod")
+			O("В целочисленном делении допустимы только целочисленные подвыражения")
 		| Ast.ErrNotRealTypeForRealDiv		:
-			O("Ast.ErrNotRealTypeForRealDiv")
+			O("В дробном делении допустимы только подвыражения дробного типа")
 		| Ast.ErrIntDivByZero				:
-			O("Ast.ErrIntDivByZero")
+			O("Деление на 0")
 		| Ast.ErrNotIntSetElem				:
-			O("Ast.ErrNotIntSetElem")
+			O("В качестве элементов множества допустимы только целые числа")
 		| Ast.ErrSetElemOutOfRange			:
-			O("Ast.ErrSetElemOutOfRange")
+			O("Элемент множества выходит за границы возможных значений - 0 .. 31")
 		| Ast.ErrSetLeftElemBiggerRightElem	:
-			O("Ast.ErrSetLeftElemBiggerRightElem")
+			O("Левый элемент диапазона больше правого")
 		| Ast.ErrAddExprDifferenTypes		:
-			O("Ast.ErrAddExprDifferenTypes")
-		| Ast.ErrNotNumberAndNotSetInMul	:
-			O("Ast.ErrNotNumberAndNotSetInMul")
-		| Ast.ErrNotNumberAndNotSetInAdd	:
-			O("Ast.ErrNotNumberAndNotSetInAdd")
-		| Ast.ErrSignForBool				:
-			O("Ast.ErrSignForBool")
+			O("Типы подвыражений в сложении несовместимы")
 		| Ast.ErrNotNumberAndNotSetInMult	:
-			O("Ast.ErrNotNumberAndNotSetInMult")
+			O("В выражениях *, /, DIV, MOD допустимы только числа и множества")
+		| Ast.ErrNotNumberAndNotSetInAdd	:
+			O("В выражениях +, - допустимы только числа и множества")
+		| Ast.ErrSignForBool				:
+			O("Унарный знак не применим к логическому выражению")
 		| Ast.ErrRelationExprDifferenTypes	:
 			O("Типы подвыражений в сравнении не совпадают")
 		| Ast.ErrExprInWrongTypes			:
@@ -99,19 +97,19 @@ BEGIN
 		| Ast.ErrExprInRightNotSet			:
 			O("Ast.ErrExprInRightNotSet")
 		| Ast.ErrExprInLeftNotInteger		:
-			O("Ast.ErrExprInLeftNotInteger")
+			O("Левый член выражения IN должен быть целочисленным")
 		| Ast.ErrRelIncompatibleType		:
-			O("Ast.ErrRelIncompatibleType")
+			O("В сравнении выражения несовместимых типов")
 		| Ast.ErrIsExtTypeNotRecord			:
-			O("Операция IS применима только к записям")
+			O("Проверка IS применима только к записям")
 		| Ast.ErrIsExtVarNotRecord			:
-			O("Ast.ErrIsExtVarNotRecord")
+			O("Левый член проверки IS должен иметь тип записи или указателя на неё")
 		| Ast.ErrConstDeclExprNotConst		:
 			O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
 		| Ast.ErrAssignIncompatibleType		:
 			O("Несовместимые типы в присваивании")
 		| Ast.ErrCallNotProc				:
-			O("Ast.ErrCallNotProc")
+			O("Вызов допустим только для процедур и переменных процедурного типа")
 		| Ast.ErrCallIgnoredReturn			:
 			O("Возвращаемое значение не задействовано в выражении")
 		| Ast.ErrCallExprWithoutReturn		:
@@ -127,19 +125,17 @@ BEGIN
 		| Ast.ErrCallParamsNotEnough		:
 			O("Не хватает фактических параметров в вызове процедуры")
 		| Ast.ErrCaseExprNotIntOrChar		:
-			O("Ast.ErrCaseExprNotIntOrChar")
+			O("Выражение в CASE должно быть целочисленным или литерой")
 		| Ast.ErrCaseElemExprTypeMismatch	:
-			O("Ast.ErrCaseElemExprTypeMismatch")
-		| Ast.ErrCaseElemExprNotConst		:
-			O("Ast.ErrCaseElemExprNotConst")
+			O("Метки CASE должно быть целочисленными или литерами")
 		| Ast.ErrCaseElemDuplicate			:
 			O("Дублирование значения меток в CASE")
 		| Ast.ErrCaseRangeLabelsTypeMismatch:
 			O("Не совпадает тип меток CASE")
 		| Ast.ErrCaseLabelLeftNotLessRight	:
-			O("Ast.ErrCaseLabelLeftNotLessRight")
+			O("Левая часть диапазона значений в метке CASE должна быть меньше правой")
 		| Ast.ErrCaseLabelNotConst			:
-			O("Ast.ErrCaseLabelNotConst")
+			O("Метки CASE должны быть константами")
 		| Ast.ErrProcHasNoReturn			:
 			O("Процедура не имеет возвращаемого значения")
 		| Ast.ErrReturnIncompatibleType		:

@@ -946,7 +946,7 @@ VAR case: Ast.Case;
 		END LabelList;
 	BEGIN
 		elem := Ast.CaseElementNew(LabelList(p, case, ds));
-		ASSERT(elem.labels # NIL);
+		(*ASSERT(elem.labels # NIL); TODO *)
 		Expect(p, Scanner.Colon, ErrExpectColon);
 		elem.stats := statements(p, ds);
 

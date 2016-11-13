@@ -29,8 +29,8 @@ CONST
 	ErrNo* 							= 0;
 	ErrImportNameDuplicate*			= -1;
 	ErrDeclarationNameDuplicate*	= -2;
-	ErrReturnInModuleInit*			= -3;
-	ErrMultExprDifferenTypes*		= -4;
+	ErrMultExprDifferentTypes*		= -3;
+	ErrDivExprDifferentTypes*		= -4;
 	ErrNotBoolInLogicExpr*			= -5;
 	ErrNotIntInDivOrMod*			= -6;
 	ErrNotRealTypeForRealDiv*		= -7;
@@ -39,10 +39,9 @@ CONST
 	ErrSetElemOutOfRange*			= -10;
 	ErrSetLeftElemBiggerRightElem*	= -11;
 	ErrAddExprDifferenTypes*		= -12;
-	ErrNotNumberAndNotSetInMul*		= -13;
+	ErrNotNumberAndNotSetInMult*	= -13;
 	ErrNotNumberAndNotSetInAdd*		= -14;
 	ErrSignForBool*					= -15;
-	ErrNotNumberAndNotSetInMult*	= -16;
 	ErrRelationExprDifferenTypes*	= -17;
 	ErrExprInWrongTypes*			= -18;
 	ErrExprInRightNotSet*			= ErrExprInWrongTypes - 1;
@@ -61,8 +60,8 @@ CONST
 	ErrCallParamsNotEnough*			= -32;
 	ErrCallVarPointerTypeNotSame*	= -58;(*TODO*)
 	ErrCaseExprNotIntOrChar*		= -33;
+	ErrCaseLabelNotIntOrChar*		= -68;(*TODO*)
 	ErrCaseElemExprTypeMismatch*	= -34;
-	ErrCaseElemExprNotConst*		= -35;
 	ErrCaseElemDuplicate*			= -36;
 	ErrCaseRangeLabelsTypeMismatch*	= -37;
 	ErrCaseLabelLeftNotLessRight*	= -38;
@@ -96,6 +95,7 @@ CONST
 	ErrUntilAlwaysTrue*				= -65;
 									(*-66*)
 	ErrNegateNotBool*				= -67;
+									(*-68*)
 
 	ErrNotImplemented*				= -99;
 
@@ -1314,12 +1314,12 @@ BEGIN
 	IF (type # NIL) & ~(type.id IN {IdPointer, IdRecord}) THEN
 		err := ErrIsExtTypeNotRecord
 	ELSIF des # NIL THEN
-		IF des IS Designator THEN
+		IF des IS Designator THEN 
 			e.designator := des(Designator);
 			IF (des.type # NIL) & ~(des.type.id IN {IdPointer, IdRecord}) THEN
 				err := ErrIsExtVarNotRecord
-			END
-		ELSE 
+			END (* TODO проверка возможности проверки *)
+		ELSE
 			err := ErrIsExtVarNotRecord
 		END
 	END
@@ -1614,13 +1614,19 @@ VAR err: INTEGER;
 			continue := FALSE
 		ELSIF e1.type.id # e2.type.id THEN
 			continue := FALSE;
-			err := ErrMultExprDifferenTypes
+			IF mult = Scanner.And THEN
+				err := ErrNotBoolInLogicExpr
+			ELSIF mult = Scanner.Asterisk THEN
+				err := ErrMultExprDifferentTypes
+			ELSE
+				err := ErrDivExprDifferentTypes
+			END
 		ELSIF mult = Scanner.And THEN
 			continue := e1.type.id = IdBoolean;
 			IF ~continue THEN
 				err := ErrNotBoolInLogicExpr
 			END
-		ELSIF (e1.type.id # IdInteger) & (e1.type.id # IdReal) & (e1.type.id # IdSet) THEN
+		ELSIF ~(e1.type.id IN {IdInteger, IdReal, IdSet}) THEN
 			continue := FALSE;
 			err := ErrNotNumberAndNotSetInMult
 		ELSIF (mult = Scanner.Div) OR (mult = Scanner.Mod) THEN
@@ -2156,7 +2162,7 @@ BEGIN
 		   )
 	THEN
 		(*Log.Str("Label type id "); Log.Int(decl(Const).expr.type.id); Log.Ln;*)
-		err := ErrCaseExprNotIntOrChar
+		err := ErrCaseLabelNotIntOrChar
 	ELSE
 		IF decl(Const).expr.type.id = IdInteger THEN
 			err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)

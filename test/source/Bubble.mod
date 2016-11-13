@@ -31,7 +31,7 @@ CONST n = 4000;
 		arr : ARRAY n OF INTEGER;
 		i, j, tmp : INTEGER;
 	BEGIN
-		
+
 		FOR i := 0 TO n - 1 DO
 			arr[i] := n-i
 		END;
@@ -39,7 +39,7 @@ CONST n = 4000;
 		PrintAll(arr);
 		Out.String("---");
 		Out.Ln;
-		
+
 		FOR i:=0 TO n-1 DO
 			FOR j:=0 TO n-2-i DO
 				tmp := arr[j];
