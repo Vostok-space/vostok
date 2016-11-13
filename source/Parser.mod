@@ -45,18 +45,16 @@ CONST
 	ErrExpectOf*					= Err - 12;
 	ErrExpectConstIntExpr*			= Err - 14;
 	ErrExpectTo*					= Err - 15;
-	ErrExpectNamedType*				= Err - 16;
+	ErrExpectStructuredType*		= Err - 16;
 	ErrExpectRecord*				= Err - 17;
 	ErrExpectStatement*				= Err - 18;
 	ErrExpectThen*					= Err - 19;
 	ErrExpectAssign*				= Err - 20;
-	ErrExpectAssignOrBrace1Open*	= Err - 21;
 	ErrExpectVarRecordOrPointer*	= Err - 22;
 	ErrExpectType*					= Err - 24;
 	ErrExpectUntil*					= Err - 25;
 	ErrExpectDo*					= Err - 26;
 	ErrExpectDesignator*			= Err - 28;
-	ErrExpectVar*					= Err - 29;
 	ErrExpectProcedure*				= Err - 30;
 	ErrExpectConstName*				= Err - 31;
 	ErrExpectProcedureName*			= Err - 32;
@@ -851,7 +849,7 @@ BEGIN
 		IF type # NIL THEN
 			type.mark := mark;
 			IF ~(type IS Ast.Construct) THEN
-				AddError(p, ErrExpectNamedType)
+				AddError(p, ErrExpectStructuredType)
 			(*
 			ELSIF type.next = NIL THEN
 				CheckAst(p, Ast.TypeAdd(ds, p.s.buf, begin, end, type))

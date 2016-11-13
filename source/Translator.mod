@@ -240,19 +240,17 @@ BEGIN
 		| Parser.ErrExpectConstIntExpr		:
 			O("Ожидается константное целочисленное выражение")
 		| Parser.ErrExpectTo				:
-			O("ErrExpectTo")
-		| Parser.ErrExpectNamedType			:
-			O("ErrExpectNamedType")
+			O("Ожидается TO")
+		| Parser.ErrExpectStructuredType	:
+			O("Ожидается структурный тип: массив, запись, указатель, процедурный")
 		| Parser.ErrExpectRecord			:
 			O("Ожидается запись")
 		| Parser.ErrExpectStatement			:
 			O("Ожидается оператор")
 		| Parser.ErrExpectThen				:
-			O("ErrExpectThen")
+			O("Ожидается THEN")
 		| Parser.ErrExpectAssign:
-			O("ErrExpectAssign")
-		| Parser.ErrExpectAssignOrBrace1Open:
-			O("ErrExpectAssignOrBrace1Open")
+			O("Ожидается :=")
 		| Parser.ErrExpectVarRecordOrPointer:
 			O("Ожидается переменная типа запись либо указателя на неё")
 		| Parser.ErrExpectType				:
@@ -260,15 +258,13 @@ BEGIN
 		| Parser.ErrExpectUntil				:
 			O("Ожидается UNTIL")
 		| Parser.ErrExpectDo				:
-			O("ErrExpectDo")
+			O("Ожидается DO")
 		| Parser.ErrExpectDesignator		:
-			O("ErrExpectDesignator")
-		| Parser.ErrExpectVar				:
-			O("ErrExpectVar")
+			O("Ожидается обозначение")
 		| Parser.ErrExpectProcedure			:
 			O("Ожидается процедура")
 		| Parser.ErrExpectConstName			:
-			O("ErrExpectConstName")
+			O("Ожидается имя константы")
 		| Parser.ErrExpectProcedureName		:
 			O("Ожидается завершающее имя процедуры")
 		| Parser.ErrExpectExpression		:
@@ -278,7 +274,7 @@ BEGIN
 		| Parser.ErrEndModuleNameNotMatch	:
 			O("Завершающее имя в конце модуля не совпадает с его именем")
 		| Parser.ErrArrayDimensionsTooMany	:
-			O("ErrArrayDimensionsTooMany")
+			O("Слишком большая n-мерность массива")
 		| Parser.ErrEndProcedureNameNotMatch:
 			O("Завершающее имя в теле процедуры не совпадает с её именем")
 		| Parser.ErrFunctionWithoutBraces	:
