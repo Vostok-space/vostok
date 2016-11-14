@@ -660,7 +660,7 @@ BEGIN
 			Str(gen, ", &");
 			Selector(gen, sels, i, typ);
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, ", NULL)")
+				Str(gen, ")")
 			ELSE
 				Str(gen, ", ");
 				GlobalName(gen, sels.decl);

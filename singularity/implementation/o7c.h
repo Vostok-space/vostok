@@ -213,8 +213,8 @@ static O7C_INLINE void **
 	return strct;
 }
 
-#define O7C_GUARD(ExtType, strct, base) \
-	(*(struct ExtType **)o7c_must(base, (void **)strct, ExtType##_tag))
+#define O7C_GUARD(ExtType, strct) \
+	(*(struct ExtType **)o7c_must(NULL, (void **)strct, ExtType##_tag))
 
 
 static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,
