@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "Scanner.h"
@@ -15,7 +16,7 @@
 #define RealScaleMax_cnst 512
 
 o7c_tag_t Scanner_Scanner_tag;
-typedef bool (*Suit)(o7c_char ch);
+typedef o7c_bool (*Suit)(o7c_char ch);
 typedef int (*SuitDigit)(o7c_char ch);
 
 extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDataStream_In *in_) {
@@ -30,7 +31,7 @@ extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDat
 }
 
 static void FillBuf(o7c_char buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, o7c_tag_t in__tag) {
-	int size = O7C_INT_UNDEFINED;
+	int size = O7C_INT_UNDEF;
 
 	if (o7c_mod((*ind), (o7c_div(buf_len0, 2))) != 0) {
 		assert(buf[o7c_ind(buf_len0, (*ind))] == 0x0Cu);
@@ -69,16 +70,16 @@ static void ScanChars(o7c_char buf[/*len0*/], int buf_len0, int *i, Suit suit, s
 	} else break;
 }
 
-static bool IsDigit(o7c_char ch) {
+static o7c_bool IsDigit(o7c_char ch) {
 	return (ch >= (char unsigned)'0') && (ch <= (char unsigned)'9');
 }
 
-static bool IsHexDigit(o7c_char ch) {
+static o7c_bool IsHexDigit(o7c_char ch) {
 	return (ch >= (char unsigned)'0') && (ch <= (char unsigned)'9') || (ch >= (char unsigned)'A') && (ch <= (char unsigned)'F');
 }
 
 static int ValDigit(o7c_char ch) {
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	if ((ch >= (char unsigned)'0') && (ch <= (char unsigned)'9')) {
 		i = o7c_sub((int)ch, (int)(char unsigned)'0');
@@ -89,7 +90,7 @@ static int ValDigit(o7c_char ch) {
 }
 
 static int ValHexDigit(o7c_char ch) {
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	if ((ch >= (char unsigned)'0') && (ch <= (char unsigned)'9')) {
 		i = o7c_sub((int)ch, (int)(char unsigned)'0');
@@ -103,7 +104,7 @@ static int ValHexDigit(o7c_char ch) {
 
 static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag);
 static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, int capacity, SuitDigit valDigit) {
-	int d = O7C_INT_UNDEFINED, val = O7C_INT_UNDEFINED, i = O7C_INT_UNDEFINED;
+	int d = O7C_INT_UNDEF, val = O7C_INT_UNDEF, i = O7C_INT_UNDEF;
 
 	val = 0;
 	i = (*s).lexStart;
@@ -129,15 +130,15 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, in
 }
 
 static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex) {
-	int i = O7C_INT_UNDEFINED, d = O7C_INT_UNDEFINED, scale = O7C_INT_UNDEFINED;
-	bool scMinus = 0 > 1;
-	double val = 0./0., t = 0./0.;
+	int i = O7C_INT_UNDEF, d = O7C_INT_UNDEF, scale = O7C_INT_UNDEF;
+	o7c_bool scMinus = O7C_BOOL_UNDEF;
+	double val = O7C_DBL_UNDEF, t = O7C_DBL_UNDEF;
 
 	val = 1.0;
 	i = (*s).lexStart;
 	d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (d >= 0) {
-		val = val * 10.0 + (double)d;
+		val = o7c_fadd(o7c_fmul(val, 10.0), (double)d);
 		i++;
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
@@ -148,8 +149,8 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 	t = 10.0;
 	d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (d >= 0) {
-		val = val + (double)d / t;
-		t = t * 10.0;
+		val = o7c_fadd(val, (double)d / t);
+		t = o7c_fmul(t, 10.0);
 		i++;
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
@@ -162,7 +163,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 			FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 		}
 		scMinus = (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'-';
-		if (scMinus || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'+')) {
+		if (o7c_bl(scMinus) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'+')) {
 			i++;
 			if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 				FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
@@ -184,7 +185,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 			if (scale <= RealScaleMax_cnst) {
 				while (scale > 0) {
 					if (scMinus) {
-						val = val * 10.0;
+						val = o7c_fmul(val, 10.0);
 					} else {
 						val = val / 10.0;
 					}
@@ -202,7 +203,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 }
 
 static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int lex = O7C_INT_UNDEFINED;
+	int lex = O7C_INT_UNDEF;
 	o7c_char ch /* char init */;
 
 	lex = Scanner_Number_cnst;
@@ -238,8 +239,8 @@ static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	return lex;
 }
 
-static bool IsWordEqual(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
-	int i = O7C_INT_UNDEFINED, j = O7C_INT_UNDEFINED;
+static o7c_bool IsWordEqual(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
+	int i = O7C_INT_UNDEF, j = O7C_INT_UNDEF;
 
 	assert(str_len0 <= o7c_div(buf_len0, 2));
 	j = 1;
@@ -253,7 +254,7 @@ static bool IsWordEqual(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len
 	return (buf[o7c_ind(buf_len0, i)] == 0x08u) && (str[o7c_ind(str_len0, j)] == 0x00u);
 }
 
-static bool CheckPredefined_Eq(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
+static o7c_bool CheckPredefined_Eq(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	return IsWordEqual(str, str_len0, buf, buf_len0, begin, end);
 }
 
@@ -274,7 +275,7 @@ static int CheckPredefined_T(o7c_char s1[/*len0*/], int s1_len0, o7c_char buf[/*
 }
 
 extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int id = O7C_INT_UNDEFINED;
+	int id = O7C_INT_UNDEF;
 	o7c_char save /* char init */;
 
 	save = buf[o7c_ind(buf_len0, end)];
@@ -341,7 +342,7 @@ extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int beg
 }
 
 static int CheckWord(o7c_char buf[/*len0*/], int buf_len0, int ind, int end);
-static bool CheckWord_Eq(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
+static o7c_bool CheckWord_Eq(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
 	return IsWordEqual(str, str_len0, buf, buf_len0, ind, end);
 }
 
@@ -364,7 +365,7 @@ static void CheckWord_T(int *lex, o7c_char s1[/*len0*/], int s1_len0, int l1, o7
 }
 
 static int CheckWord(o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
-	int lex = O7C_INT_UNDEFINED;
+	int lex = O7C_INT_UNDEF;
 	o7c_char save /* char init */;
 
 	save = buf[o7c_ind(buf_len0, end)];
@@ -448,12 +449,12 @@ static int CheckWord(o7c_char buf[/*len0*/], int buf_len0, int ind, int end) {
 	return lex;
 }
 
-static bool IsLetterOrDigit(o7c_char ch) {
+static o7c_bool IsLetterOrDigit(o7c_char ch) {
 	return (ch >= (char unsigned)'A') && (ch <= (char unsigned)'Z') || (ch >= (char unsigned)'a') && (ch <= (char unsigned)'z') || (ch >= (char unsigned)'0') && (ch <= (char unsigned)'9');
 }
 
 static int SWord(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int len = O7C_INT_UNDEFINED, l = O7C_INT_UNDEFINED;
+	int len = O7C_INT_UNDEF, l = O7C_INT_UNDEF;
 
 	ScanChars((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, IsLetterOrDigit, &(*(*s).in_), NULL);
 	len = o7c_add(o7c_sub((*s).ind, (*s).lexStart), o7c_mul((int)((*s).ind < (*s).lexStart), (sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1)));
@@ -466,8 +467,8 @@ static int SWord(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	return l;
 }
 
-static bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int start = O7C_INT_UNDEFINED, i = O7C_INT_UNDEFINED, comment = O7C_INT_UNDEFINED;
+static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
+	int start = O7C_INT_UNDEF, i = O7C_INT_UNDEF, comment = O7C_INT_UNDEF;
 
 	i = (*s).ind;
 	assert(i >= 0);
@@ -518,7 +519,7 @@ static bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 }
 
 static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int l = O7C_INT_UNDEFINED, i = O7C_INT_UNDEFINED, j = O7C_INT_UNDEFINED, count = O7C_INT_UNDEFINED;
+	int l = O7C_INT_UNDEF, i = O7C_INT_UNDEF, j = O7C_INT_UNDEF, count = O7C_INT_UNDEF;
 
 	i = o7c_add((*s).ind, 1);
 	if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
@@ -566,7 +567,7 @@ static void Next_Li(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, o7c_ch
 }
 
 extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int lex = O7C_INT_UNDEFINED;
+	int lex = O7C_INT_UNDEF;
 
 	if (!ScanBlank(&(*s), s_tag)) {
 		lex = Scanner_ErrUnclosedComment_cnst;

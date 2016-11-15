@@ -124,8 +124,8 @@ typedef struct Scanner_Scanner {
 	int lexStart;
 	int lexEnd;
 	int lexLen;
-	bool isReal;
-	bool isChar;
+	o7c_bool isReal;
+	o7c_bool isChar;
 	int integer;
 	double real;
 } Scanner_Scanner;

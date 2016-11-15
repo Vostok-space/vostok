@@ -27,14 +27,17 @@
 #	endif
 #endif
 
-#define O7C_INT_UNDEFINED INT_MIN
+#define O7C_INT_UNDEF INT_MIN
+
+#define O7C_DBL_UNDEF o7c_dbl_undef()
 
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
-#elif __STDC_VERSION__ >= 199901L
+#elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
 	typedef _Bool o7c_bool;
 #else
-	typedef int o7c_bool;
+#	define O7C_BOOL_UNDEF 0xFF
+	typedef char unsigned o7c_bool;
 #endif
 
 #if defined(O7C_INT_T)
@@ -83,9 +86,58 @@ typedef char unsigned o7c_char;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
+static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
+	if (sizeof(b) == sizeof(o7c_char)) {
+		assert(*(o7c_char *)&b < 2);
+	}
+	return b;
+}
+
+static O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_dbl_undef(void) {
+	double undef;
+	if (sizeof(unsigned) == sizeof(double) / 2) {
+		((unsigned *)&undef)[1] = 0x7FFFFFFF;
+	} else {
+		((unsigned long *)&undef)[1] = 0x7FFFFFFF;
+	}
+	return undef;
+}
+
+static O7C_INLINE double o7c_dbl(double d) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_dbl(double d) {
+	if (sizeof(unsigned) == sizeof(double) / 2) {
+		assert(((unsigned *)&d)[1] != 0x7FFFFFFF);
+	} else {
+		assert(((unsigned long *)&d)[1] != 0x7FFFFFFF);
+	}
+	return d;
+}
+
+static O7C_INLINE double o7c_fadd(double a1, double a2) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_fadd(double a1, double a2) {
+	return o7c_dbl(a1) + o7c_dbl(a2);
+}
+
+static O7C_INLINE double o7c_fsub(double m, double s) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_fsub(double m, double s) {
+	return o7c_dbl(m) - o7c_dbl(s);
+}
+
+static O7C_INLINE double o7c_fmul(double m1, double m2) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_fmul(double m1, double m2) {
+	return o7c_dbl(m1) * o7c_dbl(m2);
+}
+
+static O7C_INLINE double o7c_fdiv(double n, double d) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE double o7c_fdiv(double n, double d) {
+	return o7c_dbl(n) / o7c_dbl(d);
+}
+
 static O7C_INLINE int o7c_int(int i) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_int(int i) {
-	assert(i != O7C_INT_UNDEFINED);
+	assert(i != O7C_INT_UNDEF);
 	return i;
 }
 
@@ -161,8 +213,8 @@ static O7C_INLINE void **
 	return strct;
 }
 
-#define O7C_GUARD(ExtType, strct, base) \
-	(*(struct ExtType **)o7c_must(base, (void **)strct, ExtType##_tag))
+#define O7C_GUARD(ExtType, strct) \
+	(*(struct ExtType **)o7c_must(NULL, (void **)strct, ExtType##_tag))
 
 
 static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,

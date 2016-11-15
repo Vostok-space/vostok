@@ -3,7 +3,7 @@
 
 #include "Out.h"
 
-extern bool Log_state;
+extern o7c_bool Log_state;
 
 extern void Log_Str(o7c_char s[/*len0*/], int s_len0);
 
@@ -17,7 +17,7 @@ extern void Log_Ln(void);
 
 extern void Log_Real(double x);
 
-extern void Log_Turn(bool st);
+extern void Log_Turn(o7c_bool st);
 
 extern void Log_init(void);
 #endif

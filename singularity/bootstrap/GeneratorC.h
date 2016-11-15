@@ -19,17 +19,17 @@
 typedef struct GeneratorC_Options_s {
 	struct V_Base _;
 	int std;
-	bool gnu;
-	bool procLocal;
-	bool checkIndex;
-	bool checkArith;
-	bool caseAbort;
+	o7c_bool gnu;
+	o7c_bool procLocal;
+	o7c_bool checkIndex;
+	o7c_bool checkArith;
+	o7c_bool caseAbort;
 	int varInit;
-	bool main_;
+	o7c_bool main_;
 	int index;
 	struct V_Base *records;
 	struct V_Base *recordLast;
-	bool lastSelectorDereference;
+	o7c_bool lastSelectorDereference;
 } *GeneratorC_Options;
 extern o7c_tag_t GeneratorC_Options_s_tag;
 
@@ -41,9 +41,9 @@ typedef struct GeneratorC_Generator {
 	int localDeep;
 	int fixedLen;
 	int tabs;
-	bool interface_;
+	o7c_bool interface_;
 	struct GeneratorC_Options_s *opt;
-	bool expressionSemicolon;
+	o7c_bool expressionSemicolon;
 } GeneratorC_Generator;
 extern o7c_tag_t GeneratorC_Generator_tag;
 

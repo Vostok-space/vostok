@@ -25,18 +25,16 @@
 #define Parser_ErrExpectOf_cnst (-112)
 #define Parser_ErrExpectConstIntExpr_cnst (-114)
 #define Parser_ErrExpectTo_cnst (-115)
-#define Parser_ErrExpectNamedType_cnst (-116)
+#define Parser_ErrExpectStructuredType_cnst (-116)
 #define Parser_ErrExpectRecord_cnst (-117)
 #define Parser_ErrExpectStatement_cnst (-118)
 #define Parser_ErrExpectThen_cnst (-119)
 #define Parser_ErrExpectAssign_cnst (-120)
-#define Parser_ErrExpectAssignOrBrace1Open_cnst (-121)
 #define Parser_ErrExpectVarRecordOrPointer_cnst (-122)
 #define Parser_ErrExpectType_cnst (-124)
 #define Parser_ErrExpectUntil_cnst (-125)
 #define Parser_ErrExpectDo_cnst (-126)
 #define Parser_ErrExpectDesignator_cnst (-128)
-#define Parser_ErrExpectVar_cnst (-129)
 #define Parser_ErrExpectProcedure_cnst (-130)
 #define Parser_ErrExpectConstName_cnst (-131)
 #define Parser_ErrExpectProcedureName_cnst (-132)
@@ -54,8 +52,8 @@
 
 typedef struct Parser_Options {
 	struct V_Base _;
-	bool strictSemicolon;
-	bool strictReturn;
+	o7c_bool strictSemicolon;
+	o7c_bool strictReturn;
 	void (*printError)(int code);
 } Parser_Options;
 extern o7c_tag_t Parser_Options_tag;

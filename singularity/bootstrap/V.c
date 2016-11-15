@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "V.h"
@@ -19,7 +20,7 @@ o7c_tag_t V_MsgLinks_tag;
 o7c_tag_t V_MsgContentPass_tag;
 o7c_tag_t V_MsgHash_tag;
 
-static bool Nothing(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag) {
+static o7c_bool Nothing(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag) {
 	return false;
 }
 
@@ -32,7 +33,7 @@ extern void V_SetDo(struct V_Base *base, o7c_tag_t base_tag, V_Handle do_) {
 	(*base).do_ = do_;
 }
 
-extern bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag) {
+extern o7c_bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag) {
 	return (*handler).do_(&(*handler), handler_tag, &(*message), message_tag);
 }
 

@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "Ast.h"
@@ -82,7 +83,7 @@ static void DeclInit(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds) {
 	if (ds == NULL) {
 		d->module = NULL;
 	} else if (ds->_.module == NULL) {
-		d->module = O7C_GUARD(Ast_RModule, &ds, NULL);
+		d->module = O7C_GUARD(Ast_RModule, &ds);
 	} else {
 		d->module = ds->_.module;
 	}
@@ -142,6 +143,7 @@ extern struct Ast_RModule *Ast_ModuleNew(o7c_char name[/*len0*/], int name_len0,
 	m = o7c_new(sizeof(*m), Ast_RModule_tag);
 	NodeInit(&(*m)._._._, Ast_RModule_tag);
 	DeclarationsInit(&m->_, NULL);
+	m->fixed = false;
 	m->import_ = NULL;
 	m->errors = NULL;
 	m->errLast = NULL;
@@ -158,9 +160,15 @@ extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, struct A
 	return p->get(p, host, name, name_len0, ofs, end);
 }
 
+extern int Ast_ModuleEnd(struct Ast_RModule *m) {
+	assert(!m->fixed);
+	m->fixed = true;
+	return Ast_ErrNo_cnst;
+}
+
 static int ImportAdd_Load(struct Ast_RModule **res, struct Ast_RModule *host, o7c_char buf[/*len0*/], int buf_len0, int realOfs, int realEnd, struct Ast_RProvider *p) {
 	o7c_char n[TranslatorLimits_MaxLenName_cnst] /* init array */;
-	int l = O7C_INT_UNDEFINED, err = O7C_INT_UNDEFINED;
+	int l = O7C_INT_UNDEF, err = O7C_INT_UNDEF;
 
 	l = 0;
 	assert(StringStore_CopyChars(n, TranslatorLimits_MaxLenName_cnst, &l, buf, buf_len0, realOfs, realEnd));
@@ -182,18 +190,19 @@ static int ImportAdd_Load(struct Ast_RModule **res, struct Ast_RModule *host, o7
 	return err;
 }
 
-static bool ImportAdd_IsDup(struct Ast_Import_s *i, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd) {
+static o7c_bool ImportAdd_IsDup(struct Ast_Import_s *i, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd) {
 	return StringStore_IsEqualToChars(&i->_.name, StringStore_String_tag, buf, buf_len0, nameOfs, nameEnd) || (realOfs != nameOfs) && ((i->_.name.ofs != i->_.module->_._.name.ofs) || (i->_.name.block != i->_.module->_._.name.block)) && StringStore_IsEqualToChars(&i->_.module->_._.name, StringStore_String_tag, buf, buf_len0, realOfs, realEnd);
 }
 
 extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd, struct Ast_RProvider *p) {
 	struct Ast_Import_s *imp = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
+	assert(!m->fixed);
 	imp = m->import_;
 	assert((imp == NULL) || (o7c_is(NULL, m->_.end, Ast_Import_s_tag)));
 	while ((imp != NULL) && !ImportAdd_IsDup(imp, buf, buf_len0, nameOfs, nameEnd, realOfs, realEnd)) {
-		imp = O7C_GUARD(Ast_Import_s, &imp->_.next, NULL);
+		imp = O7C_GUARD(Ast_Import_s, &imp->_.next);
 	}
 	if (imp != NULL) {
 		err = Ast_ErrImportNameDuplicate_cnst;
@@ -201,6 +210,7 @@ extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_
 		imp = o7c_new(sizeof(*imp), Ast_Import_s_tag);
 		imp->_._.id = Ast_IdImport_cnst;
 		DeclConnect(&imp->_, &m->_, buf, buf_len0, nameOfs, nameEnd);
+		imp->_.mark = true;
 		if (m->import_ == NULL) {
 			m->import_ = imp;
 		}
@@ -228,8 +238,9 @@ static struct Ast_RDeclaration *SearchName(struct Ast_RDeclaration *d, o7c_char 
 
 extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	struct Ast_Const_s *c = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
+	assert(!ds->_.module->fixed);
 	if (SearchName(ds->start, buf, buf_len0, begin, end) != NULL) {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
 	} else {
@@ -247,7 +258,7 @@ extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], in
 }
 
 extern int Ast_ConstSetExpression(struct Ast_Const_s *const_, struct Ast_RExpression *expr) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	const_->finished = true;
 	err = Ast_ErrNo_cnst;
@@ -274,8 +285,9 @@ static void TypeAdd_MoveForwardDeclToLast(struct Ast_RDeclarations *ds, struct A
 
 extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end, struct Ast_RType **td) {
 	struct Ast_RDeclaration *d = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
+	assert(!ds->_.module->fixed);
 	d = SearchName(ds->start, buf, buf_len0, begin, end);
 	if ((d == NULL) || (d->_.id == Ast_IdRecordForward_cnst)) {
 		err = Ast_ErrNo_cnst;
@@ -289,8 +301,8 @@ extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int
 			ds->types = (*td);
 		}
 	} else {
-		(*td) = O7C_GUARD(Ast_RType, &d, NULL);
-		TypeAdd_MoveForwardDeclToLast(ds, O7C_GUARD(Ast_Record_s, &d, NULL));
+		(*td) = O7C_GUARD(Ast_RType, &d);
+		TypeAdd_MoveForwardDeclToLast(ds, O7C_GUARD(Ast_Record_s, &d));
 	}
 	return err;
 }
@@ -307,8 +319,9 @@ static void ChecklessVarAdd(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o
 
 extern int Ast_VarAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	struct Ast_RVar *v = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
+	assert((ds->_.module == NULL) || !ds->_.module->fixed);
 	if (SearchName(ds->start, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
 	} else {
@@ -335,7 +348,7 @@ extern struct Ast_ProcType_s *Ast_ProcTypeNew(void) {
 	return p;
 }
 
-static void ParamAddPredefined(struct Ast_ProcType_s *proc, struct Ast_RType *type, bool isVar) {
+static void ParamAddPredefined(struct Ast_ProcType_s *proc, struct Ast_RType *type, o7c_bool isVar) {
 	struct Ast_FormalParam_s *v = NULL;
 
 	v = o7c_new(sizeof(*v), Ast_FormalParam_s_tag);
@@ -354,7 +367,7 @@ static void ParamAddPredefined(struct Ast_ProcType_s *proc, struct Ast_RType *ty
 }
 
 extern int Ast_ParamAdd(struct Ast_RModule *module, struct Ast_ProcType_s *proc, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	if (SearchName(&proc->params->_._, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
@@ -445,7 +458,7 @@ extern struct Ast_Record_s *Ast_RecordNew(struct Ast_RDeclarations *ds, struct A
 
 static struct Ast_RDeclaration *SearchPredefined(o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	struct Ast_RDeclaration *d = NULL;
-	int l = O7C_INT_UNDEFINED;
+	int l = O7C_INT_UNDEF;
 
 	l = Scanner_CheckPredefined(buf, buf_len0, begin, end);
 	Log_Str("SearchPredefined ", 18);
@@ -464,7 +477,7 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 	struct Ast_RDeclaration *d = NULL;
 
 	if (o7c_is(NULL, ds, Ast_RProcedure_tag)) {
-		d = SearchName(&O7C_GUARD(Ast_RProcedure, &ds, NULL)->_.header->params->_._, buf, buf_len0, begin, end);
+		d = SearchName(&O7C_GUARD(Ast_RProcedure, &ds)->_.header->params->_._, buf, buf_len0, begin, end);
 	} else {
 		d = NULL;
 	}
@@ -491,7 +504,7 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 }
 
 extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	(*d) = Ast_DeclarationSearch(ds, buf, buf_len0, begin, end);
 	if ((*d) == NULL) {
@@ -502,9 +515,11 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, struct Ast_RDeclarati
 		(*d)->type = o7c_new(sizeof(*(*d)->type), Ast_RType_tag);
 		DeclInit(&(*d)->type->_, NULL);
 		(*d)->type->_._.id = Ast_IdError_cnst;
-	} else if ((o7c_is(NULL, (*d), Ast_Const_s_tag)) && !O7C_GUARD(Ast_Const_s, &(*d), NULL)->finished) {
+	} else if (!o7c_bl((*d)->mark) && ((*d)->module != NULL) && o7c_bl((*d)->module->fixed)) {
+		err = Ast_ErrDeclarationIsPrivate_cnst;
+	} else if ((o7c_is(NULL, (*d), Ast_Const_s_tag)) && !O7C_GUARD(Ast_Const_s, &(*d))->finished) {
 		err = Ast_ErrConstRecursive_cnst;
-		O7C_GUARD(Ast_Const_s, &(*d), NULL)->finished = true;
+		O7C_GUARD(Ast_Const_s, &(*d))->finished = true;
 	} else {
 		err = Ast_ErrNo_cnst;
 	}
@@ -512,7 +527,7 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, struct Ast_RDeclarati
 }
 
 extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 	struct Ast_RDeclaration *d = NULL;
 
 	d = Ast_DeclarationSearch(ds, buf, buf_len0, begin, end);
@@ -524,7 +539,10 @@ extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_cha
 		err = Ast_ErrNo_cnst;
 	}
 	if (err == Ast_ErrNo_cnst) {
-		(*v) = O7C_GUARD(Ast_RVar, &d, NULL);
+		(*v) = O7C_GUARD(Ast_RVar, &d);
+		if (!o7c_bl(d->mark) && o7c_bl(d->module->fixed)) {
+			err = Ast_ErrDeclarationIsPrivate_cnst;
+		}
 	} else {
 		ChecklessVarAdd(&(*v), ds, buf, buf_len0, begin, end);
 	}
@@ -532,7 +550,7 @@ extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_cha
 }
 
 extern int Ast_ForIteratorGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	err = Ast_VarGet(&(*v), ds, buf, buf_len0, begin, end);
 	if ((*v) != NULL) {
@@ -585,7 +603,7 @@ extern struct Ast_ExprReal_s *Ast_ExprRealNewByValue(double real) {
 	return e;
 }
 
-extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(bool bool_) {
+extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(o7c_bool bool_) {
 	struct Ast_ExprBoolean_s *e = NULL;
 
 	e = o7c_new(sizeof(*e), Ast_ExprBoolean_s_tag);
@@ -597,7 +615,7 @@ extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(bool bool_) {
 
 extern struct Ast_ExprString_s *Ast_ExprStringNew(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	struct Ast_ExprString_s *e = NULL;
-	int len = O7C_INT_UNDEFINED;
+	int len = O7C_INT_UNDEF;
 
 	len = o7c_sub(end, begin);
 	if (len < 0) {
@@ -658,12 +676,12 @@ extern struct Ast_ExprSet_s *Ast_ExprSetByValue(unsigned set) {
 	return e;
 }
 
-static bool ExprSetNew_CheckRange(int int_) {
+static o7c_bool ExprSetNew_CheckRange(int int_) {
 	return (int_ >= 0) && (int_ <= Limits_SetMax_cnst);
 }
 
 extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr1, struct Ast_RExpression *expr2) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprSet_s_tag);
 	ExprInit(&(*e)->_._, Ast_IdSet_cnst, Ast_TypeGet(Ast_IdSet_cnst));
@@ -677,15 +695,15 @@ extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr
 		if ((expr1->type->_._.id != Ast_IdInteger_cnst) || (expr2 != NULL) && (expr2->type->_._.id != Ast_IdInteger_cnst)) {
 			err = Ast_ErrNotIntSetElem_cnst;
 		} else if ((expr1->value_ != NULL) && ((expr2 == NULL) || (expr2->value_ != NULL))) {
-			if (!ExprSetNew_CheckRange(O7C_GUARD(Ast_RExprInteger, &expr1->value_, NULL)->int_) || ((expr2 != NULL) && !ExprSetNew_CheckRange(O7C_GUARD(Ast_RExprInteger, &expr2->value_, NULL)->int_))) {
+			if (!ExprSetNew_CheckRange(O7C_GUARD(Ast_RExprInteger, &expr1->value_)->int_) || ((expr2 != NULL) && !ExprSetNew_CheckRange(O7C_GUARD(Ast_RExprInteger, &expr2->value_)->int_))) {
 				err = Ast_ErrSetElemOutOfRange_cnst;
 			} else if (expr2 == NULL) {
-				(*e)->set = (1 << O7C_GUARD(Ast_RExprInteger, &expr1->value_, NULL)->int_);
+				(*e)->set = (1 << O7C_GUARD(Ast_RExprInteger, &expr1->value_)->int_);
 				(*e)->_._.value_ = (&((*e))->_);
-			} else if (O7C_GUARD(Ast_RExprInteger, &expr1->value_, NULL)->int_ > O7C_GUARD(Ast_RExprInteger, &expr2->value_, NULL)->int_) {
+			} else if (O7C_GUARD(Ast_RExprInteger, &expr1->value_)->int_ > O7C_GUARD(Ast_RExprInteger, &expr2->value_)->int_) {
 				err = Ast_ErrSetLeftElemBiggerRightElem_cnst;
 			} else {
-				(*e)->set = o7c_set(O7C_GUARD(Ast_RExprInteger, &expr1->value_, NULL)->int_, O7C_GUARD(Ast_RExprInteger, &expr2->value_, NULL)->int_);
+				(*e)->set = o7c_set(O7C_GUARD(Ast_RExprInteger, &expr1->value_)->int_, O7C_GUARD(Ast_RExprInteger, &expr2->value_)->int_);
 				(*e)->_._.value_ = (&((*e))->_);
 			}
 		}
@@ -693,16 +711,21 @@ extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr
 	return err;
 }
 
-extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr) {
-	struct Ast_ExprNegate_s *e = NULL;
+extern int Ast_ExprNegateNew(struct Ast_ExprNegate_s **neg, struct Ast_RExpression *expr) {
+	int err = O7C_INT_UNDEF;
 
-	e = o7c_new(sizeof(*e), Ast_ExprNegate_s_tag);
-	ExprInit(&e->_._, Ast_IdNegate_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
-	e->expr = expr;
-	if (expr->value_ != NULL) {
-		e->_._.value_ = (&(Ast_ExprBooleanNew(!O7C_GUARD(Ast_ExprBoolean_s, &expr->value_, NULL)->bool_))->_);
+	(*neg) = o7c_new(sizeof(*(*neg)), Ast_ExprNegate_s_tag);
+	ExprInit(&(*neg)->_._, Ast_IdNegate_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
+	(*neg)->expr = expr;
+	if (expr->type->_._.id != Ast_IdBoolean_cnst) {
+		err = Ast_ErrNegateNotBool_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+		if (expr->value_ != NULL) {
+			(*neg)->_._.value_ = (&(Ast_ExprBooleanNew(!O7C_GUARD(Ast_ExprBoolean_s, &expr->value_)->bool_))->_);
+		}
 	}
-	return e;
+	return err;
 }
 
 extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl) {
@@ -714,14 +737,14 @@ extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl)
 	d->sel = NULL;
 	d->_._.type = decl->type;
 	if (o7c_is(NULL, decl, Ast_Const_s_tag)) {
-		d->_._.value_ = O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->value_;
+		d->_._.value_ = O7C_GUARD(Ast_Const_s, &decl)->expr->value_;
 	} else if (o7c_is(NULL, decl, Ast_RGeneralProcedure_tag)) {
-		d->_._.type = (&(O7C_GUARD(Ast_RGeneralProcedure, &decl, NULL)->header)->_._);
+		d->_._.type = (&(O7C_GUARD(Ast_RGeneralProcedure, &decl)->header)->_._);
 	}
 	return d;
 }
 
-extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1) {
+extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1) {
 	Log_Str("IsRecordExtension ", 19);
 	(*distance) = 0;
 	if ((t0 != NULL) && (t1 != NULL)) {
@@ -745,7 +768,7 @@ static void SelInit(struct Ast_RSelector *s) {
 
 extern int Ast_SelPointerNew(struct Ast_RSelector **sel, struct Ast_RType **type) {
 	struct Ast_SelPointer_s *sp = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	sp = o7c_new(sizeof(*sp), Ast_SelPointer_s_tag);
 	SelInit(&sp->_);
@@ -761,7 +784,7 @@ extern int Ast_SelPointerNew(struct Ast_RSelector **sel, struct Ast_RType **type
 
 extern int Ast_SelArrayNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RExpression *index) {
 	struct Ast_SelArray_s *sa = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	sa = o7c_new(sizeof(*sa), Ast_SelArray_s_tag);
 	SelInit(&sa->_);
@@ -771,9 +794,9 @@ extern int Ast_SelArrayNew(struct Ast_RSelector **sel, struct Ast_RType **type, 
 		err = Ast_ErrArrayItemToNotArray_cnst;
 	} else if (index->type->_._.id != Ast_IdInteger_cnst) {
 		err = Ast_ErrArrayIndexNotInt_cnst;
-	} else if ((index->value_ != NULL) && (O7C_GUARD(Ast_RExprInteger, &index->value_, NULL)->int_ < 0)) {
+	} else if ((index->value_ != NULL) && (O7C_GUARD(Ast_RExprInteger, &index->value_)->int_ < 0)) {
 		err = Ast_ErrArrayIndexNegative_cnst;
-	} else if ((index->value_ != NULL) && (O7C_GUARD(Ast_RArray, &(*type), NULL)->count != NULL) && (O7C_GUARD(Ast_RArray, &(*type), NULL)->count->value_ != NULL) && (O7C_GUARD(Ast_RExprInteger, &index->value_, NULL)->int_ >= O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_RArray, &(*type), NULL)->count->value_, NULL)->int_)) {
+	} else if ((index->value_ != NULL) && (O7C_GUARD(Ast_RArray, &(*type))->count != NULL) && (O7C_GUARD(Ast_RArray, &(*type))->count->value_ != NULL) && (O7C_GUARD(Ast_RExprInteger, &index->value_)->int_ >= O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_RArray, &(*type))->count->value_)->int_)) {
 		err = Ast_ErrArrayIndexOutOfRange_cnst;
 	} else {
 		err = Ast_ErrNo_cnst;
@@ -784,7 +807,7 @@ extern int Ast_SelArrayNew(struct Ast_RSelector **sel, struct Ast_RType **type, 
 
 extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type, o7c_char name[/*len0*/], int name_len0, int begin, int end) {
 	struct Ast_SelRecord_s *sr = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 	struct Ast_RVar *var_ = NULL;
 	struct Ast_RDeclarations *vars = NULL;
 
@@ -793,15 +816,15 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type,
 	var_ = NULL;
 	err = Ast_ErrNo_cnst;
 	if ((*type) != NULL) {
-		if (!(( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
+		if (!(!!( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
 			err = Ast_ErrDotSelectorToNotRecord_cnst;
 		} else {
 			if ((*type)->_._.id == Ast_IdRecord_cnst) {
-				vars = O7C_GUARD(Ast_Record_s, &(*type), NULL)->vars;
+				vars = O7C_GUARD(Ast_Record_s, &(*type))->vars;
 			} else if ((*type)->_.type == NULL) {
 				vars = NULL;
 			} else {
-				vars = O7C_GUARD(Ast_Record_s, &(*type)->_.type, NULL)->vars;
+				vars = O7C_GUARD(Ast_Record_s, &(*type)->_.type)->vars;
 			}
 			if (vars != NULL) {
 				err = Ast_VarGet(&var_, vars, name, name_len0, begin, end);
@@ -820,24 +843,24 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type,
 
 extern int Ast_SelGuardNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RDeclaration *guard) {
 	struct Ast_SelGuard_s *sg = NULL;
-	int err = O7C_INT_UNDEFINED, dist = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF, dist = O7C_INT_UNDEF;
 
 	sg = o7c_new(sizeof(*sg), Ast_SelGuard_s_tag);
 	SelInit(&sg->_);
 	err = Ast_ErrNo_cnst;
-	if (!(( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
+	if (!(!!( (1u << (*type)->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
 		err = Ast_ErrGuardedTypeNotExtensible_cnst;
 	} else if ((*type)->_._.id == Ast_IdRecord_cnst) {
-		if (!(o7c_is(NULL, guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &(*type), NULL), O7C_GUARD(Ast_Record_s, &guard, NULL))) {
+		if (!(o7c_is(NULL, guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &(*type)), O7C_GUARD(Ast_Record_s, &guard))) {
 			err = Ast_ErrGuardExpectRecordExt_cnst;
 		} else {
-			(*type) = (&(O7C_GUARD(Ast_Record_s, &guard, NULL))->_._);
+			(*type) = (&(O7C_GUARD(Ast_Record_s, &guard))->_._);
 		}
 	} else {
-		if (!(o7c_is(NULL, guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &(*type), NULL)->_._._.type, NULL), O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &guard, NULL)->_._._.type, NULL))) {
+		if (!(o7c_is(NULL, guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &(*type))->_._._.type), O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &guard)->_._._.type))) {
 			err = Ast_ErrGuardExpectPointerExt_cnst;
 		} else {
-			(*type) = (&(O7C_GUARD(Ast_RPointer, &guard, NULL))->_._);
+			(*type) = (&(O7C_GUARD(Ast_RPointer, &guard))->_._);
 		}
 	}
 	sg->type = (*type);
@@ -845,25 +868,25 @@ extern int Ast_SelGuardNew(struct Ast_RSelector **sel, struct Ast_RType **type, 
 	return err;
 }
 
-static bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, struct Ast_ProcType_s *t2) {
-	bool comp = 0 > 1;
+static o7c_bool CompatibleTypes_EqualProcTypes(struct Ast_ProcType_s *t1, struct Ast_ProcType_s *t2) {
+	o7c_bool comp = O7C_BOOL_UNDEF;
 	struct Ast_RDeclaration *fp1 = NULL, *fp2 = NULL;
 
 	comp = t1->_._._.type == t2->_._._.type;
 	if (comp) {
 		fp1 = (&(t1->params)->_._);
 		fp2 = (&(t2->params)->_._);
-		while ((fp1 != NULL) && (fp2 != NULL) && (o7c_is(NULL, fp1, Ast_FormalParam_s_tag)) && (o7c_is(NULL, fp2, Ast_FormalParam_s_tag)) && (fp1->type == fp2->type) && (O7C_GUARD(Ast_FormalParam_s, &fp1, NULL)->isVar == O7C_GUARD(Ast_FormalParam_s, &fp2, NULL)->isVar)) {
+		while ((fp1 != NULL) && (fp2 != NULL) && (o7c_is(NULL, fp1, Ast_FormalParam_s_tag)) && (o7c_is(NULL, fp2, Ast_FormalParam_s_tag)) && (fp1->type == fp2->type) && (O7C_GUARD(Ast_FormalParam_s, &fp1)->isVar == O7C_GUARD(Ast_FormalParam_s, &fp2)->isVar)) {
 			fp1 = fp1->next;
 			fp2 = fp2->next;
 		}
 		comp = ((fp1 == NULL) || !(o7c_is(NULL, fp1, Ast_FormalParam_s_tag))) && ((fp2 == NULL) || !(o7c_is(NULL, fp2, Ast_FormalParam_s_tag)));
 	}
-	return comp;
+	return o7c_bl(comp);
 }
 
-extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_RType *t2) {
-	bool comp = 0 > 1;
+extern o7c_bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_RType *t2) {
+	o7c_bool comp = O7C_BOOL_UNDEF;
 
 	comp = (t1 == NULL) || (t2 == NULL);
 	if (!comp) {
@@ -874,19 +897,19 @@ extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_
 		Log_Int(t2->_._.id);
 		Log_Ln();
 		(*distance) = 0;
-		if (!comp && (t1->_._.id == t2->_._.id) && (( (1u << t1->_._.id) & ((1 << Ast_IdArray_cnst) | (1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst) | (1 << Ast_IdProcType_cnst))))) {
+		if (!o7c_bl(comp) && (t1->_._.id == t2->_._.id) && (!!( (1u << t1->_._.id) & ((1 << Ast_IdArray_cnst) | (1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst) | (1 << Ast_IdProcType_cnst))))) {
 			switch (t1->_._.id) {
 			case 7:
 				comp = Ast_CompatibleTypes(&(*distance), t1->_.type, t2->_.type);
 				break;
 			case 6:
-				comp = (t1->_.type == NULL) || (t2->_.type == NULL) || Ast_IsRecordExtension(&(*distance), O7C_GUARD(Ast_Record_s, &t1->_.type, NULL), O7C_GUARD(Ast_Record_s, &t2->_.type, NULL));
+				comp = (t1->_.type == NULL) || (t2->_.type == NULL) || Ast_IsRecordExtension(&(*distance), O7C_GUARD(Ast_Record_s, &t1->_.type), O7C_GUARD(Ast_Record_s, &t2->_.type));
 				break;
 			case 8:
-				comp = Ast_IsRecordExtension(&(*distance), O7C_GUARD(Ast_Record_s, &t1, NULL), O7C_GUARD(Ast_Record_s, &t2, NULL));
+				comp = Ast_IsRecordExtension(&(*distance), O7C_GUARD(Ast_Record_s, &t1), O7C_GUARD(Ast_Record_s, &t2));
 				break;
 			case 10:
-				comp = CompatibleTypes_EqualProcTypes(O7C_GUARD(Ast_ProcType_s, &t1, NULL), O7C_GUARD(Ast_ProcType_s, &t2, NULL));
+				comp = CompatibleTypes_EqualProcTypes(O7C_GUARD(Ast_ProcType_s, &t1), O7C_GUARD(Ast_ProcType_s, &t2));
 				break;
 			default:
 				abort();
@@ -894,23 +917,23 @@ extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_
 			}
 		}
 	}
-	return comp;
+	return o7c_bl(comp);
 }
 
 extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, struct Ast_RExpression **des, struct Ast_RType *type) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprIsExtension_s_tag);
 	ExprInit(&(*e)->_, Ast_IdIsExtension_cnst, Ast_TypeGet(Ast_IdBoolean_cnst));
 	(*e)->designator = NULL;
 	(*e)->extType = type;
 	err = Ast_ErrNo_cnst;
-	if ((type != NULL) && !(( (1u << type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
+	if ((type != NULL) && !(!!( (1u << type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
 		err = Ast_ErrIsExtTypeNotRecord_cnst;
 	} else if ((*des) != NULL) {
 		if (o7c_is(NULL, (*des), Ast_Designator_s_tag)) {
-			(*e)->designator = O7C_GUARD(Ast_Designator_s, &(*des), NULL);
-			if (((*des)->type != NULL) && !(( (1u << (*des)->type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
+			(*e)->designator = O7C_GUARD(Ast_Designator_s, &(*des));
+			if (((*des)->type != NULL) && !(!!( (1u << (*des)->type->_._.id) & ((1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst))))) {
 				err = Ast_ErrIsExtVarNotRecord_cnst;
 			}
 		} else {
@@ -920,27 +943,27 @@ extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, struct Ast_R
 	return err;
 }
 
-static bool CompatibleAsCharAndString(struct Ast_RType *t1, struct Ast_RExpression **e2) {
-	bool ret = 0 > 1;
+static o7c_bool CompatibleAsCharAndString(struct Ast_RType *t1, struct Ast_RExpression **e2) {
+	o7c_bool ret = O7C_BOOL_UNDEF;
 
 	Log_Str("1 CompatibleAsCharAndString ", 29);
 	Log_Int((int)((*e2)->value_ != NULL));
 	Log_Ln();
-	ret = (t1->_._.id == Ast_IdChar_cnst) && ((*e2)->value_ != NULL) && (o7c_is(NULL, (*e2)->value_, Ast_ExprString_s_tag)) && (O7C_GUARD(Ast_ExprString_s, &(*e2)->value_, NULL)->_.int_ >= 0);
-	if (ret && !O7C_GUARD(Ast_ExprString_s, &(*e2)->value_, NULL)->asChar) {
+	ret = (t1->_._.id == Ast_IdChar_cnst) && ((*e2)->value_ != NULL) && (o7c_is(NULL, (*e2)->value_, Ast_ExprString_s_tag)) && (O7C_GUARD(Ast_ExprString_s, &(*e2)->value_)->_.int_ >= 0);
+	if (o7c_bl(ret) && !O7C_GUARD(Ast_ExprString_s, &(*e2)->value_)->asChar) {
 		if (o7c_is(NULL, (*e2), Ast_ExprString_s_tag)) {
-			(*e2) = (&(Ast_ExprCharNew(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_, NULL)->_.int_))->_._._._);
+			(*e2) = (&(Ast_ExprCharNew(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_)->_.int_))->_._._._);
 		} else {
-			(*e2)->value_ = (&(Ast_ExprCharNew(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_, NULL)->_.int_))->_._._);
+			(*e2)->value_ = (&(Ast_ExprCharNew(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_)->_.int_))->_._._);
 		}
-		assert(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_, NULL)->asChar);
+		assert(o7c_bl(O7C_GUARD(Ast_ExprString_s, &(*e2)->value_)->asChar));
 	}
-	return ret;
+	return o7c_bl(ret);
 }
 
-static bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType *t2, struct Ast_RExpression **e1, struct Ast_RExpression **e2, int relation, int *distance, int *err) {
-	bool continue_ = 0 > 1;
-	int dist1 = O7C_INT_UNDEFINED, dist2 = O7C_INT_UNDEFINED;
+static o7c_bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType *t2, struct Ast_RExpression **e1, struct Ast_RExpression **e2, int relation, int *distance, int *err) {
+	o7c_bool continue_ = O7C_BOOL_UNDEF;
+	int dist1 = O7C_INT_UNDEF, dist2 = O7C_INT_UNDEF;
 
 	dist1 = 0;
 	dist2 = 0;
@@ -954,9 +977,9 @@ static bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType *t2
 	} else if (!Ast_CompatibleTypes(&dist1, t1, t2) && !Ast_CompatibleTypes(&dist2, t2, t1) && !CompatibleAsCharAndString(t1, &(*e2)) && !CompatibleAsCharAndString(t2, &(*e1))) {
 		(*err) = Ast_ErrRelationExprDifferenTypes_cnst;
 		continue_ = false;
-	} else if ((( (1u << t1->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdChar_cnst)))) || (t1->_._.id == Ast_IdArray_cnst) && (t1->_.type->_._.id == Ast_IdChar_cnst)) {
+	} else if ((!!( (1u << t1->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdChar_cnst)))) || (t1->_._.id == Ast_IdArray_cnst) && (t1->_.type->_._.id == Ast_IdChar_cnst)) {
 		continue_ = true;
-	} else if (( (1u << t1->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdArray_cnst)))) {
+	} else if (!!( (1u << t1->_._.id) & ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdArray_cnst)))) {
 		continue_ = false;
 		(*err) = Ast_ErrRelIncompatibleType_cnst;
 	} else {
@@ -966,12 +989,12 @@ static bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType *t2
 		}
 	}
 	(*distance) = o7c_sub(dist1, dist2);
-	return continue_;
+	return o7c_bl(continue_);
 }
 
 extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpression *expr1, int relation, struct Ast_RExpression *expr2) {
-	int err = O7C_INT_UNDEFINED;
-	bool res = 0 > 1;
+	int err = O7C_INT_UNDEF;
+	o7c_bool res = O7C_BOOL_UNDEF;
 	struct Ast_RExpression *v1 = NULL, *v2 = NULL;
 
 	assert((relation >= Scanner_RelationFirst_cnst) && (relation < Scanner_RelationLast_cnst));
@@ -989,16 +1012,16 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ == O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ == O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 1:
-				res = O7C_GUARD(Ast_ExprBoolean_s, &v1, NULL)->bool_ == O7C_GUARD(Ast_ExprBoolean_s, &v2, NULL)->bool_;
+				res = O7C_GUARD(Ast_ExprBoolean_s, &v1)->bool_ == O7C_GUARD(Ast_ExprBoolean_s, &v2)->bool_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real == O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real == O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 5:
-				res = O7C_GUARD(Ast_ExprSet_s, &v1, NULL)->set == O7C_GUARD(Ast_ExprSet_s, &v2, NULL)->set;
+				res = O7C_GUARD(Ast_ExprSet_s, &v1)->set == O7C_GUARD(Ast_ExprSet_s, &v2)->set;
 				break;
 			case 6:
 				res = false;
@@ -1018,16 +1041,16 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ != O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ != O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 1:
-				res = O7C_GUARD(Ast_ExprBoolean_s, &v1, NULL)->bool_ != O7C_GUARD(Ast_ExprBoolean_s, &v2, NULL)->bool_;
+				res = O7C_GUARD(Ast_ExprBoolean_s, &v1)->bool_ != O7C_GUARD(Ast_ExprBoolean_s, &v2)->bool_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real != O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real != O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 5:
-				res = O7C_GUARD(Ast_ExprSet_s, &v1, NULL)->set != O7C_GUARD(Ast_ExprSet_s, &v2, NULL)->set;
+				res = O7C_GUARD(Ast_ExprSet_s, &v1)->set != O7C_GUARD(Ast_ExprSet_s, &v2)->set;
 				break;
 			case 6:
 				res = false;
@@ -1047,10 +1070,10 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ < O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ < O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real < O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real < O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 7:
 				res = false;
@@ -1064,13 +1087,13 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ <= O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ <= O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real <= O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real <= O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 5:
-				res = O7C_GUARD(Ast_ExprSet_s, &v1, NULL)->set <= O7C_GUARD(Ast_ExprSet_s, &v2, NULL)->set;
+				res = O7C_GUARD(Ast_ExprSet_s, &v1)->set <= O7C_GUARD(Ast_ExprSet_s, &v2)->set;
 				break;
 			case 7:
 				res = false;
@@ -1084,10 +1107,10 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ > O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ > O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real > O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real > O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 7:
 				res = false;
@@ -1101,13 +1124,13 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			switch (expr1->type->_._.id) {
 			case 0:
 			case 3:
-				res = O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_ >= O7C_GUARD(Ast_RExprInteger, &v2, NULL)->int_;
+				res = O7C_GUARD(Ast_RExprInteger, &v1)->int_ >= O7C_GUARD(Ast_RExprInteger, &v2)->int_;
 				break;
 			case 4:
-				res = O7C_GUARD(Ast_ExprReal_s, &v1, NULL)->real >= O7C_GUARD(Ast_ExprReal_s, &v2, NULL)->real;
+				res = O7C_GUARD(Ast_ExprReal_s, &v1)->real >= O7C_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 5:
-				res = O7C_GUARD(Ast_ExprSet_s, &v1, NULL)->set >= O7C_GUARD(Ast_ExprSet_s, &v2, NULL)->set;
+				res = O7C_GUARD(Ast_ExprSet_s, &v1)->set >= O7C_GUARD(Ast_ExprSet_s, &v2)->set;
 				break;
 			case 7:
 				res = false;
@@ -1118,7 +1141,7 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 			}
 			break;
 		case 27:
-			res = ( (1u << O7C_GUARD(Ast_RExprInteger, &v1, NULL)->int_) & O7C_GUARD(Ast_ExprSet_s, &v2, NULL)->set);
+			res = !!( (1u << O7C_GUARD(Ast_RExprInteger, &v1)->int_) & O7C_GUARD(Ast_ExprSet_s, &v2)->set);
 			break;
 		default:
 			abort();
@@ -1130,7 +1153,7 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 }
 
 static int LexToSign(int lex) {
-	int s = O7C_INT_UNDEFINED;
+	int s = O7C_INT_UNDEF;
 
 	if ((lex ==  - 1) || (lex == Scanner_Plus_cnst)) {
 		s =  + 1;
@@ -1145,7 +1168,7 @@ static void ExprSumCreate(struct Ast_ExprSum_s **e, int add, struct Ast_RExpress
 	struct Ast_RType *t = NULL;
 
 	(*e) = o7c_new(sizeof(*(*e)), Ast_ExprSum_s_tag);
-	if ((sum != NULL) && (sum->type != NULL) && (( (1u << sum->type->_._.id) & ((1 << Ast_IdReal_cnst) | (1 << Ast_IdInteger_cnst))))) {
+	if ((sum != NULL) && (sum->type != NULL) && (!!( (1u << sum->type->_._.id) & ((1 << Ast_IdReal_cnst) | (1 << Ast_IdInteger_cnst))))) {
 		t = sum->type;
 	} else if (term != NULL) {
 		t = term->type;
@@ -1159,13 +1182,13 @@ static void ExprSumCreate(struct Ast_ExprSum_s **e, int add, struct Ast_RExpress
 }
 
 extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, int add, struct Ast_RExpression *term) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	assert((add ==  - 1) || (add == Scanner_Plus_cnst) || (add == Scanner_Minus_cnst));
 	ExprSumCreate(&(*e), add, NULL, term);
 	err = Ast_ErrNo_cnst;
 	if ((*e)->_.type != NULL) {
-		if (!(( (1u << (*e)->_.type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdSet_cnst)))) && (add !=  - 1)) {
+		if (!(!!( (1u << (*e)->_.type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdSet_cnst)))) && (add !=  - 1)) {
 			if ((*e)->_.type->_._.id != Ast_IdBoolean_cnst) {
 				err = Ast_ErrNotNumberAndNotSetInAdd_cnst;
 			} else {
@@ -1174,20 +1197,20 @@ extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, int add, struct Ast_RExpress
 		} else if (term->value_ != NULL) {
 			switch ((*e)->_.type->_._.id) {
 			case 0:
-				(*e)->_.value_ = (&(Ast_ExprIntegerNew(o7c_mul(O7C_GUARD(Ast_RExprInteger, &term->value_, NULL)->int_, LexToSign(add))))->_._);
+				(*e)->_.value_ = (&(Ast_ExprIntegerNew(o7c_mul(O7C_GUARD(Ast_RExprInteger, &term->value_)->int_, LexToSign(add))))->_._);
 				break;
 			case 4:
-				(*e)->_.value_ = (&(Ast_ExprRealNewByValue(O7C_GUARD(Ast_ExprReal_s, &term->value_, NULL)->real * (double)LexToSign(add)))->_._);
+				(*e)->_.value_ = (&(Ast_ExprRealNewByValue(o7c_fmul(O7C_GUARD(Ast_ExprReal_s, &term->value_)->real, (double)LexToSign(add))))->_._);
 				break;
 			case 5:
 				if (add != Scanner_Minus_cnst) {
-					(*e)->_.value_ = (&(Ast_ExprSetByValue(O7C_GUARD(Ast_ExprSet_s, &term->value_, NULL)->set))->_);
+					(*e)->_.value_ = (&(Ast_ExprSetByValue(O7C_GUARD(Ast_ExprSet_s, &term->value_)->set))->_);
 				} else {
-					(*e)->_.value_ = (&(Ast_ExprSetByValue( ~O7C_GUARD(Ast_ExprSet_s, &term->value_, NULL)->set))->_);
+					(*e)->_.value_ = (&(Ast_ExprSetByValue( ~O7C_GUARD(Ast_ExprSet_s, &term->value_)->set))->_);
 				}
 				break;
 			case 1:
-				(*e)->_.value_ = (&(Ast_ExprBooleanNew(O7C_GUARD(Ast_ExprBoolean_s, &term->value_, NULL)->bool_))->_);
+				(*e)->_.value_ = (&(Ast_ExprBooleanNew(O7C_GUARD(Ast_ExprBoolean_s, &term->value_)->bool_))->_);
 				break;
 			default:
 				abort();
@@ -1198,8 +1221,8 @@ extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, int add, struct Ast_RExpress
 	return err;
 }
 
-static bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int add, int *err) {
-	bool continue_ = 0 > 1;
+static o7c_bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int add, int *err) {
+	o7c_bool continue_ = O7C_BOOL_UNDEF;
 
 	if ((e1->type == NULL) || (e2->type == NULL)) {
 		continue_ = false;
@@ -1212,39 +1235,39 @@ static bool ExprSumAdd_CheckType(struct Ast_RExpression *e1, struct Ast_RExpress
 			(*err) = Ast_ErrNotBoolInLogicExpr_cnst;
 		}
 	} else {
-		continue_ = (e1->type->_._.id == Ast_IdInteger_cnst) || (e1->type->_._.id == Ast_IdReal_cnst) || (e1->type->_._.id == Ast_IdSet_cnst);
+		continue_ = !!( (1u << e1->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdSet_cnst)));
 		if (!continue_) {
 			(*err) = Ast_ErrNotNumberAndNotSetInAdd_cnst;
 		}
 	}
-	return continue_;
+	return o7c_bl(continue_);
 }
 
 extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, struct Ast_ExprSum_s **lastAdder, int add, struct Ast_RExpression *term) {
 	struct Ast_ExprSum_s *e = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	assert((add == Scanner_Plus_cnst) || (add == Scanner_Minus_cnst) || (add == Scanner_Or_cnst));
 	ExprSumCreate(&e, add, fullSum, term);
 	err = Ast_ErrNo_cnst;
 	if ((fullSum != NULL) && (term != NULL) && ExprSumAdd_CheckType(fullSum, term, add, &err) && (fullSum->value_ != NULL) && (term->value_ != NULL)) {
 		if (add == Scanner_Or_cnst) {
-			if (O7C_GUARD(Ast_ExprBoolean_s, &term->value_, NULL)->bool_) {
-				O7C_GUARD(Ast_ExprBoolean_s, &fullSum->value_, NULL)->bool_ = true;
+			if (O7C_GUARD(Ast_ExprBoolean_s, &term->value_)->bool_) {
+				O7C_GUARD(Ast_ExprBoolean_s, &fullSum->value_)->bool_ = true;
 			}
 		} else {
 			switch (term->type->_._.id) {
 			case 0:
-				O7C_GUARD(Ast_RExprInteger, &fullSum->value_, NULL)->int_ = o7c_add(O7C_GUARD(Ast_RExprInteger, &fullSum->value_, NULL)->int_, o7c_mul(O7C_GUARD(Ast_RExprInteger, &term->value_, NULL)->int_, LexToSign(add)));
+				O7C_GUARD(Ast_RExprInteger, &fullSum->value_)->int_ = o7c_add(O7C_GUARD(Ast_RExprInteger, &fullSum->value_)->int_, o7c_mul(O7C_GUARD(Ast_RExprInteger, &term->value_)->int_, LexToSign(add)));
 				break;
 			case 4:
-				O7C_GUARD(Ast_ExprReal_s, &fullSum->value_, NULL)->real = O7C_GUARD(Ast_ExprReal_s, &fullSum->value_, NULL)->real + O7C_GUARD(Ast_ExprReal_s, &term->value_, NULL)->real * (double)LexToSign(add);
+				O7C_GUARD(Ast_ExprReal_s, &fullSum->value_)->real = o7c_fadd(O7C_GUARD(Ast_ExprReal_s, &fullSum->value_)->real, o7c_fmul(O7C_GUARD(Ast_ExprReal_s, &term->value_)->real, (double)LexToSign(add)));
 				break;
 			case 5:
 				if (add == Scanner_Plus_cnst) {
-					O7C_GUARD(Ast_ExprSet_s, &fullSum->value_, NULL)->set = O7C_GUARD(Ast_ExprSet_s, &fullSum->value_, NULL)->set | O7C_GUARD(Ast_ExprSet_s, &term->value_, NULL)->set;
+					O7C_GUARD(Ast_ExprSet_s, &fullSum->value_)->set = O7C_GUARD(Ast_ExprSet_s, &fullSum->value_)->set | O7C_GUARD(Ast_ExprSet_s, &term->value_)->set;
 				} else {
-					O7C_GUARD(Ast_ExprSet_s, &fullSum->value_, NULL)->set = O7C_GUARD(Ast_ExprSet_s, &fullSum->value_, NULL)->set & ~O7C_GUARD(Ast_ExprSet_s, &term->value_, NULL)->set;
+					O7C_GUARD(Ast_ExprSet_s, &fullSum->value_)->set = O7C_GUARD(Ast_ExprSet_s, &fullSum->value_)->set & ~O7C_GUARD(Ast_ExprSet_s, &term->value_)->set;
 				}
 				break;
 			default:
@@ -1263,20 +1286,26 @@ extern int Ast_ExprSumAdd(struct Ast_RExpression *fullSum, struct Ast_ExprSum_s 
 }
 
 static int MultCalc(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b);
-static bool MultCalc_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int mult, int *err) {
-	bool continue_ = 0 > 1;
+static o7c_bool MultCalc_CheckType(struct Ast_RExpression *e1, struct Ast_RExpression *e2, int mult, int *err) {
+	o7c_bool continue_ = O7C_BOOL_UNDEF;
 
 	if ((e1->type == NULL) || (e2->type == NULL)) {
 		continue_ = false;
 	} else if (e1->type->_._.id != e2->type->_._.id) {
 		continue_ = false;
-		(*err) = Ast_ErrMultExprDifferenTypes_cnst;
+		if (mult == Scanner_And_cnst) {
+			(*err) = Ast_ErrNotBoolInLogicExpr_cnst;
+		} else if (mult == Scanner_Asterisk_cnst) {
+			(*err) = Ast_ErrMultExprDifferentTypes_cnst;
+		} else {
+			(*err) = Ast_ErrDivExprDifferentTypes_cnst;
+		}
 	} else if (mult == Scanner_And_cnst) {
 		continue_ = e1->type->_._.id == Ast_IdBoolean_cnst;
 		if (!continue_) {
 			(*err) = Ast_ErrNotBoolInLogicExpr_cnst;
 		}
-	} else if ((e1->type->_._.id != Ast_IdInteger_cnst) && (e1->type->_._.id != Ast_IdReal_cnst) && (e1->type->_._.id != Ast_IdSet_cnst)) {
+	} else if (!(!!( (1u << e1->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst) | (1 << Ast_IdSet_cnst))))) {
 		continue_ = false;
 		(*err) = Ast_ErrNotNumberAndNotSetInMult_cnst;
 	} else if ((mult == Scanner_Div_cnst) || (mult == Scanner_Mod_cnst)) {
@@ -1290,14 +1319,14 @@ static bool MultCalc_CheckType(struct Ast_RExpression *e1, struct Ast_RExpressio
 	} else {
 		continue_ = true;
 	}
-	return continue_;
+	return o7c_bl(continue_);
 }
 
 static void MultCalc_Int(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b, int *err) {
-	int i = O7C_INT_UNDEFINED, i1 = O7C_INT_UNDEFINED, i2 = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF, i1 = O7C_INT_UNDEF, i2 = O7C_INT_UNDEF;
 
-	i1 = O7C_GUARD(Ast_RExprInteger, &a->value_, NULL)->int_;
-	i2 = O7C_GUARD(Ast_RExprInteger, &b->value_, NULL)->int_;
+	i1 = O7C_GUARD(Ast_RExprInteger, &a->value_)->int_;
+	i2 = O7C_GUARD(Ast_RExprInteger, &b->value_)->int_;
 	if (mult == Scanner_Asterisk_cnst) {
 		i = o7c_mul(i1, i2);
 	} else if (i2 == 0) {
@@ -1312,33 +1341,33 @@ static void MultCalc_Int(struct Ast_RExpression *res, struct Ast_RExpression *a,
 		if (res->value_ == NULL) {
 			res->value_ = (&(Ast_ExprIntegerNew(i))->_._);
 		} else {
-			O7C_GUARD(Ast_RExprInteger, &res->value_, NULL)->int_ = i;
+			O7C_GUARD(Ast_RExprInteger, &res->value_)->int_ = i;
 		}
 	}
 }
 
 static void MultCalc_Rl(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
-	double r = 0./0., r1 = 0./0., r2 = 0./0.;
+	double r = O7C_DBL_UNDEF, r1 = O7C_DBL_UNDEF, r2 = O7C_DBL_UNDEF;
 
-	r1 = O7C_GUARD(Ast_ExprReal_s, &a->value_, NULL)->real;
-	r2 = O7C_GUARD(Ast_ExprReal_s, &b->value_, NULL)->real;
+	r1 = O7C_GUARD(Ast_ExprReal_s, &a->value_)->real;
+	r2 = O7C_GUARD(Ast_ExprReal_s, &b->value_)->real;
 	if (mult == Scanner_Asterisk_cnst) {
-		r = r1 * r2;
+		r = o7c_fmul(r1, r2);
 	} else {
 		r = r1 / r2;
 	}
 	if (res->value_ == NULL) {
 		res->value_ = (&(Ast_ExprRealNewByValue(r))->_._);
 	} else {
-		O7C_GUARD(Ast_ExprReal_s, &res->value_, NULL)->real = r;
+		O7C_GUARD(Ast_ExprReal_s, &res->value_)->real = r;
 	}
 }
 
 static void MultCalc_St(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
 	unsigned s = 0, s1 = 0, s2 = 0;
 
-	s1 = O7C_GUARD(Ast_ExprSet_s, &a->value_, NULL)->set;
-	s2 = O7C_GUARD(Ast_ExprSet_s, &b->value_, NULL)->set;
+	s1 = O7C_GUARD(Ast_ExprSet_s, &a->value_)->set;
+	s2 = O7C_GUARD(Ast_ExprSet_s, &b->value_)->set;
 	if (mult == Scanner_Asterisk_cnst) {
 		s = s1 & s2;
 	} else {
@@ -1347,13 +1376,13 @@ static void MultCalc_St(struct Ast_RExpression *res, struct Ast_RExpression *a, 
 	if (res->value_ == NULL) {
 		res->value_ = (&(Ast_ExprSetByValue(s))->_);
 	} else {
-		O7C_GUARD(Ast_ExprSet_s, &res->value_, NULL)->set = s;
+		O7C_GUARD(Ast_ExprSet_s, &res->value_)->set = s;
 	}
 }
 
 static int MultCalc(struct Ast_RExpression *res, struct Ast_RExpression *a, int mult, struct Ast_RExpression *b) {
-	int err = O7C_INT_UNDEFINED;
-	bool bool_ = 0 > 1;
+	int err = O7C_INT_UNDEF;
+	o7c_bool bool_ = O7C_BOOL_UNDEF;
 
 	err = Ast_ErrNo_cnst;
 	if (MultCalc_CheckType(a, b, mult, &err) && (a->value_ != NULL) && (b->value_ != NULL)) {
@@ -1365,11 +1394,11 @@ static int MultCalc(struct Ast_RExpression *res, struct Ast_RExpression *a, int 
 			MultCalc_Rl(res, a, mult, b);
 			break;
 		case 1:
-			bool_ = O7C_GUARD(Ast_ExprBoolean_s, &a->value_, NULL)->bool_ && O7C_GUARD(Ast_ExprBoolean_s, &b->value_, NULL)->bool_;
+			bool_ = o7c_bl(O7C_GUARD(Ast_ExprBoolean_s, &a->value_)->bool_) && o7c_bl(O7C_GUARD(Ast_ExprBoolean_s, &b->value_)->bool_);
 			if (res->value_ == NULL) {
 				res->value_ = (&(Ast_ExprBooleanNew(bool_))->_);
 			} else {
-				O7C_GUARD(Ast_ExprBoolean_s, &res->value_, NULL)->bool_ = bool_;
+				O7C_GUARD(Ast_ExprBoolean_s, &res->value_)->bool_ = bool_;
 			}
 			break;
 		case 5:
@@ -1406,11 +1435,11 @@ extern int Ast_ExprTermNew(struct Ast_ExprTerm_s **e, struct Ast_RFactor *factor
 
 extern int Ast_ExprTermAdd(struct Ast_RExpression *fullTerm, struct Ast_ExprTerm_s **lastTerm, int mult, struct Ast_RExpression *factorOrTerm) {
 	struct Ast_ExprTerm_s *e = NULL;
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	if ((*lastTerm) != NULL) {
 		assert((*lastTerm)->expr != NULL);
-		err = ExprTermGeneral(&e, fullTerm, O7C_GUARD(Ast_RFactor, &(*lastTerm)->expr, NULL), mult, factorOrTerm);
+		err = ExprTermGeneral(&e, fullTerm, O7C_GUARD(Ast_RFactor, &(*lastTerm)->expr), mult, factorOrTerm);
 		(*lastTerm)->expr = (&(e)->_);
 		(*lastTerm) = e;
 	} else {
@@ -1419,8 +1448,8 @@ extern int Ast_ExprTermAdd(struct Ast_RExpression *fullTerm, struct Ast_ExprTerm
 	return err;
 }
 
-static int ExprCallCreate(struct Ast_ExprCall_s **e, struct Ast_Designator_s *des, bool func_) {
-	int err = O7C_INT_UNDEFINED;
+static int ExprCallCreate(struct Ast_ExprCall_s **e, struct Ast_Designator_s *des, o7c_bool func_) {
+	int err = O7C_INT_UNDEF;
 	struct Ast_RType *t = NULL;
 	struct Ast_ProcType_s *pt = NULL;
 
@@ -1456,20 +1485,20 @@ extern int Ast_ExprCallNew(struct Ast_ExprCall_s **e, struct Ast_Designator_s *d
 	return ExprCallCreate(&(*e), des, true);
 }
 
-extern bool Ast_IsChangeable(struct Ast_RModule *cur, struct Ast_RVar *v) {
+extern o7c_bool Ast_IsChangeable(struct Ast_RModule *cur, struct Ast_RVar *v) {
 	Log_StrLn("IsChangeable", 13);
-	return (!(o7c_is(NULL, v, Ast_FormalParam_s_tag)) || (O7C_GUARD(Ast_FormalParam_s, &v, NULL)->isVar) || !((o7c_is(NULL, v->_.type, Ast_RArray_tag)) || (o7c_is(NULL, v->_.type, Ast_Record_s_tag))));
+	return (!(o7c_is(NULL, v, Ast_FormalParam_s_tag)) || (O7C_GUARD(Ast_FormalParam_s, &v)->isVar) || !((o7c_is(NULL, v->_.type, Ast_RArray_tag)) || (o7c_is(NULL, v->_.type, Ast_Record_s_tag))));
 }
 
-extern bool Ast_IsVar(struct Ast_RExpression *e) {
+extern o7c_bool Ast_IsVar(struct Ast_RExpression *e) {
 	Log_Str("IsVar: e.id = ", 15);
 	Log_Int(e->_.id);
 	Log_Ln();
-	return (o7c_is(NULL, e, Ast_Designator_s_tag)) && (o7c_is(NULL, O7C_GUARD(Ast_Designator_s, &e, NULL)->decl, Ast_RVar_tag));
+	return (o7c_is(NULL, e, Ast_Designator_s_tag)) && (o7c_is(NULL, O7C_GUARD(Ast_Designator_s, &e)->decl, Ast_RVar_tag));
 }
 
 extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, struct Ast_RProcedure **p, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	if (SearchName(ds->start, buf, buf_len0, begin, end) == NULL) {
 		err = Ast_ErrNo_cnst;
@@ -1489,7 +1518,7 @@ extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, struct Ast_RProcedure 
 }
 
 extern int Ast_ProcedureSetReturn(struct Ast_RProcedure *p, struct Ast_RExpression *e) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	assert(p->_.return_ == NULL);
 	err = Ast_ErrNo_cnst;
@@ -1505,7 +1534,7 @@ extern int Ast_ProcedureSetReturn(struct Ast_RProcedure *p, struct Ast_RExpressi
 }
 
 extern int Ast_ProcedureEnd(struct Ast_RProcedure *p) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	if ((p->_.header->_._._.type != NULL) && (p->_.return_ == NULL)) {
 		err = Ast_ErrExpectReturn_cnst;
@@ -1515,9 +1544,9 @@ extern int Ast_ProcedureEnd(struct Ast_RProcedure *p) {
 	return err;
 }
 
-static bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, struct Ast_RType *tp, struct Ast_FormalParam_s *fp) {
-	bool comp = 0 > 1;
-	int id = O7C_INT_UNDEFINED;
+static o7c_bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, struct Ast_RType *tp, struct Ast_FormalParam_s *fp) {
+	o7c_bool comp = O7C_BOOL_UNDEF;
+	int id = O7C_INT_UNDEF;
 
 	comp = o7c_is(NULL, call->designator->decl, Ast_PredefinedProcedure_s_tag);
 	if (comp) {
@@ -1525,19 +1554,19 @@ static bool CallParamNew_TypeVariation(struct Ast_ExprCall_s *call, struct Ast_R
 		if (id == Scanner_New_cnst) {
 			comp = tp->_._.id == Ast_IdPointer_cnst;
 		} else if (id == Scanner_Abs_cnst) {
-			comp = ( (1u << tp->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst)));
+			comp = !!( (1u << tp->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdReal_cnst)));
 			call->_._.type = tp;
 		} else if (id == Scanner_Len_cnst) {
 			comp = tp->_._.id == Ast_IdArray_cnst;
 		} else {
-			comp = (id == Scanner_Ord_cnst) && (( (1u << tp->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst) | (1 << Ast_IdSet_cnst) | (1 << Ast_IdBoolean_cnst))));
+			comp = (id == Scanner_Ord_cnst) && (!!( (1u << tp->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst) | (1 << Ast_IdSet_cnst) | (1 << Ast_IdBoolean_cnst))));
 		}
 	}
-	return comp;
+	return o7c_bl(comp);
 }
 
 static void CallParamNew_ParamsVariation(struct Ast_ExprCall_s *call, struct Ast_RExpression *e, int *err) {
-	int id = O7C_INT_UNDEFINED;
+	int id = O7C_INT_UNDEF;
 
 	id = call->designator->decl->_.id;
 	if (id != Ast_IdError_cnst) {
@@ -1550,21 +1579,21 @@ static void CallParamNew_ParamsVariation(struct Ast_ExprCall_s *call, struct Ast
 }
 
 extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, struct Ast_Parameter_s **lastParam, struct Ast_RExpression *e, struct Ast_FormalParam_s **currentFormalParam) {
-	int err = O7C_INT_UNDEFINED, distance = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF, distance = O7C_INT_UNDEF;
 
 	err = Ast_ErrNo_cnst;
 	if ((*currentFormalParam) != NULL) {
 		if (!Ast_CompatibleTypes(&distance, (*currentFormalParam)->_._.type, e->type) && !CompatibleAsCharAndString((*currentFormalParam)->_._.type, &e) && !CallParamNew_TypeVariation(call, e->type, (*currentFormalParam))) {
 			err = Ast_ErrCallIncompatibleParamType_cnst;
 		} else if ((*currentFormalParam)->isVar) {
-			if (!(Ast_IsVar(e) && Ast_IsChangeable(call->designator->decl->module, O7C_GUARD(Ast_RVar, &O7C_GUARD(Ast_Designator_s, &e, NULL)->decl, NULL)))) {
+			if (!(Ast_IsVar(e) && Ast_IsChangeable(call->designator->decl->module, O7C_GUARD(Ast_RVar, &O7C_GUARD(Ast_Designator_s, &e)->decl)))) {
 				err = Ast_ErrCallExpectVarParam_cnst;
 			} else if ((e->type != NULL) && (e->type->_._.id == Ast_IdPointer_cnst) && (e->type != (*currentFormalParam)->_._.type) && ((*currentFormalParam)->_._.type != NULL) && ((*currentFormalParam)->_._.type->_.type != NULL) && (e->type->_.type != NULL)) {
 				err = Ast_ErrCallVarPointerTypeNotSame_cnst;
 			}
 		}
 		if (((*currentFormalParam)->_._.next != NULL) && (o7c_is(NULL, (*currentFormalParam)->_._.next, Ast_FormalParam_s_tag))) {
-			(*currentFormalParam) = O7C_GUARD(Ast_FormalParam_s, &(*currentFormalParam)->_._.next, NULL);
+			(*currentFormalParam) = O7C_GUARD(Ast_FormalParam_s, &(*currentFormalParam)->_._.next);
 		} else {
 			(*currentFormalParam) = NULL;
 		}
@@ -1595,53 +1624,53 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 			switch (call->designator->decl->_.id) {
 			case 90:
 				if (v->_.type->_._.id == Ast_IdReal_cnst) {
-					if (O7C_GUARD(Ast_ExprReal_s, &v, NULL)->real < 0.0) {
-						call->_._.value_ = (&(Ast_ExprRealNewByValue( - O7C_GUARD(Ast_ExprReal_s, &v, NULL)->real))->_._);
+					if (O7C_GUARD(Ast_ExprReal_s, &v)->real < 0.0) {
+						call->_._.value_ = (&(Ast_ExprRealNewByValue(o7c_fsub(0, O7C_GUARD(Ast_ExprReal_s, &v)->real)))->_._);
 					} else {
 						call->_._.value_ = v;
 					}
 				} else {
 					assert(v->_.type->_._.id == Ast_IdInteger_cnst);
-					call->_._.value_ = (&(Ast_ExprIntegerNew(abs(O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_)))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew(abs(O7C_GUARD(Ast_RExprInteger, &v)->int_)))->_._);
 				}
 				break;
 			case 107:
-				call->_._.value_ = (&(Ast_ExprBooleanNew((O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_ % 2 == 1)))->_);
+				call->_._.value_ = (&(Ast_ExprBooleanNew((O7C_GUARD(Ast_RExprInteger, &v)->int_ % 2 == 1)))->_);
 				break;
 			case 105:
 				if (call->params->next->expr->value_ != NULL) {
-					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_ << O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_, NULL)->int_)))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v)->int_ << O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_)->int_)))->_._);
 				}
 				break;
 			case 91:
 				if (call->params->next->expr->value_ != NULL) {
-					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_ >> O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_, NULL)->int_)))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v)->int_ >> O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_)->int_)))->_._);
 				}
 				break;
 			case 111:
 				if (call->params->next->expr->value_ != NULL) {
-					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_ >> O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_, NULL)->int_)))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew((int)((unsigned)O7C_GUARD(Ast_RExprInteger, &v)->int_ >> O7C_GUARD(Ast_RExprInteger, &call->params->next->expr->value_)->int_)))->_._);
 				}
 				break;
 			case 99:
-				call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprReal_s, &v, NULL)->real))->_._);
+				call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprReal_s, &v)->real))->_._);
 				break;
 			case 100:
-				call->_._.value_ = (&(Ast_ExprRealNewByValue((double)O7C_GUARD(Ast_RExprInteger, &v, NULL)->int_))->_._);
+				call->_._.value_ = (&(Ast_ExprRealNewByValue((double)O7C_GUARD(Ast_RExprInteger, &v)->int_))->_._);
 				break;
 			case 108:
 				if (v->_.type->_._.id == Ast_IdChar_cnst) {
 					call->_._.value_ = v;
 				} else if (o7c_is(NULL, v, Ast_ExprString_s_tag)) {
-					if (O7C_GUARD(Ast_ExprString_s, &v, NULL)->_.int_ >  - 1) {
-						call->_._.value_ = (&(Ast_ExprIntegerNew(O7C_GUARD(Ast_ExprString_s, &v, NULL)->_.int_))->_._);
+					if (O7C_GUARD(Ast_ExprString_s, &v)->_.int_ >  - 1) {
+						call->_._.value_ = (&(Ast_ExprIntegerNew(O7C_GUARD(Ast_ExprString_s, &v)->_.int_))->_._);
 					} else {
 						assert(false);
 					}
 				} else if (v->_.type->_._.id == Ast_IdBoolean_cnst) {
-					call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprBoolean_s, &v, NULL)->bool_))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprBoolean_s, &v)->bool_))->_._);
 				} else if (v->_.type->_._.id == Ast_IdSet_cnst) {
-					call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprSet_s, &v, NULL)->set))->_._);
+					call->_._.value_ = (&(Ast_ExprIntegerNew((int)O7C_GUARD(Ast_ExprSet_s, &v)->set))->_._);
 				} else {
 					Log_Str("Неправильный id типа = ", 40);
 					Log_Int(v->_.type->_._.id);
@@ -1656,8 +1685,8 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 				abort();
 				break;
 			}
-		} else if ((call->designator->decl->_.id == Scanner_Len_cnst) && (O7C_GUARD(Ast_RArray, &call->params->expr->type, NULL)->count != NULL)) {
-			call->_._.value_ = O7C_GUARD(Ast_RArray, &call->params->expr->type, NULL)->count->value_;
+		} else if ((call->designator->decl->_.id == Scanner_Len_cnst) && (O7C_GUARD(Ast_RArray, &call->params->expr->type)->count != NULL)) {
+			call->_._.value_ = O7C_GUARD(Ast_RArray, &call->params->expr->type)->count->value_;
 		}
 	}
 	return o7c_mul((int)(currentFormalParam != NULL), Ast_ErrCallParamsNotEnough_cnst);
@@ -1670,7 +1699,7 @@ static void StatInit(struct Ast_RStatement *s, struct Ast_RExpression *e) {
 }
 
 extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 	struct Ast_ExprCall_s *e = NULL;
 
 	err = ExprCallCreate(&e, des, false);
@@ -1679,33 +1708,57 @@ extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des) {
 	return err;
 }
 
-extern struct Ast_If_s *Ast_IfNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
-	struct Ast_If_s *if_ = NULL;
+extern int Ast_IfNew(struct Ast_If_s **if_, struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
+	int err = O7C_INT_UNDEF;
 
-	if_ = o7c_new(sizeof(*if_), Ast_If_s_tag);
-	StatInit(&if_->_._, expr);
-	if_->_.stats = stats;
-	if_->_.elsif = NULL;
-	return if_;
+	(*if_) = o7c_new(sizeof(*(*if_)), Ast_If_s_tag);
+	StatInit(&(*if_)->_._, expr);
+	(*if_)->_.stats = stats;
+	(*if_)->_.elsif = NULL;
+	if ((expr != NULL) && (expr->type->_._.id != Ast_IdBoolean_cnst)) {
+		err = Ast_ErrNotBoolInIfCondition_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
+	return err;
 }
 
-extern struct Ast_While_s *Ast_WhileNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
-	struct Ast_While_s *w = NULL;
-
-	w = o7c_new(sizeof(*w), Ast_While_s_tag);
-	StatInit(&w->_._, expr);
-	w->_.stats = stats;
-	w->_.elsif = NULL;
-	return w;
+static void CheckCondition(int *err, struct Ast_RExpression *expr, int adder) {
+	(*err) = Ast_ErrNo_cnst;
+	if (expr != NULL) {
+		if (expr->type->_._.id != Ast_IdBoolean_cnst) {
+			(*err) = o7c_add(Ast_ErrNotBoolInWhileCondition_cnst, adder);
+		} else if (expr->value_ != NULL) {
+			(*err) = o7c_sub(o7c_add(Ast_ErrWhileConditionAlwaysFalse_cnst, adder), (int)O7C_GUARD(Ast_ExprBoolean_s, &expr->value_)->bool_);
+		}
+	}
 }
 
-extern struct Ast_Repeat_s *Ast_RepeatNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
-	struct Ast_Repeat_s *r = NULL;
+extern int Ast_WhileNew(struct Ast_While_s **w, struct Ast_RExpression *expr, struct Ast_RStatement *stats) {
+	int err = O7C_INT_UNDEF;
 
-	r = o7c_new(sizeof(*r), Ast_Repeat_s_tag);
-	StatInit(&r->_, expr);
-	r->stats = stats;
-	return r;
+	(*w) = o7c_new(sizeof(*(*w)), Ast_While_s_tag);
+	StatInit(&(*w)->_._, expr);
+	(*w)->_.stats = stats;
+	(*w)->_.elsif = NULL;
+	CheckCondition(&err, expr, 0);
+	return err;
+}
+
+extern int Ast_RepeatNew(struct Ast_Repeat_s **r, struct Ast_RStatement *stats) {
+	(*r) = o7c_new(sizeof(*(*r)), Ast_Repeat_s_tag);
+	StatInit(&(*r)->_, NULL);
+	(*r)->stats = stats;
+	return Ast_ErrNo_cnst;
+}
+
+extern int Ast_RepeatSetUntil(struct Ast_Repeat_s *r, struct Ast_RExpression *e) {
+	int err = O7C_INT_UNDEF;
+
+	assert(r->_.expr == NULL);
+	r->_.expr = e;
+	CheckCondition(&err, e, Ast_ErrNotBoolInUntil_cnst - Ast_ErrNotBoolInWhileCondition_cnst);
+	return err;
 }
 
 extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats) {
@@ -1721,12 +1774,12 @@ extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpressio
 }
 
 extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	(*case_) = o7c_new(sizeof(*(*case_)), Ast_Case_s_tag);
 	StatInit(&(*case_)->_, expr);
 	(*case_)->elements = NULL;
-	if ((expr->type != NULL) && !(( (1u << expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))))) {
+	if ((expr->type != NULL) && !(!!( (1u << expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))))) {
 		err = Ast_ErrCaseExprNotIntOrChar_cnst;
 	} else {
 		err = Ast_ErrNo_cnst;
@@ -1751,7 +1804,7 @@ extern int Ast_CaseRangeSearch(struct Ast_Case_s *case_, int int_) {
 }
 
 extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_) {
-	assert(( (1u << id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))));
+	assert(!!( (1u << id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst))));
 	(*label) = o7c_new(sizeof(*(*label)), Ast_CaseLabel_s_tag);
 	NodeInit(&(*(*label))._, Ast_CaseLabel_s_tag);
 	(*label)->qual = NULL;
@@ -1763,19 +1816,19 @@ extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_) 
 }
 
 extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDeclaration *decl) {
-	int err = O7C_INT_UNDEFINED, i = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF, i = O7C_INT_UNDEF;
 
 	if (!(o7c_is(NULL, decl, Ast_Const_s_tag))) {
 		err = Ast_ErrCaseLabelNotConst_cnst;
-	} else if (!(( (1u << O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst)))) && !((o7c_is(NULL, O7C_GUARD(Ast_Const_s, &decl, NULL)->expr, Ast_ExprString_s_tag)) && (O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl, NULL)->expr, NULL)->_.int_ >  - 1))) {
-		err = Ast_ErrCaseExprNotIntOrChar_cnst;
+	} else if (!(!!( (1u << O7C_GUARD(Ast_Const_s, &decl)->expr->type->_._.id) & ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst)))) && !((o7c_is(NULL, O7C_GUARD(Ast_Const_s, &decl)->expr, Ast_ExprString_s_tag)) && (O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr)->_.int_ >  - 1))) {
+		err = Ast_ErrCaseLabelNotIntOrChar_cnst;
 	} else {
-		if (O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->type->_._.id == Ast_IdInteger_cnst) {
-			err = Ast_CaseLabelNew(&(*label), Ast_IdInteger_cnst, O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->value_, NULL)->int_);
+		if (O7C_GUARD(Ast_Const_s, &decl)->expr->type->_._.id == Ast_IdInteger_cnst) {
+			err = Ast_CaseLabelNew(&(*label), Ast_IdInteger_cnst, O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_Const_s, &decl)->expr->value_)->int_);
 		} else {
-			i = O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->value_, NULL)->_.int_;
+			i = O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr->value_)->_.int_;
 			if (i < 0) {
-				i = (int)O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl, NULL)->expr->value_, NULL)->string.block->s[0];
+				i = (int)O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr->value_)->string.block->s[0];
 			}
 			err = Ast_CaseLabelNew(&(*label), Ast_IdChar_cnst, i);
 		}
@@ -1787,7 +1840,7 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDecl
 }
 
 extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, struct Ast_CaseLabel_s *right) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	assert((left->right == NULL) && (left->next == NULL));
 	assert((right == NULL) || (right->right == NULL) && (right->next == NULL));
@@ -1802,25 +1855,25 @@ extern int Ast_CaseRangeNew(struct Ast_CaseLabel_s *left, struct Ast_CaseLabel_s
 	return err;
 }
 
-static bool IsRangesCross(struct Ast_CaseLabel_s *l1, struct Ast_CaseLabel_s *l2) {
-	bool cross = 0 > 1;
+static o7c_bool IsRangesCross(struct Ast_CaseLabel_s *l1, struct Ast_CaseLabel_s *l2) {
+	o7c_bool cross = O7C_BOOL_UNDEF;
 
 	if (l1->value_ < l2->value_) {
 		cross = (l1->right != NULL) && (l1->right->value_ >= l2->value_);
 	} else {
 		cross = (l1->value_ == l2->value_) || (l2->right != NULL) && (l2->right->value_ >= l1->value_);
 	}
-	return cross;
+	return o7c_bl(cross);
 }
 
-static bool IsListCrossRange(struct Ast_CaseLabel_s *list, struct Ast_CaseLabel_s *range) {
+static o7c_bool IsListCrossRange(struct Ast_CaseLabel_s *list, struct Ast_CaseLabel_s *range) {
 	while ((list != NULL) && !IsRangesCross(list, range)) {
 		list = list->next;
 	}
 	return list != NULL;
 }
 
-static bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, struct Ast_CaseLabel_s *range) {
+static o7c_bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, struct Ast_CaseLabel_s *range) {
 	while ((elem != NULL) && !IsListCrossRange(elem->labels, range)) {
 		elem = elem->next;
 	}
@@ -1828,7 +1881,7 @@ static bool IsElementsCrossRange(struct Ast_CaseElement_s *elem, struct Ast_Case
 }
 
 extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, struct Ast_CaseLabel_s *first, struct Ast_CaseLabel_s *new_) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	assert(new_->next == NULL);
 	if (case_->_.expr->type->_._.id != new_->_.id) {
@@ -1859,7 +1912,7 @@ extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labe
 }
 
 extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, struct Ast_CaseElement_s *elem) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 	struct Ast_CaseElement_s *last = NULL;
 
 	if (case_->elements == NULL) {
@@ -1876,7 +1929,7 @@ extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, struct Ast_CaseElement_s
 }
 
 extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, struct Ast_RExpression *expr) {
-	int err = O7C_INT_UNDEFINED;
+	int err = O7C_INT_UNDEF;
 
 	(*a) = o7c_new(sizeof(*(*a)), Ast_Assign_s_tag);
 	StatInit(&(*a)->_, expr);
@@ -1988,7 +2041,7 @@ static void PredefinedDeclarationsInit(void) {
 	ParamAddPredefined(tp, typeReal, true);
 }
 
-extern bool Ast_HasError(struct Ast_RModule *m) {
+extern o7c_bool Ast_HasError(struct Ast_RModule *m) {
 	return m->errLast != NULL;
 }
 

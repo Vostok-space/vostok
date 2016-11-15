@@ -13,7 +13,7 @@ extern o7c_tag_t V_Message_tag;
 typedef struct V_Message *V_PMessage;
 typedef struct V_Base {
 	struct V_Message _;
-	bool (*do_)(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag);
+	o7c_bool (*do_)(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag);
 } V_Base;
 extern o7c_tag_t V_Base_tag;
 
@@ -24,7 +24,7 @@ typedef struct V_Error {
 extern o7c_tag_t V_Error_tag;
 
 typedef struct V_Error *V_PError;
-typedef bool (*V_Handle)(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag);
+typedef o7c_bool (*V_Handle)(struct V_Base *this_, o7c_tag_t this__tag, struct V_Message *mes, o7c_tag_t mes_tag);
 typedef struct V_MsgFinalize {
 	struct V_Base _;
 } V_MsgFinalize;
@@ -65,7 +65,7 @@ extern void V_Init(struct V_Base *base, o7c_tag_t base_tag);
 
 extern void V_SetDo(struct V_Base *base, o7c_tag_t base_tag, V_Handle do_);
 
-extern bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag);
+extern o7c_bool V_Do(struct V_Base *handler, o7c_tag_t handler_tag, struct V_Message *message, o7c_tag_t message_tag);
 
 extern void V_init(void);
 #endif

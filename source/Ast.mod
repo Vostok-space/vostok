@@ -692,8 +692,6 @@ END TypeAdd;
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
 						  buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
-	ASSERT(~ds.module.fixed);
-
 	NEW(v); v.id := IdVar;
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
@@ -707,6 +705,7 @@ PROCEDURE VarAdd*(ds: Declarations;
 VAR v: Var;
 	err: INTEGER;
 BEGIN
+	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
 	IF SearchName(ds.start, buf, begin, end) = NIL THEN
 		err := ErrNo
 	ELSE

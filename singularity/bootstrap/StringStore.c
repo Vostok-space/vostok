@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "StringStore.h"
@@ -25,7 +26,7 @@ static void Put_AddBlock(struct StringStore_Block_s **b, int *i) {
 
 extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end) {
 	struct StringStore_Block_s *b = NULL;
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	assert((end >= 0) && (end < o7c_sub(s_len0, 1)));
 	b = (*store).last;
@@ -57,8 +58,8 @@ extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag
 	(*store).ofs = i;
 }
 
-extern bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end) {
-	int i = O7C_INT_UNDEFINED;
+extern o7c_bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end) {
+	int i = O7C_INT_UNDEF;
 	struct StringStore_Block_s *b = NULL;
 
 	assert((end >= 0) && (end < o7c_sub(s_len0, 1)));
@@ -74,8 +75,8 @@ extern bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w
 	return (b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u) && (j == end);
 }
 
-extern bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0) {
-	int i = O7C_INT_UNDEFINED, j = O7C_INT_UNDEFINED;
+extern o7c_bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0) {
+	int i = O7C_INT_UNDEF, j = O7C_INT_UNDEF;
 	struct StringStore_Block_s *b = NULL;
 
 	j = 0;
@@ -93,7 +94,7 @@ extern bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_tag_t 
 
 extern void StringStore_CopyToChars(o7c_char d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, o7c_tag_t w_tag) {
 	struct StringStore_Block_s *b = NULL;
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	b = (*w).block;
 	i = (*w).ofs;
@@ -124,8 +125,8 @@ extern void StringStore_StoreDone(struct StringStore_Store *s, o7c_tag_t s_tag) 
 	(*s).last = NULL;
 }
 
-extern bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, int *destOfs, o7c_char src[/*len0*/], int src_len0, int srcOfs, int srcEnd) {
-	bool ret = 0 > 1;
+extern o7c_bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, int *destOfs, o7c_char src[/*len0*/], int src_len0, int srcOfs, int srcEnd) {
+	o7c_bool ret = O7C_BOOL_UNDEF;
 
 	assert(((*destOfs) >= 0) && (srcOfs >= 0) && (srcEnd >= srcOfs) && (srcEnd <= src_len0));
 	ret = o7c_sub(o7c_add((*destOfs), srcEnd), srcOfs) < o7c_sub(dest_len0, 1);
@@ -137,11 +138,11 @@ extern bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, int *d
 		}
 	}
 	dest[o7c_ind(dest_len0, (*destOfs))] = 0x00u;
-	return ret;
+	return o7c_bl(ret);
 }
 
 extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, struct StringStore_String *str, o7c_tag_t str_tag) {
-	int i = O7C_INT_UNDEFINED, len = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF, len = O7C_INT_UNDEF;
 	struct StringStore_Block_s *block = NULL;
 
 	block = (*str).block;

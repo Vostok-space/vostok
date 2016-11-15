@@ -12,8 +12,8 @@
 #define Ast_ErrNo_cnst 0
 #define Ast_ErrImportNameDuplicate_cnst (-1)
 #define Ast_ErrDeclarationNameDuplicate_cnst (-2)
-#define Ast_ErrReturnInModuleInit_cnst (-3)
-#define Ast_ErrMultExprDifferenTypes_cnst (-4)
+#define Ast_ErrMultExprDifferentTypes_cnst (-3)
+#define Ast_ErrDivExprDifferentTypes_cnst (-4)
 #define Ast_ErrNotBoolInLogicExpr_cnst (-5)
 #define Ast_ErrNotIntInDivOrMod_cnst (-6)
 #define Ast_ErrNotRealTypeForRealDiv_cnst (-7)
@@ -22,10 +22,9 @@
 #define Ast_ErrSetElemOutOfRange_cnst (-10)
 #define Ast_ErrSetLeftElemBiggerRightElem_cnst (-11)
 #define Ast_ErrAddExprDifferenTypes_cnst (-12)
-#define Ast_ErrNotNumberAndNotSetInMul_cnst (-13)
+#define Ast_ErrNotNumberAndNotSetInMult_cnst (-13)
 #define Ast_ErrNotNumberAndNotSetInAdd_cnst (-14)
 #define Ast_ErrSignForBool_cnst (-15)
-#define Ast_ErrNotNumberAndNotSetInMult_cnst (-16)
 #define Ast_ErrRelationExprDifferenTypes_cnst (-17)
 #define Ast_ErrExprInWrongTypes_cnst (-18)
 #define Ast_ErrExprInRightNotSet_cnst (-19)
@@ -44,8 +43,8 @@
 #define Ast_ErrCallParamsNotEnough_cnst (-32)
 #define Ast_ErrCallVarPointerTypeNotSame_cnst (-58)
 #define Ast_ErrCaseExprNotIntOrChar_cnst (-33)
+#define Ast_ErrCaseLabelNotIntOrChar_cnst (-68)
 #define Ast_ErrCaseElemExprTypeMismatch_cnst (-34)
-#define Ast_ErrCaseElemExprNotConst_cnst (-35)
 #define Ast_ErrCaseElemDuplicate_cnst (-36)
 #define Ast_ErrCaseRangeLabelsTypeMismatch_cnst (-37)
 #define Ast_ErrCaseLabelLeftNotLessRight_cnst (-38)
@@ -54,6 +53,7 @@
 #define Ast_ErrReturnIncompatibleType_cnst (-41)
 #define Ast_ErrExpectReturn_cnst (-42)
 #define Ast_ErrDeclarationNotFound_cnst (-43)
+#define Ast_ErrDeclarationIsPrivate_cnst (-66)
 #define Ast_ErrConstRecursive_cnst (-44)
 #define Ast_ErrImportModuleNotFound_cnst (-45)
 #define Ast_ErrImportModuleWithError_cnst (-46)
@@ -68,6 +68,14 @@
 #define Ast_ErrDotSelectorToNotRecord_cnst (-55)
 #define Ast_ErrDeclarationNotVar_cnst (-56)
 #define Ast_ErrForIteratorNotInteger_cnst (-57)
+#define Ast_ErrNotBoolInIfCondition_cnst (-59)
+#define Ast_ErrNotBoolInWhileCondition_cnst (-60)
+#define Ast_ErrWhileConditionAlwaysFalse_cnst (-61)
+#define Ast_ErrWhileConditionAlwaysTrue_cnst (-62)
+#define Ast_ErrNotBoolInUntil_cnst (-63)
+#define Ast_ErrUntilAlwaysFalse_cnst (-64)
+#define Ast_ErrUntilAlwaysTrue_cnst (-65)
+#define Ast_ErrNegateNotBool_cnst (-67)
 #define Ast_ErrNotImplemented_cnst (-99)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
@@ -133,7 +141,7 @@ typedef struct Ast_RDeclaration {
 	struct Ast_RModule *module;
 	struct Ast_RDeclarations *up;
 	struct StringStore_String name;
-	bool mark;
+	o7c_bool mark;
 	struct Ast_RType *type;
 	struct Ast_RDeclaration *next;
 } Ast_RDeclaration;
@@ -155,7 +163,7 @@ typedef struct Ast_RExpression *Ast_Expression;
 typedef struct Ast_Const_s {
 	struct Ast_RDeclaration _;
 	struct Ast_RExpression *expr;
-	bool finished;
+	o7c_bool finished;
 } *Ast_Const;
 extern o7c_tag_t Ast_Const_s_tag;
 
@@ -193,7 +201,7 @@ extern o7c_tag_t Ast_RVar_tag;
 
 typedef struct Ast_FormalParam_s {
 	struct Ast_RVar _;
-	bool isVar;
+	o7c_bool isVar;
 } *Ast_FormalParam;
 extern o7c_tag_t Ast_FormalParam_s_tag;
 
@@ -228,6 +236,7 @@ typedef struct Ast_RModule {
 	struct Ast_RDeclarations _;
 	struct StringStore_Store store;
 	struct Ast_Import_s *import_;
+	o7c_bool fixed;
 	struct Ast_Error_s *errors;
 	struct Ast_Error_s *errLast;
 } Ast_RModule;
@@ -323,14 +332,14 @@ extern o7c_tag_t Ast_ExprReal_s_tag;
 
 typedef struct Ast_ExprBoolean_s {
 	struct Ast_RFactor _;
-	bool bool_;
+	o7c_bool bool_;
 } *Ast_ExprBoolean;
 extern o7c_tag_t Ast_ExprBoolean_s_tag;
 
 typedef struct Ast_ExprString_s {
 	struct Ast_RExprInteger _;
 	struct StringStore_String string;
-	bool asChar;
+	o7c_bool asChar;
 } *Ast_ExprString;
 extern o7c_tag_t Ast_ExprString_s_tag;
 
@@ -492,6 +501,8 @@ extern struct Ast_RModule *Ast_ModuleNew(o7c_char name[/*len0*/], int name_len0,
 
 extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end);
 
+extern int Ast_ModuleEnd(struct Ast_RModule *m);
+
 extern int Ast_ImportAdd(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int nameOfs, int nameEnd, int realOfs, int realEnd, struct Ast_RProvider *p);
 
 extern int Ast_ConstAdd(struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end);
@@ -532,7 +543,7 @@ extern struct Ast_ExprReal_s *Ast_ExprRealNew(double real, struct Ast_RModule *m
 
 extern struct Ast_ExprReal_s *Ast_ExprRealNewByValue(double real);
 
-extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(bool bool_);
+extern struct Ast_ExprBoolean_s *Ast_ExprBooleanNew(o7c_bool bool_);
 
 extern struct Ast_ExprString_s *Ast_ExprStringNew(struct Ast_RModule *m, o7c_char buf[/*len0*/], int buf_len0, int begin, int end);
 
@@ -546,11 +557,11 @@ extern struct Ast_ExprSet_s *Ast_ExprSetByValue(unsigned set);
 
 extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr1, struct Ast_RExpression *expr2);
 
-extern struct Ast_ExprNegate_s *Ast_ExprNegateNew(struct Ast_RExpression *expr);
+extern int Ast_ExprNegateNew(struct Ast_ExprNegate_s **neg, struct Ast_RExpression *expr);
 
 extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl);
 
-extern bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1);
+extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1);
 
 extern int Ast_SelPointerNew(struct Ast_RSelector **sel, struct Ast_RType **type);
 
@@ -560,7 +571,7 @@ extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type,
 
 extern int Ast_SelGuardNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RDeclaration *guard);
 
-extern bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_RType *t2);
+extern o7c_bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct Ast_RType *t2);
 
 extern int Ast_ExprIsExtensionNew(struct Ast_ExprIsExtension_s **e, struct Ast_RExpression **des, struct Ast_RType *type);
 
@@ -576,9 +587,9 @@ extern int Ast_ExprTermAdd(struct Ast_RExpression *fullTerm, struct Ast_ExprTerm
 
 extern int Ast_ExprCallNew(struct Ast_ExprCall_s **e, struct Ast_Designator_s *des);
 
-extern bool Ast_IsChangeable(struct Ast_RModule *cur, struct Ast_RVar *v);
+extern o7c_bool Ast_IsChangeable(struct Ast_RModule *cur, struct Ast_RVar *v);
 
-extern bool Ast_IsVar(struct Ast_RExpression *e);
+extern o7c_bool Ast_IsVar(struct Ast_RExpression *e);
 
 extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, struct Ast_RProcedure **p, o7c_char buf[/*len0*/], int buf_len0, int begin, int end);
 
@@ -592,11 +603,13 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 
 extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des);
 
-extern struct Ast_If_s *Ast_IfNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats);
+extern int Ast_IfNew(struct Ast_If_s **if_, struct Ast_RExpression *expr, struct Ast_RStatement *stats);
 
-extern struct Ast_While_s *Ast_WhileNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats);
+extern int Ast_WhileNew(struct Ast_While_s **w, struct Ast_RExpression *expr, struct Ast_RStatement *stats);
 
-extern struct Ast_Repeat_s *Ast_RepeatNew(struct Ast_RExpression *expr, struct Ast_RStatement *stats);
+extern int Ast_RepeatNew(struct Ast_Repeat_s **r, struct Ast_RStatement *stats);
+
+extern int Ast_RepeatSetUntil(struct Ast_Repeat_s *r, struct Ast_RExpression *e);
 
 extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats);
 
@@ -620,7 +633,7 @@ extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, 
 
 extern struct Ast_StatementError_s *Ast_StatementErrorNew(void);
 
-extern bool Ast_HasError(struct Ast_RModule *m);
+extern o7c_bool Ast_HasError(struct Ast_RModule *m);
 
 extern void Ast_ProviderInit(struct Ast_RProvider *p, Ast_Provide get);
 

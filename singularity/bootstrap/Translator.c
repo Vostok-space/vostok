@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "Log.h"
@@ -54,52 +55,49 @@ static void ErrorMessage(int code) {
 		{ int o7c_case_expr = o7c_sub(code, Parser_ErrAstBegin_cnst);
 			switch (o7c_case_expr) {
 			case -1:
-				ErrorMessage_O("Ast.ErrImportNameDuplicate", 27);
+				ErrorMessage_O("Имя модуля уже встречается в списке импорта", 81);
 				break;
 			case -2:
 				ErrorMessage_O("Повторное объявление имени в той же области видимости", 100);
 				break;
 			case -3:
-				ErrorMessage_O("Ast.ErrReturnInModuleInit", 26);
+				ErrorMessage_O("Типы подвыражений в умножении несовместимы", 81);
 				break;
 			case -4:
-				ErrorMessage_O("st.ErrMultExprDifferenTypes", 28);
+				ErrorMessage_O("Типы подвыражений в делении несовместимы", 77);
 				break;
 			case -5:
-				ErrorMessage_O("Ast.ErrNotBoolInLogicExpr", 26);
+				ErrorMessage_O("В логическом выражении должны использоваться подвыражении логического типа", 142);
 				break;
 			case -6:
-				ErrorMessage_O("Ast.ErrNotIntInDivOrMod", 24);
+				ErrorMessage_O("В целочисленном делении допустимы только целочисленные подвыражения", 129);
 				break;
 			case -7:
-				ErrorMessage_O("Ast.ErrNotRealTypeForRealDiv", 29);
+				ErrorMessage_O("В дробном делении допустимы только подвыражения дробного типа", 116);
 				break;
 			case -8:
-				ErrorMessage_O("Ast.ErrIntDivByZero", 20);
+				ErrorMessage_O("Деление на 0", 22);
 				break;
 			case -9:
-				ErrorMessage_O("Ast.ErrNotIntSetElem", 21);
+				ErrorMessage_O("В качестве элементов множества допустимы только целые числа", 112);
 				break;
 			case -10:
-				ErrorMessage_O("Ast.ErrSetElemOutOfRange", 25);
+				ErrorMessage_O("Элемент множества выходит за границы возможных значений - 0 .. 31", 115);
 				break;
 			case -11:
-				ErrorMessage_O("Ast.ErrSetLeftElemBiggerRightElem", 34);
+				ErrorMessage_O("Левый элемент диапазона больше правого", 73);
 				break;
 			case -12:
-				ErrorMessage_O("Ast.ErrAddExprDifferenTypes", 28);
+				ErrorMessage_O("Типы подвыражений в сложении несовместимы", 79);
 				break;
 			case -13:
-				ErrorMessage_O("Ast.ErrNotNumberAndNotSetInMul", 31);
+				ErrorMessage_O("В выражениях *, /, DIV, MOD допустимы только числа и множества", 104);
 				break;
 			case -14:
-				ErrorMessage_O("Ast.ErrNotNumberAndNotSetInAdd", 31);
+				ErrorMessage_O("В выражениях +, - допустимы только числа и множества", 94);
 				break;
 			case -15:
-				ErrorMessage_O("Ast.ErrSignForBool", 19);
-				break;
-			case -16:
-				ErrorMessage_O("Ast.ErrNotNumberAndNotSetInMult", 32);
+				ErrorMessage_O("Унарный знак не применим к логическому выражению", 91);
 				break;
 			case -17:
 				ErrorMessage_O("Типы подвыражений в сравнении не совпадают", 80);
@@ -111,16 +109,16 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Ast.ErrExprInRightNotSet", 25);
 				break;
 			case -20:
-				ErrorMessage_O("Ast.ErrExprInLeftNotInteger", 28);
+				ErrorMessage_O("Левый член выражения IN должен быть целочисленным", 91);
 				break;
 			case -21:
-				ErrorMessage_O("Ast.ErrRelIncompatibleType", 27);
+				ErrorMessage_O("В сравнении выражения несовместимых типов", 79);
 				break;
 			case -22:
-				ErrorMessage_O("Операция IS применима только к записям", 70);
+				ErrorMessage_O("Проверка IS применима только к записям", 70);
 				break;
 			case -23:
-				ErrorMessage_O("Ast.ErrIsExtVarNotRecord", 25);
+				ErrorMessage_O("Левый член проверки IS должен иметь тип записи или указателя на неё", 122);
 				break;
 			case -24:
 				ErrorMessage_O("Постоянная сопоставляется выражению, невычислимым на этапе перевода", 128);
@@ -129,7 +127,7 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Несовместимые типы в присваивании", 64);
 				break;
 			case -26:
-				ErrorMessage_O("Ast.ErrCallNotProc", 19);
+				ErrorMessage_O("Вызов допустим только для процедур и переменных процедурного типа", 123);
 				break;
 			case -28:
 				ErrorMessage_O("Возвращаемое значение не задействовано в выражении", 96);
@@ -153,13 +151,10 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Не хватает фактических параметров в вызове процедуры", 99);
 				break;
 			case -33:
-				ErrorMessage_O("Ast.ErrCaseExprNotIntOrChar", 28);
+				ErrorMessage_O("Выражение в CASE должно быть целочисленным или литерой", 98);
 				break;
 			case -34:
-				ErrorMessage_O("Ast.ErrCaseElemExprTypeMismatch", 32);
-				break;
-			case -35:
-				ErrorMessage_O("Ast.ErrCaseElemExprNotConst", 28);
+				ErrorMessage_O("Метки CASE должно быть целочисленными или литерами", 91);
 				break;
 			case -36:
 				ErrorMessage_O("Дублирование значения меток в CASE", 61);
@@ -168,10 +163,10 @@ static void ErrorMessage(int code) {
 				ErrorMessage_O("Не совпадает тип меток CASE", 47);
 				break;
 			case -38:
-				ErrorMessage_O("Ast.ErrCaseLabelLeftNotLessRight", 33);
+				ErrorMessage_O("Левая часть диапазона значений в метке CASE должна быть меньше правой", 125);
 				break;
 			case -39:
-				ErrorMessage_O("Ast.ErrCaseLabelNotConst", 25);
+				ErrorMessage_O("Метки CASE должны быть константами", 61);
 				break;
 			case -40:
 				ErrorMessage_O("Процедура не имеет возвращаемого значения", 79);
@@ -226,6 +221,33 @@ static void ErrorMessage(int code) {
 				break;
 			case -57:
 				ErrorMessage_O("Итератор FOR не целочисленного типа", 64);
+				break;
+			case -59:
+				ErrorMessage_O("Выражение в охране условного оператора должно быть логическим", 116);
+				break;
+			case -60:
+				ErrorMessage_O("Выражение в охране цикла WHILE должно быть логическим", 95);
+				break;
+			case -61:
+				ErrorMessage_O("Охрана цикла WHILE всегда ложна", 54);
+				break;
+			case -62:
+				ErrorMessage_O("Цикл бесконечен, так как охрана WHILE всегда истинна", 92);
+				break;
+			case -63:
+				ErrorMessage_O("Выражение в условии завершения цикла REPEAT должно быть логическим", 119);
+				break;
+			case -64:
+				ErrorMessage_O("Цикл бесконечен, так как условие завершения всегда ложно", 105);
+				break;
+			case -65:
+				ErrorMessage_O("Условие завершения всегда истинно", 64);
+				break;
+			case -66:
+				ErrorMessage_O("Объявление не экспортировано", 55);
+				break;
+			case -67:
+				ErrorMessage_O("Логическое отрицание применено не к логическому типу", 99);
 				break;
 			case -99:
 				ErrorMessage_O("Ast.ErrNotImplemented", 22);
@@ -301,10 +323,10 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("Ожидается константное целочисленное выражение", 88);
 			break;
 		case -115:
-			ErrorMessage_O("ErrExpectTo", 12);
+			ErrorMessage_O("Ожидается TO", 22);
 			break;
 		case -116:
-			ErrorMessage_O("ErrExpectNamedType", 19);
+			ErrorMessage_O("Ожидается структурный тип: массив, запись, указатель, процедурный", 121);
 			break;
 		case -117:
 			ErrorMessage_O("Ожидается запись", 32);
@@ -313,13 +335,10 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("Ожидается оператор", 36);
 			break;
 		case -119:
-			ErrorMessage_O("ErrExpectThen", 14);
+			ErrorMessage_O("Ожидается THEN", 24);
 			break;
 		case -120:
-			ErrorMessage_O("ErrExpectAssign", 16);
-			break;
-		case -121:
-			ErrorMessage_O("ErrExpectAssignOrBrace1Open", 28);
+			ErrorMessage_O("Ожидается :=", 22);
 			break;
 		case -122:
 			ErrorMessage_O("Ожидается переменная типа запись либо указателя на неё", 102);
@@ -331,19 +350,16 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("Ожидается UNTIL", 25);
 			break;
 		case -126:
-			ErrorMessage_O("ErrExpectDo", 12);
+			ErrorMessage_O("Ожидается DO", 22);
 			break;
 		case -128:
-			ErrorMessage_O("ErrExpectDesignator", 20);
-			break;
-		case -129:
-			ErrorMessage_O("ErrExpectVar", 13);
+			ErrorMessage_O("Ожидается обозначение", 42);
 			break;
 		case -130:
 			ErrorMessage_O("Ожидается процедура", 38);
 			break;
 		case -131:
-			ErrorMessage_O("ErrExpectConstName", 19);
+			ErrorMessage_O("Ожидается имя константы", 45);
 			break;
 		case -132:
 			ErrorMessage_O("Ожидается завершающее имя процедуры", 68);
@@ -358,7 +374,7 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("Завершающее имя в конце модуля не совпадает с его именем", 104);
 			break;
 		case -151:
-			ErrorMessage_O("ErrArrayDimensionsTooMany", 26);
+			ErrorMessage_O("Слишком большая n-мерность массива", 64);
 			break;
 		case -152:
 			ErrorMessage_O("Завершающее имя в теле процедуры не совпадает с её именем", 106);
@@ -380,7 +396,7 @@ static void ErrorMessage(int code) {
 }
 
 static void PrintErrors(Ast_Error err) {
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	Out_String("с ошибками: ", 22);
 	Out_Ln();
@@ -400,7 +416,7 @@ static void PrintErrors(Ast_Error err) {
 }
 
 static int LenStr(o7c_char str[/*len0*/], int str_len0, int ofs) {
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	i = ofs;
 	while (str[o7c_ind(str_len0, i)] != 0x00u) {
@@ -410,7 +426,7 @@ static int LenStr(o7c_char str[/*len0*/], int str_len0, int ofs) {
 }
 
 static void CopyPath(o7c_char str[/*len0*/], int str_len0, int arg) {
-	int i = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF;
 
 	i = 0;
 	while ((arg < CLI_count) && CLI_Get(str, str_len0, &i, arg)) {
@@ -451,7 +467,7 @@ static void AddModule(struct Translator_ModuleProvider_s *mp, struct Ast_RModule
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end);
 static struct VFileStream_RIn *GetModule_Open(struct Translator_ModuleProvider_s *p, int *pathOfs, o7c_char name[/*len0*/], int name_len0, int ofs, int end) {
 	o7c_char n[1024] /* init array */;
-	int len = O7C_INT_UNDEFINED, l = O7C_INT_UNDEFINED;
+	int len = O7C_INT_UNDEF, l = O7C_INT_UNDEF;
 	struct VFileStream_RIn *in_ = NULL;
 
 	len = LenStr(p->path, 4096, (*pathOfs));
@@ -472,9 +488,9 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 	struct Ast_RModule *m = NULL;
 	struct VFileStream_RIn *source = NULL;
 	struct Translator_ModuleProvider_s *mp = NULL;
-	int pathOfs = O7C_INT_UNDEFINED;
+	int pathOfs = O7C_INT_UNDEF;
 
-	mp = O7C_GUARD(Translator_ModuleProvider_s, &p, NULL);
+	mp = O7C_GUARD(Translator_ModuleProvider_s, &p);
 	m = SearchModule(mp, name, name_len0, ofs, end);
 	if (m != NULL) {
 		Log_StrLn("Найден уже разобранный модуль", 56);
@@ -495,9 +511,9 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 	return m;
 }
 
-static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_ROut **implementation, bool *isMain) {
+static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_ROut **implementation, o7c_bool *isMain) {
 	o7c_char dest[1024] /* init array */;
-	int destLen = O7C_INT_UNDEFINED, ret = O7C_INT_UNDEFINED;
+	int destLen = O7C_INT_UNDEF, ret = O7C_INT_UNDEF;
 
 	(*interface_) = NULL;
 	(*implementation) = NULL;
@@ -536,8 +552,8 @@ static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RI
 	struct GeneratorC_Generator intGen /* record init */, realGen /* record init */;
 	GeneratorC_Options opt = NULL;
 	struct VFileStream_ROut *interface_ = NULL, *implementation = NULL;
-	int ret = O7C_INT_UNDEFINED;
-	bool isMain = 0 > 1;
+	int ret = O7C_INT_UNDEF;
+	o7c_bool isMain = O7C_BOOL_UNDEF;
 
 	module = Parser_Parse(&source->_, &mp->_, &mp->opt, Parser_Options_tag);
 	VFileStream_CloseIn(&source);
@@ -566,7 +582,7 @@ static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RI
 
 static struct Translator_ModuleProvider_s *NewProvider(o7c_char fileExt[/*len0*/], int fileExt_len0, int extLen) {
 	struct Translator_ModuleProvider_s *mp = NULL;
-	bool ret = 0 > 1;
+	o7c_bool ret = O7C_BOOL_UNDEF;
 
 	mp = o7c_new(sizeof(*mp), Translator_ModuleProvider_s_tag);
 	Ast_ProviderInit(&mp->_, GetModule);
@@ -577,7 +593,7 @@ static struct Translator_ModuleProvider_s *NewProvider(o7c_char fileExt[/*len0*/
 	mp->modules.last = NULL;
 	mp->extLen = 0;
 	ret = StringStore_CopyChars(mp->fileExt, 32, &mp->extLen, fileExt, fileExt_len0, 0, extLen);
-	assert(ret);
+	assert(o7c_bl(ret));
 	return mp;
 }
 
@@ -623,7 +639,7 @@ static void ErrMessage(int err) {
 }
 
 static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/], int name_len0) {
-	int i = O7C_INT_UNDEFINED, dot = O7C_INT_UNDEFINED, len = O7C_INT_UNDEFINED;
+	int i = O7C_INT_UNDEF, dot = O7C_INT_UNDEF, len = O7C_INT_UNDEF;
 
 	i = 0;
 	dot =  - 1;
@@ -644,7 +660,7 @@ static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/]
 static void Translator_Start(void) {
 	o7c_char src[1024] /* init array */;
 	o7c_char ext[32] /* init array */;
-	int srcLen = O7C_INT_UNDEFINED, extLen = O7C_INT_UNDEFINED, ret = O7C_INT_UNDEFINED;
+	int srcLen = O7C_INT_UNDEF, extLen = O7C_INT_UNDEF, ret = O7C_INT_UNDEF;
 	struct VFileStream_RIn *source = NULL;
 
 	Out_Open();

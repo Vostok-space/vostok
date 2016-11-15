@@ -5,12 +5,13 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define O7C_BOOL_UNDEFINED
 #include <o7c.h>
 
 #include "Log.h"
 
-bool Log_state = 0 > 1;
-static bool init_ = 0 > 1;
+o7c_bool Log_state = O7C_BOOL_UNDEF;
+static o7c_bool init_ = O7C_BOOL_UNDEF;
 
 extern void Log_Str(o7c_char s[/*len0*/], int s_len0) {
 	if (Log_state) {
@@ -49,8 +50,8 @@ extern void Log_Real(double x) {
 	}
 }
 
-extern void Log_Turn(bool st) {
-	if (st && !init_) {
+extern void Log_Turn(o7c_bool st) {
+	if (o7c_bl(st) && !init_) {
 		init_ = true;
 		Out_Open();
 	}
