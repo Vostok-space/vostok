@@ -42,6 +42,14 @@ TYPE
 		ofs: INTEGER
 	END;
 
+PROCEDURE LogLoopStr(s: ARRAY OF CHAR; j, end: INTEGER);
+BEGIN
+	WHILE j # end DO
+		Log.Char(s[j]);
+		j := (j + 1) MOD (LEN(s) - 1)
+	END 
+END LogLoopStr;
+
 PROCEDURE Put*(VAR store: Store; VAR w: String;
 			   s: ARRAY OF CHAR; j, end: INTEGER);
 VAR
@@ -58,6 +66,8 @@ VAR
 		b.next := NIL
 	END AddBlock;
 BEGIN
+	ASSERT(ODD(LEN(s)));
+	ASSERT((j >= 0) & (j < LEN(s) - 1));
 	ASSERT((end >= 0) & (end < LEN(s) - 1));
 	b := store.last;
 	i := store.ofs;
@@ -67,21 +77,17 @@ BEGIN
 	(*Log.Str("Put "); Log.Int(b.num); Log.Str(":"); Log.Int(i); Log.Ln;*)
 	WHILE j # end DO
 		IF i = LEN(b.s) - 1 THEN
-			IF i # w.ofs THEN
-				b.s[i] := Utf8.NewPage;
-				AddBlock(b, i)
-			ELSE
-				AddBlock(b, i);
-				w.block := b;
-				w.ofs := 0
-			END
+			ASSERT(i # w.ofs);
+			b.s[i] := Utf8.NewPage;
+			AddBlock(b, i)
 		END;
 		b.s[i] := s[j];
+		ASSERT(s[j] # Utf8.NewPage);
 		INC(i);
 		j := (j + 1) MOD (LEN(s) - 1)
 	END;
 	b.s[i] := Utf8.Null;
-	IF i < LEN(b.s) - 1 THEN
+	IF i < LEN(b.s) - 2 THEN
 		INC(i)
 	ELSE
 		AddBlock(b, i)
@@ -94,12 +100,12 @@ PROCEDURE IsEqualToChars*(w: String; s: ARRAY OF CHAR; j, end: INTEGER): BOOLEAN
 VAR i: INTEGER;
 	b: Block;
 BEGIN
+	ASSERT(ODD(LEN(s)));
+	ASSERT((j >= 0) & (j < LEN(s) - 1));
 	ASSERT((end >= 0) & (end < LEN(s) - 1));
 	i := w.ofs;
 	b := w.block;
 	WHILE b.s[i] = s[j] DO
-		(*Log.Char(b.s[i]);
-		Log.Char(s[j]);*)
 		INC(i);
 		j := (j + 1) MOD (LEN(s) - 1)
 	ELSIF b.s[i] = Utf8.NewPage DO
@@ -120,8 +126,7 @@ BEGIN
 	i := w.ofs;
 	b := w.block;
 	WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
-		(*Log.Char(b.s[i]);
-		Log.Char(s[j]);*)
+		(*Log.Char(b.s[i]); Log.Char(s[j]);*)
 		INC(i);
 		INC(j)
 	ELSIF b.s[i] = Utf8.NewPage DO
@@ -129,8 +134,7 @@ BEGIN
 		i := 0
 	END
 	(*Log.Int(ORD(b.s[i])); Log.Ln;
-	Log.Int(j); Log.Ln;
-	Log.Int(end); Log.Ln;*)
+	Log.Int(j); Log.Ln*)
 	RETURN b.s[i] = s[j]
 END IsEqualToString;
 
@@ -154,7 +158,8 @@ END CopyToChars;
 PROCEDURE StoreInit*(VAR s: Store);
 BEGIN
 	V.Init(s);
-	NEW(s.first);
+	NEW(s.first); V.Init(s.first^);
+	s.first.num := 0;
 	s.last := s.first;
 	s.last.next := NIL;
 	s.ofs := 0
@@ -195,7 +200,7 @@ BEGIN
 	RETURN ret
 END CopyChars;
 
-(*	копирование содержимого строки без завершающего 0 в поток вывода
+(*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;
 VAR i, len: INTEGER;

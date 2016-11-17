@@ -175,25 +175,29 @@ BEGIN
 	s.line := 0;
 	s.in := in;
 	s.ind := LEN(s.buf) - 1;
+	s.buf[0] := NewPage;
 	s.buf[s.ind] := NewPage
 END Init;
 
 PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
 VAR size: INTEGER;
 BEGIN
+	ASSERT(ODD(LEN(buf)));
 	IF ind MOD (LEN(buf) DIV 2) # 0 THEN
+		Log.StrLn("индекс новой страницы в неожиданном месте");
 		ASSERT(buf[ind] = NewPage);
 		buf[ind] := Utf8.Null
 	ELSE
-		buf[ind] := NewPage;
 		ind := ind MOD (LEN(buf) - 1);
-		size := Stream.Read(in, buf, ind, LEN(buf) DIV 2);
 		IF buf[ind] = NewPage THEN
-			buf[ind] := Utf8.Null
-		ELSIF size = LEN(buf) DIV 2 THEN
-			buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage
-		ELSE
-			buf[ind + size] := Utf8.Null
+			size := Stream.Read(in, buf, ind, LEN(buf) DIV 2);
+			IF buf[ind] = NewPage THEN
+				buf[ind] := Utf8.Null
+			ELSIF size = LEN(buf) DIV 2 THEN
+				buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage
+			ELSE
+				buf[ind + size] := Utf8.Null
+			END
 		END
 	END
 END FillBuf;
@@ -596,11 +600,7 @@ BEGIN
 			INC(comment);
 			INC(s.ind)
 		ELSIF comment = 0 THEN
-			IF s.ind > 0 THEN
-				DEC(s.ind)
-			ELSE
-				s.ind := BlockSize * 2 - 1
-			END;
+			s.ind := i;
 			comment := -1
 		END;
 		i := s.ind

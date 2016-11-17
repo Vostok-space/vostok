@@ -44,9 +44,12 @@ BEGIN
 END InitIn;
 
 PROCEDURE Read*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+VAR r: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count > 0) & (LEN(buf) - count >= ofs))
-	RETURN in.read(in, buf, ofs, count)
+	ASSERT((ofs >= 0) & (count > 0) & (LEN(buf) - count >= ofs));
+	r := in.read(in, buf, ofs, count);
+	ASSERT((r >= 0) & (r <= count))
+	RETURN r
 END Read;
 
 PROCEDURE InitOut*(VAR out: Out; write: WriteProc);
