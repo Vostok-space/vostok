@@ -980,6 +980,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Str(gen, ")");
 				Str(gen, str);
 				Str(gen, "0")
+			ELSIF (gen.opt.varInit = VarInitUndefined)
+				& (rel.value = NIL)
+				& (rel.exprs[0].type.id = Ast.IdInteger) (* TODO *)
+			THEN
+				Str(gen, "o7c_cmp(");
+				Expr(gen, rel.exprs[0], -rel.distance);
+				Str(gen, ", ");
+				Expr(gen, rel.exprs[1], rel.distance);
+				Str(gen, ")");
+				Str(gen, str);
+				Str(gen, " 0")
 			ELSE
 				Expr(gen, rel.exprs[0], -rel.distance);
 				Str(gen, str);
@@ -1080,7 +1091,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			Str(gen, ", ");
 			Expression(gen, arr[i].term);
 			Str(gen, ")")
-		END 
+		END
 	END SumCheck;
 
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
@@ -1679,7 +1690,7 @@ BEGIN
 		| Ast.IdByte:
 			Str(out.g[Implementation], " = 0")
 		| Ast.IdChar:
-			Str(out.g[Implementation], " /* char init */")
+			Str(out.g[Implementation], " = '\0'")
 		| Ast.IdReal:
 			Str(out.g[Implementation], " = O7C_DBL_UNDEF")
 		| Ast.IdSet:
@@ -2106,6 +2117,61 @@ BEGIN
 	Write(out.g[Implementation])
 END LnIfWrote;
 
+PROCEDURE VarsInit(VAR gen: Generator; d: Ast.Declaration);
+VAR arrDeep, arrTypeId, i: INTEGER;
+
+	PROCEDURE IsConformArrayType(type: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
+	BEGIN
+		deep := 0;
+		WHILE type.id = Ast.IdArray DO
+			INC(deep);
+			type := type.type
+		END;
+		id := type.id
+		RETURN id IN {Ast.IdReal, Ast.IdInteger, Ast.IdBoolean}
+	END IsConformArrayType;
+BEGIN
+	WHILE (d # NIL) & (d IS Ast.Var) DO
+		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
+			Tabs(gen, 0);
+			IF (gen.opt.varInit = VarInitZero)
+			OR (d.type.id = Ast.IdRecord)
+			OR		 (d.type.id = Ast.IdArray)
+				&	~IsConformArrayType(d.type, arrTypeId, arrDeep)
+			THEN
+				Str(gen, "memset(&");
+				Name(gen, d);
+				Str(gen, ", 0, sizeof(");
+				Name(gen, d);
+				StrLn(gen, "));")
+			ELSE
+				ASSERT(gen.opt.varInit = VarInitUndefined);
+				CASE arrTypeId OF
+				  Ast.IdInteger:
+					Str(gen, "o7c_ints_undef(")
+				| Ast.IdReal:
+					Str(gen, "o7c_doubles_undef(")
+				| Ast.IdBoolean:
+					Str(gen, "o7c_bools_undef(")
+				END;
+				Name(gen, d);
+				FOR i := 2 TO arrDeep DO
+					Str(gen, "[0]")
+				END;
+				Str(gen, ", sizeof(");
+				Name(gen, d);
+				Str(gen, ") / sizeof(");
+				Name(gen, d);
+				FOR i := 2 TO arrDeep DO
+					Str(gen, "[0]")
+				END;
+				StrLn(gen, "[0]));")
+			END
+		END;
+		d := d.next
+	END
+END VarsInit;
+
 PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
 VAR d, prev: Ast.Declaration;
 BEGIN
@@ -2116,6 +2182,7 @@ BEGIN
 		d := d.next
 	END;
 	LnIfWrote(out);
+
 	WHILE (d # NIL) & (d IS Ast.Const) DO
 		Const(out.g[ORD(d.mark & ~out.opt.main)], d(Ast.Const));
 		d := d.next
@@ -2127,21 +2194,27 @@ BEGIN
 			TypeDecl(out, d(Ast.Type));
 			d := d.next
 		END;
-		LnIfWrote(out)
+		LnIfWrote(out);
+
+		WHILE (d # NIL) & (d IS Ast.Var) DO
+			Var(out, NIL, d, TRUE);
+			d := d.next
+		END
 	ELSE
-		d := ds.vars
-	END;
-	prev := NIL;
-	WHILE (d # NIL) & (d IS Ast.Var) DO
-		IF ds IS Ast.Module THEN
-			Var(out, NIL, d, TRUE)
-		ELSE
-			Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var))
+		d := ds.vars;
+
+		prev := NIL;
+		WHILE (d # NIL) & (d IS Ast.Var) DO
+			Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var));
+			prev := d;
+			d := d.next
 		END;
-		prev := d;
-		d := d.next
+		IF out.opt.varInit # VarInitNo THEN
+			VarsInit(out.g[Implementation], ds.vars)
+		END
 	END;
 	LnIfWrote(out);
+
 	IF out.opt.procLocal OR (ds IS Ast.Module) THEN
 		WHILE d # NIL DO
 			Procedure(out, d(Ast.Procedure));
