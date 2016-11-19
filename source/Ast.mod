@@ -462,7 +462,7 @@ BEGIN
 	ASSERT(d # NIL);
 	ASSERT(name[0] # 0X);
 	ASSERT(~(d IS Module));
-	ASSERT(~(ds.start IS Module));
+	ASSERT((ds.start = NIL) OR ~(ds.start IS Module));
 	DeclInit(d, ds);
 	IF ds.end # NIL THEN
 		ASSERT(ds.end.next = NIL);
@@ -538,6 +538,7 @@ PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
 					 nameOfs, nameEnd, realOfs, realEnd: INTEGER;
 					 p: Provider): INTEGER;
 VAR imp: Import;
+	i: Declaration;
 	err: INTEGER;
 
 	PROCEDURE Load(VAR res: Module; host: Module;
@@ -575,12 +576,12 @@ VAR imp: Import;
 BEGIN
 	ASSERT(~m.fixed);
 
-	imp := m.import;
-	ASSERT((imp = NIL) OR (m.end IS Import));
-	WHILE (imp # NIL) & ~IsDup(imp, buf, nameOfs, nameEnd, realOfs, realEnd) DO
-		imp := imp.next(Import)
+	i := m.import;
+	ASSERT((i = NIL) OR (m.end IS Import));
+	WHILE (i # NIL) & ~IsDup(i(Import), buf, nameOfs, nameEnd, realOfs, realEnd)
+	DO	i := i.next
 	END;
-	IF imp # NIL THEN
+	IF i # NIL THEN
 		err := ErrImportNameDuplicate
 	ELSE
 		NEW(imp); imp.id := IdImport;

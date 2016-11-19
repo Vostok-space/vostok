@@ -728,7 +728,7 @@ VAR braces: BOOLEAN;
 
 	PROCEDURE Section(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcType);
 	VAR isVar: BOOLEAN;
-		param: Ast.FormalParam;
+		param: Ast.Declaration;
 		type: Ast.Type;
 
 		PROCEDURE Name(VAR p: Parser; proc: Ast.ProcType);
@@ -769,9 +769,9 @@ VAR braces: BOOLEAN;
 		Expect(p, Scanner.Colon, ErrExpectColon);
 		type := Type(p, ds);
 		WHILE param # NIL DO
-			param.isVar := isVar;
+			param(Ast.FormalParam).isVar := isVar;
 			param.type := type;
-			param := param.next(Ast.FormalParam)
+			param := param.next
 		END
 	END Section;
 BEGIN

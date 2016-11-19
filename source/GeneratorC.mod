@@ -723,7 +723,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
 	VAR p: Ast.Parameter;
-		fp: Ast.FormalParam;
+		fp: Ast.Declaration;
 
 		PROCEDURE Predefined(VAR gen: Generator; call: Ast.ExprCall);
 		VAR e1: Ast.Expression;
@@ -862,13 +862,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END Predefined;
 
 		PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
-							  VAR fp: Ast.FormalParam);
+							  VAR fp: Ast.Declaration);
 		VAR t: Ast.Type;
 			i, dist: INTEGER;
 		BEGIN
 			t := fp.type;
 			dist := p.distance;
-			IF (fp.isVar & ~(t IS Ast.Array))
+			IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
 			OR (t IS Ast.Record)
 			OR (t.id = Ast.IdPointer) & (dist > 0)
 			THEN
@@ -920,7 +920,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			END;
 
 			p := p.next;
-			fp := fp.next(Ast.FormalParam)
+			fp := fp.next
 		END ActualParam;
 	BEGIN
 		IF call.designator.decl IS Ast.PredefinedProcedure THEN
@@ -2176,7 +2176,7 @@ PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
 VAR d, prev: Ast.Declaration;
 BEGIN
 	d := ds.start;
-	ASSERT(~(d IS Ast.Module));
+	ASSERT((d = NIL) OR ~(d IS Ast.Module));
 	WHILE (d # NIL) & (d IS Ast.Import) DO
 		Import(out.g[ORD(~out.opt.main)], d);
 		d := d.next
