@@ -1067,7 +1067,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				DEC(i)
 			END
-		ELSE
+		ELSE ASSERT(arr[0].type.id = Ast.IdReal);
 			WHILE i > 0 DO
 				CASE arr[i].add OF
 				  Scanner.Minus:
@@ -1099,27 +1099,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
 	BEGIN
-		IF gen.opt.checkArith & ~(term.type.id IN {Ast.IdSet, Ast.IdBoolean})
-		 & (term.mult # Scanner.Slash)
-		 & (term.value = NIL)
-		THEN
-			IF term.type.id = Ast.IdInteger THEN
-				CASE term.mult OF
-				  Scanner.Asterisk	: Str(gen, "o7c_mul(")
-				| Scanner.Div		: Str(gen, "o7c_div(")
-				| Scanner.Mod		: Str(gen, "o7c_mod(")
-				END
-			ELSE
-				CASE term.mult OF
-				  Scanner.Asterisk	: Str(gen, "o7c_fmul(")
-				| Scanner.Div		: Str(gen, "o7c_fdiv(")
-				END
-			END;
-			Expression(gen, term.factor);
-			Str(gen, ", ");
-			Expression(gen, term.expr);
-			Str(gen, ")")
-		ELSE
+		REPEAT
 			CheckExpr(gen, term.factor);
 			CASE term.mult OF
 			  Scanner.Asterisk				:
@@ -1130,6 +1110,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END
 			| Scanner.Slash, Scanner.Div	: 
 				IF term.type.id = Ast.IdSet THEN
+					ASSERT(term.mult = Scanner.Slash);
 					Str(gen, " ^ ")
 				ELSE
 					Str(gen, " / ")
@@ -1137,9 +1118,58 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.And					: Str(gen, " && ")
 			| Scanner.Mod					: Str(gen, " % ")
 			END;
-			CheckExpr(gen, term.expr)
-		END
+			IF term.expr IS Ast.ExprTerm THEN
+				term := term.expr(Ast.ExprTerm)
+			ELSE
+				CheckExpr(gen, term.expr);
+				term := NIL
+			END
+		UNTIL term = NIL
 	END Term;
+
+	PROCEDURE TermCheck(VAR gen: Generator; term: Ast.ExprTerm);
+	VAR arr: ARRAY TranLim.MaxFactorsInTerm OF Ast.ExprTerm;
+		i, last: INTEGER;
+	BEGIN
+		i := -1;
+		arr[0] := term;
+		i := 0;
+		WHILE term.expr IS Ast.ExprTerm DO
+			INC(i);
+			term := term.expr(Ast.ExprTerm);
+			arr[i] := term
+		END;
+		last := i;
+		IF term.type.id = Ast.IdInteger THEN
+			WHILE i >= 0 DO 
+				CASE arr[i].mult OF
+				  Scanner.Asterisk	: Str(gen, "o7c_mul(")
+				| Scanner.Div		: Str(gen, "o7c_div(")
+				| Scanner.Mod		: Str(gen, "o7c_mod(")
+				END;
+				DEC(i)
+			END
+		ELSE ASSERT(term.type.id = Ast.IdReal);
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk	: Str(gen, "o7c_fmul(")
+				| Scanner.Slash		: Str(gen, "o7c_fdiv(")
+				END;
+				DEC(i)
+			END
+		END;
+		Expression(gen, arr[0].factor);
+		i := 0;
+		WHILE i < last DO
+			INC(i);
+			Str(gen, ", ");
+			Expression(gen, arr[i].factor);
+			Str(gen, ")")
+		END;
+		Str(gen, ", ");
+		Expression(gen, arr[last].expr);
+		Str(gen, ")")
+	END TermCheck;
 
 	PROCEDURE Boolean(VAR gen: Generator; e: Ast.ExprBoolean);
 	BEGIN
@@ -1321,7 +1351,12 @@ BEGIN
 		ELSE	Sum(gen, expr(Ast.ExprSum))
 		END
 	| Ast.IdTerm:
-		Term(gen, expr(Ast.ExprTerm))
+		IF		gen.opt.checkArith
+			  & (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
+			  & (expr.value = NIL)
+		THEN	TermCheck(gen, expr(Ast.ExprTerm))
+		ELSE	Term(gen, expr(Ast.ExprTerm))
+		END
 	| Ast.IdNegate:
 		IF		expr.type.id = Ast.IdSet
 		THEN	Str(gen, "~")
