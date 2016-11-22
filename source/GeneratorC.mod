@@ -37,6 +37,10 @@ CONST
 	VarInitZero*		= 1;
 	VarInitNo*			= 2;
 
+	MemManagerNoFree*	= 0;
+	MemManagerCounter*	= 1;
+	MemManagerGC*		= 2;
+
 TYPE
 	Options* = POINTER TO RECORD(V.Base)
 		std*: INTEGER;
@@ -46,7 +50,8 @@ TYPE
 		checkArith*,
 		caseAbort*: BOOLEAN;
 
-		varInit*: INTEGER;
+		varInit*,
+		memManager*: INTEGER;
 
 		main: BOOLEAN;
 
@@ -489,7 +494,6 @@ VAR sel: Ast.Selector;
 	PROCEDURE Record(VAR gen: Generator; VAR type: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
 		up: Ast.Declarations;
-		i: INTEGER;
 
 		PROCEDURE Search(ds: Ast.Declarations; d: Ast.Declaration): BOOLEAN;
 		VAR c: Ast.Declaration;
@@ -516,8 +520,7 @@ VAR sel: Ast.Selector;
 
 		WHILE (up # NIL) & ~Search(up, var) DO
 			up := up.up;
-			Str(gen, "_.");
-			DEC(i)
+			Str(gen, "_.")
 		END;
 
 		Name(gen, var);
@@ -1453,7 +1456,7 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 			GlobalName(gen, rec)
 		END;
 		v := rec.vars.vars;
-		IF (v = NIL) & (rec.base = NIL) & gen.opt.gnu THEN
+		IF (v = NIL) & (rec.base = NIL) & ~gen.opt.gnu THEN
 			Str(gen, " { int nothing; } ")
 		ELSE
 			StrLn(gen, " {");
@@ -1824,13 +1827,22 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 	VAR type, base: Ast.Record;
-		reref: BOOLEAN;
+		reref, retain: BOOLEAN;
 	BEGIN
-		Designator(gen, st.designator);
-		Str(gen, " = ");
+		retain := (st.designator.type.id = Ast.IdPointer)
+		       & (gen.opt.memManager = MemManagerCounter);
+		IF retain THEN
+			Str(gen, "O7C_ASSIGN(&(");
+			Designator(gen, st.designator);
+			Str(gen, "), ")
+		ELSE
+			Designator(gen, st.designator);
+			Str(gen, " = ")
+		END;
+
 		reref :=  (st.expr.type.id = Ast.IdPointer)
-			   &  (st.expr.type.type # st.designator.type.type)
-			   & ~(st.expr IS Ast.ExprNil);
+		       &  (st.expr.type.type # st.designator.type.type)
+		       & ~(st.expr IS Ast.ExprNil);
 		IF reref THEN
 			base := st.designator.type.type(Ast.Record);
 			type := st.expr.type.type(Ast.Record).base;
@@ -1853,9 +1865,10 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			END;
 			Log.StrLn("Assign record")
 		END;
-		IF	reref
-		THEN	StrLn(gen, ");")
-		ELSE	StrLn(gen, ";")
+		CASE ORD(reref) + ORD(retain) OF
+		  0: StrLn(gen, ";")
+		| 1: StrLn(gen, ");")
+		| 2: StrLn(gen, "));")
 		END
 	END Assign;
 
@@ -2034,9 +2047,34 @@ BEGIN
 	StrLn(gen, ";")
 END ProcDecl;
 
+PROCEDURE Qualifier(VAR gen: Generator; type: Ast.Type);
+BEGIN
+	CASE type.id OF
+	  Ast.IdInteger:
+		Str(gen, "int")
+	| Ast.IdSet:
+		Str(gen, "unsigned")
+	| Ast.IdBoolean:
+		IF (gen.opt.std >= IsoC99)
+		 & (gen.opt.varInit # VarInitUndefined)
+		THEN	Str(gen, "bool")
+		ELSE	Str(gen, "o7c_bool")
+		END
+	| Ast.IdByte:
+		Str(gen, "char unsigned")
+	| Ast.IdChar:
+		Str(gen, "o7c_char")
+	| Ast.IdReal:
+		Str(gen, "double")
+	| Ast.IdPointer, Ast.IdProcType:
+		GlobalName(gen, type)
+	END
+END Qualifier;
+
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 	PROCEDURE Implement(VAR out: MOut; VAR gen: Generator; proc: Ast.Procedure);
+	VAR retainParams: Ast.Declaration;
 
 		PROCEDURE CloseConsts(VAR gen: Generator; consts: Ast.Declaration);
 		BEGIN
@@ -2047,6 +2085,76 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				consts := consts.next
 			END
 		END CloseConsts;
+
+		PROCEDURE SearchRetain(gen: Generator; fp: Ast.Declaration): Ast.Declaration;
+		BEGIN
+			WHILE (fp # NIL)
+				& ((fp.type.id # Ast.IdPointer) OR fp(Ast.FormalParam).isVar)
+			DO
+				fp := fp.next
+			END
+			RETURN fp
+		END SearchRetain;
+
+		PROCEDURE RetainParams(VAR gen: Generator; fp: Ast.Declaration);
+		BEGIN
+			IF fp # NIL THEN
+				Tabs(gen, 0);
+				Str(gen, "o7c_retain(");
+				Name(gen, fp);
+				fp := fp.next;
+				WHILE fp # NIL DO
+					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
+					THEN
+						Str(gen, "); o7c_retain(");
+						Name(gen, fp)
+					END;
+					fp := fp.next
+				END;
+				StrLn(gen, ");")
+			END
+		END RetainParams;
+
+		PROCEDURE ReleaseParams(VAR gen: Generator; fp: Ast.Declaration);
+		BEGIN
+			IF fp # NIL THEN
+				Tabs(gen, 0);
+				Str(gen, "o7c_release(");
+				Name(gen, fp);
+				fp := fp.next;
+				WHILE fp # NIL DO
+					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
+					THEN
+						Str(gen, "); o7c_release(");
+						Name(gen, fp)
+					END;
+					fp := fp.next
+				END;
+				StrLn(gen, ");")
+			END
+		END ReleaseParams;
+
+		PROCEDURE ReleaseVars(VAR gen: Generator; var: Ast.Declaration);
+		VAR first: BOOLEAN;
+		BEGIN
+			first := TRUE;
+			WHILE (var # NIL) & (var IS Ast.Var) DO
+				IF var.type.id = Ast.IdPointer THEN
+					IF first THEN
+						first := FALSE;
+						Tabs(gen, 0);
+						Str(gen, "o7c_release(")
+					ELSE
+						Str(gen, "); o7c_release(")
+					END;
+					Name(gen, var)
+				END;
+				var := var.next
+			END;
+			IF ~first THEN
+				StrLn(gen, ");")
+			END
+		END ReleaseVars;
 	BEGIN
 		Tabs(gen, 0);
 		Mark(gen, proc.mark);
@@ -2055,16 +2163,61 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		INC(gen.localDeep);
 		INC(gen.tabs);
+
 		gen.fixedLen := gen.len;
+
+		IF gen.opt.memManager # MemManagerCounter THEN
+			retainParams := NIL
+		ELSE
+			retainParams := SearchRetain(gen, proc.header.params);
+			IF proc.return # NIL THEN
+				Tabs(gen, 0);
+				Qualifier(gen, proc.return.type);
+				IF proc.return.type.id = Ast.IdPointer
+				THEN	StrLn(gen, " o7c_return = NULL;")
+				ELSE	StrLn(gen, " o7c_return;")
+				END
+			END
+		END;
 		declarations(out, proc);
+
+		RetainParams(gen, retainParams);
+
 		Statements(gen, proc.stats);
 
-		IF proc.return # NIL THEN
+		IF proc.return = NIL THEN
+			ReleaseVars(gen, proc.vars);
+			ReleaseParams(gen, retainParams)
+		ELSE
 			Tabs(gen, 0);
-			Str(gen, "return ");
-			CheckExpr(gen, proc.return);
-			StrLn(gen, ";")
+			IF (gen.opt.memManager = MemManagerCounter) & (proc.return # NIL)
+			THEN
+				IF proc.return.type.id = Ast.IdPointer THEN
+					Str(gen, "O7C_ASSIGN(&o7c_return, ");
+					CheckExpr(gen, proc.return);
+					StrLn(gen, ");")
+				ELSE
+					Str(gen, "o7c_return = ");
+					CheckExpr(gen, proc.return);
+					StrLn(gen, ";")
+				END;
+				ReleaseVars(gen, proc.vars);
+				ReleaseParams(gen, retainParams);
+				IF proc.return.type.id = Ast.IdPointer THEN
+					Tabs(gen, 0);
+					StrLn(gen, "o7c_unhold(o7c_return);")
+				END;
+				Tabs(gen, 0);
+				StrLn(gen, "return o7c_return;")
+			ELSE
+				ReleaseVars(gen, proc.vars);
+				ReleaseParams(gen, retainParams);
+				Str(gen, "return ");
+				CheckExpr(gen, proc.return);
+				StrLn(gen, ";")
+			END
 		END;
+
 		DEC(gen.localDeep);
 		CloseConsts(gen, proc.start);
 		Tabs(gen, -1);
@@ -2235,6 +2388,7 @@ BEGIN
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
 		o.varInit := VarInitUndefined;
+		o.memManager := MemManagerCounter;
 		o.main := FALSE
 	END
 	RETURN o

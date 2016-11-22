@@ -32,11 +32,11 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 	CFiles_File file;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
-	file = (CFiles_File)malloc(sizeof(*file));
+	file = (CFiles_File)o7c_new(sizeof(*file), NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), mode);
 		if (NULL == file->file) {
-			free(file); file = NULL;
+			O7C_NULL(&file);
 		}
 	}
 	return file;
@@ -45,8 +45,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
-		free(*file);
-		*file = NULL;
+		O7C_NULL(file);
 	}
 }
 

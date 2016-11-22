@@ -99,6 +99,14 @@ BEGIN
 	END
 END printArray;
 
+PROCEDURE releaseArray(arr: PointArray);
+VAR i: INTEGER;
+BEGIN
+	FOR i := 0 TO arr.cnt - 1 DO
+		arr.arr[i] := NIL
+	END
+END releaseArray;
+
 PROCEDURE Check(arr: PointArray);
 VAR i: INTEGER;
 BEGIN
@@ -132,7 +140,9 @@ BEGIN
 			ELSE
 				sort(points.arr, points.cnt, cmp)
 			END;
-			Check(points)
+			Check(points);
+
+			releaseArray(points)
 		END
 	END
 END Go;

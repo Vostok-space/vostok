@@ -33,6 +33,7 @@ extern void o7c_init(int argc, char *argv[]) {
 		|| (sizeof(long) * 2 == sizeof(double)));
 	undefined = o7c_dbl_undef();
 	assert(undefined != undefined);
+	assert(sizeof(o7c_mmc_t) == sizeof(void *));
 
 	/* для случая использования int в качестве INTEGER */
 	assert(INT_MAX >= 2147483647);

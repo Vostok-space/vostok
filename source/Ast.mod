@@ -651,8 +651,8 @@ BEGIN
 END ConstSetExpression;
 
 PROCEDURE TypeAdd*(ds: Declarations;
-				   buf: ARRAY OF CHAR; begin, end: INTEGER;
-				   VAR td: Type): INTEGER;
+                   buf: ARRAY OF CHAR; begin, end: INTEGER;
+                   VAR td: Type): INTEGER;
 VAR d: Declaration;
 	err: INTEGER;
 
@@ -690,8 +690,8 @@ BEGIN
 	RETURN err
 END TypeAdd;
 
-PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
-						  buf: ARRAY OF CHAR; begin, end: INTEGER);
+PROCEDURE ChecklessVarAdd*(VAR v: Var; ds: Declarations;
+                           buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
 	NEW(v); v.id := IdVar;
 	DeclConnect(v, ds, buf, begin, end);
@@ -702,7 +702,7 @@ BEGIN
 END ChecklessVarAdd;
 
 PROCEDURE VarAdd*(ds: Declarations;
-				  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR v: Var;
 	err: INTEGER;
 BEGIN

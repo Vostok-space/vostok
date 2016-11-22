@@ -289,7 +289,6 @@ static o7c_bool Record_Selector_Search(struct Ast_RDeclarations *ds, struct Ast_
 static void Selector_Record(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RType **type, struct Ast_RSelector **sel) {
 	struct Ast_RDeclaration *var_ = NULL;
 	struct Ast_RDeclarations *up = NULL;
-	int i = O7C_INT_UNDEF;
 
 	var_ = (&(O7C_GUARD(Ast_SelRecord_s, &(*sel))->var_)->_);
 	if (o7c_is(NULL, (*type), Ast_RPointer_tag)) {
@@ -305,7 +304,6 @@ static void Selector_Record(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag,
 	while ((up != NULL) && !Record_Selector_Search(up, var_)) {
 		up = up->_.up;
 		Str(&(*gen), gen_tag, "_.", 3);
-		i--;
 	}
 	Name(&(*gen), gen_tag, var_);
 	(*type) = var_->type;
