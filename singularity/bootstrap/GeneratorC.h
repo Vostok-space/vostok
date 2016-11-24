@@ -15,6 +15,9 @@
 #define GeneratorC_VarInitUndefined_cnst 0
 #define GeneratorC_VarInitZero_cnst 1
 #define GeneratorC_VarInitNo_cnst 2
+#define GeneratorC_MemManagerNoFree_cnst 0
+#define GeneratorC_MemManagerCounter_cnst 1
+#define GeneratorC_MemManagerGC_cnst 2
 
 typedef struct GeneratorC_Options_s {
 	struct V_Base _;
@@ -25,6 +28,7 @@ typedef struct GeneratorC_Options_s {
 	o7c_bool checkArith;
 	o7c_bool caseAbort;
 	int varInit;
+	int memManager;
 	o7c_bool main_;
 	int index;
 	struct V_Base *records;

@@ -26,6 +26,7 @@
 #define TranslatorLimits_MaxIfBranches_cnst 255
 #define TranslatorLimits_MaxSelectors_cnst 63
 #define TranslatorLimits_MaxTermsInSum_cnst 255
+#define TranslatorLimits_MaxFactorsInTerm_cnst 255
 
 static inline void TranslatorLimits_init(void) { ; }
 #endif

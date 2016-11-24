@@ -180,10 +180,16 @@ typedef struct Ast_RArray {
 extern o7c_tag_t Ast_RArray_tag;
 
 typedef struct Ast_RPointer *Ast_Pointer;
+typedef struct Ast_RVar *Ast_Var;
+typedef struct Ast_RVar {
+	struct Ast_RDeclaration _;
+} Ast_RVar;
+extern o7c_tag_t Ast_RVar_tag;
+
 typedef struct Ast_Record_s {
 	struct Ast_RConstruct _;
 	struct Ast_Record_s *base;
-	struct Ast_RDeclarations *vars;
+	struct Ast_RVar *vars;
 	struct Ast_RPointer *pointer;
 } *Ast_Record;
 extern o7c_tag_t Ast_Record_s_tag;
@@ -192,12 +198,6 @@ typedef struct Ast_RPointer {
 	struct Ast_RConstruct _;
 } Ast_RPointer;
 extern o7c_tag_t Ast_RPointer_tag;
-
-typedef struct Ast_RVar *Ast_Var;
-typedef struct Ast_RVar {
-	struct Ast_RDeclaration _;
-} Ast_RVar;
-extern o7c_tag_t Ast_RVar_tag;
 
 typedef struct Ast_FormalParam_s {
 	struct Ast_RVar _;
@@ -222,7 +222,6 @@ typedef struct Ast_RDeclarations {
 	struct Ast_RType *types;
 	struct Ast_RVar *vars;
 	struct Ast_RProcedure *procedures;
-	struct Ast_Record_s *recordsForward;
 	struct Ast_RStatement *stats;
 } Ast_RDeclarations;
 extern o7c_tag_t Ast_RDeclarations_tag;
@@ -566,6 +565,10 @@ extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, st
 extern int Ast_SelPointerNew(struct Ast_RSelector **sel, struct Ast_RType **type);
 
 extern int Ast_SelArrayNew(struct Ast_RSelector **sel, struct Ast_RType **type, struct Ast_RExpression *index);
+
+extern int Ast_RecordVarAdd(struct Ast_RVar **v, struct Ast_Record_s *r, o7c_char name[/*len0*/], int name_len0, int begin, int end);
+
+extern int Ast_RecordVarGet(struct Ast_RVar **v, struct Ast_Record_s *r, o7c_char name[/*len0*/], int name_len0, int begin, int end);
 
 extern int Ast_SelRecordNew(struct Ast_RSelector **sel, struct Ast_RType **type, o7c_char name[/*len0*/], int name_len0, int begin, int end);
 

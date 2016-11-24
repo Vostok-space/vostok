@@ -6,8 +6,7 @@
 #define V_ContentPassNext_cnst 1
 #define V_ContentPassClose_cnst 2
 
-typedef struct V_Message {
-} V_Message;
+typedef struct V_Message { int nothing; } V_Message;
 extern o7c_tag_t V_Message_tag;
 
 typedef struct V_Message *V_PMessage;

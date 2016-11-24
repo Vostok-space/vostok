@@ -33,6 +33,10 @@ extern void o7c_init(int argc, char *argv[]) {
 		|| (sizeof(long) * 2 == sizeof(double)));
 	undefined = o7c_dbl_undef();
 	assert(undefined != undefined);
+	assert(sizeof(o7c_mmc_t) == sizeof(void *));
+
+	/* для случая использования int в качестве INTEGER */
+	assert(INT_MAX >= 2147483647);
 
 	assert((argc > 0) == (argv != NULL));
 
@@ -65,4 +69,30 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 		ext[i] = 0;
 		++i;
 	}
+}
+
+#if defined O7C_BOOL_UNDEF
+	extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size) {
+		int i;
+		for (i = 0; i < size; ++i) {
+			array[i] = O7C_BOOL_UNDEF;
+		}
+		return array;
+	}
+#endif
+
+extern double* o7c_doubles_undef(double array[], int size) {
+	int i;
+	for (i = 0; i < size; ++i) {
+		array[i] = O7C_DBL_UNDEF;
+	}
+	return array;
+}
+
+extern int* o7c_ints_undef(int array[], int size) {
+	int i;
+	for (i = 0; i < size; ++i) {
+		array[i] = O7C_INT_UNDEF;
+	}
+	return array;
 }

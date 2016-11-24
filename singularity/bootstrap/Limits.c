@@ -11,6 +11,9 @@
 #include "Limits.h"
 
 extern o7c_bool Limits_IsNan(double r) {
-	return r != r;
+	o7c_bool o7c_return;
+
+	o7c_return = r != r;
+	return o7c_return;
 }
 

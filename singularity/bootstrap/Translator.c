@@ -51,7 +51,7 @@ static void ErrorMessage_O(o7c_char s[/*len0*/], int s_len0) {
 static void ErrorMessage(int code) {
 	Out_Int(o7c_sub(code, Parser_ErrAstBegin_cnst), 0);
 	Out_String(" ", 2);
-	if (code <= Parser_ErrAstBegin_cnst) {
+	if (o7c_cmp(code, Parser_ErrAstBegin_cnst) <=  0) {
 		{ int o7c_case_expr = o7c_sub(code, Parser_ErrAstBegin_cnst);
 			switch (o7c_case_expr) {
 			case -1:
@@ -398,11 +398,12 @@ static void ErrorMessage(int code) {
 static void PrintErrors(Ast_Error err) {
 	int i = O7C_INT_UNDEF;
 
+	o7c_retain(err);
 	Out_String("с ошибками: ", 22);
 	Out_Ln();
 	i = 0;
 	while (err != NULL) {
-		i++;
+		i = o7c_add(i, 1);;
 		Out_Int(i, 2);
 		Out_String(") ", 3);
 		ErrorMessage(err->code);
@@ -411,29 +412,33 @@ static void PrintErrors(Ast_Error err) {
 		Out_String(" : ", 4);
 		Out_Int(o7c_add(err->column, o7c_mul(err->tabs, 3)), 0);
 		Out_Ln();
-		err = err->next;
+		O7C_ASSIGN(&(err), err->next);
 	}
+	o7c_release(err);
 }
 
 static int LenStr(o7c_char str[/*len0*/], int str_len0, int ofs) {
+	int o7c_return;
+
 	int i = O7C_INT_UNDEF;
 
 	i = ofs;
 	while (str[o7c_ind(str_len0, i)] != 0x00u) {
-		i++;
+		i = o7c_add(i, 1);;
 	}
-	return o7c_sub(i, ofs);
+	o7c_return = o7c_sub(i, ofs);
+	return o7c_return;
 }
 
 static void CopyPath(o7c_char str[/*len0*/], int str_len0, int arg) {
 	int i = O7C_INT_UNDEF;
 
 	i = 0;
-	while ((arg < CLI_count) && CLI_Get(str, str_len0, &i, arg)) {
-		i++;
-		arg++;
+	while ((o7c_cmp(arg, CLI_count) <  0) && CLI_Get(str, str_len0, &i, arg)) {
+		i = o7c_add(i, 1);;
+		arg = o7c_add(arg, 1);;
 	}
-	if (o7c_add(i, 1) < str_len0) {
+	if (o7c_cmp(o7c_add(i, 1), str_len0) <  0) {
 		str[o7c_ind(str_len0, o7c_add(i, 1))] = 0x00u;
 	} else {
 		str[o7c_ind(str_len0, o7c_sub(str_len0, 1))] = 0x00u;
@@ -443,64 +448,84 @@ static void CopyPath(o7c_char str[/*len0*/], int str_len0, int arg) {
 }
 
 static struct Ast_RModule *SearchModule(struct Translator_ModuleProvider_s *mp, o7c_char name[/*len0*/], int name_len0, int ofs, int end) {
+	Ast_Module o7c_return = NULL;
+
 	struct Ast_RModule *m = NULL;
 
-	m = mp->modules.first;
+	o7c_retain(mp);
+	O7C_ASSIGN(&(m), mp->modules.first);
 	while ((m != NULL) && !StringStore_IsEqualToChars(&m->_._.name, StringStore_String_tag, name, name_len0, ofs, end)) {
 		assert(m != m->_._.module);
-		m = m->_._.module;
+		O7C_ASSIGN(&(m), m->_._.module);
 	}
-	return m;
+	O7C_ASSIGN(&o7c_return, m);
+	o7c_release(m);
+	o7c_release(mp);
+	o7c_unhold(o7c_return);
+	return o7c_return;
 }
 
 static void AddModule(struct Translator_ModuleProvider_s *mp, struct Ast_RModule *m) {
+	o7c_retain(mp); o7c_retain(m);
 	assert(m->_._.module == m);
-	m->_._.module = NULL;
+	O7C_ASSIGN(&(m->_._.module), NULL);
 	if (mp->modules.first == NULL) {
-		mp->modules.first = m;
+		O7C_ASSIGN(&(mp->modules.first), m);
 	} else {
-		mp->modules.last->_._.module = m;
+		O7C_ASSIGN(&(mp->modules.last->_._.module), m);
 	}
-	mp->modules.last = m;
+	O7C_ASSIGN(&(mp->modules.last), m);
+	o7c_release(mp); o7c_release(m);
 }
 
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end);
 static struct VFileStream_RIn *GetModule_Open(struct Translator_ModuleProvider_s *p, int *pathOfs, o7c_char name[/*len0*/], int name_len0, int ofs, int end) {
+	VFileStream_In o7c_return = NULL;
+
 	o7c_char n[1024] /* init array */;
 	int len = O7C_INT_UNDEF, l = O7C_INT_UNDEF;
 	struct VFileStream_RIn *in_ = NULL;
+	memset(&n, 0, sizeof(n));
 
+	o7c_retain(p);
 	len = LenStr(p->path, 4096, (*pathOfs));
 	l = 0;
-	if ((len > 0) && StringStore_CopyChars(n, 1024, &l, p->path, 4096, (*pathOfs), o7c_add((*pathOfs), len)) && StringStore_CopyChars(n, 1024, &l, "/", 2, 0, 1) && StringStore_CopyChars(n, 1024, &l, name, name_len0, ofs, end) && StringStore_CopyChars(n, 1024, &l, p->fileExt, 32, 0, p->extLen)) {
+	if ((o7c_cmp(len, 0) >  0) && StringStore_CopyChars(n, 1024, &l, p->path, 4096, (*pathOfs), o7c_add((*pathOfs), len)) && StringStore_CopyChars(n, 1024, &l, "/", 2, 0, 1) && StringStore_CopyChars(n, 1024, &l, name, name_len0, ofs, end) && StringStore_CopyChars(n, 1024, &l, p->fileExt, 32, 0, p->extLen)) {
 		Log_Str("Открыть ", 16);
 		Log_Str(n, 1024);
 		Log_Ln();
-		in_ = VFileStream_OpenIn(n, 1024);
+		O7C_ASSIGN(&(in_), VFileStream_OpenIn(n, 1024));
 	} else {
-		in_ = NULL;
+		O7C_ASSIGN(&(in_), NULL);
 	}
 	(*pathOfs) = o7c_add(o7c_add((*pathOfs), len), 2);
-	return in_;
+	O7C_ASSIGN(&o7c_return, in_);
+	o7c_release(in_);
+	o7c_release(p);
+	o7c_unhold(o7c_return);
+	return o7c_return;
 }
 
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end) {
+	Ast_Module o7c_return = NULL;
+
 	struct Ast_RModule *m = NULL;
 	struct VFileStream_RIn *source = NULL;
 	struct Translator_ModuleProvider_s *mp = NULL;
 	int pathOfs = O7C_INT_UNDEF;
 
-	mp = O7C_GUARD(Translator_ModuleProvider_s, &p);
-	m = SearchModule(mp, name, name_len0, ofs, end);
+	o7c_retain(p); o7c_retain(host);
+	O7C_ASSIGN(&(mp), O7C_GUARD(Translator_ModuleProvider_s, &p));
+	O7C_ASSIGN(&(m), SearchModule(mp, name, name_len0, ofs, end));
 	if (m != NULL) {
 		Log_StrLn("Найден уже разобранный модуль", 56);
 	} else {
 		pathOfs = 0;
 		do {
-			source = GetModule_Open(mp, &pathOfs, name, name_len0, ofs, end);
+			O7C_ASSIGN(&(source), GetModule_Open(mp, &pathOfs, name, name_len0, ofs, end));
 		} while (!((source != NULL) || (mp->path[o7c_ind(4096, pathOfs)] == 0x00u)));
 		if (source != NULL) {
-			m = Parser_Parse(&source->_, p, &mp->opt, Parser_Options_tag);
+			O7C_ASSIGN(&(m), Parser_Parse(&source->_, p, &mp->opt, Parser_Options_tag));
 			VFileStream_CloseIn(&source);
 			AddModule(mp, m);
 		} else {
@@ -508,34 +533,41 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 			Out_Ln();
 		}
 	}
-	return m;
+	O7C_ASSIGN(&o7c_return, m);
+	o7c_release(m); o7c_release(source); o7c_release(mp);
+	o7c_release(p); o7c_release(host);
+	o7c_unhold(o7c_return);
+	return o7c_return;
 }
 
 static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_ROut **implementation, o7c_bool *isMain) {
+	int o7c_return;
+
 	o7c_char dest[1024] /* init array */;
 	int destLen = O7C_INT_UNDEF, ret = O7C_INT_UNDEF;
+	memset(&dest, 0, sizeof(dest));
 
-	(*interface_) = NULL;
-	(*implementation) = NULL;
+	O7C_ASSIGN(&((*interface_)), NULL);
+	O7C_ASSIGN(&((*implementation)), NULL);
 	destLen = 0;
-	if (!(CLI_Get(dest, 1024, &destLen, 2) && (destLen < sizeof(dest) / sizeof (dest[0]) - 2))) {
+	if (!(CLI_Get(dest, 1024, &destLen, 2) && (o7c_cmp(destLen, sizeof(dest) / sizeof (dest[0]) - 2) <  0))) {
 		ret = ErrTooLongOutName_cnst;
 	} else {
-		(*isMain) = (destLen > 3) && (dest[o7c_ind(1024, o7c_sub(destLen, 3))] == (char unsigned)'.') && (dest[o7c_ind(1024, o7c_sub(destLen, 2))] == (char unsigned)'c');
+		(*isMain) = (o7c_cmp(destLen, 3) >  0) && (dest[o7c_ind(1024, o7c_sub(destLen, 3))] == (char unsigned)'.') && (dest[o7c_ind(1024, o7c_sub(destLen, 2))] == (char unsigned)'c');
 		if ((*isMain)) {
-			destLen -= 2;
+			destLen = o7c_sub(destLen, 2);;
 		}
 		dest[o7c_ind(1024, o7c_sub(destLen, 1))] = (char unsigned)'.';
 		dest[o7c_ind(1024, o7c_add(destLen, 1))] = 0x00u;
 		if (!(*isMain)) {
 			dest[o7c_ind(1024, destLen)] = (char unsigned)'h';
-			(*interface_) = VFileStream_OpenOut(dest, 1024);
+			O7C_ASSIGN(&((*interface_)), VFileStream_OpenOut(dest, 1024));
 		}
 		if (((*interface_) == NULL) && !(*isMain)) {
 			ret = ErrOpenH_cnst;
 		} else {
 			dest[o7c_ind(1024, destLen)] = (char unsigned)'c';
-			(*implementation) = VFileStream_OpenOut(dest, 1024);
+			O7C_ASSIGN(&((*implementation)), VFileStream_OpenOut(dest, 1024));
 			if ((*implementation) == NULL) {
 				VFileStream_CloseOut(&(*interface_));
 				ret = ErrOpenC_cnst;
@@ -544,18 +576,24 @@ static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_R
 			}
 		}
 	}
-	return ret;
+	o7c_return = ret;
+	return o7c_return;
 }
 
 static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RIn *source) {
+	int o7c_return;
+
 	struct Ast_RModule *module = NULL;
 	struct GeneratorC_Generator intGen /* record init */, realGen /* record init */;
 	GeneratorC_Options opt = NULL;
 	struct VFileStream_ROut *interface_ = NULL, *implementation = NULL;
 	int ret = O7C_INT_UNDEF;
 	o7c_bool isMain = O7C_BOOL_UNDEF;
+	memset(&intGen, 0, sizeof(intGen));
+	memset(&realGen, 0, sizeof(realGen));
 
-	module = Parser_Parse(&source->_, &mp->_, &mp->opt, Parser_Options_tag);
+	o7c_retain(mp); o7c_retain(source);
+	O7C_ASSIGN(&(module), Parser_Parse(&source->_, &mp->_, &mp->opt, Parser_Options_tag));
 	VFileStream_CloseIn(&source);
 	if (module == NULL) {
 		Out_String("Ожидается MODULE", 26);
@@ -568,19 +606,24 @@ static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RI
 		Out_String("Модуль переведён без ошибок", 52);
 		Out_Ln();
 		ret = OpenOutput(&interface_, &implementation, &isMain);
-		if (ret == ErrNo_cnst) {
+		if (o7c_cmp(ret, ErrNo_cnst) ==  0) {
 			GeneratorC_Init(&intGen, GeneratorC_Generator_tag, &interface_->_);
 			GeneratorC_Init(&realGen, GeneratorC_Generator_tag, &implementation->_);
-			opt = GeneratorC_DefaultOptions();
+			O7C_ASSIGN(&(opt), GeneratorC_DefaultOptions());
 			GeneratorC_Generate(&intGen, GeneratorC_Generator_tag, &realGen, GeneratorC_Generator_tag, module, opt);
 			VFileStream_CloseOut(&interface_);
 			VFileStream_CloseOut(&implementation);
 		}
 	}
-	return ret;
+	o7c_return = ret;
+	o7c_release(module); o7c_release(opt); o7c_release(interface_); o7c_release(implementation);
+	o7c_release(mp); o7c_release(source);
+	return o7c_return;
 }
 
 static struct Translator_ModuleProvider_s *NewProvider(o7c_char fileExt[/*len0*/], int fileExt_len0, int extLen) {
+	ModuleProvider o7c_return = NULL;
+
 	struct Translator_ModuleProvider_s *mp = NULL;
 	o7c_bool ret = O7C_BOOL_UNDEF;
 
@@ -589,12 +632,15 @@ static struct Translator_ModuleProvider_s *NewProvider(o7c_char fileExt[/*len0*/
 	Parser_DefaultOptions(&mp->opt, Parser_Options_tag);
 	mp->opt.printError = ErrorMessage;
 	CopyPath(mp->path, 4096, 3);
-	mp->modules.first = NULL;
-	mp->modules.last = NULL;
+	O7C_ASSIGN(&(mp->modules.first), NULL);
+	O7C_ASSIGN(&(mp->modules.last), NULL);
 	mp->extLen = 0;
 	ret = StringStore_CopyChars(mp->fileExt, 32, &mp->extLen, fileExt, fileExt_len0, 0, extLen);
 	assert(o7c_bl(ret));
-	return mp;
+	O7C_ASSIGN(&o7c_return, mp);
+	o7c_release(mp);
+	o7c_unhold(o7c_return);
+	return o7c_return;
 }
 
 static void ErrMessage(int err) {
@@ -639,6 +685,8 @@ static void ErrMessage(int err) {
 }
 
 static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/], int name_len0) {
+	int o7c_return;
+
 	int i = O7C_INT_UNDEF, dot = O7C_INT_UNDEF, len = O7C_INT_UNDEF;
 
 	i = 0;
@@ -647,14 +695,15 @@ static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/]
 		if (name[o7c_ind(name_len0, i)] == (char unsigned)'.') {
 			dot = i;
 		}
-		i++;
+		i = o7c_add(i, 1);;
 	}
 	len = 0;
-	if (!((dot >= 0) && StringStore_CopyChars(ext, ext_len0, &len, name, name_len0, dot, i)) && !StringStore_CopyChars(ext, ext_len0, &len, ".mod", 5, 0, 4)) {
+	if (!((o7c_cmp(dot, 0) >=  0) && StringStore_CopyChars(ext, ext_len0, &len, name, name_len0, dot, i)) && !StringStore_CopyChars(ext, ext_len0, &len, ".mod", 5, 0, 4)) {
 		len =  - 1;
 	}
-	assert(len >= 0);
-	return len;
+	assert(o7c_cmp(len, 0) >=  0);
+	o7c_return = len;
+	return o7c_return;
 }
 
 static void Translator_Start(void) {
@@ -662,10 +711,12 @@ static void Translator_Start(void) {
 	o7c_char ext[32] /* init array */;
 	int srcLen = O7C_INT_UNDEF, extLen = O7C_INT_UNDEF, ret = O7C_INT_UNDEF;
 	struct VFileStream_RIn *source = NULL;
+	memset(&src, 0, sizeof(src));
+	memset(&ext, 0, sizeof(ext));
 
 	Out_Open();
 	Log_Turn(false);
-	if (CLI_count <= 2) {
+	if (o7c_cmp(CLI_count, 2) <=  0) {
 		ret = ErrWrongArgs_cnst;
 	} else {
 		srcLen = 0;
@@ -673,7 +724,7 @@ static void Translator_Start(void) {
 			ret = ErrTooLongSourceName_cnst;
 		} else {
 			extLen = CopyExt(ext, 32, src, 1024);
-			source = VFileStream_OpenIn(src, 1024);
+			O7C_ASSIGN(&(source), VFileStream_OpenIn(src, 1024));
 			if (source == NULL) {
 				ret = ErrOpenSource_cnst;
 			} else {
@@ -681,10 +732,11 @@ static void Translator_Start(void) {
 			}
 		}
 	}
-	if (ret != 0) {
+	if (o7c_cmp(ret, 0) !=  0) {
 		ErrMessage(ret);
 		CLI_SetExitCode(1);
 	}
+	o7c_release(source);
 }
 
 extern int main(int argc, char **argv) {

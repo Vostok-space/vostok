@@ -50,6 +50,36 @@
 #	error
 #endif
 
+enum {
+	O7C_MEM_MAN_NOFREE,
+	O7C_MEM_MAN_COUNTER,
+	O7C_MEM_MAN_GC,
+
+#if defined(O7C_MEM_MAN_MODEL)
+	O7C_MEM_MAN = O7C_MEM_MAN_MODEL
+#else
+	O7C_MEM_MAN = O7C_MEM_MAN_NOFREE
+#endif
+};
+
+#if defined(O7C_MEM_MAN_COUNTER_TYPE)
+	typedef O7C_MEM_MAN_COUNTER_TYPE o7c_mmc_t;
+#else
+	typedef long o7c_mmc_t;
+#endif
+
+enum {
+	O7C_VAR_INIT_UNDEF,
+	O7C_VAR_INIT_ZERO,
+	O7C_VAR_INIT_NO,
+
+#if defined(O7C_VAR_INIT_MODEL)
+	O7C_VAR_INIT = O7C_VAR_INIT_MODEL
+#else
+	O7C_VAR_INIT = O7C_VAR_INIT_ZERO
+#endif
+};
+
 typedef char unsigned o7c_char;
 
 #if __GNUC__ > 2
@@ -58,19 +88,31 @@ typedef char unsigned o7c_char;
 #	define O7C_ATTR_ALWAYS_INLINE
 #endif
 
+static O7C_INLINE void* o7c_raw_alloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void* o7c_raw_alloc(size_t size) {
+	void *mem;
+	if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
+	 || (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER))
+	{
+		mem = calloc(1, size);
+	} else {
+		mem = malloc(size);
+	}
+	return mem;
+}
+
+static O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 #if defined(O7C_LSAN_LEAK_IGNORE)
 #	include <sanitizer/lsan_interface.h>
-	static O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 	static O7C_INLINE void* o7c_malloc(size_t size) {
 		void *mem;
-		mem = malloc(size);
+		mem = o7c_raw_alloc(size);
 		__lsan_ignore_object(mem);
 		return mem;
 	}
 #else
-	static O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 	static O7C_INLINE void* o7c_malloc(size_t size) {
-		return malloc(size);
+		return o7c_raw_alloc(size);
 	}
 #endif
 
@@ -94,6 +136,8 @@ static O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
 	return b;
 }
 
+extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size);
+
 static O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_dbl_undef(void) {
 	double undef;
@@ -104,6 +148,8 @@ static O7C_INLINE double o7c_dbl_undef(void) {
 	}
 	return undef;
 }
+
+extern double* o7c_doubles_undef(double array[], int size);
 
 static O7C_INLINE double o7c_dbl(double d) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_dbl(double d) {
@@ -141,6 +187,8 @@ static O7C_INLINE int o7c_int(int i) {
 	return i;
 }
 
+extern int* o7c_ints_undef(int array[], int size);
+
 static O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_add(int a1, int a2) {
 	return o7c_int(a1) + o7c_int(a2);
@@ -173,23 +221,119 @@ static O7C_INLINE int o7c_ind(int len, int ind) {
 	return ind;
 }
 
-extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
+static O7C_INLINE int o7c_cmp(int a, int b) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE int o7c_cmp(int a, int b) {
+	int cmp;
+	if (a < b) {
+		assert(a != O7C_INT_UNDEF);
+		cmp = -1;
+	} else {
+		assert(b != O7C_INT_UNDEF);
+		if (a == b) {
+			cmp = 0;
+		} else {
+			cmp = 1;
+		}
+	}
+	return cmp;
+}
 
 static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag)
 	O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
 	void *mem;
-	mem = o7c_malloc(sizeof(o7c_id_t *) + size);
+	mem = o7c_malloc(
+		sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
+	  + sizeof(o7c_id_t *) + size);
 	if (NULL != mem) {
+		if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
+			*(o7c_mmc_t *)mem = 1;
+			mem = (void *)((o7c_mmc_t *)mem + 1);
+		}
 		*(o7c_id_t const **)mem = tag;
 		mem = (void *)((o7c_id_t **)mem + 1);
 	}
 	return mem;
 }
 
+static O7C_INLINE void* o7c_retain(void *mem) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void* o7c_retain(void *mem) {
+	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) && (NULL != mem)) {
+		++*((o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1);
+	}
+	return mem;
+}
+
+static O7C_INLINE void o7c_release(void *mem) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void o7c_release(void *mem) {
+	o7c_mmc_t *counter;
+	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
+	 && (NULL != mem))
+	{
+		counter = (o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1;
+		if (1 == *counter) {
+			free(counter);
+		} else {
+			assert(*counter > 1);
+			--*counter;
+		}
+	}
+}
+
+/** уменьшает счётчик на 1, но не освобождает объект при достижении 0 */
+static O7C_INLINE void* o7c_unhold(void *mem) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void* o7c_unhold(void *mem) {
+	o7c_mmc_t *counter;
+	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
+	 && (NULL != mem))
+	{
+		counter = (o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1;
+		assert(*counter > 0);
+		--*counter;
+	}
+	return mem;
+}
+
+
+#define O7C_RELEASE_PARAMS(array) o7c_release_array(array, sizeof(array) / sizeof(array[0]))
+
+static O7C_INLINE void o7c_null(void **mem) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void o7c_null(void **mem) {
+	o7c_release(*mem);
+	*mem = NULL;
+}
+
+#define O7C_NULL(mem) o7c_null((void **)(mem))
+
+static O7C_INLINE void o7c_release_array(void *mem[], int count)
+	O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void o7c_release_array(void *mem[], int count) {
+	int i;
+	if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
+		for (i = 0; i < count; ++i) {
+			o7c_null(mem + i);
+		}
+	}
+}
+
+static O7C_INLINE void o7c_assign(void **m1, void *m2) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void o7c_assign(void **m1, void *m2) {
+	assert(NULL != m1);
+	o7c_retain(m2);
+	if (NULL != *m1) {
+		o7c_release(*m1);
+	}
+	*m1 = m2;
+}
+
+#define O7C_ASSIGN(m1, m2) o7c_assign((void **)(m1), m2) 
+
+extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
+
 static O7C_INLINE o7c_id_t const * o7c_dynamic_tag(void const *mem)
 	O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE o7c_id_t const * o7c_dynamic_tag(void const *mem) {
+	assert(NULL != mem);
 	return *((o7c_id_t const **)mem - 1);
 }
 
@@ -198,10 +342,10 @@ static O7C_INLINE o7c_bool o7c_is(o7c_tag_t const base, void const *strct,
 static O7C_INLINE o7c_bool
 	o7c_is(o7c_tag_t const base, void const *strct, o7c_tag_t const ext)
 {
-	if ((NULL == base) && (NULL != strct)) {
+	if (NULL == base) {
 		base = o7c_dynamic_tag(strct);
 	}
-	return (NULL != strct) && (base[ext[0]] == ext[ext[0]]);
+	return base[ext[0]] == ext[ext[0]];
 }
 
 static O7C_INLINE void ** o7c_must(o7c_tag_t const base, void **strct,
@@ -209,7 +353,7 @@ static O7C_INLINE void ** o7c_must(o7c_tag_t const base, void **strct,
 static O7C_INLINE void **
 	o7c_must(o7c_tag_t const base, void **strct, o7c_tag_t const ext)
 {
-	assert((NULL == *strct) || o7c_is(base, *strct, ext));
+	assert(o7c_is(base, *strct, ext));
 	return strct;
 }
 
@@ -222,7 +366,7 @@ static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,
 static O7C_INLINE void *
 	o7c_must_r(o7c_tag_t const base, void *strct, o7c_tag_t const ext)
 {
-	assert((NULL == strct) || o7c_is(base, strct, ext));
+	assert(o7c_is(base, strct, ext));
 	return strct;
 }
 
