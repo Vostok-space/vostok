@@ -1121,14 +1121,18 @@ BEGIN
 END DesignatorNew;
 
 PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
+VAR dist: INTEGER;
 BEGIN
 	Log.Str("IsRecordExtension ");
-	distance := 0;
 	IF (t0 # NIL) & (t1 # NIL) THEN
+		dist := 0;
 		REPEAT
 			t1 := t1.base;
-			INC(distance)
-		UNTIL (t0 = t1) OR (t1 = NIL)
+			INC(dist)
+		UNTIL (t0 = t1) OR (t1 = NIL);
+		IF t0 = t1 THEN
+			distance := dist
+		END
 	ELSE
 		t0 := NIL; t1 := NIL
 	END;
@@ -1339,20 +1343,21 @@ VAR comp: BOOLEAN;
 		RETURN comp
 	END EqualProcTypes;
 BEGIN
+	distance := 0;
 	comp := (t1 = NIL) OR (t2 = NIL); (* совместимы, если ошибка в разборе *)
 	IF ~comp THEN
 		comp := t1 = t2;
 		Log.Str("Идентификаторы типов : ");
 		Log.Int(t1.id); Log.Str(" : ");
 		Log.Int(t2.id); Log.Ln;
-		distance := 0;
 		IF ~comp & (t1.id = t2.id)
 		 & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
 		THEN
 			CASE t1.id OF
 			  IdArray	: comp := CompatibleTypes(distance, t1.type, t2.type)
 			| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL) 
-							   OR IsRecordExtension(distance, t1.type(Record), t2.type(Record))
+			                   OR IsRecordExtension(distance, t1.type(Record),
+			                                                  t2.type(Record))
 			| IdRecord	: comp := IsRecordExtension(distance, t1(Record), t2(Record))
 			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 			END
