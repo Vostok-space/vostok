@@ -493,9 +493,9 @@ VAR sel: Ast.Selector;
 
 	PROCEDURE Record(VAR gen: Generator; VAR type: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
-		up: Ast.Declarations;
+		up: Ast.Record;
 
-		PROCEDURE Search(ds: Ast.Declarations; d: Ast.Declaration): BOOLEAN;
+		PROCEDURE Search(ds: Ast.Record; d: Ast.Declaration): BOOLEAN;
 		VAR c: Ast.Declaration;
 		BEGIN
 			c := ds.vars;
@@ -507,9 +507,9 @@ VAR sel: Ast.Selector;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
 		IF type IS Ast.Pointer THEN
-			up := type(Ast.Pointer).type(Ast.Record).vars
+			up := type(Ast.Pointer).type(Ast.Record)
 		ELSE
-			up := type(Ast.Record).vars
+			up := type(Ast.Record)
 		END;
 
 		IF type.id = Ast.IdPointer THEN
@@ -519,7 +519,7 @@ VAR sel: Ast.Selector;
 		END;
 
 		WHILE (up # NIL) & ~Search(up, var) DO
-			up := up.up;
+			up := up.base;
 			Str(gen, "_.")
 		END;
 
@@ -1490,7 +1490,7 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 		IF CheckStructName(gen, rec) THEN
 			GlobalName(gen, rec)
 		END;
-		v := rec.vars.vars;
+		v := rec.vars;
 		IF (v = NIL) & (rec.base = NIL) & ~gen.opt.gnu THEN
 			Str(gen, " { int nothing; } ")
 		ELSE
@@ -2471,7 +2471,7 @@ BEGIN
 				t.mark := TRUE;
 				ASSERT(t.module # NIL) 
 			END;
-			d := t(Ast.Record).vars.vars;
+			d := t(Ast.Record).vars;
 			WHILE d # NIL DO
 				MarkType(d.type);
 				IF d.name.block # NIL THEN

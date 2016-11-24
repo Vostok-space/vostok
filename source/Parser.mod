@@ -622,18 +622,44 @@ BEGIN
 END Vars;
 
 PROCEDURE Record(VAR p: Parser; ds: Ast.Declarations;
-				 nameBegin, nameEnd: INTEGER): Ast.Record;
+                 nameBegin, nameEnd: INTEGER): Ast.Record;
 VAR rec, base: Ast.Record;
 	t: Ast.Type;
 	decl: Ast.Declaration;
 
-	PROCEDURE Vars(VAR p: Parser; dsAdd, dsTypes: Ast.Declarations);
+	PROCEDURE Vars(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
+	
+		PROCEDURE Declaration(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
+		VAR var: Ast.Var;
+			d: Ast.Declaration;
+			typ: Ast.Type;
+		
+			PROCEDURE Name(VAR v: Ast.Var; VAR p: Parser; ds: Ast.Record);
+			VAR begin, end: INTEGER;
+			BEGIN
+				ExpectIdent(p, begin, end, ErrExpectIdent);
+				CheckAst(p, Ast.RecordVarAdd(v, ds, p.s.buf, begin, end));
+				Mark(p, v)
+			END Name;
+		BEGIN
+			Name(var, p, dsAdd);
+			d := var;
+			WHILE ScanIfEqual(p, Scanner.Comma) DO
+				Name(var, p, dsAdd)
+			END;
+			Expect(p, Scanner.Colon, ErrExpectColon);
+			typ := type(p, dsTypes, -1, -1);
+			WHILE d # NIL DO
+				d.type := typ;
+				d := d.next
+			END
+		END Declaration;
 	BEGIN
 		IF p.l = Scanner.Ident THEN
-			VarDeclaration(p, dsAdd, dsTypes);
+			Declaration(p, dsAdd, dsTypes);
 			WHILE ScanIfEqual(p, Scanner.Semicolon) DO
 				IF p.l # Scanner.End THEN
-					VarDeclaration(p, dsAdd, dsTypes)
+					Declaration(p, dsAdd, dsTypes)
 				ELSIF p.settings.strictSemicolon THEN
 					AddError(p, ErrExcessSemicolon);
 					p.err := FALSE
@@ -658,19 +684,21 @@ BEGIN
 	IF nameBegin >= 0 THEN
 		t := rec;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t));
-		rec := t(Ast.Record);
-		Ast.RecordSetBase(rec, base)
+		IF rec # t THEN
+			rec := t(Ast.Record);
+			Ast.RecordSetBase(rec, base)
+		END
 	ELSE
 		rec.name.block := NIL;
 		rec.module := p.module
 	END;
-	Vars(p, rec.vars, ds);
+	Vars(p, rec, ds);
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN rec
 END Record;
 
 PROCEDURE Pointer(VAR p: Parser; ds: Ast.Declarations;
-				  nameBegin, nameEnd: INTEGER): Ast.Pointer;
+                  nameBegin, nameEnd: INTEGER): Ast.Pointer;
 VAR tp: Ast.Pointer;
 	t: Ast.Type;
 	decl: Ast.Declaration;

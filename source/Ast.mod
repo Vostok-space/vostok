@@ -193,18 +193,18 @@ TYPE
 
 	Pointer* = POINTER TO RPointer;
 
+	Var* = POINTER TO RVar;
+	RVar* = RECORD(RDeclaration)
+	END;
+
 	Record* = POINTER TO RECORD(RConstruct)
 		base*: Record;
-		vars*: Declarations;
+		vars*: Var;
 		pointer*: Pointer
 	END;
 
 	RPointer* = RECORD(RConstruct)
 		(* type - ссылка на record *)
-	END;
-
-	Var* = POINTER TO RVar;
-	RVar* = RECORD(RDeclaration)
 	END;
 
 	FormalParam* = POINTER TO RECORD(RVar)
@@ -225,8 +225,6 @@ TYPE
 		types*: Type;
 		vars*: Var;
 		procedures*: Procedure;
-
-		recordsForward*: Record;
 
 		stats*: Statement
 	END;
@@ -487,7 +485,6 @@ BEGIN
 	d.types := NIL;
 	d.vars := NIL;
 	d.procedures := NIL;
-	d.recordsForward := NIL;
 	d.up := up;
 	d.stats := NIL
 END DeclarationsInit;
@@ -598,9 +595,8 @@ END ImportAdd;
 PROCEDURE SearchName(d: Declaration;
 					 buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 BEGIN
-	WHILE (d # NIL)
-		& ((d IS Module) OR ~Strings.IsEqualToChars(d.name, buf, begin, end))
-	DO
+	WHILE (d # NIL) & ~Strings.IsEqualToChars(d.name, buf, begin, end) DO
+		ASSERT(~(d IS Module));
 		d := d.next
 	END;
 	IF d # NIL THEN
@@ -690,7 +686,7 @@ BEGIN
 	RETURN err
 END TypeAdd;
 
-PROCEDURE ChecklessVarAdd*(VAR v: Var; ds: Declarations;
+PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
                            buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
 	NEW(v); v.id := IdVar;
@@ -823,10 +819,9 @@ END PointerGet;
 
 PROCEDURE RecordSetBase*(r, base: Record);
 BEGIN
-	r.base := base;
-	IF base # NIL THEN
-		r.vars.up := base.vars
-	END
+	ASSERT(r.base = NIL);
+	ASSERT(r.vars = NIL);
+	r.base := base
 END RecordSetBase;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
@@ -834,9 +829,8 @@ VAR r: Record;
 BEGIN
 	NEW(r); TInit(r, IdRecord);
 	r.pointer := NIL;
-	NEW(r.vars); NodeInit(r.vars^);
-	DeclarationsConnect(r.vars, ds, "", -1, -1);
-	r.vars.up := NIL;
+	r.vars := NIL;
+	r.base := NIL;
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
@@ -1190,12 +1184,76 @@ BEGIN
 	RETURN err
 END SelArrayNew;
 
+PROCEDURE RecordVarSearch(r: Record; name: ARRAY OF CHAR; begin, end: INTEGER): Var; 
+VAR d: Declaration;
+	v: Var;
+BEGIN
+	d := SearchName(r.vars, name, begin, end);
+	WHILE (d = NIL) & (r.base # NIL) DO
+		r := r.base;
+		d := SearchName(r.vars, name, begin, end)
+	END;
+	IF d # NIL
+	THEN v := d(Var)
+	ELSE v := NIL
+	END
+	RETURN v
+END RecordVarSearch;
+
+PROCEDURE RecordChecklessVarAdd(r: Record; name: ARRAY OF CHAR;
+                                begin, end: INTEGER): Var;
+VAR v: Var;
+	last: Declaration;
+BEGIN
+	NEW(v); DeclInit(v, NIL);
+	v.module := r.module;
+	PutChars(v.module, v.name, name, begin, end);
+	IF r.vars = NIL THEN
+		r.vars := v
+	ELSE
+		last := r.vars;
+		WHILE last.next # NIL DO
+			last := last.next
+		END;
+		last.next := v
+	END
+	RETURN v
+END RecordChecklessVarAdd;
+
+PROCEDURE RecordVarAdd*(VAR v: Var; r: Record;
+                        name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	v := RecordVarSearch(r, name, begin, end);
+	IF v = NIL
+	THEN err := ErrNo
+	ELSE err := ErrDeclarationNameDuplicate (* TODO *)
+	END;
+	v := RecordChecklessVarAdd(r, name, begin, end)
+	RETURN err
+END RecordVarAdd;
+
+PROCEDURE RecordVarGet*(VAR v: Var; r: Record;
+                        name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	v := RecordVarSearch(r, name, begin, end);
+	IF v # NIL THEN
+		err := ErrNo
+	ELSE
+		err := ErrDeclarationNotFound; (* TODO *)
+		v := RecordChecklessVarAdd(r, name, begin, end);
+		v.type := TypeGet(IdInteger)
+	END
+	RETURN err
+END RecordVarGet;
+
 PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
-						name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                        name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR sr: SelRecord;
 	err: INTEGER;
+	record: Record;
 	var: Var;
-	vars: Declarations;
 BEGIN
 	NEW(sr); SelInit(sr);
 	var := NIL;
@@ -1205,14 +1263,14 @@ BEGIN
 			err := ErrDotSelectorToNotRecord
 		ELSE
 			IF type.id = IdRecord THEN
-				vars := type(Record).vars
+				record := type(Record)
 			ELSIF type.type = NIL THEN
-				vars := NIL
+				record := NIL
 			ELSE
-				vars := type.type(Record).vars
+				record := type.type(Record)
 			END;
-			IF vars # NIL THEN
-				err := VarGet(var, vars, name, begin, end);
+			IF record # NIL THEN
+				err := RecordVarGet(var, record, name, begin, end);
 				IF var # NIL THEN
 					type := var.type
 				ELSE
