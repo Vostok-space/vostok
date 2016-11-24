@@ -783,6 +783,50 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Str(gen, "(int)");
 				Factor(gen, e)
 			END Ord;
+
+			PROCEDURE Inc(VAR gen: Generator;
+			              e1: Ast.Expression; p2: Ast.Parameter);
+			BEGIN
+				Expression(gen, e1);
+				IF gen.opt.checkArith THEN
+					Str(gen, " = o7c_add(");
+					Expression(gen, e1);
+					IF p2 = NIL THEN
+						Str(gen, ", 1);")
+					ELSE
+						Str(gen, ", ");
+						Expression(gen, p2.expr);
+						Str(gen, ");")
+					END
+				ELSIF p2 = NIL THEN
+					Str(gen, "++")
+				ELSE
+					Str(gen, " += ");
+					Expression(gen, p2.expr)
+				END
+			END Inc;
+
+			PROCEDURE Dec(VAR gen: Generator;
+			              e1: Ast.Expression; p2: Ast.Parameter);
+			BEGIN
+				Expression(gen, e1);
+				IF gen.opt.checkArith THEN
+					Str(gen, " = o7c_sub(");
+					Expression(gen, e1);
+					IF p2 = NIL THEN
+						Str(gen, ", 1);")
+					ELSE
+						Str(gen, ", ");
+						Expression(gen, p2.expr);
+						Str(gen, ");")
+					END
+				ELSIF p2 = NIL THEN
+					Str(gen, "--")
+				ELSE
+					Str(gen, " -= ");
+					Expression(gen, p2.expr)
+				END
+			END Dec;
 		BEGIN
 			e1 := call.params.expr;
 			p2 := call.params.next;
@@ -823,21 +867,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Str(gen, "(char unsigned)");
 				Factor(gen, e1)
 			| Scanner.Inc:
-				Expression(gen, e1);
-				IF p2 = NIL THEN
-					Str(gen, "++")
-				ELSE
-					Str(gen, " += ");
-					Expression(gen, p2.expr)
-				END
+				Inc(gen, e1, p2)
 			| Scanner.Dec:
-				Expression(gen, e1);
-				IF p2 = NIL THEN
-					Str(gen, "--")
-				ELSE
-					Str(gen, " -= ");
-					Expression(gen, p2.expr)
-				END
+				Dec(gen, e1, p2)
 			| Scanner.Incl:
 				Expression(gen, e1);
 				Str(gen, " |= 1u << ");
@@ -865,7 +897,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END Predefined;
 
 		PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
-							  VAR fp: Ast.Declaration);
+		                      VAR fp: Ast.Declaration);
 		VAR t: Ast.Type;
 			i, dist: INTEGER;
 		BEGIN
@@ -951,7 +983,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	PROCEDURE Relation(VAR gen: Generator; rel: Ast.ExprRelation);
 
 		PROCEDURE Simple(VAR gen: Generator; rel: Ast.ExprRelation;
-						 str: ARRAY OF CHAR);
+		                 str: ARRAY OF CHAR);
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
 			BEGIN
