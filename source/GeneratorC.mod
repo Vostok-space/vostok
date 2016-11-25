@@ -1897,40 +1897,46 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		reref, retain: BOOLEAN;
 	BEGIN
 		retain := (st.designator.type.id = Ast.IdPointer)
-		       & (gen.opt.memManager = MemManagerCounter);
-		IF retain THEN
-			Str(gen, "O7C_ASSIGN(&(");
+		        & (gen.opt.memManager = MemManagerCounter);
+		IF retain & (st.expr.id = Ast.IdPointer) THEN
+			Str(gen, "O7C_NULL(&");
 			Designator(gen, st.designator);
-			Str(gen, "), ")
+			reref := FALSE
 		ELSE
-			Designator(gen, st.designator);
-			Str(gen, " = ")
-		END;
-
-		reref :=  (st.expr.type.id = Ast.IdPointer)
-		       &  (st.expr.type.type # st.designator.type.type)
-		       & ~(st.expr IS Ast.ExprNil);
-		IF reref THEN
-			base := st.designator.type.type(Ast.Record);
-			type := st.expr.type.type(Ast.Record).base;
-			Str(gen, "(&(");
-			Expression(gen, st.expr);
-			Str(gen, ")->_")
-		ELSE
-			base := NIL;
-			Expression(gen, st.expr)
-		END;
-		IF (base # NIL) OR (st.expr.type.id = Ast.IdRecord) THEN
-			(*ASSERT(st.designator.type.id = Ast.IdRecord);*)
-			IF base = NIL THEN
-				base := st.designator.type(Ast.Record);
-				type := st.expr.type(Ast.Record)
+			IF retain THEN
+				Str(gen, "O7C_ASSIGN(&");
+				Designator(gen, st.designator);
+				Str(gen, ", ")
+			ELSE
+				Designator(gen, st.designator);
+				Str(gen, " = ")
 			END;
-			WHILE type # base DO
-				Str(gen, "._");
-				type := type.base
+	
+			reref :=  (st.expr.type.id = Ast.IdPointer)
+			       &  (st.expr.type.type # st.designator.type.type)
+			       & ~(st.expr.id = Ast.IdPointer);
+			IF reref THEN
+				base := st.designator.type.type(Ast.Record);
+				type := st.expr.type.type(Ast.Record).base;
+				Str(gen, "(&(");
+				Expression(gen, st.expr);
+				Str(gen, ")->_")
+			ELSE
+				base := NIL;
+				Expression(gen, st.expr)
 			END;
-			Log.StrLn("Assign record")
+			IF (base # NIL) OR (st.expr.type.id = Ast.IdRecord) THEN
+				(*ASSERT(st.designator.type.id = Ast.IdRecord);*)
+				IF base = NIL THEN
+					base := st.designator.type(Ast.Record);
+					type := st.expr.type(Ast.Record)
+				END;
+				WHILE type # base DO
+					Str(gen, "._");
+					type := type.base
+				END;
+				Log.StrLn("Assign record")
+			END
 		END;
 		CASE ORD(reref) + ORD(retain) OF
 		  0: StrLn(gen, ";")

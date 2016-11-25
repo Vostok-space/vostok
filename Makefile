@@ -9,7 +9,7 @@ SING_BS := singularity/bootstrap
 SELF := result/self
 
 SRC := $(wildcard source/*.mod)
-SANITIZE := -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
+SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
 O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
 DEBUG := -g
