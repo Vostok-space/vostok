@@ -3,14 +3,14 @@ MODULE OopInsertSort;
 IMPORT Out, CLI;
 
 TYPE
-	RElement* = RECORD END;
-	Element* = POINTER TO RElement;
+	RElement = RECORD END;
+	Element = POINTER TO RElement;
 
-	Comparator* = RECORD
+	Comparator = RECORD
 		compare: PROCEDURE(c: Comparator; a, b: Element): INTEGER
 	END;
 
-	Compare* = PROCEDURE(c: Comparator; a, b: Element): INTEGER;
+	Compare = PROCEDURE(c: Comparator; a, b: Element): INTEGER;
 
 	IntPoint = POINTER TO RECORD(RElement)
 		x, y: INTEGER
@@ -25,7 +25,7 @@ TYPE
 		cnt: INTEGER
 	END;
 
-PROCEDURE sort*(VAR arr: ARRAY OF Element; cnt: INTEGER; cmp: Comparator);
+PROCEDURE sort(VAR arr: ARRAY OF Element; cnt: INTEGER; cmp: Comparator);
 VAR i, j: INTEGER;
 	a: Element;
 BEGIN

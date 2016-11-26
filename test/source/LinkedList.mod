@@ -1,4 +1,3 @@
-(* Для проверки счётчика ссылок *)
 MODULE LinkedList;
 
 IMPORT Out;

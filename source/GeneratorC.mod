@@ -44,7 +44,7 @@ CONST
 TYPE
 	Options* = POINTER TO RECORD(V.Base)
 		std*: INTEGER;
-		gnu*,
+		gnu*, plan9*,
 		procLocal*,
 		checkIndex*,
 		checkArith*,
@@ -518,9 +518,11 @@ VAR sel: Ast.Selector;
 			Str(gen, ".")
 		END;
 
-		WHILE (up # NIL) & ~Search(up, var) DO
-			up := up.base;
-			Str(gen, "_.")
+		IF ~gen.opt.plan9 THEN
+			WHILE (up # NIL) & ~Search(up, var) DO
+				up := up.base;
+				Str(gen, "_.")
+			END
 		END;
 
 		Name(gen, var);
@@ -905,14 +907,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			dist := p.distance;
 			IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
 			OR (t IS Ast.Record)
-			OR (t.id = Ast.IdPointer) & (dist > 0)
+			OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
 			THEN
 				Str(gen, "&")
 			END;
 			gen.opt.lastSelectorDereference := FALSE;
 			Expression(gen, p.expr);
 
-			IF dist > 0 THEN
+			IF (dist > 0) & ~gen.opt.plan9 THEN
 				IF t.id = Ast.IdPointer THEN
 					DEC(dist);
 					Str(gen, "->_")
@@ -987,11 +989,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
 			BEGIN
-				IF (dist > 0) & (e.type.id = Ast.IdPointer) THEN
+				IF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
 					Str(gen, "&")
 				END;
 				Expression(gen, e);
-				IF dist > 0 THEN
+				IF (dist > 0) & ~gen.opt.plan9 THEN
 					IF e.type.id = Ast.IdPointer THEN
 						DEC(dist);
 						Str(gen, "->_")
@@ -1530,9 +1532,12 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 
 			IF rec.base # NIL THEN
 				Tabs(gen, +1);
-				Str(gen, "struct ");
 				GlobalName(gen, rec.base);
-				StrLn(gen, " _;")
+				IF gen.opt.plan9 THEN
+					StrLn(gen, ";")
+				ELSE
+					StrLn(gen, " _;")
+				END
 			ELSE
 				INC(gen.tabs)
 			END;
@@ -1911,29 +1916,36 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Designator(gen, st.designator);
 				Str(gen, " = ")
 			END;
-	
-			reref :=  (st.expr.type.id = Ast.IdPointer)
-			       &  (st.expr.type.type # st.designator.type.type)
-			       & ~(st.expr.id = Ast.IdPointer);
-			IF reref THEN
+			base := NIL;
+			reref := (st.expr.type.id = Ast.IdPointer)
+			       & (st.expr.type.type # st.designator.type.type)
+			       & (st.expr.id # Ast.IdPointer);
+			IF ~reref THEN
+				Expression(gen, st.expr);
+				IF st.expr.type.id = Ast.IdRecord THEN
+					base := st.designator.type(Ast.Record);
+					type := st.expr.type(Ast.Record)
+				END
+			ELSIF gen.opt.plan9 THEN
+				Expression(gen, st.expr);
+				reref := FALSE
+			ELSE 
 				base := st.designator.type.type(Ast.Record);
 				type := st.expr.type.type(Ast.Record).base;
 				Str(gen, "(&(");
 				Expression(gen, st.expr);
 				Str(gen, ")->_")
-			ELSE
-				base := NIL;
-				Expression(gen, st.expr)
 			END;
-			IF (base # NIL) OR (st.expr.type.id = Ast.IdRecord) THEN
+			IF (base # NIL) & (type # base) THEN
 				(*ASSERT(st.designator.type.id = Ast.IdRecord);*)
-				IF base = NIL THEN
-					base := st.designator.type(Ast.Record);
-					type := st.expr.type(Ast.Record)
-				END;
-				WHILE type # base DO
-					Str(gen, "._");
-					type := type.base
+				IF gen.opt.plan9 THEN
+					Str(gen, ".");
+					GlobalName(gen, st.designator.type)
+				ELSE
+					WHILE type # base DO
+						Str(gen, "._");
+						type := type.base
+					END
 				END;
 				Log.StrLn("Assign record")
 			END
@@ -1970,7 +1982,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				DEC(gen.tabs, 1)
 			END
 		END CaseElement;
-		
+
 		PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
 								  caseExpr: Ast.Expression);
 		VAR r: Ast.CaseLabel;
@@ -2210,22 +2222,24 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE ReleaseVars(VAR gen: Generator; var: Ast.Declaration);
 		VAR first: BOOLEAN;
 		BEGIN
-			first := TRUE;
-			WHILE (var # NIL) & (var IS Ast.Var) DO
-				IF var.type.id = Ast.IdPointer THEN
-					IF first THEN
-						first := FALSE;
-						Tabs(gen, 0);
-						Str(gen, "o7c_release(")
-					ELSE
-						Str(gen, "); o7c_release(")
+			IF gen.opt.memManager = MemManagerCounter THEN
+				first := TRUE;
+				WHILE (var # NIL) & (var IS Ast.Var) DO
+					IF var.type.id = Ast.IdPointer THEN
+						IF first THEN
+							first := FALSE;
+							Tabs(gen, 0);
+							Str(gen, "o7c_release(")
+						ELSE
+							Str(gen, "); o7c_release(")
+						END;
+						Name(gen, var)
 					END;
-					Name(gen, var)
+					var := var.next
 				END;
-				var := var.next
-			END;
-			IF ~first THEN
-				StrLn(gen, ");")
+				IF ~first THEN
+					StrLn(gen, ");")
+				END
 			END
 		END ReleaseVars;
 	BEGIN
@@ -2310,7 +2324,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			t := t.next
 		END;
 		p := proc.procedures;
-		IF p # NIL THEN
+		IF (p # NIL) & ~out.opt.procLocal THEN
 			IF ~proc.mark & ~out.opt.procLocal THEN
 				(* TODO также проверить наличие рекурсии из локальных процедур*)
 				ProcDecl(out.g[Implementation], proc)
@@ -2437,7 +2451,9 @@ BEGIN
 		END;
 		IF out.opt.varInit # VarInitNo THEN
 			VarsInit(out.g[Implementation], ds.vars)
-		END
+		END;
+
+		d := ds.procedures
 	END;
 	LnIfWrote(out);
 
