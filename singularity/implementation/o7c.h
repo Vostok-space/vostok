@@ -23,7 +23,7 @@
 #	elif __GNUC__ > 2
 #		define O7C_INLINE __inline__
 #	else
-#		define O7C_INLINE 
+#		define O7C_INLINE
 #	endif
 #endif
 
@@ -238,9 +238,11 @@ static O7C_INLINE int o7c_cmp(int a, int b) {
 	return cmp;
 }
 
-static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag)
+static O7C_INLINE void o7c_release(void *mem) O7C_ATTR_ALWAYS_INLINE;
+
+static O7C_INLINE void o7c_new(void **mem, int size, o7c_tag_t const tag)
 	O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
+static O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag) {
 	void *mem;
 	mem = o7c_malloc(
 		sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
@@ -253,8 +255,11 @@ static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
 		*(o7c_id_t const **)mem = tag;
 		mem = (void *)((o7c_id_t **)mem + 1);
 	}
-	return mem;
+	o7c_release(*pmem);
+	*pmem = mem;
 }
+
+#define O7C_NEW(mem, tag) o7c_new((void **)mem, sizeof(**(mem)), tag)
 
 static O7C_INLINE void* o7c_retain(void *mem) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void* o7c_retain(void *mem) {
@@ -264,7 +269,6 @@ static O7C_INLINE void* o7c_retain(void *mem) {
 	return mem;
 }
 
-static O7C_INLINE void o7c_release(void *mem) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void o7c_release(void *mem) {
 	o7c_mmc_t *counter;
 	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)

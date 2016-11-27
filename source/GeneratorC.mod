@@ -770,10 +770,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
 			VAR ret: BOOLEAN;
 			BEGIN
+				Str(gen, "O7C_NEW(&");
 				Expression(gen, e);
-				Str(gen, " = o7c_new(sizeof(*");
-				Expression(gen, e);
-				Str(gen, "), ");
+				Str(gen, ", ");
 				ret := CheckStructName(gen, e.type.type(Ast.Record));
 				ASSERT(ret);
 				GlobalName(gen, e.type.type);
@@ -1728,6 +1727,48 @@ END Const;
 
 PROCEDURE Var(VAR out: MOut; prev, var: Ast.Declaration; last: BOOLEAN);
 VAR same, mark: BOOLEAN;
+
+	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger, Ast.IdByte, Ast.IdReal, Ast.IdSet:
+			Str(gen, " = 0")
+		| Ast.IdBoolean:
+			Str(gen, " = 0 > 1")
+		| Ast.IdChar:
+			Str(gen, " = '\0'")
+		| Ast.IdPointer, Ast.IdProcType:
+			Str(gen, " = NULL")
+		| Ast.IdArray:
+			Str(gen, " ")
+		| Ast.IdRecord:
+			Str(gen, " ")
+		END
+	END InitZero;
+
+	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger:
+			Str(gen, " = O7C_INT_UNDEF")
+		| Ast.IdBoolean:
+			Str(gen, " = O7C_BOOL_UNDEF")
+		| Ast.IdByte:
+			Str(gen, " = 0")
+		| Ast.IdChar:
+			Str(gen, " = '\0'")
+		| Ast.IdReal:
+			Str(gen, " = O7C_DBL_UNDEF")
+		| Ast.IdSet:
+			Str(gen, " = 0")
+		| Ast.IdPointer, Ast.IdProcType:
+			Str(gen, " = NULL")
+		| Ast.IdArray:
+			Str(gen, " ")
+		| Ast.IdRecord:
+			Str(gen, " ")
+		END
+	END InitUndef;
 BEGIN
 	mark := var.mark & ~out.opt.main;
 	same := (prev # NIL) & (prev.mark = mark) & (prev.type = var.type);
@@ -1755,29 +1796,22 @@ BEGIN
 			Str(out.g[Implementation], ", ")
 		END
 	END;
+
 	Declarator(out.g[Implementation], var, FALSE, same, TRUE);
-	IF out.opt.varInit # VarInitNo THEN
-		CASE var.type.id OF
-		  Ast.IdInteger:
-			Str(out.g[Implementation], " = O7C_INT_UNDEF")
-		| Ast.IdBoolean:
-			Str(out.g[Implementation], " = O7C_BOOL_UNDEF")
-		| Ast.IdByte:
-			Str(out.g[Implementation], " = 0")
-		| Ast.IdChar:
-			Str(out.g[Implementation], " = '\0'")
-		| Ast.IdReal:
-			Str(out.g[Implementation], " = O7C_DBL_UNDEF")
-		| Ast.IdSet:
-			Str(out.g[Implementation], " = 0")
-		| Ast.IdPointer, Ast.IdProcType:
+
+	CASE out.opt.varInit OF
+	  VarInitUndefined:
+		InitUndef(out.g[Implementation], var)
+	| VarInitZero:
+		InitZero(out.g[Implementation], var)
+	| VarInitNo:
+		IF (var.type.id = Ast.IdPointer)
+		 & (out.opt.memManager = MemManagerCounter)
+		THEN
 			Str(out.g[Implementation], " = NULL")
-		| Ast.IdArray:
-			Str(out.g[Implementation], " /* init array */")
-		| Ast.IdRecord:
-			Str(out.g[Implementation], " /* record init */")
 		END
 	END;
+
 	IF last THEN
 		StrLn(out.g[Implementation], ";")
 	END
