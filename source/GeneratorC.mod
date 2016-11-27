@@ -2506,6 +2506,7 @@ BEGIN
 	IF o # NIL THEN
 		o.std := IsoC99;
 		o.gnu := FALSE;
+		o.plan9 := FALSE;
 		o.procLocal := FALSE;
 		o.checkIndex := TRUE;
 		o.checkArith := TRUE;

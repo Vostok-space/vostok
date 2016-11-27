@@ -23,7 +23,8 @@ IMPORT
 	V,
 	Scanner,
 	Strings := StringStore,
-	TranLim := TranslatorLimits;
+	TranLim := TranslatorLimits,
+	Arithmetic;
 
 CONST
 	ErrNo* 							= 0;
@@ -34,8 +35,7 @@ CONST
 	ErrNotBoolInLogicExpr*			= -5;
 	ErrNotIntInDivOrMod*			= -6;
 	ErrNotRealTypeForRealDiv*		= -7;
-	ErrIntDivByZero*				= -8;
-	ErrNotIntSetElem*				= -9;
+	ErrNotIntSetElem*				= -9;(*TODO*)
 	ErrSetElemOutOfRange*			= -10;
 	ErrSetLeftElemBiggerRightElem*	= -11;
 	ErrAddExprDifferenTypes*		= -12;
@@ -96,6 +96,10 @@ CONST
 									(*-66*)
 	ErrNegateNotBool*				= -67;
 									(*-68*)
+	ErrConstAddOverflow*			= -69;
+	ErrConstSubOverflow*			= -ErrConstAddOverflow - 1;
+	ErrConstMultOverflow*			= -71;
+	ErrConstDivByZero*				= -72;
 
 	ErrNotImplemented*				= -99;
 
@@ -1637,9 +1641,12 @@ BEGIN
 		ELSE
 			CASE term.type.id OF
 			  IdInteger:
-				fullSum.value(ExprInteger).int :=
-					fullSum.value(ExprInteger).int
-				  + term.value(ExprInteger).int * LexToSign(add)
+				IF ~Arithmetic.Add(fullSum.value(ExprInteger).int,
+						fullSum.value(ExprInteger).int,
+						term.value(ExprInteger).int * LexToSign(add))
+				THEN
+					err := ErrConstAddOverflow + ORD(add = Scanner.Minus)
+				END
 			| IdReal:
 				fullSum.value(ExprReal).real :=
 					fullSum.value(ExprReal).real
@@ -1705,16 +1712,18 @@ VAR err: INTEGER;
 		END
 		RETURN continue
 	END CheckType;
-	
+
 	PROCEDURE Int(res, a: Expression; mult: INTEGER; b: Expression; VAR err: INTEGER);
 	VAR i, i1, i2: INTEGER;
 	BEGIN
 		i1 := a.value(ExprInteger).int;
 		i2 := b.value(ExprInteger).int;
 		IF mult = Scanner.Asterisk THEN
-			i := i1 * i2
+			IF ~Arithmetic.Mul(i, i1, i2) THEN
+				err := ErrConstMultOverflow
+			END
 		ELSIF i2 = 0 THEN
-			err := ErrIntDivByZero;
+			err := ErrConstDivByZero;
 			res.value := NIL
 		ELSIF mult = Scanner.Div THEN
 			i := i1 DIV i2
@@ -1729,7 +1738,7 @@ VAR err: INTEGER;
 			END
 		END
 	END Int;
-	
+
 	PROCEDURE Rl(res, a: Expression; mult: INTEGER; b: Expression);
 	VAR r, r1, r2: REAL;
 	BEGIN
@@ -1746,7 +1755,7 @@ VAR err: INTEGER;
 			res.value(ExprReal).real := r
 		END
 	END Rl;
-	
+
 	PROCEDURE St(res, a: Expression; mult: INTEGER; b: Expression);
 	VAR s, s1, s2: SET;
 	BEGIN
@@ -1782,13 +1791,19 @@ BEGIN
 			St(res, a, mult, b)
 		END
 	ELSE
-		res.value := NIL
+		res.value := NIL;
+		IF ((mult - Scanner.Div) IN {0, 1})
+		 & (b.value # NIL) & (b.value.type.id = IdInteger)
+		 & (b.value(ExprInteger).int = 0)
+		THEN
+			err := ErrConstDivByZero
+		END
 	END
 	RETURN err
 END MultCalc;
 
 PROCEDURE ExprTermGeneral(VAR e: ExprTerm; result: Expression; factor: Factor;
-						  mult: INTEGER; factorOrTerm: Expression): INTEGER;
+                          mult: INTEGER; factorOrTerm: Expression): INTEGER;
 BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
@@ -1805,12 +1820,12 @@ BEGIN
 END ExprTermGeneral;
 
 PROCEDURE ExprTermNew*(VAR e: ExprTerm; factor: Factor; mult: INTEGER;
-					   factorOrTerm: Expression): INTEGER;
+                       factorOrTerm: Expression): INTEGER;
 	RETURN ExprTermGeneral(e, e, factor, mult, factorOrTerm)
 END ExprTermNew;
 
 PROCEDURE ExprTermAdd*(fullTerm: Expression; VAR lastTerm: ExprTerm;
-					   mult: INTEGER; factorOrTerm: Expression): INTEGER;
+                       mult: INTEGER; factorOrTerm: Expression): INTEGER;
 VAR e: ExprTerm;
 	err: INTEGER;
 BEGIN
@@ -1926,7 +1941,7 @@ BEGIN
 END ProcedureEnd;
 
 PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
-						VAR currentFormalParam: FormalParam): INTEGER;
+                        VAR currentFormalParam: FormalParam): INTEGER;
 VAR err, distance: INTEGER;
 
 	PROCEDURE TypeVariation(call: ExprCall; tp: Type; fp: FormalParam): BOOLEAN;

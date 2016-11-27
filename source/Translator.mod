@@ -74,8 +74,6 @@ BEGIN
 			O("В целочисленном делении допустимы только целочисленные подвыражения")
 		| Ast.ErrNotRealTypeForRealDiv		:
 			O("В дробном делении допустимы только подвыражения дробного типа")
-		| Ast.ErrIntDivByZero				:
-			O("Деление на 0")
 		| Ast.ErrNotIntSetElem				:
 			O("В качестве элементов множества допустимы только целые числа")
 		| Ast.ErrSetElemOutOfRange			:
@@ -180,16 +178,24 @@ BEGIN
 			O("Охрана цикла WHILE всегда ложна")
 		| Ast.ErrWhileConditionAlwaysTrue	:
 			O("Цикл бесконечен, так как охрана WHILE всегда истинна")
-		| Ast.ErrNotBoolInUntil:
+		| Ast.ErrNotBoolInUntil				:
 			O("Выражение в условии завершения цикла REPEAT должно быть логическим")
 		| Ast.ErrUntilAlwaysFalse			:
 			O("Цикл бесконечен, так как условие завершения всегда ложно")
 		| Ast.ErrUntilAlwaysTrue			:
 			O("Условие завершения всегда истинно")
-		| Ast.ErrDeclarationIsPrivate:
+		| Ast.ErrDeclarationIsPrivate		:
 			O("Объявление не экспортировано")
-		| Ast.ErrNegateNotBool:
+		| Ast.ErrNegateNotBool				:
 			O("Логическое отрицание применено не к логическому типу")
+		| Ast.ErrConstAddOverflow			:
+			O("Переполнение при сложении постоянных")
+		| Ast.ErrConstSubOverflow			:
+			O("Переполнение при вычитании постоянных")
+		| Ast.ErrConstMultOverflow			:
+			O("Переполнение при умножении постоянных")
+		| Ast.ErrConstDivByZero				:
+			O("Деление на 0")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
