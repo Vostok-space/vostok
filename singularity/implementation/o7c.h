@@ -387,6 +387,13 @@ static O7C_INLINE unsigned o7c_set(int low, int high) {
 
 #define O7C_SET(low, high) ((~0u << low) & (~0u >> (31 - high)))
 
+static O7C_INLINE o7c_bool o7c_in(int n, unsigned set) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE o7c_bool o7c_in(int n, unsigned set) {
+	return (n >= 0) && (n <= 31) && (0 != (set & (1u << n)));
+}
+
+#define O7C_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != (set) & (1u << n)))
+
 extern void o7c_init(int argc, char *argv[]);
 
 extern int o7c_exit_code;

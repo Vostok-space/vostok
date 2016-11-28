@@ -1033,6 +1033,30 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expr(gen, rel.exprs[1], rel.distance)
 			END
 		END Simple;
+
+		PROCEDURE In(VAR gen: Generator; rel: Ast.ExprRelation);
+		BEGIN
+			IF (rel.exprs[0].value # NIL)
+			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. 31})
+			THEN
+				Str(gen, "!!(");
+				Str(gen, " (1u << ");
+				Factor(gen, rel.exprs[0]);
+				Str(gen, ") & ");
+				Factor(gen, rel.exprs[1]);
+				Str(gen, ")")
+			ELSE
+				IF rel.value # NIL THEN
+					Str(gen, "O7C_IN(")
+				ELSE
+					Str(gen, "o7c_in(")
+				END;
+				Expression(gen, rel.exprs[0]);
+				Str(gen, ", ");
+				Expression(gen, rel.exprs[1]);
+				Str(gen, ")")
+			END
+		END In;
 	BEGIN
 		CASE rel.relation OF
 		  Scanner.Equal			: Simple(gen, rel, " == ")
@@ -1041,13 +1065,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		| Scanner.LessEqual		: Simple(gen, rel, " <= ")
 		| Scanner.Greater		: Simple(gen, rel, " > ")
 		| Scanner.GreaterEqual	: Simple(gen, rel, " >= ")
-		| Scanner.In			:
-			Str(gen, "!!(");
-			Str(gen, " (1u << ");
-			Factor(gen, rel.exprs[0]);
-			Str(gen, ") & ");
-			Factor(gen, rel.exprs[1]);
-			Str(gen, ")")
+		| Scanner.In			: In(gen, rel)
 		END
 	END Relation;
 
