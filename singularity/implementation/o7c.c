@@ -47,6 +47,10 @@ extern void o7c_init(int argc, char *argv[]) {
 
 	o7c_cli_argc = argc;
 	o7c_cli_argv = argv;
+
+	if (O7C_MEM_MAN == O7C_MEM_MAN_GC) {
+		o7c_gc_init();
+	}
 }
 
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {

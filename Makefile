@@ -11,6 +11,8 @@ SELF := result/self
 SRC := $(wildcard source/*.mod)
 SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
 O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER
+#LD_OPT := -lgc
+LD_OPT := 
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
 DEBUG := -g
 OPTIM := -O1
@@ -21,7 +23,7 @@ RM := trash
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
 result/o7c : $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c -o $@
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
 result/Translator.c : source/Translator.mod Makefile $(O7CI)
 	@mkdir -p result
@@ -38,7 +40,7 @@ result/bs-o7c:
 result/test/% : test/source/%.mod always
 	@mkdir -p result/test
 	$(O7C) $< $@.c $(SING_O7) test/source
-	$(CC) -fsanitize=undefined -fsanitize=address -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER $@.c $(SING_C)/*.c -I $(SING_C) -o $@
+	$(CC) -g -fsanitize=undefined -fsanitize=address -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
 $(SELF)/%.c : source/%.mod $(SRC) Makefile $(O7C)
@@ -49,7 +51,7 @@ $(SELF)/Translator.c : source/Translator.mod Makefile $(O7C)
 	$(O7C) source/Translator.mod $@ source $(SING_O7)
 
 $(SELF)/o7c : result/o7c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c -o $@
+	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
 
 self : $(SELF)/o7c
 	make test O7C:=$(SELF)/o7c
