@@ -86,6 +86,24 @@ enum {
 #endif
 };
 
+#if defined(O7C_CHECK_OVERFLOW)
+	enum { O7C_OVERFLOW = O7C_CHECK_OVERFLOW };
+#else
+	enum { O7C_OVERFLOW = 1 };
+#endif
+
+#if defined(O7C_CHECK_DIV_BY_ZERO)
+	enum { O7C_DIV_ZERO = O7C_CHECK_DIV_BY_ZERO };
+#else
+	enum { O7C_DIV_ZERO };
+#endif
+
+#if defined(O7C_CHECK_UNDEFINED)
+	enum { O7C_UNDEF = O7C_CHECK_UNDEFINED };
+#else
+	enum { O7C_UNDEF = 1 };
+#endif
+
 typedef char unsigned o7c_char;
 
 #if __GNUC__ > 2
@@ -93,6 +111,8 @@ typedef char unsigned o7c_char;
 #else
 #	define O7C_ATTR_ALWAYS_INLINE
 #endif
+
+static O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 
 static O7C_INLINE void* o7c_raw_alloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void* o7c_raw_alloc(size_t size) {
@@ -163,7 +183,9 @@ extern double* o7c_doubles_undef(double array[], int size);
 
 static O7C_INLINE double o7c_dbl(double d) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_dbl(double d) {
-	if (sizeof(unsigned) == sizeof(double) / 2) {
+	if (!O7C_UNDEF) {
+		;
+	} else if (sizeof(unsigned) == sizeof(double) / 2) {
 		assert(((unsigned *)&d)[1] != 0x7FFFFFFF);
 	} else {
 		assert(((unsigned long *)&d)[1] != 0x7FFFFFFF);
@@ -193,7 +215,9 @@ static O7C_INLINE double o7c_fdiv(double n, double d) {
 
 static O7C_INLINE int o7c_int(int i) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_int(int i) {
-	assert(i != O7C_INT_UNDEF);
+	if (O7C_UNDEF) {
+		assert(i != O7C_INT_UNDEF);
+	}
 	return i;
 }
 
@@ -201,26 +225,49 @@ extern int* o7c_ints_undef(int array[], int size);
 
 static O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_add(int a1, int a2) {
+	if (!O7C_OVERFLOW) {
+		;
+	} else if (a2 >= 0) {
+		assert(a1 <=  INT_MAX - a2);
+	} else {
+		assert(a1 >= -INT_MAX - a2);
+	}
 	return o7c_int(a1) + o7c_int(a2);
 }
 
 static O7C_INLINE int o7c_sub(int m, int s) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_sub(int m, int s) {
+	if (!O7C_OVERFLOW) {
+		;
+	} else if (s >= 0) {
+		assert(m >= -INT_MAX + s);
+	} else {
+		assert(m <=  INT_MAX + s);
+	}
 	return o7c_int(m) - o7c_int(s);
 }
 
 static O7C_INLINE int o7c_mul(int m1, int m2) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_mul(int m1, int m2) {
+	if (O7C_OVERFLOW && (0 != m2)) {
+		assert(abs(m1) <= INT_MAX / abs(m2));
+	}
 	return o7c_int(m1) * o7c_int(m2);
 }
 
 static O7C_INLINE int o7c_div(int n, int d) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_div(int n, int d) {
+	if (O7C_OVERFLOW && O7C_DIV_ZERO) {
+		assert(d != 0);
+	}
 	return o7c_int(n) / o7c_int(d);
 }
 
 static O7C_INLINE int o7c_mod(int n, int d) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_mod(int n, int d) {
+	if (O7C_OVERFLOW && O7C_DIV_ZERO) {
+		assert(d != 0);
+	}
 	return o7c_int(n) % o7c_int(d);
 }
 
