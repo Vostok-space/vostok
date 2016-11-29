@@ -51,7 +51,7 @@
 #define Parser_ErrAstEnd_cnst (-300)
 
 typedef struct Parser_Options {
-	struct V_Base _;
+	V_Base _;
 	o7c_bool strictSemicolon;
 	o7c_bool strictReturn;
 	void (*printError)(int code);

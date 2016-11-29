@@ -20,9 +20,10 @@
 #define GeneratorC_MemManagerGC_cnst 2
 
 typedef struct GeneratorC_Options_s {
-	struct V_Base _;
+	V_Base _;
 	int std;
 	o7c_bool gnu;
+	o7c_bool plan9;
 	o7c_bool procLocal;
 	o7c_bool checkIndex;
 	o7c_bool checkArith;
@@ -38,7 +39,7 @@ typedef struct GeneratorC_Options_s {
 extern o7c_tag_t GeneratorC_Options_s_tag;
 
 typedef struct GeneratorC_Generator {
-	struct V_Base _;
+	V_Base _;
 	struct VDataStream_Out *out;
 	int len;
 	struct Ast_RModule *module;

@@ -29,10 +29,10 @@ struct CFiles_Implement {
 
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 							   int ofs, char unsigned mode[/*len*/], int mode_len) {
-	CFiles_File file;
+	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
-	file = (CFiles_File)o7c_new(sizeof(*file), NULL);
+	O7C_NEW(&file, NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), mode);
 		if (NULL == file->file) {

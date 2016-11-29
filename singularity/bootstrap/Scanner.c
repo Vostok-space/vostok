@@ -26,7 +26,7 @@ extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDat
 	(*s).column = 0;
 	(*s).tabs = 0;
 	(*s).line = 0;
-	O7C_ASSIGN(&((*s).in_), in_);
+	O7C_ASSIGN(&(*s).in_, in_);
 	(*s).ind = sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1;
 	(*s).buf[0] = 0x0Cu;
 	(*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] = 0x0Cu;

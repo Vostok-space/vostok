@@ -6,14 +6,14 @@
 
 typedef struct VFileStream_RIn *VFileStream_In;
 typedef struct VFileStream_RIn {
-	struct VDataStream_In _;
+	VDataStream_In _;
 	CFiles_File file;
 } VFileStream_RIn;
 extern o7c_tag_t VFileStream_RIn_tag;
 
 typedef struct VFileStream_ROut *VFileStream_Out;
 typedef struct VFileStream_ROut {
-	struct VDataStream_Out _;
+	VDataStream_Out _;
 	CFiles_File file;
 } VFileStream_ROut;
 extern o7c_tag_t VFileStream_ROut_tag;

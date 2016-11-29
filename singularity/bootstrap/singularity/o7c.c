@@ -38,12 +38,19 @@ extern void o7c_init(int argc, char *argv[]) {
 	/* для случая использования int в качестве INTEGER */
 	assert(INT_MAX >= 2147483647);
 
+	assert((int)(0 < 1) == 1);
+	assert((int)(0 > 1) == 0);
+
 	assert((argc > 0) == (argv != NULL));
 
 	o7c_exit_code = 0;
 
 	o7c_cli_argc = argc;
 	o7c_cli_argv = argv;
+
+	if (O7C_MEM_MAN == O7C_MEM_MAN_GC) {
+		o7c_gc_init();
+	}
 }
 
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {

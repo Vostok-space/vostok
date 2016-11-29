@@ -23,7 +23,7 @@
 #	elif __GNUC__ > 2
 #		define O7C_INLINE __inline__
 #	else
-#		define O7C_INLINE 
+#		define O7C_INLINE
 #	endif
 #endif
 
@@ -50,17 +50,23 @@
 #	error
 #endif
 
-enum {
-	O7C_MEM_MAN_NOFREE,
-	O7C_MEM_MAN_COUNTER,
-	O7C_MEM_MAN_GC,
+
+#define O7C_MEM_MAN_NOFREE  0
+#define O7C_MEM_MAN_COUNTER 1
+#define O7C_MEM_MAN_GC      2
 
 #if defined(O7C_MEM_MAN_MODEL)
-	O7C_MEM_MAN = O7C_MEM_MAN_MODEL
+#	define O7C_MEM_MAN O7C_MEM_MAN_MODEL
 #else
-	O7C_MEM_MAN = O7C_MEM_MAN_NOFREE
+#	define O7C_MEM_MAN O7C_MEM_MAN_NOFREE
 #endif
-};
+
+#if O7C_MEM_MAN == O7C_MEM_MAN_GC
+#	include "gc.h"
+	static O7C_INLINE void o7c_gc_init(void) { GC_INIT(); }
+#else
+	static O7C_INLINE void o7c_gc_init(void) { assert(0 > 1); }
+#endif
 
 #if defined(O7C_MEM_MAN_COUNTER_TYPE)
 	typedef O7C_MEM_MAN_COUNTER_TYPE o7c_mmc_t;
@@ -102,7 +108,11 @@ static O7C_INLINE void* o7c_raw_alloc(size_t size) {
 }
 
 static O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
-#if defined(O7C_LSAN_LEAK_IGNORE)
+#if O7C_MEM_MAN == O7C_MEM_MAN_GC
+	static O7C_INLINE void* o7c_malloc(size_t size) {
+		return GC_MALLOC(size);
+	}
+#elif defined(O7C_LSAN_LEAK_IGNORE)
 #	include <sanitizer/lsan_interface.h>
 	static O7C_INLINE void* o7c_malloc(size_t size) {
 		void *mem;
@@ -238,9 +248,11 @@ static O7C_INLINE int o7c_cmp(int a, int b) {
 	return cmp;
 }
 
-static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag)
+static O7C_INLINE void o7c_release(void *mem) O7C_ATTR_ALWAYS_INLINE;
+
+static O7C_INLINE void o7c_new(void **mem, int size, o7c_tag_t const tag)
 	O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
+static O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag) {
 	void *mem;
 	mem = o7c_malloc(
 		sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
@@ -253,8 +265,11 @@ static O7C_INLINE void* o7c_new(int size, o7c_tag_t const tag) {
 		*(o7c_id_t const **)mem = tag;
 		mem = (void *)((o7c_id_t **)mem + 1);
 	}
-	return mem;
+	o7c_release(*pmem);
+	*pmem = mem;
 }
+
+#define O7C_NEW(mem, tag) o7c_new((void **)mem, sizeof(**(mem)), tag)
 
 static O7C_INLINE void* o7c_retain(void *mem) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void* o7c_retain(void *mem) {
@@ -264,7 +279,6 @@ static O7C_INLINE void* o7c_retain(void *mem) {
 	return mem;
 }
 
-static O7C_INLINE void o7c_release(void *mem) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void o7c_release(void *mem) {
 	o7c_mmc_t *counter;
 	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
@@ -382,6 +396,13 @@ static O7C_INLINE unsigned o7c_set(int low, int high) {
 }
 
 #define O7C_SET(low, high) ((~0u << low) & (~0u >> (31 - high)))
+
+static O7C_INLINE o7c_bool o7c_in(int n, unsigned set) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE o7c_bool o7c_in(int n, unsigned set) {
+	return (n >= 0) && (n <= 31) && (0 != (set & (1u << n)));
+}
+
+#define O7C_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != (set) & (1u << (n))))
 
 extern void o7c_init(int argc, char *argv[]);
 

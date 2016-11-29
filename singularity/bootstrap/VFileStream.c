@@ -26,14 +26,14 @@ extern struct VFileStream_RIn *VFileStream_OpenIn(o7c_char name[/*len0*/], int n
 	struct VFileStream_RIn *in_ = NULL;
 	CFiles_File file = NULL;
 
-	in_ = o7c_new(sizeof(*in_), VFileStream_RIn_tag);
+	O7C_NEW(&in_, VFileStream_RIn_tag);
 	if (in_ != NULL) {
-		O7C_ASSIGN(&(file), CFiles_Open(name, name_len0, 0, "rb", 3));
+		O7C_ASSIGN(&file, CFiles_Open(name, name_len0, 0, "rb", 3));
 		if (file == NULL) {
-			O7C_ASSIGN(&(in_), NULL);
+			O7C_NULL(&in_);
 		} else {
 			VDataStream_InitIn(&(*in_)._, VFileStream_RIn_tag, Read);
-			O7C_ASSIGN(&(in_->file), file);
+			O7C_ASSIGN(&in_->file, file);
 		}
 	}
 	O7C_ASSIGN(&o7c_return, in_);
@@ -44,7 +44,7 @@ extern struct VFileStream_RIn *VFileStream_OpenIn(o7c_char name[/*len0*/], int n
 
 extern void VFileStream_CloseIn(struct VFileStream_RIn **in_) {
 	CFiles_Close(&(*in_)->file);
-	O7C_ASSIGN(&((*in_)), NULL);
+	O7C_NULL(&(*in_));
 }
 
 static int Write(struct VDataStream_Out *out, o7c_tag_t out_tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count) {
@@ -60,14 +60,14 @@ extern struct VFileStream_ROut *VFileStream_OpenOut(o7c_char name[/*len0*/], int
 	struct VFileStream_ROut *out = NULL;
 	CFiles_File file = NULL;
 
-	out = o7c_new(sizeof(*out), VFileStream_ROut_tag);
+	O7C_NEW(&out, VFileStream_ROut_tag);
 	if (out != NULL) {
-		O7C_ASSIGN(&(file), CFiles_Open(name, name_len0, 0, "wb", 3));
+		O7C_ASSIGN(&file, CFiles_Open(name, name_len0, 0, "wb", 3));
 		if (file == NULL) {
-			O7C_ASSIGN(&(out), NULL);
+			O7C_NULL(&out);
 		} else {
 			VDataStream_InitOut(&(*out)._, VFileStream_ROut_tag, Write);
-			O7C_ASSIGN(&(out->file), file);
+			O7C_ASSIGN(&out->file, file);
 		}
 	}
 	O7C_ASSIGN(&o7c_return, out);
@@ -79,7 +79,7 @@ extern struct VFileStream_ROut *VFileStream_OpenOut(o7c_char name[/*len0*/], int
 extern void VFileStream_CloseOut(struct VFileStream_ROut **out) {
 	if ((*out) != NULL) {
 		CFiles_Close(&(*out)->file);
-		O7C_ASSIGN(&((*out)), NULL);
+		O7C_NULL(&(*out));
 	}
 }
 

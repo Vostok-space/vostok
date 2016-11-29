@@ -9,7 +9,7 @@
 #define StringStore_BlockSize_cnst 256
 
 typedef struct StringStore_Block_s {
-	struct V_Base _;
+	V_Base _;
 	o7c_char s[StringStore_BlockSize_cnst + 1];
 	struct StringStore_Block_s *next;
 	int num;
@@ -17,14 +17,14 @@ typedef struct StringStore_Block_s {
 extern o7c_tag_t StringStore_Block_s_tag;
 
 typedef struct StringStore_String {
-	struct V_Base _;
+	V_Base _;
 	struct StringStore_Block_s *block;
 	int ofs;
 } StringStore_String;
 extern o7c_tag_t StringStore_String_tag;
 
 typedef struct StringStore_Store {
-	struct V_Base _;
+	V_Base _;
 	struct StringStore_Block_s *first;
 	struct StringStore_Block_s *last;
 	int ofs;

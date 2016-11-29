@@ -5,14 +5,14 @@
 
 typedef struct VDataStream_In *VDataStream_PIn;
 typedef struct VDataStream_In {
-	struct V_Base _;
+	V_Base _;
 	int (*read)(struct VDataStream_In *in_, o7c_tag_t in__tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count);
 } VDataStream_In;
 extern o7c_tag_t VDataStream_In_tag;
 
 typedef struct VDataStream_Out *VDataStream_POut;
 typedef struct VDataStream_Out {
-	struct V_Base _;
+	V_Base _;
 	int (*write)(struct VDataStream_Out *out, o7c_tag_t out_tag, o7c_char buf[/*len0*/], int buf_len0, int ofs, int count);
 } VDataStream_Out;
 extern o7c_tag_t VDataStream_Out_tag;

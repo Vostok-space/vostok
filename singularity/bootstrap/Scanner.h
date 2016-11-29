@@ -114,7 +114,7 @@
 #define Scanner_BlockSize_cnst 65536
 
 typedef struct Scanner_Scanner {
-	struct V_Base _;
+	V_Base _;
 	struct VDataStream_In *in_;
 	int line;
 	int column;
