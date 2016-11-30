@@ -31,6 +31,20 @@
 
 #define O7C_DBL_UNDEF o7c_dbl_undef()
 
+#if defined(O7C_USE_GNUC_BUILTIN_OVERFLOW)
+#	define O7C_GNUC_BUILTIN_OVERFLOW O7C_USE_GNUC_BUILTIN_OVERFLOW
+#elif __GNUC__ >= 5
+#	define O7C_GNUC_BUILTIN_OVERFLOW (0 < 1)
+#else
+#	define O7C_GNUC_BUILTIN_OVERFLOW (0 > 1)
+#	if !defined(__builtin_sadd_overflow)
+#		define O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
+#		define __builtin_sadd_overflow(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
+#		define __builtin_ssub_overflow(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
+#		define __builtin_smul_overflow(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
+#	endif
+#endif
+
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
 #elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
@@ -225,34 +239,58 @@ extern int* o7c_ints_undef(int array[], int size);
 
 static O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_add(int a1, int a2) {
-	if (!O7C_OVERFLOW) {
-		;
-	} else if (a2 >= 0) {
-		assert(a1 <=  INT_MAX - a2);
+	int s;
+	o7c_bool overflow;
+	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_sadd_overflow(o7c_int(a1), o7c_int(a2), &s);
+		assert(!overflow);
 	} else {
-		assert(a1 >= -INT_MAX - a2);
+		if (!O7C_OVERFLOW) {
+			;
+		} else if (a2 >= 0) {
+			assert(a1 <=  INT_MAX - a2);
+		} else {
+			assert(a1 >= -INT_MAX - a2);
+		}
+		s = o7c_int(a1) + o7c_int(a2);
 	}
-	return o7c_int(a1) + o7c_int(a2);
+	return s;
 }
 
 static O7C_INLINE int o7c_sub(int m, int s) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_sub(int m, int s) {
-	if (!O7C_OVERFLOW) {
-		;
-	} else if (s >= 0) {
-		assert(m >= -INT_MAX + s);
+	int d;
+	o7c_bool overflow;
+	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_ssub_overflow(o7c_int(m), o7c_int(s), &d);
+		assert(!overflow);
 	} else {
-		assert(m <=  INT_MAX + s);
+		if (!O7C_OVERFLOW) {
+			;
+		} else if (s >= 0) {
+			assert(m >= -INT_MAX + s);
+		} else {
+			assert(m <=  INT_MAX + s);
+		}
+		d = o7c_int(m) - o7c_int(s);
 	}
-	return o7c_int(m) - o7c_int(s);
+	return d;
 }
 
 static O7C_INLINE int o7c_mul(int m1, int m2) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE int o7c_mul(int m1, int m2) {
-	if (O7C_OVERFLOW && (0 != m2)) {
-		assert(abs(m1) <= INT_MAX / abs(m2));
+	int p;
+	o7c_bool overflow;
+	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_smul_overflow(o7c_int(m1), o7c_int(m2), &p);
+		assert(!overflow);
+	} else {
+		if (O7C_OVERFLOW && (0 != m2)) {
+			assert(abs(m1) <= INT_MAX / abs(m2));
+		}
+		p = o7c_int(m1) * o7c_int(m2);
 	}
-	return o7c_int(m1) * o7c_int(m2);
+	return p;
 }
 
 static O7C_INLINE int o7c_div(int n, int d) O7C_ATTR_ALWAYS_INLINE;
@@ -460,5 +498,12 @@ static O7C_INLINE o7c_bool o7c_in(int n, unsigned set) {
 extern void o7c_init(int argc, char *argv[]);
 
 extern int o7c_exit_code;
+
+#if defined(O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF)
+#	undef O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
+#	undef __builtin_sadd_overflow
+#	undef __builtin_ssub_overflow
+#	undef __builtin_smul_overflow
+#endif
 
 #endif
