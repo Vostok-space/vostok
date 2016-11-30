@@ -398,10 +398,10 @@ static O7C_INLINE o7c_id_t const * o7c_dynamic_tag(void const *mem) {
 	return *((o7c_id_t const **)mem - 1);
 }
 
-static O7C_INLINE o7c_bool o7c_is(o7c_tag_t const base, void const *strct,
+static O7C_INLINE o7c_bool o7c_is_r(o7c_tag_t const base, void const *strct,
 	o7c_tag_t const ext) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE o7c_bool
-	o7c_is(o7c_tag_t const base, void const *strct, o7c_tag_t const ext)
+	o7c_is_r(o7c_tag_t const base, void const *strct, o7c_tag_t const ext)
 {
 	if (NULL == base) {
 		base = o7c_dynamic_tag(strct);
@@ -409,17 +409,23 @@ static O7C_INLINE o7c_bool
 	return base[ext[0]] == ext[ext[0]];
 }
 
-static O7C_INLINE void ** o7c_must(o7c_tag_t const base, void **strct,
-	o7c_tag_t const ext) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void **
-	o7c_must(o7c_tag_t const base, void **strct, o7c_tag_t const ext)
-{
-	assert(o7c_is(base, *strct, ext));
+static O7C_INLINE o7c_bool o7c_is(void const *strct, o7c_tag_t const ext)
+	O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE o7c_bool o7c_is(void const *strct, o7c_tag_t const ext) {
+	o7c_id_t const *base;
+	base = o7c_dynamic_tag(strct);
+	return base[ext[0]] == ext[ext[0]];
+}
+
+static O7C_INLINE void ** o7c_must(void **strct, o7c_tag_t const ext)
+	O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE void **o7c_must(void **strct, o7c_tag_t const ext) {
+	assert(o7c_is(*strct, ext));
 	return strct;
 }
 
 #define O7C_GUARD(ExtType, strct) \
-	(*(struct ExtType **)o7c_must(NULL, (void **)strct, ExtType##_tag))
+	(*(struct ExtType **)o7c_must((void **)strct, ExtType##_tag))
 
 
 static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,
@@ -427,7 +433,7 @@ static O7C_INLINE void * o7c_must_r(o7c_tag_t const base, void *strct,
 static O7C_INLINE void *
 	o7c_must_r(o7c_tag_t const base, void *strct, o7c_tag_t const ext)
 {
-	assert(o7c_is(base, strct, ext));
+	assert(o7c_is_r(base, strct, ext));
 	return strct;
 }
 

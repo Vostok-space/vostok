@@ -1352,11 +1352,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			extType := extType.type;
 			ret := CheckStructName(gen, extType(Ast.Record));
 			ASSERT(ret);
-			Str(gen, "o7c_is(NULL, ");
+			Str(gen, "o7c_is(");
 			Expression(gen, is.designator);
 			Str(gen, ", ")
 		ELSE
-			Str(gen, "o7c_is(");
+			Str(gen, "o7c_is_r(");
 			GlobalName(gen, decl);
 			Str(gen, "_tag, ");
 			GlobalName(gen, decl);
