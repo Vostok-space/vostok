@@ -10,7 +10,7 @@ SELF := result/self
 
 SRC := $(wildcard source/*.mod)
 SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE
-O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER
+O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE
 #LD_OPT := -lgc
 LD_OPT := 
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
@@ -40,7 +40,7 @@ result/bs-o7c:
 result/test/% : test/source/%.mod always
 	@mkdir -p result/test
 	$(O7C) $< $@.c $(SING_O7) test/source
-	$(CC) -g -fsanitize=undefined -fsanitize=address -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_COUNTER $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
+	$(CC) -g -fsanitize=undefined -fsanitize=address -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -DO7C_LSAN_LEAK_IGNORE $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
 $(SELF)/%.c : source/%.mod $(SRC) Makefile $(O7C)

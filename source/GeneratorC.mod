@@ -2529,8 +2529,8 @@ BEGIN
 		o.checkIndex := TRUE;
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
-		o.varInit := VarInitUndefined;
-		o.memManager := MemManagerCounter;
+		o.varInit := VarInitNo;
+		o.memManager := MemManagerNoFree;
 		o.main := FALSE
 	END
 	RETURN o

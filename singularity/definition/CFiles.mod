@@ -14,13 +14,9 @@
  *)
 MODULE CFiles;
 
-CONST
-
 TYPE
 	File* = POINTER TO RECORD
 	END;
-
-VAR
 
 PROCEDURE Open*(name: ARRAY OF CHAR; ofs: INTEGER; mode: ARRAY OF CHAR): File;
 	RETURN NIL
@@ -38,5 +34,9 @@ END Read;
 PROCEDURE Write*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN 0
 END Write;
+
+PROCEDURE Remove*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+	RETURN FALSE
+END Remove;
 
 END CFiles.

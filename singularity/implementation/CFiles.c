@@ -65,6 +65,12 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
+extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {
+	assert(ofs >= 0);
+	assert(name_len > 1);
+	return remove(name) == 0;
+}
+
 extern void CFiles_init(void) {
 	;
 }
