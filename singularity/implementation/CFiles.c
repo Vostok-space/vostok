@@ -45,7 +45,11 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
-		O7C_NULL(file);
+		if (O7C_MEM_MAN == O7C_MEM_MAN_NOFREE) {
+			free((void **)*file - 1); *file = NULL;
+		} else {
+			O7C_NULL(file);
+		}
 	}
 }
 
