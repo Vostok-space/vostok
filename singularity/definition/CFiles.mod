@@ -35,6 +35,11 @@ PROCEDURE Write*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN 0
 END Write;
 
+(* полная позиция = gibi * 1024^3 + ofs; 0 <= pos < 1024^3 *)
+PROCEDURE Seek*(file: File; gibi, ofs: INTEGER): BOOLEAN;
+	RETURN FALSE
+END Seek;
+
 PROCEDURE Remove*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 	RETURN FALSE
 END Remove;

@@ -69,6 +69,12 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
+extern int CFiles_Seek(CFiles_File file, int gibi, int ofs) {
+	assert((gibi >= 0) && (gibi < LONG_MAX / (1024 * 1024 * 1024)));
+	assert((ofs >= 0) && (ofs < 1024 * 1024 * 1024));
+	return fseek(file->file, (long)gibi * (1024 * 1024 * 1024) + ofs, SEEK_SET) == 0;
+}
+
 extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {
 	assert(ofs >= 0);
 	assert(name_len > 1);
