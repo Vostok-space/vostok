@@ -426,7 +426,8 @@ TYPE
 
 VAR
 	types: ARRAY PredefinedTypesCount OF Type;
-	predefined: ARRAY Scanner.PredefinedLast - Scanner.PredefinedFirst + 1 OF Declaration;
+	predefined: ARRAY Scanner.PredefinedLast - Scanner.PredefinedFirst + 1
+	            OF Declaration;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
 					s: ARRAY OF CHAR; begin, end: INTEGER);
@@ -547,9 +548,11 @@ VAR imp: Import;
 				   p: Provider): INTEGER;
 	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
 		l, err: INTEGER;
+		ret: BOOLEAN;
 	BEGIN
 		l := 0;
-		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
+		ret := Strings.CopyChars(n, l, buf, realOfs, realEnd);
+		ASSERT(ret);
 		(* TODO сделать загрузку модуля из символьного файла *)
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
 		res := GetModuleByName(p, host, buf, realOfs, realEnd);
@@ -1673,7 +1676,7 @@ BEGIN
 	RETURN err
 END ExprSumAdd;
 
-PROCEDURE MultCalc(res, a: Expression; mult: INTEGER; b: Expression): INTEGER;
+PROCEDURE MultCalc(res: Expression; mult: INTEGER; b: Expression): INTEGER;
 VAR err: INTEGER;
 	bool: BOOLEAN;
 
@@ -1713,36 +1716,33 @@ VAR err: INTEGER;
 		RETURN continue
 	END CheckType;
 
-	PROCEDURE Int(res, a: Expression; mult: INTEGER; b: Expression; VAR err: INTEGER);
+	PROCEDURE Int(res: Expression; mult: INTEGER; b: Expression; VAR err: INTEGER);
 	VAR i, i1, i2: INTEGER;
 	BEGIN
-		i1 := a.value(ExprInteger).int;
+		i1 := res.value(ExprInteger).int;
 		i2 := b.value(ExprInteger).int;
 		IF mult = Scanner.Asterisk THEN
 			IF ~Arithmetic.Mul(i, i1, i2) THEN
 				err := ErrConstMultOverflow
 			END
 		ELSIF i2 = 0 THEN
-			err := ErrConstDivByZero;
-			res.value := NIL
+			err := ErrConstDivByZero
 		ELSIF mult = Scanner.Div THEN
 			i := i1 DIV i2
 		ELSE
 			i := i1 MOD i2
 		END;
 		IF err = ErrNo THEN
-			IF res.value = NIL THEN
-				res.value := ExprIntegerNew(i)
-			ELSE
-				res.value(ExprInteger).int := i
-			END
+			res.value := ExprIntegerNew(i)
+		ELSE
+			res.value := NIL
 		END
 	END Int;
 
-	PROCEDURE Rl(res, a: Expression; mult: INTEGER; b: Expression);
+	PROCEDURE Rl(res: Expression; mult: INTEGER; b: Expression);
 	VAR r, r1, r2: REAL;
 	BEGIN
-		r1 := a.value(ExprReal).real;
+		r1 := res.value(ExprReal).real;
 		r2 := b.value(ExprReal).real;
 		IF mult = Scanner.Asterisk THEN
 			r := r1 * r2
@@ -1756,10 +1756,10 @@ VAR err: INTEGER;
 		END
 	END Rl;
 
-	PROCEDURE St(res, a: Expression; mult: INTEGER; b: Expression);
+	PROCEDURE St(res: Expression; mult: INTEGER; b: Expression);
 	VAR s, s1, s2: SET;
 	BEGIN
-		s1 := a.value(ExprSet).set;
+		s1 := res.value(ExprSet).set;
 		s2 := b.value(ExprSet).set;
 		IF mult = Scanner.Asterisk THEN
 			s := s1 * s2
@@ -1774,21 +1774,21 @@ VAR err: INTEGER;
 	END St;
 BEGIN
 	err := ErrNo;
-	IF CheckType(a, b, mult, err) & (a.value # NIL) & (b.value # NIL) THEN
-		CASE a.type.id OF
+	IF CheckType(res, b, mult, err) & (res.value # NIL) & (b.value # NIL) THEN
+		CASE res.type.id OF
 		  IdInteger:
-			Int(res, a, mult, b, err)
+			Int(res, mult, b, err)
 		| IdReal:
-			Rl(res, a, mult, b)
+			Rl(res, mult, b)
 		| IdBoolean:
-			bool := a.value(ExprBoolean).bool & b.value(ExprBoolean).bool;
+			bool := res.value(ExprBoolean).bool & b.value(ExprBoolean).bool;
 			IF res.value = NIL THEN
 				res.value := ExprBooleanNew(bool)
 			ELSE
 				res.value(ExprBoolean).bool := bool
 			END
 		| IdSet:
-			St(res, a, mult, b)
+			St(res, mult, b)
 		END
 	ELSE
 		res.value := NIL;
@@ -1809,19 +1809,20 @@ BEGIN
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
 
 	NEW(e); ExprInit(e, IdTerm, factorOrTerm.type (* TODO *));
+	IF result = NIL THEN
+		result := e;
+		e.value := factor.value
+	END;
 	e.factor := factor;
 	e.mult := mult;
 	e.expr := factorOrTerm;
-	IF result = NIL THEN
-		result := e
-	END;
 	e.factor := factor
-	RETURN MultCalc(result, factor, mult, factorOrTerm)
+	RETURN MultCalc(result, mult, factorOrTerm)
 END ExprTermGeneral;
 
 PROCEDURE ExprTermNew*(VAR e: ExprTerm; factor: Factor; mult: INTEGER;
                        factorOrTerm: Expression): INTEGER;
-	RETURN ExprTermGeneral(e, e, factor, mult, factorOrTerm)
+	RETURN ExprTermGeneral(e, NIL, factor, mult, factorOrTerm)
 END ExprTermNew;
 
 PROCEDURE ExprTermAdd*(fullTerm: Expression; VAR lastTerm: ExprTerm;
