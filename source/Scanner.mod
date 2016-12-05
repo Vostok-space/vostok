@@ -31,6 +31,7 @@ CONST
 
 	Plus*			= 10;
 	Minus*			= 11;
+	Or*				= 12;
 	Dot*			= 14;
 	Range*			= 15;
 	Comma*			= 16;
@@ -80,7 +81,6 @@ CONST
 	Module*			= 67;
 	Nil*			= 68;
 	Of*				= 69;
-	Or*				= 70;
 	Pointer*		= 71;
 	Procedure*		= 72;
 	Record*			= 73;

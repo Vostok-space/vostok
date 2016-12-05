@@ -45,6 +45,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
+		(*file)->file = NULL;
 		if (O7C_MEM_MAN == O7C_MEM_MAN_NOFREE) {
 			free((void **)*file - 1); *file = NULL;
 		} else {
@@ -55,6 +56,7 @@ extern void CFiles_Close(CFiles_File *file) {
 
 extern int CFiles_Read(CFiles_File file,
 					   char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+	assert(buf != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(buf_len - count >= ofs);
@@ -69,10 +71,23 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
-extern int CFiles_Seek(CFiles_File file, int gibi, int ofs) {
-	assert((gibi >= 0) && (gibi < LONG_MAX / (1024 * 1024 * 1024)));
-	assert((ofs >= 0) && (ofs < 1024 * 1024 * 1024));
-	return fseek(file->file, (long)gibi * (1024 * 1024 * 1024) + ofs, SEEK_SET) == 0;
+extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
+	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
+	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
+	return fseek(file->file, (long)gibs * CFiles_GiB_cnst + bytes, SEEK_SET) == 0;
+}
+
+extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
+	long pos;
+	pos = ftell(file->file);
+	if (pos >= 0) {
+		*gibs = pos / CFiles_GiB_cnst;
+		*bytes = pos % CFiles_GiB_cnst;
+	} else {
+		*gibs = INT_MIN;
+		*bytes = INT_MIN;
+	}
+	return pos >= 0;
 }
 
 extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {

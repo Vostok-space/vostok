@@ -14,6 +14,11 @@
  *)
 MODULE CFiles;
 
+CONST
+	KiB* = 1024;
+	MiB* = 1024 * KiB;
+	GiB* = 1024 * MiB;
+
 TYPE
 	File* = POINTER TO RECORD
 	END;
@@ -35,10 +40,14 @@ PROCEDURE Write*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN 0
 END Write;
 
-(* полная позиция = gibi * 1024^3 + ofs; 0 <= pos < 1024^3 *)
-PROCEDURE Seek*(file: File; gibi, ofs: INTEGER): BOOLEAN;
+(* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB *)
+PROCEDURE Seek*(file: File; gibs, bytes: INTEGER): BOOLEAN;
 	RETURN FALSE
 END Seek;
+
+PROCEDURE Tell*(file: File; VAR gibs, bytes: INTEGER): BOOLEAN;
+	RETURN FALSE
+END Tell;
 
 PROCEDURE Remove*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 	RETURN FALSE

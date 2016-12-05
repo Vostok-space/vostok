@@ -431,19 +431,18 @@ BEGIN
 	Log.StrLn("Sum");
 	l := p.l;
 
-	IF (l = Scanner.Minus) OR (l = Scanner.Plus) THEN
+	IF l IN {Scanner.Plus, Scanner.Minus} THEN
 		Scan(p);
 		CheckAst(p, Ast.ExprSumNew(sum, l, Term(p, ds)));
 		e := sum
 	ELSE
 		e := Term(p, ds);
-		IF (p.l = Scanner.Minus) OR (p.l = Scanner.Plus) OR (p.l = Scanner.Or)
-		THEN
+		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
 			CheckAst(p, Ast.ExprSumNew(sum, -1, e));
 			e := sum
 		END
 	END;
-	WHILE (p.l = Scanner.Minus) OR (p.l = Scanner.Plus) OR (p.l = Scanner.Or) DO
+	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
 		l := p.l;
 		Scan(p);
 		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))

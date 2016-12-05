@@ -24,14 +24,15 @@ IMPORT
 	Stream := VDataStream,
 	Utf8,
 	Log,
+	Limits,
 	TranLim := TranslatorLimits;
 
 CONST
 	Interface = 1;
 	Implementation = 0;
 
-	IsoC90*	= 0;
-	IsoC99*	= 1;
+	IsoC90* = 0;
+	IsoC99* = 1;
 
 	VarInitUndefined*	= 0;
 	VarInitZero*		= 1;
@@ -1225,16 +1226,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	PROCEDURE Boolean(VAR gen: Generator; e: Ast.ExprBoolean);
 	BEGIN
 		IF gen.opt.std = IsoC90 THEN
-			IF e.bool THEN
-				Str(gen, "(0 < 1)")
-			ELSE
-				Str(gen, "(0 > 1)")
+			IF e.bool
+			THEN Str(gen, "(0 < 1)")
+			ELSE Str(gen, "(0 > 1)")
 			END
 		ELSE
-			IF e.bool THEN
-				Str(gen, "true")
-			ELSE
-				Str(gen, "false")
+			IF e.bool
+			THEN Str(gen, "true")
+			ELSE Str(gen, "false")
 			END
 		END
 	END Boolean;

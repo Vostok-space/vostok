@@ -1,6 +1,7 @@
 MODULE Div;
 
 PROCEDURE Go*;
+CONST m = 1024 * 1024 * 1024 DIV 1025;
 VAR a, b, c: INTEGER;
 BEGIN
 	ASSERT(10 DIV 3 = 3);
@@ -10,7 +11,9 @@ BEGIN
 	ASSERT(10 MOD 9 MOD 3 = 1);
 
 	a := 10; b := 9; c := 3;
-	ASSERT(a MOD b MOD c = 1)
+	ASSERT(a MOD b MOD c = 1);
+
+	ASSERT(160 DIV m >= 0)
 END Go;
 
 BEGIN
