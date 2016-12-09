@@ -942,7 +942,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, "_tag")
 				END
 			ELSIF fp.type.id # Ast.IdChar THEN
-				WHILE (t.id = Ast.IdArray) (*& (t(Ast.TArray).count # NIL)*) DO
+				WHILE (t.id = Ast.IdArray) & (fp.type(Ast.Array).count = NIL) DO
 					Str(gen, ", ");
 					IF t(Ast.Array).count # NIL THEN
 						Expression(gen, t(Ast.Array).count)
@@ -1038,7 +1038,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		PROCEDURE In(VAR gen: Generator; rel: Ast.ExprRelation);
 		BEGIN
 			IF (rel.exprs[0].value # NIL)
-			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. 31})
+			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. Limits.SetMax})
 			THEN
 				Str(gen, "!!(");
 				Str(gen, " (1u << ");
@@ -1963,6 +1963,12 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Str(gen, "O7C_ASSIGN(&");
 				Designator(gen, st.designator);
 				Str(gen, ", ")
+			ELSIF (st.designator.type.id = Ast.IdArray)
+			    & (st.designator.type.type.id # Ast.IdString)
+			THEN
+				Str(gen, "memcpy(");
+				Designator(gen, st.designator);
+				Str(gen, ", ")
 			ELSE
 				Designator(gen, st.designator);
 				Str(gen, " = ")
@@ -1976,6 +1982,12 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				IF st.expr.type.id = Ast.IdRecord THEN
 					base := st.designator.type(Ast.Record);
 					type := st.expr.type(Ast.Record)
+				ELSIF (st.designator.type.id = Ast.IdArray)
+					& (st.designator.type.type.id # Ast.IdString)
+				THEN
+					Str(gen, ", sizeof(");
+					Expression(gen, st.expr);
+					Str(gen, ")")
 				END
 			ELSIF gen.opt.plan9 THEN
 				Expression(gen, st.expr);
@@ -2001,7 +2013,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Log.StrLn("Assign record")
 			END
 		END;
-		CASE ORD(reref) + ORD(retain) OF
+		CASE ORD(reref) + ORD(retain)
+		   + ORD((st.designator.type.id = Ast.IdArray)
+			   & (st.designator.type.type.id # Ast.IdString)
+		        )
+		OF
 		  0: StrLn(gen, ";")
 		| 1: StrLn(gen, ");")
 		| 2: StrLn(gen, "));")
