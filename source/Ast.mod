@@ -101,6 +101,8 @@ CONST
 	ErrConstMultOverflow*			= -71;
 	ErrConstDivByZero*				= -72;
 
+	ErrValueOutOfRangeOfByte*		= -73;
+
 	ErrNotImplemented*				= -99;
 
 	ErrMin* 						= -100;
@@ -1417,6 +1419,10 @@ BEGIN
 	RETURN ret
 END CompatibleAsCharAndString;
 
+PROCEDURE CompatibleAsIntAndByte(t1, t2: Type): BOOLEAN;
+	RETURN (t1.id IN {IdInteger, IdByte}) & (t2.id IN {IdInteger, IdByte})
+END CompatibleAsIntAndByte;
+
 PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
 						   relation: INTEGER; expr2: Expression): INTEGER;
 VAR err: INTEGER;
@@ -1442,6 +1448,7 @@ VAR err: INTEGER;
 			& ~CompatibleTypes(dist2, t2, t1)
 			& ~CompatibleAsCharAndString(t1, e2)
 			& ~CompatibleAsCharAndString(t2, e1)
+			& ~CompatibleAsIntAndByte(t1, t2)
 		THEN
 			err := ErrRelationExprDifferenTypes;
 			continue := FALSE
@@ -1551,13 +1558,17 @@ PROCEDURE ExprSumCreate(VAR e: ExprSum; add: INTEGER; sum, term: Expression);
 VAR t: Type;
 BEGIN
 	NEW(e);
-	IF (sum # NIL) & (sum.type # NIL) & (sum.type.id IN {IdReal, IdInteger})
+	IF (sum # NIL) & (sum.type # NIL)
+	 & (sum.type.id IN {IdReal, IdInteger, IdByte})
 	THEN
 		t := sum.type
 	ELSIF term # NIL THEN
 		t := term.type
 	ELSE
 		t := NIL
+	END;
+	IF (t # NIL) & (t.id = IdByte) THEN
+		t := TypeGet(IdInteger)
 	END;
 	ExprInit(e, IdSum, t);
 	e.next := NIL;
@@ -1572,7 +1583,7 @@ BEGIN
 	ExprSumCreate(e, add, NIL, term);
 	err := ErrNo;
 	IF e.type # NIL THEN
-		IF ~(e.type.id IN {IdInteger, IdReal, IdSet}) & (add # -1) THEN
+		IF ~(e.type.id IN {IdByte, IdInteger, IdReal, IdSet}) & (add # -1) THEN
 			IF e.type.id # IdBoolean THEN
 				err := ErrNotNumberAndNotSetInAdd
 			ELSE
@@ -1612,7 +1623,9 @@ VAR e: ExprSum;
 	BEGIN
 		IF (e1.type = NIL) OR (e2.type = NIL) THEN
 			continue := FALSE
-		ELSIF e1.type.id # e2.type.id THEN
+		ELSIF (e1.type.id # e2.type.id) &
+		     ~CompatibleAsIntAndByte(e1.type, e2.type)
+		THEN
 			err := ErrAddExprDifferenTypes;
 			continue := FALSE
 		ELSIF add = Scanner.Or THEN
@@ -1685,7 +1698,9 @@ VAR err: INTEGER;
 	BEGIN
 		IF (e1.type = NIL) OR (e2.type = NIL) THEN
 			continue := FALSE
-		ELSIF e1.type.id # e2.type.id THEN
+		ELSIF (e1.type.id # e2.type.id)
+		    & ~CompatibleAsIntAndByte(e1.type, e2.type)
+		THEN
 			continue := FALSE;
 			IF mult = Scanner.And THEN
 				err := ErrNotBoolInLogicExpr
@@ -1804,11 +1819,17 @@ END MultCalc;
 
 PROCEDURE ExprTermGeneral(VAR e: ExprTerm; result: Expression; factor: Factor;
                           mult: INTEGER; factorOrTerm: Expression): INTEGER;
+VAR t: Type;
 BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
 
-	NEW(e); ExprInit(e, IdTerm, factorOrTerm.type (* TODO *));
+	t := factorOrTerm.type; 
+	IF (t # NIL) & (t.id = IdByte) THEN
+		t := TypeGet(IdInteger)
+	END;
+
+	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
 		e.value := factor.value
@@ -1832,7 +1853,8 @@ VAR e: ExprTerm;
 BEGIN
 	IF lastTerm # NIL THEN
 		ASSERT(lastTerm.expr # NIL);
-		err := ExprTermGeneral(e, fullTerm, lastTerm.expr(Factor), mult, factorOrTerm);
+		err := ExprTermGeneral(e, fullTerm, lastTerm.expr(Factor),
+		                       mult, factorOrTerm);
 		lastTerm.expr := e;
 		lastTerm := e
 	ELSE
@@ -1924,7 +1946,14 @@ BEGIN
 		IF ~CompatibleTypes(p.distance, p.header.type, e.type)
 		 & ~CompatibleAsCharAndString(p.header.type, p.return)
 		THEN
-			err := ErrReturnIncompatibleType
+			IF ~CompatibleAsIntAndByte(p.header.type, p.return.type) THEN
+				err := ErrReturnIncompatibleType
+			ELSIF (p.return.type.id = IdByte)
+			    & (e.value # NIL)
+			    & ~Limits.InByteRange(e.value(ExprInteger).int)
+			THEN
+				err := ErrValueOutOfRangeOfByte
+			END
 		END
 	END
 	RETURN err
@@ -1986,6 +2015,9 @@ BEGIN
 	IF currentFormalParam # NIL THEN
 		IF ~CompatibleTypes(distance, currentFormalParam.type, e.type)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
+		 &	   (currentFormalParam.isVar
+			OR ~CompatibleAsIntAndByte(currentFormalParam.type, e.type)
+			   )
 		 & ~TypeVariation(call, e.type, currentFormalParam)
 		THEN
 			err := ErrCallIncompatibleParamType
@@ -2003,6 +2035,10 @@ BEGIN
 			THEN
 				err := ErrCallVarPointerTypeNotSame
 			END
+		ELSIF (currentFormalParam.type.id = IdByte) & (e.type.id = IdInteger)
+			& (e.value # NIL) & ~Limits.InByteRange(e.value(ExprInteger).int)
+		THEN
+			err := ErrValueOutOfRangeOfByte
 		END;
 		IF (currentFormalParam.next # NIL)
 		 & (currentFormalParam.next IS FormalParam)
@@ -2356,13 +2392,19 @@ VAR err: INTEGER;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
+	err := ErrNo;
 	IF (expr # NIL) & (des # NIL)
 	 & ~CompatibleTypes(a.distance, des.type, expr.type)
 	 & ~CompatibleAsCharAndString(des.type, a.expr)
 	THEN
-		err := ErrAssignIncompatibleType
-	ELSE
-		err := ErrNo
+		IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
+			err := ErrAssignIncompatibleType
+		ELSIF (des.type.id = IdByte)
+		    & (expr.value # NIL)
+		    & ~Limits.InByteRange(expr.value(ExprInteger).int)
+		THEN
+			err := ErrValueOutOfRangeOfByte
+		END
 	END
 	RETURN err
 END AssignNew;

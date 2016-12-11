@@ -196,6 +196,8 @@ BEGIN
 			O("Переполнение при умножении постоянных")
 		| Ast.ErrConstDivByZero				:
 			O("Деление на 0")
+		| Ast.ErrValueOutOfRangeOfByte		:
+			O("Значение выходит за границы BYTE")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")

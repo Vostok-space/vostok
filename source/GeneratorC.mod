@@ -904,55 +904,65 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			i, dist: INTEGER;
 		BEGIN
 			t := fp.type;
-			dist := p.distance;
-			IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
-			OR (t IS Ast.Record)
-			OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
+			IF (t.id = Ast.IdByte) & (p.expr.type.id = Ast.IdInteger)
+			 & gen.opt.checkArith & (p.expr.value = NIL)
 			THEN
-				Str(gen, "&")
-			END;
-			gen.opt.lastSelectorDereference := FALSE;
-			Expression(gen, p.expr);
-
-			IF (dist > 0) & ~gen.opt.plan9 THEN
-				IF t.id = Ast.IdPointer THEN
-					DEC(dist);
-					Str(gen, "->_")
+				Str(gen, "o7c_byte(");
+				Expression(gen, p.expr);
+				Str(gen, ")")
+			ELSE
+				dist := p.distance;
+				IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
+				OR (t IS Ast.Record)
+				OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
+				THEN
+					Str(gen, "&")
 				END;
-				WHILE dist > 0 DO
-					DEC(dist);
-					Str(gen, "._")
-				END
-			END;
-			
-			t := p.expr.type;
-			i := 0;
-			IF t.id = Ast.IdRecord THEN
-				IF gen.opt.lastSelectorDereference THEN
-					Str(gen, ", NULL")
-				ELSE
-					Str(gen, ", ");
-					IF (p.expr(Ast.Designator).decl IS Ast.FormalParam)
-					 & (p.expr(Ast.Designator).sel = NIL)
-					THEN
-						Name(gen, p.expr(Ast.Designator).decl)
-					ELSE
-						GlobalName(gen, t)
+				gen.opt.lastSelectorDereference := FALSE;
+				Expression(gen, p.expr);
+
+				IF (dist > 0) & ~gen.opt.plan9 THEN
+					IF t.id = Ast.IdPointer THEN
+						DEC(dist);
+						Str(gen, "->_")
 					END;
-					Str(gen, "_tag")
-				END
-			ELSIF fp.type.id # Ast.IdChar THEN
-				WHILE (t.id = Ast.IdArray) & (fp.type(Ast.Array).count = NIL) DO
-					Str(gen, ", ");
-					IF t(Ast.Array).count # NIL THEN
-						Expression(gen, t(Ast.Array).count)
+					WHILE dist > 0 DO
+						DEC(dist);
+						Str(gen, "._")
+					END
+				END;
+
+				t := p.expr.type;
+				i := 0;
+				IF t.id = Ast.IdRecord THEN
+					IF gen.opt.lastSelectorDereference THEN
+						Str(gen, ", NULL")
 					ELSE
-						Name(gen, p.expr(Ast.Designator).decl);
-						Str(gen, "_len");
-						Int(gen, i)
-					END;
-					INC(i);
-					t := t.type
+						Str(gen, ", ");
+						IF (p.expr(Ast.Designator).decl IS Ast.FormalParam)
+						 & (p.expr(Ast.Designator).sel = NIL)
+						THEN
+							Name(gen, p.expr(Ast.Designator).decl)
+						ELSE
+							GlobalName(gen, t)
+						END;
+						Str(gen, "_tag")
+					END
+				ELSIF fp.type.id # Ast.IdChar THEN
+					WHILE (t.id = Ast.IdArray)
+					    & (fp.type(Ast.Array).count = NIL)
+					DO
+						Str(gen, ", ");
+						IF t(Ast.Array).count # NIL THEN
+							Expression(gen, t(Ast.Array).count)
+						ELSE
+							Name(gen, p.expr(Ast.Designator).decl);
+							Str(gen, "_len");
+							Int(gen, i)
+						END;
+						INC(i);
+						t := t.type
+					END
 				END
 			END;
 
@@ -1950,8 +1960,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 	VAR type, base: Ast.Record;
-		reref, retain: BOOLEAN;
+		reref, retain, toByte: BOOLEAN;
 	BEGIN
+		toByte := (st.designator.type.id = Ast.IdByte)
+		        & (st.expr.type.id = Ast.IdInteger)
+		        & gen.opt.checkArith & (st.expr.value = NIL);
 		retain := (st.designator.type.id = Ast.IdPointer)
 		        & (gen.opt.memManager = MemManagerCounter);
 		IF retain & (st.expr.id = Ast.IdPointer) THEN
@@ -1969,6 +1982,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Str(gen, "memcpy(");
 				Designator(gen, st.designator);
 				Str(gen, ", ")
+			ELSIF toByte THEN
+				Designator(gen, st.designator);
+				Str(gen, " = o7c_byte(")
 			ELSE
 				Designator(gen, st.designator);
 				Str(gen, " = ")
@@ -2013,9 +2029,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Log.StrLn("Assign record")
 			END
 		END;
-		CASE ORD(reref) + ORD(retain)
+		CASE ORD(reref) + ORD(retain) + ORD(toByte)
 		   + ORD((st.designator.type.id = Ast.IdArray)
-			   & (st.designator.type.type.id # Ast.IdString)
+		       & (st.designator.type.type.id # Ast.IdString)
 		        )
 		OF
 		  0: StrLn(gen, ";")

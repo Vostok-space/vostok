@@ -30,4 +30,12 @@ PROCEDURE IsNan*(r: REAL): BOOLEAN;
 	RETURN r # r
 END IsNan;
 
+PROCEDURE InByteRange*(v: INTEGER): BOOLEAN;
+	RETURN (v >= 0) & (v <= ByteMax)
+END InByteRange;
+
+PROCEDURE InCharRange*(v: INTEGER): BOOLEAN;
+	RETURN (v >= 0) & (v <= ORD(CharMax))
+END InCharRange;
+
 END Limits.
