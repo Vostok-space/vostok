@@ -866,8 +866,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.Ord:
 				Ord(gen, e1)
 			| Scanner.Chr:
-				Str(gen, "(char unsigned)");
-				Factor(gen, e1)
+				IF gen.opt.checkArith & (e1.value = NIL) THEN
+					Str(gen, "o7c_chr(");
+					Factor(gen, e1);
+					Str(gen, ")")
+				ELSE
+					Str(gen, "(char unsigned)");
+					Factor(gen, e1)
+				END
 			| Scanner.Inc:
 				Inc(gen, e1, p2)
 			| Scanner.Dec:

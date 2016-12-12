@@ -198,6 +198,8 @@ BEGIN
 			O("Деление на 0")
 		| Ast.ErrValueOutOfRangeOfByte		:
 			O("Значение выходит за границы BYTE")
+		| Ast.ErrValueOutOfRangeOfChar		:
+			O("Значение выходит за границы CHAR")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")

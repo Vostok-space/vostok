@@ -501,6 +501,12 @@ static O7C_INLINE char unsigned o7c_byte(int v) {
 	return (char unsigned)v;
 }
 
+static O7C_INLINE char unsigned o7c_chr(int v) O7C_ATTR_ALWAYS_INLINE;
+static O7C_INLINE char unsigned o7c_chr(int v) {
+	assert((unsigned)v <= 255);
+	return (char unsigned)v;
+}
+
 extern void o7c_init(int argc, char *argv[]);
 
 extern int o7c_exit_code;

@@ -102,6 +102,7 @@ CONST
 	ErrConstDivByZero*				= -72;
 
 	ErrValueOutOfRangeOfByte*		= -73;
+	ErrValueOutOfRangeOfChar*		= -74;
 
 	ErrNotImplemented*				= -99;
 
@@ -2068,7 +2069,9 @@ END CallParamNew;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam): INTEGER;
 VAR v: Factor;
+	err: INTEGER;
 BEGIN
+	err := ErrNo;
 	IF (currentFormalParam = NIL)
 	 & (call.designator.decl IS PredefinedProcedure)
 	 & (call.designator.decl.type.type # NIL)
@@ -2132,6 +2135,9 @@ BEGIN
 					ASSERT(FALSE)
 				END
 			| Scanner.Chr:
+				IF ~Limits.InCharRange(v(ExprInteger).int) THEN
+					err := ErrValueOutOfRangeOfChar
+				END;
 				call.value := v
 			END
 		ELSIF (call.designator.decl.id = Scanner.Len)
@@ -2139,8 +2145,11 @@ BEGIN
 		THEN
 			call.value := call.params.expr.type(Array).count.value
 		END
+	END;
+	IF currentFormalParam # NIL THEN
+		err := ErrCallParamsNotEnough
 	END
-	RETURN ORD(currentFormalParam # NIL) * ErrCallParamsNotEnough
+	RETURN err 
 END CallParamsEnd;
 
 PROCEDURE StatInit(s: Statement; e: Expression);
