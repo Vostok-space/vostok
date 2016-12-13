@@ -80,6 +80,8 @@
 #define Ast_ErrConstSubOverflow_cnst 68
 #define Ast_ErrConstMultOverflow_cnst (-71)
 #define Ast_ErrConstDivByZero_cnst (-72)
+#define Ast_ErrValueOutOfRangeOfByte_cnst (-73)
+#define Ast_ErrValueOutOfRangeOfChar_cnst (-74)
 #define Ast_ErrNotImplemented_cnst (-99)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)

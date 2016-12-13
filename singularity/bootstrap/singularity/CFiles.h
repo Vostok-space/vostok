@@ -15,6 +15,10 @@
 #if !defined(HEADER_GUARD_CFiles)
 #define HEADER_GUARD_CFiles
 
+#define CFiles_KiB_cnst 1024
+#define CFiles_MiB_cnst (CFiles_KiB_cnst * 1024)
+#define CFiles_GiB_cnst (CFiles_MiB_cnst * 1024)
+
 typedef struct CFiles_Implement* CFiles_File;
 
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len, int ofs,
@@ -27,6 +31,13 @@ extern int CFiles_Read(CFiles_File file,
 
 extern int CFiles_Write(CFiles_File file,
 						char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+
+extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
+
+extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);
+
+extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs);
+
 
 extern void CFiles_init(void);
 

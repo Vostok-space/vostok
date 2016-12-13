@@ -8,6 +8,7 @@
 #include "VDataStream.h"
 #include "Utf8.h"
 #include "Log.h"
+#include "Limits.h"
 #include "TranslatorLimits.h"
 
 #define GeneratorC_IsoC90_cnst 0

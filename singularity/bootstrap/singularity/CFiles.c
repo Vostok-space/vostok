@@ -51,6 +51,7 @@ extern void CFiles_Close(CFiles_File *file) {
 
 extern int CFiles_Read(CFiles_File file,
 					   char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+	assert(buf != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(buf_len - count >= ofs);
@@ -63,6 +64,31 @@ extern int CFiles_Write(CFiles_File file,
 	assert(count >= 0);
 	assert(buf_len - count >= ofs);
 	return fwrite(buf + ofs, 1, count, file->file);
+}
+
+extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
+	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
+	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
+	return fseek(file->file, (long)gibs * CFiles_GiB_cnst + bytes, SEEK_SET) == 0;
+}
+
+extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
+	long pos;
+	pos = ftell(file->file);
+	if (pos >= 0) {
+		*gibs = pos / CFiles_GiB_cnst;
+		*bytes = pos % CFiles_GiB_cnst;
+	} else {
+		*gibs = INT_MIN;
+		*bytes = INT_MIN;
+	}
+	return pos >= 0;
+}
+
+extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {
+	assert(ofs >= 0);
+	assert(name_len > 1);
+	return remove(name) == 0;
 }
 
 extern void CFiles_init(void) {

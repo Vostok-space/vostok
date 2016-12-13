@@ -1104,7 +1104,7 @@ VAR err: INTEGER;
 BEGIN
 	NEW(neg); ExprInit(neg, IdNegate, TypeGet(IdBoolean));
 	neg.expr := expr;
-	IF expr.type.id # IdBoolean THEN
+	IF (expr.type # NIL) & (expr.type.id # IdBoolean) THEN
 		err := ErrNegateNotBool
 	ELSE
 		err := ErrNo;

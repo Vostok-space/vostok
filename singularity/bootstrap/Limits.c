@@ -11,9 +11,14 @@
 #include "Limits.h"
 
 extern o7c_bool Limits_IsNan(double r) {
-	o7c_bool o7c_return;
+	return r != r;
+}
 
-	o7c_return = r != r;
-	return o7c_return;
+extern o7c_bool Limits_InByteRange(int v) {
+	return (o7c_cmp(v, 0) >=  0) && (o7c_cmp(v, Limits_ByteMax_cnst) <=  0);
+}
+
+extern o7c_bool Limits_InCharRange(int v) {
+	return (o7c_cmp(v, 0) >=  0) && (o7c_cmp(v, (int)0xFFu) <=  0);
 }
 

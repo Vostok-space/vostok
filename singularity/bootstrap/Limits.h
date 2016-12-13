@@ -10,5 +10,9 @@
 
 extern o7c_bool Limits_IsNan(double r);
 
+extern o7c_bool Limits_InByteRange(int v);
+
+extern o7c_bool Limits_InCharRange(int v);
+
 static inline void Limits_init(void) { ; }
 #endif

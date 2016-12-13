@@ -11,6 +11,7 @@
 #define Scanner_UnexpectChar_cnst 1
 #define Scanner_Plus_cnst 10
 #define Scanner_Minus_cnst 11
+#define Scanner_Or_cnst 12
 #define Scanner_Dot_cnst 14
 #define Scanner_Range_cnst 15
 #define Scanner_Comma_cnst 16
@@ -56,7 +57,6 @@
 #define Scanner_Module_cnst 67
 #define Scanner_Nil_cnst 68
 #define Scanner_Of_cnst 69
-#define Scanner_Or_cnst 70
 #define Scanner_Pointer_cnst 71
 #define Scanner_Procedure_cnst 72
 #define Scanner_Record_cnst 73
