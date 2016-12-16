@@ -755,6 +755,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, ") / sizeof (");
 					Designator(gen, des);
 					Str(gen, "[0])")
+				ELSIF des.type(Ast.Array).count # NIL THEN
+					Expression(gen, des.type(Ast.Array).count)
 				ELSE
 					GlobalName(gen, des.decl);
 					Str(gen, "_len");
