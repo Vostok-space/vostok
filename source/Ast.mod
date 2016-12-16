@@ -104,6 +104,9 @@ CONST
 	ErrValueOutOfRangeOfByte*		= -73;
 	ErrValueOutOfRangeOfChar*		= -74;
 
+	ErrExpectIntExpr*				= -75;
+	ErrExpectConstIntExpr*			= -76;
+
 	ErrNotImplemented*				= -99;
 
 	ErrMin* 						= -100;
@@ -1991,7 +1994,7 @@ VAR err, distance: INTEGER;
 				comp := tp.id = IdArray
 			ELSE
 				comp := (id = Scanner.Ord)
-					  & (tp.id IN {IdInteger, IdChar, IdSet, IdBoolean})
+				      & (tp.id IN {IdInteger, IdChar, IdSet, IdBoolean})
 			END
 		END
 		RETURN comp
@@ -2221,16 +2224,43 @@ BEGIN
 	RETURN err
 END RepeatSetUntil;
 
-PROCEDURE ForNew*(var: Var; init, to: Expression; by: INTEGER; stats: Statement): For;
-VAR f: For;
+PROCEDURE ForSetBy*(for: For; by: Expression): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	err := ErrNo;
+	IF (by # NIL) & (by.value # NIL) & (by.type.id = IdInteger) THEN
+		for.by := by.value(ExprInteger).int
+	ELSE
+		for.by := 0;
+		IF by # NIL THEN
+			err := ErrExpectConstIntExpr
+		END
+	END
+	RETURN err
+END ForSetBy;
+
+PROCEDURE ForSetTo*(for: For; to: Expression): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF (to # NIL) & (to.type.id # IdInteger) THEN
+		err := ErrExpectIntExpr
+	ELSE
+		err := ErrNo
+	END;
+	for.to := to
+	RETURN err
+END ForSetTo;
+
+PROCEDURE ForNew*(VAR f: For; var: Var; init, to: Expression; by: INTEGER;
+                  stats: Statement): INTEGER;
+VAR err: INTEGER;
 BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
-	f.to := to;
-	(* TODO check type of expression *)
+	err := ForSetTo(f, to);
 	f.by := by;
 	f.stats := stats
-	RETURN f
+	RETURN err
 END ForNew;
 
 PROCEDURE CaseNew*(VAR case: Case; expr: Expression): INTEGER;

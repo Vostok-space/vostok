@@ -41,7 +41,6 @@ CONST
 	ErrExpectBrace2Close*			= Err - 10;
 	ErrExpectBrace3Close*			= Err - 11;
 	ErrExpectOf*					= Err - 12;
-	ErrExpectConstIntExpr*			= Err - 14;
 	ErrExpectTo*					= Err - 15;
 	ErrExpectStructuredType*		= Err - 16;
 	ErrExpectRecord*				= Err - 17;
@@ -513,25 +512,11 @@ BEGIN
 	ELSE 
 		i := -1;
 		IF e # NIL THEN
-			AddError(p, ErrExpectConstIntExpr)
+			AddError(p, Ast.ErrExpectConstIntExpr)
 		END
 	END
 	RETURN i
 END ExprToArrayLen;
-
-PROCEDURE ExprToInteger(VAR p:Parser; e: Ast.Expression): INTEGER;
-VAR i: INTEGER;
-BEGIN
-	IF (e # NIL) & (e.type.id = Ast.IdInteger) THEN
-		i := e(Ast.ExprInteger).int
-	ELSE 
-		i := 0;
-		IF e # NIL THEN
-			AddError(p, ErrExpectConstIntExpr)
-		END
-	END
-	RETURN i
-END ExprToInteger;
 
 PROCEDURE Array(VAR p: Parser; ds: Ast.Declarations;
 				nameBegin, nameEnd: INTEGER): Ast.Array;
@@ -1014,11 +999,11 @@ BEGIN
 	END;
 	Scan(p);
 	Expect(p, Scanner.Assign, ErrExpectAssign);
-	f := Ast.ForNew(v, Expression(p, ds), NIL, 1, NIL);
+	CheckAst(p, Ast.ForNew(f, v, Expression(p, ds), NIL, 1, NIL));
 	Expect(p, Scanner.To, ErrExpectTo);
-	f.to := Expression(p, ds);
+	CheckAst(p, Ast.ForSetTo(f, Expression(p, ds)));
 	IF ScanIfEqual(p, Scanner.By) THEN
-		f.by := ExprToInteger(p, Expression(p, ds))
+		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds)))
 	END;
 	Expect(p, Scanner.Do, ErrExpectDo);
 	f.stats := statements(p, ds);

@@ -200,6 +200,10 @@ BEGIN
 			O("Значение выходит за границы BYTE")
 		| Ast.ErrValueOutOfRangeOfChar		:
 			O("Значение выходит за границы CHAR")
+		| Ast.ErrExpectIntExpr				:
+			O("Ожидается целочисленное выражение")
+		| Ast.ErrExpectConstIntExpr			:
+			O("Ожидается константное целочисленное выражение")
 
 		| Ast.ErrNotImplemented				:
 			O("Ast.ErrNotImplemented")
@@ -247,8 +251,6 @@ BEGIN
 			O("Ожидается '}'")
 		| Parser.ErrExpectOf				:
 			O("Ожидается OF")
-		| Parser.ErrExpectConstIntExpr		:
-			O("Ожидается константное целочисленное выражение")
 		| Parser.ErrExpectTo				:
 			O("Ожидается TO")
 		| Parser.ErrExpectStructuredType	:

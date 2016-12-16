@@ -794,11 +794,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, " = o7c_add(");
 					Expression(gen, e1);
 					IF p2 = NIL THEN
-						Str(gen, ", 1);")
+						Str(gen, ", 1)")
 					ELSE
 						Str(gen, ", ");
 						Expression(gen, p2.expr);
-						Str(gen, ");")
+						Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
 					Str(gen, "++")
@@ -816,11 +816,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Str(gen, " = o7c_sub(");
 					Expression(gen, e1);
 					IF p2 = NIL THEN
-						Str(gen, ", 1);")
+						Str(gen, ", 1)")
 					ELSE
 						Str(gen, ", ");
 						Expression(gen, p2.expr);
-						Str(gen, ");")
+						Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
 					Str(gen, "--")
@@ -1925,7 +1925,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Repeat;
 
-	(* TODO исправить для st.by < 0 *)
 	PROCEDURE For(VAR gen: Generator; st: Ast.For);
 		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
 		RETURN (sum.next # NIL)
@@ -1941,21 +1940,35 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		Expression(gen, st.expr);
 		Str(gen, "; ");
 		GlobalName(gen, st.var);
-		IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
-			Str(gen, " < ");
-			Expression(gen, st.to(Ast.ExprSum).term)
+		IF st.by > 0 THEN
+			IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
+				Str(gen, " < ");
+				Expression(gen, st.to(Ast.ExprSum).term)
+			ELSE
+				Str(gen, " <= ");
+				Expression(gen, st.to)
+			END;
+			IF st.by = 1 THEN
+				Str(gen, "; ++");
+				GlobalName(gen, st.var)
+			ELSE
+				Str(gen, "; ");
+				GlobalName(gen, st.var);
+				Str(gen, " += ");
+				Int(gen, st.by)
+			END
 		ELSE
-			Str(gen, " <= ");
-			Expression(gen, st.to)
-		END;
-		IF st.by = 1 THEN
-			Str(gen, "; ++");
-			GlobalName(gen, st.var)
-		ELSE
-			Str(gen, "; ");
-			GlobalName(gen, st.var);
-			Str(gen, " += ");
-			Int(gen, st.by)
+			Str(gen, " >= ");
+			Expression(gen, st.to);
+			IF st.by = -1 THEN
+				Str(gen, "; --");
+				GlobalName(gen, st.var)
+			ELSE
+				Str(gen, "; ");
+				GlobalName(gen, st.var);
+				Str(gen, " -= ");
+				Int(gen, -st.by)
+			END
 		END;
 		StrLn(gen, ") {");
 		INC(gen.tabs);
@@ -2566,7 +2579,7 @@ BEGIN
 		o.checkIndex := TRUE;
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
-		o.varInit := VarInitNo;
+		o.varInit := VarInitUndefined;
 		o.memManager := MemManagerNoFree;
 		o.main := FALSE
 	END
