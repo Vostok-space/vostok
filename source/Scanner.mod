@@ -159,7 +159,9 @@ TYPE
 
 		isReal*, isChar*: BOOLEAN;
 		integer*: INTEGER;
-		real*: REAL
+		real*: REAL;
+
+		commentOfs, commentEnd: INTEGER
 	END;
 
 	Suit = PROCEDURE(ch: CHAR): BOOLEAN;
@@ -176,11 +178,23 @@ BEGIN
 	s.in := in;
 	s.ind := LEN(s.buf) - 1;
 	s.buf[0] := NewPage;
-	s.buf[s.ind] := NewPage
+	s.buf[s.ind] := NewPage;
+
+	s.commentOfs := -1
 END Init;
 
 PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
 VAR size: INTEGER;
+
+	PROCEDURE Normalize(VAR buf: ARRAY OF CHAR; i, end: INTEGER);
+	BEGIN
+		WHILE i < end DO
+			IF (buf[i] = NewPage) OR (buf[i] = Utf8.TransmissionEnd) THEN
+				buf[i] := Utf8.Idle
+			END;
+			INC(i)
+		END
+	END Normalize;
 BEGIN
 	ASSERT(ODD(LEN(buf)));
 	IF ind MOD (LEN(buf) DIV 2) # 0 THEN
@@ -191,12 +205,11 @@ BEGIN
 		ind := ind MOD (LEN(buf) - 1);
 		IF buf[ind] = NewPage THEN
 			size := Stream.Read(in, buf, ind, LEN(buf) DIV 2);
-			IF buf[ind] = NewPage THEN
-				buf[ind] := Utf8.Null
-			ELSIF size = LEN(buf) DIV 2 THEN
+			Normalize(buf, ind, ind + size);
+			IF size = LEN(buf) DIV 2 THEN
 				buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage
 			ELSE
-				buf[ind + size] := Utf8.Null
+				buf[ind + size] := Utf8.TransmissionEnd
 			END
 		END
 	END
@@ -597,8 +610,15 @@ BEGIN
 	ELSIF (s.buf[i] = "(") & (comment >= 0) DO
 		s.ind := i;
 		IF ScanChar(s) = "*" THEN
+			INC(s.ind);
 			INC(comment);
-			INC(s.ind)
+			IF comment = 1 THEN
+				IF s.ind = LEN(s.buf) - 1 THEN
+					s.commentOfs := 0
+				ELSE
+					s.commentOfs := s.ind
+				END
+			END
 		ELSIF comment = 0 THEN
 			s.ind := i;
 			comment := -1
@@ -609,6 +629,9 @@ BEGIN
 			s.ind := i;
 			IF ScanChar(s) = ")" THEN
 				DEC(comment);
+				IF comment = 0 THEN
+					s.commentEnd := i
+				END;
 				i := s.ind
 			END
 		END;
@@ -629,7 +652,9 @@ BEGIN
 	END;
 	j := i;
 	count := 0;
-	WHILE (s.buf[i] # Utf8.DQuote) & ((s.buf[i] >= " ") OR (s.buf[i] = Utf8.Tab)) DO
+	WHILE (s.buf[i] # Utf8.DQuote) & ((s.buf[i] >= " ")
+	   OR (s.buf[i] = Utf8.Tab))
+	DO
 		INC(i);
 		INC(count)
 	ELSIF s.buf[i] = NewPage DO
@@ -679,9 +704,10 @@ BEGIN
 	ELSE
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
-		  0X : lex := End
-		| 1X .. "!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX .. 0FFX:
+		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0FFX:
 			lex := UnexpectChar
+		| Utf8.TransmissionEnd:
+			lex := EndOfFile
 		| "0" .. "9":
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
@@ -722,6 +748,23 @@ BEGIN
 	END
 	RETURN lex
 END Next;
+
+PROCEDURE TakeCommentPos*(VAR s: Scanner; VAR ofs, end: INTEGER): BOOLEAN;
+VAR ret: BOOLEAN;
+BEGIN
+	ret := s.commentOfs >= 0;
+	IF ret THEN
+		ofs := s.commentOfs;
+		end := s.commentEnd;
+		s.commentOfs := -1
+	END
+	RETURN ret
+END TakeCommentPos;
+
+PROCEDURE ResetComment*(VAR s: Scanner);
+BEGIN
+	s.commentOfs := -1
+END ResetComment;
 
 BEGIN
 	ASSERT(TranLim.MaxLenName < BlockSize)

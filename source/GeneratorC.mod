@@ -748,8 +748,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			VAR sel: Ast.Selector;
 				i: INTEGER;
 			BEGIN
-				IF (des.decl.type.id # Ast.IdArray) OR ~(des.decl IS Ast.FormalParam)
-				THEN
+				IF  (des.decl.type.id # Ast.IdArray)
+				OR ~(des.decl IS Ast.FormalParam) THEN
 					Str(gen, "sizeof(");
 					Designator(gen, des);
 					Str(gen, ") / sizeof (");
@@ -2046,8 +2046,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 						Str(gen, "._");
 						type := type.base
 					END
-				END;
-				Log.StrLn("Assign record")
+				END
 			END
 		END;
 		CASE ORD(reref) + ORD(retain) + ORD(toByte)
@@ -2260,6 +2259,25 @@ BEGIN
 	END
 END Qualifier;
 
+PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
+VAR i: Strings.Iterator;
+	prev: CHAR;
+BEGIN
+	IF Strings.GetIter(i, com, 0) THEN
+		REPEAT
+			prev := i.char
+		UNTIL ~Strings.IterNext(i)
+		   OR (prev = "/") & (i.char = "*")
+		   OR (prev = "*") & (i.char = "/");
+
+		IF i.char = Utf8.Null THEN
+			Str(gen, "/*");
+			String(gen, com);
+			StrLn(gen, "*/")
+		END
+	END
+END Comment;
+
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 	PROCEDURE Implement(VAR out: MOut; VAR gen: Generator; proc: Ast.Procedure);
@@ -2347,6 +2365,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			END
 		END ReleaseVars;
 	BEGIN
+		Comment(gen, proc.comment);
 		Tabs(gen, 0);
 		Mark(gen, proc.mark);
 		Declarator(gen, proc, FALSE, FALSE(*TODO*), TRUE);
@@ -2618,7 +2637,6 @@ END MarkExpression;
 PROCEDURE MarkType(t: Ast.Type);
 VAR d: Ast.Declaration;
 BEGIN
-	Log.StrLn("MarkType !!!!");
 	WHILE (t # NIL) & ~t.mark DO
 		t.mark := TRUE;
 		IF t.id = Ast.IdArray THEN
@@ -2741,25 +2759,26 @@ VAR out: MOut;
 		opt.recordLast := NIL;
 		gen.opt := opt;
 
-		IF ~gen.interface THEN
-			StrLn(gen, "#include <stdlib.h>");
-			StrLn(gen, "#include <stddef.h>");
-			StrLn(gen, "#include <string.h>");
-			StrLn(gen, "#include <assert.h>");
-			StrLn(gen, "#include <math.h>");
-			IF opt.std >= IsoC99 THEN
-				StrLn(gen, "#include <stdbool.h>")
-			END;
-			Ln(gen);
-			IF opt.varInit = VarInitUndefined THEN
-				StrLn(gen, "#define O7C_BOOL_UNDEFINED")
-			END;
-			StrLn(gen, "#include <o7c.h>");
-			Ln(gen)
-		END;
-
 		gen.fixedLen := gen.len
 	END Init;
+
+	PROCEDURE Includes(VAR gen: Generator);
+	BEGIN
+		StrLn(gen, "#include <stdlib.h>");
+		StrLn(gen, "#include <stddef.h>");
+		StrLn(gen, "#include <string.h>");
+		StrLn(gen, "#include <assert.h>");
+		StrLn(gen, "#include <math.h>");
+		IF gen.opt.std >= IsoC99 THEN
+			StrLn(gen, "#include <stdbool.h>")
+		END;
+		Ln(gen);
+		IF gen.opt.varInit = VarInitUndefined THEN
+			StrLn(gen, "#define O7C_BOOL_UNDEFINED")
+		END;
+		StrLn(gen, "#include <o7c.h>");
+		Ln(gen)
+	END Includes;
 
 	PROCEDURE HeaderGuard(VAR gen: Generator);
 	BEGIN
@@ -2843,6 +2862,10 @@ BEGIN
 
 	out.g[Implementation].interface := FALSE;
 	Init(out.g[Implementation], implementation.out, module, opt);
+
+	Comment(out.g[ORD(~opt.main)], module.comment);
+
+	Includes(out.g[Implementation]);
 
 	IF ~opt.main THEN
 		HeaderGuard(out.g[Interface]);

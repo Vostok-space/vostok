@@ -17,12 +17,16 @@
 MODULE Utf8;
 
 CONST
-	Null*		= 00X;
-	BackSpace*	= 08X;
-	Tab*		= 09X;
-	NewLine*	= 0AX;
-	NewPage*	= 0CX;
-	CarRet*		= 0DX;
-	DQuote*		= 22X;
+	Null*            = 00X;
+	TransmissionEnd* = 04X;
+	Bell*            = 07X;
+	BackSpace*       = 08X;
+	Tab*             = 09X;
+	NewLine*         = 0AX;
+	NewPage*         = 0CX;
+	CarRet*          = 0DX;
+	Idle*            = 16X;
+	DQuote*          = 22X;
+	Delete*          = 7FX;
 
 END Utf8.

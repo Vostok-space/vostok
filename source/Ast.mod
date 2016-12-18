@@ -127,7 +127,7 @@ CONST
 	IdProcType*			= 10;
 	IdNamed*			= 11;
 	IdString*			= 12;
-	
+
 	IdDesignator*		= 20;
 	IdRelation*			= 21;
 	IdSum*				= 22;
@@ -157,6 +157,7 @@ TYPE
 
 	Node* = RECORD(V.Base)
 		id*: INTEGER;
+		comment*: Strings.String;
 		ext*: V.PBase
 	END;
 
@@ -436,7 +437,7 @@ VAR
 	            OF Declaration;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
-					s: ARRAY OF CHAR; begin, end: INTEGER);
+                    s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
 	Strings.Put(m.store, w, s, begin, end)
 END PutChars;
@@ -445,8 +446,21 @@ PROCEDURE NodeInit(VAR n: Node);
 BEGIN
 	V.Init(n);
 	n.id := -1;
+	Strings.UndefString(n.comment);
 	n.ext := NIL
 END NodeInit;
+
+PROCEDURE DeclSetComment*(d: Declaration; com: ARRAY OF CHAR; ofs, end: INTEGER);
+BEGIN
+	ASSERT(d.comment.block = NIL);
+	PutChars(d.module, d.comment, com, ofs, end)
+END DeclSetComment;
+
+PROCEDURE ModuleSetComment*(m: Module; com: ARRAY OF CHAR; ofs, end: INTEGER);
+BEGIN
+	ASSERT(m.comment.block = NIL);
+	PutChars(m, m.comment, com, ofs, end)
+END ModuleSetComment;
 
 PROCEDURE DeclInit(d: Declaration; ds: Declarations);
 BEGIN
@@ -466,7 +480,7 @@ BEGIN
 END DeclInit;
 
 PROCEDURE DeclConnect(d: Declaration; ds: Declarations;
-					  name: ARRAY OF CHAR; start, end: INTEGER);
+                      name: ARRAY OF CHAR; start, end: INTEGER);
 BEGIN
 	ASSERT(d # NIL);
 	ASSERT(name[0] # 0X);
@@ -501,7 +515,7 @@ BEGIN
 END DeclarationsInit;
 
 PROCEDURE DeclarationsConnect(d, up: Declarations;
-							  name: ARRAY OF CHAR; start, end: INTEGER);
+                              name: ARRAY OF CHAR; start, end: INTEGER);
 BEGIN
 	DeclarationsInit(d, up);
 	IF name[0] # 0X THEN
@@ -531,7 +545,7 @@ BEGIN
 END ModuleNew;
 
 PROCEDURE GetModuleByName*(p: Provider; host: Module;
-						   name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
+                           name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
 	RETURN p.get(p, host, name, ofs, end)
 END GetModuleByName;
 
@@ -543,8 +557,8 @@ BEGIN
 END ModuleEnd;
 
 PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
-					 nameOfs, nameEnd, realOfs, realEnd: INTEGER;
-					 p: Provider): INTEGER;
+                     nameOfs, nameEnd, realOfs, realEnd: INTEGER;
+                     p: Provider): INTEGER;
 VAR imp: Import;
 	i: Declaration;
 	err: INTEGER;
@@ -1136,7 +1150,6 @@ END DesignatorNew;
 PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
 VAR dist: INTEGER;
 BEGIN
-	Log.Str("IsRecordExtension ");
 	IF (t0 # NIL) & (t1 # NIL) THEN
 		dist := 0;
 		REPEAT
@@ -1919,7 +1932,7 @@ BEGIN
 END IsVar;
 
 PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
-						buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                        buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	IF SearchName(ds.start, buf, begin, end) = NIL THEN

@@ -75,14 +75,20 @@ CONST
 TYPE
 	Options* = RECORD(V.Base)
 		strictSemicolon*,
-		strictReturn*	: BOOLEAN;
+		strictReturn*,
+		saveComments*    : BOOLEAN;
 		printError*: PROCEDURE(code: INTEGER) 
 	END;
 	Parser = RECORD(V.Base) (* короткие названия из-за частого использования *)
-		settings: Options;
+		opt: Options;
 		err: BOOLEAN;
 		s: Scanner.Scanner; 
 		l: INTEGER;(* lexem *)
+
+		comment: RECORD
+			ofs, end: INTEGER
+		END;
+
 		module: Ast.Module;
 		provider: Ast.Provider
 	END;
@@ -103,7 +109,7 @@ BEGIN
 	IF p.module # NIL THEN
 		Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
 	END;
-	p.settings.printError(err);
+	p.opt.printError(err);
 	Out.Ln
 END AddError;
 
@@ -123,10 +129,12 @@ BEGIN
 		IF p.l = Scanner.ErrNumberTooBig THEN
 			p.l := Scanner.Number
 		END
+	ELSIF p.l = Scanner.Semicolon THEN
+		Scanner.ResetComment(p.s)
 	END
 END Scan;
 
-PROCEDURE Expect(VAR p: Parser; expect, error: INTEGER)(*: BOOLEAN*);
+PROCEDURE Expect(VAR p: Parser; expect, error: INTEGER);
 BEGIN
 	IF p.l = expect THEN
 		Scan(p)
@@ -196,15 +204,6 @@ BEGIN
 	RETURN e
 END Set;
 
-PROCEDURE Negate(VAR p: Parser; ds: Ast.Declarations): Ast.ExprNegate;
-VAR neg: Ast.ExprNegate;
-BEGIN
-	ASSERT(p.l = Scanner.Negate);
-	Scan(p);
-	CheckAst(p, Ast.ExprNegateNew(neg, expression(p, ds)))
-	RETURN neg
-END Negate;
-
 PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
@@ -254,7 +253,8 @@ VAR des: Ast.Designator;
 	type: Ast.Type;
 	nameBegin, nameEnd: INTEGER; 
 
-	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector; des: Ast.Designator);
+	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector;
+	                 des: Ast.Designator);
 	BEGIN
 		IF prev = NIL THEN
 			des.sel := sel
@@ -281,7 +281,8 @@ BEGIN
 					ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
 					IF nameBegin >= 0 THEN
 						CheckAst(p,
-							Ast.SelRecordNew(sel, type, p.s.buf, nameBegin, nameEnd)
+							Ast.SelRecordNew(sel, type,
+							                 p.s.buf, nameBegin, nameEnd)
 						)
 					END
 				ELSIF p.l = Scanner.Brace1Open THEN
@@ -339,7 +340,8 @@ BEGIN
 	END
 END CallParams;
 
-PROCEDURE ExprCall(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator): Ast.ExprCall;
+PROCEDURE ExprCall(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator)
+                  : Ast.ExprCall;
 VAR e: Ast.ExprCall;
 BEGIN
 	CheckAst(p, Ast.ExprCallNew(e, des));
@@ -360,6 +362,15 @@ VAR e: Ast.Expression;
 			e := ExprCall(p, ds, des)
 		END
 	END Ident;
+
+	PROCEDURE Negate(VAR p: Parser; ds: Ast.Declarations): Ast.ExprNegate;
+	VAR neg: Ast.ExprNegate;
+	BEGIN
+		ASSERT(p.l = Scanner.Negate);
+		Scan(p);
+		CheckAst(p, Ast.ExprNegateNew(neg, Factor(p, ds)))
+		RETURN neg
+	END Negate;
 BEGIN
 	Log.StrLn("Factor");
 
@@ -519,7 +530,7 @@ BEGIN
 END ExprToArrayLen;
 
 PROCEDURE Array(VAR p: Parser; ds: Ast.Declarations;
-				nameBegin, nameEnd: INTEGER): Ast.Array;
+                nameBegin, nameEnd: INTEGER): Ast.Array;
 VAR a: Ast.Array;
 	t: Ast.Type;
 	exprLen: Ast.Expression;
@@ -612,12 +623,13 @@ VAR rec, base: Ast.Record;
 	decl: Ast.Declaration;
 
 	PROCEDURE Vars(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
-	
-		PROCEDURE Declaration(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
+
+		PROCEDURE Declaration(VAR p: Parser; dsAdd: Ast.Record;
+		                      dsTypes: Ast.Declarations);
 		VAR var: Ast.Var;
 			d: Ast.Declaration;
 			typ: Ast.Type;
-		
+
 			PROCEDURE Name(VAR v: Ast.Var; VAR p: Parser; ds: Ast.Record);
 			VAR begin, end: INTEGER;
 			BEGIN
@@ -644,7 +656,7 @@ VAR rec, base: Ast.Record;
 			WHILE ScanIfEqual(p, Scanner.Semicolon) DO
 				IF p.l # Scanner.End THEN
 					Declaration(p, dsAdd, dsTypes)
-				ELSIF p.settings.strictSemicolon THEN
+				ELSIF p.opt.strictSemicolon THEN
 					AddError(p, ErrExcessSemicolon);
 					p.err := FALSE
 				END
@@ -1107,8 +1119,6 @@ VAR stats, last: Ast.Statement;
 		RETURN st
 	END Statement;
 BEGIN
-	Log.StrLn("Statements");
-
 	stats := Statement(p, ds);
 	last := stats;
 
@@ -1116,7 +1126,7 @@ BEGIN
 		IF NotEnd(p.l) THEN
 			last.next := Statement(p, ds);
 			last := last.next
-		ELSIF p.settings.strictSemicolon THEN
+		ELSIF p.opt.strictSemicolon THEN
 			AddError(p, ErrExcessSemicolon);
 			p.err := FALSE
 		END
@@ -1137,7 +1147,7 @@ BEGIN
 		Scan(p);
 		CheckAst(p, Ast.ProcedureSetReturn(proc, Expression(p, proc)));
 		IF p.l = Scanner.Semicolon THEN
-			IF p.settings.strictSemicolon THEN
+			IF p.opt.strictSemicolon THEN
 				AddError(p, ErrExcessSemicolon);
 				p.err := FALSE
 			END;
@@ -1150,7 +1160,6 @@ END Return;
 
 PROCEDURE ProcBody(VAR p: Parser; proc: Ast.Procedure);
 BEGIN
-	Log.StrLn("ProcBody");
 	declarations(p, proc);
 	IF ScanIfEqual(p, Scanner.Begin) THEN
 		proc.stats := Statements(p, proc)
@@ -1158,7 +1167,6 @@ BEGIN
 	Return(p, proc);
 	Expect(p, Scanner.End, ErrExpectEnd);
 	IF p.l = Scanner.Ident THEN
-		Log.StrLn("End Ident");
 		IF ~Strings.IsEqualToChars(proc.name, p.s.buf, p.s.lexStart, p.s.lexEnd)
 		THEN
 			AddError(p, ErrEndProcedureNameNotMatch)
@@ -1169,17 +1177,24 @@ BEGIN
 	END
 END ProcBody;
 
+PROCEDURE TakeComment(VAR p: Parser): BOOLEAN;
+	RETURN p.opt.saveComments
+	     & Scanner.TakeCommentPos(p.s, p.comment.ofs, p.comment.end)
+END TakeComment;
+
 PROCEDURE Procedure(VAR p: Parser; ds: Ast.Declarations);
 VAR proc: Ast.Procedure;
-	nameStart, nameEnd: INTEGER; 
+	nameStart, nameEnd: INTEGER;
 BEGIN
-	Log.StrLn("Procedure");
-
+	ASSERT(p.l = Scanner.Procedure);
 	Scan(p);
 	ExpectIdent(p, nameStart, nameEnd, ErrExpectIdent);
 	CheckAst(p,
 		Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd)
 	);
+	IF TakeComment(p) THEN
+		Ast.DeclSetComment(proc, p.s.buf, p.comment.ofs, p.comment.end)
+	END;
 	Mark(p, proc);
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
@@ -1217,8 +1232,10 @@ BEGIN
 			realEnd := nameEnd
 		END;
 		IF ~p.err THEN
-			CheckAst(p, Ast.ImportAdd(p.module, p.s.buf,
-				nameOfs, nameEnd, realOfs, realEnd, p.provider))
+			CheckAst(p,
+			         Ast.ImportAdd(p.module, p.s.buf, nameOfs, nameEnd,
+			                       realOfs, realEnd, p.provider)
+			)
 		ELSE
 			p.err := FALSE;
 			WHILE (p.l < Scanner.Import)
@@ -1246,6 +1263,10 @@ BEGIN
 			AddError(p, ErrExpectIdent)
 		ELSE
 			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd);
+			IF TakeComment(p) THEN
+				Ast.ModuleSetComment(p.module, p.s.buf,
+				                     p.comment.ofs, p.comment.end)
+			END;
 			Scan(p)
 		END;
 		Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
@@ -1259,7 +1280,7 @@ BEGIN
 		Expect(p, Scanner.End, ErrExpectEnd);
 		IF p.l = Scanner.Ident THEN
 			IF ~Strings.IsEqualToChars(p.module.name, p.s.buf,
-									   p.s.lexStart, p.s.lexEnd)
+			                           p.s.lexStart, p.s.lexEnd)
 			THEN
 				AddError(p, ErrEndModuleNameNotMatch)
 			END;
@@ -1274,15 +1295,16 @@ BEGIN
 	END
 END Module;
 
-PROCEDURE PrintError(code: INTEGER);
-END PrintError;
+PROCEDURE Blank(code: INTEGER);
+END Blank;
 
 PROCEDURE DefaultOptions*(VAR opt: Options);
 BEGIN
 	V.Init(opt);
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn := TRUE;
-	opt.printError := PrintError
+	opt.saveComments := TRUE;
+	opt.printError := Blank
 END DefaultOptions;
 
 PROCEDURE Parse*(in: Stream.PIn; prov: Ast.Provider; opt: Options): Ast.Module;
@@ -1291,7 +1313,7 @@ BEGIN
 	ASSERT(in # NIL);
 	ASSERT(prov # NIL);
 	V.Init(p);
-	p.settings := opt;
+	p.opt := opt;
 	p.err := FALSE;
 	p.module := NIL;
 	p.provider := prov;

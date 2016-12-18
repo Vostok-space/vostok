@@ -37,18 +37,29 @@ TYPE
 		ofs*: INTEGER
 	END;
 
+	Iterator* = RECORD(V.Base)
+		char*: CHAR;
+		b: Block;
+		i: INTEGER
+	END;
+
 	Store* = RECORD(V.Base)
 		first, last: Block;
 		ofs: INTEGER
 	END;
 
-PROCEDURE LogLoopStr(s: ARRAY OF CHAR; j, end: INTEGER);
+PROCEDURE LogLoopStr*(s: ARRAY OF CHAR; j, end: INTEGER);
 BEGIN
 	WHILE j # end DO
 		Log.Char(s[j]);
 		j := (j + 1) MOD (LEN(s) - 1)
 	END 
 END LogLoopStr;
+
+PROCEDURE UndefString*(VAR s: String);
+BEGIN
+	s.block := NIL
+END UndefString;
 
 PROCEDURE Put*(VAR store: Store; VAR w: String;
 			   s: ARRAY OF CHAR; j, end: INTEGER);
@@ -95,6 +106,38 @@ BEGIN
 	store.last := b;
 	store.ofs := i
 END Put;
+
+PROCEDURE GetIter*(VAR iter: Iterator; s: String; ofs: INTEGER): BOOLEAN;
+BEGIN
+	ASSERT(ofs >= 0);
+	IF s.block # NIL THEN
+		V.Init(iter);
+		iter.b := s.block;
+		iter.i := s.ofs;
+		WHILE iter.b.s[iter.i] = Utf8.NewPage DO
+			iter.b := iter.b.next;
+			iter.i := 0
+		ELSIF (ofs > 0) & (iter.b.s[iter.i] # Utf8.Null) DO
+			DEC(ofs);
+			INC(iter.i)
+		END;
+		iter.char := iter.b.s[iter.i]
+	END
+	RETURN (s.block # NIL) & (iter.b.s[iter.i] # Utf8.Null)
+END GetIter;
+
+PROCEDURE IterNext*(VAR iter: Iterator): BOOLEAN;
+BEGIN
+	IF iter.char # Utf8.Null THEN
+		INC(iter.i);
+		IF iter.b.s[iter.i] = Utf8.NewPage THEN
+			iter.b := iter.b.next;
+			iter.i := 0
+		END;
+		iter.char := iter.b.s[iter.i]
+	END
+	RETURN iter.char # Utf8.Null
+END IterNext;
 
 PROCEDURE IsEqualToChars*(w: String; s: ARRAY OF CHAR; j, end: INTEGER): BOOLEAN;
 VAR i: INTEGER;
@@ -209,14 +252,14 @@ BEGIN
 	block := str.block;
 	i := str.ofs;
 	len := 0;
-	WHILE block.s[i] > Utf8.NewPage DO
-		INC(i)
-	ELSIF block.s[i] = Utf8.NewPage DO
-		ASSERT(len = 0);
+	WHILE block.s[i] = Utf8.NewPage DO
+		(*ASSERT(len = 0);*)
 		ASSERT(i > str.ofs);
 		len := len + Stream.Write(out, block.s, str.ofs, i - str.ofs);
 		block := block.next;
 		i := 0
+	ELSIF block.s[i] # Utf8.Null DO
+		INC(i)
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
 	IF len = 0 THEN
