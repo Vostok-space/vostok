@@ -51,6 +51,7 @@ extern o7c_bool Arithmetic_Mul(int *prod, int m1, int m2) {
 	return o7c_bl(norm);
 }
 
+/* Для полноты картины */
 extern o7c_bool Arithmetic_Div(int *frac, int n, int d) {
 	if (o7c_cmp(d, 0) !=  0) {
 		(*frac) = o7c_div(n, d);

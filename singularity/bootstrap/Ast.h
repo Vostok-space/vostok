@@ -1,3 +1,19 @@
+/*  Abstract syntax tree support for Oberon-07
+ *  Copyright (C) 2016  ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Softwarendation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #if !defined(HEADER_GUARD_Ast)
 #define HEADER_GUARD_Ast
 
@@ -82,6 +98,8 @@
 #define Ast_ErrConstDivByZero_cnst (-72)
 #define Ast_ErrValueOutOfRangeOfByte_cnst (-73)
 #define Ast_ErrValueOutOfRangeOfChar_cnst (-74)
+#define Ast_ErrExpectIntExpr_cnst (-75)
+#define Ast_ErrExpectConstIntExpr_cnst (-76)
 #define Ast_ErrNotImplemented_cnst (-99)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
@@ -124,6 +142,7 @@ extern o7c_tag_t Ast_RProvider_tag;
 typedef struct Ast_Node {
 	V_Base _;
 	int id;
+	struct StringStore_String comment;
 	struct V_Base *ext;
 } Ast_Node;
 extern o7c_tag_t Ast_Node_tag;
@@ -502,6 +521,10 @@ extern o7c_tag_t Ast_StatementError_s_tag;
 
 extern void Ast_PutChars(struct Ast_RModule *m, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int begin, int end);
 
+extern void Ast_DeclSetComment(struct Ast_RDeclaration *d, o7c_char com[/*len0*/], int com_len0, int ofs, int end);
+
+extern void Ast_ModuleSetComment(struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end);
+
 extern struct Ast_RModule *Ast_ModuleNew(o7c_char name[/*len0*/], int name_len0, int begin, int end);
 
 extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RProvider *p, struct Ast_RModule *host, o7c_char name[/*len0*/], int name_len0, int ofs, int end);
@@ -620,7 +643,11 @@ extern int Ast_RepeatNew(struct Ast_Repeat_s **r, struct Ast_RStatement *stats);
 
 extern int Ast_RepeatSetUntil(struct Ast_Repeat_s *r, struct Ast_RExpression *e);
 
-extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats);
+extern int Ast_ForSetBy(struct Ast_For_s *for_, struct Ast_RExpression *by);
+
+extern int Ast_ForSetTo(struct Ast_For_s *for_, struct Ast_RExpression *to);
+
+extern int Ast_ForNew(struct Ast_For_s **f, struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats);
 
 extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr);
 

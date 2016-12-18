@@ -76,7 +76,18 @@ extern void Ast_PutChars(struct Ast_RModule *m, struct StringStore_String *w, o7
 static void NodeInit(struct Ast_Node *n, o7c_tag_t n_tag) {
 	V_Init(&(*n)._, n_tag);
 	(*n).id =  - 1;
+	StringStore_UndefString(&(*n).comment, StringStore_String_tag);
 	(*n).ext = NULL;
+}
+
+extern void Ast_DeclSetComment(struct Ast_RDeclaration *d, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
+	assert(d->_.comment.block == NULL);
+	Ast_PutChars(d->module, &d->_.comment, StringStore_String_tag, com, com_len0, ofs, end);
+}
+
+extern void Ast_ModuleSetComment(struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
+	assert(m->_._._.comment.block == NULL);
+	Ast_PutChars(m, &m->_._._.comment, StringStore_String_tag, com, com_len0, ofs, end);
 }
 
 static void DeclInit(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds) {
@@ -516,7 +527,7 @@ extern int Ast_DeclarationGet(struct Ast_RDeclaration **d, struct Ast_RDeclarati
 		O7C_NEW(&(*d)->type, Ast_RType_tag);
 		DeclInit(&(*d)->type->_, NULL);
 		(*d)->type->_._.id = Ast_IdError_cnst;
-	} else if (!o7c_bl((*d)->mark) && ((*d)->module != NULL) && o7c_bl((*d)->module->fixed)) {
+	} else if (!(*d)->mark && ((*d)->module != NULL) && o7c_bl((*d)->module->fixed)) {
 		err = Ast_ErrDeclarationIsPrivate_cnst;
 	} else if ((o7c_is((*d), Ast_Const_s_tag)) && !O7C_GUARD(Ast_Const_s, &(*d))->finished) {
 		err = Ast_ErrConstRecursive_cnst;
@@ -541,7 +552,7 @@ extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_cha
 	}
 	if (o7c_cmp(err, Ast_ErrNo_cnst) ==  0) {
 		(*v) = O7C_GUARD(Ast_RVar, &d);
-		if (!o7c_bl(d->mark) && o7c_bl(d->module->fixed)) {
+		if (!d->mark && o7c_bl(d->module->fixed)) {
 			err = Ast_ErrDeclarationIsPrivate_cnst;
 		}
 	} else {
@@ -550,6 +561,7 @@ extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_cha
 	return err;
 }
 
+/* TODO итератор должен быть только локальным? */
 extern int Ast_ForIteratorGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
 	int err = O7C_INT_UNDEF;
 
@@ -622,7 +634,7 @@ extern struct Ast_ExprString_s *Ast_ExprStringNew(struct Ast_RModule *m, o7c_cha
 	if (o7c_cmp(len, 0) <  0) {
 		len = o7c_sub(o7c_add(len, buf_len0), 1);
 	}
-	len = o7c_sub(len, 2);;
+	len = o7c_sub(len, 2);
 	O7C_NEW(&e, Ast_ExprString_s_tag);
 	ExprInit(&e->_._._._, Ast_IdString_cnst, &Ast_ArrayGet(Ast_TypeGet(Ast_IdChar_cnst), &Ast_ExprIntegerNew(o7c_add(len, 1))->_._._)->_._);
 	e->_.int_ =  - 1;
@@ -748,12 +760,11 @@ extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl)
 extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1) {
 	int dist = O7C_INT_UNDEF;
 
-	Log_Str("IsRecordExtension ", 19);
 	if ((t0 != NULL) && (t1 != NULL)) {
 		dist = 0;
 		do {
 			t1 = t1->base;
-			dist = o7c_add(dist, 1);;
+			dist = o7c_add(dist, 1);
 		} while (!((t0 == t1) || (t1 == NULL)));
 		if (t0 == t1) {
 			(*distance) = dist;
@@ -967,7 +978,7 @@ extern o7c_bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct 
 		Log_Str(" : ", 4);
 		Log_Int(t2->_._.id);
 		Log_Ln();
-		if (!o7c_bl(comp) && (o7c_cmp(t1->_._.id, t2->_._.id) ==  0) && (o7c_in(t1->_._.id, ((1 << Ast_IdArray_cnst) | (1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst) | (1 << Ast_IdProcType_cnst))))) {
+		if (!comp && (o7c_cmp(t1->_._.id, t2->_._.id) ==  0) && (o7c_in(t1->_._.id, ((1 << Ast_IdArray_cnst) | (1 << Ast_IdPointer_cnst) | (1 << Ast_IdRecord_cnst) | (1 << Ast_IdProcType_cnst))))) {
 			switch (t1->_._.id) {
 			case 7:
 				comp = Ast_CompatibleTypes(&(*distance), t1->_.type, t2->_.type);
@@ -1863,16 +1874,43 @@ extern int Ast_RepeatSetUntil(struct Ast_Repeat_s *r, struct Ast_RExpression *e)
 	return err;
 }
 
-extern struct Ast_For_s *Ast_ForNew(struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats) {
-	struct Ast_For_s *f = NULL;
+extern int Ast_ForSetBy(struct Ast_For_s *for_, struct Ast_RExpression *by) {
+	int err = O7C_INT_UNDEF;
 
-	O7C_NEW(&f, Ast_For_s_tag);
-	StatInit(&f->_, init_);
-	f->var_ = var_;
-	f->to = to;
-	f->by = by;
-	f->stats = stats;
-	return f;
+	err = Ast_ErrNo_cnst;
+	if ((by != NULL) && (by->value_ != NULL) && (o7c_cmp(by->type->_._.id, Ast_IdInteger_cnst) ==  0)) {
+		for_->by = O7C_GUARD(Ast_RExprInteger, &by->value_)->int_;
+	} else {
+		for_->by = 0;
+		if (by != NULL) {
+			err = Ast_ErrExpectConstIntExpr_cnst;
+		}
+	}
+	return err;
+}
+
+extern int Ast_ForSetTo(struct Ast_For_s *for_, struct Ast_RExpression *to) {
+	int err = O7C_INT_UNDEF;
+
+	if ((to != NULL) && (o7c_cmp(to->type->_._.id, Ast_IdInteger_cnst) !=  0)) {
+		err = Ast_ErrExpectIntExpr_cnst;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
+	for_->to = to;
+	return err;
+}
+
+extern int Ast_ForNew(struct Ast_For_s **f, struct Ast_RVar *var_, struct Ast_RExpression *init_, struct Ast_RExpression *to, int by, struct Ast_RStatement *stats) {
+	int err = O7C_INT_UNDEF;
+
+	O7C_NEW(&(*f), Ast_For_s_tag);
+	StatInit(&(*f)->_, init_);
+	(*f)->var_ = var_;
+	err = Ast_ForSetTo((*f), to);
+	(*f)->by = by;
+	(*f)->stats = stats;
+	return err;
 }
 
 extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr) {

@@ -1,3 +1,19 @@
+/*  Command line interface for Oberon-07 translator 
+ *  Copyright (C) 2016  ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the re Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -264,6 +280,12 @@ static void ErrorMessage(int code) {
 			case -74:
 				ErrorMessage_O("Значение выходит за границы CHAR", 57);
 				break;
+			case -75:
+				ErrorMessage_O("Ожидается целочисленное выражение", 65);
+				break;
+			case -76:
+				ErrorMessage_O("Ожидается константное целочисленное выражение", 88);
+				break;
 			case -99:
 				ErrorMessage_O("Ast.ErrNotImplemented", 22);
 				break;
@@ -333,9 +355,6 @@ static void ErrorMessage(int code) {
 			break;
 		case -112:
 			ErrorMessage_O("Ожидается OF", 22);
-			break;
-		case -114:
-			ErrorMessage_O("Ожидается константное целочисленное выражение", 88);
 			break;
 		case -115:
 			ErrorMessage_O("Ожидается TO", 22);
@@ -417,7 +436,7 @@ static void PrintErrors(Ast_Error err) {
 	Out_Ln();
 	i = 0;
 	while (err != NULL) {
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		Out_Int(i, 2);
 		Out_String(") ", 3);
 		ErrorMessage(err->code);
@@ -435,7 +454,7 @@ static int LenStr(o7c_char str[/*len0*/], int str_len0, int ofs) {
 
 	i = ofs;
 	while (str[o7c_ind(str_len0, i)] != 0x00u) {
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 	}
 	return o7c_sub(i, ofs);
 }
@@ -445,8 +464,8 @@ static void CopyPath(o7c_char str[/*len0*/], int str_len0, int arg) {
 
 	i = 0;
 	while ((o7c_cmp(arg, CLI_count) <  0) && CLI_Get(str, str_len0, &i, arg)) {
-		i = o7c_add(i, 1);;
-		arg = o7c_add(arg, 1);;
+		i = o7c_add(i, 1);
+		arg = o7c_add(arg, 1);
 	}
 	if (o7c_cmp(o7c_add(i, 1), str_len0) <  0) {
 		str[o7c_ind(str_len0, o7c_add(i, 1))] = 0x00u;
@@ -540,7 +559,7 @@ static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_R
 	} else {
 		(*isMain) = (o7c_cmp(destLen, 3) >  0) && (dest[o7c_ind(1024, o7c_sub(destLen, 3))] == (char unsigned)'.') && (dest[o7c_ind(1024, o7c_sub(destLen, 2))] == (char unsigned)'c');
 		if ((*isMain)) {
-			destLen = o7c_sub(destLen, 2);;
+			destLen = o7c_sub(destLen, 2);
 		}
 		dest[o7c_ind(1024, o7c_sub(destLen, 1))] = (char unsigned)'.';
 		dest[o7c_ind(1024, o7c_add(destLen, 1))] = 0x00u;
@@ -665,7 +684,7 @@ static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/]
 		if (name[o7c_ind(name_len0, i)] == (char unsigned)'.') {
 			dot = i;
 		}
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 	}
 	len = 0;
 	if (!((o7c_cmp(dot, 0) >=  0) && StringStore_CopyChars(ext, ext_len0, &len, name, name_len0, dot, i)) && !StringStore_CopyChars(ext, ext_len0, &len, ".mod", 5, 0, 4)) {

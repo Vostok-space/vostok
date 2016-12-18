@@ -1,3 +1,19 @@
+/*  Strings storage
+ *  Copyright (C) 2016  ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, eitherf the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #if !defined(HEADER_GUARD_StringStore)
 #define HEADER_GUARD_StringStore
 
@@ -23,6 +39,14 @@ typedef struct StringStore_String {
 } StringStore_String;
 extern o7c_tag_t StringStore_String_tag;
 
+typedef struct StringStore_Iterator {
+	V_Base _;
+	o7c_char char_;
+	struct StringStore_Block_s *b;
+	int i;
+} StringStore_Iterator;
+extern o7c_tag_t StringStore_Iterator_tag;
+
 typedef struct StringStore_Store {
 	V_Base _;
 	struct StringStore_Block_s *first;
@@ -32,7 +56,15 @@ typedef struct StringStore_Store {
 extern o7c_tag_t StringStore_Store_tag;
 
 
+extern void StringStore_LogLoopStr(o7c_char s[/*len0*/], int s_len0, int j, int end);
+
+extern void StringStore_UndefString(struct StringStore_String *s, o7c_tag_t s_tag);
+
 extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end);
+
+extern o7c_bool StringStore_GetIter(struct StringStore_Iterator *iter, o7c_tag_t iter_tag, struct StringStore_String *s, o7c_tag_t s_tag, int ofs);
+
+extern o7c_bool StringStore_IterNext(struct StringStore_Iterator *iter, o7c_tag_t iter_tag);
 
 extern o7c_bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end);
 

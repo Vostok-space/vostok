@@ -1,3 +1,4 @@
+/* база всего сущего, авось пригодится для чего-нибудь эдакого */
 #if !defined(HEADER_GUARD_V)
 #define HEADER_GUARD_V
 

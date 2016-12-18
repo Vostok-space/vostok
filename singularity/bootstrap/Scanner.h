@@ -1,3 +1,19 @@
+/*  Scanner of Oberon-07 lexems
+ *  Copyright (C) 2016  ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #if !defined(HEADER_GUARD_Scanner)
 #define HEADER_GUARD_Scanner
 
@@ -128,6 +144,8 @@ typedef struct Scanner_Scanner {
 	o7c_bool isChar;
 	int integer;
 	double real;
+	int commentOfs;
+	int commentEnd;
 } Scanner_Scanner;
 extern o7c_tag_t Scanner_Scanner_tag;
 
@@ -137,6 +155,10 @@ extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDat
 extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int begin, int end);
 
 extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag);
+
+extern o7c_bool Scanner_TakeCommentPos(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *ofs, int *end);
+
+extern void Scanner_ResetComment(struct Scanner_Scanner *s, o7c_tag_t s_tag);
 
 extern void Scanner_init(void);
 #endif

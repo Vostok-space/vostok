@@ -29,6 +29,17 @@ extern void Scanner_Init(struct Scanner_Scanner *s, o7c_tag_t s_tag, struct VDat
 	(*s).ind = sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1;
 	(*s).buf[0] = 0x0Cu;
 	(*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] = 0x0Cu;
+	(*s).commentOfs =  - 1;
+}
+
+static void FillBuf(o7c_char buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, o7c_tag_t in__tag);
+static void FillBuf_Normalize(o7c_char buf[/*len0*/], int buf_len0, int i, int end) {
+	while (o7c_cmp(i, end) <  0) {
+		if ((buf[o7c_ind(buf_len0, i)] == 0x0Cu) || (buf[o7c_ind(buf_len0, i)] == 0x04u)) {
+			buf[o7c_ind(buf_len0, i)] = 0x16u;
+		}
+		i = o7c_add(i, 1);
+	}
 }
 
 static void FillBuf(o7c_char buf[/*len0*/], int buf_len0, int *ind, struct VDataStream_In *in_, o7c_tag_t in__tag) {
@@ -43,12 +54,11 @@ static void FillBuf(o7c_char buf[/*len0*/], int buf_len0, int *ind, struct VData
 		(*ind) = o7c_mod((*ind), (o7c_sub(buf_len0, 1)));
 		if (buf[o7c_ind(buf_len0, (*ind))] == 0x0Cu) {
 			size = VDataStream_Read(&(*in_), in__tag, buf, buf_len0, (*ind), o7c_div(buf_len0, 2));
-			if (buf[o7c_ind(buf_len0, (*ind))] == 0x0Cu) {
-				buf[o7c_ind(buf_len0, (*ind))] = 0x00u;
-			} else if (o7c_cmp(size, o7c_div(buf_len0, 2)) ==  0) {
+			FillBuf_Normalize(buf, buf_len0, (*ind), o7c_add((*ind), size));
+			if (o7c_cmp(size, o7c_div(buf_len0, 2)) ==  0) {
 				buf[o7c_ind(buf_len0, o7c_mod((o7c_add((*ind), o7c_div(buf_len0, 2))), (o7c_sub(buf_len0, 1))))] = 0x0Cu;
 			} else {
-				buf[o7c_ind(buf_len0, o7c_add((*ind), size))] = 0x00u;
+				buf[o7c_ind(buf_len0, o7c_add((*ind), size))] = 0x04u;
 			}
 		}
 	}
@@ -57,7 +67,7 @@ static void FillBuf(o7c_char buf[/*len0*/], int buf_len0, int *ind, struct VData
 static o7c_char ScanChar(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	o7c_char ch = '\0';
 
-	(*s).ind = o7c_add((*s).ind, 1);;
+	(*s).ind = o7c_add((*s).ind, 1);
 	ch = (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 	if (ch == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, &(*(*s).in_), NULL);
@@ -68,7 +78,7 @@ static o7c_char ScanChar(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 
 static void ScanChars(o7c_char buf[/*len0*/], int buf_len0, int *i, Suit suit, struct VDataStream_In *in_, o7c_tag_t in__tag) {
 	while (1) if (suit(buf[o7c_ind(buf_len0, (*i))])) {
-		(*i) = o7c_add((*i), 1);;
+		(*i) = o7c_add((*i), 1);
 	} else if (buf[o7c_ind(buf_len0, (*i))] == 0x0Cu) {
 		FillBuf(buf, buf_len0, &(*i), &(*in_), in__tag);
 	} else break;
@@ -124,7 +134,7 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex, in
 		} else {
 			(*lex) = Scanner_ErrNumberTooBig_cnst;
 		}
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		d = valDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		i = 0;
@@ -143,32 +153,32 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 	d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (o7c_cmp(d, 0) >=  0) {
 		val = o7c_fadd(o7c_fmul(val, 10.0), (double)d);
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		i = 0;
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
-	i = o7c_add(i, 1);;
+	i = o7c_add(i, 1);
 	t = 10.0;
 	d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	while (1) if (o7c_cmp(d, 0) >=  0) {
 		val = o7c_fadd(val, o7c_fdiv((double)d, t));
 		t = o7c_fmul(t, 10.0);
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 		d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
 	if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'E') {
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 			FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 		}
 		scMinus = (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'-';
 		if (o7c_bl(scMinus) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'+')) {
-			i = o7c_add(i, 1);;
+			i = o7c_add(i, 1);
 			if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 				FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 			}
@@ -180,7 +190,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 				if (o7c_cmp(scale, IntMax_cnst / 10) <  0) {
 					scale = o7c_add(o7c_mul(scale, 10), d);
 				}
-				i = o7c_add(i, 1);;
+				i = o7c_add(i, 1);
 				d = ValDigit((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 			} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 				FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
@@ -193,7 +203,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *lex
 					} else {
 						val = o7c_fdiv(val, 10.0);
 					}
-					scale = o7c_sub(scale, 1);;
+					scale = o7c_sub(scale, 1);
 				}
 			} else {
 				(*lex) = Scanner_ErrRealScaleTooBig_cnst;
@@ -215,7 +225,7 @@ static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	ch = (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 	(*s).isReal = ch == (char unsigned)'.';
 	if ((*s).isReal) {
-		(*s).ind = o7c_add((*s).ind, 1);;
+		(*s).ind = o7c_add((*s).ind, 1);
 		SNumber_ValReal(&(*s), s_tag, &lex);
 	} else if ((ch >= (char unsigned)'A') && (ch <= (char unsigned)'F') || (ch == (char unsigned)'H') || (ch == (char unsigned)'X')) {
 		ScanChars((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, IsHexDigit, &(*(*s).in_), NULL);
@@ -232,7 +242,7 @@ static int SNumber(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			lex = Scanner_ErrExpectHOrX_cnst;
 		}
 		if ((ch == (char unsigned)'X') || (ch == (char unsigned)'H')) {
-			(*s).ind = o7c_add((*s).ind, 1);;
+			(*s).ind = o7c_add((*s).ind, 1);
 		}
 	} else {
 		SNumber_Val(&(*s), s_tag, &lex, 10, ValDigit);
@@ -250,8 +260,8 @@ static o7c_bool IsWordEqual(o7c_char str[/*len0*/], int str_len0, o7c_char buf[/
 	j = 1;
 	i = o7c_add(ind, 1);
 	while (1) if (buf[o7c_ind(buf_len0, i)] == str[o7c_ind(str_len0, j)]) {
-		i = o7c_add(i, 1);;
-		j = o7c_add(j, 1);;
+		i = o7c_add(i, 1);
+		j = o7c_add(j, 1);
 	} else if (buf[o7c_ind(buf_len0, i)] == 0x0Cu) {
 		i = 0;
 	} else break;
@@ -471,6 +481,8 @@ static int SWord(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	return l;
 }
 
+/*	TODO поправить обработку комментариев - иногда ложно воспринимаются как
+	комментарии строки с '(' и '*' */
 static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	int start = O7C_INT_UNDEF, i = O7C_INT_UNDEF, comment = O7C_INT_UNDEF;
 
@@ -479,15 +491,15 @@ static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	start = i;
 	comment = 0;
 	while (1) if (((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)' ') || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Du)) {
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u) {
-		i = o7c_add(i, 1);;
-		(*s).tabs = o7c_add((*s).tabs, 1);;
+		i = o7c_add(i, 1);
+		(*s).tabs = o7c_add((*s).tabs, 1);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Au) {
-		(*s).line = o7c_add((*s).line, 1);;
+		(*s).line = o7c_add((*s).line, 1);
 		(*s).column = 0;
 		(*s).tabs = 0;
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 		start = i;
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
@@ -495,8 +507,15 @@ static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	} else if (((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'(') && (o7c_cmp(comment, 0) >=  0)) {
 		(*s).ind = i;
 		if (ScanChar(&(*s), s_tag) == (char unsigned)'*') {
-			comment = o7c_add(comment, 1);;
-			(*s).ind = o7c_add((*s).ind, 1);;
+			(*s).ind = o7c_add((*s).ind, 1);
+			comment = o7c_add(comment, 1);
+			if (o7c_cmp(comment, 1) ==  0) {
+				if (o7c_cmp((*s).ind, sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1) ==  0) {
+					(*s).commentOfs = 0;
+				} else {
+					(*s).commentOfs = (*s).ind;
+				}
+			}
 		} else if (o7c_cmp(comment, 0) ==  0) {
 			(*s).ind = i;
 			comment =  - 1;
@@ -506,11 +525,14 @@ static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)'*') {
 			(*s).ind = i;
 			if (ScanChar(&(*s), s_tag) == (char unsigned)')') {
-				comment = o7c_sub(comment, 1);;
+				comment = o7c_sub(comment, 1);
+				if (o7c_cmp(comment, 0) ==  0) {
+					(*s).commentEnd = i;
+				}
 				i = (*s).ind;
 			}
 		}
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 	} else break;
 	(*s).column = o7c_add((*s).column, (o7c_sub(i, start)));
 	assert(o7c_cmp((*s).column, 0) >=  0);
@@ -528,8 +550,8 @@ static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	j = i;
 	count = 0;
 	while (1) if (((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] != (char unsigned)'"') && (((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] >= (char unsigned)' ') || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u))) {
-		i = o7c_add(i, 1);;
-		count = o7c_add(count, 1);;
+		i = o7c_add(i, 1);
+		count = o7c_add(count, 1);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &i, &(*(*s).in_), NULL);
 	} else break;
@@ -540,7 +562,7 @@ static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			(*s).isChar = true;
 			(*s).integer = (int)(*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, j)];
 		}
-		i = o7c_add(i, 1);;
+		i = o7c_add(i, 1);
 	} else {
 		l = Scanner_ErrExpectDQuote_cnst;
 	}
@@ -549,18 +571,18 @@ static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 }
 
 static void Next_L(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, int l) {
-	(*s).ind = o7c_add((*s).ind, 1);;
+	(*s).ind = o7c_add((*s).ind, 1);
 	(*lex) = l;
 }
 
 static void Next_Li(int *lex, struct Scanner_Scanner *s, o7c_tag_t s_tag, o7c_char ch, int then, int else_) {
-	(*s).ind = o7c_add((*s).ind, 1);;
+	(*s).ind = o7c_add((*s).ind, 1);
 	if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 0x0Cu) {
 		FillBuf((*s).buf, Scanner_BlockSize_cnst * 2 + 1, &(*s).ind, &(*(*s).in_), NULL);
 	}
 	if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == ch) {
 		(*lex) = then;
-		(*s).ind = o7c_add((*s).ind, 1);;
+		(*s).ind = o7c_add((*s).ind, 1);
 	} else {
 		(*lex) = else_;
 	}
@@ -574,8 +596,8 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 	} else {
 		(*s).lexStart = (*s).ind;
 		switch ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)]) {
-		case 0:
-			lex = Scanner_End_cnst;
+		case 4:
+			lex = Scanner_EndOfFile_cnst;
 			break;
 		case 43:
 			Next_L(&lex, &(*s), s_tag, Scanner_Plus_cnst);
@@ -647,7 +669,7 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			lex = ScanString(&(*s), s_tag);
 			break;
 		default:
-			if ((1 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 33) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 36) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 37) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 39) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 63) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 64) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 92) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 95) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 96) || (127 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 255)) {
+			if ((0 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 3) || (5 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 33) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 36) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 37) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 39) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 63) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 64) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 92) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 95) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 96) || (127 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 255)) {
 				lex = Scanner_UnexpectChar_cnst;
 			} else if ((48 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 57)) {
 				lex = SNumber(&(*s), s_tag);
@@ -663,6 +685,22 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		assert(o7c_cmp((*s).column, 0) >=  0);
 	}
 	return lex;
+}
+
+extern o7c_bool Scanner_TakeCommentPos(struct Scanner_Scanner *s, o7c_tag_t s_tag, int *ofs, int *end) {
+	o7c_bool ret = O7C_BOOL_UNDEF;
+
+	ret = o7c_cmp((*s).commentOfs, 0) >=  0;
+	if (ret) {
+		(*ofs) = (*s).commentOfs;
+		(*end) = (*s).commentEnd;
+		(*s).commentOfs =  - 1;
+	}
+	return o7c_bl(ret);
+}
+
+extern void Scanner_ResetComment(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
+	(*s).commentOfs =  - 1;
 }
 
 extern void Scanner_init(void) {

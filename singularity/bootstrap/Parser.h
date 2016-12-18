@@ -1,3 +1,19 @@
+/*  Parser of Oberon-07 modules
+ *  Copyright (C) 2016  ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #if !defined(HEADER_GUARD_Parser)
 #define HEADER_GUARD_Parser
 
@@ -23,7 +39,6 @@
 #define Parser_ErrExpectBrace2Close_cnst (-110)
 #define Parser_ErrExpectBrace3Close_cnst (-111)
 #define Parser_ErrExpectOf_cnst (-112)
-#define Parser_ErrExpectConstIntExpr_cnst (-114)
 #define Parser_ErrExpectTo_cnst (-115)
 #define Parser_ErrExpectStructuredType_cnst (-116)
 #define Parser_ErrExpectRecord_cnst (-117)
@@ -54,6 +69,7 @@ typedef struct Parser_Options {
 	V_Base _;
 	o7c_bool strictSemicolon;
 	o7c_bool strictReturn;
+	o7c_bool saveComments;
 	void (*printError)(int code);
 } Parser_Options;
 extern o7c_tag_t Parser_Options_tag;
