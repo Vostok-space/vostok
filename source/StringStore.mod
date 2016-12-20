@@ -246,27 +246,23 @@ END CopyChars;
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;
-VAR i, len: INTEGER;
+VAR i, len, ofs: INTEGER;
 	block: Block;
 BEGIN
 	block := str.block;
 	i := str.ofs;
+	ofs := i;
 	len := 0;
 	WHILE block.s[i] = Utf8.NewPage DO
-		(*ASSERT(len = 0);*)
-		ASSERT(i > str.ofs);
-		len := len + Stream.Write(out, block.s, str.ofs, i - str.ofs);
+		len := len + Stream.Write(out, block.s, ofs, i - ofs);
 		block := block.next;
+		ofs := 0;
 		i := 0
 	ELSIF block.s[i] # Utf8.Null DO
 		INC(i)
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
-	IF len = 0 THEN
-		len := Stream.Write(out, block.s, str.ofs, i - str.ofs)
-	ELSE
-		len := len + Stream.Write(out, block.s, 0, i)
-	END
+	len := Stream.Write(out, block.s, ofs, i - ofs)
 	RETURN len
 END Write;
 
