@@ -106,8 +106,10 @@ CONST
 
 	ErrExpectIntExpr*				= -75;
 	ErrExpectConstIntExpr*			= -76;
-
-	ErrNotImplemented*				= -99;
+	ErrForByZero*					= -77;
+	ErrByShouldBePositive*			= -78;
+	ErrByShouldBeNegative*			= -79;
+	ErrForPossibleOverflow*			= -80;
 
 	ErrMin* 						= -100;
 
@@ -149,8 +151,8 @@ TYPE
 	Provider* = POINTER TO RProvider;
 
 	Provide* = PROCEDURE(p: Provider; host: Module;
-						 name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
-	
+	                     name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
+
 	RProvider* = RECORD(V.Base)
 		get: Provide
 	END;
@@ -268,7 +270,7 @@ TYPE
 	END;
 
 	Factor* = POINTER TO RFactor;
-	
+
 	RExpression* = RECORD(Node)
 		type*: Type;
 
@@ -393,7 +395,7 @@ TYPE
 	CaseLabel* = POINTER TO RECORD(Node)
 		value*: INTEGER;
 		qual*: Declaration;
-	
+
 		right*, (* правая часть диапазона *)
 		next*: CaseLabel (* следующий элемент списка меток *)
 	END;
@@ -589,13 +591,13 @@ VAR imp: Import;
 	END Load;
 
 	PROCEDURE IsDup(i: Import; buf: ARRAY OF CHAR;
-					nameOfs, nameEnd, realOfs, realEnd: INTEGER): BOOLEAN;
-		RETURN	Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd)
-			OR	(realOfs # nameOfs) & (
-					(i.name.ofs # i.module.name.ofs)
-				 OR (i.name.block # i.module.name.block)
-				)
-				& Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
+	                nameOfs, nameEnd, realOfs, realEnd: INTEGER): BOOLEAN;
+		RETURN Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd)
+			OR (realOfs # nameOfs) & (
+			   (i.name.ofs # i.module.name.ofs)
+			    OR (i.name.block # i.module.name.block)
+			   )
+			  & Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
 	END IsDup;
 BEGIN
 	ASSERT(~m.fixed);
@@ -603,7 +605,7 @@ BEGIN
 	i := m.import;
 	ASSERT((i = NIL) OR (m.end IS Import));
 	WHILE (i # NIL) & ~IsDup(i(Import), buf, nameOfs, nameEnd, realOfs, realEnd)
-	DO	i := i.next
+	DO    i := i.next
 	END;
 	IF i # NIL THEN
 		err := ErrImportNameDuplicate
@@ -620,13 +622,13 @@ BEGIN
 END ImportAdd;
 
 PROCEDURE SearchName(d: Declaration;
-					 buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
+                     buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 BEGIN
 	WHILE (d # NIL) & ~Strings.IsEqualToChars(d.name, buf, begin, end) DO
 		ASSERT(~(d IS Module));
 		d := d.next
 	END;
-	IF d # NIL THEN
+	IF (d # NIL) & FALSE THEN
 		Log.Str("Найдено объявление ");
 		WHILE begin # end DO
 			Log.Char(buf[begin]);
@@ -637,7 +639,8 @@ BEGIN
 	RETURN d
 END SearchName;
 
-PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER)
+                   : INTEGER;
 VAR c: Const;
 	err: INTEGER;
 BEGIN
@@ -878,7 +881,7 @@ BEGIN
 END SearchPredefined;
 
 PROCEDURE DeclarationSearch*(ds: Declarations; buf: ARRAY OF CHAR;
-							 begin, end: INTEGER): Declaration;
+                             begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 BEGIN
 	IF ds IS Procedure THEN
@@ -909,7 +912,7 @@ BEGIN
 END DeclarationSearch;
 
 PROCEDURE DeclarationGet*(VAR d: Declaration; ds: Declarations;
-						  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                          buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
@@ -930,7 +933,7 @@ BEGIN
 END DeclarationGet;
 
 PROCEDURE VarGet*(VAR v: Var; ds: Declarations;
-				  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 	d: Declaration;
 BEGIN
@@ -955,7 +958,7 @@ END VarGet;
 
 (* TODO итератор должен быть только локальным? *)
 PROCEDURE ForIteratorGet*(VAR v: Var; ds: Declarations;
-						  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                          buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	err := VarGet(v, ds, buf, begin, end);
@@ -987,7 +990,7 @@ BEGIN
 END ExprIntegerNew;
 
 PROCEDURE ExprRealNew*(real: REAL; m: Module;
-					   buf: ARRAY OF CHAR; begin, end: INTEGER): ExprReal;
+                       buf: ARRAY OF CHAR; begin, end: INTEGER): ExprReal;
 VAR e: ExprReal;
 BEGIN
 	ASSERT(m # NIL);
@@ -2238,15 +2241,34 @@ BEGIN
 END RepeatSetUntil;
 
 PROCEDURE ForSetBy*(for: For; by: Expression): INTEGER;
-VAR err: INTEGER;
+VAR err, init, to: INTEGER;
 BEGIN
 	err := ErrNo;
 	IF (by # NIL) & (by.value # NIL) & (by.type.id = IdInteger) THEN
-		for.by := by.value(ExprInteger).int
+		for.by := by.value(ExprInteger).int;
+		IF for.by = 0 THEN
+			err := ErrForByZero
+		END
 	ELSE
-		for.by := 0;
+		for.by := 1;
 		IF by # NIL THEN
 			err := ErrExpectConstIntExpr
+		END
+	END;
+	IF (err = ErrNo)
+	 & (for.expr # NIL) & (for.expr.value # NIL)
+	 & (for.to # NIL) & (for.to.value # NIL)
+	THEN
+		init := for.expr.value(ExprInteger).int;
+		to := for.to.value(ExprInteger).int;
+		IF (init < to) & (for.by < 0) THEN
+			err := ErrByShouldBePositive
+		ELSIF (init > to) & (for.by > 0) THEN
+			err := ErrByShouldBeNegative
+		ELSIF (for.by > 0) & (Limits.IntegerMax - for.by < to)
+		   OR (for.by < 0) & (Limits.IntegerMin - for.by > to)
+		THEN (* TODO уточнить условие *)
+			err := ErrForPossibleOverflow
 		END
 	END
 	RETURN err

@@ -65,8 +65,6 @@ CONST
 	ErrFunctionWithoutBraces*		= Err - 53;
 	ErrArrayLenLess1*				= Err - 54;
 
-	ErrNotImplemented* = Err - 70;
-
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
 
@@ -376,7 +374,8 @@ BEGIN
 
 	IF p.l = Scanner.Number THEN
 		IF p.s.isReal THEN
-			e := Ast.ExprRealNew(p.s.real, p.module, p.s.buf, p.s.lexStart, p.s.lexEnd)
+			e := Ast.ExprRealNew(p.s.real, p.module,
+			                     p.s.buf, p.s.lexStart, p.s.lexEnd)
 		ELSE
 			e := Ast.ExprIntegerNew(p.s.integer)
 		END;
@@ -466,8 +465,6 @@ VAR expr: Ast.Expression;
 	isExt: Ast.ExprIsExtension;
 	rel: INTEGER;
 BEGIN
-	Log.StrLn("Expression");
-
 	expr := Sum(p, ds);
 	IF (p.l >= Scanner.RelationFirst) & (p.l < Scanner.RelationLast) THEN
 		rel := p.l;
@@ -819,7 +816,7 @@ BEGIN
 END FormalParameters;
 
 PROCEDURE TypeProcedure(VAR p: Parser; ds: Ast.Declarations;
-						nameBegin, nameEnd: INTEGER): Ast.ProcType;
+                        nameBegin, nameEnd: INTEGER): Ast.ProcType;
 VAR proc: Ast.ProcType;
 	t: Ast.Type;
 BEGIN
@@ -835,7 +832,7 @@ BEGIN
 END TypeProcedure;
 
 PROCEDURE Type(VAR p: Parser; ds: Ast.Declarations;
-			   nameBegin, nameEnd: INTEGER): Ast.Type;
+               nameBegin, nameEnd: INTEGER): Ast.Type;
 VAR t: Ast.Type;
 BEGIN
 	IF p.l = Scanner.Array			THEN
@@ -920,10 +917,10 @@ VAR case: Ast.Case;
 		PROCEDURE LabelList(VAR p: Parser; case: Ast.Case;
 							ds: Ast.Declarations): Ast.CaseLabel;
 		VAR first, last: Ast.CaseLabel;
-		
+
 			PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
 			VAR r: Ast.CaseLabel;
-			
+
 				PROCEDURE Label(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
 				VAR err: INTEGER;
 					l: Ast.CaseLabel;
@@ -1003,8 +1000,8 @@ BEGIN
 	ASSERT(p.l = Scanner.For);
 	Scan(p);
 	IF p.l # Scanner.Ident THEN
-		AddError(p, ErrExpectIdent +
-			Ast.ForIteratorGet(v, ds, "FORITERATOR", 0, 10) * 0
+		AddError(p, ErrExpectIdent
+		          + Ast.ForIteratorGet(v, ds, "FORITERATOR", 0, 10) * 0
 		)
 	ELSE
 		CheckAst(p, Ast.ForIteratorGet(v, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
@@ -1014,7 +1011,10 @@ BEGIN
 	CheckAst(p, Ast.ForNew(f, v, Expression(p, ds), NIL, 1, NIL));
 	Expect(p, Scanner.To, ErrExpectTo);
 	CheckAst(p, Ast.ForSetTo(f, Expression(p, ds)));
-	IF ScanIfEqual(p, Scanner.By) THEN
+	IF p.l # Scanner.By THEN
+		CheckAst(p, Ast.ForSetBy(f, NIL))
+	ELSE
+		Scan(p);
 		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds)))
 	END;
 	Expect(p, Scanner.Do, ErrExpectDo);
@@ -1045,7 +1045,8 @@ BEGIN
 	RETURN w
 END While;
 
-PROCEDURE Assign(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator): Ast.Assign;
+PROCEDURE Assign(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator)
+                : Ast.Assign;
 VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
@@ -1062,7 +1063,8 @@ BEGIN
 		CallParams(p, ds, st.expr(Ast.ExprCall))
 	ELSIF (des # NIL) & (des.type # NIL) & (des.type IS Ast.ProcType) THEN
 		CheckAst(p, Ast.CallParamsEnd(st.expr(Ast.ExprCall),
-					  des.type(Ast.ProcType).params))
+		                              des.type(Ast.ProcType).params)
+		)
 	END
 	RETURN st
 END Call;

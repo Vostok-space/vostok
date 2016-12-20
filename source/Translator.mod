@@ -204,9 +204,14 @@ BEGIN
 			O("Ожидается целочисленное выражение")
 		| Ast.ErrExpectConstIntExpr			:
 			O("Ожидается константное целочисленное выражение")
-
-		| Ast.ErrNotImplemented				:
-			O("Ast.ErrNotImplemented")
+		| Ast.ErrForByZero					:
+			O("Шаг итератора не может быть равен 0")
+		| Ast.ErrByShouldBePositive			:
+			O("Для прохода от меньшего к большему шаг итератора должен быть > 0")
+		| Ast.ErrByShouldBeNegative			:
+			O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
+		| Ast.ErrForPossibleOverflow		:
+			O("Во время итерации в FOR возможно переполнение")
 		END
 	ELSE
 		CASE code OF
@@ -219,7 +224,7 @@ BEGIN
 		| Scanner.ErrWordLenTooBig			:
 			O("ErrWordLenTooBig")
 		| Scanner.ErrExpectHOrX				:
-			O("ErrExpectHOrX")
+			O("В конце 16-ричного числа ожидается 'H' или 'X'")
 		| Scanner.ErrExpectDQuote			:
 			O("ErrExpectDQuote")
 		| Scanner.ErrExpectDigitInScale		:
@@ -293,9 +298,6 @@ BEGIN
 			O("Объявление процедуры с возвращаемым значением не содержит скобки")
 		| Parser.ErrArrayLenLess1			:
 			O("Длина массива должна быть > 0")
-
-		| Parser.ErrNotImplemented			:
-			O("Не реализовано")
 		END
 	END
 
