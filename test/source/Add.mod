@@ -2,6 +2,7 @@ MODULE Add;
 
 CONST MAX = 2147483647;
 
+(* комментарий *)
 PROCEDURE Go*;
 VAR a, b, c, v: INTEGER;
 BEGIN
