@@ -49,7 +49,8 @@ TYPE
 		procLocal*,
 		checkIndex*,
 		checkArith*,
-		caseAbort*: BOOLEAN;
+		caseAbort*,
+		comment*: BOOLEAN;
 
 		varInit*,
 		memManager*: INTEGER;
@@ -2263,7 +2264,7 @@ PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
 VAR i: Strings.Iterator;
 	prev: CHAR;
 BEGIN
-	IF Strings.GetIter(i, com, 0) THEN
+	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
 		REPEAT
 			prev := i.char
 		UNTIL ~Strings.IterNext(i)
@@ -2271,6 +2272,7 @@ BEGIN
 		   OR (prev = "*") & (i.char = "/");
 
 		IF i.char = Utf8.Null THEN
+			Tabs(gen, 0);
 			Str(gen, "/*");
 			String(gen, com);
 			StrLn(gen, "*/")
@@ -2600,6 +2602,7 @@ BEGIN
 		o.checkIndex := TRUE;
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
+		o.comment := TRUE;
 		o.varInit := VarInitUndefined;
 		o.memManager := MemManagerNoFree;
 		o.main := FALSE
