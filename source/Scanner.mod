@@ -426,11 +426,13 @@ PROCEDURE CheckPredefined*(buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR id: INTEGER;
 	save: CHAR;
 
-	PROCEDURE Eq(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end: INTEGER): BOOLEAN;
+	PROCEDURE Eq(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end: INTEGER)
+	            : BOOLEAN;
 		RETURN IsWordEqual(str, buf, begin, end)
 	END Eq;
 	
-	PROCEDURE O(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end, id: INTEGER): INTEGER;
+	PROCEDURE O(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end, id: INTEGER)
+	           : INTEGER;
 	BEGIN
 		IF ~IsWordEqual(str, buf, begin, end) THEN
 			id := Ident
@@ -587,13 +589,14 @@ END SWord;
 (*	TODO поправить обработку комментариев - иногда ложно воспринимаются как
 	комментарии строки с '(' и '*' *)
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
-VAR start, i, comment: INTEGER;
+VAR start, i, comment, commentsCount: INTEGER;
 BEGIN
 	i := s.ind;
 	(*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*)
 	ASSERT(i >= 0);
 	start := i;
 	comment := 0;
+	commentsCount := 0;
 	WHILE (s.buf[i] = " ") OR (s.buf[i] = Utf8.CarRet) DO
 		INC(i)
 	ELSIF s.buf[i] = Utf8.Tab DO
@@ -612,7 +615,8 @@ BEGIN
 		IF ScanChar(s) = "*" THEN
 			INC(s.ind);
 			INC(comment);
-			IF comment = 1 THEN
+			INC(commentsCount);
+			IF commentsCount = 1 THEN
 				IF s.ind = LEN(s.buf) - 1 THEN
 					s.commentOfs := 0
 				ELSE
@@ -737,11 +741,11 @@ BEGIN
 		| Utf8.DQuote: lex := ScanString(s)
 		END;
 		(*
-		Log.Str("Scan "); Log.Int(lex, 0); Log.Ln;
+		Log.Str("Scan "); Log.Int(lex); Log.Ln;
 		*)
 		s.lexEnd := s.ind;
 		s.lexLen := s.lexEnd + ORD(s.lexEnd < s.lexStart) * (LEN(s.buf) - 1)
-				  - s.lexStart;
+		          - s.lexStart;
 		ASSERT(s.lexLen > 0);
 		s.column := s.column + s.lexLen;
 		ASSERT(s.column >= 0)
