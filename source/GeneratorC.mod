@@ -1751,8 +1751,29 @@ BEGIN
 	END
 END Mark;
 
+PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
+VAR i: Strings.Iterator;
+	prev: CHAR;
+BEGIN
+	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
+		REPEAT
+			prev := i.char
+		UNTIL ~Strings.IterNext(i)
+		   OR (prev = "/") & (i.char = "*")
+		   OR (prev = "*") & (i.char = "/");
+
+		IF i.char = Utf8.Null THEN
+			Tabs(gen, 0);
+			Str(gen, "/*");
+			String(gen, com);
+			StrLn(gen, "*/")
+		END
+	END
+END Comment;
+
 PROCEDURE Const(VAR gen: Generator; const: Ast.Const);
 BEGIN
+	Comment(gen, const.comment);
 	Str(gen, "#define ");
 	GlobalName(gen, const);
 	Str(gen, " ");
@@ -1810,6 +1831,7 @@ VAR same, mark: BOOLEAN;
 	END InitUndef;
 BEGIN
 	mark := var.mark & ~out.opt.main;
+	Comment(out.g[ORD(mark)], var.comment);
 	same := (prev # NIL) & (prev.mark = mark) & (prev.type = var.type);
 	IF ~same THEN
 		IF prev # NIL THEN
@@ -1874,26 +1896,6 @@ BEGIN
 	END
 	RETURN r # NIL
 END IsCaseElementWithRange;
-
-PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
-VAR i: Strings.Iterator;
-	prev: CHAR;
-BEGIN
-	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
-		REPEAT
-			prev := i.char
-		UNTIL ~Strings.IterNext(i)
-		   OR (prev = "/") & (i.char = "*")
-		   OR (prev = "*") & (i.char = "/");
-
-		IF i.char = Utf8.Null THEN
-			Tabs(gen, 0);
-			Str(gen, "/*");
-			String(gen, com);
-			StrLn(gen, "*/")
-		END
-	END
-END Comment;
 
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 

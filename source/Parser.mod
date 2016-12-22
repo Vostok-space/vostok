@@ -168,7 +168,8 @@ PROCEDURE Set(VAR p: Parser; ds: Ast.Declarations): Ast.ExprSet;
 VAR e, next: Ast.ExprSet;
 	err: INTEGER;
 
-	PROCEDURE Element(VAR e: Ast.ExprSet; VAR p: Parser; ds: Ast.Declarations): INTEGER;
+	PROCEDURE Element(VAR e: Ast.ExprSet; VAR p: Parser; ds: Ast.Declarations)
+	                 : INTEGER;
 	VAR left: Ast.Expression;
 		err: INTEGER;
 	BEGIN
@@ -478,8 +479,17 @@ BEGIN
 	RETURN expr
 END Expression;
 
+PROCEDURE DeclComment(VAR p: Parser; d: Ast.Declaration);
+VAR comOfs, comEnd: INTEGER;
+BEGIN
+	IF p.opt.saveComments & Scanner.TakeCommentPos(p.s, comOfs, comEnd) THEN
+		Ast.DeclSetComment(d, p.s.buf, comOfs, comEnd)
+	END
+END DeclComment;
+
 PROCEDURE Mark(VAR p: Parser; d: Ast.Declaration);
 BEGIN
+	DeclComment(p, d);
 	d.mark := ScanIfEqual(p, Scanner.Asterisk)
 END Mark;
 
@@ -590,6 +600,7 @@ VAR var: Ast.Declaration;
 	BEGIN
 		ExpectIdent(p, begin, end, ErrExpectIdent);
 		CheckAst(p, Ast.VarAdd(ds, p.s.buf, begin, end));
+		DeclComment(p, ds.end);
 		Mark(p, ds.end)
 	END Name;
 BEGIN
@@ -1203,9 +1214,6 @@ BEGIN
 	CheckAst(p,
 		Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd)
 	);
-	IF TakeComment(p) THEN
-		Ast.DeclSetComment(proc, p.s.buf, p.comment.ofs, p.comment.end)
-	END;
 	Mark(p, proc);
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
