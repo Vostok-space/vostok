@@ -104,9 +104,9 @@ TYPE
 
 VAR
 	type: PROCEDURE(VAR gen: Generator; type: Ast.Type;
-					typeDecl, sameType: BOOLEAN);
+	                typeDecl, sameType: BOOLEAN);
 	declarator: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration;
-						  typeDecl, sameType, global: BOOLEAN);
+	                      typeDecl, sameType, global: BOOLEAN);
 	declarations: PROCEDURE(VAR out: MOut; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR gen: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression);
@@ -114,8 +114,10 @@ VAR
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
 VAR ret: BOOLEAN;
 BEGIN
-	ret := Strings.CopyChars(out.mem[ORD(out.invert)].buf,
-						   out.mem[ORD(out.invert)].len, buf, ofs, ofs + count);
+	ret := Strings.CopyChars(
+		out.mem[ORD(out.invert)].buf, out.mem[ORD(out.invert)].len,
+		buf, ofs, ofs + count
+	);
 	ASSERT(ret)
 END MemoryWrite;
 
@@ -489,7 +491,8 @@ BEGIN
 	RETURN rec.name.block # NIL
 END CheckStructName;
 
-PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER; VAR typ: Ast.Type);
+PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
+                   VAR typ: Ast.Type);
 VAR sel: Ast.Selector;
 	ret: BOOLEAN;
 
@@ -1872,6 +1875,26 @@ BEGIN
 	RETURN r # NIL
 END IsCaseElementWithRange;
 
+PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
+VAR i: Strings.Iterator;
+	prev: CHAR;
+BEGIN
+	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
+		REPEAT
+			prev := i.char
+		UNTIL ~Strings.IterNext(i)
+		   OR (prev = "/") & (i.char = "*")
+		   OR (prev = "*") & (i.char = "/");
+
+		IF i.char = Utf8.Null THEN
+			Tabs(gen, 0);
+			Str(gen, "/*");
+			String(gen, com);
+			StrLn(gen, "*/")
+		END
+	END
+END Comment;
+
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR gen: Generator; wi: Ast.WhileIf);
@@ -2192,6 +2215,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END
 	END Case;
 BEGIN
+	Comment(gen, st.comment);
 	Tabs(gen, 0);
 	IF st IS Ast.Assign THEN
 		Assign(gen, st(Ast.Assign))
@@ -2259,26 +2283,6 @@ BEGIN
 		GlobalName(gen, type)
 	END
 END Qualifier;
-
-PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
-VAR i: Strings.Iterator;
-	prev: CHAR;
-BEGIN
-	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
-		REPEAT
-			prev := i.char
-		UNTIL ~Strings.IterNext(i)
-		   OR (prev = "/") & (i.char = "*")
-		   OR (prev = "*") & (i.char = "/");
-
-		IF i.char = Utf8.Null THEN
-			Tabs(gen, 0);
-			Str(gen, "/*");
-			String(gen, com);
-			StrLn(gen, "*/")
-		END
-	END
-END Comment;
 
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 

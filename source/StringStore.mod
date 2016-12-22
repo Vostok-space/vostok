@@ -62,7 +62,7 @@ BEGIN
 END UndefString;
 
 PROCEDURE Put*(VAR store: Store; VAR w: String;
-			   s: ARRAY OF CHAR; j, end: INTEGER);
+               s: ARRAY OF CHAR; j, end: INTEGER);
 VAR
 	b: Block;
 	i: INTEGER;

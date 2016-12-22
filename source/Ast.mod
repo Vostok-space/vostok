@@ -452,16 +452,21 @@ BEGIN
 	n.ext := NIL
 END NodeInit;
 
+PROCEDURE NodeSetComment*(VAR n: Node; m: Module;
+                          com: ARRAY OF CHAR; ofs, end: INTEGER);
+BEGIN
+	ASSERT(n.comment.block = NIL);
+	PutChars(m, n.comment, com, ofs, end)
+END NodeSetComment;
+
 PROCEDURE DeclSetComment*(d: Declaration; com: ARRAY OF CHAR; ofs, end: INTEGER);
 BEGIN
-	ASSERT(d.comment.block = NIL);
-	PutChars(d.module, d.comment, com, ofs, end)
+	NodeSetComment(d^, d.module, com, ofs, end)
 END DeclSetComment;
 
 PROCEDURE ModuleSetComment*(m: Module; com: ARRAY OF CHAR; ofs, end: INTEGER);
 BEGIN
-	ASSERT(m.comment.block = NIL);
-	PutChars(m, m.comment, com, ofs, end)
+	NodeSetComment(m^, m, com, ofs, end)
 END ModuleSetComment;
 
 PROCEDURE DeclInit(d: Declaration; ds: Declarations);
@@ -684,7 +689,8 @@ VAR d: Declaration;
 
 	PROCEDURE MoveForwardDeclToLast(ds: Declarations; rec: Record);
 	BEGIN
-		ASSERT(rec.pointer.next = rec);(* TODO это может быть и не так *)
+		(* TODO это может быть и не так *)
+		ASSERT(rec.pointer.next = rec);
 		rec.id := IdRecord;
 		IF rec.next # NIL THEN
 			rec.pointer.next := rec.next;
@@ -1373,7 +1379,8 @@ VAR comp: BOOLEAN;
 	END EqualProcTypes;
 BEGIN
 	distance := 0;
-	comp := (t1 = NIL) OR (t2 = NIL); (* совместимы, если ошибка в разборе *)
+	(* совместимы, если ошибка в разборе *)
+	comp := (t1 = NIL) OR (t2 = NIL);
 	IF ~comp THEN
 		comp := t1 = t2;
 		Log.Str("Идентификаторы типов : ");
@@ -1408,9 +1415,10 @@ BEGIN
 	ELSIF des # NIL THEN
 		IF des IS Designator THEN 
 			e.designator := des(Designator);
+			(* TODO проверка возможности проверки *)
 			IF (des.type # NIL) & ~(des.type.id IN {IdPointer, IdRecord}) THEN
 				err := ErrIsExtVarNotRecord
-			END (* TODO проверка возможности проверки *)
+			END
 		ELSE
 			err := ErrIsExtVarNotRecord
 		END
@@ -1514,9 +1522,9 @@ BEGIN
 			| IdBoolean		: res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
 			| IdReal		: res := v1(ExprReal).real = v2(ExprReal).real
 			| IdSet			: res := v1(ExprSet).set = v2(ExprSet).set
-			| IdPointer		: res := FALSE (* TODO *)
-			| IdArray		: res := FALSE (* TODO *)
-			| IdProcType	: res := FALSE (* TODO *)
+			| IdPointer		: (* TODO *) res := FALSE
+			| IdArray		: (* TODO *) res := FALSE
+			| IdProcType	: (* TODO *) res := FALSE
 			END
 		| Scanner.Inequal:
 			CASE expr1.type.id OF
@@ -1524,35 +1532,35 @@ BEGIN
 			| IdBoolean			: res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
 			| IdReal			: res := v1(ExprReal).real # v2(ExprReal).real
 			| IdSet				: res := v1(ExprSet).set # v2(ExprSet).set
-			| IdPointer			: res := FALSE (* TODO *)
-			| IdArray			: res := FALSE (* TODO *)
-			| IdProcType		: res := FALSE (* TODO *)
+			| IdPointer			: (* TODO *) res := FALSE
+			| IdArray			: (* TODO *) res := FALSE
+			| IdProcType		: (* TODO *) res := FALSE
 			END
 		| Scanner.Less:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar	: res := v1(ExprInteger).int < v2(ExprInteger).int
 			| IdReal			: res := v1(ExprReal).real < v2(ExprReal).real
-			| IdArray			: res := FALSE (* TODO *)
+			| IdArray			: (* TODO *) res := FALSE
 			END
 		| Scanner.LessEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar	: res := v1(ExprInteger).int <= v2(ExprInteger).int
 			| IdReal			: res := v1(ExprReal).real <= v2(ExprReal).real
 			| IdSet				: res := v1(ExprSet).set <= v2(ExprSet).set
-			| IdArray			: res := FALSE (* TODO *)
+			| IdArray			: (* TODO *) res := FALSE
 			END
 		| Scanner.Greater:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar	: res := v1(ExprInteger).int > v2(ExprInteger).int
 			| IdReal			: res := v1(ExprReal).real > v2(ExprReal).real
-			| IdArray			: res := FALSE (* TODO *)
+			| IdArray			: (* TODO *) res := FALSE
 			END
 		| Scanner.GreaterEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar	: res := v1(ExprInteger).int >= v2(ExprInteger).int
 			| IdReal			: res := v1(ExprReal).real >= v2(ExprReal).real
 			| IdSet				: res := v1(ExprSet).set >= v2(ExprSet).set
-			| IdArray			: res := FALSE (* TODO *)
+			| IdArray			: (* TODO *) res := FALSE
 			END
 		| Scanner.In:
 			res := v1(ExprInteger).int IN v2(ExprSet).set
@@ -2142,7 +2150,7 @@ BEGIN
 					IF v(ExprString).int > -1 THEN
 						call.value := ExprIntegerNew(v(ExprString).int)
 					ELSE
-						ASSERT(FALSE) (* TODO *)
+						(* TODO *) ASSERT(FALSE)
 					END
 				ELSIF v.type.id = IdBoolean THEN
 					call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
@@ -2358,6 +2366,7 @@ BEGIN
 		ELSE
 			i := decl(Const).expr.value(ExprString).int;
 			IF i < 0 THEN
+				(* TODO *) ASSERT(FALSE);
 				i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])
 			END;
 			err := CaseLabelNew(label, IdChar, i)

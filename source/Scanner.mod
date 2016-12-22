@@ -275,7 +275,8 @@ VAR
 	lex: INTEGER;
 	ch: CHAR;
 
-	PROCEDURE Val(VAR s: Scanner; VAR lex: INTEGER; capacity: INTEGER; valDigit: SuitDigit);
+	PROCEDURE Val(VAR s: Scanner; VAR lex: INTEGER; capacity: INTEGER;
+	              valDigit: SuitDigit);
 	VAR d, val, i: INTEGER;
 	BEGIN
 		val := 0;
@@ -320,7 +321,8 @@ VAR
 			i := 0;
 			d := ValDigit(s.buf[i])
 		END;
-		INC(i); (* skip dot *)
+		(* skip dot *)
+		INC(i);
 		t := 10.0;
 		d := ValDigit(s.buf[i]);
 		WHILE d >= 0 DO
@@ -358,7 +360,8 @@ VAR
 					d := ValDigit(s.buf[i])
 				END;
 				IF scale <= RealScaleMax THEN
-					WHILE scale > 0 DO (* TODO *)
+					(* TODO *)
+					WHILE scale > 0 DO
 						IF scMinus THEN
 							val := val * 10.0
 						ELSE
@@ -671,7 +674,7 @@ BEGIN
 			s.isChar := TRUE;
 			s.integer := ORD(s.buf[j])
 		END;
-		INC(i)
+		i := (i + 1) MOD (LEN(s.buf) - 1)
 	ELSE
 		l := ErrExpectDQuote
 	END;

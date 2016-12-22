@@ -237,7 +237,7 @@ BEGIN
 END Qualident;
 
 PROCEDURE ExpectRecordExtend(VAR p: Parser; ds: Ast.Declarations;
-							 base: Ast.Construct): Ast.Declaration;
+                             base: Ast.Construct): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	d := Qualident(p, ds)
@@ -507,6 +507,7 @@ BEGIN
 	END
 END Consts;
 
+(* TODO в Ast *)
 PROCEDURE ExprToArrayLen(VAR p: Parser; e: Ast.Expression): INTEGER;
 VAR i: INTEGER;
 BEGIN
@@ -1084,9 +1085,14 @@ VAR stats, last: Ast.Statement;
 	PROCEDURE Statement(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
 	VAR des: Ast.Designator;
 		st: Ast.Statement;
+		commentOfs, commentEnd: INTEGER;
 	BEGIN
-		Log.StrLn("Statement");
-
+		(* Log.StrLn("Statement"); *)
+		IF ~p.opt.saveComments
+		OR ~Scanner.TakeCommentPos(p.s, commentOfs, commentEnd)
+		THEN
+			commentOfs := -1
+		END;
 		IF p.l = Scanner.Ident THEN
 			des := Designator(p, ds);
 			IF p.l = Scanner.Assign THEN
@@ -1110,6 +1116,9 @@ VAR stats, last: Ast.Statement;
 		END;
 		IF st = NIL THEN
 			st := Ast.StatementErrorNew()
+		END;
+		IF commentOfs >= 0 THEN
+			Ast.NodeSetComment(st^, p.module, p.s.buf, commentOfs, commentEnd)
 		END;
 		IF p.err THEN
 			Log.StrLn("Error");
