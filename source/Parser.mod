@@ -934,25 +934,20 @@ VAR case: Ast.Case;
 			VAR r: Ast.CaseLabel;
 
 				PROCEDURE Label(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
-				VAR err: INTEGER;
-					l: Ast.CaseLabel;
-					qual: BOOLEAN;
+				VAR l: Ast.CaseLabel;
 				BEGIN
-					qual := FALSE;
 					IF (p.l = Scanner.Number) & ~p.s.isReal THEN
-						err := Ast.CaseLabelNew(l, Ast.IdInteger, p.s.integer)
+						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdInteger, p.s.integer));
+						Scan(p)
 					ELSIF p.l = Scanner.String THEN
 						ASSERT(p.s.isChar);
-						err := Ast.CaseLabelNew(l, Ast.IdChar, p.s.integer)
-					ELSIF p.l = Scanner.Ident THEN
-						qual := TRUE;
-						err := Ast.CaseLabelQualNew(l, Qualident(p, ds))
-					ELSE
-						err := ErrExpectIntOrStrOrQualident
-					END;
-					CheckAst(p, err);
-					IF ~qual & (err # ErrExpectIntOrStrOrQualident) THEN
+						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdChar, p.s.integer));
 						Scan(p)
+					ELSIF p.l = Scanner.Ident THEN
+						CheckAst(p, Ast.CaseLabelQualNew(l, Qualident(p, ds)))
+					ELSE
+						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdInteger, 0));
+						AddError(p, ErrExpectIntOrStrOrQualident)
 					END
 					RETURN l
 				END Label;
@@ -966,6 +961,8 @@ VAR case: Ast.Case;
 			END LabelRange;
 		BEGIN
 			first := LabelRange(p, ds);
+			(* проверка 1-го диапазона *)
+			CheckAst(p, Ast.CaseRangeListAdd(case, NIL, first));
 			WHILE p.l = Scanner.Comma DO
 				Scan(p);
 				last := LabelRange(p, ds);

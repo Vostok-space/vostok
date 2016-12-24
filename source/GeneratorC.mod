@@ -1393,7 +1393,7 @@ BEGIN
 	| Ast.IdBoolean:
 		Boolean(gen, expr(Ast.ExprBoolean))
 	| Ast.IdReal:
-		IF		expr(Ast.ExprReal).str.block # NIL
+		IF expr(Ast.ExprReal).str.block # NIL
 		THEN	String(gen, expr(Ast.ExprReal).str)
 		ELSE	Real(gen, expr(Ast.ExprReal).real)
 		END
@@ -1409,28 +1409,28 @@ BEGIN
 		Log.Str(" (expr.value # NIL) = ");
 		Log.Int(ORD(expr.value # NIL));
 		Log.Ln;
-		IF		(expr.value # NIL) & (expr.value.id = Ast.IdString)
+		IF (expr.value # NIL) & (expr.value.id = Ast.IdString)
 		THEN	CString(gen, expr.value(Ast.ExprString))
 		ELSE	Designator(gen, expr(Ast.Designator))
 		END
 	| Ast.IdRelation:
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
-		IF		gen.opt.checkArith
-			  & (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
-			  & (expr.value = NIL)
+		IF	  gen.opt.checkArith
+			& (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
+			& (expr.value = NIL)
 		THEN	SumCheck(gen, expr(Ast.ExprSum))
 		ELSE	Sum(gen, expr(Ast.ExprSum))
 		END
 	| Ast.IdTerm:
-		IF		gen.opt.checkArith
-			  & (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
-			  & (expr.value = NIL)
+		IF	  gen.opt.checkArith
+			& (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
+			& (expr.value = NIL)
 		THEN	TermCheck(gen, expr(Ast.ExprTerm))
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:
-		IF		expr.type.id = Ast.IdSet
+		IF expr.type.id = Ast.IdSet
 		THEN	Str(gen, "~")
 		ELSE	Str(gen, "!")
 		END;
@@ -2089,7 +2089,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
 	VAR elem, elemWithRange: Ast.CaseElement;
 		caseExpr: Ast.Expression;
-		
+
 		PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
 		VAR r: Ast.CaseLabel;
 		BEGIN
@@ -2113,11 +2113,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END CaseElement;
 
 		PROCEDURE CaseElementAsIf(VAR gen: Generator; elem: Ast.CaseElement;
-								  caseExpr: Ast.Expression);
+		                          caseExpr: Ast.Expression);
 		VAR r: Ast.CaseLabel;
 
 			PROCEDURE CaseRange(VAR gen: Generator; r: Ast.CaseLabel;
-								caseExpr: Ast.Expression);
+			                    caseExpr: Ast.Expression);
 			BEGIN
 				IF r.right = NIL THEN
 					IF caseExpr = NIL THEN

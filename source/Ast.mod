@@ -2427,18 +2427,30 @@ PROCEDURE CaseRangeListAdd*(case: Case; first, new: CaseLabel): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	ASSERT(new.next = NIL);
-	IF case.expr.type.id # new.id THEN
+	IF (case.expr.type.id # new.id)
+	 & ~((case.expr.type.id IN {IdInteger, IdByte})
+	   & (new.id IN {IdInteger, IdByte})
+	    )
+	THEN
 		err := ErrCaseRangeLabelsTypeMismatch
 	ELSE
-		IF IsElementsCrossRange(case.elements, new) THEN
-			err := ErrCaseElemDuplicate
-		ELSE
-			err := ErrNo
+		IF IsElementsCrossRange(case.elements, new)
+		THEN err := ErrCaseElemDuplicate
+		ELSE err := ErrNo
 		END;
-		WHILE first.next # NIL DO
-			first := first.next
-		END;
-		first.next := new
+
+		IF first # NIL THEN
+			WHILE first.next # NIL DO
+				IF IsListCrossRange(first, new) THEN
+					err := ErrCaseElemDuplicate
+				END;
+				first := first.next
+			END;
+			IF IsListCrossRange(first, new) THEN
+				err := ErrCaseElemDuplicate
+			END;
+			first.next := new
+		END
 	END
 	RETURN err
 END CaseRangeListAdd;

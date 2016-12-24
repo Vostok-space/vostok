@@ -298,6 +298,8 @@ BEGIN
 			O("Объявление процедуры с возвращаемым значением не содержит скобки")
 		| Parser.ErrArrayLenLess1			:
 			O("Длина массива должна быть > 0")
+		| Parser.ErrExpectIntOrStrOrQualident:
+			O("Ожидалось число или строка")
 		END
 	END
 
