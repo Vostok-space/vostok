@@ -1080,11 +1080,11 @@ END Call;
 
 PROCEDURE NotEnd(l: INTEGER): BOOLEAN;
 RETURN (l # Scanner.End)
-	 & (l # Scanner.Return)
-	 & (l # Scanner.Else)
-	 & (l # Scanner.Elsif)
-	 & (l # Scanner.Until)
-	 & (l # Scanner.Alternative)
+     & (l # Scanner.Return)
+     & (l # Scanner.Else)
+     & (l # Scanner.Elsif)
+     & (l # Scanner.Until)
+     & (l # Scanner.Alternative)
 END NotEnd;
 
 PROCEDURE Statements(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;

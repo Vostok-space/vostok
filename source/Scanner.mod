@@ -229,7 +229,7 @@ BEGIN
 END ScanChar;
 
 PROCEDURE ScanChars(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; suit: Suit;
-					VAR in: Stream.In);
+                    VAR in: Stream.In);
 BEGIN
 	WHILE suit(buf[i]) DO
 		INC(i)
@@ -444,8 +444,8 @@ VAR id: INTEGER;
 	END O;
 	
 	PROCEDURE T(s1: ARRAY OF CHAR;
-				buf: ARRAY OF CHAR; begin, end: INTEGER;
-				id1: INTEGER; s2: ARRAY OF CHAR; id2: INTEGER): INTEGER;
+	            buf: ARRAY OF CHAR; begin, end: INTEGER;
+	            id1: INTEGER; s2: ARRAY OF CHAR; id2: INTEGER): INTEGER;
 	BEGIN
 		IF     IsWordEqual(s1, buf, begin, end) THEN id2 := id1
 		ELSIF ~IsWordEqual(s2, buf, begin, end) THEN id2 := Ident
@@ -570,8 +570,8 @@ END CheckWord;
 
 PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
 	RETURN (ch >= "A") & (ch <= "Z")
-		OR (ch >= "a") & (ch <= "z")
-		OR (ch >= "0") & (ch <= "9")
+	    OR (ch >= "a") & (ch <= "z")
+	    OR (ch >= "0") & (ch <= "9")
 END IsLetterOrDigit;
 
 PROCEDURE SWord(VAR s: Scanner): INTEGER;

@@ -491,6 +491,24 @@ BEGIN
 	RETURN rec.name.block # NIL
 END CheckStructName;
 
+PROCEDURE ArrayLen(VAR gen: Generator; type: Ast.Type;
+                   decl: Ast.Declaration; sel: Ast.Selector);
+VAR i: INTEGER;
+BEGIN
+	IF type(Ast.Array).count # NIL THEN
+		expression(gen, type(Ast.Array).count)
+	ELSE
+		GlobalName(gen, decl);
+		Str(gen, "_len");
+		i := -1;
+		WHILE sel # NIL DO
+			INC(i);
+			sel := sel.next
+		END;
+		Int(gen, i)
+	END
+END ArrayLen;
+
 PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
                    VAR typ: Ast.Type);
 VAR sel: Ast.Selector;
@@ -558,23 +576,6 @@ VAR sel: Ast.Selector;
 	VAR s: Ast.Selector;
 		i, j: INTEGER;
 
-		PROCEDURE Len(VAR gen: Generator; type: Ast.Type;
-					  decl: Ast.Declaration; sel: Ast.Selector);
-		VAR i: INTEGER;
-		BEGIN
-			IF type(Ast.Array).count # NIL THEN
-				expression(gen, type(Ast.Array).count)
-			ELSE
-				GlobalName(gen, decl);
-				Str(gen, "_len");
-				i := -1;
-				WHILE sel # NIL DO
-					INC(i);
-					sel := sel.next
-				END;
-				Int(gen, i)
-			END
-		END Len;
 	BEGIN
 		Str(gen, "[");
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
@@ -586,7 +587,7 @@ VAR sel: Ast.Selector;
 				)
 			THEN
 				Str(gen, "o7c_ind(");
-				Len(gen, type, decl, sel);
+				ArrayLen(gen, type, decl, sel);
 				Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Str(gen, ")")
@@ -603,7 +604,7 @@ VAR sel: Ast.Selector;
 					)
 				THEN
 					Str(gen, "][o7c_ind(");
-					Len(gen, type, decl, sel);
+					ArrayLen(gen, type, decl, sel);
 					Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
 					Str(gen, ")")
@@ -1026,16 +1027,35 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					END
 				END
 			END Expr;
+
+			PROCEDURE Len(VAR gen: Generator; e: Ast.Expression);
+			VAR des: Ast.Designator;
+			BEGIN
+				IF e.type(Ast.Array).count # NIL THEN
+					Expression(gen, e.type(Ast.Array).count)
+				ELSE
+					des := e(Ast.Designator);
+					ArrayLen(gen, des.type, des.decl, des.sel)
+				END
+			END Len;
 		BEGIN
 			IF (rel.exprs[0].type.id = Ast.IdArray)
 			 & ((rel.exprs[0].value = NIL)
 			 OR ~rel.exprs[0].value(Ast.ExprString).asChar
 			   )
 			THEN
-				Str(gen, "strcmp(");
+				Str(gen, "o7c_strcmp(");
+
 				Expr(gen, rel.exprs[0], -rel.distance);
 				Str(gen, ", ");
+				Len(gen, rel.exprs[0]);
+
+				Str(gen, ", ");
+
 				Expr(gen, rel.exprs[1], rel.distance);
+				Str(gen, ", ");
+				Len(gen, rel.exprs[1]);
+
 				Str(gen, ")");
 				Str(gen, str);
 				Str(gen, "0")
@@ -1082,13 +1102,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END In;
 	BEGIN
 		CASE rel.relation OF
-		  Scanner.Equal			: Simple(gen, rel, " == ")
-		| Scanner.Inequal		: Simple(gen, rel, " != ")
-		| Scanner.Less			: Simple(gen, rel, " < ")
-		| Scanner.LessEqual		: Simple(gen, rel, " <= ")
-		| Scanner.Greater		: Simple(gen, rel, " > ")
-		| Scanner.GreaterEqual	: Simple(gen, rel, " >= ")
-		| Scanner.In			: In(gen, rel)
+		  Scanner.Equal        : Simple(gen, rel, " == ")
+		| Scanner.Inequal      : Simple(gen, rel, " != ")
+		| Scanner.Less         : Simple(gen, rel, " < ")
+		| Scanner.LessEqual    : Simple(gen, rel, " <= ")
+		| Scanner.Greater      : Simple(gen, rel, " > ")
+		| Scanner.GreaterEqual : Simple(gen, rel, " >= ")
+		| Scanner.In           : In(gen, rel)
 		END
 	END Relation;
 
@@ -1176,21 +1196,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		REPEAT
 			CheckExpr(gen, term.factor);
 			CASE term.mult OF
-			  Scanner.Asterisk				:
+			  Scanner.Asterisk           :
 				IF term.type.id = Ast.IdSet THEN
 					Str(gen, " & ")
 				ELSE
 					Str(gen, " * ")
 				END
-			| Scanner.Slash, Scanner.Div	: 
+			| Scanner.Slash, Scanner.Div : 
 				IF term.type.id = Ast.IdSet THEN
 					ASSERT(term.mult = Scanner.Slash);
 					Str(gen, " ^ ")
 				ELSE
 					Str(gen, " / ")
 				END
-			| Scanner.And					: Str(gen, " && ")
-			| Scanner.Mod					: Str(gen, " % ")
+			| Scanner.And                : Str(gen, " && ")
+			| Scanner.Mod                : Str(gen, " % ")
 			END;
 			IF term.expr IS Ast.ExprTerm THEN
 				term := term.expr(Ast.ExprTerm)
@@ -1217,17 +1237,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		IF term.type.id = Ast.IdInteger THEN
 			WHILE i >= 0 DO 
 				CASE arr[i].mult OF
-				  Scanner.Asterisk	: Str(gen, "o7c_mul(")
-				| Scanner.Div		: Str(gen, "o7c_div(")
-				| Scanner.Mod		: Str(gen, "o7c_mod(")
+				  Scanner.Asterisk : Str(gen, "o7c_mul(")
+				| Scanner.Div      : Str(gen, "o7c_div(")
+				| Scanner.Mod      : Str(gen, "o7c_mod(")
 				END;
 				DEC(i)
 			END
 		ELSE ASSERT(term.type.id = Ast.IdReal);
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk	: Str(gen, "o7c_fmul(")
-				| Scanner.Slash		: Str(gen, "o7c_fdiv(")
+				  Scanner.Asterisk : Str(gen, "o7c_fmul(")
+				| Scanner.Slash    : Str(gen, "o7c_fdiv(")
 				END;
 				DEC(i)
 			END
@@ -1501,7 +1521,7 @@ BEGIN
 END ProcHead;
 
 PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
-					 typeDecl, sameType, global: BOOLEAN);
+                     typeDecl, sameType, global: BOOLEAN);
 VAR g: Generator;
 	mo: PMemoryOut;
 BEGIN

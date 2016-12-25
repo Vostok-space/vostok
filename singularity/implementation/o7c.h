@@ -507,6 +507,9 @@ static O7C_INLINE char unsigned o7c_chr(int v) {
 	return (char unsigned)v;
 }
 
+extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
+                      o7c_char const s2[/*len*/], int s2_len);
+
 extern void o7c_init(int argc, char *argv[]);
 
 extern int o7c_exit_code;

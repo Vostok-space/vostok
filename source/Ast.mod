@@ -1403,7 +1403,7 @@ BEGIN
 END CompatibleTypes;
 
 PROCEDURE ExprIsExtensionNew*(VAR e: ExprIsExtension; VAR des: Expression;
-							  type: Type): INTEGER;
+                              type: Type): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	NEW(e); ExprInit(e, IdIsExtension, TypeGet(IdBoolean));
@@ -1452,7 +1452,7 @@ PROCEDURE CompatibleAsIntAndByte(t1, t2: Type): BOOLEAN;
 END CompatibleAsIntAndByte;
 
 PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
-						   relation: INTEGER; expr2: Expression): INTEGER;
+                           relation: INTEGER; expr2: Expression): INTEGER;
 VAR err: INTEGER;
 	res: BOOLEAN;
 	v1, v2: Expression;
@@ -1519,48 +1519,48 @@ BEGIN
 		  Scanner.Equal:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int = v2(ExprInteger).int
-			| IdBoolean		: res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
-			| IdReal		: res := v1(ExprReal).real = v2(ExprReal).real
-			| IdSet			: res := v1(ExprSet).set = v2(ExprSet).set
-			| IdPointer		: (* TODO *) res := FALSE
-			| IdArray		: (* TODO *) res := FALSE
-			| IdProcType	: (* TODO *) res := FALSE
+			| IdBoolean  : res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
+			| IdReal     : res := v1(ExprReal).real = v2(ExprReal).real
+			| IdSet      : res := v1(ExprSet).set = v2(ExprSet).set
+			| IdPointer  : (* TODO *) res := FALSE
+			| IdArray    : (* TODO *) res := FALSE
+			| IdProcType : (* TODO *) res := FALSE
 			END
 		| Scanner.Inequal:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar	: res := v1(ExprInteger).int # v2(ExprInteger).int
-			| IdBoolean			: res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
-			| IdReal			: res := v1(ExprReal).real # v2(ExprReal).real
-			| IdSet				: res := v1(ExprSet).set # v2(ExprSet).set
-			| IdPointer			: (* TODO *) res := FALSE
-			| IdArray			: (* TODO *) res := FALSE
-			| IdProcType		: (* TODO *) res := FALSE
+			  IdInteger, IdChar : res := v1(ExprInteger).int # v2(ExprInteger).int
+			| IdBoolean         : res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
+			| IdReal            : res := v1(ExprReal).real # v2(ExprReal).real
+			| IdSet             : res := v1(ExprSet).set # v2(ExprSet).set
+			| IdPointer         : (* TODO *) res := FALSE
+			| IdArray           : (* TODO *) res := FALSE
+			| IdProcType        : (* TODO *) res := FALSE
 			END
 		| Scanner.Less:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar	: res := v1(ExprInteger).int < v2(ExprInteger).int
-			| IdReal			: res := v1(ExprReal).real < v2(ExprReal).real
-			| IdArray			: (* TODO *) res := FALSE
+			  IdInteger, IdChar : res := v1(ExprInteger).int < v2(ExprInteger).int
+			| IdReal            : res := v1(ExprReal).real < v2(ExprReal).real
+			| IdArray           : (* TODO *) res := FALSE
 			END
 		| Scanner.LessEqual:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar	: res := v1(ExprInteger).int <= v2(ExprInteger).int
-			| IdReal			: res := v1(ExprReal).real <= v2(ExprReal).real
-			| IdSet				: res := v1(ExprSet).set <= v2(ExprSet).set
-			| IdArray			: (* TODO *) res := FALSE
+			  IdInteger, IdChar : res := v1(ExprInteger).int <= v2(ExprInteger).int
+			| IdReal            : res := v1(ExprReal).real <= v2(ExprReal).real
+			| IdSet             : res := v1(ExprSet).set <= v2(ExprSet).set
+			| IdArray           : (* TODO *) res := FALSE
 			END
 		| Scanner.Greater:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar	: res := v1(ExprInteger).int > v2(ExprInteger).int
-			| IdReal			: res := v1(ExprReal).real > v2(ExprReal).real
-			| IdArray			: (* TODO *) res := FALSE
+			  IdInteger, IdChar : res := v1(ExprInteger).int > v2(ExprInteger).int
+			| IdReal            : res := v1(ExprReal).real > v2(ExprReal).real
+			| IdArray           : (* TODO *) res := FALSE
 			END
 		| Scanner.GreaterEqual:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar	: res := v1(ExprInteger).int >= v2(ExprInteger).int
-			| IdReal			: res := v1(ExprReal).real >= v2(ExprReal).real
-			| IdSet				: res := v1(ExprSet).set >= v2(ExprSet).set
-			| IdArray			: (* TODO *) res := FALSE
+			  IdInteger, IdChar : res := v1(ExprInteger).int >= v2(ExprInteger).int
+			| IdReal            : res := v1(ExprReal).real >= v2(ExprReal).real
+			| IdSet             : res := v1(ExprSet).set >= v2(ExprSet).set
+			| IdArray           : (* TODO *) res := FALSE
 			END
 		| Scanner.In:
 			res := v1(ExprInteger).int IN v2(ExprSet).set
@@ -1642,7 +1642,7 @@ BEGIN
 END ExprSumNew;
 
 PROCEDURE ExprSumAdd*(fullSum: Expression; VAR lastAdder: ExprSum;
-					  add: INTEGER; term: Expression): INTEGER;
+                      add: INTEGER; term: Expression): INTEGER;
 VAR e: ExprSum;
 	err: INTEGER;
 	
