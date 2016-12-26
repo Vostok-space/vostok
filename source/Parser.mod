@@ -328,7 +328,11 @@ BEGIN
 	Scan(p);
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		fp := e.designator.type(Ast.ProcType).params;
+		IF e.designator.type IS Ast.ProcType THEN
+			fp := e.designator.type(Ast.ProcType).params
+		ELSE
+			fp := NIL
+		END;
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
@@ -927,7 +931,7 @@ VAR case: Ast.Case;
 	VAR elem: Ast.CaseElement;
 
 		PROCEDURE LabelList(VAR p: Parser; case: Ast.Case;
-							ds: Ast.Declarations): Ast.CaseLabel;
+		                    ds: Ast.Declarations): Ast.CaseLabel;
 		VAR first, last: Ast.CaseLabel;
 
 			PROCEDURE LabelRange(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
