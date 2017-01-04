@@ -63,10 +63,10 @@ $(SELF)/%.o : $(SELF)/%.c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
 
 
 self : $(SELF)/o7c
-	make test O7C:=$(SELF)/o7c
+	+make test O7C:=$(SELF)/o7c
 
 self-full : result/self/o7c
-	make self O7C:=result/self/o7c SELF:=result/self2
+	+make self O7C:=result/self/o7c SELF:=result/self2
 
 test : result/o7c result/test/RecordExt $(TESTS)
 
@@ -74,7 +74,7 @@ help :
 	@echo "Основные цели Makefile:\n\
 	   result/o7c - цель по умолчанию, сбор транслятора через bootstrap\n\
 	   test       - прогон тестов первичным транслятором\n\
-	   self       - сбор транслятора самим транслятором и прогон тестов\n\
+	   self       - сбор транслятора им самим и прогон тестов\n\
 	   self-full  - сбор транслятора версией, полученной от self и прогон тестов\n\
 	   clean      - удаление всех результатов\n\
 	Основные переменные-параметры:\n\
