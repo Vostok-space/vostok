@@ -23,14 +23,17 @@ RM := trash
 
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
-result/o7c : $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
+result/o7c : $(patsubst source/%.mod,result/%.o, $(SRC))
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.o $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
-result/Translator.c : source/Translator.mod Makefile $(O7CI)
+result/%.o : result/%.c $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity $< -c -o $@
+
+result/Translator.c : source/Translator.mod $(O7CI)
 	@mkdir -p result
 	$(O7CI) source/Translator.mod result/Translator.c source $(SING_O7)
 
-result/%.c : source/%.mod $(SRC) Makefile $(O7CI)
+result/%.c : source/%.mod $(SRC) $(O7CI)
 	@mkdir -p result
 	$(O7CI) $< $(basename $@) source $(SING_O7)
 
@@ -44,15 +47,20 @@ result/test/% : test/source/%.mod always
 	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
-$(SELF)/%.c : source/%.mod $(SRC) Makefile $(O7C)
+$(SELF)/%.c : source/%.mod $(SRC) $(O7C)
 	@mkdir -p $(SELF)
 	$(O7C) $< $(basename $@) source $(SING_O7)
 
-$(SELF)/Translator.c : source/Translator.mod Makefile $(O7C)
+$(SELF)/Translator.c : source/Translator.mod $(O7C)
+	@mkdir -p $(SELF)
 	$(O7C) source/Translator.mod $@ source $(SING_O7)
 
-$(SELF)/o7c : result/o7c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
+$(SELF)/o7c : result/o7c $(patsubst source/%.mod,$(SELF)/%.o, $(SRC))
+	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.o $(SING_C)/*.c $(LD_OPT) -o $@
+
+$(SELF)/%.o : $(SELF)/%.c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
+	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(LD_OPT) $< -c -o $@
+
 
 self : $(SELF)/o7c
 	make test O7C:=$(SELF)/o7c
