@@ -122,7 +122,7 @@ BEGIN
 END MemoryWrite;
 
 PROCEDURE MemWrite(VAR out: Stream.Out;
-				   buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+                   buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 BEGIN
 	MemoryWrite(out(MemoryOut), buf, ofs, count)
 	RETURN count
@@ -145,7 +145,7 @@ BEGIN
 		mo.invert := ~mo.invert
 	ELSE
 		ret := Strings.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
-							   mo.mem[1 - inv].buf, 0, mo.mem[1 - inv].len);
+		                         mo.mem[1 - inv].buf, 0, mo.mem[1 - inv].len);
 		ASSERT(ret);
 		mo.mem[1 - inv].len := 0
 	END
@@ -304,6 +304,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		OR Eq(n, "main")
 		OR Eq(n, "malloc")
 		OR Eq(n, "memcmp")
+		OR Eq(n, "memcpy")
 		OR Eq(n, "memset")
 		OR Eq(n, "NULL")
 		OR Eq(n, "strcmp")
@@ -740,7 +741,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		VAR e1: Ast.Expression;
 			p2: Ast.Parameter;
 
-			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR; ps: Ast.Parameter);
+			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR;
+			                ps: Ast.Parameter);
 			BEGIN
 				Str(gen, "(int)((unsigned)");
 				Factor(gen, ps.expr);
@@ -946,7 +948,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 
 				t := p.expr.type;
-				i := 0;
 				IF t.id = Ast.IdRecord THEN
 					IF gen.opt.lastSelectorDereference THEN
 						Str(gen, ", NULL")
@@ -962,6 +963,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Str(gen, "_tag")
 					END
 				ELSIF fp.type.id # Ast.IdChar THEN
+					i := 0;
 					WHILE (t.id = Ast.IdArray)
 					    & (fp.type(Ast.Array).count = NIL)
 					DO
@@ -1976,10 +1978,10 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	PROCEDURE For(VAR gen: Generator; st: Ast.For);
 		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
 		RETURN (sum.next # NIL)
-			 & (sum.next.next = NIL)
-			 & (sum.next.add = Scanner.Minus)
-			 & (sum.next.term.value # NIL)
-			 & (sum.next.term.value(Ast.ExprInteger).int = 1)
+		     & (sum.next.next = NIL)
+		     & (sum.next.add = Scanner.Minus)
+		     & (sum.next.term.value # NIL)
+		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
 		END IsEndMinus1;
 	BEGIN
 		Str(gen, "for (");
@@ -2772,11 +2774,11 @@ BEGIN
 END TagsInit;
 
 PROCEDURE Generate*(VAR interface, implementation: Generator;
-					module: Ast.Module; opt: Options);
+                    module: Ast.Module; opt: Options);
 VAR out: MOut;
 
 	PROCEDURE Init(VAR gen: Generator; out: Stream.POut;
-				   module: Ast.Module; opt: Options);
+	               module: Ast.Module; opt: Options);
 	BEGIN
 		gen.out := out;
 		gen.len := 0;

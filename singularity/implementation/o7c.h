@@ -112,6 +112,12 @@ enum {
 	enum { O7C_DIV_ZERO };
 #endif
 
+#if defined(O7C_CHECK_FLOAT_DIV_BY_ZERO)
+	enum { O7C_FLOAT_DIV_ZERO = O7C_CHECK_FLOAT_DIV_BY_ZERO };
+#else
+	enum { O7C_FLOAT_DIV_ZERO = 1 };
+#endif
+
 #if defined(O7C_CHECK_UNDEFINED)
 	enum { O7C_UNDEF = O7C_CHECK_UNDEFINED };
 #else
@@ -224,6 +230,9 @@ static O7C_INLINE double o7c_fmul(double m1, double m2) {
 
 static O7C_INLINE double o7c_fdiv(double n, double d) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_fdiv(double n, double d) {
+	if (O7C_FLOAT_DIV_ZERO) {
+		assert(d != 0.0);
+	}
 	return o7c_dbl(n) / o7c_dbl(d);
 }
 

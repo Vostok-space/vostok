@@ -121,8 +121,8 @@ static O7C_INLINE void
 		} else if (*(Int64_t *)m2 != 0) {
 			if (*(Int64_t *)m1 >= 0) {
 				assert(*(Int64_t *)m1 <=
-						((Int64_ut)(-1 - Int64_Min) + 1u)
-					  / ((Int64_ut)(-1 - *(Int64_t *)m2) + 1u)
+				        ((Int64_ut)(-1 - Int64_Min) + 1u)
+				      / ((Int64_ut)(-1 - *(Int64_t *)m2) + 1u)
 				);
 			} else {
 				assert(*(Int64_t *)m1 >= Int64_Max / *(Int64_t *)m2);
