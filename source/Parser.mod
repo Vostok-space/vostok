@@ -108,6 +108,10 @@ BEGIN
 		Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
 	END;
 	p.opt.printError(err);
+	Out.String(". ");
+	Out.Int(p.s.line + 1, 2);
+	Out.String(":");
+	Out.Int(p.s.column + p.s.tabs * 3, 2);
 	Out.Ln
 END AddError;
 
@@ -591,6 +595,10 @@ BEGIN
 		ELSIF d.id # Ast.IdError THEN
 			AddError(p, ErrExpectType)
 		END
+	END;
+	IF t = NIL THEN
+		(* TODO Заменить на некий ErrorType *)
+		t := Ast.TypeGet(Ast.IdInteger)
 	END
 	RETURN t
 END TypeNamed;
@@ -758,7 +766,6 @@ BEGIN
 	END
 	RETURN tp
 END Pointer;
-
 
 PROCEDURE FormalParameters(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcType);
 VAR braces: BOOLEAN;
