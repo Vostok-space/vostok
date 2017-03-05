@@ -184,7 +184,7 @@ extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size);
 
 static O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE double o7c_dbl_undef(void) {
-	double undef;
+	double undef = 0.0;
 	if (sizeof(unsigned) == sizeof(double) / 2) {
 		((unsigned *)&undef)[1] = 0x7FFFFFFF;
 	} else {
