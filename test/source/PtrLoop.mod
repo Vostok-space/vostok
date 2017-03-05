@@ -1,0 +1,24 @@
+MODULE PtrLoop;
+
+CONST
+	UnLoop = TRUE;
+
+TYPE
+	Ptr = POINTER TO RECORD
+		i: INTEGER;
+		next: Ptr
+	END;
+
+VAR
+	p: Ptr;
+
+BEGIN
+	NEW(p); p.next := p;
+	p.i := 2;
+	INC(p.next.i);
+	IF UnLoop THEN
+		p.next := NIL
+	END;
+	ASSERT(p.i = 3);
+	p := NIL
+END PtrLoop.
