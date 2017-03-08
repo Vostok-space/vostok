@@ -35,6 +35,10 @@ BEGIN
 	ASSERT(v4 = (s4 - {3}));
 	INCL(v4, 8);
 	ASSERT(v4 = (s4 - {3} + {8}));
+	ASSERT(v4 = s4 - {3} + {8});
+
+	ASSERT(v4 # (s4 - {3} + {8, 0}));
+	ASSERT(v4 # s4 - {3} + {8, 0});
 
 	ASSERT(1 IN -s5);
 	ASSERT(2 IN s5);

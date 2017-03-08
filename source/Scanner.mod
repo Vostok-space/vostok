@@ -500,9 +500,9 @@ VAR lex: INTEGER;
 		IF IsWordEqual(str, buf, ind, end) THEN lex := l ELSE lex := Ident END
 	END O;
 	PROCEDURE T(VAR lex: INTEGER;
-				s1: ARRAY OF CHAR; l1: INTEGER;
-				s2: ARRAY OF CHAR; l2: INTEGER;
-				buf: ARRAY OF CHAR; ind, end: INTEGER);
+	            s1: ARRAY OF CHAR; l1: INTEGER;
+	            s2: ARRAY OF CHAR; l2: INTEGER;
+	            buf: ARRAY OF CHAR; ind, end: INTEGER);
 	BEGIN
 		IF IsWordEqual(s1, buf, ind, end) THEN
 			lex := l1

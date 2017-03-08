@@ -1013,8 +1013,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		                 str: ARRAY OF CHAR);
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
+			VAR brace: BOOLEAN;
 			BEGIN
-				IF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
+				brace := (e.type.id = Ast.IdSet)
+				      & ~(e IS Ast.Factor);
+				IF brace THEN
+					Str(gen, "(")
+				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
 					Str(gen, "&")
 				END;
 				Expression(gen, e);
@@ -1027,6 +1032,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						DEC(dist);
 						Str(gen, "._")
 					END
+				END;
+				IF brace THEN
+					Str(gen, ")")
 				END
 			END Expr;
 
