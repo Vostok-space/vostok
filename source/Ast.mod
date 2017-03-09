@@ -27,123 +27,123 @@ IMPORT
 	Arithmetic;
 
 CONST
-	ErrNo* 							= 0;
-	ErrImportNameDuplicate*			= -1;
-	ErrDeclarationNameDuplicate*	= -2;
-	ErrMultExprDifferentTypes*		= -3;
-	ErrDivExprDifferentTypes*		= -4;
-	ErrNotBoolInLogicExpr*			= -5;
-	ErrNotIntInDivOrMod*			= -6;
-	ErrNotRealTypeForRealDiv*		= -7;
-	ErrNotIntSetElem*				= -9;(*TODO*)
-	ErrSetElemOutOfRange*			= -10;
-	ErrSetLeftElemBiggerRightElem*	= -11;
-	ErrAddExprDifferenTypes*		= -12;
-	ErrNotNumberAndNotSetInMult*	= -13;
-	ErrNotNumberAndNotSetInAdd*		= -14;
-	ErrSignForBool*					= -15;
-	ErrRelationExprDifferenTypes*	= -17;
-	ErrExprInWrongTypes*			= -18;
-	ErrExprInRightNotSet*			= ErrExprInWrongTypes - 1;
-	ErrExprInLeftNotInteger*		= ErrExprInWrongTypes - 2;
-	ErrRelIncompatibleType*			= -21;
-	ErrIsExtTypeNotRecord*			= -22;
-	ErrIsExtVarNotRecord*			= -23;
-	ErrConstDeclExprNotConst*		= -24;
-	ErrAssignIncompatibleType*		= -25;
-	ErrCallNotProc*					= -26;
-	ErrCallExprWithoutReturn*		= -27;
-	ErrCallIgnoredReturn*			= ErrCallExprWithoutReturn - 1;
-	ErrCallExcessParam*				= -29;
-	ErrCallIncompatibleParamType*	= -30;
-	ErrCallExpectVarParam*			= -31;
-	ErrCallParamsNotEnough*			= -32;
-	ErrCallVarPointerTypeNotSame*	= -58;(*TODO*)
-	ErrCaseExprNotIntOrChar*		= -33;
-	ErrCaseLabelNotIntOrChar*		= -68;(*TODO*)
-	ErrCaseElemExprTypeMismatch*	= -34;
-	ErrCaseElemDuplicate*			= -36;
-	ErrCaseRangeLabelsTypeMismatch*	= -37;
-	ErrCaseLabelLeftNotLessRight*	= -38;
-	ErrCaseLabelNotConst*			= -39;
-	ErrProcHasNoReturn*				= -40;
-	ErrReturnIncompatibleType*		= -41;
-	ErrExpectReturn*				= -42;
-	ErrDeclarationNotFound*			= -43;
-	ErrDeclarationIsPrivate*		= -66;(*TODO*)
-	ErrConstRecursive*				= -44;
-	ErrImportModuleNotFound*		= -45;
-	ErrImportModuleWithError*		= -46;
-	ErrDerefToNotPointer*			= -47;
-	ErrArrayItemToNotArray*			= -48;
-	ErrArrayIndexNotInt*			= -49;
-	ErrArrayIndexNegative*			= -50;
-	ErrArrayIndexOutOfRange*		= -51;
-	ErrGuardExpectRecordExt*		= -52;
-	ErrGuardExpectPointerExt*		= -53;
-	ErrGuardedTypeNotExtensible*	= -54;
-	ErrDotSelectorToNotRecord*		= -55;
-	ErrDeclarationNotVar*			= -56;
-	ErrForIteratorNotInteger*		= -57;
-									(*-58*)
-	ErrNotBoolInIfCondition*		= -59;
-	ErrNotBoolInWhileCondition*		= -60;
-	ErrWhileConditionAlwaysFalse*	= -61;
-	ErrWhileConditionAlwaysTrue*	= -62;
-	ErrNotBoolInUntil*				= -63;
-	ErrUntilAlwaysFalse*			= -64;
-	ErrUntilAlwaysTrue*				= -65;
-									(*-66*)
-	ErrNegateNotBool*				= -67;
-									(*-68*)
-	ErrConstAddOverflow*			= -69;
-	ErrConstSubOverflow*			= -ErrConstAddOverflow - 1;
-	ErrConstMultOverflow*			= -71;
-	ErrConstDivByZero*				= -72;
+	ErrNo*                          = 0;
+	ErrImportNameDuplicate*         = -1;
+	ErrDeclarationNameDuplicate*    = -2;
+	ErrMultExprDifferentTypes*      = -3;
+	ErrDivExprDifferentTypes*       = -4;
+	ErrNotBoolInLogicExpr*          = -5;
+	ErrNotIntInDivOrMod*            = -6;
+	ErrNotRealTypeForRealDiv*       = -7;
+	ErrNotIntSetElem*               = -9;(*TODO*)
+	ErrSetElemOutOfRange*           = -10;
+	ErrSetLeftElemBiggerRightElem*  = -11;
+	ErrAddExprDifferenTypes*        = -12;
+	ErrNotNumberAndNotSetInMult*    = -13;
+	ErrNotNumberAndNotSetInAdd*     = -14;
+	ErrSignForBool*                 = -15;
+	ErrRelationExprDifferenTypes*   = -17;
+	ErrExprInWrongTypes*            = -18;
+	ErrExprInRightNotSet*           = ErrExprInWrongTypes - 1;
+	ErrExprInLeftNotInteger*        = ErrExprInWrongTypes - 2;
+	ErrRelIncompatibleType*         = -21;
+	ErrIsExtTypeNotRecord*          = -22;
+	ErrIsExtVarNotRecord*           = -23;
+	ErrConstDeclExprNotConst*       = -24;
+	ErrAssignIncompatibleType*      = -25;
+	ErrCallNotProc*                 = -26;
+	ErrCallExprWithoutReturn*       = -27;
+	ErrCallIgnoredReturn*           = ErrCallExprWithoutReturn - 1;
+	ErrCallExcessParam*             = -29;
+	ErrCallIncompatibleParamType*   = -30;
+	ErrCallExpectVarParam*          = -31;
+	ErrCallParamsNotEnough*         = -32;
+	ErrCallVarPointerTypeNotSame*   = -58;(*TODO*)
+	ErrCaseExprNotIntOrChar*        = -33;
+	ErrCaseLabelNotIntOrChar*       = -68;(*TODO*)
+	ErrCaseElemExprTypeMismatch*    = -34;
+	ErrCaseElemDuplicate*           = -36;
+	ErrCaseRangeLabelsTypeMismatch* = -37;
+	ErrCaseLabelLeftNotLessRight*   = -38;
+	ErrCaseLabelNotConst*           = -39;
+	ErrProcHasNoReturn*             = -40;
+	ErrReturnIncompatibleType*      = -41;
+	ErrExpectReturn*                = -42;
+	ErrDeclarationNotFound*         = -43;
+	ErrDeclarationIsPrivate*        = -66;(*TODO*)
+	ErrConstRecursive*              = -44;
+	ErrImportModuleNotFound*        = -45;
+	ErrImportModuleWithError*       = -46;
+	ErrDerefToNotPointer*           = -47;
+	ErrArrayItemToNotArray*         = -48;
+	ErrArrayIndexNotInt*            = -49;
+	ErrArrayIndexNegative*          = -50;
+	ErrArrayIndexOutOfRange*        = -51;
+	ErrGuardExpectRecordExt*        = -52;
+	ErrGuardExpectPointerExt*       = -53;
+	ErrGuardedTypeNotExtensible*    = -54;
+	ErrDotSelectorToNotRecord*      = -55;
+	ErrDeclarationNotVar*           = -56;
+	ErrForIteratorNotInteger*       = -57;
+	                                (*-58*)
+	ErrNotBoolInIfCondition*        = -59;
+	ErrNotBoolInWhileCondition*     = -60;
+	ErrWhileConditionAlwaysFalse*   = -61;
+	ErrWhileConditionAlwaysTrue*    = -62;
+	ErrNotBoolInUntil*              = -63;
+	ErrUntilAlwaysFalse*            = -64;
+	ErrUntilAlwaysTrue*             = -65;
+	                                (*-66*)
+	ErrNegateNotBool*               = -67;
+	                                (*-68*)
+	ErrConstAddOverflow*            = -69;
+	ErrConstSubOverflow*            = -ErrConstAddOverflow - 1;
+	ErrConstMultOverflow*           = -71;
+	ErrConstDivByZero*              = -72;
 
-	ErrValueOutOfRangeOfByte*		= -73;
-	ErrValueOutOfRangeOfChar*		= -74;
+	ErrValueOutOfRangeOfByte*       = -73;
+	ErrValueOutOfRangeOfChar*       = -74;
 
-	ErrExpectIntExpr*				= -75;
-	ErrExpectConstIntExpr*			= -76;
-	ErrForByZero*					= -77;
-	ErrByShouldBePositive*			= -78;
-	ErrByShouldBeNegative*			= -79;
-	ErrForPossibleOverflow*			= -80;
+	ErrExpectIntExpr*               = -75;
+	ErrExpectConstIntExpr*          = -76;
+	ErrForByZero*                   = -77;
+	ErrByShouldBePositive*          = -78;
+	ErrByShouldBeNegative*          = -79;
+	ErrForPossibleOverflow*         = -80;
 
-	ErrMin* 						= -100;
+	ErrMin*                         = -100;
 
-	NoId*				=-1;
-	IdInteger*			= 0;
-	IdBoolean*			= 1;
-	IdByte*				= 2;
-	IdChar*				= 3;
-	IdReal*				= 4;
-	IdSet*				= 5;
-	IdPointer*			= 6;
+	NoId*                 =-1;
+	IdInteger*            = 0;
+	IdBoolean*            = 1;
+	IdByte*               = 2;
+	IdChar*               = 3;
+	IdReal*               = 4;
+	IdSet*                = 5;
+	IdPointer*            = 6;
 	PredefinedTypesCount* = 7;
 
-	IdArray*			= 7;
-	IdRecord*			= 8;
-	IdRecordForward*	= 9;
-	IdProcType*			= 10;
-	IdNamed*			= 11;
-	IdString*			= 12;
+	IdArray*            = 7;
+	IdRecord*           = 8;
+	IdRecordForward*    = 9;
+	IdProcType*         = 10;
+	IdNamed*            = 11;
+	IdString*           = 12;
 
-	IdDesignator*		= 20;
-	IdRelation*			= 21;
-	IdSum*				= 22;
-	IdTerm*				= 23;
-	IdNegate*			= 24;
-	IdCall*				= 25;
-	IdBraces*			= 26;
-	IdIsExtension*		= 27;
+	IdDesignator*       = 20;
+	IdRelation*         = 21;
+	IdSum*              = 22;
+	IdTerm*             = 23;
+	IdNegate*           = 24;
+	IdCall*             = 25;
+	IdBraces*           = 26;
+	IdIsExtension*      = 27;
 
-	IdError*			= 31;
+	IdError*            = 31;
 
-	IdImport*			= 32;
-	IdConst*			= 33;
-	IdVar*				= 34;
+	IdImport*           = 32;
+	IdConst*            = 33;
+	IdVar*              = 34;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -263,7 +263,7 @@ TYPE
 	END;
 
 	RProcedure* = RECORD(RGeneralProcedure)
-		distance*: INTEGER
+		distance*: INTEGER (* TODO заменить все distance на deep в записях *)
 	END;
 
 	PredefinedProcedure* = POINTER TO RECORD(RGeneralProcedure)
@@ -571,8 +571,8 @@ VAR imp: Import;
 	err: INTEGER;
 
 	PROCEDURE Load(VAR res: Module; host: Module;
-				   buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER;
-				   p: Provider): INTEGER;
+	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER;
+	               p: Provider): INTEGER;
 	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
 		l, err: INTEGER;
 		ret: BOOLEAN;
@@ -723,7 +723,7 @@ BEGIN
 END TypeAdd;
 
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
-                           buf: ARRAY OF CHAR; begin, end: INTEGER);
+                          buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
 	NEW(v); v.id := IdVar;
 	DeclConnect(v, ds, buf, begin, end);
@@ -785,7 +785,7 @@ BEGIN
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
-					buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                    buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	IF SearchName(proc.params, buf, begin, end) = NIL THEN
@@ -1198,7 +1198,7 @@ BEGIN
 END SelPointerNew;
 
 PROCEDURE SelArrayNew*(VAR sel: Selector; VAR type: Type; index: Expression)
-					  : INTEGER;
+                      : INTEGER;
 VAR sa: SelArray;
 	err: INTEGER;
 BEGIN
@@ -1212,8 +1212,8 @@ BEGIN
 	ELSIF (index.value # NIL) & (index.value(ExprInteger).int < 0) THEN
 		err := ErrArrayIndexNegative
 	ELSIF (index.value # NIL)
-		& (type(Array).count # NIL) & (type(Array).count.value # NIL)
-		& (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
+	    & (type(Array).count # NIL) & (type(Array).count.value # NIL)
+	    & (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
 	THEN
 		err := ErrArrayIndexOutOfRange
 	ELSE
@@ -1365,15 +1365,15 @@ VAR comp: BOOLEAN;
 			fp1 := t1.params;
 			fp2 := t2.params;
 			WHILE (fp1 # NIL) & (fp2 # NIL)
-				& (fp1 IS FormalParam) & (fp2 IS FormalParam)
-				& (fp1.type = fp2.type)
-				& (fp1(FormalParam).isVar = fp2(FormalParam).isVar)
+			    & (fp1 IS FormalParam) & (fp2 IS FormalParam)
+			    & (fp1.type = fp2.type)
+			    & (fp1(FormalParam).isVar = fp2(FormalParam).isVar)
 			DO
 				fp1 := fp1.next;
 				fp2 := fp2.next
 			END;
 			comp := ((fp1 = NIL) OR ~(fp1 IS FormalParam))
-				  & ((fp2 = NIL) OR ~(fp2 IS FormalParam))
+			      & ((fp2 = NIL) OR ~(fp2 IS FormalParam))
 		END
 		RETURN comp
 	END EqualProcTypes;
@@ -1433,9 +1433,9 @@ BEGIN
 	Log.Int(ORD((e2.value # NIL)));
 	Log.Ln; 
 	ret := (t1.id = IdChar)
-		 & (e2.value # NIL)
-		 & (e2.value IS ExprString)
-		 & (e2.value(ExprString).int >= 0);
+	     & (e2.value # NIL)
+	     & (e2.value IS ExprString)
+	     & (e2.value(ExprString).int >= 0);
 	IF ret & ~e2.value(ExprString).asChar THEN
 		IF e2 IS ExprString THEN
 			e2 := ExprCharNew(e2.value(ExprString).int)
@@ -1458,7 +1458,7 @@ VAR err: INTEGER;
 	v1, v2: Expression;
 
 	PROCEDURE CheckType(t1, t2: Type; VAR e1, e2: Expression; relation: INTEGER;
-						VAR distance, err: INTEGER): BOOLEAN;
+	                    VAR distance, err: INTEGER): BOOLEAN;
 	VAR continue: BOOLEAN;
 		dist1, dist2: INTEGER;
 	BEGIN
@@ -1470,13 +1470,13 @@ VAR err: INTEGER;
 			continue := (t1.id = IdInteger) & (t2.id = IdSet);
 			IF ~continue THEN
 				err := ErrExprInWrongTypes - 3 + ORD(t1.id # IdInteger)
-											   + ORD(t2.id # IdSet) * 2
+				                               + ORD(t2.id # IdSet) * 2
 			END
 		ELSIF ~CompatibleTypes(dist1, t1, t2)
-			& ~CompatibleTypes(dist2, t2, t1)
-			& ~CompatibleAsCharAndString(t1, e2)
-			& ~CompatibleAsCharAndString(t2, e1)
-			& ~CompatibleAsIntAndByte(t1, t2)
+		    & ~CompatibleTypes(dist2, t2, t1)
+		    & ~CompatibleAsCharAndString(t1, e2)
+		    & ~CompatibleAsCharAndString(t2, e1)
+		    & ~CompatibleAsIntAndByte(t1, t2)
 		THEN
 			err := ErrRelationExprDifferenTypes;
 			continue := FALSE
@@ -1489,11 +1489,11 @@ VAR err: INTEGER;
 			err := ErrRelIncompatibleType
 		ELSE
 			continue := (relation = Scanner.Equal) OR (relation = Scanner.Inequal)
-					 OR (t1.id = IdSet) & (
-							(relation = Scanner.LessEqual)
-							OR
-							(relation = Scanner.GreaterEqual)
-						);
+			         OR (t1.id = IdSet) & (
+			                (relation = Scanner.LessEqual)
+			                OR
+			                (relation = Scanner.GreaterEqual)
+			            );
 			IF ~continue THEN
 				err := ErrRelIncompatibleType
 			END
@@ -1693,7 +1693,7 @@ BEGIN
 				END
 			| IdReal:
 				fullSum.value(ExprReal).real :=
-					fullSum.value(ExprReal).real
+				    fullSum.value(ExprReal).real
 				  + term.value(ExprReal).real * FLT(LexToSign(add))
 			| IdSet:
 				IF add = Scanner.Plus THEN
@@ -2043,28 +2043,28 @@ BEGIN
 	IF currentFormalParam # NIL THEN
 		IF ~CompatibleTypes(distance, currentFormalParam.type, e.type)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
-		 &	   (currentFormalParam.isVar
-			OR ~CompatibleAsIntAndByte(currentFormalParam.type, e.type)
-			   )
+		 &     (currentFormalParam.isVar
+		    OR ~CompatibleAsIntAndByte(currentFormalParam.type, e.type)
+		       )
 		 & ~TypeVariation(call, e.type, currentFormalParam)
 		THEN
 			err := ErrCallIncompatibleParamType
 		ELSIF currentFormalParam.isVar THEN
 			IF ~(IsVar(e)
 			   & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
-				)
+			    )
 			THEN
 				err := ErrCallExpectVarParam
 			ELSIF (e.type # NIL) & (e.type.id = IdPointer)
-				& (e.type # currentFormalParam.type)
-				& (currentFormalParam.type # NIL)
-				& (currentFormalParam.type.type # NIL)
-				& (e.type.type # NIL)
+			    & (e.type # currentFormalParam.type)
+			    & (currentFormalParam.type # NIL)
+			    & (currentFormalParam.type.type # NIL)
+			    & (e.type.type # NIL)
 			THEN
 				err := ErrCallVarPointerTypeNotSame
 			END
 		ELSIF (currentFormalParam.type.id = IdByte) & (e.type.id = IdInteger)
-			& (e.value # NIL) & ~Limits.InByteRange(e.value(ExprInteger).int)
+		    & (e.value # NIL) & ~Limits.InByteRange(e.value(ExprInteger).int)
 		THEN
 			err := ErrValueOutOfRangeOfByte
 		END;
@@ -2354,9 +2354,9 @@ BEGIN
 	IF ~(decl IS Const) THEN
 		err := ErrCaseLabelNotConst
 	ELSIF ~(decl(Const).expr.type.id IN {IdInteger, IdChar})
-		& ~((decl(Const).expr IS ExprString)
-		  & (decl(Const).expr(ExprString).int > -1)
-		   )
+	    & ~((decl(Const).expr IS ExprString)
+	    & (decl(Const).expr(ExprString).int > -1)
+	       )
 	THEN
 		(*Log.Str("Label type id "); Log.Int(decl(Const).expr.type.id); Log.Ln;*)
 		err := ErrCaseLabelNotIntOrChar
@@ -2403,7 +2403,8 @@ BEGIN
 	ELSE
 		cross := (l1.value = l2.value)
 			  OR (l2.right # NIL) & (l2.right.value >= l1.value)
-	END
+	END;
+	Log.Str("IsRangesCross "); Log.Bool(cross); Log.Ln
 	RETURN cross
 END IsRangesCross;
 
@@ -2411,7 +2412,8 @@ PROCEDURE IsListCrossRange(list, range: CaseLabel): BOOLEAN;
 BEGIN
 	WHILE (list # NIL) & ~IsRangesCross(list, range) DO
 		list := list.next
-	END
+	END;
+	Log.Str("IsListCrossRange "); Log.Bool(list # NIL); Log.Ln
 	RETURN list # NIL
 END IsListCrossRange;
 
@@ -2419,7 +2421,8 @@ PROCEDURE IsElementsCrossRange(elem: CaseElement; range: CaseLabel): BOOLEAN;
 BEGIN
 	WHILE (elem # NIL) & ~IsListCrossRange(elem.labels, range) DO
 		elem := elem.next
-	END
+	END;
+	Log.Str("IsElementsCrossRange "); Log.Bool(elem # NIL); Log.Ln
 	RETURN elem # NIL
 END IsElementsCrossRange;
 

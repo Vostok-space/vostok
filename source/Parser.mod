@@ -28,42 +28,42 @@ IMPORT
 CONST
 	ErrNo = 0;
 	Err = Scanner.ErrMin;
-	
-	ErrExpectModule*				= Err - 01;
-	ErrExpectIdent*					= Err - 02;
-	ErrExpectColon*					= Err - 03;
-	ErrExpectSemicolon*				= Err - 04;
-	ErrExpectEnd*					= Err - 05;
-	ErrExpectDot*					= Err - 06;
-	ErrExpectModuleName*			= Err - 07;
-	ErrExpectEqual*					= Err - 08;
-	ErrExpectBrace1Close*			= Err - 09;
-	ErrExpectBrace2Close*			= Err - 10;
-	ErrExpectBrace3Close*			= Err - 11;
-	ErrExpectOf*					= Err - 12;
-	ErrExpectTo*					= Err - 15;
-	ErrExpectStructuredType*		= Err - 16;
-	ErrExpectRecord*				= Err - 17;
-	ErrExpectStatement*				= Err - 18;
-	ErrExpectThen*					= Err - 19;
-	ErrExpectAssign*				= Err - 20;
-	ErrExpectVarRecordOrPointer*	= Err - 22;
-	ErrExpectType*					= Err - 24;
-	ErrExpectUntil*					= Err - 25;
-	ErrExpectDo*					= Err - 26;
-	ErrExpectDesignator*			= Err - 28;
-	ErrExpectProcedure*				= Err - 30;
-	ErrExpectConstName*				= Err - 31;
-	ErrExpectProcedureName*			= Err - 32;
-	ErrExpectExpression*			= Err - 33;
-	ErrExpectIntOrStrOrQualident*	= Err - 34;
-	ErrExcessSemicolon*				= Err - 35;
 
-	ErrEndModuleNameNotMatch*		= Err - 50;
-	ErrArrayDimensionsTooMany*		= Err - 51;
-	ErrEndProcedureNameNotMatch*	= Err - 52;
-	ErrFunctionWithoutBraces*		= Err - 53;
-	ErrArrayLenLess1*				= Err - 54;
+	ErrExpectModule*                = Err - 01;
+	ErrExpectIdent*                 = Err - 02;
+	ErrExpectColon*                 = Err - 03;
+	ErrExpectSemicolon*             = Err - 04;
+	ErrExpectEnd*                   = Err - 05;
+	ErrExpectDot*                   = Err - 06;
+	ErrExpectModuleName*            = Err - 07;
+	ErrExpectEqual*                 = Err - 08;
+	ErrExpectBrace1Close*           = Err - 09;
+	ErrExpectBrace2Close*           = Err - 10;
+	ErrExpectBrace3Close*           = Err - 11;
+	ErrExpectOf*                    = Err - 12;
+	ErrExpectTo*                    = Err - 15;
+	ErrExpectStructuredType*        = Err - 16;
+	ErrExpectRecord*                = Err - 17;
+	ErrExpectStatement*             = Err - 18;
+	ErrExpectThen*                  = Err - 19;
+	ErrExpectAssign*                = Err - 20;
+	ErrExpectVarRecordOrPointer*    = Err - 22;
+	ErrExpectType*                  = Err - 24;
+	ErrExpectUntil*                 = Err - 25;
+	ErrExpectDo*                    = Err - 26;
+	ErrExpectDesignator*            = Err - 28;
+	ErrExpectProcedure*             = Err - 30;
+	ErrExpectConstName*             = Err - 31;
+	ErrExpectProcedureName*         = Err - 32;
+	ErrExpectExpression*            = Err - 33;
+	ErrExpectIntOrStrOrQualident*   = Err - 34;
+	ErrExcessSemicolon*             = Err - 35;
+
+	ErrEndModuleNameNotMatch*       = Err - 50;
+	ErrArrayDimensionsTooMany*      = Err - 51;
+	ErrEndProcedureNameNotMatch*    = Err - 52;
+	ErrFunctionWithoutBraces*       = Err - 53;
+	ErrArrayLenLess1*               = Err - 54;
 
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
@@ -858,15 +858,15 @@ PROCEDURE Type(VAR p: Parser; ds: Ast.Declarations;
                nameBegin, nameEnd: INTEGER): Ast.Type;
 VAR t: Ast.Type;
 BEGIN
-	IF p.l = Scanner.Array			THEN
+	IF p.l = Scanner.Array THEN
 		t := Array(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Pointer		THEN
+	ELSIF p.l = Scanner.Pointer THEN
 		t := Pointer(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Procedure	THEN
+	ELSIF p.l = Scanner.Procedure THEN
 		t := TypeProcedure(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Record		THEN
+	ELSIF p.l = Scanner.Record THEN
 		t := Record(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Ident		THEN
+	ELSIF p.l = Scanner.Ident THEN
 		t := TypeNamed(p, ds)
 	ELSE
 		t := Ast.TypeGet(Ast.IdInteger);
@@ -1219,9 +1219,7 @@ BEGIN
 	ASSERT(p.l = Scanner.Procedure);
 	Scan(p);
 	ExpectIdent(p, nameStart, nameEnd, ErrExpectIdent);
-	CheckAst(p,
-		Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd)
-	);
+	CheckAst(p, Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd));
 	Mark(p, proc);
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);

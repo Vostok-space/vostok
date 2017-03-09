@@ -36,20 +36,20 @@ TYPE
 
 	Handle* = PROCEDURE(VAR this: Base; VAR mes: Message): BOOLEAN;
 
-	MsgFinalize*	= RECORD(Base) END;
-	MsgNeedMemory*	= RECORD(Base) END;
-	MsgCopy*		= RECORD(Base)
-		copy*: PBase
-	END;
-	MsgLinks*		= RECORD(Base)
-		diff*, count*: INTEGER
-	END;
+	MsgFinalize*    = RECORD(Base) END;
+	MsgNeedMemory*  = RECORD(Base) END;
+	MsgCopy*        = RECORD(Base)
+	                      copy*: PBase
+	                  END;
+	MsgLinks*       = RECORD(Base)
+	                      diff*, count*: INTEGER
+	                  END;
 	MsgContentPass* = RECORD(Base)
-		id*: INTEGER 
-	END;
-	MsgHash* = RECORD(Base)
-		hash*: INTEGER
-	END;
+	                      id*: INTEGER 
+	                  END;
+	MsgHash*        = RECORD(Base)
+	                      hash*: INTEGER
+	                  END;
 
 PROCEDURE Nothing(VAR this: Base; VAR mes: Message): BOOLEAN;
 	RETURN FALSE

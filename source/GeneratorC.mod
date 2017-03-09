@@ -573,7 +573,7 @@ VAR sel: Ast.Selector;
 	END Declarator;
 
 	PROCEDURE Array(VAR gen: Generator; VAR type: Ast.Type;
-					VAR sel: Ast.Selector; decl: Ast.Declaration);
+	                VAR sel: Ast.Selector; decl: Ast.Declaration);
 	VAR s: Ast.Selector;
 		i, j: INTEGER;
 
@@ -712,7 +712,7 @@ BEGIN
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
 	gen.opt.lastSelectorDereference := (sels.i > 0)
-									 & (sels.list[sels.i] IS Ast.SelPointer);
+	                                 & (sels.list[sels.i] IS Ast.SelPointer);
 	Selector(gen, sels, sels.i, typ)
 END Designator;
 
@@ -2076,7 +2076,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 					base := st.designator.type(Ast.Record);
 					type := st.expr.type(Ast.Record)
 				ELSIF (st.designator.type.id = Ast.IdArray)
-					& (st.designator.type.type.id # Ast.IdString)
+				    & (st.designator.type.type.id # Ast.IdString)
 				THEN
 					Str(gen, ", sizeof(");
 					Expression(gen, st.expr);
