@@ -184,7 +184,7 @@ static o7c_bool IsNameOccupied_Eq(struct StringStore_String *name, o7c_tag_t nam
 }
 
 static o7c_bool IsNameOccupied(struct StringStore_String *n, o7c_tag_t n_tag) {
-	return IsNameOccupied_Eq(&(*n), n_tag, "auto", 5) || IsNameOccupied_Eq(&(*n), n_tag, "break", 6) || IsNameOccupied_Eq(&(*n), n_tag, "case", 5) || IsNameOccupied_Eq(&(*n), n_tag, "char", 5) || IsNameOccupied_Eq(&(*n), n_tag, "const", 6) || IsNameOccupied_Eq(&(*n), n_tag, "continue", 9) || IsNameOccupied_Eq(&(*n), n_tag, "default", 8) || IsNameOccupied_Eq(&(*n), n_tag, "do", 3) || IsNameOccupied_Eq(&(*n), n_tag, "double", 7) || IsNameOccupied_Eq(&(*n), n_tag, "else", 5) || IsNameOccupied_Eq(&(*n), n_tag, "enum", 5) || IsNameOccupied_Eq(&(*n), n_tag, "extern", 7) || IsNameOccupied_Eq(&(*n), n_tag, "float", 6) || IsNameOccupied_Eq(&(*n), n_tag, "for", 4) || IsNameOccupied_Eq(&(*n), n_tag, "goto", 5) || IsNameOccupied_Eq(&(*n), n_tag, "if", 3) || IsNameOccupied_Eq(&(*n), n_tag, "inline", 7) || IsNameOccupied_Eq(&(*n), n_tag, "int", 4) || IsNameOccupied_Eq(&(*n), n_tag, "long", 5) || IsNameOccupied_Eq(&(*n), n_tag, "register", 9) || IsNameOccupied_Eq(&(*n), n_tag, "return", 7) || IsNameOccupied_Eq(&(*n), n_tag, "short", 6) || IsNameOccupied_Eq(&(*n), n_tag, "signed", 7) || IsNameOccupied_Eq(&(*n), n_tag, "sizeof", 7) || IsNameOccupied_Eq(&(*n), n_tag, "static", 7) || IsNameOccupied_Eq(&(*n), n_tag, "struct", 7) || IsNameOccupied_Eq(&(*n), n_tag, "switch", 7) || IsNameOccupied_Eq(&(*n), n_tag, "typedef", 8) || IsNameOccupied_Eq(&(*n), n_tag, "union", 6) || IsNameOccupied_Eq(&(*n), n_tag, "unsigned", 9) || IsNameOccupied_Eq(&(*n), n_tag, "void", 5) || IsNameOccupied_Eq(&(*n), n_tag, "volatile", 9) || IsNameOccupied_Eq(&(*n), n_tag, "while", 6) || IsNameOccupied_Eq(&(*n), n_tag, "asm", 4) || IsNameOccupied_Eq(&(*n), n_tag, "typeof", 7) || IsNameOccupied_Eq(&(*n), n_tag, "abort", 6) || IsNameOccupied_Eq(&(*n), n_tag, "assert", 7) || IsNameOccupied_Eq(&(*n), n_tag, "bool", 5) || IsNameOccupied_Eq(&(*n), n_tag, "calloc", 7) || IsNameOccupied_Eq(&(*n), n_tag, "free", 5) || IsNameOccupied_Eq(&(*n), n_tag, "main", 5) || IsNameOccupied_Eq(&(*n), n_tag, "malloc", 7) || IsNameOccupied_Eq(&(*n), n_tag, "memcmp", 7) || IsNameOccupied_Eq(&(*n), n_tag, "memset", 7) || IsNameOccupied_Eq(&(*n), n_tag, "NULL", 5) || IsNameOccupied_Eq(&(*n), n_tag, "strcmp", 7) || IsNameOccupied_Eq(&(*n), n_tag, "strcpy", 7) || IsNameOccupied_Eq(&(*n), n_tag, "realloc", 8) || IsNameOccupied_Eq(&(*n), n_tag, "array", 6) || IsNameOccupied_Eq(&(*n), n_tag, "catch", 6) || IsNameOccupied_Eq(&(*n), n_tag, "class", 6) || IsNameOccupied_Eq(&(*n), n_tag, "decltype", 9) || IsNameOccupied_Eq(&(*n), n_tag, "delegate", 9) || IsNameOccupied_Eq(&(*n), n_tag, "delete", 7) || IsNameOccupied_Eq(&(*n), n_tag, "deprecated", 11) || IsNameOccupied_Eq(&(*n), n_tag, "dllexport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "dllimport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "dllexport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "event", 6) || IsNameOccupied_Eq(&(*n), n_tag, "explicit", 9) || IsNameOccupied_Eq(&(*n), n_tag, "finally", 8) || IsNameOccupied_Eq(&(*n), n_tag, "each", 5) || IsNameOccupied_Eq(&(*n), n_tag, "in", 3) || IsNameOccupied_Eq(&(*n), n_tag, "friend", 7) || IsNameOccupied_Eq(&(*n), n_tag, "gcnew", 6) || IsNameOccupied_Eq(&(*n), n_tag, "generic", 8) || IsNameOccupied_Eq(&(*n), n_tag, "initonly", 9) || IsNameOccupied_Eq(&(*n), n_tag, "interface", 10) || IsNameOccupied_Eq(&(*n), n_tag, "literal", 8) || IsNameOccupied_Eq(&(*n), n_tag, "mutable", 8) || IsNameOccupied_Eq(&(*n), n_tag, "naked", 6) || IsNameOccupied_Eq(&(*n), n_tag, "namespace", 10) || IsNameOccupied_Eq(&(*n), n_tag, "new", 4) || IsNameOccupied_Eq(&(*n), n_tag, "noinline", 9) || IsNameOccupied_Eq(&(*n), n_tag, "noreturn", 9) || IsNameOccupied_Eq(&(*n), n_tag, "nothrow", 8) || IsNameOccupied_Eq(&(*n), n_tag, "novtable", 9) || IsNameOccupied_Eq(&(*n), n_tag, "nullptr", 8) || IsNameOccupied_Eq(&(*n), n_tag, "operator", 9) || IsNameOccupied_Eq(&(*n), n_tag, "private", 8) || IsNameOccupied_Eq(&(*n), n_tag, "property", 9) || IsNameOccupied_Eq(&(*n), n_tag, "protected", 10) || IsNameOccupied_Eq(&(*n), n_tag, "public", 7) || IsNameOccupied_Eq(&(*n), n_tag, "ref", 4) || IsNameOccupied_Eq(&(*n), n_tag, "safecast", 9) || IsNameOccupied_Eq(&(*n), n_tag, "sealed", 7) || IsNameOccupied_Eq(&(*n), n_tag, "selectany", 10) || IsNameOccupied_Eq(&(*n), n_tag, "super", 6) || IsNameOccupied_Eq(&(*n), n_tag, "template", 9) || IsNameOccupied_Eq(&(*n), n_tag, "this", 5) || IsNameOccupied_Eq(&(*n), n_tag, "thread", 7) || IsNameOccupied_Eq(&(*n), n_tag, "throw", 6) || IsNameOccupied_Eq(&(*n), n_tag, "try", 4) || IsNameOccupied_Eq(&(*n), n_tag, "typeid", 7) || IsNameOccupied_Eq(&(*n), n_tag, "typename", 9) || IsNameOccupied_Eq(&(*n), n_tag, "uuid", 5) || IsNameOccupied_Eq(&(*n), n_tag, "value", 6) || IsNameOccupied_Eq(&(*n), n_tag, "virtual", 8) || IsNameOccupied_Eq(&(*n), n_tag, "abstract", 9) || IsNameOccupied_Eq(&(*n), n_tag, "arguments", 10) || IsNameOccupied_Eq(&(*n), n_tag, "boolean", 8) || IsNameOccupied_Eq(&(*n), n_tag, "byte", 5) || IsNameOccupied_Eq(&(*n), n_tag, "debugger", 9) || IsNameOccupied_Eq(&(*n), n_tag, "eval", 5) || IsNameOccupied_Eq(&(*n), n_tag, "export", 7) || IsNameOccupied_Eq(&(*n), n_tag, "extends", 8) || IsNameOccupied_Eq(&(*n), n_tag, "final", 6) || IsNameOccupied_Eq(&(*n), n_tag, "function", 9) || IsNameOccupied_Eq(&(*n), n_tag, "implements", 11) || IsNameOccupied_Eq(&(*n), n_tag, "import", 7) || IsNameOccupied_Eq(&(*n), n_tag, "instanceof", 11) || IsNameOccupied_Eq(&(*n), n_tag, "interface", 10) || IsNameOccupied_Eq(&(*n), n_tag, "let", 4) || IsNameOccupied_Eq(&(*n), n_tag, "native", 7) || IsNameOccupied_Eq(&(*n), n_tag, "null", 5) || IsNameOccupied_Eq(&(*n), n_tag, "package", 8) || IsNameOccupied_Eq(&(*n), n_tag, "private", 8) || IsNameOccupied_Eq(&(*n), n_tag, "protected", 10) || IsNameOccupied_Eq(&(*n), n_tag, "synchronized", 13) || IsNameOccupied_Eq(&(*n), n_tag, "throws", 7) || IsNameOccupied_Eq(&(*n), n_tag, "transient", 10) || IsNameOccupied_Eq(&(*n), n_tag, "var", 4) || IsNameOccupied_Eq(&(*n), n_tag, "func", 5) || IsNameOccupied_Eq(&(*n), n_tag, "o7c", 4) || IsNameOccupied_Eq(&(*n), n_tag, "O7C", 4) || IsNameOccupied_Eq(&(*n), n_tag, "initialized", 12) || IsNameOccupied_Eq(&(*n), n_tag, "init", 5);
+	return IsNameOccupied_Eq(&(*n), n_tag, "auto", 5) || IsNameOccupied_Eq(&(*n), n_tag, "break", 6) || IsNameOccupied_Eq(&(*n), n_tag, "case", 5) || IsNameOccupied_Eq(&(*n), n_tag, "char", 5) || IsNameOccupied_Eq(&(*n), n_tag, "const", 6) || IsNameOccupied_Eq(&(*n), n_tag, "continue", 9) || IsNameOccupied_Eq(&(*n), n_tag, "default", 8) || IsNameOccupied_Eq(&(*n), n_tag, "do", 3) || IsNameOccupied_Eq(&(*n), n_tag, "double", 7) || IsNameOccupied_Eq(&(*n), n_tag, "else", 5) || IsNameOccupied_Eq(&(*n), n_tag, "enum", 5) || IsNameOccupied_Eq(&(*n), n_tag, "extern", 7) || IsNameOccupied_Eq(&(*n), n_tag, "float", 6) || IsNameOccupied_Eq(&(*n), n_tag, "for", 4) || IsNameOccupied_Eq(&(*n), n_tag, "goto", 5) || IsNameOccupied_Eq(&(*n), n_tag, "if", 3) || IsNameOccupied_Eq(&(*n), n_tag, "inline", 7) || IsNameOccupied_Eq(&(*n), n_tag, "int", 4) || IsNameOccupied_Eq(&(*n), n_tag, "long", 5) || IsNameOccupied_Eq(&(*n), n_tag, "register", 9) || IsNameOccupied_Eq(&(*n), n_tag, "return", 7) || IsNameOccupied_Eq(&(*n), n_tag, "short", 6) || IsNameOccupied_Eq(&(*n), n_tag, "signed", 7) || IsNameOccupied_Eq(&(*n), n_tag, "sizeof", 7) || IsNameOccupied_Eq(&(*n), n_tag, "static", 7) || IsNameOccupied_Eq(&(*n), n_tag, "struct", 7) || IsNameOccupied_Eq(&(*n), n_tag, "switch", 7) || IsNameOccupied_Eq(&(*n), n_tag, "typedef", 8) || IsNameOccupied_Eq(&(*n), n_tag, "union", 6) || IsNameOccupied_Eq(&(*n), n_tag, "unsigned", 9) || IsNameOccupied_Eq(&(*n), n_tag, "void", 5) || IsNameOccupied_Eq(&(*n), n_tag, "volatile", 9) || IsNameOccupied_Eq(&(*n), n_tag, "while", 6) || IsNameOccupied_Eq(&(*n), n_tag, "asm", 4) || IsNameOccupied_Eq(&(*n), n_tag, "typeof", 7) || IsNameOccupied_Eq(&(*n), n_tag, "abort", 6) || IsNameOccupied_Eq(&(*n), n_tag, "assert", 7) || IsNameOccupied_Eq(&(*n), n_tag, "bool", 5) || IsNameOccupied_Eq(&(*n), n_tag, "calloc", 7) || IsNameOccupied_Eq(&(*n), n_tag, "free", 5) || IsNameOccupied_Eq(&(*n), n_tag, "main", 5) || IsNameOccupied_Eq(&(*n), n_tag, "malloc", 7) || IsNameOccupied_Eq(&(*n), n_tag, "memcmp", 7) || IsNameOccupied_Eq(&(*n), n_tag, "memcpy", 7) || IsNameOccupied_Eq(&(*n), n_tag, "memset", 7) || IsNameOccupied_Eq(&(*n), n_tag, "NULL", 5) || IsNameOccupied_Eq(&(*n), n_tag, "strcmp", 7) || IsNameOccupied_Eq(&(*n), n_tag, "strcpy", 7) || IsNameOccupied_Eq(&(*n), n_tag, "realloc", 8) || IsNameOccupied_Eq(&(*n), n_tag, "array", 6) || IsNameOccupied_Eq(&(*n), n_tag, "catch", 6) || IsNameOccupied_Eq(&(*n), n_tag, "class", 6) || IsNameOccupied_Eq(&(*n), n_tag, "decltype", 9) || IsNameOccupied_Eq(&(*n), n_tag, "delegate", 9) || IsNameOccupied_Eq(&(*n), n_tag, "delete", 7) || IsNameOccupied_Eq(&(*n), n_tag, "deprecated", 11) || IsNameOccupied_Eq(&(*n), n_tag, "dllexport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "dllimport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "dllexport", 10) || IsNameOccupied_Eq(&(*n), n_tag, "event", 6) || IsNameOccupied_Eq(&(*n), n_tag, "explicit", 9) || IsNameOccupied_Eq(&(*n), n_tag, "finally", 8) || IsNameOccupied_Eq(&(*n), n_tag, "each", 5) || IsNameOccupied_Eq(&(*n), n_tag, "in", 3) || IsNameOccupied_Eq(&(*n), n_tag, "friend", 7) || IsNameOccupied_Eq(&(*n), n_tag, "gcnew", 6) || IsNameOccupied_Eq(&(*n), n_tag, "generic", 8) || IsNameOccupied_Eq(&(*n), n_tag, "initonly", 9) || IsNameOccupied_Eq(&(*n), n_tag, "interface", 10) || IsNameOccupied_Eq(&(*n), n_tag, "literal", 8) || IsNameOccupied_Eq(&(*n), n_tag, "mutable", 8) || IsNameOccupied_Eq(&(*n), n_tag, "naked", 6) || IsNameOccupied_Eq(&(*n), n_tag, "namespace", 10) || IsNameOccupied_Eq(&(*n), n_tag, "new", 4) || IsNameOccupied_Eq(&(*n), n_tag, "noinline", 9) || IsNameOccupied_Eq(&(*n), n_tag, "noreturn", 9) || IsNameOccupied_Eq(&(*n), n_tag, "nothrow", 8) || IsNameOccupied_Eq(&(*n), n_tag, "novtable", 9) || IsNameOccupied_Eq(&(*n), n_tag, "nullptr", 8) || IsNameOccupied_Eq(&(*n), n_tag, "operator", 9) || IsNameOccupied_Eq(&(*n), n_tag, "private", 8) || IsNameOccupied_Eq(&(*n), n_tag, "property", 9) || IsNameOccupied_Eq(&(*n), n_tag, "protected", 10) || IsNameOccupied_Eq(&(*n), n_tag, "public", 7) || IsNameOccupied_Eq(&(*n), n_tag, "ref", 4) || IsNameOccupied_Eq(&(*n), n_tag, "safecast", 9) || IsNameOccupied_Eq(&(*n), n_tag, "sealed", 7) || IsNameOccupied_Eq(&(*n), n_tag, "selectany", 10) || IsNameOccupied_Eq(&(*n), n_tag, "super", 6) || IsNameOccupied_Eq(&(*n), n_tag, "template", 9) || IsNameOccupied_Eq(&(*n), n_tag, "this", 5) || IsNameOccupied_Eq(&(*n), n_tag, "thread", 7) || IsNameOccupied_Eq(&(*n), n_tag, "throw", 6) || IsNameOccupied_Eq(&(*n), n_tag, "try", 4) || IsNameOccupied_Eq(&(*n), n_tag, "typeid", 7) || IsNameOccupied_Eq(&(*n), n_tag, "typename", 9) || IsNameOccupied_Eq(&(*n), n_tag, "uuid", 5) || IsNameOccupied_Eq(&(*n), n_tag, "value", 6) || IsNameOccupied_Eq(&(*n), n_tag, "virtual", 8) || IsNameOccupied_Eq(&(*n), n_tag, "abstract", 9) || IsNameOccupied_Eq(&(*n), n_tag, "arguments", 10) || IsNameOccupied_Eq(&(*n), n_tag, "boolean", 8) || IsNameOccupied_Eq(&(*n), n_tag, "byte", 5) || IsNameOccupied_Eq(&(*n), n_tag, "debugger", 9) || IsNameOccupied_Eq(&(*n), n_tag, "eval", 5) || IsNameOccupied_Eq(&(*n), n_tag, "export", 7) || IsNameOccupied_Eq(&(*n), n_tag, "extends", 8) || IsNameOccupied_Eq(&(*n), n_tag, "final", 6) || IsNameOccupied_Eq(&(*n), n_tag, "function", 9) || IsNameOccupied_Eq(&(*n), n_tag, "implements", 11) || IsNameOccupied_Eq(&(*n), n_tag, "import", 7) || IsNameOccupied_Eq(&(*n), n_tag, "instanceof", 11) || IsNameOccupied_Eq(&(*n), n_tag, "interface", 10) || IsNameOccupied_Eq(&(*n), n_tag, "let", 4) || IsNameOccupied_Eq(&(*n), n_tag, "native", 7) || IsNameOccupied_Eq(&(*n), n_tag, "null", 5) || IsNameOccupied_Eq(&(*n), n_tag, "package", 8) || IsNameOccupied_Eq(&(*n), n_tag, "private", 8) || IsNameOccupied_Eq(&(*n), n_tag, "protected", 10) || IsNameOccupied_Eq(&(*n), n_tag, "synchronized", 13) || IsNameOccupied_Eq(&(*n), n_tag, "throws", 7) || IsNameOccupied_Eq(&(*n), n_tag, "transient", 10) || IsNameOccupied_Eq(&(*n), n_tag, "var", 4) || IsNameOccupied_Eq(&(*n), n_tag, "func", 5) || IsNameOccupied_Eq(&(*n), n_tag, "o7c", 4) || IsNameOccupied_Eq(&(*n), n_tag, "O7C", 4) || IsNameOccupied_Eq(&(*n), n_tag, "initialized", 12) || IsNameOccupied_Eq(&(*n), n_tag, "init", 5);
 }
 
 static void Name(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RDeclaration *decl) {
@@ -277,6 +277,23 @@ static o7c_bool CheckStructName(struct GeneratorC_Generator *gen, o7c_tag_t gen_
 	return rec->_._._.name.block != NULL;
 }
 
+static void ArrayLen(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RType *type, struct Ast_RDeclaration *decl, struct Ast_RSelector *sel) {
+	int i = O7C_INT_UNDEF;
+
+	if (O7C_GUARD(Ast_RArray, &type)->count != NULL) {
+		expression(&(*gen), gen_tag, O7C_GUARD(Ast_RArray, &type)->count);
+	} else {
+		GlobalName(&(*gen), gen_tag, decl);
+		Str(&(*gen), gen_tag, "_len", 5);
+		i =  - 1;
+		while (sel != NULL) {
+			i = o7c_add(i, 1);
+			sel = sel->next;
+		}
+		Int(&(*gen), gen_tag, i);
+	}
+}
+
 static void Selector(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Selectors *sels, o7c_tag_t sels_tag, int i, struct Ast_RType **typ);
 static void Selector_Record(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RType **type, struct Ast_RSelector **sel);
 static o7c_bool Record_Selector_Search(Ast_Record ds, struct Ast_RDeclaration *d) {
@@ -353,7 +370,7 @@ static void Selector_Array(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, 
 	if ((o7c_cmp((*type)->_.type->_._.id, Ast_IdArray_cnst) !=  0) || (O7C_GUARD(Ast_RArray, &(*type))->count != NULL)) {
 		if (o7c_bl((*gen).opt->checkIndex) && ((O7C_GUARD(Ast_SelArray_s, &(*sel))->index->value_ == NULL) || (O7C_GUARD(Ast_RArray, &(*type))->count == NULL) && (o7c_cmp(O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_SelArray_s, &(*sel))->index->value_)->int_, 0) !=  0))) {
 			Str(&(*gen), gen_tag, "o7c_ind(", 9);
-			Array_Selector_Len(&(*gen), gen_tag, (*type), decl, (*sel));
+			ArrayLen(&(*gen), gen_tag, (*type), decl, (*sel));
 			Str(&(*gen), gen_tag, ", ", 3);
 			expression(&(*gen), gen_tag, O7C_GUARD(Ast_SelArray_s, &(*sel))->index);
 			Str(&(*gen), gen_tag, ")", 2);
@@ -365,7 +382,7 @@ static void Selector_Array(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, 
 		while (((*sel) != NULL) && (o7c_is((*sel), Ast_SelArray_s_tag))) {
 			if (o7c_bl((*gen).opt->checkIndex) && ((O7C_GUARD(Ast_SelArray_s, &(*sel))->index->value_ == NULL) || (O7C_GUARD(Ast_RArray, &(*type))->count == NULL) && (o7c_cmp(O7C_GUARD(Ast_RExprInteger, &O7C_GUARD(Ast_SelArray_s, &(*sel))->index->value_)->int_, 0) !=  0))) {
 				Str(&(*gen), gen_tag, "][o7c_ind(", 11);
-				Array_Selector_Len(&(*gen), gen_tag, (*type), decl, (*sel));
+				ArrayLen(&(*gen), gen_tag, (*type), decl, (*sel));
 				Str(&(*gen), gen_tag, ", ", 3);
 				expression(&(*gen), gen_tag, O7C_GUARD(Ast_SelArray_s, &(*sel))->index);
 				Str(&(*gen), gen_tag, ")", 2);
@@ -721,6 +738,7 @@ static void Call_Expression_ActualParam(struct GeneratorC_Generator *gen, o7c_ta
 				Str(&(*gen), gen_tag, "_tag", 5);
 			}
 		} else if (o7c_cmp((*fp)->type->_._.id, Ast_IdChar_cnst) !=  0) {
+			i = 0;
 			while ((o7c_cmp(t->_._.id, Ast_IdArray_cnst) ==  0) && (O7C_GUARD(Ast_RArray, &(*fp)->type)->count == NULL)) {
 				Str(&(*gen), gen_tag, ", ", 3);
 				if (O7C_GUARD(Ast_RArray, &t)->count != NULL) {
@@ -768,7 +786,12 @@ static void Expression_Call(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag,
 static void Expression_Relation(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_ExprRelation rel);
 static void Relation_Expression_Simple(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_ExprRelation rel, o7c_char str[/*len0*/], int str_len0);
 static void Simple_Relation_Expression_Expr(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RExpression *e, int dist) {
-	if ((o7c_cmp(dist, 0) >  0) && (o7c_cmp(e->type->_._.id, Ast_IdPointer_cnst) ==  0) && !(*gen).opt->plan9) {
+	o7c_bool brace = O7C_BOOL_UNDEF;
+
+	brace = (o7c_cmp(e->type->_._.id, Ast_IdSet_cnst) ==  0) && !(o7c_is(e, Ast_RFactor_tag));
+	if (brace) {
+		Str(&(*gen), gen_tag, "(", 2);
+	} else if ((o7c_cmp(dist, 0) >  0) && (o7c_cmp(e->type->_._.id, Ast_IdPointer_cnst) ==  0) && !(*gen).opt->plan9) {
 		Str(&(*gen), gen_tag, "&", 2);
 	}
 	Expression(&(*gen), gen_tag, e);
@@ -782,14 +805,32 @@ static void Simple_Relation_Expression_Expr(struct GeneratorC_Generator *gen, o7
 			Str(&(*gen), gen_tag, "._", 3);
 		}
 	}
+	if (brace) {
+		Str(&(*gen), gen_tag, ")", 2);
+	}
+}
+
+static void Simple_Relation_Expression_Len(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RExpression *e) {
+	struct Ast_Designator_s *des = NULL;
+
+	if (O7C_GUARD(Ast_RArray, &e->type)->count != NULL) {
+		Expression(&(*gen), gen_tag, O7C_GUARD(Ast_RArray, &e->type)->count);
+	} else {
+		des = O7C_GUARD(Ast_Designator_s, &e);
+		ArrayLen(&(*gen), gen_tag, des->_._.type, des->decl, des->sel);
+	}
 }
 
 static void Relation_Expression_Simple(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, Ast_ExprRelation rel, o7c_char str[/*len0*/], int str_len0) {
 	if ((o7c_cmp(rel->exprs[0]->type->_._.id, Ast_IdArray_cnst) ==  0) && ((rel->exprs[0]->value_ == NULL) || !O7C_GUARD(Ast_ExprString_s, &rel->exprs[0]->value_)->asChar)) {
-		Str(&(*gen), gen_tag, "strcmp(", 8);
+		Str(&(*gen), gen_tag, "o7c_strcmp(", 12);
 		Simple_Relation_Expression_Expr(&(*gen), gen_tag, rel->exprs[0], o7c_sub(0, rel->distance));
 		Str(&(*gen), gen_tag, ", ", 3);
+		Simple_Relation_Expression_Len(&(*gen), gen_tag, rel->exprs[0]);
+		Str(&(*gen), gen_tag, ", ", 3);
 		Simple_Relation_Expression_Expr(&(*gen), gen_tag, rel->exprs[1], rel->distance);
+		Str(&(*gen), gen_tag, ", ", 3);
+		Simple_Relation_Expression_Len(&(*gen), gen_tag, rel->exprs[1]);
 		Str(&(*gen), gen_tag, ")", 2);
 		Str(&(*gen), gen_tag, str, str_len0);
 		Str(&(*gen), gen_tag, "0", 2);
@@ -1371,7 +1412,8 @@ static void Type_Simple(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, o7c
 	MemWriteInvert(&(*O7C_GUARD(MemoryOut, &(*gen).out)), NULL);
 }
 
-/*	ПоскольЋх или
+/*	Поскольку в Си нельзя полагаться на стабильность смещения переменных
+	в структуре, неплохо бы добавить возможность генерации импортируемых или
 	наследуемых структур на массив байт со смещениями.
 */
 static void Type_Record(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_Record_s *rec) {
@@ -1577,7 +1619,26 @@ static void Mark(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, o7c_bool m
 	}
 }
 
+static void Comment(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct StringStore_String *com, o7c_tag_t com_tag) {
+	struct StringStore_Iterator i ;
+	o7c_char prev = '\0';
+	memset(&i, 0, sizeof(i));
+
+	if (o7c_bl((*gen).opt->comment) && StringStore_GetIter(&i, StringStore_Iterator_tag, &(*com), com_tag, 0)) {
+		do {
+			prev = i.char_;
+		} while (!(!StringStore_IterNext(&i, StringStore_Iterator_tag) || (prev == (char unsigned)'/') && (i.char_ == (char unsigned)'*') || (prev == (char unsigned)'*') && (i.char_ == (char unsigned)'/')));
+		if (i.char_ == 0x00u) {
+			Tabs(&(*gen), gen_tag, 0);
+			Str(&(*gen), gen_tag, "/*", 3);
+			String(&(*gen), gen_tag, &(*com), com_tag);
+			StrLn(&(*gen), gen_tag, "*/", 3);
+		}
+	}
+}
+
 static void Const(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_Const_s *const_) {
+	Comment(&(*gen), gen_tag, &const_->_._.comment, StringStore_String_tag);
 	Str(&(*gen), gen_tag, "#define ", 9);
 	GlobalName(&(*gen), gen_tag, &const_->_);
 	Str(&(*gen), gen_tag, " ", 2);
@@ -1660,6 +1721,7 @@ static void Var(struct MOut *out, o7c_tag_t out_tag, struct Ast_RDeclaration *pr
 	o7c_bool same = O7C_BOOL_UNDEF, mark = O7C_BOOL_UNDEF;
 
 	mark = o7c_bl(var_->mark) && !(*out).opt->main_;
+	Comment(&(*out).g[o7c_ind(2, (int)mark)], GeneratorC_Generator_tag, &var_->_.comment, StringStore_String_tag);
 	same = (prev != NULL) && (prev->mark == mark) && (prev->type == var_->type);
 	if (!same) {
 		if (prev != NULL) {
@@ -2032,6 +2094,7 @@ static void Statement_Case(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, 
 }
 
 static void Statement(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RStatement *st) {
+	Comment(&(*gen), gen_tag, &st->_.comment, StringStore_String_tag);
 	Tabs(&(*gen), gen_tag, 0);
 	if (o7c_is(st, Ast_Assign_s_tag)) {
 		Statement_Assign(&(*gen), gen_tag, O7C_GUARD(Ast_Assign_s, &st));
@@ -2105,23 +2168,6 @@ static void Qualifier(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struc
 	default:
 		abort();
 		break;
-	}
-}
-
-static void Comment(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct StringStore_String *com, o7c_tag_t com_tag) {
-	struct StringStore_Iterator i ;
-	o7c_char prev = '\0';
-	memset(&i, 0, sizeof(i));
-
-	if (StringStore_GetIter(&i, StringStore_Iterator_tag, &(*com), com_tag, 0)) {
-		do {
-			prev = i.char_;
-		} while (!(!StringStore_IterNext(&i, StringStore_Iterator_tag) || (prev == (char unsigned)'/') && (i.char_ == (char unsigned)'*') || (prev == (char unsigned)'*') && (i.char_ == (char unsigned)'/')));
-		if (i.char_ == 0x00u) {
-			Str(&(*gen), gen_tag, "/*", 3);
-			String(&(*gen), gen_tag, &(*com), com_tag);
-			StrLn(&(*gen), gen_tag, "*/", 3);
-		}
 	}
 }
 
@@ -2425,6 +2471,7 @@ extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void) {
 		o->checkIndex = true;
 		o->checkArith = true;
 		o->caseAbort = true;
+		o->comment = true;
 		o->varInit = GeneratorC_VarInitUndefined_cnst;
 		o->memManager = GeneratorC_MemManagerNoFree_cnst;
 		o->main_ = false;

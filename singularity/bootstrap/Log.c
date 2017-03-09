@@ -50,6 +50,16 @@ extern void Log_Real(double x) {
 	}
 }
 
+extern void Log_Bool(o7c_bool b) {
+	if (Log_state) {
+		if (b) {
+			Out_String("TRUE", 5);
+		} else {
+			Out_String("FALSE", 6);
+		}
+	}
+}
+
 extern void Log_Turn(o7c_bool st) {
 	if (o7c_bl(st) && !init_) {
 		init_ = true;

@@ -286,8 +286,17 @@ static void ErrorMessage(int code) {
 			case -76:
 				ErrorMessage_O("Ожидается константное целочисленное выражение", 88);
 				break;
-			case -99:
-				ErrorMessage_O("Ast.ErrNotImplemented", 22);
+			case -77:
+				ErrorMessage_O("Шаг итератора не может быть равен 0", 64);
+				break;
+			case -78:
+				ErrorMessage_O("Для прохода от меньшего к большему шаг итератора должен быть > 0", 116);
+				break;
+			case -79:
+				ErrorMessage_O("Для прохода от большего к меньшему шаг итератора должен быть < 0", 116);
+				break;
+			case -80:
+				ErrorMessage_O("Во время итерации в FOR возможно переполнение", 82);
 				break;
 			default:
 				abort();
@@ -309,7 +318,7 @@ static void ErrorMessage(int code) {
 			ErrorMessage_O("ErrWordLenTooBig", 17);
 			break;
 		case -5:
-			ErrorMessage_O("ErrExpectHOrX", 14);
+			ErrorMessage_O("В конце 16-ричного числа ожидается 'H' или 'X'", 77);
 			break;
 		case -6:
 			ErrorMessage_O("ErrExpectDQuote", 16);
@@ -419,8 +428,8 @@ static void ErrorMessage(int code) {
 		case -154:
 			ErrorMessage_O("Длина массива должна быть > 0", 52);
 			break;
-		case -170:
-			ErrorMessage_O("Не реализовано", 28);
+		case -134:
+			ErrorMessage_O("Ожидалось число или строка", 50);
 			break;
 		default:
 			abort();

@@ -61,7 +61,6 @@
 #define Parser_ErrEndProcedureNameNotMatch_cnst (-152)
 #define Parser_ErrFunctionWithoutBraces_cnst (-153)
 #define Parser_ErrArrayLenLess1_cnst (-154)
-#define Parser_ErrNotImplemented_cnst (-170)
 #define Parser_ErrAstBegin_cnst (-200)
 #define Parser_ErrAstEnd_cnst (-300)
 

@@ -103,3 +103,29 @@ extern int* o7c_ints_undef(int array[], int size) {
 	}
 	return array;
 }
+
+extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
+                      o7c_char const s2[/*len*/], int s2_len) {
+	int i, len, c1, c2;
+	if (s1_len < s2_len) {
+		len = s1_len;
+	} else {
+		len = s2_len;
+	}
+	i = 0;
+	while ((i < len) && (s1[i] == s2[i]) && (s1[i] != '\0')) {
+		++i;
+	}
+	if (i < s1_len) {
+		c1 = (int)s1[i];
+	} else {
+		c1 = 0;
+	}
+	if (i < s2_len) {
+		c2 = (int)s2[i];
+	} else {
+		c2 = 0;
+	}
+	return c1 - c2;
+}
+

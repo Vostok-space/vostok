@@ -100,7 +100,10 @@
 #define Ast_ErrValueOutOfRangeOfChar_cnst (-74)
 #define Ast_ErrExpectIntExpr_cnst (-75)
 #define Ast_ErrExpectConstIntExpr_cnst (-76)
-#define Ast_ErrNotImplemented_cnst (-99)
+#define Ast_ErrForByZero_cnst (-77)
+#define Ast_ErrByShouldBePositive_cnst (-78)
+#define Ast_ErrByShouldBeNegative_cnst (-79)
+#define Ast_ErrForPossibleOverflow_cnst (-80)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
 #define Ast_IdInteger_cnst 0
@@ -520,6 +523,8 @@ extern o7c_tag_t Ast_StatementError_s_tag;
 
 
 extern void Ast_PutChars(struct Ast_RModule *m, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int begin, int end);
+
+extern void Ast_NodeSetComment(struct Ast_Node *n, o7c_tag_t n_tag, struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end);
 
 extern void Ast_DeclSetComment(struct Ast_RDeclaration *d, o7c_char com[/*len0*/], int com_len0, int ofs, int end);
 

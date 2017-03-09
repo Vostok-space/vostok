@@ -484,12 +484,13 @@ static int SWord(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 /*	TODO поправить обработку комментариев - иногда ложно воспринимаются как
 	комментарии строки с '(' и '*' */
 static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
-	int start = O7C_INT_UNDEF, i = O7C_INT_UNDEF, comment = O7C_INT_UNDEF;
+	int start = O7C_INT_UNDEF, i = O7C_INT_UNDEF, comment = O7C_INT_UNDEF, commentsCount = O7C_INT_UNDEF;
 
 	i = (*s).ind;
 	assert(o7c_cmp(i, 0) >=  0);
 	start = i;
 	comment = 0;
+	commentsCount = 0;
 	while (1) if (((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (char unsigned)' ') || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Du)) {
 		i = o7c_add(i, 1);
 	} else if ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u) {
@@ -509,7 +510,8 @@ static o7c_bool ScanBlank(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		if (ScanChar(&(*s), s_tag) == (char unsigned)'*') {
 			(*s).ind = o7c_add((*s).ind, 1);
 			comment = o7c_add(comment, 1);
-			if (o7c_cmp(comment, 1) ==  0) {
+			commentsCount = o7c_add(commentsCount, 1);
+			if (o7c_cmp(commentsCount, 1) ==  0) {
 				if (o7c_cmp((*s).ind, sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1) ==  0) {
 					(*s).commentOfs = 0;
 				} else {
@@ -562,7 +564,7 @@ static int ScanString(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 			(*s).isChar = true;
 			(*s).integer = (int)(*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, j)];
 		}
-		i = o7c_add(i, 1);
+		i = o7c_mod((o7c_add(i, 1)), (sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1));
 	} else {
 		l = Scanner_ErrExpectDQuote_cnst;
 	}

@@ -188,26 +188,23 @@ extern o7c_bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, in
 /*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи */
 extern int StringStore_Write(struct VDataStream_Out *out, o7c_tag_t out_tag, struct StringStore_String *str, o7c_tag_t str_tag) {
-	int i = O7C_INT_UNDEF, len = O7C_INT_UNDEF;
+	int i = O7C_INT_UNDEF, len = O7C_INT_UNDEF, ofs = O7C_INT_UNDEF;
 	struct StringStore_Block_s *block = NULL;
 
 	block = (*str).block;
 	i = (*str).ofs;
+	ofs = i;
 	len = 0;
 	while (1) if (block->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
-		assert(o7c_cmp(i, (*str).ofs) >  0);
-		len = o7c_add(len, VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, (*str).ofs, o7c_sub(i, (*str).ofs)));
+		len = o7c_add(len, VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, ofs, o7c_sub(i, ofs)));
 		block = block->next;
+		ofs = 0;
 		i = 0;
 	} else if (block->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
 		i = o7c_add(i, 1);
 	} else break;
 	assert(block->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u);
-	if (o7c_cmp(len, 0) ==  0) {
-		len = VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, (*str).ofs, o7c_sub(i, (*str).ofs));
-	} else {
-		len = o7c_add(len, VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, 0, i));
-	}
+	len = VDataStream_Write(&(*out), out_tag, block->s, StringStore_BlockSize_cnst + 1, ofs, o7c_sub(i, ofs));
 	return len;
 }
 

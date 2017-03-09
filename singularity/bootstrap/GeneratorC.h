@@ -45,6 +45,7 @@ typedef struct GeneratorC_Options_s {
 	o7c_bool checkIndex;
 	o7c_bool checkArith;
 	o7c_bool caseAbort;
+	o7c_bool comment;
 	int varInit;
 	int memManager;
 	o7c_bool main_;

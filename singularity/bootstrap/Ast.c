@@ -80,14 +80,17 @@ static void NodeInit(struct Ast_Node *n, o7c_tag_t n_tag) {
 	(*n).ext = NULL;
 }
 
+extern void Ast_NodeSetComment(struct Ast_Node *n, o7c_tag_t n_tag, struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
+	assert((*n).comment.block == NULL);
+	Ast_PutChars(m, &(*n).comment, StringStore_String_tag, com, com_len0, ofs, end);
+}
+
 extern void Ast_DeclSetComment(struct Ast_RDeclaration *d, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
-	assert(d->_.comment.block == NULL);
-	Ast_PutChars(d->module, &d->_.comment, StringStore_String_tag, com, com_len0, ofs, end);
+	Ast_NodeSetComment(&(*d)._, Ast_RDeclaration_tag, d->module, com, com_len0, ofs, end);
 }
 
 extern void Ast_ModuleSetComment(struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
-	assert(m->_._._.comment.block == NULL);
-	Ast_PutChars(m, &m->_._._.comment, StringStore_String_tag, com, com_len0, ofs, end);
+	Ast_NodeSetComment(&(*m)._._._, Ast_RModule_tag, m, com, com_len0, ofs, end);
 }
 
 static void DeclInit(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds) {
@@ -1875,15 +1878,29 @@ extern int Ast_RepeatSetUntil(struct Ast_Repeat_s *r, struct Ast_RExpression *e)
 }
 
 extern int Ast_ForSetBy(struct Ast_For_s *for_, struct Ast_RExpression *by) {
-	int err = O7C_INT_UNDEF;
+	int err = O7C_INT_UNDEF, init_ = O7C_INT_UNDEF, to = O7C_INT_UNDEF;
 
 	err = Ast_ErrNo_cnst;
 	if ((by != NULL) && (by->value_ != NULL) && (o7c_cmp(by->type->_._.id, Ast_IdInteger_cnst) ==  0)) {
 		for_->by = O7C_GUARD(Ast_RExprInteger, &by->value_)->int_;
+		if (o7c_cmp(for_->by, 0) ==  0) {
+			err = Ast_ErrForByZero_cnst;
+		}
 	} else {
-		for_->by = 0;
+		for_->by = 1;
 		if (by != NULL) {
 			err = Ast_ErrExpectConstIntExpr_cnst;
+		}
+	}
+	if ((o7c_cmp(err, Ast_ErrNo_cnst) ==  0) && (for_->_.expr != NULL) && (for_->_.expr->value_ != NULL) && (for_->to != NULL) && (for_->to->value_ != NULL)) {
+		init_ = O7C_GUARD(Ast_RExprInteger, &for_->_.expr->value_)->int_;
+		to = O7C_GUARD(Ast_RExprInteger, &for_->to->value_)->int_;
+		if ((o7c_cmp(init_, to) <  0) && (o7c_cmp(for_->by, 0) <  0)) {
+			err = Ast_ErrByShouldBePositive_cnst;
+		} else if ((o7c_cmp(init_, to) >  0) && (o7c_cmp(for_->by, 0) >  0)) {
+			err = Ast_ErrByShouldBeNegative_cnst;
+		} else if ((o7c_cmp(for_->by, 0) >  0) && (o7c_cmp(o7c_sub(Limits_IntegerMax_cnst, for_->by), to) <  0) || (o7c_cmp(for_->by, 0) <  0) && (o7c_cmp(o7c_sub(Limits_IntegerMin_cnst, for_->by), to) >  0)) {
+			err = Ast_ErrForPossibleOverflow_cnst;
 		}
 	}
 	return err;
@@ -2024,7 +2041,7 @@ extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, struct Ast_CaseLabel_s
 	int err = O7C_INT_UNDEF;
 
 	assert(new_->next == NULL);
-	if (o7c_cmp(case_->_.expr->type->_._.id, new_->_.id) !=  0) {
+	if ((o7c_cmp(case_->_.expr->type->_._.id, new_->_.id) !=  0) && !((o7c_in(case_->_.expr->type->_._.id, ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdByte_cnst)))) && (o7c_in(new_->_.id, ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdByte_cnst)))))) {
 		err = Ast_ErrCaseRangeLabelsTypeMismatch_cnst;
 	} else {
 		if (IsElementsCrossRange(case_->elements, new_)) {
@@ -2032,10 +2049,18 @@ extern int Ast_CaseRangeListAdd(struct Ast_Case_s *case_, struct Ast_CaseLabel_s
 		} else {
 			err = Ast_ErrNo_cnst;
 		}
-		while (first->next != NULL) {
-			first = first->next;
+		if (first != NULL) {
+			while (first->next != NULL) {
+				if (IsListCrossRange(first, new_)) {
+					err = Ast_ErrCaseElemDuplicate_cnst;
+				}
+				first = first->next;
+			}
+			if (IsListCrossRange(first, new_)) {
+				err = Ast_ErrCaseElemDuplicate_cnst;
+			}
+			first->next = new_;
 		}
-		first->next = new_;
 	}
 	return err;
 }

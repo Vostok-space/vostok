@@ -33,6 +33,8 @@ extern void Log_Ln(void);
 
 extern void Log_Real(double x);
 
+extern void Log_Bool(o7c_bool b);
+
 extern void Log_Turn(o7c_bool st);
 
 extern void Log_init(void);
