@@ -2351,7 +2351,10 @@ END CaseLabelNew;
 PROCEDURE CaseLabelQualNew*(VAR label: CaseLabel; decl: Declaration): INTEGER;
 VAR err, i: INTEGER;
 BEGIN
-	IF ~(decl IS Const) THEN
+	label := NIL;
+	IF decl.id = IdError THEN
+		err := ErrNo
+	ELSIF ~(decl IS Const) THEN
 		err := ErrCaseLabelNotConst
 	ELSIF ~(decl(Const).expr.type.id IN {IdInteger, IdChar})
 	    & ~((decl(Const).expr IS ExprString)
@@ -2370,10 +2373,10 @@ BEGIN
 				i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])
 			END;
 			err := CaseLabelNew(label, IdChar, i)
-		END;
-		IF label # NIL THEN
-			label.qual := decl
 		END
+	END;
+	IF label = NIL THEN
+		err := err + CaseLabelNew(label, IdInteger, 0) * 0
 	END
 	RETURN err
 END CaseLabelQualNew;
