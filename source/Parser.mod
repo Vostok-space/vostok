@@ -94,7 +94,7 @@ TYPE
 VAR
 	declarations: PROCEDURE(VAR p: Parser; ds: Ast.Declarations);
 	type: PROCEDURE(VAR p: Parser; ds: Ast.Declarations;
-					nameBegin, nameEnd: INTEGER): Ast.Type;
+	                nameBegin, nameEnd: INTEGER): Ast.Type;
 	statements: PROCEDURE(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
 	expression: PROCEDURE(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 
@@ -1264,8 +1264,8 @@ BEGIN
 		ELSE
 			p.err := FALSE;
 			WHILE (p.l < Scanner.Import)
-				& (p.l # Scanner.Comma)
-				& (p.l # Scanner.Semicolon)
+			    & (p.l # Scanner.Comma)
+			    & (p.l # Scanner.Semicolon)
 			DO
 				Scan(p)
 			END
