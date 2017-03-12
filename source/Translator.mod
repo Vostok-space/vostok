@@ -308,7 +308,7 @@ END ErrorMessage;
 PROCEDURE PrintErrors(err: Ast.Error);
 VAR i: INTEGER;
 BEGIN
-	Out.String("с ошибками: "); Out.Ln;
+	Out.String("Найдены ошибки: "); Out.Ln;
 	i := 0;
 	WHILE err # NIL DO
 		INC(i);
@@ -480,8 +480,6 @@ BEGIN
 		PrintErrors(module.errors);
 		ret := ErrParse
 	ELSE
-		Out.String("Модуль переведён без ошибок"); Out.Ln;
-
 		ret := OpenOutput(interface, implementation, isMain);
 		IF ret = ErrNo THEN
 			GeneratorC.Init(intGen, interface);
@@ -516,34 +514,36 @@ END NewProvider;
 
 PROCEDURE ErrMessage(err: INTEGER);
 BEGIN
-	CASE err OF
-	  ErrWrongArgs:
-		Out.String("Использование: "); Out.Ln;
-		Out.String("  o7c исходный.mod результат[.c] {пути-к-интерфейсным-модулям}");
-		Out.Ln;
-		Out.String(
+	IF err # ErrParse THEN
+		CASE err OF
+		  ErrWrongArgs:
+			Out.String("Использование: "); Out.Ln;
+			Out.String("  o7c исходный.mod результат[.c] {пути-к-интерфейсным-модулям}");
+			Out.Ln;
+			Out.String(
 "В случае успешной трансляции создаст .c-файл с main-функцией, если у результата"
-		);
-		Out.Ln;
-		Out.String(
+			);
+			Out.Ln;
+			Out.String(
 "было указано расширение .c, или пару из .h и .с для модуля, если не было."
-		);
-		Out.Ln;
-		Out.String("Пути для поиска модулей следует разделять пробелами.")
-	| ErrTooLongSourceName:
-		Out.String("Слишком длинное имя исходного файла"); Out.Ln
-	| ErrTooLongOutName:
-		Out.String("Слишком длинное выходное имя"); Out.Ln
-	| ErrOpenSource:
-		Out.String("Не получается открыть исходный файл")
-	| ErrOpenH:
-		Out.String("Не получается открыть выходной .h файл")
-	| ErrOpenC:
-		Out.String("Не получается открыть выходной .c файл")
-	| ErrParse:
-		Out.String("Ошибка разбора исходного файла")
-	END;
-	Out.Ln
+			);
+			Out.Ln;
+			Out.String("Пути для поиска модулей следует разделять пробелами.")
+		| ErrTooLongSourceName:
+			Out.String("Слишком длинное имя исходного файла"); Out.Ln
+		| ErrTooLongOutName:
+			Out.String("Слишком длинное выходное имя"); Out.Ln
+		| ErrOpenSource:
+			Out.String("Не получается открыть исходный файл")
+		| ErrOpenH:
+			Out.String("Не получается открыть выходной .h файл")
+		| ErrOpenC:
+			Out.String("Не получается открыть выходной .c файл")
+		| ErrParse:
+			Out.String("Ошибка разбора исходного файла")
+		END;
+		Out.Ln
+	END
 END ErrMessage;
 
 PROCEDURE CopyExt(VAR ext: ARRAY OF CHAR; name: ARRAY OF CHAR): INTEGER;

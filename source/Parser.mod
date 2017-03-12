@@ -74,12 +74,14 @@ TYPE
 	Options* = RECORD(V.Base)
 		strictSemicolon*,
 		strictReturn*,
-		saveComments*    : BOOLEAN;
+		saveComments*,
+		multiErrors*    : BOOLEAN;
 		printError*: PROCEDURE(code: INTEGER) 
 	END;
 	Parser = RECORD(V.Base) (* короткие названия из-за частого использования *)
 		opt: Options;
 		err: BOOLEAN;
+		errorsCount: INTEGER;
 		s: Scanner.Scanner; 
 		l: INTEGER;(* lexem *)
 
@@ -100,19 +102,24 @@ VAR
 
 PROCEDURE AddError(VAR p: Parser; err: INTEGER);
 BEGIN
-	Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
-	Log.Int(p.s.line); Log.Str(":");
-	Log.Int(p.s.column + p.s.tabs * 3); Log.Ln;
-	p.err := err > ErrAstBegin;
-	IF p.module # NIL THEN
-		Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
+	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
+		INC(p.errorsCount);
+		Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
+		Log.Int(p.s.line); Log.Str(":");
+		Log.Int(p.s.column + p.s.tabs * 3); Log.Ln;
+		p.err := err > ErrAstBegin;
+		IF p.module # NIL THEN
+			Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
+		END
 	END;
-	p.opt.printError(err);
-	Out.String(". ");
-	Out.Int(p.s.line + 1, 2);
-	Out.String(":");
-	Out.Int(p.s.column + p.s.tabs * 3, 2);
-	Out.Ln
+	IF p.opt.multiErrors THEN
+		p.opt.printError(err);
+		Out.String(". ");
+		Out.Int(p.s.line + 1, 2);
+		Out.String(":");
+		Out.Int(p.s.column + p.s.tabs * 3, 2);
+		Out.Ln
+	END
 END AddError;
 
 PROCEDURE CheckAst(VAR p: Parser; err: INTEGER);
@@ -125,14 +132,18 @@ END CheckAst;
 
 PROCEDURE Scan(VAR p: Parser);
 BEGIN
-	p.l := Scanner.Next(p.s);
-	IF p.l < ErrNo THEN
-		AddError(p, p.l);
-		IF p.l = Scanner.ErrNumberTooBig THEN
-			p.l := Scanner.Number
+	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
+		p.l := Scanner.Next(p.s);
+		IF p.l < ErrNo THEN
+			AddError(p, p.l);
+			IF p.l = Scanner.ErrNumberTooBig THEN
+				p.l := Scanner.Number
+			END
+		ELSIF p.l = Scanner.Semicolon THEN
+			Scanner.ResetComment(p.s)
 		END
-	ELSIF p.l = Scanner.Semicolon THEN
-		Scanner.ResetComment(p.s)
+	ELSE
+		p.l := Scanner.EndOfFile
 	END
 END Scan;
 
@@ -1329,6 +1340,7 @@ BEGIN
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn := TRUE;
 	opt.saveComments := TRUE;
+	opt.multiErrors := FALSE;
 	opt.printError := Blank
 END DefaultOptions;
 
@@ -1340,6 +1352,7 @@ BEGIN
 	V.Init(p);
 	p.opt := opt;
 	p.err := FALSE;
+	p.errorsCount := 0;
 	p.module := NIL;
 	p.provider := prov;
 	Scanner.Init(p.s, in);
