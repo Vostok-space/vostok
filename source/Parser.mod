@@ -341,21 +341,21 @@ VAR par: Ast.Parameter;
 BEGIN
 	ASSERT(p.l = Scanner.Brace1Open);
 	Scan(p);
+	IF e.designator.type IS Ast.ProcType THEN
+		fp := e.designator.type(Ast.ProcType).params
+	ELSE
+		fp := NIL
+	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		IF e.designator.type IS Ast.ProcType THEN
-			fp := e.designator.type(Ast.ProcType).params
-		ELSE
-			fp := NIL
-		END;
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
 			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp))
 		END;
-		CheckAst(p, Ast.CallParamsEnd(e, fp));
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-	END
+	END;
+	CheckAst(p, Ast.CallParamsEnd(e, fp))
 END CallParams;
 
 PROCEDURE ExprCall(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator)
