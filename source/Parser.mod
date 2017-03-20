@@ -1107,6 +1107,7 @@ RETURN (l # Scanner.End)
      & (l # Scanner.Elsif)
      & (l # Scanner.Until)
      & (l # Scanner.Alternative)
+     & (l # Scanner.EndOfFile)
 END NotEnd;
 
 PROCEDURE Statements(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
