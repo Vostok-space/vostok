@@ -492,8 +492,8 @@ BEGIN
 	RETURN rec.name.block # NIL
 END CheckStructName;
 
-PROCEDURE ArrayLen(VAR gen: Generator; type: Ast.Type;
-                   decl: Ast.Declaration; sel: Ast.Selector);
+PROCEDURE ArrayDeclLen(VAR gen: Generator; type: Ast.Type;
+                       decl: Ast.Declaration; sel: Ast.Selector);
 VAR i: INTEGER;
 BEGIN
 	IF type(Ast.Array).count # NIL THEN
@@ -508,10 +508,31 @@ BEGIN
 		END;
 		Int(gen, i)
 	END
+END ArrayDeclLen;
+
+PROCEDURE ArrayLen(VAR gen: Generator; e: Ast.Expression);
+VAR i: INTEGER;
+	des: Ast.Designator;
+	t: Ast.Type;
+BEGIN
+	IF e.type(Ast.Array).count # NIL THEN
+		expression(gen, e.type(Ast.Array).count)
+	ELSE
+		des := e(Ast.Designator);
+		GlobalName(gen, des.decl);
+		Str(gen, "_len");
+		i := 0;
+		t := des.type;
+		WHILE t # e.type DO
+			INC(i);
+			t := t.type
+		END;
+		Int(gen, i)
+	END
 END ArrayLen;
 
 PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
-                   VAR typ: Ast.Type);
+                   VAR typ: Ast.Type; desType: Ast.Type);
 VAR sel: Ast.Selector;
 	ret: BOOLEAN;
 
@@ -573,12 +594,28 @@ VAR sel: Ast.Selector;
 	END Declarator;
 
 	PROCEDURE Array(VAR gen: Generator; VAR type: Ast.Type;
-	                VAR sel: Ast.Selector; decl: Ast.Declaration);
-	VAR s: Ast.Selector;
-		i, j: INTEGER;
+	                VAR sel: Ast.Selector; decl: Ast.Declaration;
+	                isDesignatorArray: BOOLEAN);
+	VAR i: INTEGER;
 
+		PROCEDURE Mult(VAR gen: Generator;
+		               decl: Ast.Declaration; j: INTEGER; t: Ast.Type);
+		BEGIN
+			WHILE (t # NIL) & (t IS Ast.Array) DO
+				Str(gen, " * ");
+				Name(gen, decl);
+				Str(gen, "_len");
+				Int(gen, j);
+				INC(j);
+				t := t.type
+			END
+		END Mult;
 	BEGIN
-		Str(gen, "[");
+		IF isDesignatorArray THEN
+			Str(gen, " + ")
+		ELSE
+			Str(gen, "[")
+		END;
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
 		THEN
 			IF gen.opt.checkIndex
@@ -588,7 +625,7 @@ VAR sel: Ast.Selector;
 			   )
 			THEN
 				Str(gen, "o7c_ind(");
-				ArrayLen(gen, type, decl, sel);
+				ArrayDeclLen(gen, type, decl, sel);
 				Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Str(gen, ")")
@@ -605,7 +642,7 @@ VAR sel: Ast.Selector;
 				   )
 				THEN
 					Str(gen, "][o7c_ind(");
-					ArrayLen(gen, type, decl, sel);
+					ArrayDeclLen(gen, type, decl, sel);
 					Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
 					Str(gen, ")")
@@ -620,24 +657,18 @@ VAR sel: Ast.Selector;
 			i := 0;
 			WHILE (sel.next # NIL) & (sel.next IS Ast.SelArray) DO
 				Factor(gen, sel(Ast.SelArray).index);
-				sel := sel.next;
-				s := sel;
-				j := i;
-				WHILE (s # NIL) & (s IS Ast.SelArray) DO
-					Str(gen, " * ");
-					Name(gen, decl);
-					Str(gen, "_len");
-					Int(gen, j);
-					INC(j);
-					s := s.next
-				END;
-				INC(i);
 				type := type.type;
+				Mult(gen, decl, i + 1, type);
+				sel := sel.next;
+				INC(i);
 				Str(gen, " + ")
 			END;
-			Factor(gen, sel(Ast.SelArray).index)
+			Factor(gen, sel(Ast.SelArray).index);
+			Mult(gen, decl, i + 1, type.type)
 		END;
-		Str(gen, "]")
+		IF ~isDesignatorArray THEN
+			Str(gen, "]")
+		END
 	END Array;
 BEGIN
 	IF i < 0 THEN
@@ -646,18 +677,19 @@ BEGIN
 		sel := sels.list[i];
 		DEC(i);
 		IF sel IS Ast.SelRecord THEN
-			Selector(gen, sels, i, typ);
+			Selector(gen, sels, i, typ, desType);
 			Record(gen, typ, sel)
 		ELSIF sel IS Ast.SelArray THEN
-			Selector(gen, sels, i, typ);
-			Array(gen, typ, sel, sels.decl)
+			Selector(gen, sels, i, typ, desType);
+			Array(gen, typ, sel, sels.decl,
+			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
 		ELSIF sel IS Ast.SelPointer THEN
 			IF (sel.next = NIL) OR ~(sel.next IS Ast.SelRecord) THEN
 				Str(gen, "(*");
-				Selector(gen, sels, i, typ);
+				Selector(gen, sels, i, typ, desType);
 				Str(gen, ")")
 			ELSE
-				Selector(gen, sels, i, typ)
+				Selector(gen, sels, i, typ, desType)
 			END
 		ELSIF sel IS Ast.SelGuard THEN
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
@@ -670,7 +702,7 @@ BEGIN
 				GlobalName(gen, sel(Ast.SelGuard).type)
 			END;
 			Str(gen, ", &");
-			Selector(gen, sels, i, typ);
+			Selector(gen, sels, i, typ, desType);
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
 				Str(gen, ")")
 			ELSE
@@ -713,7 +745,7 @@ BEGIN
 	sels.decl := des.decl;(* TODO *)
 	gen.opt.lastSelectorDereference := (sels.i > 0)
 	                                 & (sels.list[sels.i] IS Ast.SelPointer);
-	Selector(gen, sels, sels.i, typ)
+	Selector(gen, sels, sels.i, typ, des.type)
 END Designator;
 
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
@@ -916,7 +948,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
 		                      VAR fp: Ast.Declaration);
 		VAR t: Ast.Type;
-			i, dist: INTEGER;
+			i, j, dist: INTEGER;
+
+			PROCEDURE ArrayDeep(t: Ast.Type): INTEGER;
+			VAR d: INTEGER;
+			BEGIN
+				d := -1;
+				REPEAT
+					t := t.type;
+					INC(d)
+				UNTIL t = NIL
+				RETURN d
+			END ArrayDeep;
 		BEGIN
 			t := fp.type;
 			IF (t.id = Ast.IdByte) & (p.expr.type.id = Ast.IdInteger)
@@ -963,14 +1006,25 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Str(gen, "_tag")
 					END
 				ELSIF fp.type.id # Ast.IdChar THEN
-					i := 0;
+					i := -1;
 					WHILE (t.id = Ast.IdArray)
 					    & (fp.type(Ast.Array).count = NIL)
 					DO
-						Str(gen, ", ");
 						IF t(Ast.Array).count # NIL THEN
+							Str(gen, ", ");
 							Expression(gen, t(Ast.Array).count)
 						ELSE
+							IF i = -1 THEN
+								i := ArrayDeep(p.expr(Ast.Designator).decl.type)
+								   - ArrayDeep(fp.type);
+								IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
+								THEN
+									FOR j := 0 TO i - 1 DO
+										Str(gen, "[0]")
+									END
+								END
+							END;
+							Str(gen, ", ");
 							Name(gen, p.expr(Ast.Designator).decl);
 							Str(gen, "_len");
 							Int(gen, i)
@@ -1045,7 +1099,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Expression(gen, e.type(Ast.Array).count)
 				ELSE
 					des := e(Ast.Designator);
-					ArrayLen(gen, des.type, des.decl, des.sel)
+					ArrayDeclLen(gen, des.type, des.decl, des.sel)
 				END
 			END Len;
 		BEGIN
@@ -2038,6 +2092,23 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 	VAR type, base: Ast.Record;
 		reref, retain, toByte: BOOLEAN;
+
+		PROCEDURE AssertArraySize(VAR gen: Generator;
+		                          des: Ast.Designator; e: Ast.Expression);
+		BEGIN
+			IF gen.opt.checkIndex
+			 & (  (des.type(Ast.Array).count = NIL)
+			   OR (e.type(Ast.Array).count   = NIL)
+			   )
+			THEN
+				Str(gen, "assert(");
+				ArrayLen(gen, des);
+				Str(gen, " <= ");
+				ArrayLen(gen, e);
+				StrLn(gen, ");");
+				Tabs(gen, 0)
+			END
+		END AssertArraySize;
 	BEGIN
 		toByte := (st.designator.type.id = Ast.IdByte)
 		        & (st.expr.type.id = Ast.IdInteger)
@@ -2054,8 +2125,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Designator(gen, st.designator);
 				Str(gen, ", ")
 			ELSIF (st.designator.type.id = Ast.IdArray)
-			    & (st.designator.type.type.id # Ast.IdString)
+			(*    & (st.designator.type.type.id # Ast.IdString) *)
 			THEN
+				AssertArraySize(gen, st.designator, st.expr);
 				Str(gen, "memcpy(");
 				Designator(gen, st.designator);
 				Str(gen, ", ")
@@ -2076,11 +2148,19 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 					base := st.designator.type(Ast.Record);
 					type := st.expr.type(Ast.Record)
 				ELSIF (st.designator.type.id = Ast.IdArray)
-				    & (st.designator.type.type.id # Ast.IdString)
+				(*  & (st.designator.type.type.id # Ast.IdString) *)
 				THEN
-					Str(gen, ", sizeof(");
-					Expression(gen, st.expr);
-					Str(gen, ")")
+					IF st.expr.type(Ast.Array).count # NIL THEN
+						Str(gen, ", sizeof(");
+						Expression(gen, st.expr);
+						Str(gen, ")")
+					ELSE
+						Str(gen, ", (");
+						ArrayLen(gen, st.expr);
+						Str(gen, ") * sizeof(");
+						Expression(gen, st.expr);
+						Str(gen, "[0])")
+					END
 				END
 			ELSIF gen.opt.plan9 THEN
 				Expression(gen, st.expr);
@@ -2334,7 +2414,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE SearchRetain(gen: Generator; fp: Ast.Declaration): Ast.Declaration;
 		BEGIN
 			WHILE (fp # NIL)
-				& ((fp.type.id # Ast.IdPointer) OR fp(Ast.FormalParam).isVar)
+			    & ((fp.type.id # Ast.IdPointer) OR fp(Ast.FormalParam).isVar)
 			DO
 				fp := fp.next
 			END
