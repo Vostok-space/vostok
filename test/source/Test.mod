@@ -52,8 +52,10 @@ CONST b = 11111 * 2 * 3;
 VAR a, coco: INTEGER;
 BEGIN
 	az := b;
+	a := 1;
 	d := a = 1;
 	a := ORD(d);
+	coco := 1;
 	a := baba + 5 * 4 * (coco DIV 32 + 67);
 	WHILE a = 6 DO
 		a := 7;
@@ -122,6 +124,7 @@ END Irma;
 PROCEDURE Doo(p: PoToRe);
 VAR a, b: RECORD c, b, d: INTEGER END;
 BEGIN
+	b.b := 1;
 	a := b;
 	p.a := 4444.;
 	p^.b := 0.;

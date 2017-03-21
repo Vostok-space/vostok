@@ -381,6 +381,14 @@ VAR e: Ast.Expression;
 	BEGIN
 		des := Designator(p, ds);
 		IF p.l # Scanner.Brace1Open THEN
+			IF p.varParam THEN
+				p.varParam := FALSE;
+				IF des.decl IS Ast.Var THEN
+					des.decl(Ast.Var).inited := TRUE (* TODO *)
+				END
+			ELSE
+				CheckAst(p, Ast.CheckDesignatorAsValue(des))
+			END;
 			e := des
 		ELSE
 			e := ExprCall(p, ds, des)

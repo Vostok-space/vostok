@@ -2322,6 +2322,7 @@ VAR err: INTEGER;
 BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
+	var.inited := TRUE;
 	err := ForSetTo(f, to);
 	f.by := by;
 	f.stats := stats
