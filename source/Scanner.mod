@@ -16,9 +16,9 @@
  *)
 MODULE Scanner;
 
-IMPORT 
+IMPORT
 	V,
-	Stream := VDataStream, 
+	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
 	Log;
@@ -101,7 +101,7 @@ CONST
 		Div*            = 153;
 		Mod*            = 154;
 	MultLast*       = 154;
-	
+
 	(* Предопределенные идентификаторы имеют стабильный порядок *)
 	(* TODO Их нужно вынести за рамки сканера *)
 	PredefinedFirst* = 90;
@@ -433,7 +433,7 @@ VAR id: INTEGER;
 	            : BOOLEAN;
 		RETURN IsWordEqual(str, buf, begin, end)
 	END Eq;
-	
+
 	PROCEDURE O(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end, id: INTEGER)
 	           : INTEGER;
 	BEGIN
@@ -442,7 +442,7 @@ VAR id: INTEGER;
 		END
 		RETURN id
 	END O;
-	
+
 	PROCEDURE T(s1: ARRAY OF CHAR;
 	            buf: ARRAY OF CHAR; begin, end: INTEGER;
 	            id1: INTEGER; s2: ARRAY OF CHAR; id2: INTEGER): INTEGER;
@@ -458,8 +458,8 @@ BEGIN
 	CASE buf[begin] OF
 	 "A":
 		IF Eq("ABS", buf, begin, end) THEN
-			id := Abs 
-		ELSE 
+			id := Abs
+		ELSE
 			id := T("ASR", buf, begin, end, Asr, "ASSERT", Assert)
 		END
 	|"B": id := T("BOOLEAN", buf, begin, end, Boolean, "BYTE", Byte)

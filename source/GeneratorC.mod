@@ -718,7 +718,7 @@ BEGIN
 END Selector;
 
 PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
-VAR 
+VAR
 	sels: Selectors;
 	typ: Ast.Type;
 
@@ -1266,7 +1266,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				ELSE
 					Str(gen, " * ")
 				END
-			| Scanner.Slash, Scanner.Div : 
+			| Scanner.Slash, Scanner.Div :
 				IF term.type.id = Ast.IdSet THEN
 					ASSERT(term.mult = Scanner.Slash);
 					Str(gen, " ^ ")
@@ -1299,7 +1299,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END;
 		last := i;
 		IF term.type.id = Ast.IdInteger THEN
-			WHILE i >= 0 DO 
+			WHILE i >= 0 DO
 				CASE arr[i].mult OF
 				  Scanner.Asterisk : Str(gen, "o7c_mul(")
 				| Scanner.Div      : Str(gen, "o7c_div(")
@@ -1598,8 +1598,8 @@ BEGIN
 	g.interface := gen.interface;
 	g.opt := gen.opt;
 
-	IF (decl IS Ast.FormalParam) & 
-	   ((decl(Ast.FormalParam).isVar & ~(decl.type IS Ast.Array)) OR 
+	IF (decl IS Ast.FormalParam) &
+	   ((decl(Ast.FormalParam).isVar & ~(decl.type IS Ast.Array)) OR
 	   (decl.type IS Ast.Record))
 	THEN
 		Str(g, "*")
@@ -1663,7 +1663,7 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 			ELSE
 				INC(gen.tabs)
 			END;
-			
+
 			WHILE v # NIL DO
 				Tabs(gen, 0);
 				Declarator(gen, v, FALSE, FALSE, FALSE);
@@ -1861,7 +1861,7 @@ BEGIN
 	Str(gen, "#define ");
 	GlobalName(gen, const);
 	Str(gen, " ");
-	IF const.mark & (const.expr # NIL) THEN  
+	IF const.mark & (const.expr # NIL) THEN
 		Factor(gen, const.expr.value)
 	ELSE
 		Factor(gen, const.expr)
@@ -1965,7 +1965,7 @@ END Var;
 PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
 BEGIN
 	Expression(gen, wi.expr);
-	StrLn(gen, ") {"); 
+	StrLn(gen, ") {");
 	INC(gen.tabs);
 	statements(gen, wi.stats);
 	wi := wi.elsif
@@ -1999,7 +1999,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
 			IF wi # NIL THEN
-				Tabs(gen, -1); 
+				Tabs(gen, -1);
 				StrLn(gen, "} else {");
 				INC(gen.tabs);
 				statements(gen, wi.stats)
@@ -2007,7 +2007,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			Tabs(gen, -1);
 			StrLn(gen, "}")
 		ELSIF wi.elsif = NIL THEN
-			Str(gen, "while ("); 
+			Str(gen, "while (");
 			ExprThenStats(gen, wi);
 			Tabs(gen, -1);
 			StrLn(gen, "}")
@@ -2165,7 +2165,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			ELSIF gen.opt.plan9 THEN
 				Expression(gen, st.expr);
 				reref := FALSE
-			ELSE 
+			ELSE
 				base := st.designator.type.type(Ast.Record);
 				type := st.expr.type.type(Ast.Record).base;
 				Str(gen, "(&(");
@@ -2765,7 +2765,7 @@ BEGIN
 			IF t.id = Ast.IdPointer THEN
 				t := t.type;
 				t.mark := TRUE;
-				ASSERT(t.module # NIL) 
+				ASSERT(t.module # NIL)
 			END;
 			d := t(Ast.Record).vars;
 			WHILE d # NIL DO
@@ -2839,7 +2839,7 @@ END ImportInit;
 PROCEDURE TagsInit(VAR gen: Generator);
 VAR r: Ast.Record;
 BEGIN
-	r := NIL; 
+	r := NIL;
 	WHILE gen.opt.records # NIL DO
 		r := gen.opt.records(Ast.Record);
 		gen.opt.records := r.ext;

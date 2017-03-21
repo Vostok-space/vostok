@@ -1,4 +1,4 @@
-(*  Command line interface for Oberon-07 translator 
+(*  Command line interface for Oberon-07 translator
  *  Copyright (C) 2016  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify

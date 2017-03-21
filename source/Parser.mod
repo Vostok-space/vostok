@@ -76,14 +76,14 @@ TYPE
 		strictReturn*,
 		saveComments*,
 		multiErrors*    : BOOLEAN;
-		printError*: PROCEDURE(code: INTEGER) 
+		printError*: PROCEDURE(code: INTEGER)
 	END;
 	Parser = RECORD(V.Base) (* короткие названия из-за частого использования *)
 		opt: Options;
 		err: BOOLEAN;
 		errorsCount: INTEGER;
 		varParam : BOOLEAN;
-		s: Scanner.Scanner; 
+		s: Scanner.Scanner;
 		l: INTEGER;(* lexem *)
 
 		comment: RECORD
@@ -266,7 +266,7 @@ VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
 	prev, sel: Ast.Selector;
 	type: Ast.Type;
-	nameBegin, nameEnd: INTEGER; 
+	nameBegin, nameEnd: INTEGER;
 
 	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector;
 	                 des: Ast.Designator);
@@ -561,7 +561,7 @@ BEGIN
 		ELSE
 			Log.Str("Array Len "); Log.Int(i); Log.Ln
 		END
-	ELSE 
+	ELSE
 		i := -1;
 		IF e # NIL THEN
 			AddError(p, Ast.ErrExpectConstIntExpr)
@@ -768,7 +768,7 @@ BEGIN
 				Ast.TypeAdd(ds, p.s.buf, p.s.lexStart, p.s.lexEnd, typeDecl)
 			);
 			ASSERT(tp.next = typeDecl);
-			typeDecl.id := Ast.IdRecordForward; 
+			typeDecl.id := Ast.IdRecordForward;
 			tp.type := typeDecl;
 			typeDecl(Ast.Record).pointer := tp
 		ELSIF decl IS Ast.Record THEN
@@ -1004,7 +1004,7 @@ VAR case: Ast.Case;
 				last := LabelRange(p, ds);
 				CheckAst(p, Ast.CaseRangeListAdd(case, first, last))
 			END
-			RETURN first 
+			RETURN first
 		END LabelList;
 	BEGIN
 		elem := Ast.CaseElementNew(LabelList(p, case, ds));

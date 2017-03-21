@@ -53,7 +53,7 @@ BEGIN
 	WHILE j # end DO
 		Log.Char(s[j]);
 		j := (j + 1) MOD (LEN(s) - 1)
-	END 
+	END
 END LogLoopStr;
 
 PROCEDURE UndefString*(VAR s: String);
@@ -219,7 +219,7 @@ END StoreDone;
 
 PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                      src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN; 
+VAR ret: BOOLEAN;
 BEGIN
 	(*
 	Log.Str("CopyChars: "); Log.Int(destOfs);

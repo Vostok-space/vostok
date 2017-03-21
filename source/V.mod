@@ -45,7 +45,7 @@ TYPE
 	                      diff*, count*: INTEGER
 	                  END;
 	MsgContentPass* = RECORD(Base)
-	                      id*: INTEGER 
+	                      id*: INTEGER
 	                  END;
 	MsgHash*        = RECORD(Base)
 	                      hash*: INTEGER
