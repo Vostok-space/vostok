@@ -82,6 +82,7 @@ TYPE
 		opt: Options;
 		err: BOOLEAN;
 		errorsCount: INTEGER;
+		varParam : BOOLEAN;
 		s: Scanner.Scanner; 
 		l: INTEGER;(* lexem *)
 
@@ -287,7 +288,7 @@ BEGIN
 		IF decl IS Ast.Var THEN
 			type := decl.type;
 			prev := NIL;
-			des := Ast.DesignatorNew(decl);
+			CheckAst(p, Ast.DesignatorNew(des, decl));
 			REPEAT
 				sel := NIL;
 				IF p.l = Scanner.Dot THEN
@@ -327,7 +328,7 @@ BEGIN
 		ELSIF (decl IS Ast.Const) OR (decl IS Ast.GeneralProcedure)
 		   OR (decl.id = Ast.IdError)
 		THEN
-			des := Ast.DesignatorNew(decl)
+			CheckAst(p, Ast.DesignatorNew(des, decl))
 		ELSE
 			AddError(p, ErrExpectDesignator)
 		END
@@ -348,10 +349,15 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
+		p.varParam := fp.isVar
+		           OR (e.designator.decl.id = Scanner.Len);
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
+		p.varParam := FALSE;
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
-			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp))
+			p.varParam := (fp = NIL) OR fp.isVar;
+			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
+			p.varParam := FALSE
 		END;
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;
@@ -424,7 +430,7 @@ BEGIN
 		e := Negate(p, ds)
 	ELSE
 		AddError(p, ErrExpectExpression);
-		e := NIL
+		e := Ast.ExprErrNew()
 	END
 	RETURN e
 END Factor;
@@ -1356,6 +1362,7 @@ BEGIN
 	p.errorsCount := 0;
 	p.module := NIL;
 	p.provider := prov;
+	p.varParam := FALSE;
 	Scanner.Init(p.s, in);
 
 	Module(p)

@@ -1814,8 +1814,8 @@ BEGIN
 			type := type.type
 		END;
 		type.mark := type.mark
-				 OR (type(Ast.Record).pointer # NIL)
-				  & (type(Ast.Record).pointer.mark);
+		          OR (type(Ast.Record).pointer # NIL)
+		           & (type(Ast.Record).pointer.mark);
 		IF type.mark & ~out.opt.main THEN
 			RecordTag(out.g[Interface], type(Ast.Record))
 		END;

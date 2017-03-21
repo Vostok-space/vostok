@@ -212,6 +212,8 @@ BEGIN
 			O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
 		| Ast.ErrForPossibleOverflow:
 			O("Во время итерации в FOR возможно переполнение")
+		| Ast.ErrVarUninitialized:
+			O("Использование не инициализированной переменной")
 		END
 	ELSE
 		CASE code OF

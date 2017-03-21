@@ -111,6 +111,8 @@ CONST
 	ErrByShouldBeNegative*          = -79;
 	ErrForPossibleOverflow*         = -80;
 
+	ErrVarUninitialized*            = -81;
+
 	ErrMin*                         = -100;
 
 	NoId*                 =-1;
@@ -208,6 +210,7 @@ TYPE
 
 	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
+		inited*: BOOLEAN
 	END;
 
 	Record* = POINTER TO RECORD(RConstruct)
@@ -728,6 +731,7 @@ BEGIN
 	NEW(v); v.id := IdVar;
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
+	v.inited := FALSE;
 	IF ds.vars = NIL THEN
 		ds.vars := v
 	END
@@ -781,7 +785,8 @@ BEGIN
 	v.next := NIL;
 
 	v.type := type;
-	v.isVar := isVar
+	v.isVar := isVar;
+	v.inited := TRUE
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
@@ -1055,7 +1060,6 @@ BEGIN
 	RETURN e
 END ExprCharNew;
 
-
 PROCEDURE ExprNilNew*(): ExprNil;
 VAR e: ExprNil;
 BEGIN
@@ -1064,6 +1068,10 @@ BEGIN
 	e.value := e
 	RETURN e
 END ExprNilNew;
+
+PROCEDURE ExprErrNew*(): Expression;
+	RETURN ExprNilNew() (* TODO *)
+END ExprErrNew;
 
 PROCEDURE ExprBracesNew*(expr: Expression): ExprBraces;
 VAR e: ExprBraces;
@@ -1141,8 +1149,7 @@ BEGIN
 	RETURN err
 END ExprNegateNew;
 
-PROCEDURE DesignatorNew*(decl: Declaration): Designator;
-VAR d: Designator;
+PROCEDURE DesignatorNew*(VAR d: Designator; decl: Declaration): INTEGER;
 BEGIN
 	NEW(d); ExprInit(d, IdDesignator, NIL);
 	d.decl := decl;
@@ -1153,8 +1160,23 @@ BEGIN
 	ELSIF decl IS GeneralProcedure THEN
 		d.type := decl(GeneralProcedure).header
 	END
-	RETURN d
+	RETURN ErrNo
 END DesignatorNew;
+
+PROCEDURE CheckDesignatorAsValue*(d: Designator): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF (d.decl.up # NIL) & (d.decl.up.up # NIL)
+	 & (d.decl IS Var)
+	 & ~d.decl(Var).inited
+	THEN
+		err := ErrVarUninitialized;
+		d.decl(Var).inited := TRUE
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
+END CheckDesignatorAsValue;
 
 PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
 VAR dist: INTEGER;
@@ -2493,6 +2515,9 @@ VAR err: INTEGER;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
+	IF des.decl IS Var THEN
+		des.decl(Var).inited := TRUE
+	END;
 	err := ErrNo;
 	IF (expr # NIL) & (des # NIL)
 	 & ~CompatibleTypes(a.distance, des.type, expr.type)
