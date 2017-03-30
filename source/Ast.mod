@@ -2287,7 +2287,9 @@ BEGIN
 	END;
 	IF (err = ErrNo)
 	 & (for.expr # NIL) & (for.expr.value # NIL)
+	 & (for.expr.value IS ExprInteger)
 	 & (for.to # NIL) & (for.to.value # NIL)
+	 & (for.to.value IS ExprInteger)
 	THEN
 		init := for.expr.value(ExprInteger).int;
 		to := for.to.value(ExprInteger).int;
