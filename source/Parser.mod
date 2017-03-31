@@ -1156,13 +1156,9 @@ VAR stats, last: Ast.Statement;
 		ELSIF p.l = Scanner.While	THEN
 			st := While(p, ds)
 		ELSE
-			st := NIL;
-			AddError(p, ErrExpectStatement)
+			st := NIL
 		END;
-		IF st = NIL THEN
-			st := Ast.StatementErrorNew()
-		END;
-		IF commentOfs >= 0 THEN
+		IF (st # NIL) & (commentOfs >= 0) THEN
 			Ast.NodeSetComment(st^, p.module, p.s.buf, commentOfs, commentEnd)
 		END;
 		IF p.err THEN
@@ -1179,12 +1175,14 @@ BEGIN
 	last := stats;
 
 	WHILE ScanIfEqual(p, Scanner.Semicolon) DO
-		IF NotEnd(p.l) THEN
+		IF stats = NIL THEN
+			stats := Statement(p, ds);
+			last := stats
+		ELSE
 			last.next := Statement(p, ds);
-			last := last.next
-		ELSIF p.opt.strictSemicolon THEN
-			AddError(p, ErrExcessSemicolon);
-			p.err := FALSE
+			IF last.next # NIL THEN
+				last := last.next
+			END
 		END
 	ELSIF NotEnd(p.l) DO
 		AddError(p, ErrExpectSemicolon);

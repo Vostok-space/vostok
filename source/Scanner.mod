@@ -142,7 +142,7 @@ CONST
 
 	ErrMin*                 = -100;
 
-	BlockSize = 4096;
+	BlockSize = 4096 * 64;
 
 	IntMax = 07FFFFFFFH;
 	CharMax = 0FFX;
