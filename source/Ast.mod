@@ -458,7 +458,7 @@ END NodeInit;
 PROCEDURE NodeSetComment*(VAR n: Node; m: Module;
                           com: ARRAY OF CHAR; ofs, end: INTEGER);
 BEGIN
-	ASSERT(n.comment.block = NIL);
+	ASSERT(~Strings.IsDefined(n.comment));
 	PutChars(m, n.comment, com, ofs, end)
 END NodeSetComment;
 

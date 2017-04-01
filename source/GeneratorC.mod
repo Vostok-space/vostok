@@ -455,8 +455,8 @@ VAR anon: ARRAY TranLim.MaxLenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
 	ret: BOOLEAN;
 BEGIN
-	IF rec.name.block = NIL THEN
-		IF (rec.pointer # NIL) & (rec.pointer.name.block # NIL) THEN
+	IF ~Strings.IsDefined(rec.name) THEN
+		IF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
 			l := 0;
 			ASSERT(rec.module # NIL);
 			rec.mark := TRUE;
@@ -489,7 +489,7 @@ BEGIN
 			Ast.PutChars(rec.module, rec.name, anon, 0, l)
 		END
 	END
-	RETURN rec.name.block # NIL
+	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
 
 PROCEDURE ArrayDeclLen(VAR gen: Generator; type: Ast.Type;
@@ -1044,12 +1044,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		ELSE
 			Designator(gen, call.designator);
 			Str(gen, "(");
-			p := call.params;
-			IF FALSE & (call.designator.decl IS Ast.Procedure) THEN
-				fp := call.designator.decl(Ast.Procedure).header.params
-			ELSE
-				fp := call.designator.type(Ast.ProcType).params
-			END;
+			p  := call.params;
+			fp := call.designator.type(Ast.ProcType).params;
 			IF p # NIL THEN
 				ActualParam(gen, p, fp);
 				WHILE p # NIL DO
@@ -1477,7 +1473,7 @@ BEGIN
 	| Ast.IdBoolean:
 		Boolean(gen, expr(Ast.ExprBoolean))
 	| Ast.IdReal:
-		IF expr(Ast.ExprReal).str.block # NIL
+		IF Strings.IsDefined(expr(Ast.ExprReal).str)
 		THEN	String(gen, expr(Ast.ExprReal).str)
 		ELSE	Real(gen, expr(Ast.ExprReal).real)
 		END
@@ -1705,24 +1701,23 @@ BEGIN
 		Str(gen, "void ");
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	ELSE
-		IF ~typeDecl & (type.name.block # NIL) THEN
+		IF ~typeDecl & Strings.IsDefined(type.name) THEN
 			IF sameType THEN
-				IF (type IS Ast.Pointer) & (type.type.name.block # NIL) THEN
-					Str(gen, "*")
+				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
+				THEN	Str(gen, "*")
 				END
 			ELSE
-				IF (type IS Ast.Pointer) & (type.type.name.block # NIL) THEN
+				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
+				THEN
 					Str(gen, "struct ");
 					GlobalName(gen, type.type); Str(gen, " *")
-				ELSE
-					IF type IS Ast.Record THEN
-						Str(gen, "struct ");
-						IF CheckStructName(gen, type(Ast.Record)) THEN
-							GlobalName(gen, type); Str(gen, " ")
-						END
-					ELSE
+				ELSIF type IS Ast.Record THEN
+					Str(gen, "struct ");
+					IF CheckStructName(gen, type(Ast.Record)) THEN
 						GlobalName(gen, type); Str(gen, " ")
 					END
+				ELSE
+					GlobalName(gen, type); Str(gen, " ")
 				END;
 				IF gen.out IS PMemoryOut THEN
 					MemWriteInvert(gen.out(PMemoryOut)^)
@@ -2770,7 +2765,7 @@ BEGIN
 			d := t(Ast.Record).vars;
 			WHILE d # NIL DO
 				MarkType(d.type);
-				IF d.name.block # NIL THEN
+				IF Strings.IsDefined(d.name) THEN
 					Log.StrLn(d.name.block.s)
 				END;
 				d := d.next

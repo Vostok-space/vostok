@@ -58,8 +58,13 @@ END LogLoopStr;
 
 PROCEDURE UndefString*(VAR s: String);
 BEGIN
-	s.block := NIL
+	s.block := NIL;
+	s.ofs := -1
 END UndefString;
+
+PROCEDURE IsDefined*(s: String): BOOLEAN;
+	RETURN s.block # NIL
+END IsDefined;
 
 PROCEDURE Put*(VAR store: Store; VAR w: String;
                s: ARRAY OF CHAR; j, end: INTEGER);
