@@ -77,7 +77,8 @@ TYPE
 		interface: BOOLEAN;
 		opt: Options;
 
-		expressionSemicolon: BOOLEAN
+		expressionSemicolon,
+		isNewLine: BOOLEAN
 	END;
 
 	MemoryOut = RECORD(Stream.Out)
@@ -110,6 +111,31 @@ VAR
 	declarations: PROCEDURE(VAR out: MOut; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR gen: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression);
+
+PROCEDURE Chars(VAR gen: Generator; ch: CHAR; count: INTEGER);
+VAR c: ARRAY 1 OF CHAR;
+BEGIN
+	ASSERT(count >= 0);
+	c[0] := ch;
+	WHILE count > 0 DO
+		gen.len := gen.len + Stream.Write(gen.out^, c, 0, 1);
+		DEC(count)
+	END
+END Chars;
+
+PROCEDURE Tabs(VAR gen: Generator; adder: INTEGER);
+BEGIN
+	gen.tabs := gen.tabs + adder;
+	Chars(gen, Utf8.Tab, gen.tabs)
+END Tabs;
+
+PROCEDURE TabsAfterNewLine(VAR gen: Generator);
+BEGIN
+	IF gen.isNewLine THEN
+		gen.isNewLine := FALSE;
+		Tabs(gen, 0)
+	END
+END TabsAfterNewLine;
 
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
 VAR ret: BOOLEAN;
@@ -154,6 +180,7 @@ END MemWriteInvert;
 PROCEDURE MemWriteDirect(VAR gen: Generator; VAR mo: MemoryOut);
 VAR inv: INTEGER;
 BEGIN
+	TabsAfterNewLine(gen);
 	inv := ORD(mo.invert);
 	ASSERT(mo.mem[1 - inv].len = 0);
 	gen.len := gen.len + Stream.Write(gen.out^, mo.mem[inv].buf, 0, mo.mem[inv].len);
@@ -163,39 +190,39 @@ END MemWriteDirect;
 PROCEDURE Str(VAR gen: Generator; str: ARRAY OF CHAR);
 BEGIN
 	ASSERT(str[LEN(str) - 1] = Utf8.Null);
+	TabsAfterNewLine(gen);
 	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1)
 END Str;
 
 PROCEDURE StrLn(VAR gen: Generator; str: ARRAY OF CHAR);
 BEGIN
+	TabsAfterNewLine(gen);
 	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1);
-	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1)
+	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
+	gen.isNewLine := TRUE
 END StrLn;
 
 PROCEDURE Ln(VAR gen: Generator);
 BEGIN
+	gen.isNewLine := TRUE;
 	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1)
 END Ln;
 
-PROCEDURE Chars(VAR gen: Generator; ch: CHAR; count: INTEGER);
-VAR c: ARRAY 1 OF CHAR;
+PROCEDURE StrOpen(VAR gen: Generator; str: ARRAY OF CHAR);
 BEGIN
-	ASSERT(count >= 0);
-	c[0] := ch;
-	WHILE count > 0 DO
-		gen.len := gen.len + Stream.Write(gen.out^, c, 0, 1);
-		DEC(count)
-	END
-END Chars;
+	StrLn(gen, str);
+	INC(gen.tabs)
+END StrOpen;
 
-PROCEDURE Tabs(VAR gen: Generator; adder: INTEGER);
+PROCEDURE StrClose(VAR gen: Generator; str: ARRAY OF CHAR);
 BEGIN
-	gen.tabs := gen.tabs + adder;
-	Chars(gen, Utf8.Tab, gen.tabs)
-END Tabs;
+	DEC(gen.tabs, 1);
+	StrLn(gen, str)
+END StrClose;
 
 PROCEDURE String(VAR gen: Generator; word: Strings.String);
 BEGIN
+	TabsAfterNewLine(gen);
 	gen.len := gen.len + Strings.Write(gen.out^, word)
 END String;
 
@@ -203,6 +230,7 @@ PROCEDURE ScreeningString(VAR gen: Generator; str: Strings.String);
 VAR i, len, last: INTEGER;
 	block: Strings.Block;
 BEGIN
+	TabsAfterNewLine(gen);
 	block := str.block;
 	i := str.ofs;
 	last := i;
@@ -231,6 +259,7 @@ VAR buf: ARRAY 14 OF CHAR;
 	i: INTEGER;
 	sign: BOOLEAN;
 BEGIN
+	TabsAfterNewLine(gen);
 	sign := int < 0;
 	IF sign THEN
 		int := -int
@@ -250,6 +279,7 @@ END Int;
 
 PROCEDURE Real(VAR gen: Generator; real: REAL);
 BEGIN
+	TabsAfterNewLine(gen);
 	Str(gen, "Real not implemented")
 END Real;
 
@@ -1646,27 +1676,23 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 		IF (v = NIL) & (rec.base = NIL) & ~gen.opt.gnu THEN
 			Str(gen, " { int nothing; } ")
 		ELSE
-			StrLn(gen, " {");
+			StrOpen(gen, " {");
 
 			IF rec.base # NIL THEN
-				Tabs(gen, +1);
 				GlobalName(gen, rec.base);
 				IF gen.opt.plan9 THEN
 					StrLn(gen, ";")
 				ELSE
 					StrLn(gen, " _;")
 				END
-			ELSE
-				INC(gen.tabs)
 			END;
 
 			WHILE v # NIL DO
-				Tabs(gen, 0);
 				Declarator(gen, v, FALSE, FALSE, FALSE);
 				StrLn(gen, ";");
 				v := v.next
 			END;
-			Tabs(gen, -1);
+			DEC(gen.tabs);
 			Str(gen, "} ")
 		END;
 		MemWriteInvert(gen.out(PMemoryOut)^)
@@ -1784,7 +1810,6 @@ PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 
 	PROCEDURE Typedef(VAR gen: Generator; type: Ast.Type);
 	BEGIN
-		Tabs(gen, 0);
 		Str(gen, "typedef ");
 		Declarator(gen, type, TRUE, FALSE, TRUE);
 		StrLn(gen, ";")
@@ -1842,7 +1867,6 @@ BEGIN
 		   OR (prev = "*") & (i.char = "/");
 
 		IF i.char = Utf8.Null THEN
-			Tabs(gen, 0);
 			Str(gen, "/*");
 			String(gen, com);
 			StrLn(gen, "*/")
@@ -1916,7 +1940,6 @@ BEGIN
 		IF prev # NIL THEN
 			StrLn(out.g[ORD(mark)], ";")
 		END;
-		Tabs(out.g[ORD(mark)], 0);
 		Mark(out.g[ORD(mark)], mark)
 	ELSE
 		Str(out.g[ORD(mark)], ", ")
@@ -1927,13 +1950,10 @@ BEGIN
 			StrLn(out.g[Interface], ";")
 		END;
 
-		IF ~same THEN
-			IF prev # NIL THEN
-				StrLn(out.g[Implementation], ";")
-			END;
-			Tabs(out.g[Implementation], 0)
-		ELSE
+		IF same THEN
 			Str(out.g[Implementation], ", ")
+		ELSIF prev # NIL THEN
+			StrLn(out.g[Implementation], ";")
 		END
 	END;
 
@@ -1960,8 +1980,7 @@ END Var;
 PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
 BEGIN
 	Expression(gen, wi.expr);
-	StrLn(gen, ") {");
-	INC(gen.tabs);
+	StrOpen(gen, ") {");
 	statements(gen, wi.stats);
 	wi := wi.elsif
 END ExprThenStats;
@@ -1983,7 +2002,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		PROCEDURE Elsif(VAR gen: Generator; VAR wi: Ast.WhileIf);
 		BEGIN
 			WHILE (wi # NIL) & (wi.expr # NIL) DO
-				Tabs(gen, -1);
+				DEC(gen.tabs);
 				Str(gen, "} else if (");
 				ExprThenStats(gen, wi)
 			END
@@ -1994,33 +2013,28 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
 			IF wi # NIL THEN
-				Tabs(gen, -1);
-				StrLn(gen, "} else {");
-				INC(gen.tabs);
+				DEC(gen.tabs);
+				StrOpen(gen, "} else {");
 				statements(gen, wi.stats)
 			END;
-			Tabs(gen, -1);
-			StrLn(gen, "}")
+			StrClose(gen, "}")
 		ELSIF wi.elsif = NIL THEN
 			Str(gen, "while (");
 			ExprThenStats(gen, wi);
-			Tabs(gen, -1);
-			StrLn(gen, "}")
+			StrClose(gen, "}")
 		ELSE
 			Str(gen, "while (1) if (");
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
-			Tabs(gen, -1);
-			StrLn(gen, "} else break;")
+			StrClose(gen, "} else break;")
 		END
 	END WhileIf;
 
 	PROCEDURE Repeat(VAR gen: Generator; st: Ast.Repeat);
 	BEGIN
-		StrLn(gen, "do {");
-		INC(gen.tabs);
+		StrOpen(gen, "do {");
 		statements(gen, st.stats);
-		Tabs(gen, -1);
+		DEC(gen.tabs);
 		IF st.expr.id = Ast.IdNegate THEN
 			Str(gen, "} while (");
 			Expression(gen, st.expr(Ast.ExprNegate).expr);
@@ -2077,11 +2091,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Int(gen, -st.by)
 			END
 		END;
-		StrLn(gen, ") {");
-		INC(gen.tabs);
+		StrOpen(gen, ") {");
 		statements(gen, st.stats);
-		Tabs(gen, -1);
-		StrLn(gen, "}")
+		StrClose(gen, "}")
 	END For;
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
@@ -2100,8 +2112,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				ArrayLen(gen, des);
 				Str(gen, " <= ");
 				ArrayLen(gen, e);
-				StrLn(gen, ");");
-				Tabs(gen, 0)
+				StrLn(gen, ");")
 			END
 		END AssertArraySize;
 	BEGIN
@@ -2201,7 +2212,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			IF ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
 				WHILE r # NIL DO
-					Tabs(gen, 0);
 					Str(gen, "case ");
 					Int(gen, r.value);
 					ASSERT(r.right = NIL);
@@ -2211,7 +2221,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				END;
 				INC(gen.tabs);
 				statements(gen, elem.stats);
-				Tabs(gen, 0);
 				StrLn(gen, "break;");
 				DEC(gen.tabs, 1)
 			END
@@ -2260,10 +2269,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Str(gen, " || ");
 				CaseRange(gen, r, caseExpr)
 			END;
-			StrLn(gen, ") {");
-			INC(gen.tabs);
+			StrOpen(gen, ") {");
 			statements(gen, elem.stats);
-			Tabs(gen, -1);
+			DEC(gen.tabs);
 			Str(gen, "}")
 		END CaseElementAsIf;
 	BEGIN
@@ -2277,8 +2285,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			caseExpr := NIL;
 			Str(gen, "{ int o7c_case_expr = ");
 			Expression(gen, st.expr);
-			StrLn(gen, ";");
-			Tabs(gen, +1);
+			StrOpen(gen, ";");
 			StrLn(gen, "switch (o7c_case_expr) {")
 		ELSE
 			caseExpr := st.expr;
@@ -2291,9 +2298,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			CaseElement(gen, elem);
 			elem := elem.next
 		UNTIL elem = NIL;
-		Tabs(gen, 0);
-		StrLn(gen, "default:");
-		Tabs(gen, +1);
+		StrOpen(gen, "default:");
 		IF elemWithRange # NIL THEN
 			elem := elemWithRange;
 			CaseElementAsIf(gen, elem, caseExpr);
@@ -2306,24 +2311,19 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				elem := elem.next
 			END;
 			IF gen.opt.caseAbort THEN
-				StrLn(gen, " else abort();");
-				Tabs(gen, 0)
+				StrLn(gen, " else abort();")
 			END
 		ELSIF gen.opt.caseAbort THEN
-			StrLn(gen, "abort();");
-			Tabs(gen, 0)
+			StrLn(gen, "abort();")
 		END;
 		StrLn(gen, "break;");
-		Tabs(gen, -1);
-		StrLn(gen, "}");
+		StrClose(gen, "}");
 		IF caseExpr = NIL THEN
-			Tabs(gen, -1);
-			StrLn(gen, "}")
+			StrClose(gen, "}")
 		END
 	END Case;
 BEGIN
 	Comment(gen, st.comment);
-	Tabs(gen, 0);
 	IF st IS Ast.Assign THEN
 		Assign(gen, st(Ast.Assign))
 	ELSIF st IS Ast.Call THEN
@@ -2357,7 +2357,6 @@ END Statements;
 
 PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
 BEGIN
-	Tabs(gen, 0);
 	IF proc.mark & ~gen.opt.main THEN
 		Str(gen, "extern ")
 	ELSE
@@ -2419,7 +2418,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE RetainParams(VAR gen: Generator; fp: Ast.Declaration);
 		BEGIN
 			IF fp # NIL THEN
-				Tabs(gen, 0);
 				Str(gen, "o7c_retain(");
 				Name(gen, fp);
 				fp := fp.next;
@@ -2438,7 +2436,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE ReleaseParams(VAR gen: Generator; fp: Ast.Declaration);
 		BEGIN
 			IF fp # NIL THEN
-				Tabs(gen, 0);
 				Str(gen, "o7c_release(");
 				Name(gen, fp);
 				fp := fp.next;
@@ -2463,7 +2460,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 					IF var.type.id = Ast.IdPointer THEN
 						IF first THEN
 							first := FALSE;
-							Tabs(gen, 0);
 							Str(gen, "o7c_release(")
 						ELSE
 							Str(gen, "); o7c_release(")
@@ -2479,13 +2475,11 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		END ReleaseVars;
 	BEGIN
 		Comment(gen, proc.comment);
-		Tabs(gen, 0);
 		Mark(gen, proc.mark);
 		Declarator(gen, proc, FALSE, FALSE(*TODO*), TRUE);
-		StrLn(gen, " {");
+		StrOpen(gen, " {");
 
 		INC(gen.localDeep);
-		INC(gen.tabs);
 
 		gen.fixedLen := gen.len;
 
@@ -2494,7 +2488,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		ELSE
 			retainParams := SearchRetain(gen, proc.header.params);
 			IF proc.return # NIL THEN
-				Tabs(gen, 0);
 				Qualifier(gen, proc.return.type);
 				IF proc.return.type.id = Ast.IdPointer
 				THEN	StrLn(gen, " o7c_return = NULL;")
@@ -2512,7 +2505,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			ReleaseVars(gen, proc.vars);
 			ReleaseParams(gen, retainParams)
 		ELSE
-			Tabs(gen, 0);
 			IF (gen.opt.memManager = MemManagerCounter) & (proc.return # NIL)
 			THEN
 				IF proc.return.type.id = Ast.IdPointer THEN
@@ -2527,10 +2519,8 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				ReleaseVars(gen, proc.vars);
 				ReleaseParams(gen, retainParams);
 				IF proc.return.type.id = Ast.IdPointer THEN
-					Tabs(gen, 0);
 					StrLn(gen, "o7c_unhold(o7c_return);")
 				END;
-				Tabs(gen, 0);
 				StrLn(gen, "return o7c_return;")
 			ELSE
 				ReleaseVars(gen, proc.vars);
@@ -2543,8 +2533,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		DEC(gen.localDeep);
 		CloseConsts(gen, proc.start);
-		Tabs(gen, -1);
-		StrLn(gen, "}");
+		StrClose(gen, "}");
 		Ln(gen)
 	END Implement;
 
@@ -2609,7 +2598,6 @@ VAR arrDeep, arrTypeId, i: INTEGER;
 BEGIN
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
-			Tabs(gen, 0);
 			IF (gen.opt.varInit = VarInitZero)
 			OR (d.type.id = Ast.IdRecord)
 			OR    (d.type.id = Ast.IdArray)
@@ -2821,7 +2809,6 @@ BEGIN
 		ASSERT(imp IS Ast.Import);
 
 		REPEAT
-			Tabs(gen, 0);
 			String(gen, imp.module.name);
 			StrLn(gen, "_init();");
 
@@ -2840,7 +2827,6 @@ BEGIN
 		gen.opt.records := r.ext;
 		r.ext := NIL;
 
-		Tabs(gen, 0);
 		Str(gen, "o7c_tag_init(");
 		GlobalName(gen, r);
 		IF r.base = NIL THEN
@@ -2873,7 +2859,9 @@ VAR out: MOut;
 		opt.recordLast := NIL;
 		gen.opt := opt;
 
-		gen.fixedLen := gen.len
+		gen.fixedLen := gen.len;
+
+		gen.isNewLine := FALSE
 	END Init;
 
 	PROCEDURE Includes(VAR gen: Generator);
@@ -2924,38 +2912,30 @@ VAR out: MOut;
 
 			Str(impl, "extern void ");
 			Name(impl, module);
-			StrLn(impl, "_init(void) {");
-			Tabs(impl, +1);
+			StrOpen(impl, "_init(void) {");
 			StrLn(impl, "static int initialized = 0;");
-			Tabs(impl, 0);
 			StrLn(impl, "if (0 == initialized) {");
 			INC(impl.tabs, 1);
 			ImportInit(impl, module.import);
 			TagsInit(impl);
 			Statements(impl, module.stats);
-			Tabs(impl, -1);
-			StrLn(impl, "}");
-			Tabs(impl, 0);
+			StrClose(impl, "}");
 			StrLn(impl, "++initialized;");
-			Tabs(impl, -1);
-			StrLn(impl, "}"); Ln(impl)
+			StrClose(impl, "}"); Ln(impl)
 		END
 	END ModuleInit;
 
 	PROCEDURE Main(VAR gen: Generator; module: Ast.Module);
 	BEGIN
-		StrLn(gen, "extern int main(int argc, char **argv) {");
-		Tabs(gen, +1);
+		StrOpen(gen, "extern int main(int argc, char **argv) {");
 		StrLn(gen, "o7c_init(argc, argv);");
 		ImportInit(gen, module.import);
 		TagsInit(gen);
 		IF module.stats # NIL THEN
 			Statements(gen, module.stats)
 		END;
-		Tabs(gen, 0);
 		StrLn(gen, "return o7c_exit_code;");
-		Tabs(gen, -1);
-		StrLn(gen, "}")
+		StrClose(gen, "}")
 	END Main;
 BEGIN
 	ASSERT(~Ast.HasError(module));
