@@ -1,0 +1,164 @@
+MODULE TextGenerator;
+
+IMPORT
+	V,
+	Utf8,
+	Strings := StringStore,
+	Stream := VDataStream;
+
+TYPE
+	Out* = RECORD(V.Base)
+		out: Stream.POut;
+		len*: INTEGER;
+		tabs: INTEGER;
+		isNewLine: BOOLEAN
+	END;
+
+PROCEDURE Init*(VAR g: Out; out: Stream.POut);
+BEGIN
+	ASSERT(out # NIL);
+
+	V.Init(g);
+	g.out := out;
+	g.len := 0;
+	g.isNewLine := FALSE
+END Init;
+
+PROCEDURE SetTabs*(VAR g: Out; d: Out);
+BEGIN
+	g.tabs := d.tabs
+END SetTabs;
+
+PROCEDURE Chars(VAR gen: Out; ch: CHAR; count: INTEGER);
+VAR c: ARRAY 1 OF CHAR;
+BEGIN
+	ASSERT(count >= 0);
+	c[0] := ch;
+	WHILE count > 0 DO
+		gen.len := gen.len + Stream.Write(gen.out^, c, 0, 1);
+		DEC(count)
+	END
+END Chars;
+
+PROCEDURE Indent(VAR gen: Out; adder: INTEGER);
+BEGIN
+	gen.tabs := gen.tabs + adder;
+	Chars(gen, Utf8.Tab, gen.tabs)
+END Indent;
+
+PROCEDURE NewLine(VAR gen: Out);
+BEGIN
+	IF gen.isNewLine THEN
+		gen.isNewLine := FALSE;
+		Chars(gen, Utf8.Tab, gen.tabs)
+	END
+END NewLine;
+
+PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	ASSERT(str[LEN(str) - 1] = Utf8.Null);
+	NewLine(gen);
+	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1)
+END Str;
+
+PROCEDURE StrLn*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	NewLine(gen);
+	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1);
+	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
+	gen.isNewLine := gen.tabs > 0
+END StrLn;
+
+PROCEDURE Ln*(VAR gen: Out);
+BEGIN
+	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
+	gen.isNewLine := gen.tabs > 0
+END Ln;
+
+PROCEDURE StrOpen*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	INC(gen.tabs);
+	StrLn(gen, str)
+END StrOpen;
+
+PROCEDURE StrClose*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	DEC(gen.tabs, 1);
+	StrLn(gen, str)
+END StrClose;
+
+PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	ASSERT(str[LEN(str) - 1] = Utf8.Null);
+	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1)
+END StrIgnoreIndent;
+
+PROCEDURE String*(VAR gen: Out; word: Strings.String);
+BEGIN
+	NewLine(gen);
+	gen.len := gen.len + Strings.Write(gen.out^, word)
+END String;
+
+PROCEDURE Data*(VAR g: Out; data: ARRAY OF CHAR; ofs, count: INTEGER);
+BEGIN
+	NewLine(g);
+	g.len := g.len + Stream.Write(g.out^, data, ofs, count)
+END Data;
+
+PROCEDURE ScreeningString*(VAR gen: Out; str: Strings.String);
+VAR i, last: INTEGER;
+	block: Strings.Block;
+BEGIN
+	NewLine(gen);
+	block := str.block;
+	i := str.ofs;
+	last := i;
+	ASSERT(block.s[i] = Utf8.DQuote);
+	INC(i);
+	WHILE block.s[i] = Utf8.NewPage DO
+		gen.len := gen.len + Stream.Write(gen.out^, block.s, last, i - last);
+		block := block.next;
+		i := 0;
+		last := 0
+	ELSIF block.s[i] = "\" DO
+		gen.len := gen.len + Stream.Write(gen.out^, block.s, last, i - last + 1);
+		gen.len := gen.len + Stream.Write(gen.out^, "\", 0, 1);
+		INC(i);
+		last := i
+	ELSIF block.s[i] # Utf8.Null DO
+		INC(i)
+	END;
+	ASSERT(block.s[i] = Utf8.Null);
+	gen.len := gen.len + Stream.Write(gen.out^, block.s, last, i - last)
+END ScreeningString;
+
+PROCEDURE Int*(VAR gen: Out; int: INTEGER);
+VAR buf: ARRAY 14 OF CHAR;
+	i: INTEGER;
+	sign: BOOLEAN;
+BEGIN
+	NewLine(gen);
+	sign := int < 0;
+	IF sign THEN
+		int := -int
+	END;
+	i := LEN(buf);
+	REPEAT
+		DEC(i);
+		buf[i] := CHR(ORD("0") + int MOD 10);
+		int := int DIV 10
+	UNTIL int = 0;
+	IF sign THEN
+		DEC(i);
+		buf[i] := "-"
+	END;
+	gen.len := gen.len + Stream.Write(gen.out^, buf, i, LEN(buf) - i)
+END Int;
+
+PROCEDURE Real*(VAR gen: Out; real: REAL);
+BEGIN
+	NewLine(gen);
+	Str(gen, "Real not implemented")
+END Real;
+
+END TextGenerator.

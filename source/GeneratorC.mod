@@ -22,6 +22,7 @@ IMPORT
 	Strings := StringStore,
 	Scanner,
 	Stream := VDataStream,
+	Text := TextGenerator,
 	Utf8,
 	Log,
 	Limits,
@@ -63,22 +64,17 @@ TYPE
 		lastSelectorDereference: BOOLEAN
 	END;
 
-	Generator* = RECORD(V.Base)
-		out*: Stream.POut;
-		len*: INTEGER;
-
+	Generator* = RECORD(Text.Out)
 		module: Ast.Module;
 
 		localDeep: INTEGER;(* Вложенность процедур *)
 
 		fixedLen: INTEGER;
-		tabs: INTEGER;
 
 		interface: BOOLEAN;
 		opt: Options;
 
-		expressionSemicolon,
-		isNewLine: BOOLEAN
+		expressionSemicolon: BOOLEAN
 	END;
 
 	MemoryOut = RECORD(Stream.Out)
@@ -111,31 +107,6 @@ VAR
 	declarations: PROCEDURE(VAR out: MOut; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR gen: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression);
-
-PROCEDURE Chars(VAR gen: Generator; ch: CHAR; count: INTEGER);
-VAR c: ARRAY 1 OF CHAR;
-BEGIN
-	ASSERT(count >= 0);
-	c[0] := ch;
-	WHILE count > 0 DO
-		gen.len := gen.len + Stream.Write(gen.out^, c, 0, 1);
-		DEC(count)
-	END
-END Chars;
-
-PROCEDURE Tabs(VAR gen: Generator; adder: INTEGER);
-BEGIN
-	gen.tabs := gen.tabs + adder;
-	Chars(gen, Utf8.Tab, gen.tabs)
-END Tabs;
-
-PROCEDURE TabsAfterNewLine(VAR gen: Generator);
-BEGIN
-	IF gen.isNewLine THEN
-		gen.isNewLine := FALSE;
-		Tabs(gen, 0)
-	END
-END TabsAfterNewLine;
 
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
 VAR ret: BOOLEAN;
@@ -180,108 +151,11 @@ END MemWriteInvert;
 PROCEDURE MemWriteDirect(VAR gen: Generator; VAR mo: MemoryOut);
 VAR inv: INTEGER;
 BEGIN
-	TabsAfterNewLine(gen);
 	inv := ORD(mo.invert);
 	ASSERT(mo.mem[1 - inv].len = 0);
-	gen.len := gen.len + Stream.Write(gen.out^, mo.mem[inv].buf, 0, mo.mem[inv].len);
+	Text.Data(gen, mo.mem[inv].buf, 0, mo.mem[inv].len);
 	mo.mem[inv].len := 0
 END MemWriteDirect;
-
-PROCEDURE Str(VAR gen: Generator; str: ARRAY OF CHAR);
-BEGIN
-	ASSERT(str[LEN(str) - 1] = Utf8.Null);
-	TabsAfterNewLine(gen);
-	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1)
-END Str;
-
-PROCEDURE StrLn(VAR gen: Generator; str: ARRAY OF CHAR);
-BEGIN
-	TabsAfterNewLine(gen);
-	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1);
-	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
-	gen.isNewLine := TRUE
-END StrLn;
-
-PROCEDURE Ln(VAR gen: Generator);
-BEGIN
-	gen.isNewLine := TRUE;
-	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1)
-END Ln;
-
-PROCEDURE StrOpen(VAR gen: Generator; str: ARRAY OF CHAR);
-BEGIN
-	StrLn(gen, str);
-	INC(gen.tabs)
-END StrOpen;
-
-PROCEDURE StrClose(VAR gen: Generator; str: ARRAY OF CHAR);
-BEGIN
-	DEC(gen.tabs, 1);
-	StrLn(gen, str)
-END StrClose;
-
-PROCEDURE String(VAR gen: Generator; word: Strings.String);
-BEGIN
-	TabsAfterNewLine(gen);
-	gen.len := gen.len + Strings.Write(gen.out^, word)
-END String;
-
-PROCEDURE ScreeningString(VAR gen: Generator; str: Strings.String);
-VAR i, len, last: INTEGER;
-	block: Strings.Block;
-BEGIN
-	TabsAfterNewLine(gen);
-	block := str.block;
-	i := str.ofs;
-	last := i;
-	ASSERT(block.s[i] = Utf8.DQuote);
-	INC(i);
-	len := 0;
-	WHILE block.s[i] = Utf8.NewPage DO
-		len := len + Stream.Write(gen.out^, block.s, last, i - last);
-		block := block.next;
-		i := 0;
-		last := 0
-	ELSIF block.s[i] = "\" DO
-		len := len + Stream.Write(gen.out^, block.s, last, i - last + 1);
-		len := len + Stream.Write(gen.out^, "\", 0, 1);
-		INC(i);
-		last := i
-	ELSIF block.s[i] # Utf8.Null DO
-		INC(i)
-	END;
-	ASSERT(block.s[i] = Utf8.Null);
-	gen.len := gen.len + Stream.Write(gen.out^, block.s, last, i - last)
-END ScreeningString;
-
-PROCEDURE Int(VAR gen: Generator; int: INTEGER);
-VAR buf: ARRAY 14 OF CHAR;
-	i: INTEGER;
-	sign: BOOLEAN;
-BEGIN
-	TabsAfterNewLine(gen);
-	sign := int < 0;
-	IF sign THEN
-		int := -int
-	END;
-	i := LEN(buf);
-	REPEAT
-		DEC(i);
-		buf[i] := CHR(ORD("0") + int MOD 10);
-		int := int DIV 10
-	UNTIL int = 0;
-	IF sign THEN
-		DEC(i);
-		buf[i] := "-"
-	END;
-	gen.len := gen.len + Stream.Write(gen.out^, buf, i, LEN(buf) - i)
-END Int;
-
-PROCEDURE Real(VAR gen: Generator; real: REAL);
-BEGIN
-	TabsAfterNewLine(gen);
-	Str(gen, "Real not implemented")
-END Real;
 
 PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 
@@ -433,16 +307,16 @@ BEGIN
 	THEN
 		up := decl.up;
 		WHILE ~(up IS Ast.Module) DO
-			String(gen, up.name);
-			Str(gen, "_");
+			Text.String(gen, up.name);
+			Text.Str(gen, "_");
 			up := up.up
 		END
 	END;
-	String(gen, decl.name);
+	Text.String(gen, decl.name);
 	IF decl IS Ast.Const THEN
-		Str(gen, "_cnst")
+		Text.Str(gen, "_cnst")
 	ELSIF IsNameOccupied(decl.name) THEN
-		Str(gen, "_")
+		Text.Str(gen, "_")
 	END
 END Name;
 
@@ -450,11 +324,11 @@ PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
 	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module) THEN
 		ASSERT(decl.module # NIL);
-		String(gen, decl.module.name);
-		Str(gen, "_");
-		String(gen, decl.name);
+		Text.String(gen, decl.module.name);
+		Text.Str(gen, "_");
+		Text.String(gen, decl.name);
 		IF decl IS Ast.Const THEN
-			Str(gen, "_cnst")
+			Text.Str(gen, "_cnst")
 		END
 	ELSE
 		Name(gen, decl)
@@ -463,10 +337,10 @@ END GlobalName;
 
 PROCEDURE Import(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
-	Str(gen, "#include "); Str(gen, Utf8.DQuote);
-	String(gen, decl.module.name);
-	Str(gen, ".h");
-	StrLn(gen, Utf8.DQuote)
+	Text.Str(gen, "#include "); Text.Str(gen, Utf8.DQuote);
+	Text.String(gen, decl.module.name);
+	Text.Str(gen, ".h");
+	Text.StrLn(gen, Utf8.DQuote)
 END Import;
 
 PROCEDURE Factor(VAR gen: Generator; expr: Ast.Expression);
@@ -474,9 +348,9 @@ BEGIN
 	IF expr IS Ast.Factor THEN
 		expression(gen, expr)
 	ELSE
-		Str(gen, "(");
+		Text.Str(gen, "(");
 		expression(gen, expr);
-		Str(gen, ")")
+		Text.Str(gen, ")")
 	END
 END Factor;
 
@@ -530,13 +404,13 @@ BEGIN
 		expression(gen, type(Ast.Array).count)
 	ELSE
 		GlobalName(gen, decl);
-		Str(gen, "_len");
+		Text.Str(gen, "_len");
 		i := -1;
 		WHILE sel # NIL DO
 			INC(i);
 			sel := sel.next
 		END;
-		Int(gen, i)
+		Text.Int(gen, i)
 	END
 END ArrayDeclLen;
 
@@ -550,14 +424,14 @@ BEGIN
 	ELSE
 		des := e(Ast.Designator);
 		GlobalName(gen, des.decl);
-		Str(gen, "_len");
+		Text.Str(gen, "_len");
 		i := 0;
 		t := des.type;
 		WHILE t # e.type DO
 			INC(i);
 			t := t.type
 		END;
-		Int(gen, i)
+		Text.Int(gen, i)
 	END
 END ArrayLen;
 
@@ -588,15 +462,15 @@ VAR sel: Ast.Selector;
 		END;
 
 		IF type.id = Ast.IdPointer THEN
-			Str(gen, "->")
+			Text.Str(gen, "->")
 		ELSE
-			Str(gen, ".")
+			Text.Str(gen, ".")
 		END;
 
 		IF ~gen.opt.plan9 THEN
 			WHILE (up # NIL) & ~Search(up, var) DO
 				up := up.base;
-				Str(gen, "_.")
+				Text.Str(gen, "_.")
 			END
 		END;
 
@@ -615,9 +489,9 @@ VAR sel: Ast.Selector;
 				(type.id = Ast.IdRecord)
 			)
 		THEN
-			Str(gen, "(*");
+			Text.Str(gen, "(*");
 			GlobalName(gen, decl);
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		ELSE
 			GlobalName(gen, decl)
 		END
@@ -632,19 +506,19 @@ VAR sel: Ast.Selector;
 		               decl: Ast.Declaration; j: INTEGER; t: Ast.Type);
 		BEGIN
 			WHILE (t # NIL) & (t IS Ast.Array) DO
-				Str(gen, " * ");
+				Text.Str(gen, " * ");
 				Name(gen, decl);
-				Str(gen, "_len");
-				Int(gen, j);
+				Text.Str(gen, "_len");
+				Text.Int(gen, j);
 				INC(j);
 				t := t.type
 			END
 		END Mult;
 	BEGIN
 		IF isDesignatorArray THEN
-			Str(gen, " + ")
+			Text.Str(gen, " + ")
 		ELSE
-			Str(gen, "[")
+			Text.Str(gen, "[")
 		END;
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
 		THEN
@@ -654,11 +528,11 @@ VAR sel: Ast.Selector;
 			     & (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 			   )
 			THEN
-				Str(gen, "o7c_ind(");
+				Text.Str(gen, "o7c_ind(");
 				ArrayDeclLen(gen, type, decl, sel);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			ELSE
 				expression(gen, sel(Ast.SelArray).index)
 			END;
@@ -671,13 +545,13 @@ VAR sel: Ast.Selector;
 				     & (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 				   )
 				THEN
-					Str(gen, "][o7c_ind(");
+					Text.Str(gen, "][o7c_ind(");
 					ArrayDeclLen(gen, type, decl, sel);
-					Str(gen, ", ");
+					Text.Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
-					Str(gen, ")")
+					Text.Str(gen, ")")
 				ELSE
-					Str(gen, "][");
+					Text.Str(gen, "][");
 					expression(gen, sel(Ast.SelArray).index)
 				END;
 				sel := sel.next;
@@ -691,13 +565,13 @@ VAR sel: Ast.Selector;
 				Mult(gen, decl, i + 1, type);
 				sel := sel.next;
 				INC(i);
-				Str(gen, " + ")
+				Text.Str(gen, " + ")
 			END;
 			Factor(gen, sel(Ast.SelArray).index);
 			Mult(gen, decl, i + 1, type.type)
 		END;
 		IF ~isDesignatorArray THEN
-			Str(gen, "]")
+			Text.Str(gen, "]")
 		END
 	END Array;
 BEGIN
@@ -715,30 +589,30 @@ BEGIN
 			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
 		ELSIF sel IS Ast.SelPointer THEN
 			IF (sel.next = NIL) OR ~(sel.next IS Ast.SelRecord) THEN
-				Str(gen, "(*");
+				Text.Str(gen, "(*");
 				Selector(gen, sels, i, typ, desType);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			ELSE
 				Selector(gen, sels, i, typ, desType)
 			END
 		ELSIF sel IS Ast.SelGuard THEN
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, "O7C_GUARD(");
+				Text.Str(gen, "O7C_GUARD(");
 				ret := CheckStructName(gen, sel(Ast.SelGuard).type.type(Ast.Record));
 				ASSERT(ret);
 				GlobalName(gen, sel(Ast.SelGuard).type.type)
 			ELSE
-				Str(gen, "O7C_GUARD_R(");
+				Text.Str(gen, "O7C_GUARD_R(");
 				GlobalName(gen, sel(Ast.SelGuard).type)
 			END;
-			Str(gen, ", &");
+			Text.Str(gen, ", &");
 			Selector(gen, sels, i, typ, desType);
 			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			ELSE
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				GlobalName(gen, sels.decl);
-				Str(gen, "_tag)")
+				Text.Str(gen, "_tag)")
 			END;
 			typ := sel(Ast.SelGuard).type
 		ELSE
@@ -785,9 +659,9 @@ BEGIN
 	 & (e.type.id = Ast.IdBoolean)
 	 & (e.value = NIL)
 	THEN
-		Str(gen, "o7c_bl(");
+		Text.Str(gen, "o7c_bl(");
 		expression(gen, e);
-		Str(gen, ")")
+		Text.Str(gen, ")")
 	ELSE
 		expression(gen, e)
 	END
@@ -806,11 +680,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR;
 			                ps: Ast.Parameter);
 			BEGIN
-				Str(gen, "(int)((unsigned)");
+				Text.Str(gen, "(int)((unsigned)");
 				Factor(gen, ps.expr);
-				Str(gen, shift);
+				Text.Str(gen, shift);
 				Factor(gen, ps.next.expr);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			END Shift;
 
 			PROCEDURE Len(VAR gen: Generator; des: Ast.Designator);
@@ -819,41 +693,41 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				IF  (des.decl.type.id # Ast.IdArray)
 				OR ~(des.decl IS Ast.FormalParam) THEN
-					Str(gen, "sizeof(");
+					Text.Str(gen, "sizeof(");
 					Designator(gen, des);
-					Str(gen, ") / sizeof (");
+					Text.Str(gen, ") / sizeof (");
 					Designator(gen, des);
-					Str(gen, "[0])")
+					Text.Str(gen, "[0])")
 				ELSIF des.type(Ast.Array).count # NIL THEN
 					Expression(gen, des.type(Ast.Array).count)
 				ELSE
 					GlobalName(gen, des.decl);
-					Str(gen, "_len");
+					Text.Str(gen, "_len");
 					i := 0;
 					sel := des.sel;
 					WHILE sel # NIL DO
 						INC(i);
 						sel := sel.next
 					END;
-					Int(gen, i)
+					Text.Int(gen, i)
 				END
 			END Len;
 
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
 			VAR ret: BOOLEAN;
 			BEGIN
-				Str(gen, "O7C_NEW(&");
+				Text.Str(gen, "O7C_NEW(&");
 				Expression(gen, e);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				ret := CheckStructName(gen, e.type.type(Ast.Record));
 				ASSERT(ret);
 				GlobalName(gen, e.type.type);
-				Str(gen, "_tag)")
+				Text.Str(gen, "_tag)")
 			END New;
 
 			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
-				Str(gen, "(int)");
+				Text.Str(gen, "(int)");
 				Factor(gen, e)
 			END Ord;
 
@@ -862,19 +736,19 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				Expression(gen, e1);
 				IF gen.opt.checkArith THEN
-					Str(gen, " = o7c_add(");
+					Text.Str(gen, " = o7c_add(");
 					Expression(gen, e1);
 					IF p2 = NIL THEN
-						Str(gen, ", 1)")
+						Text.Str(gen, ", 1)")
 					ELSE
-						Str(gen, ", ");
+						Text.Str(gen, ", ");
 						Expression(gen, p2.expr);
-						Str(gen, ")")
+						Text.Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
-					Str(gen, "++")
+					Text.Str(gen, "++")
 				ELSE
-					Str(gen, " += ");
+					Text.Str(gen, " += ");
 					Expression(gen, p2.expr)
 				END
 			END Inc;
@@ -884,19 +758,19 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				Expression(gen, e1);
 				IF gen.opt.checkArith THEN
-					Str(gen, " = o7c_sub(");
+					Text.Str(gen, " = o7c_sub(");
 					Expression(gen, e1);
 					IF p2 = NIL THEN
-						Str(gen, ", 1)")
+						Text.Str(gen, ", 1)")
 					ELSE
-						Str(gen, ", ");
+						Text.Str(gen, ", ");
 						Expression(gen, p2.expr);
-						Str(gen, ")")
+						Text.Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
-					Str(gen, "--")
+					Text.Str(gen, "--")
 				ELSE
-					Str(gen, " -= ");
+					Text.Str(gen, " -= ");
 					Expression(gen, p2.expr)
 				END
 			END Dec;
@@ -906,16 +780,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			CASE call.designator.decl.id OF
 			  Scanner.Abs:
 				IF call.type.id = Ast.IdInteger THEN
-					Str(gen, "abs(")
+					Text.Str(gen, "abs(")
 				ELSE
-					Str(gen, "fabs(")
+					Text.Str(gen, "fabs(")
 				END;
 				Expression(gen, e1);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			| Scanner.Odd:
-				Str(gen, "(");
+				Text.Str(gen, "(");
 				Factor(gen, e1);
-				Str(gen, " % 2 == 1)")
+				Text.Str(gen, " % 2 == 1)")
 			| Scanner.Len:
 				Len(gen, e1(Ast.Designator))
 			| Scanner.Lsl:
@@ -923,26 +797,26 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.Asr:
 				Shift(gen, " >> ", call.params)
 			| Scanner.Ror:
-				Str(gen, "o7_ror(");
+				Text.Str(gen, "o7_ror(");
 				Expression(gen, e1);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				Expression(gen, p2.expr);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			| Scanner.Floor:
-				Str(gen, "(int)");
+				Text.Str(gen, "(int)");
 				Factor(gen, e1)
 			| Scanner.Flt:
-				Str(gen, "(double)");
+				Text.Str(gen, "(double)");
 				Factor(gen, e1)
 			| Scanner.Ord:
 				Ord(gen, e1)
 			| Scanner.Chr:
 				IF gen.opt.checkArith & (e1.value = NIL) THEN
-					Str(gen, "o7c_chr(");
+					Text.Str(gen, "o7c_chr(");
 					Factor(gen, e1);
-					Str(gen, ")")
+					Text.Str(gen, ")")
 				ELSE
-					Str(gen, "(char unsigned)");
+					Text.Str(gen, "(char unsigned)");
 					Factor(gen, e1)
 				END
 			| Scanner.Inc:
@@ -951,26 +825,26 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Dec(gen, e1, p2)
 			| Scanner.Incl:
 				Expression(gen, e1);
-				Str(gen, " |= 1u << ");
+				Text.Str(gen, " |= 1u << ");
 				Factor(gen, p2.expr)
 			| Scanner.Excl:
 				Expression(gen, e1);
-				Str(gen, " &= ~(1u << ");
+				Text.Str(gen, " &= ~(1u << ");
 				Factor(gen, p2.expr);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			| Scanner.New:
 				New(gen, e1)
 			| Scanner.Assert:
-				Str(gen, "assert(");
+				Text.Str(gen, "assert(");
 				CheckExpr(gen, e1);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			| Scanner.Pack:
 				Expression(gen, e1);
-				Str(gen, " *= 1 << ");
+				Text.Str(gen, " *= 1 << ");
 				Expression(gen, p2.expr)
 			| Scanner.Unpk:
 				Expression(gen, e1);
-				Str(gen, " /= 1 << ");
+				Text.Str(gen, " /= 1 << ");
 				Expression(gen, p2.expr)
 			END
 		END Predefined;
@@ -995,16 +869,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF (t.id = Ast.IdByte) & (p.expr.type.id = Ast.IdInteger)
 			 & gen.opt.checkArith & (p.expr.value = NIL)
 			THEN
-				Str(gen, "o7c_byte(");
+				Text.Str(gen, "o7c_byte(");
 				Expression(gen, p.expr);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			ELSE
 				dist := p.distance;
 				IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
 				OR (t IS Ast.Record)
 				OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
 				THEN
-					Str(gen, "&")
+					Text.Str(gen, "&")
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
 				Expression(gen, p.expr);
@@ -1012,20 +886,20 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				IF (dist > 0) & ~gen.opt.plan9 THEN
 					IF t.id = Ast.IdPointer THEN
 						DEC(dist);
-						Str(gen, "->_")
+						Text.Str(gen, "->_")
 					END;
 					WHILE dist > 0 DO
 						DEC(dist);
-						Str(gen, "._")
+						Text.Str(gen, "._")
 					END
 				END;
 
 				t := p.expr.type;
 				IF t.id = Ast.IdRecord THEN
 					IF gen.opt.lastSelectorDereference THEN
-						Str(gen, ", NULL")
+						Text.Str(gen, ", NULL")
 					ELSE
-						Str(gen, ", ");
+						Text.Str(gen, ", ");
 						IF (p.expr(Ast.Designator).decl IS Ast.FormalParam)
 						 & (p.expr(Ast.Designator).sel = NIL)
 						THEN
@@ -1033,7 +907,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						ELSE
 							GlobalName(gen, t)
 						END;
-						Str(gen, "_tag")
+						Text.Str(gen, "_tag")
 					END
 				ELSIF fp.type.id # Ast.IdChar THEN
 					i := -1;
@@ -1041,7 +915,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					    & (fp.type(Ast.Array).count = NIL)
 					DO
 						IF t(Ast.Array).count # NIL THEN
-							Str(gen, ", ");
+							Text.Str(gen, ", ");
 							Expression(gen, t(Ast.Array).count)
 						ELSE
 							IF i = -1 THEN
@@ -1050,14 +924,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 								IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
 								THEN
 									FOR j := 0 TO i - 1 DO
-										Str(gen, "[0]")
+										Text.Str(gen, "[0]")
 									END
 								END
 							END;
-							Str(gen, ", ");
+							Text.Str(gen, ", ");
 							Name(gen, p.expr(Ast.Designator).decl);
-							Str(gen, "_len");
-							Int(gen, i)
+							Text.Str(gen, "_len");
+							Text.Int(gen, i)
 						END;
 						INC(i);
 						t := t.type
@@ -1073,17 +947,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			Predefined(gen, call)
 		ELSE
 			Designator(gen, call.designator);
-			Str(gen, "(");
+			Text.Str(gen, "(");
 			p  := call.params;
 			fp := call.designator.type(Ast.ProcType).params;
 			IF p # NIL THEN
 				ActualParam(gen, p, fp);
 				WHILE p # NIL DO
-					Str(gen, ", ");
+					Text.Str(gen, ", ");
 					ActualParam(gen, p, fp)
 				END
 			END;
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		END
 	END Call;
 
@@ -1098,23 +972,23 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				brace := (e.type.id = Ast.IdSet)
 				      & ~(e IS Ast.Factor);
 				IF brace THEN
-					Str(gen, "(")
+					Text.Str(gen, "(")
 				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
-					Str(gen, "&")
+					Text.Str(gen, "&")
 				END;
 				Expression(gen, e);
 				IF (dist > 0) & ~gen.opt.plan9 THEN
 					IF e.type.id = Ast.IdPointer THEN
 						DEC(dist);
-						Str(gen, "->_")
+						Text.Str(gen, "->_")
 					END;
 					WHILE dist > 0 DO
 						DEC(dist);
-						Str(gen, "._")
+						Text.Str(gen, "._")
 					END
 				END;
 				IF brace THEN
-					Str(gen, ")")
+					Text.Str(gen, ")")
 				END
 			END Expr;
 
@@ -1134,35 +1008,35 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			   OR ~rel.exprs[0].value(Ast.ExprString).asChar
 			   )
 			THEN
-				Str(gen, "o7c_strcmp(");
+				Text.Str(gen, "o7c_strcmp(");
 
 				Expr(gen, rel.exprs[0], -rel.distance);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				Len(gen, rel.exprs[0]);
 
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 
 				Expr(gen, rel.exprs[1], rel.distance);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				Len(gen, rel.exprs[1]);
 
-				Str(gen, ")");
-				Str(gen, str);
-				Str(gen, "0")
+				Text.Str(gen, ")");
+				Text.Str(gen, str);
+				Text.Str(gen, "0")
 			ELSIF (gen.opt.varInit = VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id = Ast.IdInteger) (* TODO *)
 			THEN
-				Str(gen, "o7c_cmp(");
+				Text.Str(gen, "o7c_cmp(");
 				Expr(gen, rel.exprs[0], -rel.distance);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				Expr(gen, rel.exprs[1], rel.distance);
-				Str(gen, ")");
-				Str(gen, str);
-				Str(gen, " 0")
+				Text.Str(gen, ")");
+				Text.Str(gen, str);
+				Text.Str(gen, " 0")
 			ELSE
 				Expr(gen, rel.exprs[0], -rel.distance);
-				Str(gen, str);
+				Text.Str(gen, str);
 				Expr(gen, rel.exprs[1], rel.distance)
 			END
 		END Simple;
@@ -1172,22 +1046,22 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF (rel.exprs[0].value # NIL)
 			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. Limits.SetMax})
 			THEN
-				Str(gen, "!!(");
-				Str(gen, " (1u << ");
+				Text.Str(gen, "!!(");
+				Text.Str(gen, " (1u << ");
 				Factor(gen, rel.exprs[0]);
-				Str(gen, ") & ");
+				Text.Str(gen, ") & ");
 				Factor(gen, rel.exprs[1]);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			ELSE
 				IF rel.value # NIL THEN
-					Str(gen, "O7C_IN(")
+					Text.Str(gen, "O7C_IN(")
 				ELSE
-					Str(gen, "o7c_in(")
+					Text.Str(gen, "o7c_in(")
 				END;
 				Expression(gen, rel.exprs[0]);
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				Expression(gen, rel.exprs[1]);
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			END
 		END In;
 	BEGIN
@@ -1209,20 +1083,20 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		REPEAT
 			IF sum.add = Scanner.Minus THEN
 				IF sum.type.id # Ast.IdSet THEN
-					Str(gen, " - ")
+					Text.Str(gen, " - ")
 				ELSIF first THEN
-					Str(gen, " ~")
+					Text.Str(gen, " ~")
 				ELSE
-					Str(gen, " & ~")
+					Text.Str(gen, " & ~")
 				END
 			ELSIF sum.add = Scanner.Plus THEN
 				IF sum.type.id = Ast.IdSet THEN
-					Str(gen, " | ")
+					Text.Str(gen, " | ")
 				ELSE
-					Str(gen, " + ")
+					Text.Str(gen, " + ")
 				END
 			ELSIF sum.add = Scanner.Or THEN
-				Str(gen, " || ")
+				Text.Str(gen, " || ")
 			END;
 			CheckExpr(gen, sum.term);
 			sum := sum.next;
@@ -1245,9 +1119,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			WHILE i > 0 DO
 				CASE arr[i].add OF
 				  Scanner.Minus:
-					Str(gen, "o7c_sub(")
+					Text.Str(gen, "o7c_sub(")
 				| Scanner.Plus:
-					Str(gen, "o7c_add(")
+					Text.Str(gen, "o7c_add(")
 				END;
 				DEC(i)
 			END
@@ -1255,29 +1129,29 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			WHILE i > 0 DO
 				CASE arr[i].add OF
 				  Scanner.Minus:
-					Str(gen, "o7c_fsub(")
+					Text.Str(gen, "o7c_fsub(")
 				| Scanner.Plus:
-					Str(gen, "o7c_fadd(")
+					Text.Str(gen, "o7c_fadd(")
 				END;
 				DEC(i)
 			END
 		END;
 		IF arr[0].add = Scanner.Minus THEN
 			IF arr[0].type.id = Ast.IdInteger THEN
-				Str(gen, "o7c_sub(0, ")
+				Text.Str(gen, "o7c_sub(0, ")
 			ELSE
-				Str(gen, "o7c_fsub(0, ")
+				Text.Str(gen, "o7c_fsub(0, ")
 			END;
 			Expression(gen, arr[0].term);
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		ELSE
 			Expression(gen, arr[0].term)
 		END;
 		WHILE i < last DO
 			INC(i);
-			Str(gen, ", ");
+			Text.Str(gen, ", ");
 			Expression(gen, arr[i].term);
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		END
 	END SumCheck;
 
@@ -1288,19 +1162,19 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			CASE term.mult OF
 			  Scanner.Asterisk           :
 				IF term.type.id = Ast.IdSet THEN
-					Str(gen, " & ")
+					Text.Str(gen, " & ")
 				ELSE
-					Str(gen, " * ")
+					Text.Str(gen, " * ")
 				END
 			| Scanner.Slash, Scanner.Div :
 				IF term.type.id = Ast.IdSet THEN
 					ASSERT(term.mult = Scanner.Slash);
-					Str(gen, " ^ ")
+					Text.Str(gen, " ^ ")
 				ELSE
-					Str(gen, " / ")
+					Text.Str(gen, " / ")
 				END
-			| Scanner.And                : Str(gen, " && ")
-			| Scanner.Mod                : Str(gen, " % ")
+			| Scanner.And                : Text.Str(gen, " && ")
+			| Scanner.Mod                : Text.Str(gen, " % ")
 			END;
 			IF term.expr IS Ast.ExprTerm THEN
 				term := term.expr(Ast.ExprTerm)
@@ -1327,17 +1201,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		IF term.type.id = Ast.IdInteger THEN
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Str(gen, "o7c_mul(")
-				| Scanner.Div      : Str(gen, "o7c_div(")
-				| Scanner.Mod      : Str(gen, "o7c_mod(")
+				  Scanner.Asterisk : Text.Str(gen, "o7c_mul(")
+				| Scanner.Div      : Text.Str(gen, "o7c_div(")
+				| Scanner.Mod      : Text.Str(gen, "o7c_mod(")
 				END;
 				DEC(i)
 			END
 		ELSE ASSERT(term.type.id = Ast.IdReal);
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Str(gen, "o7c_fmul(")
-				| Scanner.Slash    : Str(gen, "o7c_fdiv(")
+				  Scanner.Asterisk : Text.Str(gen, "o7c_fmul(")
+				| Scanner.Slash    : Text.Str(gen, "o7c_fdiv(")
 				END;
 				DEC(i)
 			END
@@ -1346,26 +1220,26 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		i := 0;
 		WHILE i < last DO
 			INC(i);
-			Str(gen, ", ");
+			Text.Str(gen, ", ");
 			Expression(gen, arr[i].factor);
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		END;
-		Str(gen, ", ");
+		Text.Str(gen, ", ");
 		Expression(gen, arr[last].expr);
-		Str(gen, ")")
+		Text.Str(gen, ")")
 	END TermCheck;
 
 	PROCEDURE Boolean(VAR gen: Generator; e: Ast.ExprBoolean);
 	BEGIN
 		IF gen.opt.std = IsoC90 THEN
 			IF e.bool
-			THEN Str(gen, "(0 < 1)")
-			ELSE Str(gen, "(0 > 1)")
+			THEN Text.Str(gen, "(0 < 1)")
+			ELSE Text.Str(gen, "(0 > 1)")
 			END
 		ELSE
 			IF e.bool
-			THEN Str(gen, "true")
-			ELSE Str(gen, "false")
+			THEN Text.Str(gen, "true")
+			ELSE Text.Str(gen, "false")
 			END
 		END
 	END Boolean;
@@ -1391,27 +1265,27 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		IF e.asChar THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
-				Str(gen, "(char unsigned)'\''")
+				Text.Str(gen, "(char unsigned)'\''")
 			ELSIF ch = "\" THEN
-				Str(gen, "(char unsigned)'\\'")
+				Text.Str(gen, "(char unsigned)'\\'")
 			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
-				Str(gen, "(char unsigned)");
+				Text.Str(gen, "(char unsigned)");
 				s2[0] := "'";
 				s2[1] := ch;
 				s2[2] := "'";
 				s2[3] := Utf8.Null;
-				Str(gen, s2)
+				Text.Str(gen, s2)
 			ELSE
-				Str(gen, "0x");
+				Text.Str(gen, "0x");
 				s2[0] := ToHex(e.int DIV 16);
 				s2[1] := ToHex(e.int MOD 16);
 				s2[2] := "u";
 				s2[3] := Utf8.Null;
-				Str(gen, s2)
+				Text.Str(gen, s2)
 			END
 		ELSE
 			IF w.block.s[w.ofs] = Utf8.DQuote THEN
-				ScreeningString(gen, w)
+				Text.ScreeningString(gen, w)
 			ELSE
 				s1[0] := Utf8.DQuote;
 				s1[1] := "\";
@@ -1420,7 +1294,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				s1[4] := ToHex(e.int MOD 16);
 				s1[5] := Utf8.DQuote;
 				s1[6] := Utf8.Null;
-				Str(gen, s1)
+				Text.Str(gen, s1)
 			END
 		END
 	END CString;
@@ -1428,11 +1302,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	PROCEDURE ExprInt(VAR gen: Generator; int: INTEGER);
 	BEGIN
 		IF int >= 0 THEN
-			Int(gen, int)
+			Text.Int(gen, int)
 		ELSE
-			Str(gen, "(-");
-			Int(gen, -int);
-			Str(gen, ")")
+			Text.Str(gen, "(-");
+			Text.Int(gen, -int);
+			Text.Str(gen, ")")
 		END
 	END ExprInt;
 
@@ -1440,35 +1314,35 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		PROCEDURE Item(VAR gen: Generator; set: Ast.ExprSet);
 		BEGIN
 			IF set.exprs[0] = NIL THEN
-				Str(gen, "0")
+				Text.Str(gen, "0")
 			ELSE
 				IF set.exprs[1] = NIL THEN
-					Str(gen, "(1 << ");
+					Text.Str(gen, "(1 << ");
 					Factor(gen, set.exprs[0])
 				ELSE
 					IF (set.exprs[0].value = NIL) OR (set.exprs[1].value = NIL)
-					THEN Str(gen, "o7c_set(")
-					ELSE Str(gen, "O7C_SET(")
+					THEN Text.Str(gen, "o7c_set(")
+					ELSE Text.Str(gen, "O7C_SET(")
 					END;
 					Expression(gen, set.exprs[0]);
-					Str(gen, ", ");
+					Text.Str(gen, ", ");
 					Expression(gen, set.exprs[1])
 				END;
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			END
 		END Item;
 	BEGIN
 		IF set.next = NIL THEN
 			Item(gen, set)
 		ELSE
-			Str(gen, "(");
+			Text.Str(gen, "(");
 			Item(gen, set);
 			REPEAT
-				Str(gen, " | ");
+				Text.Str(gen, " | ");
 				set := set.next;
 				Item(gen, set)
 			UNTIL set.next = NIL;
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		END
 	END Set;
 
@@ -1483,18 +1357,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			extType := extType.type;
 			ret := CheckStructName(gen, extType(Ast.Record));
 			ASSERT(ret);
-			Str(gen, "o7c_is(");
+			Text.Str(gen, "o7c_is(");
 			Expression(gen, is.designator);
-			Str(gen, ", ")
+			Text.Str(gen, ", ")
 		ELSE
-			Str(gen, "o7c_is_r(");
+			Text.Str(gen, "o7c_is_r(");
 			GlobalName(gen, decl);
-			Str(gen, "_tag, ");
+			Text.Str(gen, "_tag, ");
 			GlobalName(gen, decl);
-			Str(gen, ", ")
+			Text.Str(gen, ", ")
 		END;
 		GlobalName(gen, extType);
-		Str(gen, "_tag)")
+		Text.Str(gen, "_tag)")
 	END IsExtension;
 BEGIN
 	CASE expr.id OF
@@ -1504,8 +1378,8 @@ BEGIN
 		Boolean(gen, expr(Ast.ExprBoolean))
 	| Ast.IdReal:
 		IF Strings.IsDefined(expr(Ast.ExprReal).str)
-		THEN	String(gen, expr(Ast.ExprReal).str)
-		ELSE	Real(gen, expr(Ast.ExprReal).real)
+		THEN	Text.String(gen, expr(Ast.ExprReal).str)
+		ELSE	Text.Real(gen, expr(Ast.ExprReal).real)
 		END
 	| Ast.IdString:
 		CString(gen, expr(Ast.ExprString))
@@ -1541,16 +1415,16 @@ BEGIN
 		END
 	| Ast.IdNegate:
 		IF expr.type.id = Ast.IdSet
-		THEN	Str(gen, "~")
-		ELSE	Str(gen, "!")
+		THEN	Text.Str(gen, "~")
+		ELSE	Text.Str(gen, "!")
 		END;
 		Expression(gen, expr(Ast.ExprNegate).expr)
 	| Ast.IdBraces:
-		Str(gen, "(");
+		Text.Str(gen, "(");
 		Expression(gen, expr(Ast.ExprBraces).expr);
-		Str(gen, ")")
+		Text.Str(gen, ")")
 	| Ast.IdPointer:
-		Str(gen, "NULL")
+		Text.Str(gen, "NULL")
 	| Ast.IdIsExtension:
 		IsExtension(gen, expr(Ast.ExprIsExtension))
 	END
@@ -1574,15 +1448,15 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			t := fp.type;
 			i := 0;
 			IF t.id = Ast.IdRecord THEN
-				Str(gen, ", o7c_tag_t ");
+				Text.Str(gen, ", o7c_tag_t ");
 				Name(gen, fp);
-				Str(gen, "_tag")
+				Text.Str(gen, "_tag")
 			ELSE
 				WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
-					Str(gen, ", int ");
+					Text.Str(gen, ", int ");
 					Name(gen, fp);
-					Str(gen, "_len");
-					Int(gen, i);
+					Text.Str(gen, "_len");
+					Text.Int(gen, i);
 					INC(i);
 					t := t.type
 				END
@@ -1590,17 +1464,17 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 		END Par;
 	BEGIN
 		IF proc.params = NIL THEN
-			Str(gen, "(void)")
+			Text.Str(gen, "(void)")
 		ELSE
-			Str(gen, "(");
+			Text.Str(gen, "(");
 			p := proc.params;
 			WHILE p # proc.end DO
 				Par(gen, p(Ast.FormalParam));
-				Str(gen, ", ");
+				Text.Str(gen, ", ");
 				p := p.next
 			END;
 			Par(gen, p(Ast.FormalParam));
-			Str(gen, ")")
+			Text.Str(gen, ")")
 		END
 	END Parameters;
 BEGIN
@@ -1616,11 +1490,9 @@ VAR g: Generator;
 	mo: PMemoryOut;
 BEGIN
 	NEW(mo); MemoryOutInit(mo^);
-	V.Init(g);
-	g.out := mo;
-	g.len := 0;
+	Text.Init(g, mo);
+	Text.SetTabs(g, gen);
 	g.module := gen.module;
-	g.tabs := gen.tabs;
 	g.interface := gen.interface;
 	g.opt := gen.opt;
 
@@ -1628,9 +1500,9 @@ BEGIN
 	   ((decl(Ast.FormalParam).isVar & ~(decl.type IS Ast.Array)) OR
 	   (decl.type IS Ast.Record))
 	THEN
-		Str(g, "*")
+		Text.Str(g, "*")
 	ELSIF decl IS Ast.Const THEN
-		Str(g, "const ")
+		Text.Str(g, "const ")
 	END;
 	IF global THEN
 		GlobalName(g, decl)
@@ -1655,7 +1527,7 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 
 	PROCEDURE Simple(VAR gen: Generator; str: ARRAY OF CHAR);
 	BEGIN
-		Str(gen, str);
+		Text.Str(gen, str);
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	END Simple;
 
@@ -1668,32 +1540,32 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 	BEGIN
 
 		rec.module := gen.module;
-		Str(gen, "struct ");
+		Text.Str(gen, "struct ");
 		IF CheckStructName(gen, rec) THEN
 			GlobalName(gen, rec)
 		END;
 		v := rec.vars;
 		IF (v = NIL) & (rec.base = NIL) & ~gen.opt.gnu THEN
-			Str(gen, " { int nothing; } ")
+			Text.Str(gen, " { int nothing; } ")
 		ELSE
-			StrOpen(gen, " {");
+			Text.StrOpen(gen, " {");
 
 			IF rec.base # NIL THEN
 				GlobalName(gen, rec.base);
 				IF gen.opt.plan9 THEN
-					StrLn(gen, ";")
+					Text.StrLn(gen, ";")
 				ELSE
-					StrLn(gen, " _;")
+					Text.StrLn(gen, " _;")
 				END
 			END;
 
 			WHILE v # NIL DO
 				Declarator(gen, v, FALSE, FALSE, FALSE);
-				StrLn(gen, ";");
+				Text.StrLn(gen, ";");
 				v := v.next
 			END;
 			DEC(gen.tabs);
-			Str(gen, "} ")
+			Text.Str(gen, "} ")
 		END;
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	END Record;
@@ -1705,45 +1577,45 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 		t := arr.type;
 		MemWriteInvert(gen.out(PMemoryOut)^);
 		IF arr.count = NIL THEN
-			Str(gen, "[/*len0");
+			Text.Str(gen, "[/*len0");
 			i := 0;
 			WHILE t.id = Ast.IdArray DO
 				INC(i);
-				Str(gen, ", len");
-				Int(gen, i);
+				Text.Str(gen, ", len");
+				Text.Int(gen, i);
 				t := t.type
 			END;
-			Str(gen, "*/]")
+			Text.Str(gen, "*/]")
 		ELSE
-			Str(gen, "[");
+			Text.Str(gen, "[");
 			Expression(gen, arr.count);
-			Str(gen, "]")
+			Text.Str(gen, "]")
 		END;
 		Invert(gen);
 		Type(gen, t, FALSE, sameType)
 	END Array;
 BEGIN
 	IF type = NIL THEN
-		Str(gen, "void ");
+		Text.Str(gen, "void ");
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(type.name) THEN
 			IF sameType THEN
 				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
-				THEN	Str(gen, "*")
+				THEN	Text.Str(gen, "*")
 				END
 			ELSE
 				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
 				THEN
-					Str(gen, "struct ");
-					GlobalName(gen, type.type); Str(gen, " *")
+					Text.Str(gen, "struct ");
+					GlobalName(gen, type.type); Text.Str(gen, " *")
 				ELSIF type IS Ast.Record THEN
-					Str(gen, "struct ");
+					Text.Str(gen, "struct ");
 					IF CheckStructName(gen, type(Ast.Record)) THEN
-						GlobalName(gen, type); Str(gen, " ")
+						GlobalName(gen, type); Text.Str(gen, " ")
 					END
 				ELSE
-					GlobalName(gen, type); Str(gen, " ")
+					GlobalName(gen, type); Text.Str(gen, " ")
 				END;
 				IF gen.out IS PMemoryOut THEN
 					MemWriteInvert(gen.out(PMemoryOut)^)
@@ -1769,7 +1641,7 @@ BEGIN
 			| Ast.IdReal:
 				Simple(gen, "double ")
 			| Ast.IdPointer:
-				Str(gen, "*");
+				Text.Str(gen, "*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
 				Invert(gen);
 				Type(gen, type.type, FALSE, sameType)
@@ -1778,9 +1650,9 @@ BEGIN
 			| Ast.IdRecord:
 				Record(gen, type(Ast.Record))
 			| Ast.IdProcType:
-				Str(gen, "(*");
+				Text.Str(gen, "(*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
-				Str(gen, ")");
+				Text.Str(gen, ")");
 				ProcHead(gen, type(Ast.ProcType))
 			END
 		END;
@@ -1793,16 +1665,16 @@ END Type;
 PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
 BEGIN
 	IF ~rec.mark OR gen.opt.main THEN
-		Str(gen, "static o7c_tag_t ")
+		Text.Str(gen, "static o7c_tag_t ")
 	ELSIF gen.interface THEN
-		Str(gen, "extern o7c_tag_t ")
+		Text.Str(gen, "extern o7c_tag_t ")
 	ELSE
-		Str(gen, "o7c_tag_t ")
+		Text.Str(gen, "o7c_tag_t ")
 	END;
 	GlobalName(gen, rec);
-	StrLn(gen, "_tag;");
+	Text.StrLn(gen, "_tag;");
 	IF ~rec.mark OR gen.opt.main OR gen.interface THEN
-		Ln(gen)
+		Text.Ln(gen)
 	END
 END RecordTag;
 
@@ -1810,9 +1682,9 @@ PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 
 	PROCEDURE Typedef(VAR gen: Generator; type: Ast.Type);
 	BEGIN
-		Str(gen, "typedef ");
+		Text.Str(gen, "typedef ");
 		Declarator(gen, type, TRUE, FALSE, TRUE);
-		StrLn(gen, ";")
+		Text.StrLn(gen, ";")
 	END Typedef;
 
 	PROCEDURE LinkRecord(opt: Options; rec: Ast.Record);
@@ -1848,9 +1720,9 @@ PROCEDURE Mark(VAR gen: Generator; mark: BOOLEAN);
 BEGIN
 	IF gen.localDeep = 0 THEN
 		IF mark & ~gen.opt.main THEN
-			Str(gen, "extern ")
+			Text.Str(gen, "extern ")
 		ELSE
-			Str(gen, "static ")
+			Text.Str(gen, "static ")
 		END
 	END
 END Mark;
@@ -1867,9 +1739,9 @@ BEGIN
 		   OR (prev = "*") & (i.char = "/");
 
 		IF i.char = Utf8.Null THEN
-			Str(gen, "/*");
-			String(gen, com);
-			StrLn(gen, "*/")
+			Text.Str(gen, "/*");
+			Text.String(gen, com);
+			Text.StrLn(gen, "*/")
 		END
 	END
 END Comment;
@@ -1877,15 +1749,16 @@ END Comment;
 PROCEDURE Const(VAR gen: Generator; const: Ast.Const);
 BEGIN
 	Comment(gen, const.comment);
-	Str(gen, "#define ");
+	Text.StrIgnoreIndent(gen, "#");
+	Text.Str(gen, "define ");
 	GlobalName(gen, const);
-	Str(gen, " ");
+	Text.Str(gen, " ");
 	IF const.mark & (const.expr # NIL) THEN
 		Factor(gen, const.expr.value)
 	ELSE
 		Factor(gen, const.expr)
 	END;
-	Ln(gen)
+	Text.Ln(gen)
 END Const;
 
 PROCEDURE Var(VAR out: MOut; prev, var: Ast.Declaration; last: BOOLEAN);
@@ -1895,17 +1768,17 @@ VAR same, mark: BOOLEAN;
 	BEGIN
 		CASE var.type.id OF
 		  Ast.IdInteger, Ast.IdByte, Ast.IdReal, Ast.IdSet:
-			Str(gen, " = 0")
+			Text.Str(gen, " = 0")
 		| Ast.IdBoolean:
-			Str(gen, " = 0 > 1")
+			Text.Str(gen, " = 0 > 1")
 		| Ast.IdChar:
-			Str(gen, " = '\0'")
+			Text.Str(gen, " = '\0'")
 		| Ast.IdPointer, Ast.IdProcType:
-			Str(gen, " = NULL")
+			Text.Str(gen, " = NULL")
 		| Ast.IdArray:
-			Str(gen, " ")
+			Text.Str(gen, " ")
 		| Ast.IdRecord:
-			Str(gen, " ")
+			Text.Str(gen, " ")
 		END
 	END InitZero;
 
@@ -1913,23 +1786,23 @@ VAR same, mark: BOOLEAN;
 	BEGIN
 		CASE var.type.id OF
 		  Ast.IdInteger:
-			Str(gen, " = O7C_INT_UNDEF")
+			Text.Str(gen, " = O7C_INT_UNDEF")
 		| Ast.IdBoolean:
-			Str(gen, " = O7C_BOOL_UNDEF")
+			Text.Str(gen, " = O7C_BOOL_UNDEF")
 		| Ast.IdByte:
-			Str(gen, " = 0")
+			Text.Str(gen, " = 0")
 		| Ast.IdChar:
-			Str(gen, " = '\0'")
+			Text.Str(gen, " = '\0'")
 		| Ast.IdReal:
-			Str(gen, " = O7C_DBL_UNDEF")
+			Text.Str(gen, " = O7C_DBL_UNDEF")
 		| Ast.IdSet:
-			Str(gen, " = 0")
+			Text.Str(gen, " = 0")
 		| Ast.IdPointer, Ast.IdProcType:
-			Str(gen, " = NULL")
+			Text.Str(gen, " = NULL")
 		| Ast.IdArray:
-			Str(gen, " ")
+			Text.Str(gen, " ")
 		| Ast.IdRecord:
-			Str(gen, " ")
+			Text.Str(gen, " ")
 		END
 	END InitUndef;
 BEGIN
@@ -1938,22 +1811,22 @@ BEGIN
 	same := (prev # NIL) & (prev.mark = mark) & (prev.type = var.type);
 	IF ~same THEN
 		IF prev # NIL THEN
-			StrLn(out.g[ORD(mark)], ";")
+			Text.StrLn(out.g[ORD(mark)], ";")
 		END;
 		Mark(out.g[ORD(mark)], mark)
 	ELSE
-		Str(out.g[ORD(mark)], ", ")
+		Text.Str(out.g[ORD(mark)], ", ")
 	END;
 	IF mark THEN
 		Declarator(out.g[Interface], var, FALSE, same, TRUE);
 		IF last THEN
-			StrLn(out.g[Interface], ";")
+			Text.StrLn(out.g[Interface], ";")
 		END;
 
 		IF same THEN
-			Str(out.g[Implementation], ", ")
+			Text.Str(out.g[Implementation], ", ")
 		ELSIF prev # NIL THEN
-			StrLn(out.g[Implementation], ";")
+			Text.StrLn(out.g[Implementation], ";")
 		END
 	END;
 
@@ -1968,19 +1841,19 @@ BEGIN
 		IF (var.type.id = Ast.IdPointer)
 		 & (out.opt.memManager = MemManagerCounter)
 		THEN
-			Str(out.g[Implementation], " = NULL")
+			Text.Str(out.g[Implementation], " = NULL")
 		END
 	END;
 
 	IF last THEN
-		StrLn(out.g[Implementation], ";")
+		Text.StrLn(out.g[Implementation], ";")
 	END
 END Var;
 
 PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
 BEGIN
 	Expression(gen, wi.expr);
-	StrOpen(gen, ") {");
+	Text.StrOpen(gen, ") {");
 	statements(gen, wi.stats);
 	wi := wi.elsif
 END ExprThenStats;
@@ -2003,46 +1876,46 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		BEGIN
 			WHILE (wi # NIL) & (wi.expr # NIL) DO
 				DEC(gen.tabs);
-				Str(gen, "} else if (");
+				Text.Str(gen, "} else if (");
 				ExprThenStats(gen, wi)
 			END
 		END Elsif;
 	BEGIN
 		IF wi IS Ast.If THEN
-			Str(gen, "if (");
+			Text.Str(gen, "if (");
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
 			IF wi # NIL THEN
 				DEC(gen.tabs);
-				StrOpen(gen, "} else {");
+				Text.StrOpen(gen, "} else {");
 				statements(gen, wi.stats)
 			END;
-			StrClose(gen, "}")
+			Text.StrClose(gen, "}")
 		ELSIF wi.elsif = NIL THEN
-			Str(gen, "while (");
+			Text.Str(gen, "while (");
 			ExprThenStats(gen, wi);
-			StrClose(gen, "}")
+			Text.StrClose(gen, "}")
 		ELSE
-			Str(gen, "while (1) if (");
+			Text.Str(gen, "while (1) if (");
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
-			StrClose(gen, "} else break;")
+			Text.StrClose(gen, "} else break;")
 		END
 	END WhileIf;
 
 	PROCEDURE Repeat(VAR gen: Generator; st: Ast.Repeat);
 	BEGIN
-		StrOpen(gen, "do {");
+		Text.StrOpen(gen, "do {");
 		statements(gen, st.stats);
 		DEC(gen.tabs);
 		IF st.expr.id = Ast.IdNegate THEN
-			Str(gen, "} while (");
+			Text.Str(gen, "} while (");
 			Expression(gen, st.expr(Ast.ExprNegate).expr);
-			StrLn(gen, ");")
+			Text.StrLn(gen, ");")
 		ELSE
-			Str(gen, "} while (!(");
+			Text.Str(gen, "} while (!(");
 			Expression(gen, st.expr);
-			StrLn(gen, "));")
+			Text.StrLn(gen, "));")
 		END
 	END Repeat;
 
@@ -2055,45 +1928,45 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
 		END IsEndMinus1;
 	BEGIN
-		Str(gen, "for (");
+		Text.Str(gen, "for (");
 		GlobalName(gen, st.var);
-		Str(gen, " = ");
+		Text.Str(gen, " = ");
 		Expression(gen, st.expr);
-		Str(gen, "; ");
+		Text.Str(gen, "; ");
 		GlobalName(gen, st.var);
 		IF st.by > 0 THEN
 			IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
-				Str(gen, " < ");
+				Text.Str(gen, " < ");
 				Expression(gen, st.to(Ast.ExprSum).term)
 			ELSE
-				Str(gen, " <= ");
+				Text.Str(gen, " <= ");
 				Expression(gen, st.to)
 			END;
 			IF st.by = 1 THEN
-				Str(gen, "; ++");
+				Text.Str(gen, "; ++");
 				GlobalName(gen, st.var)
 			ELSE
-				Str(gen, "; ");
+				Text.Str(gen, "; ");
 				GlobalName(gen, st.var);
-				Str(gen, " += ");
-				Int(gen, st.by)
+				Text.Str(gen, " += ");
+				Text.Int(gen, st.by)
 			END
 		ELSE
-			Str(gen, " >= ");
+			Text.Str(gen, " >= ");
 			Expression(gen, st.to);
 			IF st.by = -1 THEN
-				Str(gen, "; --");
+				Text.Str(gen, "; --");
 				GlobalName(gen, st.var)
 			ELSE
-				Str(gen, "; ");
+				Text.Str(gen, "; ");
 				GlobalName(gen, st.var);
-				Str(gen, " -= ");
-				Int(gen, -st.by)
+				Text.Str(gen, " -= ");
+				Text.Int(gen, -st.by)
 			END
 		END;
-		StrOpen(gen, ") {");
+		Text.StrOpen(gen, ") {");
 		statements(gen, st.stats);
-		StrClose(gen, "}")
+		Text.StrClose(gen, "}")
 	END For;
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
@@ -2108,11 +1981,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			   OR (e.type(Ast.Array).count   = NIL)
 			   )
 			THEN
-				Str(gen, "assert(");
+				Text.Str(gen, "assert(");
 				ArrayLen(gen, des);
-				Str(gen, " <= ");
+				Text.Str(gen, " <= ");
 				ArrayLen(gen, e);
-				StrLn(gen, ");")
+				Text.StrLn(gen, ");")
 			END
 		END AssertArraySize;
 	BEGIN
@@ -2122,27 +1995,27 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		retain := (st.designator.type.id = Ast.IdPointer)
 		        & (gen.opt.memManager = MemManagerCounter);
 		IF retain & (st.expr.id = Ast.IdPointer) THEN
-			Str(gen, "O7C_NULL(&");
+			Text.Str(gen, "O7C_NULL(&");
 			Designator(gen, st.designator);
 			reref := FALSE
 		ELSE
 			IF retain THEN
-				Str(gen, "O7C_ASSIGN(&");
+				Text.Str(gen, "O7C_ASSIGN(&");
 				Designator(gen, st.designator);
-				Str(gen, ", ")
+				Text.Str(gen, ", ")
 			ELSIF (st.designator.type.id = Ast.IdArray)
 			(*    & (st.designator.type.type.id # Ast.IdString) *)
 			THEN
 				AssertArraySize(gen, st.designator, st.expr);
-				Str(gen, "memcpy(");
+				Text.Str(gen, "memcpy(");
 				Designator(gen, st.designator);
-				Str(gen, ", ")
+				Text.Str(gen, ", ")
 			ELSIF toByte THEN
 				Designator(gen, st.designator);
-				Str(gen, " = o7c_byte(")
+				Text.Str(gen, " = o7c_byte(")
 			ELSE
 				Designator(gen, st.designator);
-				Str(gen, " = ")
+				Text.Str(gen, " = ")
 			END;
 			base := NIL;
 			reref := (st.expr.type.id = Ast.IdPointer)
@@ -2157,15 +2030,15 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				(*  & (st.designator.type.type.id # Ast.IdString) *)
 				THEN
 					IF st.expr.type(Ast.Array).count # NIL THEN
-						Str(gen, ", sizeof(");
+						Text.Str(gen, ", sizeof(");
 						Expression(gen, st.expr);
-						Str(gen, ")")
+						Text.Str(gen, ")")
 					ELSE
-						Str(gen, ", (");
+						Text.Str(gen, ", (");
 						ArrayLen(gen, st.expr);
-						Str(gen, ") * sizeof(");
+						Text.Str(gen, ") * sizeof(");
 						Expression(gen, st.expr);
-						Str(gen, "[0])")
+						Text.Str(gen, "[0])")
 					END
 				END
 			ELSIF gen.opt.plan9 THEN
@@ -2174,18 +2047,18 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			ELSE
 				base := st.designator.type.type(Ast.Record);
 				type := st.expr.type.type(Ast.Record).base;
-				Str(gen, "(&(");
+				Text.Str(gen, "(&(");
 				Expression(gen, st.expr);
-				Str(gen, ")->_")
+				Text.Str(gen, ")->_")
 			END;
 			IF (base # NIL) & (type # base) THEN
 				(*ASSERT(st.designator.type.id = Ast.IdRecord);*)
 				IF gen.opt.plan9 THEN
-					Str(gen, ".");
+					Text.Str(gen, ".");
 					GlobalName(gen, st.designator.type)
 				ELSE
 					WHILE type # base DO
-						Str(gen, "._");
+						Text.Str(gen, "._");
 						type := type.base
 					END
 				END
@@ -2196,9 +2069,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		       & (st.designator.type.type.id # Ast.IdString)
 		        )
 		OF
-		  0: StrLn(gen, ";")
-		| 1: StrLn(gen, ");")
-		| 2: StrLn(gen, "));")
+		  0: Text.StrLn(gen, ";")
+		| 1: Text.StrLn(gen, ");")
+		| 2: Text.StrLn(gen, "));")
 		END
 	END Assign;
 
@@ -2212,16 +2085,16 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			IF ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
 				WHILE r # NIL DO
-					Str(gen, "case ");
-					Int(gen, r.value);
+					Text.Str(gen, "case ");
+					Text.Int(gen, r.value);
 					ASSERT(r.right = NIL);
-					StrLn(gen, ":");
+					Text.StrLn(gen, ":");
 
 					r := r.next
 				END;
 				INC(gen.tabs);
 				statements(gen, elem.stats);
-				StrLn(gen, "break;");
+				Text.StrLn(gen, "break;");
 				DEC(gen.tabs, 1)
 			END
 		END CaseElement;
@@ -2235,44 +2108,44 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			BEGIN
 				IF r.right = NIL THEN
 					IF caseExpr = NIL THEN
-						Str(gen, "(o7c_case_expr == ")
+						Text.Str(gen, "(o7c_case_expr == ")
 					ELSE
-						Str(gen, "(");
+						Text.Str(gen, "(");
 						Expression(gen, caseExpr);
-						Str(gen, " == ")
+						Text.Str(gen, " == ")
 					END;
-					Int(gen, r.value)
+					Text.Int(gen, r.value)
 				ELSE
 					ASSERT(r.value <= r.right.value);
-					Str(gen, "(");
-					Int(gen, r.value);
+					Text.Str(gen, "(");
+					Text.Int(gen, r.value);
 					IF caseExpr = NIL THEN
-						Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
+						Text.Str(gen, " <= o7c_case_expr && o7c_case_expr <= ")
 					ELSE
-						Str(gen, " <= ");
+						Text.Str(gen, " <= ");
 						Expression(gen, caseExpr);
-						Str(gen, " && ");
+						Text.Str(gen, " && ");
 						Expression(gen, caseExpr);
-						Str(gen, " <= ")
+						Text.Str(gen, " <= ")
 					END;
-					Int(gen, r.right.value)
+					Text.Int(gen, r.right.value)
 				END;
-				Str(gen, ")")
+				Text.Str(gen, ")")
 			END CaseRange;
 		BEGIN
-			Str(gen, "if (");
+			Text.Str(gen, "if (");
 			r := elem.labels;
 			ASSERT(r # NIL);
 			CaseRange(gen, r, caseExpr);
 			WHILE r.next # NIL DO
 				r := r.next;
-				Str(gen, " || ");
+				Text.Str(gen, " || ");
 				CaseRange(gen, r, caseExpr)
 			END;
-			StrOpen(gen, ") {");
+			Text.StrOpen(gen, ") {");
 			statements(gen, elem.stats);
 			DEC(gen.tabs);
-			Str(gen, "}")
+			Text.Str(gen, "}")
 		END CaseElementAsIf;
 	BEGIN
 		elemWithRange := st.elements;
@@ -2283,43 +2156,43 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		& ~((st.expr IS Ast.Factor) & ~(st.expr IS Ast.ExprBraces))
 		THEN
 			caseExpr := NIL;
-			Str(gen, "{ int o7c_case_expr = ");
+			Text.Str(gen, "{ int o7c_case_expr = ");
 			Expression(gen, st.expr);
-			StrOpen(gen, ";");
-			StrLn(gen, "switch (o7c_case_expr) {")
+			Text.StrOpen(gen, ";");
+			Text.StrLn(gen, "switch (o7c_case_expr) {")
 		ELSE
 			caseExpr := st.expr;
-			Str(gen, "switch (");
+			Text.Str(gen, "switch (");
 			Expression(gen, caseExpr);
-			StrLn(gen, ") {")
+			Text.StrLn(gen, ") {")
 		END;
 		elem := st.elements;
 		REPEAT
 			CaseElement(gen, elem);
 			elem := elem.next
 		UNTIL elem = NIL;
-		StrOpen(gen, "default:");
+		Text.StrOpen(gen, "default:");
 		IF elemWithRange # NIL THEN
 			elem := elemWithRange;
 			CaseElementAsIf(gen, elem, caseExpr);
 			elem := elem.next;
 			WHILE elem # NIL DO
 				IF IsCaseElementWithRange(elem) THEN
-					Str(gen, " else ");
+					Text.Str(gen, " else ");
 					CaseElementAsIf(gen, elem, caseExpr)
 				END;
 				elem := elem.next
 			END;
 			IF gen.opt.caseAbort THEN
-				StrLn(gen, " else abort();")
+				Text.StrLn(gen, " else abort();")
 			END
 		ELSIF gen.opt.caseAbort THEN
-			StrLn(gen, "abort();")
+			Text.StrLn(gen, "abort();")
 		END;
-		StrLn(gen, "break;");
-		StrClose(gen, "}");
+		Text.StrLn(gen, "break;");
+		Text.StrClose(gen, "}");
 		IF caseExpr = NIL THEN
-			StrClose(gen, "}")
+			Text.StrClose(gen, "}")
 		END
 	END Case;
 BEGIN
@@ -2330,9 +2203,9 @@ BEGIN
 		gen.expressionSemicolon := TRUE;
 		Expression(gen, st.expr);
 		IF gen.expressionSemicolon THEN
-			StrLn(gen, ";")
+			Text.StrLn(gen, ";")
 		ELSE
-			Ln(gen)
+			Text.Ln(gen)
 		END
 	ELSIF st IS Ast.WhileIf THEN
 		WhileIf(gen, st(Ast.WhileIf))
@@ -2358,33 +2231,33 @@ END Statements;
 PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
 BEGIN
 	IF proc.mark & ~gen.opt.main THEN
-		Str(gen, "extern ")
+		Text.Str(gen, "extern ")
 	ELSE
-		Str(gen, "static ")
+		Text.Str(gen, "static ")
 	END;
 	Declarator(gen, proc, FALSE, FALSE, TRUE);
-	StrLn(gen, ";")
+	Text.StrLn(gen, ";")
 END ProcDecl;
 
 PROCEDURE Qualifier(VAR gen: Generator; type: Ast.Type);
 BEGIN
 	CASE type.id OF
 	  Ast.IdInteger:
-		Str(gen, "int")
+		Text.Str(gen, "int")
 	| Ast.IdSet:
-		Str(gen, "unsigned")
+		Text.Str(gen, "unsigned")
 	| Ast.IdBoolean:
 		IF (gen.opt.std >= IsoC99)
 		 & (gen.opt.varInit # VarInitUndefined)
-		THEN	Str(gen, "bool")
-		ELSE	Str(gen, "o7c_bool")
+		THEN	Text.Str(gen, "bool")
+		ELSE	Text.Str(gen, "o7c_bool")
 		END
 	| Ast.IdByte:
-		Str(gen, "char unsigned")
+		Text.Str(gen, "char unsigned")
 	| Ast.IdChar:
-		Str(gen, "o7c_char")
+		Text.Str(gen, "o7c_char")
 	| Ast.IdReal:
-		Str(gen, "double")
+		Text.Str(gen, "double")
 	| Ast.IdPointer, Ast.IdProcType:
 		GlobalName(gen, type)
 	END
@@ -2398,9 +2271,10 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE CloseConsts(VAR gen: Generator; consts: Ast.Declaration);
 		BEGIN
 			WHILE (consts # NIL) & (consts IS Ast.Const) DO
-				Str(gen, "#undef ");
+				Text.StrIgnoreIndent(gen, "#");
+				Text.Str(gen, "undef ");
 				Name(gen, consts);
-				Ln(gen);
+				Text.Ln(gen);
 				consts := consts.next
 			END
 		END CloseConsts;
@@ -2418,36 +2292,36 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE RetainParams(VAR gen: Generator; fp: Ast.Declaration);
 		BEGIN
 			IF fp # NIL THEN
-				Str(gen, "o7c_retain(");
+				Text.Str(gen, "o7c_retain(");
 				Name(gen, fp);
 				fp := fp.next;
 				WHILE fp # NIL DO
 					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
 					THEN
-						Str(gen, "); o7c_retain(");
+						Text.Str(gen, "); o7c_retain(");
 						Name(gen, fp)
 					END;
 					fp := fp.next
 				END;
-				StrLn(gen, ");")
+				Text.StrLn(gen, ");")
 			END
 		END RetainParams;
 
 		PROCEDURE ReleaseParams(VAR gen: Generator; fp: Ast.Declaration);
 		BEGIN
 			IF fp # NIL THEN
-				Str(gen, "o7c_release(");
+				Text.Str(gen, "o7c_release(");
 				Name(gen, fp);
 				fp := fp.next;
 				WHILE fp # NIL DO
 					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
 					THEN
-						Str(gen, "); o7c_release(");
+						Text.Str(gen, "); o7c_release(");
 						Name(gen, fp)
 					END;
 					fp := fp.next
 				END;
-				StrLn(gen, ");")
+				Text.StrLn(gen, ");")
 			END
 		END ReleaseParams;
 
@@ -2460,16 +2334,16 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 					IF var.type.id = Ast.IdPointer THEN
 						IF first THEN
 							first := FALSE;
-							Str(gen, "o7c_release(")
+							Text.Str(gen, "o7c_release(")
 						ELSE
-							Str(gen, "); o7c_release(")
+							Text.Str(gen, "); o7c_release(")
 						END;
 						Name(gen, var)
 					END;
 					var := var.next
 				END;
 				IF ~first THEN
-					StrLn(gen, ");")
+					Text.StrLn(gen, ");")
 				END
 			END
 		END ReleaseVars;
@@ -2477,7 +2351,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		Comment(gen, proc.comment);
 		Mark(gen, proc.mark);
 		Declarator(gen, proc, FALSE, FALSE(*TODO*), TRUE);
-		StrOpen(gen, " {");
+		Text.StrOpen(gen, " {");
 
 		INC(gen.localDeep);
 
@@ -2490,8 +2364,8 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			IF proc.return # NIL THEN
 				Qualifier(gen, proc.return.type);
 				IF proc.return.type.id = Ast.IdPointer
-				THEN	StrLn(gen, " o7c_return = NULL;")
-				ELSE	StrLn(gen, " o7c_return;")
+				THEN	Text.StrLn(gen, " o7c_return = NULL;")
+				ELSE	Text.StrLn(gen, " o7c_return;")
 				END
 			END
 		END;
@@ -2508,33 +2382,33 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			IF (gen.opt.memManager = MemManagerCounter) & (proc.return # NIL)
 			THEN
 				IF proc.return.type.id = Ast.IdPointer THEN
-					Str(gen, "O7C_ASSIGN(&o7c_return, ");
+					Text.Str(gen, "O7C_ASSIGN(&o7c_return, ");
 					CheckExpr(gen, proc.return);
-					StrLn(gen, ");")
+					Text.StrLn(gen, ");")
 				ELSE
-					Str(gen, "o7c_return = ");
+					Text.Str(gen, "o7c_return = ");
 					CheckExpr(gen, proc.return);
-					StrLn(gen, ";")
+					Text.StrLn(gen, ";")
 				END;
 				ReleaseVars(gen, proc.vars);
 				ReleaseParams(gen, retainParams);
 				IF proc.return.type.id = Ast.IdPointer THEN
-					StrLn(gen, "o7c_unhold(o7c_return);")
+					Text.StrLn(gen, "o7c_unhold(o7c_return);")
 				END;
-				StrLn(gen, "return o7c_return;")
+				Text.StrLn(gen, "return o7c_return;")
 			ELSE
 				ReleaseVars(gen, proc.vars);
 				ReleaseParams(gen, retainParams);
-				Str(gen, "return ");
+				Text.Str(gen, "return ");
 				CheckExpr(gen, proc.return);
-				StrLn(gen, ";")
+				Text.StrLn(gen, ";")
 			END
 		END;
 
 		DEC(gen.localDeep);
 		CloseConsts(gen, proc.start);
-		StrClose(gen, "}");
-		Ln(gen)
+		Text.StrClose(gen, "}");
+		Text.Ln(gen)
 	END Implement;
 
 	PROCEDURE LocalProcs(VAR out: MOut; proc: Ast.Procedure);
@@ -2573,7 +2447,7 @@ PROCEDURE LnIfWrote(VAR out: MOut);
 	PROCEDURE Write(VAR gen: Generator);
 	BEGIN
 		IF gen.fixedLen # gen.len THEN
-			Ln(gen);
+			Text.Ln(gen);
 			gen.fixedLen := gen.len
 		END
 	END Write;
@@ -2603,33 +2477,33 @@ BEGIN
 			OR    (d.type.id = Ast.IdArray)
 			    & ~IsConformArrayType(d.type, arrTypeId, arrDeep)
 			THEN
-				Str(gen, "memset(&");
+				Text.Str(gen, "memset(&");
 				Name(gen, d);
-				Str(gen, ", 0, sizeof(");
+				Text.Str(gen, ", 0, sizeof(");
 				Name(gen, d);
-				StrLn(gen, "));")
+				Text.StrLn(gen, "));")
 			ELSE
 				ASSERT(gen.opt.varInit = VarInitUndefined);
 				CASE arrTypeId OF
 				  Ast.IdInteger:
-					Str(gen, "o7c_ints_undef(")
+					Text.Str(gen, "o7c_ints_undef(")
 				| Ast.IdReal:
-					Str(gen, "o7c_doubles_undef(")
+					Text.Str(gen, "o7c_doubles_undef(")
 				| Ast.IdBoolean:
-					Str(gen, "o7c_bools_undef(")
+					Text.Str(gen, "o7c_bools_undef(")
 				END;
 				Name(gen, d);
 				FOR i := 2 TO arrDeep DO
-					Str(gen, "[0]")
+					Text.Str(gen, "[0]")
 				END;
-				Str(gen, ", sizeof(");
+				Text.Str(gen, ", sizeof(");
 				Name(gen, d);
-				Str(gen, ") / sizeof(");
+				Text.Str(gen, ") / sizeof(");
 				Name(gen, d);
 				FOR i := 2 TO arrDeep DO
-					Str(gen, "[0]")
+					Text.Str(gen, "[0]")
 				END;
-				StrLn(gen, "[0]));")
+				Text.StrLn(gen, "[0]));")
 			END
 		END;
 		d := d.next
@@ -2709,11 +2583,6 @@ BEGIN
 	RETURN o
 END DefaultOptions;
 
-PROCEDURE Init*(VAR g: Generator; out: Stream.POut);
-BEGIN
-	V.Init(g);
-	g.out := out
-END Init;
 
 PROCEDURE MarkExpression(e: Ast.Expression);
 BEGIN
@@ -2809,12 +2678,12 @@ BEGIN
 		ASSERT(imp IS Ast.Import);
 
 		REPEAT
-			String(gen, imp.module.name);
-			StrLn(gen, "_init();");
+			Text.String(gen, imp.module.name);
+			Text.StrLn(gen, "_init();");
 
 			imp := imp.next
 		UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
-		Ln(gen)
+		Text.Ln(gen)
 	END
 END ImportInit;
 
@@ -2827,32 +2696,30 @@ BEGIN
 		gen.opt.records := r.ext;
 		r.ext := NIL;
 
-		Str(gen, "o7c_tag_init(");
+		Text.Str(gen, "o7c_tag_init(");
 		GlobalName(gen, r);
 		IF r.base = NIL THEN
-			StrLn(gen, "_tag, NULL);")
+			Text.StrLn(gen, "_tag, NULL);")
 		ELSE
-			Str(gen, "_tag, ");
+			Text.Str(gen, "_tag, ");
 			GlobalName(gen, r.base);
-			StrLn(gen, "_tag);")
+			Text.StrLn(gen, "_tag);")
 		END
 	END;
 	IF r # NIL THEN
-		Ln(gen)
+		Text.Ln(gen)
 	END
 END TagsInit;
 
-PROCEDURE Generate*(VAR interface, implementation: Generator;
+PROCEDURE Generate*(interface, implementation: Stream.POut;
                     module: Ast.Module; opt: Options);
 VAR out: MOut;
 
 	PROCEDURE Init(VAR gen: Generator; out: Stream.POut;
-	               module: Ast.Module; opt: Options);
+	               module: Ast.Module; opt: Options; interface: BOOLEAN);
 	BEGIN
-		gen.out := out;
-		gen.len := 0;
+		Text.Init(gen, out);
 		gen.module := module;
-		gen.tabs := 0;
 		gen.localDeep := 0;
 
 		opt.records := NIL;
@@ -2861,35 +2728,35 @@ VAR out: MOut;
 
 		gen.fixedLen := gen.len;
 
-		gen.isNewLine := FALSE
+		gen.interface := interface
 	END Init;
 
 	PROCEDURE Includes(VAR gen: Generator);
 	BEGIN
-		StrLn(gen, "#include <stdlib.h>");
-		StrLn(gen, "#include <stddef.h>");
-		StrLn(gen, "#include <string.h>");
-		StrLn(gen, "#include <assert.h>");
-		StrLn(gen, "#include <math.h>");
+		Text.StrLn(gen, "#include <stdlib.h>");
+		Text.StrLn(gen, "#include <stddef.h>");
+		Text.StrLn(gen, "#include <string.h>");
+		Text.StrLn(gen, "#include <assert.h>");
+		Text.StrLn(gen, "#include <math.h>");
 		IF gen.opt.std >= IsoC99 THEN
-			StrLn(gen, "#include <stdbool.h>")
+			Text.StrLn(gen, "#include <stdbool.h>")
 		END;
-		Ln(gen);
+		Text.Ln(gen);
 		IF gen.opt.varInit = VarInitUndefined THEN
-			StrLn(gen, "#define O7C_BOOL_UNDEFINED")
+			Text.StrLn(gen, "#define O7C_BOOL_UNDEFINED")
 		END;
-		StrLn(gen, "#include <o7c.h>");
-		Ln(gen)
+		Text.StrLn(gen, "#include <o7c.h>");
+		Text.Ln(gen)
 	END Includes;
 
 	PROCEDURE HeaderGuard(VAR gen: Generator);
 	BEGIN
-		Str(gen, "#if !defined(HEADER_GUARD_");
-		String(gen, gen.module.name);
-		StrLn(gen, ")");
-		Str(gen, "#define HEADER_GUARD_");
-		String(gen, gen.module.name);
-		Ln(gen); Ln(gen)
+		Text.Str(gen, "#if !defined(HEADER_GUARD_");
+		Text.String(gen, gen.module.name);
+		Text.StrLn(gen, ")");
+		Text.Str(gen, "#define HEADER_GUARD_");
+		Text.String(gen, gen.module.name);
+		Text.Ln(gen); Text.Ln(gen)
 	END HeaderGuard;
 
 	PROCEDURE ModuleInit(VAR interf, impl: Generator; module: Ast.Module);
@@ -2899,43 +2766,44 @@ VAR out: MOut;
 		 & (impl.opt.records = NIL)
 		THEN
 			IF impl.opt.std >= IsoC99 THEN
-				Str(interf, "static inline void ")
+				Text.Str(interf, "static inline void ")
 			ELSE
-				Str(interf, "static void ")
+				Text.Str(interf, "static void ")
 			END;
 			Name(interf, module);
-			StrLn(interf, "_init(void) { ; }")
+			Text.StrLn(interf, "_init(void) { ; }")
 		ELSE
-			Str(interf, "extern void ");
+			Text.Str(interf, "extern void ");
 			Name(interf, module);
-			StrLn(interf, "_init(void);");
+			Text.StrLn(interf, "_init(void);");
 
-			Str(impl, "extern void ");
+			Text.Str(impl, "extern void ");
 			Name(impl, module);
-			StrOpen(impl, "_init(void) {");
-			StrLn(impl, "static int initialized = 0;");
-			StrLn(impl, "if (0 == initialized) {");
+			Text.StrOpen(impl, "_init(void) {");
+			Text.StrLn(impl, "static int initialized = 0;");
+			Text.StrLn(impl, "if (0 == initialized) {");
 			INC(impl.tabs, 1);
 			ImportInit(impl, module.import);
 			TagsInit(impl);
 			Statements(impl, module.stats);
-			StrClose(impl, "}");
-			StrLn(impl, "++initialized;");
-			StrClose(impl, "}"); Ln(impl)
+			Text.StrClose(impl, "}");
+			Text.StrLn(impl, "++initialized;");
+			Text.StrClose(impl, "}");
+			Text.Ln(impl)
 		END
 	END ModuleInit;
 
 	PROCEDURE Main(VAR gen: Generator; module: Ast.Module);
 	BEGIN
-		StrOpen(gen, "extern int main(int argc, char **argv) {");
-		StrLn(gen, "o7c_init(argc, argv);");
+		Text.StrOpen(gen, "extern int main(int argc, char **argv) {");
+		Text.StrLn(gen, "o7c_init(argc, argv);");
 		ImportInit(gen, module.import);
 		TagsInit(gen);
 		IF module.stats # NIL THEN
 			Statements(gen, module.stats)
 		END;
-		StrLn(gen, "return o7c_exit_code;");
-		StrClose(gen, "}")
+		Text.StrLn(gen, "return o7c_exit_code;");
+		Text.StrClose(gen, "}")
 	END Main;
 BEGIN
 	ASSERT(~Ast.HasError(module));
@@ -2943,19 +2811,20 @@ BEGIN
 	IF opt = NIL THEN
 		opt := DefaultOptions()
 	END;
-	opt.main := interface.out = NIL;
+	opt.main := interface = NIL;
 
 	IF ~opt.main THEN
 		MarkUsedInMarked(module)
 	END;
 
 	out.opt := opt;
-	out.g[Interface].interface := TRUE;
-	Init(out.g[Interface], interface.out, module, opt);
+
+	IF interface # NIL THEN
+		Init(out.g[Interface], interface, module, opt, TRUE)
+	END;
 	opt.index := 0;
 
-	out.g[Implementation].interface := FALSE;
-	Init(out.g[Implementation], implementation.out, module, opt);
+	Init(out.g[Implementation], implementation, module, opt, FALSE);
 
 	Comment(out.g[ORD(~opt.main)], module.comment);
 
@@ -2972,11 +2841,8 @@ BEGIN
 		Main(out.g[Implementation], module)
 	ELSE
 		ModuleInit(out.g[Interface], out.g[Implementation], module);
-		StrLn(out.g[Interface], "#endif")
-	END;
-
-	interface.len := out.g[Interface].len;
-	implementation.len := out.g[Implementation].len
+		Text.StrLn(out.g[Interface], "#endif")
+	END
 END Generate;
 
 BEGIN

@@ -467,7 +467,6 @@ END OpenOutput;
 
 PROCEDURE Compile(mp: ModuleProvider; source: File.In): INTEGER;
 VAR module: Ast.Module;
-	intGen, realGen: GeneratorC.Generator;
 	opt: GeneratorC.Options;
 	interface, implementation: File.Out;
 	ret: INTEGER;
@@ -484,10 +483,8 @@ BEGIN
 	ELSE
 		ret := OpenOutput(interface, implementation, isMain);
 		IF ret = ErrNo THEN
-			GeneratorC.Init(intGen, interface);
-			GeneratorC.Init(realGen, implementation);
 			opt := GeneratorC.DefaultOptions();
-			GeneratorC.Generate(intGen, realGen, module, opt);
+			GeneratorC.Generate(interface, implementation, module, opt);
 
 			File.CloseOut(interface);
 			File.CloseOut(implementation)
