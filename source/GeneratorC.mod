@@ -1564,8 +1564,7 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 				Text.StrLn(gen, ";");
 				v := v.next
 			END;
-			DEC(gen.tabs);
-			Text.Str(gen, "} ")
+			Text.StrClose(gen, "} ")
 		END;
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	END Record;
@@ -1875,8 +1874,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		PROCEDURE Elsif(VAR gen: Generator; VAR wi: Ast.WhileIf);
 		BEGIN
 			WHILE (wi # NIL) & (wi.expr # NIL) DO
-				DEC(gen.tabs);
-				Text.Str(gen, "} else if (");
+				Text.StrClose(gen, "} else if (");
 				ExprThenStats(gen, wi)
 			END
 		END Elsif;
@@ -1886,20 +1884,20 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
 			IF wi # NIL THEN
-				DEC(gen.tabs);
+				Text.IndentClose(gen);
 				Text.StrOpen(gen, "} else {");
 				statements(gen, wi.stats)
 			END;
-			Text.StrClose(gen, "}")
+			Text.StrLnClose(gen, "}")
 		ELSIF wi.elsif = NIL THEN
 			Text.Str(gen, "while (");
 			ExprThenStats(gen, wi);
-			Text.StrClose(gen, "}")
+			Text.StrLnClose(gen, "}")
 		ELSE
 			Text.Str(gen, "while (1) if (");
 			ExprThenStats(gen, wi);
 			Elsif(gen, wi);
-			Text.StrClose(gen, "} else break;")
+			Text.StrLnClose(gen, "} else break;")
 		END
 	END WhileIf;
 
@@ -1907,13 +1905,12 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	BEGIN
 		Text.StrOpen(gen, "do {");
 		statements(gen, st.stats);
-		DEC(gen.tabs);
 		IF st.expr.id = Ast.IdNegate THEN
-			Text.Str(gen, "} while (");
+			Text.StrClose(gen, "} while (");
 			Expression(gen, st.expr(Ast.ExprNegate).expr);
 			Text.StrLn(gen, ");")
 		ELSE
-			Text.Str(gen, "} while (!(");
+			Text.StrClose(gen, "} while (!(");
 			Expression(gen, st.expr);
 			Text.StrLn(gen, "));")
 		END
@@ -1966,7 +1963,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END;
 		Text.StrOpen(gen, ") {");
 		statements(gen, st.stats);
-		Text.StrClose(gen, "}")
+		Text.StrLnClose(gen, "}")
 	END For;
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
@@ -2092,10 +2089,10 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 					r := r.next
 				END;
-				INC(gen.tabs);
+				Text.IndentOpen(gen);
 				statements(gen, elem.stats);
 				Text.StrLn(gen, "break;");
-				DEC(gen.tabs, 1)
+				Text.IndentClose(gen)
 			END
 		END CaseElement;
 
@@ -2144,8 +2141,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			END;
 			Text.StrOpen(gen, ") {");
 			statements(gen, elem.stats);
-			DEC(gen.tabs);
-			Text.Str(gen, "}")
+			Text.StrClose(gen, "}")
 		END CaseElementAsIf;
 	BEGIN
 		elemWithRange := st.elements;
@@ -2190,9 +2186,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			Text.StrLn(gen, "abort();")
 		END;
 		Text.StrLn(gen, "break;");
-		Text.StrClose(gen, "}");
+		Text.StrLnClose(gen, "}");
 		IF caseExpr = NIL THEN
-			Text.StrClose(gen, "}")
+			Text.StrLnClose(gen, "}")
 		END
 	END Case;
 BEGIN
@@ -2407,7 +2403,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		DEC(gen.localDeep);
 		CloseConsts(gen, proc.start);
-		Text.StrClose(gen, "}");
+		Text.StrLnClose(gen, "}");
 		Text.Ln(gen)
 	END Implement;
 
@@ -2781,14 +2777,13 @@ VAR out: MOut;
 			Name(impl, module);
 			Text.StrOpen(impl, "_init(void) {");
 			Text.StrLn(impl, "static int initialized = 0;");
-			Text.StrLn(impl, "if (0 == initialized) {");
-			INC(impl.tabs, 1);
+			Text.StrOpen(impl, "if (0 == initialized) {");
 			ImportInit(impl, module.import);
 			TagsInit(impl);
 			Statements(impl, module.stats);
-			Text.StrClose(impl, "}");
+			Text.StrLnClose(impl, "}");
 			Text.StrLn(impl, "++initialized;");
-			Text.StrClose(impl, "}");
+			Text.StrLnClose(impl, "}");
 			Text.Ln(impl)
 		END
 	END ModuleInit;
@@ -2803,7 +2798,7 @@ VAR out: MOut;
 			Statements(gen, module.stats)
 		END;
 		Text.StrLn(gen, "return o7c_exit_code;");
-		Text.StrClose(gen, "}")
+		Text.StrLnClose(gen, "}")
 	END Main;
 BEGIN
 	ASSERT(~Ast.HasError(module));

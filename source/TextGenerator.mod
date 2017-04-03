@@ -1,3 +1,19 @@
+(*  Formatted plain text generator
+ *  Copyright (C) 2017 ComdivByZero
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *)
 MODULE TextGenerator;
 
 IMPORT
@@ -66,26 +82,43 @@ BEGIN
 	NewLine(gen);
 	gen.len := gen.len + Stream.Write(gen.out^, str, 0, LEN(str) - 1);
 	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
-	gen.isNewLine := gen.tabs > 0
+	gen.isNewLine := TRUE
 END StrLn;
 
 PROCEDURE Ln*(VAR gen: Out);
 BEGIN
 	gen.len := gen.len + Stream.Write(gen.out^, Utf8.NewLine, 0, 1);
-	gen.isNewLine := gen.tabs > 0
+	gen.isNewLine := TRUE
 END Ln;
 
 PROCEDURE StrOpen*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	INC(gen.tabs);
-	StrLn(gen, str)
+	StrLn(gen, str);
+	INC(gen.tabs)
 END StrOpen;
+
+PROCEDURE IndentOpen*(VAR gen: Out);
+BEGIN
+	INC(gen.tabs)
+END IndentOpen;
+
+PROCEDURE IndentClose*(VAR gen: Out);
+BEGIN
+	ASSERT(gen.tabs > 0);
+	DEC(gen.tabs)
+END IndentClose;
 
 PROCEDURE StrClose*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	DEC(gen.tabs, 1);
-	StrLn(gen, str)
+	IndentClose(gen);
+	Str(gen, str)
 END StrClose;
+
+PROCEDURE StrLnClose*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	IndentClose(gen);
+	StrLn(gen, str)
+END StrLnClose;
 
 PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
