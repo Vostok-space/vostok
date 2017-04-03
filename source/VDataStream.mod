@@ -46,7 +46,7 @@ END InitIn;
 PROCEDURE Read*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 VAR r: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count > 0) & (LEN(buf) - count >= ofs));
+	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
 	r := in.read(in, buf, ofs, count);
 	ASSERT((r >= 0) & (r <= count))
 	RETURN r
@@ -59,9 +59,12 @@ BEGIN
 END InitOut;
 
 PROCEDURE Write*(VAR out: Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+VAR w: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count > 0) & (LEN(buf) - count >= ofs))
-	RETURN out.write(out, buf, ofs, count)
+	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	w := out.write(out, buf, ofs, count);
+	ASSERT((0 <= w) & (w <= count))
+	RETURN w
 END Write;
 
 END VDataStream.
