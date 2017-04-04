@@ -1299,12 +1299,15 @@ PROCEDURE RecordVarGet*(VAR v: Var; r: Record;
 VAR err: INTEGER;
 BEGIN
 	v := RecordVarSearch(r, name, begin, end);
-	IF v # NIL THEN
-		err := ErrNo
-	ELSE
+	IF v = NIL THEN
 		err := ErrDeclarationNotFound; (* TODO *)
 		v := RecordChecklessVarAdd(r, name, begin, end);
 		v.type := TypeGet(IdInteger)
+	ELSIF ~v.mark & v.module.fixed THEN
+		err := ErrDeclarationIsPrivate;
+		v.mark := TRUE
+	ELSE
+		err := ErrNo
 	END
 	RETURN err
 END RecordVarGet;
@@ -1354,7 +1357,8 @@ BEGIN
 	IF ~(type.id IN {IdRecord, IdPointer}) THEN
 		err := ErrGuardedTypeNotExtensible
 	ELSIF type.id = IdRecord THEN
-		IF ~(guard IS Record)
+		IF (guard = NIL)
+		OR ~(guard IS Record)
 		OR ~IsRecordExtension(dist, type(Record), guard(Record))
 		THEN
 			err := ErrGuardExpectRecordExt
@@ -1362,7 +1366,8 @@ BEGIN
 			type := guard(Record)
 		END
 	ELSE
-		IF ~(guard IS Pointer)
+		IF (guard = NIL)
+		OR ~(guard IS Pointer)
 		OR ~IsRecordExtension(dist, type(Pointer).type(Record), guard(Pointer).type(Record))
 		THEN
 			err := ErrGuardExpectPointerExt

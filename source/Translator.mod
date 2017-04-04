@@ -592,7 +592,7 @@ BEGIN
 			END
 		END
 	END;
-	IF ret # 0 THEN
+	IF ret # ErrNo THEN
 		ErrMessage(ret);
 		CLI.SetExitCode(1)
 	END

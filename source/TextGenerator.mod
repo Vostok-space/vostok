@@ -24,7 +24,7 @@ IMPORT
 
 TYPE
 	Out* = RECORD(V.Base)
-		out: Stream.POut;
+		out*: Stream.POut;
 		len*: INTEGER;
 		tabs: INTEGER;
 		isNewLine: BOOLEAN

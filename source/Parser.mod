@@ -256,7 +256,7 @@ END Qualident;
 PROCEDURE ExpectRecordExtend(VAR p: Parser; ds: Ast.Declarations;
                              base: Ast.Construct): Ast.Declaration;
 VAR d: Ast.Declaration;
-BEGIN
+BEGIN (*TODO*)
 	d := Qualident(p, ds)
 	RETURN d
 END ExpectRecordExtend;
@@ -1280,7 +1280,7 @@ BEGIN
 			realOfs := nameOfs;
 			realEnd := nameEnd
 		END;
-		IF ~p.err THEN
+		IF ~p.err & (realOfs >= 0) THEN
 			CheckAst(p,
 			         Ast.ImportAdd(p.module, p.s.buf, nameOfs, nameEnd,
 			                       realOfs, realEnd, p.provider)
@@ -1290,6 +1290,7 @@ BEGIN
 			WHILE (p.l < Scanner.Import)
 			    & (p.l # Scanner.Comma)
 			    & (p.l # Scanner.Semicolon)
+			    & (p.l # Scanner.EndOfFile)
 			DO
 				Scan(p)
 			END
