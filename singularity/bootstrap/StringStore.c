@@ -24,6 +24,11 @@ extern void StringStore_LogLoopStr(o7c_char s[/*len0*/], int s_len0, int j, int 
 
 extern void StringStore_UndefString(struct StringStore_String *s, o7c_tag_t s_tag) {
 	(*s).block = NULL;
+	(*s).ofs =  - 1;
+}
+
+extern o7c_bool StringStore_IsDefined(struct StringStore_String *s, o7c_tag_t s_tag) {
+	return (*s).block != NULL;
 }
 
 static void Put_AddBlock(struct StringStore_Block_s **b, int *i) {

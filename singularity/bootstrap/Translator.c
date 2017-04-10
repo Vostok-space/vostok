@@ -1,9 +1,9 @@
-/*  Command line interface for Oberon-07 translator 
+/*  Command line interface for Oberon-07 translator
  *  Copyright (C) 2016  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the re Foundation, either version 3 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -298,6 +298,9 @@ static void ErrorMessage(int code) {
 			case -80:
 				ErrorMessage_O("Во время итерации в FOR возможно переполнение", 82);
 				break;
+			case -81:
+				ErrorMessage_O("Использование не инициализированной переменной", 90);
+				break;
 			default:
 				abort();
 				break;
@@ -441,7 +444,7 @@ static void ErrorMessage(int code) {
 static void PrintErrors(Ast_Error err) {
 	int i = O7C_INT_UNDEF;
 
-	Out_String("с ошибками: ", 22);
+	Out_String("Найдены ошибки: ", 30);
 	Out_Ln();
 	i = 0;
 	while (err != NULL) {
@@ -594,13 +597,10 @@ static int OpenOutput(struct VFileStream_ROut **interface_, struct VFileStream_R
 
 static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RIn *source) {
 	struct Ast_RModule *module = NULL;
-	struct GeneratorC_Generator intGen , realGen ;
 	GeneratorC_Options opt = NULL;
 	struct VFileStream_ROut *interface_ = NULL, *implementation = NULL;
 	int ret = O7C_INT_UNDEF;
 	o7c_bool isMain = O7C_BOOL_UNDEF;
-	memset(&intGen, 0, sizeof(intGen));
-	memset(&realGen, 0, sizeof(realGen));
 
 	module = Parser_Parse(&source->_, &mp->_, &mp->opt, Parser_Options_tag);
 	VFileStream_CloseIn(&source);
@@ -612,14 +612,10 @@ static int Compile(struct Translator_ModuleProvider_s *mp, struct VFileStream_RI
 		PrintErrors(module->errors);
 		ret = ErrParse_cnst;
 	} else {
-		Out_String("Модуль переведён без ошибок", 52);
-		Out_Ln();
 		ret = OpenOutput(&interface_, &implementation, &isMain);
 		if (o7c_cmp(ret, ErrNo_cnst) ==  0) {
-			GeneratorC_Init(&intGen, GeneratorC_Generator_tag, &interface_->_);
-			GeneratorC_Init(&realGen, GeneratorC_Generator_tag, &implementation->_);
 			opt = GeneratorC_DefaultOptions();
-			GeneratorC_Generate(&intGen, GeneratorC_Generator_tag, &realGen, GeneratorC_Generator_tag, module, opt);
+			GeneratorC_Generate(&interface_->_, &implementation->_, module, opt);
 			VFileStream_CloseOut(&interface_);
 			VFileStream_CloseOut(&implementation);
 		}
@@ -645,43 +641,45 @@ static struct Translator_ModuleProvider_s *NewProvider(o7c_char fileExt[/*len0*/
 }
 
 static void ErrMessage(int err) {
-	switch (err) {
-	case -1:
-		Out_String("Использование: ", 29);
+	if (o7c_cmp(err, ErrParse_cnst) !=  0) {
+		switch (err) {
+		case -1:
+			Out_String("Использование: ", 29);
+			Out_Ln();
+			Out_String("  o7c исходный.mod результат[.c] {пути-к-интерфейсным-модулям}", 104);
+			Out_Ln();
+			Out_String("В случае успешной трансляции создаст .c-файл с main-функцией, если у результата", 140);
+			Out_Ln();
+			Out_String("было указано расширение .c, или пару из .h и .с для модуля, если не было.", 125);
+			Out_Ln();
+			Out_String("Пути для поиска модулей следует разделять пробелами.", 98);
+			break;
+		case -2:
+			Out_String("Слишком длинное имя исходного файла", 67);
+			Out_Ln();
+			break;
+		case -3:
+			Out_String("Слишком длинное выходное имя", 54);
+			Out_Ln();
+			break;
+		case -4:
+			Out_String("Не получается открыть исходный файл", 67);
+			break;
+		case -5:
+			Out_String("Не получается открыть выходной .h файл", 70);
+			break;
+		case -6:
+			Out_String("Не получается открыть выходной .c файл", 70);
+			break;
+		case -7:
+			Out_String("Ошибка разбора исходного файла", 58);
+			break;
+		default:
+			abort();
+			break;
+		}
 		Out_Ln();
-		Out_String("  o7c исходный.mod результат[.c] {пути-к-интерфейсным-модулям}", 104);
-		Out_Ln();
-		Out_String("В случае успешной трансляции создаст .c-файл с main-функцией, если у результата", 140);
-		Out_Ln();
-		Out_String("было указано расширение .c, или пару из .h и .с для модуля, если не было.", 125);
-		Out_Ln();
-		Out_String("Пути для поиска модулей следует разделять пробелами.", 98);
-		break;
-	case -2:
-		Out_String("Слишком длинное имя исходного файла", 67);
-		Out_Ln();
-		break;
-	case -3:
-		Out_String("Слишком длинное выходное имя", 54);
-		Out_Ln();
-		break;
-	case -4:
-		Out_String("Не получается открыть исходный файл", 67);
-		break;
-	case -5:
-		Out_String("Не получается открыть выходной .h файл", 70);
-		break;
-	case -6:
-		Out_String("Не получается открыть выходной .c файл", 70);
-		break;
-	case -7:
-		Out_String("Ошибка разбора исходного файла", 58);
-		break;
-	default:
-		abort();
-		break;
 	}
-	Out_Ln();
 }
 
 static int CopyExt(o7c_char ext[/*len0*/], int ext_len0, o7c_char name[/*len0*/], int name_len0) {
@@ -729,7 +727,7 @@ static void Translator_Start(void) {
 			}
 		}
 	}
-	if (o7c_cmp(ret, 0) !=  0) {
+	if (o7c_cmp(ret, ErrNo_cnst) !=  0) {
 		ErrMessage(ret);
 		CLI_SetExitCode(1);
 	}

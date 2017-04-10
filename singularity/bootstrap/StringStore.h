@@ -3,7 +3,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, eitherf the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -59,6 +59,8 @@ extern o7c_tag_t StringStore_Store_tag;
 extern void StringStore_LogLoopStr(o7c_char s[/*len0*/], int s_len0, int j, int end);
 
 extern void StringStore_UndefString(struct StringStore_String *s, o7c_tag_t s_tag);
+
+extern o7c_bool StringStore_IsDefined(struct StringStore_String *s, o7c_tag_t s_tag);
 
 extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag, struct StringStore_String *w, o7c_tag_t w_tag, o7c_char s[/*len0*/], int s_len0, int j, int end);
 

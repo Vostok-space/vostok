@@ -3,7 +3,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation version 3 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -127,7 +127,7 @@
 #define Scanner_ErrExpectDigitInScale_cnst (-7)
 #define Scanner_ErrUnclosedComment_cnst (-8)
 #define Scanner_ErrMin_cnst (-100)
-#define Scanner_BlockSize_cnst 65536
+#define Scanner_BlockSize_cnst 262144
 
 typedef struct Scanner_Scanner {
 	V_Base _;

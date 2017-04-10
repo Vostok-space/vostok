@@ -3,7 +3,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Softwarendation, either version 3 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -104,6 +104,7 @@
 #define Ast_ErrByShouldBePositive_cnst (-78)
 #define Ast_ErrByShouldBeNegative_cnst (-79)
 #define Ast_ErrForPossibleOverflow_cnst (-80)
+#define Ast_ErrVarUninitialized_cnst (-81)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
 #define Ast_IdInteger_cnst 0
@@ -211,6 +212,7 @@ typedef struct Ast_RPointer *Ast_Pointer;
 typedef struct Ast_RVar *Ast_Var;
 typedef struct Ast_RVar {
 	Ast_RDeclaration _;
+	o7c_bool inited;
 } Ast_RVar;
 extern o7c_tag_t Ast_RVar_tag;
 
@@ -584,6 +586,8 @@ extern struct Ast_ExprString_s *Ast_ExprCharNew(int int_);
 
 extern struct Ast_ExprNil_s *Ast_ExprNilNew(void);
 
+extern struct Ast_RExpression *Ast_ExprErrNew(void);
+
 extern struct Ast_ExprBraces_s *Ast_ExprBracesNew(struct Ast_RExpression *expr);
 
 extern struct Ast_ExprSet_s *Ast_ExprSetByValue(unsigned set);
@@ -592,7 +596,9 @@ extern int Ast_ExprSetNew(struct Ast_ExprSet_s **e, struct Ast_RExpression *expr
 
 extern int Ast_ExprNegateNew(struct Ast_ExprNegate_s **neg, struct Ast_RExpression *expr);
 
-extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl);
+extern int Ast_DesignatorNew(struct Ast_Designator_s **d, struct Ast_RDeclaration *decl);
+
+extern int Ast_CheckDesignatorAsValue(struct Ast_Designator_s *d);
 
 extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1);
 

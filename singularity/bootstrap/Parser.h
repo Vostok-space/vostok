@@ -3,7 +3,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -69,6 +69,7 @@ typedef struct Parser_Options {
 	o7c_bool strictSemicolon;
 	o7c_bool strictReturn;
 	o7c_bool saveComments;
+	o7c_bool multiErrors;
 	void (*printError)(int code);
 } Parser_Options;
 extern o7c_tag_t Parser_Options_tag;

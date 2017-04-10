@@ -81,7 +81,7 @@ static void NodeInit(struct Ast_Node *n, o7c_tag_t n_tag) {
 }
 
 extern void Ast_NodeSetComment(struct Ast_Node *n, o7c_tag_t n_tag, struct Ast_RModule *m, o7c_char com[/*len0*/], int com_len0, int ofs, int end) {
-	assert((*n).comment.block == NULL);
+	assert(!StringStore_IsDefined(&(*n).comment, StringStore_String_tag));
 	Ast_PutChars(m, &(*n).comment, StringStore_String_tag, com, com_len0, ofs, end);
 }
 
@@ -330,6 +330,7 @@ static void ChecklessVarAdd(struct Ast_RVar **v, struct Ast_RDeclarations *ds, o
 	(*v)->_._.id = Ast_IdVar_cnst;
 	DeclConnect(&(*v)->_, ds, buf, buf_len0, begin, end);
 	(*v)->_.type = NULL;
+	(*v)->inited = false;
 	if (ds->vars == NULL) {
 		ds->vars = (*v);
 	}
@@ -382,6 +383,7 @@ static void ParamAddPredefined(struct Ast_ProcType_s *proc, struct Ast_RType *ty
 	v->_._.next = NULL;
 	v->_._.type = type;
 	v->isVar = isVar;
+	v->_.inited = true;
 }
 
 extern int Ast_ParamAdd(struct Ast_RModule *module, struct Ast_ProcType_s *proc, o7c_char buf[/*len0*/], int buf_len0, int begin, int end) {
@@ -670,6 +672,10 @@ extern struct Ast_ExprNil_s *Ast_ExprNilNew(void) {
 	return e;
 }
 
+extern struct Ast_RExpression *Ast_ExprErrNew(void) {
+	return Ast_ExprNilNew();
+}
+
 extern struct Ast_ExprBraces_s *Ast_ExprBracesNew(struct Ast_RExpression *expr) {
 	struct Ast_ExprBraces_s *e = NULL;
 
@@ -744,20 +750,30 @@ extern int Ast_ExprNegateNew(struct Ast_ExprNegate_s **neg, struct Ast_RExpressi
 	return err;
 }
 
-extern struct Ast_Designator_s *Ast_DesignatorNew(struct Ast_RDeclaration *decl) {
-	struct Ast_Designator_s *d = NULL;
-
-	O7C_NEW(&d, Ast_Designator_s_tag);
-	ExprInit(&d->_._, Ast_IdDesignator_cnst, NULL);
-	d->decl = decl;
-	d->sel = NULL;
-	d->_._.type = decl->type;
+extern int Ast_DesignatorNew(struct Ast_Designator_s **d, struct Ast_RDeclaration *decl) {
+	O7C_NEW(&(*d), Ast_Designator_s_tag);
+	ExprInit(&(*d)->_._, Ast_IdDesignator_cnst, NULL);
+	(*d)->decl = decl;
+	(*d)->sel = NULL;
+	(*d)->_._.type = decl->type;
 	if (o7c_is(decl, Ast_Const_s_tag)) {
-		d->_._.value_ = O7C_GUARD(Ast_Const_s, &decl)->expr->value_;
+		(*d)->_._.value_ = O7C_GUARD(Ast_Const_s, &decl)->expr->value_;
 	} else if (o7c_is(decl, Ast_RGeneralProcedure_tag)) {
-		d->_._.type = (&(O7C_GUARD(Ast_RGeneralProcedure, &decl)->header)->_._);
+		(*d)->_._.type = (&(O7C_GUARD(Ast_RGeneralProcedure, &decl)->header)->_._);
 	}
-	return d;
+	return Ast_ErrNo_cnst;
+}
+
+extern int Ast_CheckDesignatorAsValue(struct Ast_Designator_s *d) {
+	int err = O7C_INT_UNDEF;
+
+	if ((d->decl->up != NULL) && (d->decl->up->_.up != NULL) && (o7c_is(d->decl, Ast_RVar_tag)) && !O7C_GUARD(Ast_RVar, &d->decl)->inited) {
+		err = Ast_ErrVarUninitialized_cnst;
+		O7C_GUARD(Ast_RVar, &d->decl)->inited = true;
+	} else {
+		err = Ast_ErrNo_cnst;
+	}
+	return err;
 }
 
 extern o7c_bool Ast_IsRecordExtension(int *distance, struct Ast_Record_s *t0, struct Ast_Record_s *t1) {
@@ -879,12 +895,15 @@ extern int Ast_RecordVarGet(struct Ast_RVar **v, struct Ast_Record_s *r, o7c_cha
 	int err = O7C_INT_UNDEF;
 
 	(*v) = RecordVarSearch(r, name, name_len0, begin, end);
-	if ((*v) != NULL) {
-		err = Ast_ErrNo_cnst;
-	} else {
+	if ((*v) == NULL) {
 		err = Ast_ErrDeclarationNotFound_cnst;
 		(*v) = RecordChecklessVarAdd(r, name, name_len0, begin, end);
 		(*v)->_.type = Ast_TypeGet(Ast_IdInteger_cnst);
+	} else if (!(*v)->_.mark && o7c_bl((*v)->_.module->fixed)) {
+		err = Ast_ErrDeclarationIsPrivate_cnst;
+		(*v)->_.mark = true;
+	} else {
+		err = Ast_ErrNo_cnst;
 	}
 	return err;
 }
@@ -935,13 +954,13 @@ extern int Ast_SelGuardNew(struct Ast_RSelector **sel, struct Ast_RType **type, 
 	if (!(o7c_in((*type)->_._.id, ((1 << Ast_IdRecord_cnst) | (1 << Ast_IdPointer_cnst))))) {
 		err = Ast_ErrGuardedTypeNotExtensible_cnst;
 	} else if (o7c_cmp((*type)->_._.id, Ast_IdRecord_cnst) ==  0) {
-		if (!(o7c_is(guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &(*type)), O7C_GUARD(Ast_Record_s, &guard))) {
+		if ((guard == NULL) || !(o7c_is(guard, Ast_Record_s_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &(*type)), O7C_GUARD(Ast_Record_s, &guard))) {
 			err = Ast_ErrGuardExpectRecordExt_cnst;
 		} else {
 			(*type) = (&(O7C_GUARD(Ast_Record_s, &guard))->_._);
 		}
 	} else {
-		if (!(o7c_is(guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &(*type))->_._._.type), O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &guard)->_._._.type))) {
+		if ((guard == NULL) || !(o7c_is(guard, Ast_RPointer_tag)) || !Ast_IsRecordExtension(&dist, O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &(*type))->_._._.type), O7C_GUARD(Ast_Record_s, &O7C_GUARD(Ast_RPointer, &guard)->_._._.type))) {
 			err = Ast_ErrGuardExpectPointerExt_cnst;
 		} else {
 			(*type) = (&(O7C_GUARD(Ast_RPointer, &guard))->_._);
@@ -1892,7 +1911,7 @@ extern int Ast_ForSetBy(struct Ast_For_s *for_, struct Ast_RExpression *by) {
 			err = Ast_ErrExpectConstIntExpr_cnst;
 		}
 	}
-	if ((o7c_cmp(err, Ast_ErrNo_cnst) ==  0) && (for_->_.expr != NULL) && (for_->_.expr->value_ != NULL) && (for_->to != NULL) && (for_->to->value_ != NULL)) {
+	if ((o7c_cmp(err, Ast_ErrNo_cnst) ==  0) && (for_->_.expr != NULL) && (for_->_.expr->value_ != NULL) && (o7c_is(for_->_.expr->value_, Ast_RExprInteger_tag)) && (for_->to != NULL) && (for_->to->value_ != NULL) && (o7c_is(for_->to->value_, Ast_RExprInteger_tag))) {
 		init_ = O7C_GUARD(Ast_RExprInteger, &for_->_.expr->value_)->int_;
 		to = O7C_GUARD(Ast_RExprInteger, &for_->to->value_)->int_;
 		if ((o7c_cmp(init_, to) <  0) && (o7c_cmp(for_->by, 0) <  0)) {
@@ -1924,6 +1943,7 @@ extern int Ast_ForNew(struct Ast_For_s **f, struct Ast_RVar *var_, struct Ast_RE
 	O7C_NEW(&(*f), Ast_For_s_tag);
 	StatInit(&(*f)->_, init_);
 	(*f)->var_ = var_;
+	var_->inited = true;
 	err = Ast_ForSetTo((*f), to);
 	(*f)->by = by;
 	(*f)->stats = stats;
@@ -1975,7 +1995,10 @@ extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_) 
 extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDeclaration *decl) {
 	int err = O7C_INT_UNDEF, i = O7C_INT_UNDEF;
 
-	if (!(o7c_is(decl, Ast_Const_s_tag))) {
+	(*label) = NULL;
+	if (o7c_cmp(decl->_.id, Ast_IdError_cnst) ==  0) {
+		err = Ast_ErrNo_cnst;
+	} else if (!(o7c_is(decl, Ast_Const_s_tag))) {
 		err = Ast_ErrCaseLabelNotConst_cnst;
 	} else if (!(o7c_in(O7C_GUARD(Ast_Const_s, &decl)->expr->type->_._.id, ((1 << Ast_IdInteger_cnst) | (1 << Ast_IdChar_cnst)))) && !((o7c_is(O7C_GUARD(Ast_Const_s, &decl)->expr, Ast_ExprString_s_tag)) && (o7c_cmp(O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr)->_.int_,  - 1) >  0))) {
 		err = Ast_ErrCaseLabelNotIntOrChar_cnst;
@@ -1985,13 +2008,14 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDecl
 		} else {
 			i = O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr->value_)->_.int_;
 			if (o7c_cmp(i, 0) <  0) {
+				assert(false);
 				i = (int)O7C_GUARD(Ast_ExprString_s, &O7C_GUARD(Ast_Const_s, &decl)->expr->value_)->string.block->s[0];
 			}
 			err = Ast_CaseLabelNew(&(*label), Ast_IdChar_cnst, i);
 		}
-		if ((*label) != NULL) {
-			(*label)->qual = decl;
-		}
+	}
+	if ((*label) == NULL) {
+		err = o7c_add(err, o7c_mul(Ast_CaseLabelNew(&(*label), Ast_IdInteger_cnst, 0), 0));
 	}
 	return err;
 }
@@ -2099,6 +2123,9 @@ extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, 
 	O7C_NEW(&(*a), Ast_Assign_s_tag);
 	StatInit(&(*a)->_, expr);
 	(*a)->designator = des;
+	if (o7c_is(des->decl, Ast_RVar_tag)) {
+		O7C_GUARD(Ast_RVar, &des->decl)->inited = true;
+	}
 	err = Ast_ErrNo_cnst;
 	if ((expr != NULL) && (des != NULL) && !Ast_CompatibleTypes(&(*a)->distance, des->_._.type, expr->type) && !CompatibleAsCharAndString(des->_._.type, &(*a)->_.expr)) {
 		if (!CompatibleAsIntAndByte(des->_._.type, expr->type)) {
