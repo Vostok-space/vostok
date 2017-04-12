@@ -75,6 +75,14 @@
 #	define O7C_MEM_MAN O7C_MEM_MAN_NOFREE
 #endif
 
+#if __GNUC__ > 2
+#	define O7C_ATTR_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#	define O7C_ATTR_ALWAYS_INLINE
+#endif
+
+static O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
+
 #if O7C_MEM_MAN == O7C_MEM_MAN_GC
 #	include "gc.h"
 	static O7C_INLINE void o7c_gc_init(void) { GC_INIT(); }
@@ -125,14 +133,6 @@ enum {
 #endif
 
 typedef char unsigned o7c_char;
-
-#if __GNUC__ > 2
-#	define O7C_ATTR_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#	define O7C_ATTR_ALWAYS_INLINE
-#endif
-
-static O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 
 static O7C_INLINE void* o7c_raw_alloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 static O7C_INLINE void* o7c_raw_alloc(size_t size) {
@@ -434,7 +434,7 @@ static O7C_INLINE void o7c_assign(void **m1, void *m2) {
 	*m1 = m2;
 }
 
-#define O7C_ASSIGN(m1, m2) o7c_assign((void **)(m1), m2) 
+#define O7C_ASSIGN(m1, m2) o7c_assign((void **)(m1), m2)
 
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base);
 
