@@ -2567,8 +2567,9 @@ END Declarations;
 PROCEDURE DefaultOptions*(): Options;
 VAR o: Options;
 BEGIN
-	NEW(o); V.Init(o^);
+	NEW(o);
 	IF o # NIL THEN
+		V.Init(o^);
 		o.std := IsoC99;
 		o.gnu := FALSE;
 		o.plan9 := FALSE;

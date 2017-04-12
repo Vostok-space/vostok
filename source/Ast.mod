@@ -2521,21 +2521,23 @@ VAR err: INTEGER;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
-	IF des.decl IS Var THEN
-		des.decl(Var).inited := TRUE
-	END;
 	err := ErrNo;
-	IF (expr # NIL) & (des # NIL)
-	 & ~CompatibleTypes(a.distance, des.type, expr.type)
-	 & ~CompatibleAsCharAndString(des.type, a.expr)
-	THEN
-		IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
-			err := ErrAssignIncompatibleType
-		ELSIF (des.type.id = IdByte)
-		    & (expr.value # NIL)
-		    & ~Limits.InByteRange(expr.value(ExprInteger).int)
+	IF des # NIL THEN
+		IF des.decl IS Var THEN
+			des.decl(Var).inited := TRUE
+		END;
+		IF (expr # NIL) & (des # NIL)
+		 & ~CompatibleTypes(a.distance, des.type, expr.type)
+		 & ~CompatibleAsCharAndString(des.type, a.expr)
 		THEN
-			err := ErrValueOutOfRangeOfByte
+			IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
+				err := ErrAssignIncompatibleType
+			ELSIF (des.type.id = IdByte)
+			    & (expr.value # NIL)
+			    & ~Limits.InByteRange(expr.value(ExprInteger).int)
+			THEN
+				err := ErrValueOutOfRangeOfByte
+			END
 		END
 	END
 	RETURN err
