@@ -404,7 +404,7 @@ TYPE
 	END;
 	CaseElement* = POINTER TO RECORD(Node)
 		labels*: CaseLabel;
-		stats*: Statement; 
+		stats*: Statement;
 		next*: CaseElement
 	END;
 	Case* = POINTER TO RECORD(RStatement)
@@ -451,7 +451,7 @@ PROCEDURE NodeInit(VAR n: Node);
 BEGIN
 	V.Init(n);
 	n.id := -1;
-	Strings.UndefString(n.comment);
+	Strings.Undef(n.comment);
 	n.ext := NIL
 END NodeInit;
 
@@ -483,8 +483,7 @@ BEGIN
 	END;
 	d.up := ds;
 	d.mark := FALSE;
-	d.name.block := NIL;
-	d.name.ofs := -1;
+	Strings.Undef(d.name);
 	d.type := NIL;
 	d.next := NIL
 END DeclInit;
@@ -659,7 +658,7 @@ BEGIN
 	ELSE
 		err := ErrNo
 	END;
-	NEW(c); c.id := IdConst; 
+	NEW(c); c.id := IdConst;
 	DeclConnect(c, ds, buf, begin, end);
 	c.expr := NIL;
 	c.finished := FALSE;
@@ -698,7 +697,7 @@ VAR d: Declaration;
 		IF rec.next # NIL THEN
 			rec.pointer.next := rec.next;
 			rec.next := NIL;
- 
+
 			ds.end.next := rec;
 			ds.end := rec
 		END
@@ -1018,7 +1017,7 @@ BEGIN
 	NEW(e); ExprInit(e, IdReal, TypeGet(IdReal));
 	e.real := real;
 	e.value := e;
-	e.str.block := NIL
+	Strings.Undef(e.str)
 	RETURN e
 END ExprRealNewByValue;
 
@@ -1052,8 +1051,7 @@ PROCEDURE ExprCharNew*(int: INTEGER): ExprString;
 VAR e: ExprString;
 BEGIN
 	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(2)));
-	e.string.ofs := -1;
-	e.string.block := NIL;
+	Strings.Undef(e.string);
 	e.int := int;
 	e.asChar := TRUE;
 	e.value := e
@@ -1245,7 +1243,7 @@ BEGIN
 	RETURN err
 END SelArrayNew;
 
-PROCEDURE RecordVarSearch(r: Record; name: ARRAY OF CHAR; begin, end: INTEGER): Var; 
+PROCEDURE RecordVarSearch(r: Record; name: ARRAY OF CHAR; begin, end: INTEGER): Var;
 VAR d: Declaration;
 	v: Var;
 BEGIN
@@ -1418,7 +1416,7 @@ BEGIN
 		THEN
 			CASE t1.id OF
 			  IdArray	: comp := CompatibleTypes(distance, t1.type, t2.type)
-			| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL) 
+			| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL)
 			                   OR IsRecordExtension(distance, t1.type(Record),
 			                                                  t2.type(Record))
 			| IdRecord	: comp := IsRecordExtension(distance, t1(Record), t2(Record))
@@ -1440,7 +1438,7 @@ BEGIN
 	IF (type # NIL) & ~(type.id IN {IdPointer, IdRecord}) THEN
 		err := ErrIsExtTypeNotRecord
 	ELSIF des # NIL THEN
-		IF des IS Designator THEN 
+		IF des IS Designator THEN
 			e.designator := des(Designator);
 			(* TODO проверка возможности проверки *)
 			IF (des.type # NIL) & ~(des.type.id IN {IdPointer, IdRecord}) THEN
@@ -1458,7 +1456,7 @@ VAR ret: BOOLEAN;
 BEGIN
 	Log.Str("1 CompatibleAsCharAndString ");
 	Log.Int(ORD((e2.value # NIL)));
-	Log.Ln; 
+	Log.Ln;
 	ret := (t1.id = IdChar)
 	     & (e2.value # NIL)
 	     & (e2.value IS ExprString)
@@ -1672,7 +1670,7 @@ PROCEDURE ExprSumAdd*(fullSum: Expression; VAR lastAdder: ExprSum;
                       add: INTEGER; term: Expression): INTEGER;
 VAR e: ExprSum;
 	err: INTEGER;
-	
+
 	PROCEDURE CheckType(e1, e2: Expression; add: INTEGER; VAR err: INTEGER): BOOLEAN;
 	VAR continue: BOOLEAN;
 	BEGIN
@@ -1816,7 +1814,7 @@ VAR err: INTEGER;
 		r2 := b.value(ExprReal).real;
 		IF mult = Scanner.Asterisk THEN
 			r := r1 * r2
-		ELSE 
+		ELSE
 			r := r1 / r2
 		END;
 		IF res.value = NIL THEN
@@ -1879,7 +1877,7 @@ BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
 
-	t := factorOrTerm.type; 
+	t := factorOrTerm.type;
 	IF (t # NIL) & (t.id = IdByte) THEN
 		t := TypeGet(IdInteger)
 	END;
@@ -1956,7 +1954,7 @@ END ExprCallNew;
 PROCEDURE IsChangeable*(cur: Module; v: Var): BOOLEAN;
 BEGIN
 	Log.StrLn("IsChangeable")
-	RETURN (*(v.module = cur) &*) 
+	RETURN (*(v.module = cur) &*)
 		(~(v IS FormalParam)
 	 OR (v(FormalParam).isVar)
 	 OR ~((v.type IS Array)
@@ -2203,7 +2201,7 @@ BEGIN
 	IF currentFormalParam # NIL THEN
 		err := ErrCallParamsNotEnough
 	END
-	RETURN err 
+	RETURN err
 END CallParamsEnd;
 
 PROCEDURE StatInit(s: Statement; e: Expression);
@@ -2211,7 +2209,7 @@ BEGIN
 	NodeInit(s^);
 	s.expr := e;
 	s.next := NIL
-END StatInit; 
+END StatInit;
 
 PROCEDURE CallNew*(VAR c: Call; des: Designator): INTEGER;
 VAR err: INTEGER;
@@ -2354,7 +2352,7 @@ VAR e: CaseElement;
 BEGIN
 	ASSERT(FALSE);
 	e := case.elements;
-	IF e # NIL THEN 
+	IF e # NIL THEN
 		WHILE e.next # NIL DO
 			e := e.next
 		END;

@@ -338,7 +338,11 @@ END GlobalName;
 PROCEDURE Import(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
 	Text.Str(gen, "#include "); Text.Str(gen, Utf8.DQuote);
-	Text.String(gen, decl.module.name);
+	IF decl IS Ast.Module THEN
+		Text.String(gen, decl.name)
+	ELSE ASSERT(decl IS Ast.Import);
+		Text.String(gen, decl.module.name)
+	END;
 	Text.Str(gen, ".h");
 	Text.StrLn(gen, Utf8.DQuote)
 END Import;
@@ -357,14 +361,14 @@ END Factor;
 PROCEDURE CheckStructName(VAR gen: Generator; rec: Ast.Record): BOOLEAN;
 VAR anon: ARRAY TranLim.MaxLenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
-	ret: BOOLEAN;
+	ret, corr: BOOLEAN;
 BEGIN
 	IF ~Strings.IsDefined(rec.name) THEN
 		IF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
 			l := 0;
 			ASSERT(rec.module # NIL);
 			rec.mark := TRUE;
-			Strings.CopyToChars(anon, l, rec.pointer.name);
+			corr := Strings.CopyToChars(anon, l, rec.pointer.name);
 
 			anon[l] := "_";
 			anon[l + 1] := "s";
@@ -372,7 +376,7 @@ BEGIN
 			Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
 		ELSE
 			l := 0;
-			Strings.CopyToChars(anon, l, rec.module.name);
+			corr := Strings.CopyToChars(anon, l, rec.module.name);
 			anon[l] := "_";
 			INC(l);
 
@@ -391,7 +395,8 @@ BEGIN
 			END;
 			INC(gen.opt.index);
 			Ast.PutChars(rec.module, rec.name, anon, 0, l)
-		END
+		END;
+		ASSERT(corr)
 	END
 	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
@@ -2618,9 +2623,9 @@ BEGIN
 			d := t(Ast.Record).vars;
 			WHILE d # NIL DO
 				MarkType(d.type);
-				IF Strings.IsDefined(d.name) THEN
+				(*IF Strings.IsDefined(d.name) THEN
 					Log.StrLn(d.name.block.s)
-				END;
+				END;*)
 				d := d.next
 			END;
 			t := t(Ast.Record).base
@@ -2718,8 +2723,6 @@ VAR out: MOut;
 		gen.module := module;
 		gen.localDeep := 0;
 
-		opt.records := NIL;
-		opt.recordLast := NIL;
 		gen.opt := opt;
 
 		gen.fixedLen := gen.len;
@@ -2806,18 +2809,21 @@ BEGIN
 	IF opt = NIL THEN
 		opt := DefaultOptions()
 	END;
+	out.opt := opt;
+
+	opt.records := NIL;
+	opt.recordLast := NIL;
+	opt.index := 0;
+
 	opt.main := interface = NIL;
 
 	IF ~opt.main THEN
 		MarkUsedInMarked(module)
 	END;
 
-	out.opt := opt;
-
 	IF interface # NIL THEN
 		Init(out.g[Interface], interface, module, opt, TRUE)
 	END;
-	opt.index := 0;
 
 	Init(out.g[Implementation], implementation, module, opt, FALSE);
 

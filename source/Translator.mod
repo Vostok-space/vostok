@@ -38,6 +38,8 @@ CONST
 	ErrOpenH                = -5;
 	ErrOpenC                = -6;
 	ErrParse                = -7;
+	ErrUnknownCommand       = -9;
+	ErrNotEnoughArgs        = -10;
 
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
@@ -45,6 +47,7 @@ TYPE
 		fileExt: ARRAY 32 OF CHAR;
 		extLen: INTEGER;
 		path: ARRAY 4096 OF CHAR;
+		sing: SET;
 		modules: RECORD
 			first, last: Ast.Module
 		END
@@ -334,12 +337,38 @@ BEGIN
 	RETURN i - ofs
 END LenStr;
 
-PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; arg: INTEGER);
+PROCEDURE IsEqualStr(str: ARRAY OF CHAR; ofs: INTEGER; sample: ARRAY OF CHAR)
+                    : BOOLEAN;
 VAR i: INTEGER;
 BEGIN
 	i := 0;
+	WHILE (str[ofs] = sample[i]) & (sample[i] # Utf8.Null) DO
+		INC(ofs);
+		INC(i)
+	END
+	RETURN str[ofs] = sample[i]
+END IsEqualStr;
+
+PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET; arg: INTEGER);
+VAR i, j, count: INTEGER;
+BEGIN
+	i := 0;
+	j := 0;
+	count := 0;
+	sing := {};
 	WHILE (arg < CLI.count) & CLI.Get(str, i, arg) DO
-		INC(i);
+		IF IsEqualStr(str, j, "-i") THEN
+			i := j;
+			INC(arg);
+			IF (arg < CLI.count) & CLI.Get(str, i, arg) THEN
+				INCL(sing, count);
+				INC(count)
+			END
+		ELSE
+			INC(count);
+			INC(i);
+			j := i
+		END;
 		INC(arg)
 	END;
 	IF i + 1 < LEN(str) THEN
@@ -363,7 +392,7 @@ BEGIN
 	RETURN m
 END SearchModule;
 
-PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module);
+PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module; sing: BOOLEAN);
 BEGIN
 	ASSERT(m.module = m);
 	m.module := NIL;
@@ -372,7 +401,10 @@ BEGIN
 	ELSE
 		mp.modules.last.module := m
 	END;
-	mp.modules.last := m
+	mp.modules.last := m;
+	IF sing THEN
+		m.mark := TRUE
+	END
 END AddModule;
 
 PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
@@ -380,7 +412,7 @@ PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
 VAR m: Ast.Module;
 	source: File.In;
 	mp: ModuleProvider;
-	pathOfs: INTEGER;
+	pathOfs, pathInd: INTEGER;
 
 	PROCEDURE Open(p: ModuleProvider; VAR pathOfs: INTEGER;
 	               name: ARRAY OF CHAR; ofs, end: INTEGER): File.In;
@@ -410,14 +442,16 @@ BEGIN
 	IF m # NIL THEN
 		Log.StrLn("Найден уже разобранный модуль")
 	ELSE
+		pathInd := -1;
 		pathOfs := 0;
 		REPEAT
-			source := Open(mp, pathOfs, name, ofs, end)
+			source := Open(mp, pathOfs, name, ofs, end);
+			INC(pathInd)
 		UNTIL (source # NIL) OR (mp.path[pathOfs] = Utf8.Null);
 		IF source # NIL THEN
 			m := Parser.Parse(source, p, mp.opt);
 			File.CloseIn(source);
-			AddModule(mp, m)
+			AddModule(mp, m, pathInd IN mp.sing)
 		ELSE
 			Out.String("Не получается найти или открыть файл импортированного модуля");
 			Out.Ln
@@ -426,34 +460,33 @@ BEGIN
 	RETURN m
 END GetModule;
 
-PROCEDURE OpenOutput(VAR interface, implementation: File.Out;
-                     VAR isMain: BOOLEAN): INTEGER;
-VAR dest: ARRAY 1024 OF CHAR;
-	destLen: INTEGER;
+PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
+                      module: Ast.Module; isMain: BOOLEAN;
+                      VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+VAR destLen: INTEGER;
 	ret: INTEGER;
 BEGIN
 	interface := NIL;
 	implementation := NIL;
-	destLen := 0;
-	IF ~(CLI.Get(dest, destLen, 2) & (destLen < LEN(dest) - 2)) THEN
+	destLen := dirLen;
+	IF ~Strings.CopyChars(dir, destLen, "/", 0, 1)
+	OR ~Strings.CopyToChars(dir, destLen, module.name)
+	OR (destLen > LEN(dir) - 3)
+	THEN
 		ret := ErrTooLongOutName
 	ELSE
-		isMain := (destLen > 3)
-		        & (dest[destLen - 3] = ".") & (dest[destLen - 2] = "c");
-		IF isMain THEN
-			DEC(destLen, 2)
-		END;
-		dest[destLen - 1] := ".";
-		dest[destLen + 1] := Utf8.Null;
+		dir[destLen] := ".";
+		dir[destLen + 2] := Utf8.Null;
 		IF ~isMain THEN
-			dest[destLen] := "h";
-			interface := File.OpenOut(dest)
+			dir[destLen + 1] := "h";
+			interface := File.OpenOut(dir)
 		END;
-		IF (interface = NIL) & ~isMain THEN
+		IF  ~isMain & (interface = NIL) THEN
 			ret := ErrOpenH
 		ELSE
-			dest[destLen] := "c";
-			implementation := File.OpenOut(dest);
+			dir[destLen + 1] := "c";
+			Out.String(dir); Out.Ln;
+			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
 				File.CloseOut(interface);
 				ret := ErrOpenC
@@ -463,35 +496,7 @@ BEGIN
 		END
 	END
 	RETURN ret
-END OpenOutput;
-
-PROCEDURE Compile(mp: ModuleProvider; source: File.In): INTEGER;
-VAR module: Ast.Module;
-	opt: GeneratorC.Options;
-	interface, implementation: File.Out;
-	ret: INTEGER;
-	isMain: BOOLEAN;
-BEGIN
-	module := Parser.Parse(source, mp, mp.opt);
-	File.CloseIn(source);
-	IF module = NIL THEN
-		Out.String("Ожидается MODULE"); Out.Ln;
-		ret := ErrParse
-	ELSIF module.errors # NIL THEN
-		PrintErrors(module.errors);
-		ret := ErrParse
-	ELSE
-		ret := OpenOutput(interface, implementation, isMain);
-		IF ret = ErrNo THEN
-			opt := GeneratorC.DefaultOptions();
-			GeneratorC.Generate(interface, implementation, module, opt);
-
-			File.CloseOut(interface);
-			File.CloseOut(implementation)
-		END
-	END
-	RETURN ret
-END Compile;
+END OpenCOutput;
 
 PROCEDURE NewProvider(fileExt: ARRAY OF CHAR; extLen: INTEGER): ModuleProvider;
 VAR mp: ModuleProvider;
@@ -500,7 +505,7 @@ BEGIN
 	NEW(mp); Ast.ProviderInit(mp, GetModule);
 	Parser.DefaultOptions(mp.opt);
 	mp.opt.printError := ErrorMessage;
-	CopyPath(mp.path, 3);
+	CopyPath(mp.path, mp.sing, 4);
 	mp.modules.first := NIL;
 	mp.modules.last := NIL;
 
@@ -511,23 +516,29 @@ BEGIN
 	RETURN mp
 END NewProvider;
 
-PROCEDURE ErrMessage(err: INTEGER);
+PROCEDURE PrintUsage;
+	PROCEDURE S(s: ARRAY OF CHAR);
+	BEGIN
+		Out.String(s);
+		Out.Ln
+	END S;
+BEGIN
+	S("Использование: ");
+	S("  o7c help");
+	S("  o7c to-c исходный.mod вых.каталог {пути_к_модулям} {-i кат.с_интерф-ми_мод-ми}");
+S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
+S("соответствующих как самому исходному модулю, так и используемых им модулей,");
+S("кроме лежащих в каталоге, указанным после опции -i, и служащих интерфейсами");
+S("для других .h и .с-файлов.");
+	S("Пути для поиска исходных модулей следует разделять пробелами.")
+END PrintUsage;
+
+PROCEDURE ErrMessage(err: INTEGER; cmd: ARRAY OF CHAR);
 BEGIN
 	IF err # ErrParse THEN
 		CASE err OF
 		  ErrWrongArgs:
-			Out.String("Использование: "); Out.Ln;
-			Out.String("  o7c исходный.mod результат[.c] {пути-к-интерфейсным-модулям}");
-			Out.Ln;
-			Out.String(
-"В случае успешной трансляции создаст .c-файл с main-функцией, если у результата"
-			);
-			Out.Ln;
-			Out.String(
-"было указано расширение .c, или пару из .h и .с для модуля, если не было."
-			);
-			Out.Ln;
-			Out.String("Пути для поиска модулей следует разделять пробелами.")
+			PrintUsage
 		| ErrTooLongSourceName:
 			Out.String("Слишком длинное имя исходного файла"); Out.Ln
 		| ErrTooLongOutName:
@@ -540,6 +551,12 @@ BEGIN
 			Out.String("Не получается открыть выходной .c файл")
 		| ErrParse:
 			Out.String("Ошибка разбора исходного файла")
+		| ErrUnknownCommand:
+			Out.String("Неизвестная команда: ");
+			Out.String(cmd)
+		| ErrNotEnoughArgs:
+			Out.String("Недостаточно аргументов для команды: ");
+			Out.String(cmd)
 		END;
 		Out.Ln
 	END
@@ -566,35 +583,101 @@ BEGIN
 	RETURN len
 END CopyExt;
 
-PROCEDURE Start*;
-VAR src: ARRAY 1024 OF CHAR;
+PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; opt: GeneratorC.Options;
+                    VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+VAR imp: Ast.Declaration;
+	ret: INTEGER;
+	iface, impl: File.Out;
+BEGIN
+	module.mark := TRUE;
+
+	ret := ErrNo;
+	imp := module.import;
+	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+		IF ~imp.module.mark THEN
+			ret := GenerateC(imp.module, FALSE, opt, dir, dirLen)
+		END;
+		imp := imp.next
+	END;
+	IF ret = ErrNo THEN
+		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen - 1);
+		IF ret = ErrNo THEN
+			GeneratorC.Generate(iface, impl, module, opt);
+			File.CloseOut(iface);
+			File.CloseOut(impl)
+		END
+	END
+	RETURN ret
+END GenerateC;
+
+PROCEDURE ToC(): INTEGER;
+VAR ret: INTEGER;
+	src: ARRAY 1024 OF CHAR;
 	ext: ARRAY 32 OF CHAR;
 	srcLen, extLen: INTEGER;
-	ret: INTEGER;
+	mp: ModuleProvider;
+	module: Ast.Module;
 	source: File.In;
+	dir: ARRAY 1024 OF CHAR;
+	dirLen: INTEGER;
+	opt: GeneratorC.Options;
+BEGIN
+	srcLen := 0;
+	dirLen := 0;
+	IF CLI.count < 4 THEN
+		ret := ErrNotEnoughArgs
+	ELSIF ~CLI.Get(src, srcLen, 2) THEN
+		ret := ErrTooLongSourceName
+	ELSE
+		extLen := CopyExt(ext, src);
+		source := File.OpenIn(src);
+		IF source = NIL THEN
+			ret := ErrOpenSource
+		ELSE
+			mp := NewProvider(ext, extLen);
+			module := Parser.Parse(source, mp, mp.opt);
+			File.CloseIn(source);
+			IF module = NIL THEN
+				ret := ErrParse
+			ELSIF module.errors # NIL THEN
+				PrintErrors(module.errors);
+				ret := ErrParse
+			ELSIF ~CLI.Get(dir, dirLen, 3) THEN
+				ret := ErrTooLongOutName
+			ELSE
+				opt := GeneratorC.DefaultOptions();
+				ret := GenerateC(module, TRUE, opt, dir, dirLen)
+			END
+		END
+	END
+	RETURN ret
+END ToC;
+
+PROCEDURE Start*;
+VAR cmd: ARRAY 1024 OF CHAR;
+	cmdLen: INTEGER;
+	ret: INTEGER;
 BEGIN
 	Out.Open;
 	Log.Turn(FALSE);
 
-	IF CLI.count <= 2 THEN
+	cmdLen := 0;
+	IF (CLI.count <= 1) OR ~CLI.Get(cmd, cmdLen, 1) THEN
 		ret := ErrWrongArgs
 	ELSE
-		srcLen := 0;
-		IF ~CLI.Get(src, srcLen, 1) THEN
-			ret := ErrTooLongSourceName
+		ret := ErrNo;
+		IF cmd = "help" THEN
+			PrintUsage;
+			Out.Ln
+		ELSIF cmd = "to-c" THEN
+			ret := ToC()
 		ELSE
-			extLen := CopyExt(ext, src);
-			source := File.OpenIn(src);
-			IF source = NIL THEN
-				ret := ErrOpenSource
-			ELSE
-				ret := Compile(NewProvider(ext, extLen), source)
-			END
+			ret := ErrUnknownCommand
 		END
 	END;
 	IF ret # ErrNo THEN
-		ErrMessage(ret);
-		CLI.SetExitCode(1)
+		CLI.SetExitCode(1);
+		ErrMessage(ret, cmd)
 	END
 END Start;
 

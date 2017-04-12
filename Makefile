@@ -13,7 +13,7 @@ SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNO
 SANITIZE_TEST := $(SANITIZE)
 O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE
 #LD_OPT := -lgc
-LD_OPT := 
+LD_OPT :=
 WARN := -Wall -Wno-parentheses -Wno-pointer-sign
 DEBUG := -g
 OPTIM := -O1
@@ -26,16 +26,16 @@ TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.m
 result/o7c : $(patsubst source/%.mod,result/%.o, $(SRC))
 	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.o $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
-result/%.o : result/%.c $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity $< -c -o $@
+result/%.o : $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity $(basename $@).c -c -o $@
 
-result/Translator.c : source/Translator.mod $(O7CI)
+result/%.c : $(SRC) $(O7CI)
+	@mkdir -p result
+	$(O7CI) $(patsubst result/%.c,source/%.mod, $@) $(basename $@) source $(SING_O7)
+
+result/Translator.c : $(SRC) $(O7CI)
 	@mkdir -p result
 	$(O7CI) source/Translator.mod result/Translator.c source $(SING_O7)
-
-result/%.c : source/%.mod $(SRC) $(O7CI)
-	@mkdir -p result
-	$(O7CI) $< $(basename $@) source $(SING_O7)
 
 result/bs-o7c:
 	@mkdir -p result
@@ -43,32 +43,11 @@ result/bs-o7c:
 
 result/test/% : test/source/%.mod always
 	@mkdir -p result/test
-	$(O7C) $< $@.c $(SING_O7) test/source
+	$(O7C) to-c $< result/test -i $(SING_O7) test/source
 	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
-$(SELF)/%.c : source/%.mod $(SRC) $(O7C)
-	@mkdir -p $(SELF)
-	$(O7C) $< $(basename $@) source $(SING_O7)
-
-$(SELF)/Translator.c : source/Translator.mod $(O7C)
-	@mkdir -p $(SELF)
-	$(O7C) source/Translator.mod $@ source $(SING_O7)
-
-$(SELF)/o7c : result/o7c $(patsubst source/%.mod,$(SELF)/%.o, $(SRC))
-	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.o $(SING_C)/*.c $(LD_OPT) -o $@
-
-$(SELF)/%.o : $(SELF)/%.c $(patsubst source/%.mod,$(SELF)/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(LD_OPT) $< -c -o $@
-
-
-self : $(SELF)/o7c
-	+make test O7C:=$(SELF)/o7c
-
-self-full : result/self/o7c
-	+make self O7C:=result/self/o7c SELF:=result/self2
-
-test : result/o7c result/test/RecordExt $(TESTS)
+test : result/o7c $(TESTS)
 
 help :
 	@echo "Основные цели Makefile:\n\

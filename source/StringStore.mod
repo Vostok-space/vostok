@@ -56,11 +56,11 @@ BEGIN
 	END
 END LogLoopStr;
 
-PROCEDURE UndefString*(VAR s: String);
+PROCEDURE Undef*(VAR s: String);
 BEGIN
 	s.block := NIL;
 	s.ofs := -1
-END UndefString;
+END Undef;
 
 PROCEDURE IsDefined*(s: String): BOOLEAN;
 	RETURN s.block # NIL
@@ -89,7 +89,7 @@ BEGIN
 	i := store.ofs;
 	w.block := b;
 	w.ofs := i;
-	
+
 	(*Log.Str("Put "); Log.Int(b.num); Log.Str(":"); Log.Int(i); Log.Ln;*)
 	WHILE j # end DO
 		IF i = LEN(b.s) - 1 THEN
@@ -186,21 +186,22 @@ BEGIN
 	RETURN b.s[i] = s[j]
 END IsEqualToString;
 
-PROCEDURE CopyToChars*(VAR d: ARRAY OF CHAR; VAR dofs: INTEGER; w: String);
+PROCEDURE CopyToChars*(VAR d: ARRAY OF CHAR; VAR dofs: INTEGER; w: String): BOOLEAN;
 VAR b: Block;
 	i: INTEGER;
 BEGIN
 	b := w.block;
 	i := w.ofs;
-	WHILE b.s[i] > Utf8.NewPage DO
+	WHILE (dofs < LEN(d) - 1) & (b.s[i] > Utf8.NewPage) DO
 		d[dofs] := b.s[i];
 		INC(dofs); INC(i)
-	ELSIF b.s[i] # 0X DO
+	ELSIF b.s[i] # Utf8.Null DO
 		ASSERT(b.s[i] = Utf8.NewPage);
 		b := b.next;
 		i := 0
 	END;
-	d[dofs] := 0X
+	d[dofs] := Utf8.Null
+	RETURN b.s[i] = Utf8.Null
 END CopyToChars;
 
 PROCEDURE StoreInit*(VAR s: Store);

@@ -731,7 +731,7 @@ BEGIN
 			Ast.RecordSetBase(rec, base)
 		END
 	ELSE
-		rec.name.block := NIL;
+		Strings.Undef(rec.name);
 		rec.module := p.module
 	END;
 	Vars(p, rec, ds);
