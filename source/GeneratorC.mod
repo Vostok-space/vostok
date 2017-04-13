@@ -1194,7 +1194,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	VAR arr: ARRAY TranLim.MaxFactorsInTerm OF Ast.ExprTerm;
 		i, last: INTEGER;
 	BEGIN
-		i := -1;
 		arr[0] := term;
 		i := 0;
 		WHILE term.expr IS Ast.ExprTerm DO
@@ -2380,8 +2379,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			ReleaseVars(gen, proc.vars);
 			ReleaseParams(gen, retainParams)
 		ELSE
-			IF (gen.opt.memManager = MemManagerCounter) & (proc.return # NIL)
-			THEN
+			IF gen.opt.memManager = MemManagerCounter THEN
 				IF proc.return.type.id = Ast.IdPointer THEN
 					Text.Str(gen, "O7C_ASSIGN(&o7c_return, ");
 					CheckExpr(gen, proc.return);
@@ -2425,7 +2423,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		END;
 		p := proc.procedures;
 		IF (p # NIL) & ~out.opt.procLocal THEN
-			IF ~proc.mark & ~out.opt.procLocal THEN
+			IF ~proc.mark THEN
 				(* TODO также проверить наличие рекурсии из локальных процедур*)
 				ProcDecl(out.g[Implementation], proc)
 			END;
