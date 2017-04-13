@@ -906,7 +906,9 @@ BEGIN
 				REPEAT
 					ds := ds.up
 				UNTIL (ds = NIL) OR (ds IS Module);
-				d := SearchName(ds.start, buf, begin, end)
+				IF ds # NIL THEN
+					d := SearchName(ds.start, buf, begin, end)
+				END
 			END
 		ELSE
 			WHILE (d = NIL) & (ds.up # NIL) DO
@@ -1885,7 +1887,9 @@ BEGIN
 	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
-		e.value := factor.value
+		IF factor # NIL THEN
+			e.value := factor.value
+		END
 	END;
 	e.factor := factor;
 	e.mult := mult;
@@ -2416,12 +2420,14 @@ BEGIN
 	ASSERT((right = NIL) OR (right.right = NIL) & (right.next = NIL));
 
 	left.right := right;
-	IF (right # NIL) & (left.id # right.id) THEN
-		err := ErrCaseRangeLabelsTypeMismatch
-	ELSIF left.value >= right.value THEN
-		err := ErrCaseLabelLeftNotLessRight
-	ELSE
-		err := ErrNo
+
+	err := ErrNo;
+	IF right # NIL THEN
+		IF left.id # right.id THEN
+			err := ErrCaseRangeLabelsTypeMismatch
+		ELSIF left.value >= right.value THEN
+			err := ErrCaseLabelLeftNotLessRight
+		END
 	END
 	RETURN err
 END CaseRangeNew;

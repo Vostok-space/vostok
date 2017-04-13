@@ -349,7 +349,7 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		p.varParam := fp.isVar
+		p.varParam := (fp = NIL) OR fp.isVar
 		           OR (e.designator.decl.id = Scanner.Len);
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		p.varParam := FALSE;

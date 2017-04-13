@@ -34,7 +34,7 @@ extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
 	assert(ofs < name_len);
 	O7C_NEW(&file, NULL);
 	if (NULL != file) {
-		file->file = fopen((char *)(name + ofs), mode);
+		file->file = fopen((char *)(name + ofs), (char *)mode);
 		if (NULL == file->file) {
 			O7C_NULL(&file);
 		}
