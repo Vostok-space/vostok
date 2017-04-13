@@ -49,6 +49,17 @@ result/test/% : test/source/%.mod always
 
 test : result/o7c $(TESTS)
 
+$(SELF)/o7c : $(O7C) $(SRC) Makefile
+	mkdir -p $(SELF)
+	$(O7C) to-c source/Translator.mod $(SELF) source -i $(SING_O7)
+	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
+
+self : $(SELF)/o7c
+	+make test O7C:=$(SELF)/o7c
+
+self-full : result/self/o7c
+	+make self O7C:=$< SELF:=result/self2
+
 help :
 	@echo "Основные цели Makefile:\n\
 	   result/o7c - цель по умолчанию, сбор транслятора через bootstrap\n\
