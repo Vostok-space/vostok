@@ -1984,7 +1984,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			THEN
 				Text.Str(gen, "assert(");
 				ArrayLen(gen, des);
-				Text.Str(gen, " <= ");
+				Text.Str(gen, " >= ");
 				ArrayLen(gen, e);
 				Text.StrLn(gen, ");")
 			END
