@@ -1,0 +1,10 @@
+MODULE OsExec;
+
+CONST
+	Ok*    = 0;
+
+PROCEDURE Do*(cmd: ARRAY OF CHAR): INTEGER;
+RETURN 1
+END Do;
+
+END OsExec.
