@@ -249,6 +249,22 @@ BEGIN
 	RETURN ret
 END CopyChars;
 
+PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                         src: ARRAY OF CHAR): BOOLEAN;
+VAR i: INTEGER;
+BEGIN
+	ASSERT(destOfs >= 0);
+
+	i := 0;
+	WHILE (destOfs < LEN(dest) - 1) & (src[i] # Utf8.Null) DO
+		dest[destOfs] := src[i];
+		INC(destOfs);
+		INC(i)
+	END;
+	dest[destOfs] := Utf8.Null
+	RETURN src[i] = Utf8.Null
+END CopyCharsNull;
+
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;
