@@ -28,7 +28,7 @@ struct CFiles_Implement {
 };
 
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
-							   int ofs, char unsigned mode[/*len*/], int mode_len) {
+                               int ofs, char unsigned mode[/*len*/], int mode_len) {
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
@@ -55,7 +55,7 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-					   char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+                       char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(buf != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -64,7 +64,7 @@ extern int CFiles_Read(CFiles_File file,
 }
 
 extern int CFiles_Write(CFiles_File file,
-						char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+                        char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(buf_len - count >= ofs);

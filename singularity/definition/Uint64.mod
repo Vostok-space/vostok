@@ -1,9 +1,10 @@
 MODULE Uint64;
 
 CONST
+	Size = 8;
 
 TYPE
-	Type* = ARRAY 8 OF CHAR;
+	Type* = ARRAY Size OF CHAR;
 
 VAR
 	max*: Type;

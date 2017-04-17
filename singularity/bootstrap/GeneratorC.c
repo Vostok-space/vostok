@@ -1811,7 +1811,7 @@ static void Assign_Statement_AssertArraySize(struct GeneratorC_Generator *gen, o
 	if (o7c_bl((*gen).opt->checkIndex) && ((O7C_GUARD(Ast_RArray, &des->_._.type)->count == NULL) || (O7C_GUARD(Ast_RArray, &e->type)->count == NULL))) {
 		TextGenerator_Str(&(*gen)._, gen_tag, "assert(", 8);
 		ArrayLen(&(*gen), gen_tag, &des->_._);
-		TextGenerator_Str(&(*gen)._, gen_tag, " <= ", 5);
+		TextGenerator_Str(&(*gen)._, gen_tag, " >= ", 5);
 		ArrayLen(&(*gen), gen_tag, e);
 		TextGenerator_StrLn(&(*gen)._, gen_tag, ");", 3);
 	}
