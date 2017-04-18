@@ -252,7 +252,7 @@ static O7C_INLINE int o7c_add(int a1, int a2) {
 	o7c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_sadd_overflow(o7c_int(a1), o7c_int(a2), &s);
-		assert(!overflow);
+		assert(!overflow && s != O7C_INT_UNDEF);
 	} else {
 		if (!O7C_OVERFLOW) {
 			;
@@ -272,7 +272,7 @@ static O7C_INLINE int o7c_sub(int m, int s) {
 	o7c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_ssub_overflow(o7c_int(m), o7c_int(s), &d);
-		assert(!overflow);
+		assert(!overflow && d != O7C_INT_UNDEF);
 	} else {
 		if (!O7C_OVERFLOW) {
 			;
@@ -292,7 +292,7 @@ static O7C_INLINE int o7c_mul(int m1, int m2) {
 	o7c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_smul_overflow(o7c_int(m1), o7c_int(m2), &p);
-		assert(!overflow);
+		assert(!overflow && p != O7C_INT_UNDEF);
 	} else {
 		if (O7C_OVERFLOW && (0 != m2)) {
 			assert(abs(m1) <= INT_MAX / abs(m2));
