@@ -2766,7 +2766,7 @@ VAR out: MOut;
 			IF impl.opt.std >= IsoC99 THEN
 				Text.Str(interf, "static inline void ")
 			ELSE
-				Text.Str(interf, "static void ")
+				Text.Str(interf, "static O7C_INLINE void ")
 			END;
 			Name(interf, module);
 			Text.StrLn(interf, "_init(void) { ; }")

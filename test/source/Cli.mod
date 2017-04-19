@@ -7,7 +7,7 @@ CONST
 TYPE
 
 VAR
-	buf: ARRAY 1024 OF CHAR;
+	buf: ARRAY 1024 * 1024 OF CHAR;
 	ret: BOOLEAN;
 	ofs, i: INTEGER;
 

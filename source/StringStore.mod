@@ -265,6 +265,16 @@ BEGIN
 	RETURN src[i] = Utf8.Null
 END CopyCharsNull;
 
+PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
+VAR i: INTEGER;
+BEGIN
+	i := ofs;
+	WHILE str[i] # Utf8.Null DO
+		INC(i)
+	END
+	RETURN i - ofs
+END CalcLen;
+
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;
