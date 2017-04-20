@@ -480,7 +480,7 @@ BEGIN
 	|"R": id := T("REAL", buf, begin, end, Real, "ROR", Ror)
 	|"S": id := O("SET", buf, begin, end, Set)
 	|"U": id := O("UNPK", buf, begin, end, Unpk)
-	|"G", "H", "J", "K", "M", "T", "V" .. "Z", "a" .. "z":
+	|"G", "H", "J", "K", "M", "Q", "T", "V" .. "Z", "a" .. "z":
 		id := Ident
 	END;
 	buf[end] := save

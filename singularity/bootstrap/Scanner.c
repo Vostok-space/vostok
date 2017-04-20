@@ -346,9 +346,7 @@ extern int Scanner_CheckPredefined(o7c_char buf[/*len0*/], int buf_len0, int beg
 		id = CheckPredefined_O("UNPK", 5, buf, buf_len0, begin, end, Scanner_Unpk_cnst);
 		break;
 	default:
-		if ((buf[o7c_ind(buf_len0, begin)] == 71) || (buf[o7c_ind(buf_len0, begin)] == 72) || (buf[o7c_ind(buf_len0, begin)] == 74) || (buf[o7c_ind(buf_len0, begin)] == 75) || (buf[o7c_ind(buf_len0, begin)] == 77) || (buf[o7c_ind(buf_len0, begin)] == 84) || (86 <= buf[o7c_ind(buf_len0, begin)] && buf[o7c_ind(buf_len0, begin)] <= 90) || (97 <= buf[o7c_ind(buf_len0, begin)] && buf[o7c_ind(buf_len0, begin)] <= 122)) {
-			id = Scanner_Ident_cnst;
-		} else abort();
+		id = Scanner_Ident_cnst;
 		break;
 	}
 	buf[o7c_ind(buf_len0, end)] = save;
