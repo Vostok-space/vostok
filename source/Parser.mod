@@ -111,7 +111,8 @@ BEGIN
 		p.err := err > ErrAstBegin;
 		IF p.module # NIL THEN
 			Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
-		END
+		END;
+		p.l := Scanner.EndOfFile
 	END;
 	IF p.opt.multiErrors THEN
 		p.opt.printError(err);
@@ -144,6 +145,7 @@ BEGIN
 			Scanner.ResetComment(p.s)
 		END
 	ELSE
+		ASSERT(FALSE);
 		p.l := Scanner.EndOfFile
 	END
 END Scan;
@@ -1188,7 +1190,9 @@ BEGIN
 		AddError(p, ErrExpectSemicolon);
 		p.err := FALSE;
 		last.next := Statement(p, ds);
-		last := last.next
+		IF last.next # NIL THEN
+			last := last.next
+		END
 	END
 	RETURN stats
 END Statements;
