@@ -51,6 +51,7 @@ CONST
 	ErrTooLongCc            = -13;
 	ErrCCompiler            = -14;
 	ErrTooLongRunArgs       = -15;
+	ErrUnexpectArg          = -16;
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
@@ -352,35 +353,36 @@ END IsEqualStr;
 PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
                    VAR cDirs: ARRAY OF CHAR; VAR cc: ARRAY OF CHAR;
                    VAR arg: INTEGER): INTEGER;
-VAR i, j, dirsOfs, ccLen, count: INTEGER;
+VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 	ret: INTEGER;
+	opt: ARRAY 256 OF CHAR;
 BEGIN
 	i := 0;
-	j := 0;
 	dirsOfs := 0;
 	cDirs[0] := Utf8.Null;
 	ccLen := 0;
 	count := 0;
 	sing := {};
 	ret := ErrNo;
+	optLen := 0;
 	WHILE (ret = ErrNo) & (count < 32)
-	    & (arg < CLI.count) & CLI.Get(str, i, arg) & ~IsEqualStr(str, j, "--")
+	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
-		IF IsEqualStr(str, j, "-i") THEN
-			i := j;
+		optLen := 0;
+		IF (opt = "-i") OR (opt = "-m") THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF CLI.Get(str, i, arg) THEN
-				INCL(sing, count);
+				IF opt = "-i" THEN
+					INCL(sing, count)
+				END;
 				INC(i);
-				j := i;
 				INC(count)
 			ELSE
 				ret := ErrTooLongModuleDirs
 			END
-		ELSIF IsEqualStr(str, j, "-c") THEN
-			i := j;
+		ELSIF opt = "-c" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
@@ -391,8 +393,7 @@ BEGIN
 			ELSE
 				ret := ErrTooLongCDirs
 			END
-		ELSIF IsEqualStr(str, j, "-cc") THEN
-			i := j;
+		ELSIF opt = "-cc" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
@@ -402,16 +403,11 @@ BEGIN
 				ret := ErrTooLongCc
 			END
 		ELSE
-			INC(count);
-			INC(i);
-			j := i
+			ret := ErrUnexpectArg
 		END;
 		INC(arg)
 	END;
 	IF i + 1 < LEN(str) THEN
-		IF IsEqualStr(str, j, "--") THEN
-			i := j - 1
-		END;
 		str[i + 1] := Utf8.Null;
 		IF count >= 32 THEN
 			ret := ErrTooManyModuleDirs
@@ -564,16 +560,16 @@ PROCEDURE PrintUsage;
 BEGIN
 S("Использование: ");
 S("  1) o7c help");
-S("  2) o7c to-c исх.mod вых.каталог {путь_к_модулям | -i кат.с_интерф-ми_мод-ми}");
+S("  2) o7c to-c исх.mod вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
 S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
 S("соответствующих как самому исходному модулю, так и используемых им модулей,");
 S("кроме лежащих в каталогах, указанным после опции -i, служащих интерфейсами");
 S("для других .h и .с-файлов.");
-S("  3) o7c to-bin исх.mod результат {путь_к_м. | -i к.с_инт_м. | -c .[hc]-файлы}");
+S("  3) o7c to-bin исх.mod результат {-m путь_к_м. | -i к.с_инт_м. | -c .[hc]-файлы}");
 S("После трансляции указанного модуля вызывает комилятор C для сбора результата -");
 S("исполнимого файла, в состав которого также войдут .h и .c файлы, находящиеся");
 S("в каталогах, указанных после -c.");
-S("  4) o7c run исх.mod {путь_к_м. | -i к.с_инт_м. | -c .[hc]-файлы} -- параметры");
+S("  4) o7c run исх.mod {-m путь_к_м. | -i к.с_инт_м. | -c .[hc]-файлы} -- параметры");
 S("Запускает собранный модуль с параметрами, указанными после --")
 END PrintUsage;
 
@@ -614,6 +610,8 @@ BEGIN
 			Out.String("Ошибка при вызове компилятора C")
 		| ErrTooLongRunArgs:
 			Out.String("Слишком длинные параметры командной строки")
+		| ErrUnexpectArg:
+			Out.String("Неожиданный аргумент")
 		END;
 		Out.Ln
 	END
@@ -803,14 +801,14 @@ BEGIN
 	ASSERT(res IN {ResultC .. ResultRun});
 
 	srcLen := 0;
-	IF CLI.count < 4 THEN
+	arg := 3 + ORD(res # ResultRun);
+	IF CLI.count < arg THEN
 		ret := ErrNotEnoughArgs
 	ELSIF ~CLI.Get(src, srcLen, 2) THEN
 		ret := ErrTooLongSourceName
 	ELSE
 		mp := NewProvider();
 		mp.extLen := CopyExt(mp.fileExt, src);
-		arg := 3 + ORD(res # ResultRun);
 		ret := CopyPath(mp.path, mp.sing, cDirs, cc, arg);
 		IF ret = ErrNo THEN
 			source := File.OpenIn(src);
