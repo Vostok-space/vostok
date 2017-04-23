@@ -43,3 +43,5 @@ extern void Out_Ln(void) {
 extern void Out_Real(double x, int n) {
 	printf("%f", x);
 }
+
+extern void Out_Open(void) { ; }
