@@ -41,9 +41,9 @@ result/bs-o7c:
 	@mkdir -p result
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SING_BS) -I$(SING_BS)/singularity $(SING_BS)/*.c $(SING_BS)/singularity/*.c -o $@
 
-result/test/% : test/source/%.mod always
+result/test/% : always
 	@mkdir -p result/test
-	$(O7C) to-c $< result/test -i $(SING_O7) -m test/source
+	$(O7C) to-c $(@F) result/test -i $(SING_O7) -m test/source
 	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
@@ -51,7 +51,7 @@ test : result/o7c $(TESTS)
 
 $(SELF)/o7c : $(O7C) $(SRC) Makefile
 	mkdir -p $(SELF)
-	$(O7C) to-c source/Translator.mod $(SELF) -m source -i $(SING_O7)
+	$(O7C) to-c Translator $(SELF) -m source -i $(SING_O7)
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
 
 self : $(SELF)/o7c

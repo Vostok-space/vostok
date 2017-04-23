@@ -494,7 +494,7 @@ BEGIN
 			File.CloseIn(source);
 			AddModule(mp, m, pathInd IN mp.sing)
 		ELSE
-			Out.String("Не получается найти или открыть файл импортированного модуля");
+			Out.String("Не получается найти или открыть файл модуля");
 			Out.Ln
 		END
 	END
@@ -560,16 +560,16 @@ PROCEDURE PrintUsage;
 BEGIN
 S("Использование: ");
 S("  1) o7c help");
-S("  2) o7c to-c исх.mod вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
+S("  2) o7c to-c модуль вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
 S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
 S("соответствующих как самому исходному модулю, так и используемых им модулей,");
 S("кроме лежащих в каталогах, указанным после опции -i, служащих интерфейсами");
 S("для других .h и .с-файлов.");
-S("  3) o7c to-bin исх.mod результат {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы}");
-S("После трансляции указанного модуля вызывает компилятор C для сбора результата -");
-S("исполнимого файла, в состав которого также войдут .h и .c файлы, находящиеся");
-S("в каталогах, указанных после -c.");
-S("  4) o7c run исх.mod {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
+S("  3) o7c to-bin модуль результат {-m пКм | -i кИм | -c .h,c-файлы} [-cc компил.]");
+S("После трансляции указанного модуля вызывает компилятор cc по умолчанию, либо");
+S("указанный после опции -cc, для сбора результата - исполнимого файла, в состав");
+S("которого также войдут .h,c файлы, находящиеся в каталогах, указанных после -c.");
+S("  4) o7c run модуль {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
 S("Запускает собранный модуль с параметрами, указанными после --")
 END PrintUsage;
 
@@ -808,34 +808,29 @@ BEGIN
 		ret := ErrTooLongSourceName
 	ELSE
 		mp := NewProvider();
-		mp.extLen := CopyExt(mp.fileExt, src);
+		mp.fileExt := ".mod";
+		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
 		ret := CopyPath(mp.path, mp.sing, cDirs, cc, arg);
 		IF ret = ErrNo THEN
-			source := File.OpenIn(src);
-			IF source = NIL THEN
-				ret := ErrOpenSource
+			module := GetModule(mp, NIL, src, 0, srcLen - 1);
+			resPathLen := 0;
+			resPath[0] := Utf8.Null;
+			IF module = NIL THEN
+				ret := ErrParse
+			ELSIF module.errors # NIL THEN
+				PrintErrors(module.errors);
+				ret := ErrParse
+			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
+				ret := ErrTooLongOutName
 			ELSE
-				module := Parser.Parse(source, mp, mp.opt);
-				File.CloseIn(source);
-				resPathLen := 0;
-				resPath[0] := Utf8.Null;
-				IF module = NIL THEN
-					ret := ErrParse
-				ELSIF module.errors # NIL THEN
-					PrintErrors(module.errors);
-					ret := ErrParse
-				ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
-					ret := ErrTooLongOutName
-				ELSE
-					opt := GeneratorC.DefaultOptions();
-					CASE res OF
-					  ResultC:
-						ret := GenerateC(module, TRUE, opt, resPath, resPathLen)
-					| ResultBin, ResultRun:
-						ret := Bin(module, opt, cDirs, cc, resPath);
-						IF (res = ResultRun) & (ret = ErrNo) THEN
-							ret := Run(resPath, arg)
-						END
+				opt := GeneratorC.DefaultOptions();
+				CASE res OF
+				  ResultC:
+					ret := GenerateC(module, TRUE, opt, resPath, resPathLen)
+				| ResultBin, ResultRun:
+					ret := Bin(module, opt, cDirs, cc, resPath);
+					IF (res = ResultRun) & (ret = ErrNo) THEN
+						ret := Run(resPath, arg)
 					END
 				END
 			END
