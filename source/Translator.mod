@@ -764,7 +764,7 @@ VAR ret: INTEGER;
 				    & Strings.CopyChars(cmd, cmdLen, cDirs, i, i + len);
 				i := i + len + 1
 			END;
-			Out.String(cmd); Out.Ln;
+			Log.StrLn(cmd);
 			ASSERT(ok);
 			IF Exec.Do(cmd) # Exec.Ok THEN
 				ret := ErrCCompiler
