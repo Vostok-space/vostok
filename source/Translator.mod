@@ -66,261 +66,277 @@ TYPE
 
 VAR started: BOOLEAN;
 
-PROCEDURE ErrorMessage(code: INTEGER);
-
+PROCEDURE AstErrorMessage(code: INTEGER);
 	PROCEDURE O(s: ARRAY OF CHAR);
 	BEGIN
 		Out.String(s)
 	END O;
 BEGIN
+	CASE code OF
+	  Ast.ErrImportNameDuplicate:
+		O("Имя модуля уже встречается в списке импорта")
+	| Ast.ErrDeclarationNameDuplicate:
+		O("Повторное объявление имени в той же области видимости")
+	| Ast.ErrMultExprDifferentTypes:
+		O("Типы подвыражений в умножении несовместимы")
+	| Ast.ErrDivExprDifferentTypes:
+		O("Типы подвыражений в делении несовместимы")
+	| Ast.ErrNotBoolInLogicExpr:
+		O("В логическом выражении должны использоваться подвыражении логического типа")
+	| Ast.ErrNotIntInDivOrMod:
+		O("В целочисленном делении допустимы только целочисленные подвыражения")
+	| Ast.ErrNotRealTypeForRealDiv:
+		O("В дробном делении допустимы только подвыражения дробного типа")
+	| Ast.ErrNotIntSetElem:
+		O("В качестве элементов множества допустимы только целые числа")
+	| Ast.ErrSetElemOutOfRange:
+		O("Элемент множества выходит за границы возможных значений - 0 .. 31")
+	| Ast.ErrSetLeftElemBiggerRightElem:
+		O("Левый элемент диапазона больше правого")
+	| Ast.ErrAddExprDifferenTypes:
+		O("Типы подвыражений в сложении несовместимы")
+	| Ast.ErrNotNumberAndNotSetInMult:
+		O("В выражениях *, /, DIV, MOD допустимы только числа и множества")
+	| Ast.ErrNotNumberAndNotSetInAdd:
+		O("В выражениях +, - допустимы только числа и множества")
+	| Ast.ErrSignForBool:
+		O("Унарный знак не применим к логическому выражению")
+	| Ast.ErrRelationExprDifferenTypes:
+		O("Типы подвыражений в сравнении не совпадают")
+	| Ast.ErrExprInWrongTypes:
+		O("Ast.ErrExprInWrongTypes")
+	| Ast.ErrExprInRightNotSet:
+		O("Ast.ErrExprInRightNotSet")
+	| Ast.ErrExprInLeftNotInteger:
+		O("Левый член выражения IN должен быть целочисленным")
+	| Ast.ErrRelIncompatibleType:
+		O("В сравнении выражения несовместимых типов")
+	| Ast.ErrIsExtTypeNotRecord:
+		O("Проверка IS применима только к записям")
+	| Ast.ErrIsExtVarNotRecord:
+		O("Левый член проверки IS должен иметь тип записи или указателя на неё")
+	| Ast.ErrConstDeclExprNotConst:
+		O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
+	| Ast.ErrAssignIncompatibleType:
+		O("Несовместимые типы в присваивании")
+	| Ast.ErrCallNotProc:
+		O("Вызов допустим только для процедур и переменных процедурного типа")
+	| Ast.ErrCallIgnoredReturn:
+		O("Возвращаемое значение не задействовано в выражении")
+	| Ast.ErrCallExprWithoutReturn:
+		O("Вызываемая процедура не возвращает значения")
+	| Ast.ErrCallExcessParam:
+		O("Лишние параметры при вызове процедуры")
+	| Ast.ErrCallIncompatibleParamType:
+		O("Несовместимый тип параметра")
+	| Ast.ErrCallExpectVarParam:
+		O("Параметр должен быть изменяемым значением")
+	| Ast.ErrCallVarPointerTypeNotSame:
+		O("Для переменного параметра - указателя должен использоваться аргумент того же типа")
+	| Ast.ErrCallParamsNotEnough:
+		O("Не хватает фактических параметров в вызове процедуры")
+	| Ast.ErrCaseExprNotIntOrChar:
+		O("Выражение в CASE должно быть целочисленным или литерой")
+	| Ast.ErrCaseElemExprTypeMismatch:
+		O("Метки CASE должно быть целочисленными или литерами")
+	| Ast.ErrCaseElemDuplicate:
+		O("Дублирование значения меток в CASE")
+	| Ast.ErrCaseRangeLabelsTypeMismatch:
+		O("Не совпадает тип меток CASE")
+	| Ast.ErrCaseLabelLeftNotLessRight:
+		O("Левая часть диапазона значений в метке CASE должна быть меньше правой")
+	| Ast.ErrCaseLabelNotConst:
+		O("Метки CASE должны быть константами")
+	| Ast.ErrProcHasNoReturn:
+		O("Процедура не имеет возвращаемого значения")
+	| Ast.ErrReturnIncompatibleType:
+		O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры")
+	| Ast.ErrExpectReturn:
+		O("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип")
+	| Ast.ErrDeclarationNotFound:
+		O("Предварительное объявление имени не было найдено")
+	| Ast.ErrConstRecursive:
+		O("Недопустимое использование константы для задания собственного значения")
+	| Ast.ErrImportModuleNotFound:
+		O("Импортированный модуль не был найден")
+	| Ast.ErrImportModuleWithError:
+		O("Импортированный модуль содержит ошибки")
+	| Ast.ErrDerefToNotPointer:
+		O("Разыменовывание применено не к указателю")
+	| Ast.ErrArrayItemToNotArray:
+		O("Получение элемента не массива")
+	| Ast.ErrArrayIndexNotInt:
+		O("Индекс массива не целочисленный")
+	| Ast.ErrArrayIndexNegative:
+		O("Отрицательный индекс массива")
+	| Ast.ErrArrayIndexOutOfRange:
+		O("Индекс массива выходит за его границы")
+	| Ast.ErrGuardExpectRecordExt:
+		O("В защите типа ожидается расширенная запись")
+	| Ast.ErrGuardExpectPointerExt:
+		O("В защите типа ожидается указатель на расширенную запись")
+	| Ast.ErrGuardedTypeNotExtensible:
+		O("В защите типа переменная должна быть либо записью, либо указателем на запись")
+	| Ast.ErrDotSelectorToNotRecord:
+		O("Селектор элемента записи применён не к записи")
+	| Ast.ErrDeclarationNotVar:
+		O("Ожидалась переменная")
+	| Ast.ErrForIteratorNotInteger:
+		O("Итератор FOR не целочисленного типа")
+	| Ast.ErrNotBoolInIfCondition:
+		O("Выражение в охране условного оператора должно быть логическим")
+	| Ast.ErrNotBoolInWhileCondition:
+		O("Выражение в охране цикла WHILE должно быть логическим")
+	| Ast.ErrWhileConditionAlwaysFalse:
+		O("Охрана цикла WHILE всегда ложна")
+	| Ast.ErrWhileConditionAlwaysTrue:
+		O("Цикл бесконечен, так как охрана WHILE всегда истинна")
+	| Ast.ErrNotBoolInUntil:
+		O("Выражение в условии завершения цикла REPEAT должно быть логическим")
+	| Ast.ErrUntilAlwaysFalse:
+		O("Цикл бесконечен, так как условие завершения всегда ложно")
+	| Ast.ErrUntilAlwaysTrue:
+		O("Условие завершения всегда истинно")
+	| Ast.ErrDeclarationIsPrivate:
+		O("Объявление не экспортировано")
+	| Ast.ErrNegateNotBool:
+		O("Логическое отрицание применено не к логическому типу")
+	| Ast.ErrConstAddOverflow:
+		O("Переполнение при сложении постоянных")
+	| Ast.ErrConstSubOverflow:
+		O("Переполнение при вычитании постоянных")
+	| Ast.ErrConstMultOverflow:
+		O("Переполнение при умножении постоянных")
+	| Ast.ErrConstDivByZero:
+		O("Деление на 0")
+	| Ast.ErrValueOutOfRangeOfByte:
+		O("Значение выходит за границы BYTE")
+	| Ast.ErrValueOutOfRangeOfChar:
+		O("Значение выходит за границы CHAR")
+	| Ast.ErrExpectIntExpr:
+		O("Ожидается целочисленное выражение")
+	| Ast.ErrExpectConstIntExpr:
+		O("Ожидается константное целочисленное выражение")
+	| Ast.ErrForByZero:
+		O("Шаг итератора не может быть равен 0")
+	| Ast.ErrByShouldBePositive:
+		O("Для прохода от меньшего к большему шаг итератора должен быть > 0")
+	| Ast.ErrByShouldBeNegative:
+		O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
+	| Ast.ErrForPossibleOverflow:
+		O("Во время итерации в FOR возможно переполнение")
+	| Ast.ErrVarUninitialized:
+		O("Использование не инициализированной переменной")
+	| Ast.ErrDeclarationNotProc:
+		O("Имя должно указывать на процедуру")
+	| Ast.ErrProcNotCommandHaveParams:
+		O("В качестве команды может выступать только процедура без параметров")
+	END
+END AstErrorMessage;
+
+PROCEDURE ParseErrorMessage(code: INTEGER);
+	PROCEDURE O(s: ARRAY OF CHAR);
+	BEGIN
+		Out.String(s)
+	END O;
+BEGIN
+	CASE code OF
+	  Scanner.ErrUnexpectChar:
+		O("Неожиданный символ в тексте")
+	| Scanner.ErrNumberTooBig:
+		O("Значение константы слишком велико")
+	| Scanner.ErrRealScaleTooBig:
+		O("ErrRealScaleTooBig")
+	| Scanner.ErrWordLenTooBig:
+		O("ErrWordLenTooBig")
+	| Scanner.ErrExpectHOrX:
+		O("В конце 16-ричного числа ожидается 'H' или 'X'")
+	| Scanner.ErrExpectDQuote:
+		O("Ожидалась "); O(Utf8.DQuote)
+	| Scanner.ErrExpectDigitInScale:
+		O("ErrExpectDigitInScale")
+	| Scanner.ErrUnclosedComment:
+		O("Незакрытый комментарий")
+
+	| Parser.ErrExpectModule:
+		O("Ожидается 'MODULE'")
+	| Parser.ErrExpectIdent:
+		O("Ожидается имя")
+	| Parser.ErrExpectColon:
+		O("Ожидается ':'")
+	| Parser.ErrExpectSemicolon:
+		O("Ожидается ';'")
+	| Parser.ErrExpectEnd:
+		O("Ожидается 'END'")
+	| Parser.ErrExpectDot:
+		O("Ожидается '.'")
+	| Parser.ErrExpectModuleName:
+		O("Ожидается имя модуля")
+	| Parser.ErrExpectEqual:
+		O("Ожидается '='")
+	| Parser.ErrExpectBrace1Close:
+		O("Ожидается ')'")
+	| Parser.ErrExpectBrace2Close:
+		O("Ожидается ']'")
+	| Parser.ErrExpectBrace3Close:
+		O("Ожидается '}'")
+	| Parser.ErrExpectOf:
+		O("Ожидается OF")
+	| Parser.ErrExpectTo:
+		O("Ожидается TO")
+	| Parser.ErrExpectStructuredType:
+		O("Ожидается структурный тип: массив, запись, указатель, процедурный")
+	| Parser.ErrExpectRecord:
+		O("Ожидается запись")
+	| Parser.ErrExpectStatement:
+		O("Ожидается оператор")
+	| Parser.ErrExpectThen:
+		O("Ожидается THEN")
+	| Parser.ErrExpectAssign:
+		O("Ожидается :=")
+	| Parser.ErrExpectVarRecordOrPointer:
+		O("Ожидается переменная типа запись либо указателя на неё")
+	| Parser.ErrExpectType:
+		O("Ожидается тип")
+	| Parser.ErrExpectUntil:
+		O("Ожидается UNTIL")
+	| Parser.ErrExpectDo:
+		O("Ожидается DO")
+	| Parser.ErrExpectDesignator:
+		O("Ожидается обозначение")
+	| Parser.ErrExpectProcedure:
+		O("Ожидается процедура")
+	| Parser.ErrExpectConstName:
+		O("Ожидается имя константы")
+	| Parser.ErrExpectProcedureName:
+		O("Ожидается завершающее имя процедуры")
+	| Parser.ErrExpectExpression:
+		O("Ожидается выражение")
+	| Parser.ErrExcessSemicolon:
+		O("Лишняя ';'")
+	| Parser.ErrEndModuleNameNotMatch:
+		O("Завершающее имя в конце модуля не совпадает с его именем")
+	| Parser.ErrArrayDimensionsTooMany:
+		O("Слишком большая n-мерность массива")
+	| Parser.ErrEndProcedureNameNotMatch:
+		O("Завершающее имя в теле процедуры не совпадает с её именем")
+	| Parser.ErrFunctionWithoutBraces:
+		O("Объявление процедуры с возвращаемым значением не содержит скобки")
+	| Parser.ErrArrayLenLess1:
+		O("Длина массива должна быть > 0")
+	| Parser.ErrExpectIntOrStrOrQualident:
+		O("Ожидалось число или строка")
+	END
+END ParseErrorMessage;
+
+PROCEDURE ErrorMessage(code: INTEGER);
+BEGIN
 	Out.Int(code - Parser.ErrAstBegin, 0); Out.String(" ");
 	IF code <= Parser.ErrAstBegin THEN
-		CASE code - Parser.ErrAstBegin OF
-		  Ast.ErrImportNameDuplicate:
-			O("Имя модуля уже встречается в списке импорта")
-		| Ast.ErrDeclarationNameDuplicate:
-			O("Повторное объявление имени в той же области видимости")
-		| Ast.ErrMultExprDifferentTypes:
-			O("Типы подвыражений в умножении несовместимы")
-		| Ast.ErrDivExprDifferentTypes:
-			O("Типы подвыражений в делении несовместимы")
-		| Ast.ErrNotBoolInLogicExpr:
-			O("В логическом выражении должны использоваться подвыражении логического типа")
-		| Ast.ErrNotIntInDivOrMod:
-			O("В целочисленном делении допустимы только целочисленные подвыражения")
-		| Ast.ErrNotRealTypeForRealDiv:
-			O("В дробном делении допустимы только подвыражения дробного типа")
-		| Ast.ErrNotIntSetElem:
-			O("В качестве элементов множества допустимы только целые числа")
-		| Ast.ErrSetElemOutOfRange:
-			O("Элемент множества выходит за границы возможных значений - 0 .. 31")
-		| Ast.ErrSetLeftElemBiggerRightElem:
-			O("Левый элемент диапазона больше правого")
-		| Ast.ErrAddExprDifferenTypes:
-			O("Типы подвыражений в сложении несовместимы")
-		| Ast.ErrNotNumberAndNotSetInMult:
-			O("В выражениях *, /, DIV, MOD допустимы только числа и множества")
-		| Ast.ErrNotNumberAndNotSetInAdd:
-			O("В выражениях +, - допустимы только числа и множества")
-		| Ast.ErrSignForBool:
-			O("Унарный знак не применим к логическому выражению")
-		| Ast.ErrRelationExprDifferenTypes:
-			O("Типы подвыражений в сравнении не совпадают")
-		| Ast.ErrExprInWrongTypes:
-			O("Ast.ErrExprInWrongTypes")
-		| Ast.ErrExprInRightNotSet:
-			O("Ast.ErrExprInRightNotSet")
-		| Ast.ErrExprInLeftNotInteger:
-			O("Левый член выражения IN должен быть целочисленным")
-		| Ast.ErrRelIncompatibleType:
-			O("В сравнении выражения несовместимых типов")
-		| Ast.ErrIsExtTypeNotRecord:
-			O("Проверка IS применима только к записям")
-		| Ast.ErrIsExtVarNotRecord:
-			O("Левый член проверки IS должен иметь тип записи или указателя на неё")
-		| Ast.ErrConstDeclExprNotConst:
-			O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
-		| Ast.ErrAssignIncompatibleType:
-			O("Несовместимые типы в присваивании")
-		| Ast.ErrCallNotProc:
-			O("Вызов допустим только для процедур и переменных процедурного типа")
-		| Ast.ErrCallIgnoredReturn:
-			O("Возвращаемое значение не задействовано в выражении")
-		| Ast.ErrCallExprWithoutReturn:
-			O("Вызываемая процедура не возвращает значения")
-		| Ast.ErrCallExcessParam:
-			O("Лишние параметры при вызове процедуры")
-		| Ast.ErrCallIncompatibleParamType:
-			O("Несовместимый тип параметра")
-		| Ast.ErrCallExpectVarParam:
-			O("Параметр должен быть изменяемым значением")
-		| Ast.ErrCallVarPointerTypeNotSame:
-			O("Для переменного параметра - указателя должен использоваться аргумент того же типа")
-		| Ast.ErrCallParamsNotEnough:
-			O("Не хватает фактических параметров в вызове процедуры")
-		| Ast.ErrCaseExprNotIntOrChar:
-			O("Выражение в CASE должно быть целочисленным или литерой")
-		| Ast.ErrCaseElemExprTypeMismatch:
-			O("Метки CASE должно быть целочисленными или литерами")
-		| Ast.ErrCaseElemDuplicate:
-			O("Дублирование значения меток в CASE")
-		| Ast.ErrCaseRangeLabelsTypeMismatch:
-			O("Не совпадает тип меток CASE")
-		| Ast.ErrCaseLabelLeftNotLessRight:
-			O("Левая часть диапазона значений в метке CASE должна быть меньше правой")
-		| Ast.ErrCaseLabelNotConst:
-			O("Метки CASE должны быть константами")
-		| Ast.ErrProcHasNoReturn:
-			O("Процедура не имеет возвращаемого значения")
-		| Ast.ErrReturnIncompatibleType:
-			O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры")
-		| Ast.ErrExpectReturn:
-			O("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип")
-		| Ast.ErrDeclarationNotFound:
-			O("Предварительное объявление имени не было найдено")
-		| Ast.ErrConstRecursive:
-			O("Недопустимое использование константы для задания собственного значения")
-		| Ast.ErrImportModuleNotFound:
-			O("Импортированный модуль не был найден")
-		| Ast.ErrImportModuleWithError:
-			O("Импортированный модуль содержит ошибки")
-		| Ast.ErrDerefToNotPointer:
-			O("Разыменовывание применено не к указателю")
-		| Ast.ErrArrayItemToNotArray:
-			O("Получение элемента не массива")
-		| Ast.ErrArrayIndexNotInt:
-			O("Индекс массива не целочисленный")
-		| Ast.ErrArrayIndexNegative:
-			O("Отрицательный индекс массива")
-		| Ast.ErrArrayIndexOutOfRange:
-			O("Индекс массива выходит за его границы")
-		| Ast.ErrGuardExpectRecordExt:
-			O("В защите типа ожидается расширенная запись")
-		| Ast.ErrGuardExpectPointerExt:
-			O("В защите типа ожидается указатель на расширенную запись")
-		| Ast.ErrGuardedTypeNotExtensible:
-			O("В защите типа переменная должна быть либо записью, либо указателем на запись")
-		| Ast.ErrDotSelectorToNotRecord:
-			O("Селектор элемента записи применён не к записи")
-		| Ast.ErrDeclarationNotVar:
-			O("Ожидалась переменная")
-		| Ast.ErrForIteratorNotInteger:
-			O("Итератор FOR не целочисленного типа")
-		| Ast.ErrNotBoolInIfCondition:
-			O("Выражение в охране условного оператора должно быть логическим")
-		| Ast.ErrNotBoolInWhileCondition:
-			O("Выражение в охране цикла WHILE должно быть логическим")
-		| Ast.ErrWhileConditionAlwaysFalse:
-			O("Охрана цикла WHILE всегда ложна")
-		| Ast.ErrWhileConditionAlwaysTrue:
-			O("Цикл бесконечен, так как охрана WHILE всегда истинна")
-		| Ast.ErrNotBoolInUntil:
-			O("Выражение в условии завершения цикла REPEAT должно быть логическим")
-		| Ast.ErrUntilAlwaysFalse:
-			O("Цикл бесконечен, так как условие завершения всегда ложно")
-		| Ast.ErrUntilAlwaysTrue:
-			O("Условие завершения всегда истинно")
-		| Ast.ErrDeclarationIsPrivate:
-			O("Объявление не экспортировано")
-		| Ast.ErrNegateNotBool:
-			O("Логическое отрицание применено не к логическому типу")
-		| Ast.ErrConstAddOverflow:
-			O("Переполнение при сложении постоянных")
-		| Ast.ErrConstSubOverflow:
-			O("Переполнение при вычитании постоянных")
-		| Ast.ErrConstMultOverflow:
-			O("Переполнение при умножении постоянных")
-		| Ast.ErrConstDivByZero:
-			O("Деление на 0")
-		| Ast.ErrValueOutOfRangeOfByte:
-			O("Значение выходит за границы BYTE")
-		| Ast.ErrValueOutOfRangeOfChar:
-			O("Значение выходит за границы CHAR")
-		| Ast.ErrExpectIntExpr:
-			O("Ожидается целочисленное выражение")
-		| Ast.ErrExpectConstIntExpr:
-			O("Ожидается константное целочисленное выражение")
-		| Ast.ErrForByZero:
-			O("Шаг итератора не может быть равен 0")
-		| Ast.ErrByShouldBePositive:
-			O("Для прохода от меньшего к большему шаг итератора должен быть > 0")
-		| Ast.ErrByShouldBeNegative:
-			O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
-		| Ast.ErrForPossibleOverflow:
-			O("Во время итерации в FOR возможно переполнение")
-		| Ast.ErrVarUninitialized:
-			O("Использование не инициализированной переменной")
-		END
+		AstErrorMessage(code - Parser.ErrAstBegin)
 	ELSE
-		CASE code OF
-		  Scanner.ErrUnexpectChar:
-			O("Неожиданный символ в тексте")
-		| Scanner.ErrNumberTooBig:
-			O("Значение константы слишком велико")
-		| Scanner.ErrRealScaleTooBig:
-			O("ErrRealScaleTooBig")
-		| Scanner.ErrWordLenTooBig:
-			O("ErrWordLenTooBig")
-		| Scanner.ErrExpectHOrX:
-			O("В конце 16-ричного числа ожидается 'H' или 'X'")
-		| Scanner.ErrExpectDQuote:
-			O("Ожидалась "); O(Utf8.DQuote)
-		| Scanner.ErrExpectDigitInScale:
-			O("ErrExpectDigitInScale")
-		| Scanner.ErrUnclosedComment:
-			O("Незакрытый комментарий")
-
-		| Parser.ErrExpectModule:
-			O("Ожидается 'MODULE'")
-		| Parser.ErrExpectIdent:
-			O("Ожидается имя")
-		| Parser.ErrExpectColon:
-			O("Ожидается ':'")
-		| Parser.ErrExpectSemicolon:
-			O("Ожидается ';'")
-		| Parser.ErrExpectEnd:
-			O("Ожидается 'END'")
-		| Parser.ErrExpectDot:
-			O("Ожидается '.'")
-		| Parser.ErrExpectModuleName:
-			O("Ожидается имя модуля")
-		| Parser.ErrExpectEqual:
-			O("Ожидается '='")
-		| Parser.ErrExpectBrace1Close:
-			O("Ожидается ')'")
-		| Parser.ErrExpectBrace2Close:
-			O("Ожидается ']'")
-		| Parser.ErrExpectBrace3Close:
-			O("Ожидается '}'")
-		| Parser.ErrExpectOf:
-			O("Ожидается OF")
-		| Parser.ErrExpectTo:
-			O("Ожидается TO")
-		| Parser.ErrExpectStructuredType:
-			O("Ожидается структурный тип: массив, запись, указатель, процедурный")
-		| Parser.ErrExpectRecord:
-			O("Ожидается запись")
-		| Parser.ErrExpectStatement:
-			O("Ожидается оператор")
-		| Parser.ErrExpectThen:
-			O("Ожидается THEN")
-		| Parser.ErrExpectAssign:
-			O("Ожидается :=")
-		| Parser.ErrExpectVarRecordOrPointer:
-			O("Ожидается переменная типа запись либо указателя на неё")
-		| Parser.ErrExpectType:
-			O("Ожидается тип")
-		| Parser.ErrExpectUntil:
-			O("Ожидается UNTIL")
-		| Parser.ErrExpectDo:
-			O("Ожидается DO")
-		| Parser.ErrExpectDesignator:
-			O("Ожидается обозначение")
-		| Parser.ErrExpectProcedure:
-			O("Ожидается процедура")
-		| Parser.ErrExpectConstName:
-			O("Ожидается имя константы")
-		| Parser.ErrExpectProcedureName:
-			O("Ожидается завершающее имя процедуры")
-		| Parser.ErrExpectExpression:
-			O("Ожидается выражение")
-		| Parser.ErrExcessSemicolon:
-			O("Лишняя ';'")
-		| Parser.ErrEndModuleNameNotMatch:
-			O("Завершающее имя в конце модуля не совпадает с его именем")
-		| Parser.ErrArrayDimensionsTooMany:
-			O("Слишком большая n-мерность массива")
-		| Parser.ErrEndProcedureNameNotMatch:
-			O("Завершающее имя в теле процедуры не совпадает с её именем")
-		| Parser.ErrFunctionWithoutBraces:
-			O("Объявление процедуры с возвращаемым значением не содержит скобки")
-		| Parser.ErrArrayLenLess1:
-			O("Длина массива должна быть > 0")
-		| Parser.ErrExpectIntOrStrOrQualident:
-			O("Ожидалось число или строка")
-		END
+		ParseErrorMessage(code)
 	END
-
 END ErrorMessage;
 
 PROCEDURE PrintErrors(err: Ast.Error);
@@ -845,8 +861,8 @@ BEGIN
 				ELSE
 					call := NIL
 				END;
-				IF ret # ErrNo THEN
-					ErrorMessage(ret);
+				IF ret # Ast.ErrNo THEN
+					AstErrorMessage(ret);
 					ret := ErrParse
 				ELSE
 					opt := GeneratorC.DefaultOptions();

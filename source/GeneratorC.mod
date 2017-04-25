@@ -2799,7 +2799,9 @@ VAR out: MOut;
 		IF module.stats # NIL THEN
 			Statements(gen, module.stats)
 		END;
-		Statement(gen, cmd);
+		IF cmd # NIL THEN
+			Statement(gen, cmd)
+		END;
 		Text.StrLn(gen, "return o7c_exit_code;");
 		Text.StrLnClose(gen, "}")
 	END Main;

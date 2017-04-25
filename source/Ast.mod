@@ -2233,9 +2233,11 @@ VAR d: Declaration;
 	des: Designator;
 	err: INTEGER;
 BEGIN
-	d := DeclarationSearch(m, name, begin, end);
+	d := SearchName(m.start, name, begin, end);
 	IF d = NIL THEN
 		err := ErrDeclarationNotFound
+	ELSIF ~d.mark THEN
+		err := ErrDeclarationIsPrivate
 	ELSIF ~(d IS Procedure) THEN
 		err := ErrDeclarationNotProc
 	ELSIF (d(Procedure).header.params # NIL) OR (d(Procedure).header.type # NIL)
