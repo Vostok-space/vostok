@@ -6,7 +6,7 @@ CONST
 
 TYPE
 
-PROCEDURE Go;
+PROCEDURE Go*;
 VAR a, b, c: REAL;
 BEGIN
 	a := 0.1;
