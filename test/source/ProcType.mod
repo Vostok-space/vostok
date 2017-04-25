@@ -20,8 +20,11 @@ VAR
 		P(i + 1)
 	END P;
 
+PROCEDURE Go*;
 BEGIN
 	P(0);
 	p := P;
 	p(0)
+END Go;
+
 END ProcType.

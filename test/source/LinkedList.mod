@@ -51,6 +51,4 @@ BEGIN
 	Unlink(Create(N))
 END Go;
 
-BEGIN
-	Go
 END LinkedList.

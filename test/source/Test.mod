@@ -2,11 +2,11 @@ MODULE Test;
 
 IMPORT Out;
 
-CONST 
+CONST
 	baba* = 101;
 	str = "babababa";
 	real = 1.0E23;
-	
+
 (* Comment *)
 
 TYPE
@@ -146,8 +146,11 @@ END Boo;
 PROCEDURE String(str: ARRAY OF CHAR);
 END String;
 
+PROCEDURE Go*;
 BEGIN
 	variable1 := 0;
 	proc1 := Irma;
 	Out.String("Hello"); Out.Ln
+END Go;
+
 END Test.

@@ -12,6 +12,7 @@ TYPE
 VAR
 	p: Ptr;
 
+PROCEDURE Go*;
 BEGIN
 	NEW(p); p.next := p;
 	p.i := 2;
@@ -21,4 +22,6 @@ BEGIN
 	END;
 	ASSERT(p.i = 3);
 	p := NIL
+END Go;
+
 END PtrLoop.

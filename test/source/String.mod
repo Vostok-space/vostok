@@ -27,6 +27,4 @@ BEGIN
 	ASSERT(s1 = "0123456789")
 END Go;
 
-BEGIN
-	Go
 END String.

@@ -58,6 +58,4 @@ BEGIN
 	END
 END Go;
 
-BEGIN
-	Go
 END QuickSort.

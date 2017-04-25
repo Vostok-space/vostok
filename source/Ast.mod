@@ -113,6 +113,9 @@ CONST
 
 	ErrVarUninitialized*            = -81;
 
+	ErrDeclarationNotProc*          = -82;
+	ErrProcNotCommandHaveParams*    = -83;
+
 	ErrMin*                         = -100;
 
 	NoId*                 =-1;
@@ -2223,6 +2226,29 @@ BEGIN
 	NEW(c); StatInit(c, e)
 	RETURN err
 END CallNew;
+
+PROCEDURE CommandGet*(VAR call: Call; m: Module;
+                      name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR d: Declaration;
+	des: Designator;
+	err: INTEGER;
+BEGIN
+	d := DeclarationSearch(m, name, begin, end);
+	IF d = NIL THEN
+		err := ErrDeclarationNotFound
+	ELSIF ~(d IS Procedure) THEN
+		err := ErrDeclarationNotProc
+	ELSIF (d(Procedure).header.params # NIL) OR (d(Procedure).header.type # NIL)
+	THEN
+		err := ErrProcNotCommandHaveParams
+	ELSE
+		err := DesignatorNew(des, d);
+		IF err = ErrNo THEN
+			err := CallNew(call, des);
+		END
+	END
+	RETURN err
+END CommandGet;
 
 PROCEDURE IfNew*(VAR if: If; expr: Expression; stats: Statement): INTEGER;
 VAR err: INTEGER;

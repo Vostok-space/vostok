@@ -19,6 +19,5 @@ BEGIN
 END Go;
 
 BEGIN
-	Out.Open;
-	Go
+	Out.Open
 END Real.

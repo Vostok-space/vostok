@@ -147,6 +147,4 @@ BEGIN
 	END
 END Go;
 
-BEGIN
-	Go
 END OopInsertSort.

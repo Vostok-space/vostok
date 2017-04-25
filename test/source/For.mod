@@ -68,6 +68,4 @@ BEGIN
 
 END Go;
 
-BEGIN
-	Go
 END For.

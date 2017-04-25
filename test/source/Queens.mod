@@ -42,7 +42,10 @@ BEGIN
 	Out.Int(count, 0); Out.String(" solutions found"); Out.Ln
 END Do;
 
+PROCEDURE Go*;
 BEGIN
 	Do(11);
 	ASSERT(count = 2680)
+END Go;
+
 END Queens.

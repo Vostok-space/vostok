@@ -16,6 +16,4 @@ BEGIN
 	ASSERT(160 DIV m >= 0)
 END Go;
 
-BEGIN
-	Go
 END Div.

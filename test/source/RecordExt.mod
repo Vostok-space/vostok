@@ -70,6 +70,7 @@ BEGIN
 	END
 END Pointer;
 
+PROCEDURE Go*;
 BEGIN
 	b.a := 1;
 
@@ -82,7 +83,7 @@ BEGIN
 	e21.a := 6;
 	e21.c := 7X;
 	e21.b := TRUE;
-	
+
 	Print(b);
 	Print(e1);
 	Print(e2);
@@ -99,4 +100,6 @@ BEGIN
 	pe1 := NIL;
 	ASSERT(pb1 = pe1);
 	ASSERT(pe1 = pb1)
+END Go;
+
 END RecordExt.

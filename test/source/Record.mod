@@ -58,6 +58,7 @@ BEGIN
 	l := LEN(p2.b)
 END Pr;
 
+PROCEDURE Go*;
 BEGIN
 	r1.a := 0;
 	r2.b := 1.0;
@@ -76,7 +77,7 @@ BEGIN
 	NEW(pr2);
 	pr2.a := 3;
 	pr1 := pr2;
-	
+
 	ASSERT(pr1.a = 3);
 	ASSERT(pr2.a = 3);
 
@@ -88,4 +89,6 @@ BEGIN
 	r3.b := 6.0;
 	r2.a := 7;
 	ASSERT(r3.r2.a = 4)
+END Go;
+
 END Record.

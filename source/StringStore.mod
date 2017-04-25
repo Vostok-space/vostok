@@ -148,12 +148,12 @@ PROCEDURE IsEqualToChars*(w: String; s: ARRAY OF CHAR; j, end: INTEGER): BOOLEAN
 VAR i: INTEGER;
 	b: Block;
 BEGIN
-	ASSERT(ODD(LEN(s)));
+	(*ASSERT(ODD(LEN(s)));*)
 	ASSERT((j >= 0) & (j < LEN(s) - 1));
 	ASSERT((end >= 0) & (end < LEN(s) - 1));
 	i := w.ofs;
 	b := w.block;
-	WHILE b.s[i] = s[j] DO
+	WHILE (b.s[i] = s[j]) & (j # end) DO
 		INC(i);
 		j := (j + 1) MOD (LEN(s) - 1)
 	ELSIF b.s[i] = Utf8.NewPage DO

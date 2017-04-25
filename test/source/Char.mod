@@ -18,6 +18,4 @@ BEGIN
 	ASSERT(249 < ORD(c) - 5)
 END Go;
 
-BEGIN
-	Go
 END Char.

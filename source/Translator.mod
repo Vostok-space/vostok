@@ -64,6 +64,8 @@ TYPE
 		END
 	END;
 
+VAR started: BOOLEAN;
+
 PROCEDURE ErrorMessage(code: INTEGER);
 
 	PROCEDURE O(s: ARRAY OF CHAR);
@@ -560,16 +562,17 @@ PROCEDURE PrintUsage;
 BEGIN
 S("Использование: ");
 S("  1) o7c help");
-S("  2) o7c to-c модуль вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
+S("  2) o7c to-c команда вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
+S("Команда - это модуль[.процедура_без_параметров] .");
 S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
 S("соответствующих как самому исходному модулю, так и используемых им модулей,");
 S("кроме лежащих в каталогах, указанным после опции -i, служащих интерфейсами");
 S("для других .h и .с-файлов.");
-S("  3) o7c to-bin модуль результат {-m пКм | -i кИм | -c .h,c-файлы} [-cc компил.]");
+S("  3) o7c to-bin ком-да результат {-m пКм | -i кИм | -c .h,c-файлы} [-cc компил.]");
 S("После трансляции указанного модуля вызывает компилятор cc по умолчанию, либо");
 S("указанный после опции -cc, для сбора результата - исполнимого файла, в состав");
 S("которого также войдут .h,c файлы, находящиеся в каталогах, указанных после -c.");
-S("  4) o7c run модуль {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
+S("  4) o7c run команда {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
 S("Запускает собранный модуль с параметрами, указанными после --")
 END PrintUsage;
 
@@ -638,7 +641,8 @@ BEGIN
 	RETURN len
 END CopyExt;
 
-PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; opt: GeneratorC.Options;
+PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
+                    opt: GeneratorC.Options;
                     VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 VAR imp: Ast.Declaration;
 	ret: INTEGER;
@@ -650,14 +654,14 @@ BEGIN
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
 		IF ~imp.module.mark THEN
-			ret := GenerateC(imp.module, FALSE, opt, dir, dirLen)
+			ret := GenerateC(imp.module, FALSE, NIL, opt, dir, dirLen)
 		END;
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
 		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen - 1);
 		IF ret = ErrNo THEN
-			GeneratorC.Generate(iface, impl, module, opt);
+			GeneratorC.Generate(iface, impl, module, cmd, opt);
 			File.CloseOut(iface);
 			File.CloseOut(impl)
 		END
@@ -700,7 +704,7 @@ END GetTempOutC;
 PROCEDURE ToC(res: INTEGER): INTEGER;
 VAR ret: INTEGER;
 	src: ARRAY 1024 OF CHAR;
-	srcLen: INTEGER;
+	srcLen, srcNameEnd: INTEGER;
 	resPath: ARRAY 1024 OF CHAR;
 	resPathLen: INTEGER;
 	cDirs, cc: ARRAY 4096 OF CHAR;
@@ -709,8 +713,9 @@ VAR ret: INTEGER;
 	source: File.In;
 	opt: GeneratorC.Options;
 	arg: INTEGER;
+	call: Ast.Call;
 
-	PROCEDURE Bin(module: Ast.Module; opt: GeneratorC.Options;
+	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR bin: ARRAY OF CHAR): INTEGER;
 	VAR outC: ARRAY 1024 OF CHAR;
 		cmd: ARRAY 8192 OF CHAR;
@@ -719,7 +724,7 @@ VAR ret: INTEGER;
 		ok: BOOLEAN;
 	BEGIN
 		outCLen := GetTempOutC(outC, bin, module.name);
-		ret := GenerateC(module, TRUE, opt, outC, outCLen);
+		ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
 		IF ret = ErrNo THEN
 			IF cc[0] = Utf8.Null THEN
 				cmd := "cc -g -O1";
@@ -797,6 +802,16 @@ VAR ret: INTEGER;
 		END
 		RETURN ret
 	END Run;
+
+	PROCEDURE ParseCommand(src: ARRAY OF CHAR): INTEGER;
+	VAR i: INTEGER;
+	BEGIN
+		i := 0;
+		WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
+			INC(i)
+		END
+		RETURN i
+	END ParseCommand;
 BEGIN
 	ASSERT(res IN {ResultC .. ResultRun});
 
@@ -808,11 +823,12 @@ BEGIN
 		ret := ErrTooLongSourceName
 	ELSE
 		mp := NewProvider();
-		mp.fileExt := ".mod";
+		mp.fileExt := ".mod"; (* TODO *)
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
 		ret := CopyPath(mp.path, mp.sing, cDirs, cc, arg);
 		IF ret = ErrNo THEN
-			module := GetModule(mp, NIL, src, 0, srcLen - 1);
+			srcNameEnd := ParseCommand(src);
+			module := GetModule(mp, NIL, src, 0, srcNameEnd);
 			resPathLen := 0;
 			resPath[0] := Utf8.Null;
 			IF module = NIL THEN
@@ -823,14 +839,25 @@ BEGIN
 			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
 				ret := ErrTooLongOutName
 			ELSE
-				opt := GeneratorC.DefaultOptions();
-				CASE res OF
-				  ResultC:
-					ret := GenerateC(module, TRUE, opt, resPath, resPathLen)
-				| ResultBin, ResultRun:
-					ret := Bin(module, opt, cDirs, cc, resPath);
-					IF (res = ResultRun) & (ret = ErrNo) THEN
-						ret := Run(resPath, arg)
+				IF srcNameEnd < srcLen - 1 THEN
+					ret := Ast.CommandGet(call, module,
+					                      src, srcNameEnd + 1, srcLen - 1)
+				ELSE
+					call := NIL
+				END;
+				IF ret # ErrNo THEN
+					ErrorMessage(ret);
+					ret := ErrParse
+				ELSE
+					opt := GeneratorC.DefaultOptions();
+					CASE res OF
+					  ResultC:
+						ret := GenerateC(module, call # NIL, call, opt, resPath, resPathLen)
+					| ResultBin, ResultRun:
+						ret := Bin(module, call, opt, cDirs, cc, resPath);
+						IF (res = ResultRun) & (ret = ErrNo) THEN
+							ret := Run(resPath, arg)
+						END
 					END
 				END
 			END
@@ -844,6 +871,8 @@ VAR cmd: ARRAY 1024 OF CHAR;
 	cmdLen: INTEGER;
 	ret: INTEGER;
 BEGIN
+	IF ~started THEN
+	started := TRUE;
 	Out.Open;
 	Log.Turn(FALSE);
 
@@ -869,8 +898,10 @@ BEGIN
 		CLI.SetExitCode(1);
 		ErrMessage(ret, cmd)
 	END
+	END
 END Start;
 
 BEGIN
+	started := FALSE;
 	Start
 END Translator.

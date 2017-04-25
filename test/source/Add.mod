@@ -17,6 +17,4 @@ BEGIN
 	ASSERT(v + 0 > 0)
 END Go;
 
-BEGIN
-	Go
 END Add.

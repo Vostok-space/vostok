@@ -11,6 +11,7 @@ VAR
 	ret: BOOLEAN;
 	ofs, i: INTEGER;
 
+PROCEDURE Go*;
 BEGIN
 	FOR i := 0 TO CLI.count - 1 DO
 		ofs := 0;
@@ -21,4 +22,6 @@ BEGIN
 		Out.String(buf);
 		Out.Ln
 	END
+END Go;
+
 END Cli.

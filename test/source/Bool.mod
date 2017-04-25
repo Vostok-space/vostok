@@ -21,6 +21,4 @@ BEGIN
 	ASSERT(~b = a)
 END Go;
 
-BEGIN
-	Go
 END Bool.

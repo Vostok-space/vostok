@@ -14,6 +14,4 @@ BEGIN
 	ASSERT(j = 11)
 END Go;
 
-BEGIN
-	Go
 END Repeat.

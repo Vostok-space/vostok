@@ -10,6 +10,7 @@ TYPE
 
 VAR ch: CHAR;
 
+PROCEDURE Go*;
 BEGIN
 	ASSERT(ORD(c2) = 3 * 16);
 	O.Char("a");
@@ -18,5 +19,7 @@ BEGIN
 	O.Char(ch);
 	O.Ln;
 	ch := c2
+END Go;
+
 END Chars.
 

@@ -63,6 +63,7 @@ BEGIN
 	ASSERT(L11(bb[0][1]) = 6)
 END F;
 
+PROCEDURE Go*;
 BEGIN
 	p := A;
 	p(a);
@@ -78,4 +79,6 @@ BEGIN
 	ASSERT(L11(bb[0][1]) = 6);
 
 	F(bb)
+END Go;
+
 END Array.

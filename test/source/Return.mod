@@ -23,6 +23,7 @@ BEGIN
 	RETURN ORD(b)
 END R3;
 
+PROCEDURE Go*;
 BEGIN
 	ASSERT(R() = 0);
 	ASSERT(R() # 1);
@@ -30,4 +31,6 @@ BEGIN
 	b := FALSE;
 	ASSERT(R2());
 	ASSERT(~R2())
+END Go;
+
 END Return.

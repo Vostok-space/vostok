@@ -8,7 +8,7 @@ VAR
 
 PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
 					 src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN; 
+VAR ret: BOOLEAN;
 BEGIN
 
 	ASSERT((destOfs >= 0)
@@ -26,5 +26,8 @@ BEGIN
 	dest[destOfs] := 0X
 	RETURN ret
 END CopyChars;
+
+PROCEDURE Go*;
+END Go;
 
 END Copy.

@@ -16,6 +16,4 @@ BEGIN
 	ASSERT(i = 4)
 END Go;
 
-BEGIN
-	Go
 END While.
