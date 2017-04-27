@@ -28,7 +28,7 @@ IMPORT
 	Ast,
 	GeneratorC,
 	TranLim := TranslatorLimits,
-	Exec := OsExec;
+	Exec := PlatformExec;
 
 CONST
 	ResultC   = 0;
@@ -689,9 +689,9 @@ END GenerateC;
 
 PROCEDURE GetTempOutC(VAR dirCOut, bin: ARRAY OF CHAR; name: Strings.String)
                      : INTEGER;
-VAR len, cmdLen, binLen: INTEGER;
+VAR len, binLen: INTEGER;
 	ok: BOOLEAN;
-	cmd: ARRAY 6144 OF CHAR;
+	cmd: Exec.Code;
 BEGIN
 	dirCOut := "/tmp/o7c-";
 	len := Strings.CalcLen(dirCOut, 0);
@@ -704,18 +704,18 @@ BEGIN
 		    & Strings.CopyToChars(bin, binLen, name);
 		ASSERT(ok)
 	END;
-	cmd := "mkdir -p ";
-	cmdLen := Strings.CalcLen(cmd, 0);
-	ok := Strings.CopyChars(cmd, cmdLen, dirCOut, 0, len);
+	ok := Exec.Init(cmd, "rm")
+	    & Exec.Add(cmd, "-rf", 0)
+	    & Exec.Add(cmd, dirCOut, 0);
 	ASSERT(ok);
-	IF Exec.Do(cmd) = Exec.Ok THEN
-		cmd := "rm -f ";
-		cmdLen := Strings.CalcLen(cmd, 0);
-		ok := Strings.CopyChars(cmd, cmdLen, dirCOut, 0, len)
-		    & Strings.CopyCharsNull(cmd, cmdLen, "/*");
-		ASSERT(ok);
-		ok := Exec.Do(cmd) = Exec.Ok
-	END
+	ok := Exec.Do(cmd) = Exec.Ok;
+
+	ok := Exec.Init(cmd, "mkdir")
+	    & Exec.Add(cmd, "-p", 0)
+	    & Exec.Add(cmd, dirCOut, 0);
+	ASSERT(ok);
+	ok := Exec.Do(cmd) = Exec.Ok
+
 	RETURN len + 1
 END GetTempOutC;
 
@@ -728,7 +728,6 @@ VAR ret: INTEGER;
 	cDirs, cc: ARRAY 4096 OF CHAR;
 	mp: ModuleProvider;
 	module: Ast.Module;
-	source: File.In;
 	opt: GeneratorC.Options;
 	arg: INTEGER;
 	call: Ast.Call;
@@ -736,37 +735,35 @@ VAR ret: INTEGER;
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR bin: ARRAY OF CHAR): INTEGER;
 	VAR outC: ARRAY 1024 OF CHAR;
-		cmd: ARRAY 8192 OF CHAR;
-		outCLen, cmdLen: INTEGER;
-		ret, i, len: INTEGER;
+		cmd: Exec.Code;
+		outCLen: INTEGER;
+		ret, i: INTEGER;
 		ok: BOOLEAN;
 	BEGIN
 		outCLen := GetTempOutC(outC, bin, module.name);
 		ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
+		outC[outCLen] := Utf8.Null;
 		IF ret = ErrNo THEN
+			ok := Exec.Init(cmd, "");
 			IF cc[0] = Utf8.Null THEN
-				cmd := "cc -g -O1";
-				cmdLen := Strings.CalcLen(cmd, 0)
+				ok := ok & Exec.AddClean(cmd, "cc -g -O1");
 			ELSE
-				cmdLen := 0
+				ok := ok & Exec.AddClean(cmd, cc)
 			END;
-			ok := ((cmdLen > 0) OR Strings.CopyCharsNull(cmd, cmdLen, cc))
-			    & Strings.CopyCharsNull(cmd, cmdLen, " -o ")
-			    & Strings.CopyCharsNull(cmd, cmdLen, bin)
-			    & Strings.CopyCharsNull(cmd, cmdLen, " ")
-			    & Strings.CopyChars(cmd, cmdLen, outC, 0, outCLen)
-			    & Strings.CopyCharsNull(cmd, cmdLen, "*.c -I")
-			    & Strings.CopyChars(cmd, cmdLen, outC, 0, outCLen - 1);
+			ok := ok
+			    & Exec.Add(cmd, "-o", 0)
+			    & Exec.Add(cmd, bin, 0)
+			    & Exec.Add(cmd, outC, 0)
+			    & Exec.AddClean(cmd, "*.c -I")
+			    & Exec.Add(cmd, outC, 0);
 			i := 0;
 			WHILE ok & (cDirs[i] # Utf8.Null) DO
-				len := Strings.CalcLen(cDirs, i);
-				ok := Strings.CopyCharsNull(cmd, cmdLen, " ")
-				    & Strings.CopyChars(cmd, cmdLen, cDirs, i, i + len)
-				    & Strings.CopyCharsNull(cmd, cmdLen, "/*.c -I")
-				    & Strings.CopyChars(cmd, cmdLen, cDirs, i, i + len);
-				i := i + len + 1
+				ok := Exec.Add(cmd, cDirs, i)
+				    & Exec.AddClean(cmd, "/*.c -I")
+				    & Exec.Add(cmd, cDirs, i);
+				i := i + Strings.CalcLen(cDirs, i) + 1
 			END;
-			Log.StrLn(cmd);
+			Exec.Log(cmd);
 			ASSERT(ok);
 			IF Exec.Do(cmd) # Exec.Ok THEN
 				ret := ErrCCompiler
@@ -776,47 +773,26 @@ VAR ret: INTEGER;
 	END Bin;
 
 	PROCEDURE Run(bin: ARRAY OF CHAR; arg: INTEGER): INTEGER;
-	VAR cmd, buf: ARRAY 65536 OF CHAR;
-		len, blen: INTEGER;
+	VAR cmd: Exec.Code;
+		buf: ARRAY 65536 OF CHAR;
+		len: INTEGER;
 		ret: INTEGER;
-
-		PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR)
-		              : BOOLEAN;
-		VAR j: INTEGER;
-		BEGIN
-			j := 0;
-			WHILE (i < LEN(d) - 2) & (s[j] = Utf8.DQuote) DO
-				d[i] := "\";
-				d[i + 1] := Utf8.DQuote;
-				INC(i, 2);
-				INC(j)
-			ELSIF (i < LEN(d) - 1) & (s[j] # Utf8.Null) DO
-				d[i] := s[j];
-				INC(i);
-				INC(j)
-			END;
-			d[i] := Utf8.Null
-			RETURN s[j] = Utf8.Null
-		END Copy;
 	BEGIN
-		len := Strings.CalcLen(bin, 0);
-		cmd := bin;
-		INC(arg);
-		blen := 0;
-		WHILE (arg < CLI.count)
-		    & Strings.CopyCharsNull(cmd, len, " ")
-		    & Strings.CopyCharsNull(cmd, len, Utf8.DQuote)
-		    & CLI.Get(buf, blen, arg) & Copy(cmd, len, buf)
-		    & Strings.CopyCharsNull(cmd, len, Utf8.DQuote)
-		DO
-			blen := 0;
-			INC(arg)
-		END;
-		IF arg >= CLI.count THEN
-			CLI.SetExitCode(Exec.Do(cmd));
-			ret := ErrNo
-		ELSE
-			ret := ErrTooLongRunArgs
+		ret := ErrTooLongRunArgs;
+		IF Exec.Init(cmd, bin) THEN
+			INC(arg);
+			len := 0;
+			WHILE (arg < CLI.count)
+			    & CLI.Get(buf, len, arg)
+			    & Exec.Add(cmd, buf, 0)
+			DO
+				len := 0;
+				INC(arg)
+			END;
+			IF arg >= CLI.count THEN
+				CLI.SetExitCode(Exec.Do(cmd));
+				ret := ErrNo
+			END
 		END
 		RETURN ret
 	END Run;
