@@ -90,10 +90,10 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 	return pos >= 0;
 }
 
-extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {
+extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int ofs) {
 	assert(ofs >= 0);
 	assert(name_len > 1);
-	return remove(name) == 0;
+	return remove((char const *)name) == 0;
 }
 
 extern void CFiles_init(void) {

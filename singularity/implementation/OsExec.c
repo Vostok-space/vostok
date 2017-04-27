@@ -10,7 +10,7 @@
 
 #include "OsExec.h"
 
-extern int OsExec_Do(o7c_char cmd[/*len0*/], int cmd_len0) {
-	return system(cmd);
+extern int OsExec_Do(o7c_char const cmd[/*len0*/], int cmd_len0) {
+	return system((char const *)cmd);
 }
 

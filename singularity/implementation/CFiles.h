@@ -36,7 +36,7 @@ extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 
 extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);
 
-extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs);
+extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int ofs);
 
 
 extern void CFiles_init(void);
