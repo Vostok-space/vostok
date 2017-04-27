@@ -510,7 +510,9 @@ BEGIN
 		IF source # NIL THEN
 			m := Parser.Parse(source, p, mp.opt);
 			File.CloseIn(source);
-			AddModule(mp, m, pathInd IN mp.sing)
+			IF m # NIL THEN
+				AddModule(mp, m, pathInd IN mp.sing)
+			END
 		ELSE
 			Out.String("Не получается найти или открыть файл модуля");
 			Out.Ln

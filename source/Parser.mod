@@ -1309,11 +1309,12 @@ BEGIN
 
 	Scan(p);
 	IF p.l # Scanner.Module THEN
-		p.l := ErrExpectModule
+		p.module := Ast.ModuleNew("  ", 0, 0);
+		AddError(p, ErrExpectModule)
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
-			p.module := Ast.ModuleNew(" ", 0, 0);
+			p.module := Ast.ModuleNew("  ", 0, 0);
 			AddError(p, ErrExpectIdent)
 		ELSE
 			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd);
