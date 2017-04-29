@@ -862,11 +862,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE ArrayDeep(t: Ast.Type): INTEGER;
 			VAR d: INTEGER;
 			BEGIN
-				d := -1;
-				REPEAT
+				d := 0;
+				WHILE t.id = Ast.IdArray DO
 					t := t.type;
 					INC(d)
-				UNTIL t = NIL
+				END
 				RETURN d
 			END ArrayDeep;
 		BEGIN
@@ -919,20 +919,22 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					WHILE (t.id = Ast.IdArray)
 					    & (fp.type(Ast.Array).count = NIL)
 					DO
+						IF (i = -1) & (p.expr IS Ast.Designator) THEN
+							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
+							   - ArrayDeep(fp.type);
+							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
+							THEN
+								j := ArrayDeep(p.expr(Ast.Designator).type);
+								WHILE j > 1 DO
+									DEC(j);
+									Text.Str(gen, "[0]")
+								END
+							END
+						END;
 						IF t(Ast.Array).count # NIL THEN
 							Text.Str(gen, ", ");
 							Expression(gen, t(Ast.Array).count)
 						ELSE
-							IF i = -1 THEN
-								i := ArrayDeep(p.expr(Ast.Designator).decl.type)
-								   - ArrayDeep(fp.type);
-								IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
-								THEN
-									FOR j := 0 TO i - 1 DO
-										Text.Str(gen, "[0]")
-									END
-								END
-							END;
 							Text.Str(gen, ", ");
 							Name(gen, p.expr(Ast.Designator).decl);
 							Text.Str(gen, "_len");
