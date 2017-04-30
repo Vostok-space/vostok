@@ -546,7 +546,7 @@ BEGIN
 			ret := ErrOpenH
 		ELSE
 			dir[destLen + 1] := "c";
-			Out.String(dir); Out.Ln;
+			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
 				File.CloseOut(interface);
@@ -637,27 +637,6 @@ BEGIN
 		Out.Ln
 	END
 END ErrMessage;
-
-PROCEDURE CopyExt(VAR ext: ARRAY OF CHAR; name: ARRAY OF CHAR): INTEGER;
-VAR i, dot, len: INTEGER;
-BEGIN
-	i := 0;
-	dot := -1;
-	WHILE name[i] # Utf8.Null DO
-		IF name[i] = "." THEN
-			dot := i
-		END;
-		INC(i)
-	END;
-	len := 0;
-	IF ~((dot >= 0) & Strings.CopyChars(ext, len, name, dot, i))
-	 & ~Strings.CopyChars(ext, len, ".mod", 0, 4)
-	THEN
-		len := -1
-	END;
-	ASSERT(len >= 0)
-	RETURN len
-END CopyExt;
 
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     opt: GeneratorC.Options;
