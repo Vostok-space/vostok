@@ -1873,6 +1873,49 @@ BEGIN
 	RETURN r # NIL
 END IsCaseElementWithRange;
 
+PROCEDURE ExprSameType(VAR gen: Generator;
+                       expr: Ast.Expression; expectType: Ast.Type);
+VAR reref, brace: BOOLEAN;
+	base, type: Ast.Record;
+BEGIN
+	base := NIL;
+	reref := (expr.type.id = Ast.IdPointer)
+	       & (expr.type.type # expectType.type)
+	       & (expr.id # Ast.IdPointer);
+	brace := reref;
+	IF ~reref THEN
+		Expression(gen, expr);
+		IF expr.type.id = Ast.IdRecord THEN
+			base := expectType(Ast.Record);
+			type := expr.type(Ast.Record)
+		END
+	ELSIF gen.opt.plan9 THEN
+		Expression(gen, expr);
+		brace := FALSE
+	ELSE
+		base := expectType.type(Ast.Record);
+		type := expr.type.type(Ast.Record).base;
+		Text.Str(gen, "(&(");
+		Expression(gen, expr);
+		Text.Str(gen, ")->_")
+	END;
+	IF (base # NIL) & (type # base) THEN
+		(*ASSERT(expectType.id = Ast.IdRecord);*)
+		IF gen.opt.plan9 THEN
+			Text.Str(gen, ".");
+			GlobalName(gen, expectType)
+		ELSE
+			WHILE type # base DO
+				Text.Str(gen, "._");
+				type := type.base
+			END
+		END
+	END;
+	IF brace THEN
+		Text.Str(gen, ")")
+	END
+END ExprSameType;
+
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR gen: Generator; wi: Ast.WhileIf);
@@ -1973,8 +2016,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END For;
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
-	VAR type, base: Ast.Record;
-		reref, retain, toByte: BOOLEAN;
+	VAR retain, toByte: BOOLEAN;
 
 		PROCEDURE AssertArraySize(VAR gen: Generator;
 		                          des: Ast.Designator; e: Ast.Expression);
@@ -2000,7 +2042,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		IF retain & (st.expr.id = Ast.IdPointer) THEN
 			Text.Str(gen, "O7C_NULL(&");
 			Designator(gen, st.designator);
-			reref := FALSE
 		ELSE
 			IF retain THEN
 				Text.Str(gen, "O7C_ASSIGN(&");
@@ -2020,54 +2061,22 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Designator(gen, st.designator);
 				Text.Str(gen, " = ")
 			END;
-			base := NIL;
-			reref := (st.expr.type.id = Ast.IdPointer)
-			       & (st.expr.type.type # st.designator.type.type)
-			       & (st.expr.id # Ast.IdPointer);
-			IF ~reref THEN
+			ExprSameType(gen, st.expr, st.designator.type);
+			IF st.designator.type.id # Ast.IdArray THEN
+				;
+			ELSIF st.expr.type(Ast.Array).count # NIL THEN
+				Text.Str(gen, ", sizeof(");
 				Expression(gen, st.expr);
-				IF st.expr.type.id = Ast.IdRecord THEN
-					base := st.designator.type(Ast.Record);
-					type := st.expr.type(Ast.Record)
-				ELSIF (st.designator.type.id = Ast.IdArray)
-				(*  & (st.designator.type.type.id # Ast.IdString) *)
-				THEN
-					IF st.expr.type(Ast.Array).count # NIL THEN
-						Text.Str(gen, ", sizeof(");
-						Expression(gen, st.expr);
-						Text.Str(gen, ")")
-					ELSE
-						Text.Str(gen, ", (");
-						ArrayLen(gen, st.expr);
-						Text.Str(gen, ") * sizeof(");
-						Expression(gen, st.expr);
-						Text.Str(gen, "[0])")
-					END
-				END
-			ELSIF gen.opt.plan9 THEN
-				Expression(gen, st.expr);
-				reref := FALSE
+				Text.Str(gen, ")")
 			ELSE
-				base := st.designator.type.type(Ast.Record);
-				type := st.expr.type.type(Ast.Record).base;
-				Text.Str(gen, "(&(");
+				Text.Str(gen, ", (");
+				ArrayLen(gen, st.expr);
+				Text.Str(gen, ") * sizeof(");
 				Expression(gen, st.expr);
-				Text.Str(gen, ")->_")
-			END;
-			IF (base # NIL) & (type # base) THEN
-				(*ASSERT(st.designator.type.id = Ast.IdRecord);*)
-				IF gen.opt.plan9 THEN
-					Text.Str(gen, ".");
-					GlobalName(gen, st.designator.type)
-				ELSE
-					WHILE type # base DO
-						Text.Str(gen, "._");
-						type := type.base
-					END
-				END
+				Text.Str(gen, "[0])")
 			END
 		END;
-		CASE ORD(reref) + ORD(retain) + ORD(toByte)
+		CASE ORD(retain) + ORD(toByte)
 		   + ORD((st.designator.type.id = Ast.IdArray)
 		       & (st.designator.type.type.id # Ast.IdString)
 		        )
@@ -2401,7 +2410,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				ReleaseVars(gen, proc.vars);
 				ReleaseParams(gen, retainParams);
 				Text.Str(gen, "return ");
-				CheckExpr(gen, proc.return);
+				ExprSameType(gen, proc.return, proc.header.type);
 				Text.StrLn(gen, ";")
 			END
 		END;
