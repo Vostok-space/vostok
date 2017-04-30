@@ -56,12 +56,6 @@ BEGIN
 	END
 END Chars;
 
-PROCEDURE Indent(VAR gen: Out; adder: INTEGER);
-BEGIN
-	gen.tabs := gen.tabs + adder;
-	Chars(gen, Utf8.Tab, gen.tabs)
-END Indent;
-
 PROCEDURE NewLine(VAR gen: Out);
 BEGIN
 	IF gen.isNewLine THEN
