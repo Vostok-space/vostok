@@ -22,14 +22,14 @@
 
 #include "Out.h"
 
-extern void Out_String(char s[/*len*/], int s_len) {
+extern void Out_String(char unsigned s[/*len*/], int s_len) {
 	int wr;
-	wr = printf("%s", s);
+	wr = printf("%s", (char unsigned *)s);
 	assert(wr < s_len);
 }
 
-extern void Out_Char(char ch) {
-	printf("%c", ch);
+extern void Out_Char(char unsigned ch) {
+	printf("%c", (char)ch);
 }
 
 extern void Out_Int(int x, int n) {

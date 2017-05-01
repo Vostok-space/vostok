@@ -17,7 +17,7 @@
 
 extern int CLI_count;
 
-extern bool CLI_Get(char str[/*len*/], int str_len, int *ofs, int arg);
+extern bool CLI_Get(char unsigned str[/*len*/], int str_len, int *ofs, int arg);
 
 extern void CLI_SetExitCode(int code);
 

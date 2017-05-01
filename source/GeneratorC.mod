@@ -74,7 +74,8 @@ TYPE
 		interface: BOOLEAN;
 		opt: Options;
 
-		expressionSemicolon: BOOLEAN
+		expressionSemicolon,
+		insideSizeOf       : BOOLEAN
 	END;
 
 	MemoryOut = RECORD(Stream.Out)
@@ -818,7 +819,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.Chr:
 				IF gen.opt.checkArith & (e1.value = NIL) THEN
 					Text.Str(gen, "o7c_chr(");
-					Factor(gen, e1);
+					Expression(gen, e1);
 					Text.Str(gen, ")")
 				ELSE
 					Text.Str(gen, "(char unsigned)");
@@ -1290,6 +1291,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, s2)
 			END
 		ELSE
+			IF ~gen.insideSizeOf THEN
+				Text.Str(gen, "(o7c_char *)")
+			END;
 			IF w.block.s[w.ofs] = Utf8.DQuote THEN
 				Text.ScreeningString(gen, w)
 			ELSE
@@ -1916,6 +1920,13 @@ BEGIN
 	END
 END ExprSameType;
 
+PROCEDURE ExprForSize(VAR gen: Generator; e: Ast.Expression);
+BEGIN
+	gen.insideSizeOf := TRUE;
+	Expression(gen, e);
+	gen.insideSizeOf := FALSE
+END ExprForSize;
+
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR gen: Generator; wi: Ast.WhileIf);
@@ -2066,13 +2077,13 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				;
 			ELSIF st.expr.type(Ast.Array).count # NIL THEN
 				Text.Str(gen, ", sizeof(");
-				Expression(gen, st.expr);
+				ExprForSize(gen, st.expr);
 				Text.Str(gen, ")")
 			ELSE
 				Text.Str(gen, ", (");
 				ArrayLen(gen, st.expr);
 				Text.Str(gen, ") * sizeof(");
-				Expression(gen, st.expr);
+				ExprForSize(gen, st.expr);
 				Text.Str(gen, "[0])")
 			END
 		END;
@@ -2737,7 +2748,9 @@ VAR out: MOut;
 
 		gen.fixedLen := gen.len;
 
-		gen.interface := interface
+		gen.interface := interface;
+
+		gen.insideSizeOf := FALSE
 	END Init;
 
 	PROCEDURE Includes(VAR gen: Generator);

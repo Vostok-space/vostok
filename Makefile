@@ -14,7 +14,7 @@ SANITIZE_TEST := $(SANITIZE)
 O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE
 #LD_OPT := -lgc
 LD_OPT :=
-WARN := -Wall -Wno-parentheses -Wno-pointer-sign
+WARN := -Wall -Wno-parentheses
 DEBUG := -g
 OPTIM := -O1
 CC_OPT:= $(WARN) $(OPTIM) $(DEBUG) $(O7C_OPT)
