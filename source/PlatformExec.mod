@@ -40,13 +40,12 @@ VAR ret: BOOLEAN;
 BEGIN
 	d[i] := "'";
 	INC(i);
-	ret := Copy(d, i, s, j);
+	ret := Copy(d, i, s, j) & (i < LEN(d) - 1);
 	IF ret THEN
-		d[i] := "'"; (* TODO*)
+		d[i] := "'";
 		INC(i);
 		d[i] := Utf8.Null
-	END;
-
+	END
 	RETURN s[j] = Utf8.Null
 END FullCopy;
 
@@ -73,7 +72,7 @@ END Add;
 PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 VAR ofs: INTEGER;
 BEGIN
-	ofs := 0;
+	ofs := 0
 	RETURN Copy(c.buf, c.len, arg, ofs)
 END AddClean;
 
@@ -104,7 +103,7 @@ VAR ret: BOOLEAN;
 	ofs: INTEGER;
 BEGIN
 	ofs := 0;
-	ret := Copy(c.buf, c.len, arg, ofs) & (c.len < LEN(c.buf) - 2);
+	ret := Copy(c.buf, c.len, arg, ofs) & (c.len < LEN(c.buf) - 1);
 	IF ret THEN
 		c.buf[c.len] := "'";
 		c.buf[c.len + 1] := Utf8.Null;
@@ -115,7 +114,7 @@ END LastPart;
 
 PROCEDURE Do*(VAR c: Code): INTEGER;
 BEGIN
-	ASSERT(c.len > 0);
+	ASSERT(c.len > 0)
 	RETURN OsExec.Do(c.buf)
 END Do;
 
