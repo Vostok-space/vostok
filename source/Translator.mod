@@ -64,8 +64,6 @@ TYPE
 		END
 	END;
 
-VAR started: BOOLEAN;
-
 PROCEDURE AstErrorMessage(code: INTEGER);
 	PROCEDURE O(s: ARRAY OF CHAR);
 	BEGIN
@@ -844,8 +842,6 @@ VAR cmd: ARRAY 1024 OF CHAR;
 	cmdLen: INTEGER;
 	ret: INTEGER;
 BEGIN
-	IF ~started THEN
-	started := TRUE;
 	Out.Open;
 	Log.Turn(FALSE);
 
@@ -871,10 +867,6 @@ BEGIN
 		CLI.SetExitCode(1);
 		ErrMessage(ret, cmd)
 	END
-	END
 END Start;
 
-BEGIN
-	started := FALSE;
-	Start
 END Translator.

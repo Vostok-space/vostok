@@ -65,13 +65,14 @@ typedef struct GeneratorC_Generator {
 	o7c_bool interface_;
 	struct GeneratorC_Options_s *opt;
 	o7c_bool expressionSemicolon;
+	o7c_bool insideSizeOf;
 } GeneratorC_Generator;
 extern o7c_tag_t GeneratorC_Generator_tag;
 
 
 extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void);
 
-extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module, struct GeneratorC_Options_s *opt);
+extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module, struct Ast_Call_s *cmd, struct GeneratorC_Options_s *opt);
 
 extern void GeneratorC_init(void);
 #endif

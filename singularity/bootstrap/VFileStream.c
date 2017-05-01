@@ -23,7 +23,7 @@ extern struct VFileStream_RIn *VFileStream_OpenIn(o7c_char name[/*len0*/], int n
 
 	O7C_NEW(&in_, VFileStream_RIn_tag);
 	if (in_ != NULL) {
-		file = CFiles_Open(name, name_len0, 0, "rb", 3);
+		file = CFiles_Open(name, name_len0, 0, (o7c_char *)"rb", 3);
 		if (file == NULL) {
 			in_ = NULL;
 		} else {
@@ -49,7 +49,7 @@ extern struct VFileStream_ROut *VFileStream_OpenOut(o7c_char name[/*len0*/], int
 
 	O7C_NEW(&out, VFileStream_ROut_tag);
 	if (out != NULL) {
-		file = CFiles_Open(name, name_len0, 0, "wb", 3);
+		file = CFiles_Open(name, name_len0, 0, (o7c_char *)"wb", 3);
 		if (file == NULL) {
 			out = NULL;
 		} else {

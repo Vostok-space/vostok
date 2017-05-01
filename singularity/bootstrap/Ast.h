@@ -105,6 +105,8 @@
 #define Ast_ErrByShouldBeNegative_cnst (-79)
 #define Ast_ErrForPossibleOverflow_cnst (-80)
 #define Ast_ErrVarUninitialized_cnst (-81)
+#define Ast_ErrDeclarationNotProc_cnst (-82)
+#define Ast_ErrProcNotCommandHaveParams_cnst (-83)
 #define Ast_ErrMin_cnst (-100)
 #define Ast_NoId_cnst (-1)
 #define Ast_IdInteger_cnst 0
@@ -645,6 +647,8 @@ extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, struct Ast_Parameter_s 
 extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam_s *currentFormalParam);
 
 extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des);
+
+extern int Ast_CommandGet(struct Ast_Call_s **call, struct Ast_RModule *m, o7c_char name[/*len0*/], int name_len0, int begin, int end);
 
 extern int Ast_IfNew(struct Ast_If_s **if_, struct Ast_RExpression *expr, struct Ast_RStatement *stats);
 

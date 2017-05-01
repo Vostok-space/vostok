@@ -36,11 +36,6 @@ static void Chars(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, o7c_char ch,
 	}
 }
 
-static void Indent(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int adder) {
-	(*gen).tabs = o7c_add((*gen).tabs, adder);
-	Chars(&(*gen), gen_tag, 0x09u, (*gen).tabs);
-}
-
 static void NewLine(struct TextGenerator_Out *gen, o7c_tag_t gen_tag) {
 	if ((*gen).isNewLine) {
 		(*gen).isNewLine = false;
@@ -57,12 +52,12 @@ extern void TextGenerator_Str(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, 
 extern void TextGenerator_StrLn(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, o7c_char str[/*len0*/], int str_len0) {
 	NewLine(&(*gen), gen_tag);
 	(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, str, str_len0, 0, o7c_sub(str_len0, 1)));
-	(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, "\x0A", 2, 0, 1));
+	(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, (o7c_char *)"\x0A", 2, 0, 1));
 	(*gen).isNewLine = true;
 }
 
 extern void TextGenerator_Ln(struct TextGenerator_Out *gen, o7c_tag_t gen_tag) {
-	(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, "\x0A", 2, 0, 1));
+	(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, (o7c_char *)"\x0A", 2, 0, 1));
 	(*gen).isNewLine = true;
 }
 
@@ -107,7 +102,7 @@ extern void TextGenerator_Data(struct TextGenerator_Out *g, o7c_tag_t g_tag, o7c
 
 extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, struct StringStore_String *str, o7c_tag_t str_tag) {
 	int i = O7C_INT_UNDEF, last = O7C_INT_UNDEF;
-	StringStore_Block block = NULL;
+	struct StringStore_Block_s *block = NULL;
 
 	NewLine(&(*gen), gen_tag);
 	block = (*str).block;
@@ -122,7 +117,7 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, o7c_tag
 		last = 0;
 	} else if (block->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == (char unsigned)'\\') {
 		(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, block->s, StringStore_BlockSize_cnst + 1, last, o7c_add(o7c_sub(i, last), 1)));
-		(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, "\\", 2, 0, 1));
+		(*gen).len = o7c_add((*gen).len, VDataStream_Write(&(*(*gen).out), NULL, (o7c_char *)"\\", 2, 0, 1));
 		i = o7c_add(i, 1);
 		last = i;
 	} else if (block->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
@@ -146,7 +141,7 @@ extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, 
 	i = sizeof(buf) / sizeof (buf[0]);
 	do {
 		i = o7c_sub(i, 1);
-		buf[o7c_ind(14, i)] = o7c_chr((o7c_add((int)(char unsigned)'0', o7c_mod(int_, 10))));
+		buf[o7c_ind(14, i)] = o7c_chr(o7c_add((int)(char unsigned)'0', o7c_mod(int_, 10)));
 		int_ = o7c_div(int_, 10);
 	} while (!(o7c_cmp(int_, 0) ==  0));
 	if (sign) {
@@ -158,7 +153,7 @@ extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, 
 
 extern void TextGenerator_Real(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, double real) {
 	NewLine(&(*gen), gen_tag);
-	TextGenerator_Str(&(*gen), gen_tag, "Real not implemented", 21);
+	TextGenerator_Str(&(*gen), gen_tag, (o7c_char *)"Real not implemented", 21);
 }
 
 extern void TextGenerator_init(void) {

@@ -53,9 +53,9 @@ extern void Log_Real(double x) {
 extern void Log_Bool(o7c_bool b) {
 	if (Log_state) {
 		if (b) {
-			Out_String("TRUE", 5);
+			Out_String((o7c_char *)"TRUE", 5);
 		} else {
-			Out_String("FALSE", 6);
+			Out_String((o7c_char *)"FALSE", 6);
 		}
 	}
 }

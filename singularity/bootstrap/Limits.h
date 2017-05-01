@@ -19,8 +19,10 @@
 
 
 #define Limits_IntegerMax_cnst 2147483647
+/* минимальное значение отброшено как усложняющее жизнь и для использования
+	   в качестве имитации недопустимого значения */
 #define Limits_IntegerMin_cnst (-2147483647)
-#define Limits_CharMax_cnst "\xFF"
+#define Limits_CharMax_cnst (o7c_char *)"\xFF"
 #define Limits_ByteMax_cnst 255
 #define Limits_SetMax_cnst 31
 

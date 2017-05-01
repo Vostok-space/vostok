@@ -40,23 +40,24 @@ static struct Ast_RExpression *(*expression)(struct Parser *p, o7c_tag_t p_tag, 
 static void AddError(struct Parser *p, o7c_tag_t p_tag, int err) {
 	if ((o7c_cmp((*p).errorsCount, 0) ==  0) || o7c_bl((*p).opt.multiErrors)) {
 		(*p).errorsCount = o7c_add((*p).errorsCount, 1);
-		Log_Str("AddError ", 10);
+		Log_Str((o7c_char *)"AddError ", 10);
 		Log_Int(err);
-		Log_Str(" at ", 5);
+		Log_Str((o7c_char *)" at ", 5);
 		Log_Int((*p).s.line);
-		Log_Str(":", 2);
+		Log_Str((o7c_char *)":", 2);
 		Log_Int(o7c_add((*p).s.column, o7c_mul((*p).s.tabs, 3)));
 		Log_Ln();
 		(*p).err = o7c_cmp(err, Parser_ErrAstBegin_cnst) >  0;
 		if ((*p).module != NULL) {
 			Ast_AddError((*p).module, err, (*p).s.line, (*p).s.column, (*p).s.tabs);
 		}
+		(*p).l = Scanner_EndOfFile_cnst;
 	}
 	if ((*p).opt.multiErrors) {
 		(*p).opt.printError(err);
-		Out_String(". ", 3);
+		Out_String((o7c_char *)". ", 3);
 		Out_Int(o7c_add((*p).s.line, 1), 2);
-		Out_String(":", 2);
+		Out_String((o7c_char *)":", 2);
 		Out_Int(o7c_add((*p).s.column, o7c_mul((*p).s.tabs, 3)), 2);
 		Out_Ln();
 	}
@@ -113,8 +114,8 @@ static void ExpectIdent(struct Parser *p, o7c_tag_t p_tag, int *begin, int *end,
 	}
 }
 
-static Ast_ExprSet Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
-static int Set_Element(Ast_ExprSet *e, struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+static struct Ast_ExprSet_s *Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
+static int Set_Element(struct Ast_ExprSet_s **e, struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RExpression *left = NULL;
 	int err = O7C_INT_UNDEF;
 
@@ -128,8 +129,8 @@ static int Set_Element(Ast_ExprSet *e, struct Parser *p, o7c_tag_t p_tag, struct
 	return err;
 }
 
-static Ast_ExprSet Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_ExprSet e = NULL, next = NULL;
+static struct Ast_ExprSet_s *Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_ExprSet_s *e = NULL, *next = NULL;
 	int err = O7C_INT_UNDEF;
 
 	assert(o7c_cmp((*p).l, Scanner_Brace3Open_cnst) ==  0);
@@ -145,6 +146,7 @@ static Ast_ExprSet Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclaratio
 		}
 		Expect(&(*p), p_tag, Scanner_Brace3Close_cnst, Parser_ErrExpectBrace3Close_cnst);
 	} else {
+		/* Пустое множество */
 		CheckAst(&(*p), p_tag, Ast_ExprSetNew(&e, NULL, NULL));
 		Scan(&(*p), p_tag);
 	}
@@ -154,7 +156,7 @@ static Ast_ExprSet Set(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclaratio
 static struct Ast_RDeclaration *DeclarationGet(struct Ast_RDeclarations *ds, struct Parser *p, o7c_tag_t p_tag) {
 	struct Ast_RDeclaration *d = NULL;
 
-	Log_StrLn("DeclarationGet", 15);
+	Log_StrLn((o7c_char *)"DeclarationGet", 15);
 	CheckAst(&(*p), p_tag, Ast_DeclarationGet(&d, ds, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd));
 	return d;
 }
@@ -175,7 +177,7 @@ static struct Ast_RDeclaration *ExpectDecl(struct Parser *p, o7c_tag_t p_tag, st
 static struct Ast_RDeclaration *Qualident(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RDeclaration *d = NULL;
 
-	Log_StrLn("Qualident", 10);
+	Log_StrLn((o7c_char *)"Qualident", 10);
 	d = ExpectDecl(&(*p), p_tag, ds);
 	if ((d != NULL) && (o7c_is(d, Ast_Import_s_tag))) {
 		Expect(&(*p), p_tag, Scanner_Dot_cnst, Parser_ErrExpectDot_cnst);
@@ -191,8 +193,8 @@ static struct Ast_RDeclaration *ExpectRecordExtend(struct Parser *p, o7c_tag_t p
 	return d;
 }
 
-static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
-static void Designator_SetSel(struct Ast_RSelector **prev, struct Ast_RSelector *sel, Ast_Designator des) {
+static struct Ast_Designator_s *Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
+static void Designator_SetSel(struct Ast_RSelector **prev, struct Ast_RSelector *sel, struct Ast_Designator_s *des) {
 	if ((*prev) == NULL) {
 		des->sel = sel;
 	} else {
@@ -201,14 +203,14 @@ static void Designator_SetSel(struct Ast_RSelector **prev, struct Ast_RSelector 
 	(*prev) = sel;
 }
 
-static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_Designator des = NULL;
+static struct Ast_Designator_s *Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_Designator_s *des = NULL;
 	struct Ast_RDeclaration *decl = NULL, *var_ = NULL;
 	struct Ast_RSelector *prev = NULL, *sel = NULL;
 	struct Ast_RType *type = NULL;
 	int nameBegin = O7C_INT_UNDEF, nameEnd = O7C_INT_UNDEF;
 
-	Log_StrLn("Designator", 11);
+	Log_StrLn((o7c_char *)"Designator", 11);
 	assert(o7c_cmp((*p).l, Scanner_Ident_cnst) ==  0);
 	decl = Qualident(&(*p), p_tag, ds);
 	des = NULL;
@@ -258,9 +260,9 @@ static Ast_Designator Designator(struct Parser *p, o7c_tag_t p_tag, struct Ast_R
 	return des;
 }
 
-static void CallParams(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_ExprCall e) {
-	Ast_Parameter par = NULL;
-	Ast_FormalParam fp = NULL;
+static void CallParams(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_ExprCall_s *e) {
+	struct Ast_Parameter_s *par = NULL;
+	struct Ast_FormalParam_s *fp = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_Brace1Open_cnst) ==  0);
 	Scan(&(*p), p_tag);
@@ -271,7 +273,7 @@ static void CallParams(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclaratio
 	}
 	if (!ScanIfEqual(&(*p), p_tag, Scanner_Brace1Close_cnst)) {
 		par = NULL;
-		(*p).varParam = o7c_bl(fp->isVar) || (o7c_cmp(e->designator->decl->_.id, Scanner_Len_cnst) ==  0);
+		(*p).varParam = (fp == NULL) || o7c_bl(fp->isVar) || (o7c_cmp(e->designator->decl->_.id, Scanner_Len_cnst) ==  0);
 		CheckAst(&(*p), p_tag, Ast_CallParamNew(e, &par, expression(&(*p), p_tag, ds), &fp));
 		(*p).varParam = false;
 		e->params = par;
@@ -285,8 +287,8 @@ static void CallParams(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclaratio
 	CheckAst(&(*p), p_tag, Ast_CallParamsEnd(e, fp));
 }
 
-static Ast_ExprCall ExprCall(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_Designator des) {
-	Ast_ExprCall e = NULL;
+static struct Ast_ExprCall_s *ExprCall(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_Designator_s *des) {
+	struct Ast_ExprCall_s *e = NULL;
 
 	CheckAst(&(*p), p_tag, Ast_ExprCallNew(&e, des));
 	CallParams(&(*p), p_tag, ds, e);
@@ -295,7 +297,7 @@ static Ast_ExprCall ExprCall(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDecl
 
 static struct Ast_RExpression *Factor(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
 static void Factor_Ident(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_RExpression **e) {
-	Ast_Designator des = NULL;
+	struct Ast_Designator_s *des = NULL;
 
 	des = Designator(&(*p), p_tag, ds);
 	if (o7c_cmp((*p).l, Scanner_Brace1Open_cnst) !=  0) {
@@ -314,8 +316,8 @@ static void Factor_Ident(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 	}
 }
 
-static Ast_ExprNegate Factor_Negate(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_ExprNegate neg = NULL;
+static struct Ast_ExprNegate_s *Factor_Negate(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_ExprNegate_s *neg = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_Negate_cnst) ==  0);
 	Scan(&(*p), p_tag);
@@ -326,7 +328,7 @@ static Ast_ExprNegate Factor_Negate(struct Parser *p, o7c_tag_t p_tag, struct As
 static struct Ast_RExpression *Factor(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RExpression *e = NULL;
 
-	Log_StrLn("Factor", 7);
+	Log_StrLn((o7c_char *)"Factor", 7);
 	if (o7c_cmp((*p).l, Scanner_Number_cnst) ==  0) {
 		if ((*p).s.isReal) {
 			e = (&(Ast_ExprRealNew((*p).s.real, (*p).module, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd))->_._._);
@@ -365,10 +367,10 @@ static struct Ast_RExpression *Factor(struct Parser *p, o7c_tag_t p_tag, struct 
 
 static struct Ast_RExpression *Term(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RExpression *e = NULL;
-	Ast_ExprTerm term = NULL;
+	struct Ast_ExprTerm_s *term = NULL;
 	int l = O7C_INT_UNDEF;
 
-	Log_StrLn("Term", 5);
+	Log_StrLn((o7c_char *)"Term", 5);
 	e = Factor(&(*p), p_tag, ds);
 	if ((o7c_cmp((*p).l, Scanner_MultFirst_cnst) >=  0) && (o7c_cmp((*p).l, Scanner_MultLast_cnst) <=  0)) {
 		l = (*p).l;
@@ -388,10 +390,10 @@ static struct Ast_RExpression *Term(struct Parser *p, o7c_tag_t p_tag, struct As
 
 static struct Ast_RExpression *Sum(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RExpression *e = NULL;
-	Ast_ExprSum sum = NULL;
+	struct Ast_ExprSum_s *sum = NULL;
 	int l = O7C_INT_UNDEF;
 
-	Log_StrLn("Sum", 4);
+	Log_StrLn((o7c_char *)"Sum", 4);
 	l = (*p).l;
 	if (o7c_in(l, ((1 << Scanner_Plus_cnst) | (1 << Scanner_Minus_cnst)))) {
 		Scan(&(*p), p_tag);
@@ -414,8 +416,8 @@ static struct Ast_RExpression *Sum(struct Parser *p, o7c_tag_t p_tag, struct Ast
 
 static struct Ast_RExpression *Expression(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_RExpression *expr = NULL;
-	Ast_ExprRelation e = NULL;
-	Ast_ExprIsExtension isExt = NULL;
+	struct Ast_ExprRelation_s *e = NULL;
+	struct Ast_ExprIsExtension_s *isExt = NULL;
 	int rel = O7C_INT_UNDEF;
 
 	expr = Sum(&(*p), p_tag, ds);
@@ -476,7 +478,7 @@ static int ExprToArrayLen(struct Parser *p, o7c_tag_t p_tag, struct Ast_RExpress
 		if (o7c_cmp(i, 0) <=  0) {
 			AddError(&(*p), p_tag, Parser_ErrArrayLenLess1_cnst);
 		} else {
-			Log_Str("Array Len ", 11);
+			Log_Str((o7c_char *)"Array Len ", 11);
 			Log_Int(i);
 			Log_Ln();
 		}
@@ -497,7 +499,7 @@ static struct Ast_RArray *Array(struct Parser *p, o7c_tag_t p_tag, struct Ast_RD
 	int i = O7C_INT_UNDEF, size = O7C_INT_UNDEF;
 	memset(&lens, 0, sizeof(lens));
 
-	Log_StrLn("Array", 6);
+	Log_StrLn((o7c_char *)"Array", 6);
 	assert(o7c_cmp((*p).l, Scanner_Array_cnst) ==  0);
 	Scan(&(*p), p_tag);
 	a = Ast_ArrayGet(NULL, Expression(&(*p), p_tag, ds));
@@ -580,10 +582,10 @@ static void Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds
 	}
 }
 
-static Ast_Record Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, int nameBegin, int nameEnd);
-static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, Ast_Record dsAdd, struct Ast_RDeclarations *dsTypes);
-static void Vars_Record_Declaration(struct Parser *p, o7c_tag_t p_tag, Ast_Record dsAdd, struct Ast_RDeclarations *dsTypes);
-static void Declaration_Vars_Record_Name(struct Ast_RVar **v, struct Parser *p, o7c_tag_t p_tag, Ast_Record ds) {
+static struct Ast_Record_s *Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, int nameBegin, int nameEnd);
+static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_Record_s *dsAdd, struct Ast_RDeclarations *dsTypes);
+static void Vars_Record_Declaration(struct Parser *p, o7c_tag_t p_tag, struct Ast_Record_s *dsAdd, struct Ast_RDeclarations *dsTypes);
+static void Declaration_Vars_Record_Name(struct Ast_RVar **v, struct Parser *p, o7c_tag_t p_tag, struct Ast_Record_s *ds) {
 	int begin = O7C_INT_UNDEF, end = O7C_INT_UNDEF;
 
 	ExpectIdent(&(*p), p_tag, &begin, &end, Parser_ErrExpectIdent_cnst);
@@ -591,7 +593,7 @@ static void Declaration_Vars_Record_Name(struct Ast_RVar **v, struct Parser *p, 
 	Mark(&(*p), p_tag, &(*v)->_);
 }
 
-static void Vars_Record_Declaration(struct Parser *p, o7c_tag_t p_tag, Ast_Record dsAdd, struct Ast_RDeclarations *dsTypes) {
+static void Vars_Record_Declaration(struct Parser *p, o7c_tag_t p_tag, struct Ast_Record_s *dsAdd, struct Ast_RDeclarations *dsTypes) {
 	struct Ast_RVar *var_ = NULL;
 	struct Ast_RDeclaration *d = NULL;
 	struct Ast_RType *typ = NULL;
@@ -609,7 +611,7 @@ static void Vars_Record_Declaration(struct Parser *p, o7c_tag_t p_tag, Ast_Recor
 	}
 }
 
-static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, Ast_Record dsAdd, struct Ast_RDeclarations *dsTypes) {
+static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, struct Ast_Record_s *dsAdd, struct Ast_RDeclarations *dsTypes) {
 	if (o7c_cmp((*p).l, Scanner_Ident_cnst) ==  0) {
 		Vars_Record_Declaration(&(*p), p_tag, dsAdd, dsTypes);
 		while (ScanIfEqual(&(*p), p_tag, Scanner_Semicolon_cnst)) {
@@ -623,8 +625,8 @@ static void Record_Vars(struct Parser *p, o7c_tag_t p_tag, Ast_Record dsAdd, str
 	}
 }
 
-static Ast_Record Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, int nameBegin, int nameEnd) {
-	Ast_Record rec = NULL, base = NULL;
+static struct Ast_Record_s *Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, int nameBegin, int nameEnd) {
+	struct Ast_Record_s *rec = NULL, *base = NULL;
 	struct Ast_RType *t = NULL;
 	struct Ast_RDeclaration *decl = NULL;
 
@@ -649,7 +651,7 @@ static Ast_Record Record(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 			Ast_RecordSetBase(rec, base);
 		}
 	} else {
-		rec->_._._.name.block = NULL;
+		StringStore_Undef(&rec->_._._.name, StringStore_String_tag);
 		rec->_._._.module = (*p).module;
 	}
 	Record_Vars(&(*p), p_tag, rec, ds);
@@ -680,6 +682,7 @@ static struct Ast_RPointer *Pointer(struct Parser *p, o7c_tag_t p_tag, struct As
 	} else if (o7c_cmp((*p).l, Scanner_Ident_cnst) ==  0) {
 		decl = Ast_DeclarationSearch(ds, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd);
 		if (decl == NULL) {
+			/* опережающее объявление записи */
 			typeDecl = (&(Ast_RecordNew(ds, NULL))->_._);
 			CheckAst(&(*p), p_tag, Ast_TypeAdd(ds, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd, &typeDecl));
 			assert(tp->_._._.next == &typeDecl->_);
@@ -834,9 +837,9 @@ static void Types(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *d
 	}
 }
 
-static Ast_If If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
-static Ast_If If_Branch(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_If if_ = NULL;
+static struct Ast_If_s *If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
+static struct Ast_If_s *If_Branch(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_If_s *if_ = NULL;
 
 	Scan(&(*p), p_tag);
 	CheckAst(&(*p), p_tag, Ast_IfNew(&if_, Expression(&(*p), p_tag, ds), NULL));
@@ -845,8 +848,8 @@ static Ast_If If_Branch(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarati
 	return if_;
 }
 
-static Ast_If If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_If if_ = NULL, else_ = NULL;
+static struct Ast_If_s *If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_If_s *if_ = NULL, *else_ = NULL;
 	struct Ast_RWhileIf *elsif = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_If_cnst) ==  0);
@@ -864,12 +867,12 @@ static Ast_If If(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds
 	return if_;
 }
 
-static Ast_Case Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
-static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_Case case_);
-static Ast_CaseLabel Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, struct Ast_RDeclarations *ds);
-static Ast_CaseLabel LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
-static Ast_CaseLabel LabelRange_LabelList_Element_Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_CaseLabel l = NULL;
+static struct Ast_Case_s *Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
+static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_Case_s *case_);
+static struct Ast_CaseLabel_s *Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, struct Ast_Case_s *case_, struct Ast_RDeclarations *ds);
+static struct Ast_CaseLabel_s *LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
+static struct Ast_CaseLabel_s *LabelRange_LabelList_Element_Case_Label(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_CaseLabel_s *l = NULL;
 
 	if ((o7c_cmp((*p).l, Scanner_Number_cnst) ==  0) && !(*p).s.isReal) {
 		CheckAst(&(*p), p_tag, Ast_CaseLabelNew(&l, Ast_IdInteger_cnst, (*p).s.integer));
@@ -887,8 +890,8 @@ static Ast_CaseLabel LabelRange_LabelList_Element_Case_Label(struct Parser *p, o
 	return l;
 }
 
-static Ast_CaseLabel LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_CaseLabel r = NULL;
+static struct Ast_CaseLabel_s *LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_CaseLabel_s *r = NULL;
 
 	r = LabelRange_LabelList_Element_Case_Label(&(*p), p_tag, ds);
 	if (o7c_cmp((*p).l, Scanner_Range_cnst) ==  0) {
@@ -898,10 +901,11 @@ static Ast_CaseLabel LabelList_Element_Case_LabelRange(struct Parser *p, o7c_tag
 	return r;
 }
 
-static Ast_CaseLabel Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, Ast_Case case_, struct Ast_RDeclarations *ds) {
-	Ast_CaseLabel first = NULL, last = NULL;
+static struct Ast_CaseLabel_s *Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, struct Ast_Case_s *case_, struct Ast_RDeclarations *ds) {
+	struct Ast_CaseLabel_s *first = NULL, *last = NULL;
 
 	first = LabelList_Element_Case_LabelRange(&(*p), p_tag, ds);
+	/* проверка 1-го диапазона */
 	CheckAst(&(*p), p_tag, Ast_CaseRangeListAdd(case_, NULL, first));
 	while (o7c_cmp((*p).l, Scanner_Comma_cnst) ==  0) {
 		Scan(&(*p), p_tag);
@@ -911,8 +915,8 @@ static Ast_CaseLabel Element_Case_LabelList(struct Parser *p, o7c_tag_t p_tag, A
 	return first;
 }
 
-static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_Case case_) {
-	Ast_CaseElement elem = NULL;
+static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_Case_s *case_) {
+	struct Ast_CaseElement_s *elem = NULL;
 
 	elem = Ast_CaseElementNew(Element_Case_LabelList(&(*p), p_tag, case_, ds));
 	Expect(&(*p), p_tag, Scanner_Colon_cnst, Parser_ErrExpectColon_cnst);
@@ -920,8 +924,8 @@ static void Case_Element(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 	CheckAst(&(*p), p_tag, Ast_CaseElementAdd(case_, elem));
 }
 
-static Ast_Case Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_Case case_ = NULL;
+static struct Ast_Case_s *Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_Case_s *case_ = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_Case_cnst) ==  0);
 	Scan(&(*p), p_tag);
@@ -935,8 +939,8 @@ static Ast_Case Case(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations
 	return case_;
 }
 
-static Ast_Repeat Repeat(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_Repeat r = NULL;
+static struct Ast_Repeat_s *Repeat(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_Repeat_s *r = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_Repeat_cnst) ==  0);
 	Scan(&(*p), p_tag);
@@ -946,14 +950,14 @@ static Ast_Repeat Repeat(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 	return r;
 }
 
-static Ast_For For(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_For f = NULL;
+static struct Ast_For_s *For(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_For_s *f = NULL;
 	struct Ast_RVar *v = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_For_cnst) ==  0);
 	Scan(&(*p), p_tag);
 	if (o7c_cmp((*p).l, Scanner_Ident_cnst) !=  0) {
-		AddError(&(*p), p_tag, o7c_add(Parser_ErrExpectIdent_cnst, o7c_mul(Ast_ForIteratorGet(&v, ds, "FORITERATOR", 12, 0, 10), 0)));
+		AddError(&(*p), p_tag, o7c_add(Parser_ErrExpectIdent_cnst, o7c_mul(Ast_ForIteratorGet(&v, ds, (o7c_char *)"FORITERATOR", 12, 0, 10), 0)));
 	} else {
 		CheckAst(&(*p), p_tag, Ast_ForIteratorGet(&v, ds, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd));
 	}
@@ -974,8 +978,8 @@ static Ast_For For(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *
 	return f;
 }
 
-static Ast_While While(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_While w = NULL, br = NULL;
+static struct Ast_While_s *While(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
+	struct Ast_While_s *w = NULL, *br = NULL;
 	struct Ast_RWhileIf *elsif = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_While_cnst) ==  0);
@@ -995,8 +999,8 @@ static Ast_While While(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclaratio
 	return w;
 }
 
-static Ast_Assign Assign(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_Designator des) {
-	Ast_Assign st = NULL;
+static struct Ast_Assign_s *Assign(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_Designator_s *des) {
+	struct Ast_Assign_s *st = NULL;
 
 	assert(o7c_cmp((*p).l, Scanner_Assign_cnst) ==  0);
 	Scan(&(*p), p_tag);
@@ -1004,8 +1008,8 @@ static Ast_Assign Assign(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarat
 	return st;
 }
 
-static Ast_Call Call(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, Ast_Designator des) {
-	Ast_Call st = NULL;
+static struct Ast_Call_s *Call(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds, struct Ast_Designator_s *des) {
+	struct Ast_Call_s *st = NULL;
 
 	CheckAst(&(*p), p_tag, Ast_CallNew(&st, des));
 	if (o7c_cmp((*p).l, Scanner_Brace1Open_cnst) ==  0) {
@@ -1022,7 +1026,7 @@ static o7c_bool NotEnd(int l) {
 
 static struct Ast_RStatement *Statements(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds);
 static struct Ast_RStatement *Statements_Statement(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
-	Ast_Designator des = NULL;
+	struct Ast_Designator_s *des = NULL;
 	struct Ast_RStatement *st = NULL;
 	int commentOfs = O7C_INT_UNDEF, commentEnd = O7C_INT_UNDEF;
 
@@ -1053,7 +1057,7 @@ static struct Ast_RStatement *Statements_Statement(struct Parser *p, o7c_tag_t p
 		Ast_NodeSetComment(&(*st)._, Ast_RStatement_tag, (*p).module, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, commentOfs, commentEnd);
 	}
 	if ((*p).err) {
-		Log_StrLn("Error", 6);
+		Log_StrLn((o7c_char *)"Error", 6);
 		while ((o7c_cmp((*p).l, Scanner_Semicolon_cnst) !=  0) && NotEnd((*p).l)) {
 			Scan(&(*p), p_tag);
 		}
@@ -1081,14 +1085,16 @@ static struct Ast_RStatement *Statements(struct Parser *p, o7c_tag_t p_tag, stru
 		AddError(&(*p), p_tag, Parser_ErrExpectSemicolon_cnst);
 		(*p).err = false;
 		last->next = Statements_Statement(&(*p), p_tag, ds);
-		last = last->next;
+		if (last->next != NULL) {
+			last = last->next;
+		}
 	} else break;
 	return stats;
 }
 
 static void Return(struct Parser *p, o7c_tag_t p_tag, struct Ast_RProcedure *proc) {
 	if (o7c_cmp((*p).l, Scanner_Return_cnst) ==  0) {
-		Log_StrLn("Return", 7);
+		Log_StrLn((o7c_char *)"Return", 7);
 		Scan(&(*p), p_tag);
 		CheckAst(&(*p), p_tag, Ast_ProcedureSetReturn(proc, Expression(&(*p), p_tag, &proc->_._)));
 		if (o7c_cmp((*p).l, Scanner_Semicolon_cnst) ==  0) {
@@ -1180,14 +1186,15 @@ static void Imports(struct Parser *p, o7c_tag_t p_tag) {
 }
 
 static void Module(struct Parser *p, o7c_tag_t p_tag) {
-	Log_StrLn("Module", 7);
+	Log_StrLn((o7c_char *)"Module", 7);
 	Scan(&(*p), p_tag);
 	if (o7c_cmp((*p).l, Scanner_Module_cnst) !=  0) {
-		(*p).l = Parser_ErrExpectModule_cnst;
+		(*p).module = Ast_ModuleNew((o7c_char *)"  ", 3, 0, 0);
+		AddError(&(*p), p_tag, Parser_ErrExpectModule_cnst);
 	} else {
 		Scan(&(*p), p_tag);
 		if (o7c_cmp((*p).l, Scanner_Ident_cnst) !=  0) {
-			(*p).module = Ast_ModuleNew(" ", 2, 0, 0);
+			(*p).module = Ast_ModuleNew((o7c_char *)"  ", 3, 0, 0);
 			AddError(&(*p), p_tag, Parser_ErrExpectIdent_cnst);
 		} else {
 			(*p).module = Ast_ModuleNew((*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd);

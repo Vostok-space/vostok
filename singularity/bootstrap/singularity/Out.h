@@ -15,9 +15,9 @@
 #if !defined(MODULE_Out_HEADER)
 #define MODULE_Out_HEADER 1
 
-extern void Out_String(char s[/*len*/], int s_len);
+extern void Out_String(char unsigned s[/*len*/], int s_len);
 
-extern void Out_Char(char ch);
+extern void Out_Char(char unsigned ch);
 
 extern void Out_Int(int x, int n);
 
@@ -25,8 +25,8 @@ extern void Out_Ln(void);
 
 extern void Out_Real(double x, int n);
 
-static O7C_INLINE void Out_Open(void) { ; }
+extern void Out_Open(void);
 
-static O7C_INLINE void Out_init(void) { ; }
+O7C_INLINE void Out_init(void) { ; }
 
 #endif

@@ -28,7 +28,7 @@ struct CFiles_Implement {
 };
 
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
-							   int ofs, char unsigned mode[/*len*/], int mode_len) {
+                               int ofs, char unsigned mode[/*len*/], int mode_len) {
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
@@ -51,7 +51,7 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-					   char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+                       char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(buf != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -60,7 +60,7 @@ extern int CFiles_Read(CFiles_File file,
 }
 
 extern int CFiles_Write(CFiles_File file,
-						char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+                        char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(buf_len - count >= ofs);
@@ -86,10 +86,10 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 	return pos >= 0;
 }
 
-extern int CFiles_Remove(char unsigned name[/*len*/], int name_len, int ofs) {
+extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int ofs) {
 	assert(ofs >= 0);
 	assert(name_len > 1);
-	return remove((char *)name) == 0;
+	return remove((char const *)name) == 0;
 }
 
 extern void CFiles_init(void) {

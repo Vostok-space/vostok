@@ -82,7 +82,7 @@ VAR
 		b.next := NIL
 	END AddBlock;
 BEGIN
-	ASSERT(ODD(LEN(s)));
+	ASSERT(ODD(LEN(s)) OR (j <= end));
 	ASSERT((j >= 0) & (j < LEN(s) - 1));
 	ASSERT((end >= 0) & (end < LEN(s) - 1));
 	b := store.last;

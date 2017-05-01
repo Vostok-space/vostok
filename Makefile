@@ -23,19 +23,10 @@ RM := trash
 
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
-result/o7c : $(patsubst source/%.mod,result/%.o, $(SRC))
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.o $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
-
-result/%.o : $(patsubst source/%.mod,result/%.c, $(SRC)) Makefile
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity $(basename $@).c -c -o $@
-
-result/%.c : $(SRC) $(O7CI)
+result/o7c : $(SRC) $(O7CI)
 	@mkdir -p result
-	$(O7CI) $(patsubst result/%.c,source/%.mod, $@) $(basename $@) source $(SING_O7)
-
-result/Translator.c : $(SRC) $(O7CI)
-	@mkdir -p result
-	$(O7CI) source/Translator.mod result/Translator.c source $(SING_O7)
+	$(O7CI) to-c Translator.Start result -m source -i $(SING_O7)
+	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
 result/bs-o7c:
 	@mkdir -p result

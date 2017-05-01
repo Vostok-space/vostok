@@ -22,7 +22,7 @@ extern void StringStore_LogLoopStr(o7c_char s[/*len0*/], int s_len0, int j, int 
 	}
 }
 
-extern void StringStore_UndefString(struct StringStore_String *s, o7c_tag_t s_tag) {
+extern void StringStore_Undef(struct StringStore_String *s, o7c_tag_t s_tag) {
 	(*s).block = NULL;
 	(*s).ofs =  - 1;
 }
@@ -45,7 +45,7 @@ extern void StringStore_Put(struct StringStore_Store *store, o7c_tag_t store_tag
 	struct StringStore_Block_s *b = NULL;
 	int i = O7C_INT_UNDEF;
 
-	assert((s_len0 % 2 == 1));
+	assert((s_len0 % 2 == 1) || (o7c_cmp(j, end) <=  0));
 	assert((o7c_cmp(j, 0) >=  0) && (o7c_cmp(j, o7c_sub(s_len0, 1)) <  0));
 	assert((o7c_cmp(end, 0) >=  0) && (o7c_cmp(end, o7c_sub(s_len0, 1)) <  0));
 	b = (*store).last;
@@ -107,12 +107,11 @@ extern o7c_bool StringStore_IsEqualToChars(struct StringStore_String *w, o7c_tag
 	int i = O7C_INT_UNDEF;
 	struct StringStore_Block_s *b = NULL;
 
-	assert((s_len0 % 2 == 1));
 	assert((o7c_cmp(j, 0) >=  0) && (o7c_cmp(j, o7c_sub(s_len0, 1)) <  0));
 	assert((o7c_cmp(end, 0) >=  0) && (o7c_cmp(end, o7c_sub(s_len0, 1)) <  0));
 	i = (*w).ofs;
 	b = (*w).block;
-	while (1) if (b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == s[o7c_ind(s_len0, j)]) {
+	while (1) if ((b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == s[o7c_ind(s_len0, j)]) && (o7c_cmp(j, end) !=  0)) {
 		i = o7c_add(i, 1);
 		j = o7c_mod((o7c_add(j, 1)), (o7c_sub(s_len0, 1)));
 	} else if (b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
@@ -139,13 +138,13 @@ extern o7c_bool StringStore_IsEqualToString(struct StringStore_String *w, o7c_ta
 	return b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == s[o7c_ind(s_len0, j)];
 }
 
-extern void StringStore_CopyToChars(o7c_char d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, o7c_tag_t w_tag) {
+extern o7c_bool StringStore_CopyToChars(o7c_char d[/*len0*/], int d_len0, int *dofs, struct StringStore_String *w, o7c_tag_t w_tag) {
 	struct StringStore_Block_s *b = NULL;
 	int i = O7C_INT_UNDEF;
 
 	b = (*w).block;
 	i = (*w).ofs;
-	while (1) if (b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] > 0x0Cu) {
+	while (1) if ((o7c_cmp((*dofs), o7c_sub(d_len0, 1)) <  0) && (b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] > 0x0Cu)) {
 		d[o7c_ind(d_len0, (*dofs))] = b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)];
 		(*dofs) = o7c_add((*dofs), 1);
 		i = o7c_add(i, 1);
@@ -155,6 +154,7 @@ extern void StringStore_CopyToChars(o7c_char d[/*len0*/], int d_len0, int *dofs,
 		i = 0;
 	} else break;
 	d[o7c_ind(d_len0, (*dofs))] = 0x00u;
+	return b->s[o7c_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u;
 }
 
 extern void StringStore_StoreInit(struct StringStore_Store *s, o7c_tag_t s_tag) {
@@ -187,7 +187,31 @@ extern o7c_bool StringStore_CopyChars(o7c_char dest[/*len0*/], int dest_len0, in
 		}
 	}
 	dest[o7c_ind(dest_len0, (*destOfs))] = 0x00u;
-	return o7c_bl(ret);
+	return ret;
+}
+
+extern o7c_bool StringStore_CopyCharsNull(o7c_char dest[/*len0*/], int dest_len0, int *destOfs, o7c_char src[/*len0*/], int src_len0) {
+	int i = O7C_INT_UNDEF;
+
+	assert(o7c_cmp((*destOfs), 0) >=  0);
+	i = 0;
+	while ((o7c_cmp((*destOfs), o7c_sub(dest_len0, 1)) <  0) && (src[o7c_ind(src_len0, i)] != 0x00u)) {
+		dest[o7c_ind(dest_len0, (*destOfs))] = src[o7c_ind(src_len0, i)];
+		(*destOfs) = o7c_add((*destOfs), 1);
+		i = o7c_add(i, 1);
+	}
+	dest[o7c_ind(dest_len0, (*destOfs))] = 0x00u;
+	return src[o7c_ind(src_len0, i)] == 0x00u;
+}
+
+extern int StringStore_CalcLen(o7c_char str[/*len0*/], int str_len0, int ofs) {
+	int i = O7C_INT_UNDEF;
+
+	i = ofs;
+	while (str[o7c_ind(str_len0, i)] != 0x00u) {
+		i = o7c_add(i, 1);
+	}
+	return o7c_sub(i, ofs);
 }
 
 /*	копирование содержимого строки, не включая завершающего 0 в поток вывода

@@ -92,6 +92,8 @@
 #define Scanner_Div_cnst 153
 #define Scanner_Mod_cnst 154
 #define Scanner_MultLast_cnst 154
+/* Предопределенные идентификаторы имеют стабильный порядок *)
+	(* TODO Их нужно вынести за рамки сканера */
 #define Scanner_PredefinedFirst_cnst 90
 #define Scanner_Abs_cnst 90
 #define Scanner_Asr_cnst 91
