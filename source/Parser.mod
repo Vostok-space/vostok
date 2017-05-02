@@ -145,7 +145,6 @@ BEGIN
 			Scanner.ResetComment(p.s)
 		END
 	ELSE
-		ASSERT(FALSE);
 		p.l := Scanner.EndOfFile
 	END
 END Scan;

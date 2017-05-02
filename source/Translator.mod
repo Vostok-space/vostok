@@ -337,20 +337,37 @@ BEGIN
 	END
 END ErrorMessage;
 
-PROCEDURE PrintErrors(err: Ast.Error);
+PROCEDURE PrintErrors(m: Ast.Module);
+CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
+	err: Ast.Error;
 BEGIN
-	Out.String("Найдены ошибки: "); Out.Ln;
 	i := 0;
-	WHILE err # NIL DO
-		INC(i);
-		Out.Int(i, 2); Out.String(") ");
-		ErrorMessage(err.code);
-		Out.String(" "); Out.Int(err.line + 1, 0);
-		Out.String(" : "); Out.Int(err.column + err.tabs * 3, 0);
-		Out.Ln;
+	WHILE m # NIL DO
+		err := m.errors;
+		WHILE (err # NIL) & (err.code = SkipError) DO
+			err := err.next
+		END;
+		IF err # NIL THEN
+			err := m.errors;
+			Out.String("Найдены ошибки в модуле ");
+			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
+			Out.String("  ");
+			WHILE err # NIL DO
+				IF err.code # SkipError THEN
+					INC(i);
 
-		err := err.next
+					Out.Int(i, 2); Out.String(") ");
+					ErrorMessage(err.code);
+					Out.String(" "); Out.Int(err.line + 1, 0);
+					Out.String(" : "); Out.Int(err.column + err.tabs * 3, 0);
+					Out.Ln
+				END;
+
+				err := err.next
+			END
+		END;
+		m := m.module
 	END
 END PrintErrors;
 
@@ -805,7 +822,7 @@ BEGIN
 			IF module = NIL THEN
 				ret := ErrParse
 			ELSIF module.errors # NIL THEN
-				PrintErrors(module.errors);
+				PrintErrors(mp.modules.first);
 				ret := ErrParse
 			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
 				ret := ErrTooLongOutName

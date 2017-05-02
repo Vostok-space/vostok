@@ -473,24 +473,43 @@ static void ErrorMessage(int code) {
 	}
 }
 
-static void PrintErrors(struct Ast_Error_s *err) {
-	int i = O7C_INT_UNDEF;
+static void PrintErrors(struct Ast_RModule *m) {
+#	define SkipError_cnst (Ast_ErrImportModuleWithError_cnst + Parser_ErrAstBegin_cnst)
 
-	Out_String((o7c_char *)"Найдены ошибки: ", 30);
-	Out_Ln();
+	int i = O7C_INT_UNDEF;
+	struct Ast_Error_s *err = NULL;
+
 	i = 0;
-	while (err != NULL) {
-		i = o7c_add(i, 1);
-		Out_Int(i, 2);
-		Out_String((o7c_char *)") ", 3);
-		ErrorMessage(err->code);
-		Out_String((o7c_char *)" ", 2);
-		Out_Int(o7c_add(err->line, 1), 0);
-		Out_String((o7c_char *)" : ", 4);
-		Out_Int(o7c_add(err->column, o7c_mul(err->tabs, 3)), 0);
-		Out_Ln();
-		err = err->next;
+	while (m != NULL) {
+		err = m->errors;
+		while ((err != NULL) && (o7c_cmp(err->code, SkipError_cnst) ==  0)) {
+			err = err->next;
+		}
+		if (err != NULL) {
+			err = m->errors;
+			Out_String((o7c_char *)"Найдены ошибки в модуле ", 45);
+			Out_String(m->_._.name.block->s, StringStore_BlockSize_cnst + 1);
+			Out_String((o7c_char *)": ", 3);
+			Out_Ln();
+			Out_String((o7c_char *)"  ", 3);
+			while (err != NULL) {
+				if (o7c_cmp(err->code, SkipError_cnst) !=  0) {
+					i = o7c_add(i, 1);
+					Out_Int(i, 2);
+					Out_String((o7c_char *)") ", 3);
+					ErrorMessage(err->code);
+					Out_String((o7c_char *)" ", 2);
+					Out_Int(o7c_add(err->line, 1), 0);
+					Out_String((o7c_char *)" : ", 4);
+					Out_Int(o7c_add(err->column, o7c_mul(err->tabs, 3)), 0);
+					Out_Ln();
+				}
+				err = err->next;
+			}
+		}
+		m = m->_._.module;
 	}
+#	undef SkipError_cnst
 }
 
 static o7c_bool IsEqualStr(o7c_char str[/*len0*/], int str_len0, int ofs, o7c_char sample[/*len0*/], int sample_len0) {
@@ -936,7 +955,7 @@ static int ToC(int res) {
 			if (module == NULL) {
 				ret = ErrParse_cnst;
 			} else if (module->errors != NULL) {
-				PrintErrors(module->errors);
+				PrintErrors(mp->modules.first);
 				ret = ErrParse_cnst;
 			} else if ((o7c_cmp(res, ResultRun_cnst) !=  0) && !CLI_Get(resPath, 1024, &resPathLen, 3)) {
 				ret = ErrTooLongOutName_cnst;
