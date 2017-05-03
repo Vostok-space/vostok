@@ -712,7 +712,8 @@ BEGIN
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
 		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0FFX:
-			lex := UnexpectChar
+			lex := UnexpectChar;
+			INC(s.ind)
 		| Utf8.TransmissionEnd:
 			lex := EndOfFile
 		| "0" .. "9":
@@ -749,7 +750,7 @@ BEGIN
 		s.lexEnd := s.ind;
 		s.lexLen := s.lexEnd + ORD(s.lexEnd < s.lexStart) * (LEN(s.buf) - 1)
 		          - s.lexStart;
-		ASSERT(s.lexLen > 0);
+		ASSERT((s.lexLen > 0) OR (lex = EndOfFile));
 		s.column := s.column + s.lexLen;
 		ASSERT(s.column >= 0)
 	END
