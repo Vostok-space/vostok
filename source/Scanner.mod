@@ -425,7 +425,7 @@ BEGIN
 	RETURN (buf[i] = Utf8.BackSpace) & (str[j] = 0X)
 END IsWordEqual;
 
-PROCEDURE CheckPredefined*(buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE CheckPredefined*(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR id: INTEGER;
 	save: CHAR;
 

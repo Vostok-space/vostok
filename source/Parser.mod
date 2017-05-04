@@ -1042,12 +1042,14 @@ END Repeat;
 PROCEDURE For(VAR p: Parser; ds: Ast.Declarations): Ast.For;
 VAR f: Ast.For;
 	v: Ast.Var;
+	errName: ARRAY 12 OF CHAR;
 BEGIN
 	ASSERT(p.l = Scanner.For);
 	Scan(p);
 	IF p.l # Scanner.Ident THEN
+		errName := "FORITERATOR";
 		AddError(p, ErrExpectIdent
-		          + Ast.ForIteratorGet(v, ds, "FORITERATOR", 0, 10) * 0
+		          + Ast.ForIteratorGet(v, ds, errName, 0, 10) * 0
 		)
 	ELSE
 		CheckAst(p, Ast.ForIteratorGet(v, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))

@@ -51,6 +51,7 @@ CONST
 	ErrIsExtVarNotRecord*           = -23;
 	ErrConstDeclExprNotConst*       = -24;
 	ErrAssignIncompatibleType*      = -25;
+	ErrAssignExpectVarParam*        = -84;(*TODO*)
 	ErrCallNotProc*                 = -26;
 	ErrCallExprWithoutReturn*       = -27;
 	ErrCallIgnoredReturn*           = ErrCallExprWithoutReturn - 1;
@@ -115,6 +116,7 @@ CONST
 
 	ErrDeclarationNotProc*          = -82;
 	ErrProcNotCommandHaveParams*    = -83;
+	                                (*-84*)
 
 	ErrMin*                         = -100;
 
@@ -878,7 +880,7 @@ BEGIN
 	RETURN r
 END RecordNew;
 
-PROCEDURE SearchPredefined(buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
+PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 	l: INTEGER;
 BEGIN
@@ -893,7 +895,7 @@ BEGIN
 	RETURN d
 END SearchPredefined;
 
-PROCEDURE DeclarationSearch*(ds: Declarations; buf: ARRAY OF CHAR;
+PROCEDURE DeclarationSearch*(ds: Declarations; VAR buf: ARRAY OF CHAR;
                              begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 BEGIN
@@ -927,7 +929,7 @@ BEGIN
 END DeclarationSearch;
 
 PROCEDURE DeclarationGet*(VAR d: Declaration; ds: Declarations;
-                          buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
@@ -948,7 +950,7 @@ BEGIN
 END DeclarationGet;
 
 PROCEDURE VarGet*(VAR v: Var; ds: Declarations;
-                  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                  VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 	d: Declaration;
 BEGIN
@@ -973,7 +975,7 @@ END VarGet;
 
 (* TODO итератор должен быть только локальным? *)
 PROCEDURE ForIteratorGet*(VAR v: Var; ds: Declarations;
-                          buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	err := VarGet(v, ds, buf, begin, end);
@@ -2557,10 +2559,12 @@ BEGIN
 	a.designator := des;
 	err := ErrNo;
 	IF des # NIL THEN
-		IF des.decl IS Var THEN
-			des.decl(Var).inited := TRUE
+		IF (des.decl IS Var) & IsChangeable(des.decl.module, des.decl(Var)) THEN
+			des.decl(Var).inited := TRUE;
+		ELSE
+			err := ErrAssignExpectVarParam
 		END;
-		IF (expr # NIL) & (des # NIL)
+		IF (expr # NIL)
 		 & ~CompatibleTypes(a.distance, des.type, expr.type)
 		 & ~CompatibleAsCharAndString(des.type, a.expr)
 		THEN

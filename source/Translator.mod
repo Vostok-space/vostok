@@ -117,6 +117,8 @@ BEGIN
 		O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
 	| Ast.ErrAssignIncompatibleType:
 		O("Несовместимые типы в присваивании")
+	| Ast.ErrAssignExpectVarParam:
+		O("Ожидалось изменяемое выражение в присваивании")
 	| Ast.ErrCallNotProc:
 		O("Вызов допустим только для процедур и переменных процедурного типа")
 	| Ast.ErrCallIgnoredReturn:
