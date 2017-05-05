@@ -481,7 +481,7 @@ PROCEDURE DeclInit(d: Declaration; ds: Declarations);
 BEGIN
 	IF ds = NIL THEN
 		d.module := NIL
-	ELSIF ds.module = NIL THEN
+	ELSIF (ds.module = NIL) & (ds IS Module) THEN
 		d.module := ds(Module)
 	ELSE
 		d.module := ds.module
