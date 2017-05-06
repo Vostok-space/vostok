@@ -284,12 +284,12 @@ BEGIN
 
 	ASSERT(p.l = Scanner.Ident);
 	decl := Qualident(p, ds);
-	des := NIL;
+	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
 		IF decl IS Ast.Var THEN
 			type := decl.type;
 			prev := NIL;
-			CheckAst(p, Ast.DesignatorNew(des, decl));
+
 			REPEAT
 				sel := NIL;
 				IF p.l = Scanner.Dot THEN
@@ -326,11 +326,10 @@ BEGIN
 			UNTIL sel = NIL;
 
 			des.type := type
-		ELSIF (decl IS Ast.Const) OR (decl IS Ast.GeneralProcedure)
-		   OR (decl.id = Ast.IdError)
+		ELSIF ~((decl IS Ast.Const) OR (decl IS Ast.GeneralProcedure)
+		     OR (decl.id = Ast.IdError)
+		       )
 		THEN
-			CheckAst(p, Ast.DesignatorNew(des, decl))
-		ELSE
 			AddError(p, ErrExpectDesignator)
 		END
 	END
