@@ -2135,10 +2135,11 @@ BEGIN
 	err := ErrNo;
 	IF (currentFormalParam = NIL)
 	 & (call.designator.decl IS PredefinedProcedure)
+	 (* TODO заменить на общую проверку корректности выбора параметра *)
 	 & (call.designator.decl.type.type # NIL)
 	THEN
 		v := call.params.expr.value;
-		IF v # NIL THEN
+		IF (v # NIL) & (call.designator.decl.id # Scanner.Len) THEN
 			CASE call.designator.decl.id OF
 			  Scanner.Abs:
 				IF v.type.id = IdReal THEN
@@ -2202,7 +2203,8 @@ BEGIN
 				call.value := v
 			END
 		ELSIF (call.designator.decl.id = Scanner.Len)
-			& (call.params.expr.type(Array).count # NIL)
+		     & (call.params.expr.type IS Array) (* TODO заменить на общую проверку корректности выбора параметра *)
+		     & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value
 		END

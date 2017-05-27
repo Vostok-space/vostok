@@ -1,5 +1,8 @@
 MODULE String;
 
+CONST S = "0123";
+      L = LEN(S);
+
 PROCEDURE Err;
 VAR s1, s2: ARRAY 11 OF CHAR;
 	i: INTEGER;
@@ -24,7 +27,11 @@ BEGIN
 	s2[10] := 0X;
 	ASSERT(s1 = s2);
 
-	ASSERT(s1 = "0123456789")
+	ASSERT(s1 = "0123456789");
+
+	ASSERT(LEN("1234") = 5);
+	ASSERT(5 = L);
+	ASSERT(LEN(S) = 5)
 END Go;
 
 END String.

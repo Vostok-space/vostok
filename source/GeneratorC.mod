@@ -693,19 +693,31 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, ")")
 			END Shift;
 
-			PROCEDURE Len(VAR gen: Generator; des: Ast.Designator);
+			PROCEDURE Len(VAR gen: Generator; e: Ast.Expression);
 			VAR sel: Ast.Selector;
 				i: INTEGER;
+				des: Ast.Designator;
+				count: Ast.Expression;
+				sizeof: BOOLEAN;
 			BEGIN
-				IF  (des.decl.type.id # Ast.IdArray)
-				OR ~(des.decl IS Ast.FormalParam) THEN
+				count := e.type(Ast.Array).count;
+				IF e IS Ast.Designator THEN
+					des := e(Ast.Designator);
+					sizeof := ~(e(Ast.Designator).decl IS Ast.Const)
+					         & ((des.decl.type.id # Ast.IdArray)
+					        OR ~(des.decl IS Ast.FormalParam)
+					           )
+				ELSE
+					sizeof := FALSE
+				END;
+				IF (count # NIL) & ~sizeof THEN
+					Expression(gen, count)
+				ELSIF sizeof THEN
 					Text.Str(gen, "sizeof(");
 					Designator(gen, des);
 					Text.Str(gen, ") / sizeof (");
 					Designator(gen, des);
 					Text.Str(gen, "[0])")
-				ELSIF des.type(Ast.Array).count # NIL THEN
-					Expression(gen, des.type(Ast.Array).count)
 				ELSE
 					GlobalName(gen, des.decl);
 					Text.Str(gen, "_len");
@@ -797,7 +809,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Factor(gen, e1);
 				Text.Str(gen, " % 2 == 1)")
 			| Scanner.Len:
-				Len(gen, e1(Ast.Designator))
+				Len(gen, e1)
 			| Scanner.Lsl:
 				Shift(gen, " << ", call.params)
 			| Scanner.Asr:
