@@ -675,6 +675,7 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		default:
 			if ((0 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 3) || (5 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 33) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 36) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 37) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 39) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 63) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 64) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 92) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 95) || ((*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] == 96) || (127 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 255)) {
 				lex = Scanner_UnexpectChar_cnst;
+				(*s).ind = o7c_add((*s).ind, 1);
 			} else if ((48 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 57)) {
 				lex = SNumber(&(*s), s_tag);
 			} else if ((97 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 122) || (65 <= (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] && (*s).buf[o7c_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)] <= 90)) {
@@ -684,7 +685,7 @@ extern int Scanner_Next(struct Scanner_Scanner *s, o7c_tag_t s_tag) {
 		}
 		(*s).lexEnd = (*s).ind;
 		(*s).lexLen = o7c_sub(o7c_add((*s).lexEnd, o7c_mul((int)(o7c_cmp((*s).lexEnd, (*s).lexStart) <  0), (sizeof((*s).buf) / sizeof ((*s).buf[0]) - 1))), (*s).lexStart);
-		assert(o7c_cmp((*s).lexLen, 0) >  0);
+		assert((o7c_cmp((*s).lexLen, 0) >  0) || (o7c_cmp(lex, Scanner_EndOfFile_cnst) ==  0));
 		(*s).column = o7c_add((*s).column, (*s).lexLen);
 		assert(o7c_cmp((*s).column, 0) >=  0);
 	}

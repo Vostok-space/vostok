@@ -96,7 +96,7 @@ extern void Ast_ModuleSetComment(struct Ast_RModule *m, o7c_char com[/*len0*/], 
 static void DeclInit(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds) {
 	if (ds == NULL) {
 		d->module = NULL;
-	} else if (ds->_.module == NULL) {
+	} else if ((ds->_.module == NULL) && (o7c_is(ds, Ast_RModule_tag))) {
 		d->module = O7C_GUARD(Ast_RModule, &ds);
 	} else {
 		d->module = ds->_.module;
@@ -1755,7 +1755,7 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 	err = Ast_ErrNo_cnst;
 	if ((currentFormalParam == NULL) && (o7c_is(call->designator->decl, Ast_PredefinedProcedure_s_tag)) && (call->designator->decl->type->_.type != NULL)) {
 		v = call->params->expr->value_;
-		if (v != NULL) {
+		if ((v != NULL) && (o7c_cmp(call->designator->decl->_.id, Scanner_Len_cnst) !=  0)) {
 			switch (call->designator->decl->_.id) {
 			case 90:
 				if (o7c_cmp(v->_.type->_._.id, Ast_IdReal_cnst) ==  0) {
@@ -1823,7 +1823,7 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 				abort();
 				break;
 			}
-		} else if ((o7c_cmp(call->designator->decl->_.id, Scanner_Len_cnst) ==  0) && (O7C_GUARD(Ast_RArray, &call->params->expr->type)->count != NULL)) {
+		} else if ((o7c_cmp(call->designator->decl->_.id, Scanner_Len_cnst) ==  0) && (o7c_is(call->params->expr->type, Ast_RArray_tag)) && (O7C_GUARD(Ast_RArray, &call->params->expr->type)->count != NULL)) {
 			call->_._.value_ = O7C_GUARD(Ast_RArray, &call->params->expr->type)->count->value_;
 		}
 	}
@@ -2165,10 +2165,12 @@ extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, 
 	(*a)->designator = des;
 	err = Ast_ErrNo_cnst;
 	if (des != NULL) {
-		if (o7c_is(des->decl, Ast_RVar_tag)) {
+		if ((o7c_is(des->decl, Ast_RVar_tag)) && Ast_IsChangeable(des->decl->module, O7C_GUARD(Ast_RVar, &des->decl))) {
 			O7C_GUARD(Ast_RVar, &des->decl)->inited = true;
+		} else {
+			err = Ast_ErrAssignExpectVarParam_cnst;
 		}
-		if ((expr != NULL) && (des != NULL) && !Ast_CompatibleTypes(&(*a)->distance, des->_._.type, expr->type) && !CompatibleAsCharAndString(des->_._.type, &(*a)->_.expr)) {
+		if ((expr != NULL) && !Ast_CompatibleTypes(&(*a)->distance, des->_._.type, expr->type) && !CompatibleAsCharAndString(des->_._.type, &(*a)->_.expr)) {
 			if (!CompatibleAsIntAndByte(des->_._.type, expr->type)) {
 				err = Ast_ErrAssignIncompatibleType_cnst;
 			} else if ((o7c_cmp(des->_._.type->_._.id, Ast_IdByte_cnst) ==  0) && (expr->value_ != NULL) && !Limits_InByteRange(O7C_GUARD(Ast_RExprInteger, &expr->value_)->int_)) {

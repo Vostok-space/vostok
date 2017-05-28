@@ -447,18 +447,28 @@ static void Predefined_Call_Expression_Shift(struct GeneratorC_Generator *gen, o
 	TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)")", 2);
 }
 
-static void Predefined_Call_Expression_Len(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_Designator_s *des) {
+static void Predefined_Call_Expression_Len(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, struct Ast_RExpression *e) {
 	struct Ast_RSelector *sel = NULL;
 	int i = O7C_INT_UNDEF;
+	struct Ast_Designator_s *des = NULL;
+	struct Ast_RExpression *count = NULL;
+	o7c_bool sizeof_ = O7C_BOOL_UNDEF;
 
-	if ((o7c_cmp(des->decl->type->_._.id, Ast_IdArray_cnst) !=  0) || !(o7c_is(des->decl, Ast_FormalParam_s_tag))) {
+	count = O7C_GUARD(Ast_RArray, &e->type)->count;
+	if (o7c_is(e, Ast_Designator_s_tag)) {
+		des = O7C_GUARD(Ast_Designator_s, &e);
+		sizeof_ = !(o7c_is(O7C_GUARD(Ast_Designator_s, &e)->decl, Ast_Const_s_tag)) && ((o7c_cmp(des->decl->type->_._.id, Ast_IdArray_cnst) !=  0) || !(o7c_is(des->decl, Ast_FormalParam_s_tag)));
+	} else {
+		sizeof_ = false;
+	}
+	if ((count != NULL) && !sizeof_) {
+		Expression(&(*gen), gen_tag, count);
+	} else if (sizeof_) {
 		TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)"sizeof(", 8);
 		Designator(&(*gen), gen_tag, des);
 		TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)") / sizeof (", 13);
 		Designator(&(*gen), gen_tag, des);
 		TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)"[0])", 5);
-	} else if (O7C_GUARD(Ast_RArray, &des->_._.type)->count != NULL) {
-		Expression(&(*gen), gen_tag, O7C_GUARD(Ast_RArray, &des->_._.type)->count);
 	} else {
 		GlobalName(&(*gen), gen_tag, des->decl);
 		TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)"_len", 5);
@@ -551,7 +561,7 @@ static void Call_Expression_Predefined(struct GeneratorC_Generator *gen, o7c_tag
 		TextGenerator_Str(&(*gen)._, gen_tag, (o7c_char *)" % 2 == 1)", 11);
 		break;
 	case 104:
-		Predefined_Call_Expression_Len(&(*gen), gen_tag, O7C_GUARD(Ast_Designator_s, &e1));
+		Predefined_Call_Expression_Len(&(*gen), gen_tag, e1);
 		break;
 	case 105:
 		Predefined_Call_Expression_Shift(&(*gen), gen_tag, (o7c_char *)" << ", 5, call->params);

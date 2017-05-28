@@ -213,12 +213,11 @@ static struct Ast_Designator_s *Designator(struct Parser *p, o7c_tag_t p_tag, st
 	Log_StrLn((o7c_char *)"Designator", 11);
 	assert(o7c_cmp((*p).l, Scanner_Ident_cnst) ==  0);
 	decl = Qualident(&(*p), p_tag, ds);
-	des = NULL;
+	CheckAst(&(*p), p_tag, Ast_DesignatorNew(&des, decl));
 	if (decl != NULL) {
 		if (o7c_is(decl, Ast_RVar_tag)) {
 			type = decl->type;
 			prev = NULL;
-			CheckAst(&(*p), p_tag, Ast_DesignatorNew(&des, decl));
 			do {
 				sel = NULL;
 				if (o7c_cmp((*p).l, Scanner_Dot_cnst) ==  0) {
@@ -251,9 +250,7 @@ static struct Ast_Designator_s *Designator(struct Parser *p, o7c_tag_t p_tag, st
 				Designator_SetSel(&prev, sel, des);
 			} while (!(sel == NULL));
 			des->_._.type = type;
-		} else if ((o7c_is(decl, Ast_Const_s_tag)) || (o7c_is(decl, Ast_RGeneralProcedure_tag)) || (o7c_cmp(decl->_.id, Ast_IdError_cnst) ==  0)) {
-			CheckAst(&(*p), p_tag, Ast_DesignatorNew(&des, decl));
-		} else {
+		} else if (!((o7c_is(decl, Ast_Const_s_tag)) || (o7c_is(decl, Ast_RGeneralProcedure_tag)) || (o7c_cmp(decl->_.id, Ast_IdError_cnst) ==  0))) {
 			AddError(&(*p), p_tag, Parser_ErrExpectDesignator_cnst);
 		}
 	}
@@ -953,11 +950,14 @@ static struct Ast_Repeat_s *Repeat(struct Parser *p, o7c_tag_t p_tag, struct Ast
 static struct Ast_For_s *For(struct Parser *p, o7c_tag_t p_tag, struct Ast_RDeclarations *ds) {
 	struct Ast_For_s *f = NULL;
 	struct Ast_RVar *v = NULL;
+	o7c_char errName[12] ;
+	memset(&errName, 0, sizeof(errName));
 
 	assert(o7c_cmp((*p).l, Scanner_For_cnst) ==  0);
 	Scan(&(*p), p_tag);
 	if (o7c_cmp((*p).l, Scanner_Ident_cnst) !=  0) {
-		AddError(&(*p), p_tag, o7c_add(Parser_ErrExpectIdent_cnst, o7c_mul(Ast_ForIteratorGet(&v, ds, (o7c_char *)"FORITERATOR", 12, 0, 10), 0)));
+		memcpy(errName, (o7c_char *)"FORITERATOR", sizeof("FORITERATOR"));
+		AddError(&(*p), p_tag, o7c_add(Parser_ErrExpectIdent_cnst, o7c_mul(Ast_ForIteratorGet(&v, ds, errName, 12, 0, 10), 0)));
 	} else {
 		CheckAst(&(*p), p_tag, Ast_ForIteratorGet(&v, ds, (*p).s.buf, Scanner_BlockSize_cnst * 2 + 1, (*p).s.lexStart, (*p).s.lexEnd));
 	}

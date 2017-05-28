@@ -149,6 +149,9 @@ static void AstErrorMessage(int code) {
 	case -25:
 		AstErrorMessage_O((o7c_char *)"Несовместимые типы в присваивании", 64);
 		break;
+	case -84:
+		AstErrorMessage_O((o7c_char *)"Ожидалось изменяемое выражение в присваивании", 87);
+		break;
 	case -26:
 		AstErrorMessage_O((o7c_char *)"Вызов допустим только для процедур и переменных процедурного типа", 123);
 		break;

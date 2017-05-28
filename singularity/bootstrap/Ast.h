@@ -50,6 +50,7 @@
 #define Ast_ErrIsExtVarNotRecord_cnst (-23)
 #define Ast_ErrConstDeclExprNotConst_cnst (-24)
 #define Ast_ErrAssignIncompatibleType_cnst (-25)
+#define Ast_ErrAssignExpectVarParam_cnst (-84)
 #define Ast_ErrCallNotProc_cnst (-26)
 #define Ast_ErrCallExprWithoutReturn_cnst (-27)
 #define Ast_ErrCallIgnoredReturn_cnst (-28)
