@@ -449,7 +449,11 @@ VAR
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
-	Strings.Put(m.store, w, s, begin, end)
+	IF begin >= 0 THEN
+		Strings.Put(m.store, w, s, begin, end)
+	ELSE
+		Strings.Put(m.store, w, "#error", 0, 5)
+	END
 END PutChars;
 
 PROCEDURE NodeInit(VAR n: Node);
@@ -636,9 +640,13 @@ END ImportAdd;
 PROCEDURE SearchName(d: Declaration;
                      buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 BEGIN
-	WHILE (d # NIL) & ~Strings.IsEqualToChars(d.name, buf, begin, end) DO
-		ASSERT(~(d IS Module));
-		d := d.next
+	IF begin < 0 THEN
+		d := NIL
+	ELSE
+		WHILE (d # NIL) & ~Strings.IsEqualToChars(d.name, buf, begin, end) DO
+			ASSERT(~(d IS Module));
+			d := d.next
+		END
 	END;
 	IF (d # NIL) & FALSE THEN
 		Log.Str("Найдено объявление ");
