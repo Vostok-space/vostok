@@ -226,7 +226,7 @@ BEGIN
 	| Ast.ErrForPossibleOverflow:
 		O("Во время итерации в FOR возможно переполнение")
 	| Ast.ErrVarUninitialized:
-		O("Использование не инициализированной переменной")
+		O("Использование неинициализированной переменной")
 	| Ast.ErrDeclarationNotProc:
 		O("Имя должно указывать на процедуру")
 	| Ast.ErrProcNotCommandHaveParams:

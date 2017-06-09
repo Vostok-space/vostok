@@ -90,6 +90,8 @@ TYPE
 			ofs, end: INTEGER
 		END;
 
+		inLoops, inConditions: INTEGER;
+
 		module: Ast.Module;
 		provider: Ast.Provider
 	END;
@@ -386,8 +388,10 @@ VAR e: Ast.Expression;
 				IF des.decl IS Ast.Var THEN
 					des.decl(Ast.Var).inited := TRUE (* TODO *)
 				END
-			ELSE
+			ELSIF p.inConditions = 0 THEN
 				CheckAst(p, Ast.CheckDesignatorAsValue(des))
+			ELSE
+				(* TODO вместо отмены проверки, отложить её до конце цикла *)
 			END;
 			e := des
 		ELSE
@@ -447,11 +451,16 @@ PROCEDURE Term(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 VAR e: Ast.Expression;
 	term: Ast.ExprTerm;
 	l: INTEGER;
+	inc: BOOLEAN;
 BEGIN
 	Log.StrLn("Term");
 	e := Factor(p, ds);
 	IF (p.l >= Scanner.MultFirst) & (p.l <= Scanner.MultLast) THEN
 		l := p.l;
+		inc := (l = Scanner.And) & (p.inLoops > 0);
+		IF inc THEN
+			INC(p.inConditions)
+		END;
 		Scan(p);
 		term := NIL;
 		CheckAst(p, Ast.ExprTermNew(term, e(Ast.Factor), l, Factor(p, ds)));
@@ -461,6 +470,10 @@ BEGIN
 			l := p.l;
 			Scan(p);
 			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds)))
+		END;
+		IF inc THEN
+			DEC(p.inConditions);
+			ASSERT(p.inConditions >= 0)
 		END
 	END
 	RETURN e
@@ -470,10 +483,12 @@ PROCEDURE Sum(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 VAR e: Ast.Expression;
 	sum: Ast.ExprSum;
 	l: INTEGER;
+	inc: BOOLEAN;
 BEGIN
 	Log.StrLn("Sum");
 	l := p.l;
 
+	inc := FALSE;
 	IF l IN {Scanner.Plus, Scanner.Minus} THEN
 		Scan(p);
 		CheckAst(p, Ast.ExprSumNew(sum, l, Term(p, ds)));
@@ -481,6 +496,10 @@ BEGIN
 	ELSE
 		e := Term(p, ds);
 		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
+			IF (p.l = Scanner.Or) & (p.inLoops > 0) THEN
+				INC(p.inConditions);
+				inc := TRUE
+			END;
 			CheckAst(p, Ast.ExprSumNew(sum, -1, e));
 			e := sum
 		END
@@ -489,6 +508,10 @@ BEGIN
 		l := p.l;
 		Scan(p);
 		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))
+	END;
+	IF inc THEN
+		DEC(p.inConditions);
+		ASSERT(p.inConditions >= 0)
 	END
 	RETURN e
 END Sum;
@@ -931,26 +954,33 @@ PROCEDURE If(VAR p: Parser; ds: Ast.Declarations): Ast.If;
 VAR if, else: Ast.If;
 	elsif: Ast.WhileIf;
 
-	PROCEDURE Branch(VAR p: Parser; ds: Ast.Declarations): Ast.If;
+	PROCEDURE Branch(VAR p: Parser; ds: Ast.Declarations; first: BOOLEAN): Ast.If;
 	VAR if: Ast.If;
 	BEGIN
 		Scan(p);
 		CheckAst(p, Ast.IfNew(if, Expression(p, ds), NIL));
 		Expect(p, Scanner.Then, ErrExpectThen);
+		IF first & (p.inLoops > 0) THEN
+			INC(p.inConditions)
+		END;
 		if.stats := statements(p, ds)
 		RETURN if
 	END Branch;
 BEGIN
 	ASSERT(p.l = Scanner.If);
-	if := Branch(p, ds);
+	if := Branch(p, ds, TRUE);
 	elsif := if;
 	WHILE p.l = Scanner.Elsif DO
-		elsif.elsif := Branch(p, ds);
+		elsif.elsif := Branch(p, ds, FALSE);
 		elsif := elsif.elsif
 	END;
 	IF ScanIfEqual(p, Scanner.Else) THEN
 		CheckAst(p, Ast.IfNew(else, NIL, statements(p, ds)));
 		elsif.elsif := else
+	END;
+	IF p.inLoops > 0 THEN
+		DEC(p.inConditions);
+		ASSERT(p.inConditions >= 0)
 	END;
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN if
@@ -1031,9 +1061,11 @@ PROCEDURE Repeat(VAR p: Parser; ds: Ast.Declarations): Ast.Repeat;
 VAR r: Ast.Repeat;
 BEGIN
 	ASSERT(p.l = Scanner.Repeat);
-	Scan(p);
-	CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
-	Expect(p, Scanner.Until, ErrExpectUntil);
+	INC(p.inLoops);
+		Scan(p);
+		CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
+		Expect(p, Scanner.Until, ErrExpectUntil);
+	DEC(p.inLoops);
 	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds)))
 	RETURN r
 END Repeat;
@@ -1064,9 +1096,11 @@ BEGIN
 		Scan(p);
 		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds)))
 	END;
-	Expect(p, Scanner.Do, ErrExpectDo);
-	f.stats := statements(p, ds);
-	Expect(p, Scanner.End, ErrExpectEnd)
+	INC(p.inLoops);
+		Expect(p, Scanner.Do, ErrExpectDo);
+		f.stats := statements(p, ds);
+		Expect(p, Scanner.End, ErrExpectEnd);
+		DEC(p.inLoops)
 	RETURN f
 END For;
 
@@ -1075,20 +1109,22 @@ VAR w, br: Ast.While;
 	elsif: Ast.WhileIf;
 BEGIN
 	ASSERT(p.l = Scanner.While);
-	Scan(p);
-	CheckAst(p, Ast.WhileNew(w, Expression(p, ds), NIL));
-	elsif := w;
-	Expect(p, Scanner.Do, ErrExpectDo);
-	w.stats := statements(p, ds);
-
-	WHILE ScanIfEqual(p, Scanner.Elsif) DO
-		CheckAst(p, Ast.WhileNew(br, Expression(p, ds), NIL));
-		elsif.elsif := br;
-		elsif := br;
+	INC(p.inLoops);
+		Scan(p);
+		CheckAst(p, Ast.WhileNew(w, Expression(p, ds), NIL));
+		elsif := w;
 		Expect(p, Scanner.Do, ErrExpectDo);
-		elsif.stats := statements(p, ds)
-	END;
-	Expect(p, Scanner.End, ErrExpectEnd)
+		w.stats := statements(p, ds);
+
+		WHILE ScanIfEqual(p, Scanner.Elsif) DO
+			CheckAst(p, Ast.WhileNew(br, Expression(p, ds), NIL));
+			elsif.elsif := br;
+			elsif := br;
+			Expect(p, Scanner.Do, ErrExpectDo);
+			elsif.stats := statements(p, ds)
+		END;
+		Expect(p, Scanner.End, ErrExpectEnd);
+	DEC(p.inLoops)
 	RETURN w
 END While;
 
@@ -1375,6 +1411,8 @@ BEGIN
 	p.module := NIL;
 	p.provider := prov;
 	p.varParam := FALSE;
+	p.inLoops := 0;
+	p.inConditions := 0;
 	Scanner.Init(p.s, in);
 
 	Module(p)
