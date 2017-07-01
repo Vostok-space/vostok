@@ -234,7 +234,7 @@ PROCEDURE ExpectDecl(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	IF p.l # Scanner.Ident THEN
-		d := NIL;
+		d := Ast.DeclErrorNew(ds);
 		AddError(p, ErrExpectIdent)
 	ELSE
 		d := DeclarationGet(ds, p);
@@ -249,7 +249,7 @@ BEGIN
 	Log.StrLn("Qualident");
 
 	d := ExpectDecl(p, ds);
-	IF (d # NIL) & (d IS Ast.Import) THEN
+	IF d IS Ast.Import THEN
 		Expect(p, Scanner.Dot, ErrExpectDot);
 		d := ExpectDecl(p, d(Ast.Import).module)
 	END

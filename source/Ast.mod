@@ -936,6 +936,15 @@ BEGIN
 	RETURN d
 END DeclarationSearch;
 
+PROCEDURE DeclErrorNew*(ds: Declarations): Declaration;
+VAR d: Declaration;
+BEGIN
+	NEW(d); d.id := IdError;
+	DeclInit(d, ds);
+	NEW(d.type); DeclInit(d.type, NIL); d.type.id := IdError
+	RETURN d
+END DeclErrorNew;
+
 PROCEDURE DeclarationGet*(VAR d: Declaration; ds: Declarations;
                           VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
@@ -943,9 +952,8 @@ BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
 		err := ErrDeclarationNotFound;
-		NEW(d); d.id := IdError;
-		DeclConnect(d, ds, buf, begin, end);
-		NEW(d.type); DeclInit(d.type, NIL); d.type.id := IdError
+		d := DeclErrorNew(ds);
+		DeclConnect(d, ds, buf, begin, end)
 	ELSIF ~d.mark & (d.module # NIL) & d.module.fixed THEN
 		err := ErrDeclarationIsPrivate
 	ELSIF (d IS Const) & ~d(Const).finished THEN
@@ -1167,11 +1175,13 @@ BEGIN
 	NEW(d); ExprInit(d, IdDesignator, NIL);
 	d.decl := decl;
 	d.sel := NIL;
-	d.type := decl.type;
-	IF decl IS Const THEN
-		d.value := decl(Const).expr.value
-	ELSIF decl IS GeneralProcedure THEN
-		d.type := decl(GeneralProcedure).header
+	IF decl # NIL THEN
+		d.type := decl.type;
+		IF decl IS Const THEN
+			d.value := decl(Const).expr.value
+		ELSIF decl IS GeneralProcedure THEN
+			d.type := decl(GeneralProcedure).header
+		END
 	END
 	RETURN ErrNo
 END DesignatorNew;
