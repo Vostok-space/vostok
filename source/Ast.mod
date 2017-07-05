@@ -115,8 +115,9 @@ CONST
 	ErrVarUninitialized*            = -81;
 
 	ErrDeclarationNotProc*          = -82;
-	ErrProcNotCommandHaveParams*    = -83;
+	ErrProcNotCommandHaveReturn*    = -83;
 	                                (*-84*)
+	ErrProcNotCommandHaveParams*    = -85;
 
 	ErrMin*                         = -100;
 
@@ -256,6 +257,8 @@ TYPE
 
 	RModule* = RECORD(RDeclarations)
 		store: Strings.Store;
+		provider: Provider;
+		script*: BOOLEAN;
 
 		import*: Import;
 
@@ -545,7 +548,7 @@ BEGIN
 	d.up := up
 END DeclarationsConnect;
 
-PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER): Module;
+PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER; p: Provider): Module;
 VAR m: Module;
 BEGIN
 	NEW(m);
@@ -558,13 +561,23 @@ BEGIN
 
 	PutChars(m, m.name, name, begin, end);
 	m.module := m;
+	m.provider := p;
+	m.script := FALSE;
 	Log.Str("Module "); Log.Str(m.name.block.s); Log.StrLn(" ")
 	RETURN m
 END ModuleNew;
 
-PROCEDURE GetModuleByName*(p: Provider; host: Module;
+PROCEDURE ScriptNew*(p: Provider): Module;
+VAR m: Module;
+BEGIN
+	m := ModuleNew("script ", 0, 6, p);
+	m.script := TRUE
+	RETURN m
+END ScriptNew;
+
+PROCEDURE GetModuleByName*(host: Module;
                            name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
-	RETURN p.get(p, host, name, ofs, end)
+	RETURN host.provider.get(host.provider, host, name, ofs, end)
 END GetModuleByName;
 
 PROCEDURE ModuleEnd*(m: Module): INTEGER;
@@ -575,15 +588,13 @@ BEGIN
 END ModuleEnd;
 
 PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
-                     nameOfs, nameEnd, realOfs, realEnd: INTEGER;
-                     p: Provider): INTEGER;
+                     nameOfs, nameEnd, realOfs, realEnd: INTEGER): INTEGER;
 VAR imp: Import;
 	i: Declaration;
 	err: INTEGER;
 
 	PROCEDURE Load(VAR res: Module; host: Module;
-	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER;
-	               p: Provider): INTEGER;
+	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
 	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
 		l, err: INTEGER;
 		ret: BOOLEAN;
@@ -593,9 +604,9 @@ VAR imp: Import;
 		ASSERT(ret);
 		(* TODO сделать загрузку модуля из символьного файла *)
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
-		res := GetModuleByName(p, host, buf, realOfs, realEnd);
+		res := GetModuleByName(host, buf, realOfs, realEnd);
 		IF res = NIL THEN
-			res := ModuleNew(buf, realOfs, realEnd);
+			res := ModuleNew(buf, realOfs, realEnd, host.provider);
 			err := ErrImportModuleNotFound
 		ELSIF res.errors # NIL THEN
 			err := ErrImportModuleWithError
@@ -632,7 +643,7 @@ BEGIN
 		IF m.import = NIL THEN
 			m.import := imp
 		END;
-		err := Load(imp.module, m, buf, realOfs, realEnd, p)
+		err := Load(imp.module, m, buf, realOfs, realEnd)
 	END
 	RETURN err
 END ImportAdd;
@@ -951,9 +962,15 @@ VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
-		err := ErrDeclarationNotFound;
-		d := DeclErrorNew(ds);
-		DeclConnect(d, ds, buf, begin, end)
+		IF ds.module.script THEN
+			err := ImportAdd(ds.module, buf, begin, end, begin, end);
+			d := ds.end
+		END;
+		IF d = NIL THEN
+			err := ErrDeclarationNotFound;
+			d := DeclErrorNew(ds);
+			DeclConnect(d, ds, buf, begin, end)
+		END
 	ELSIF ~d.mark & (d.module # NIL) & d.module.fixed THEN
 		err := ErrDeclarationIsPrivate
 	ELSIF (d IS Const) & ~d(Const).finished THEN
@@ -2249,8 +2266,8 @@ BEGIN
 	RETURN err
 END CallNew;
 
-PROCEDURE CommandGet*(VAR call: Call; m: Module;
-                      name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE CallBeginGet*(VAR call: Call; m: Module; acceptParams: BOOLEAN;
+                        name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR d: Declaration;
 	des: Designator;
 	err: INTEGER;
@@ -2262,8 +2279,9 @@ BEGIN
 		err := ErrDeclarationIsPrivate
 	ELSIF ~(d IS Procedure) THEN
 		err := ErrDeclarationNotProc
-	ELSIF (d(Procedure).header.params # NIL) OR (d(Procedure).header.type # NIL)
-	THEN
+	ELSIF d(Procedure).header.type # NIL THEN
+		err := ErrProcNotCommandHaveReturn
+	ELSIF d(Procedure).header.params # NIL THEN
 		err := ErrProcNotCommandHaveParams
 	ELSE
 		err := DesignatorNew(des, d);
@@ -2272,6 +2290,12 @@ BEGIN
 		END
 	END
 	RETURN err
+END CallBeginGet;
+
+PROCEDURE CommandGet*(VAR call: Call; m: Module;
+                      name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+BEGIN
+	RETURN CallBeginGet(call, m, FALSE, name, begin, end)
 END CommandGet;
 
 PROCEDURE IfNew*(VAR if: If; expr: Expression; stats: Statement): INTEGER;

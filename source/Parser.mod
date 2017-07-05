@@ -1176,22 +1176,22 @@ VAR stats, last: Ast.Statement;
 		THEN
 			commentOfs := -1
 		END;
-		IF p.l = Scanner.Ident THEN
+		IF p.l = Scanner.Ident      THEN
 			des := Designator(p, ds);
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
 			ELSE
 				st := Call(p, ds, des)
 			END
-		ELSIF p.l = Scanner.If		THEN
+		ELSIF p.l = Scanner.If      THEN
 			st := If(p, ds)
-		ELSIF p.l = Scanner.Case	THEN
+		ELSIF p.l = Scanner.Case    THEN
 			st := Case(p, ds)
-		ELSIF p.l = Scanner.Repeat	THEN
+		ELSIF p.l = Scanner.Repeat  THEN
 			st := Repeat(p, ds)
-		ELSIF p.l = Scanner.For		THEN
+		ELSIF p.l = Scanner.For     THEN
 			st := For(p, ds)
-		ELSIF p.l = Scanner.While	THEN
+		ELSIF p.l = Scanner.While   THEN
 			st := While(p, ds)
 		ELSE
 			st := NIL
@@ -1222,7 +1222,7 @@ BEGIN
 				last := last.next
 			END
 		END
-	ELSIF NotEnd(p.l) DO
+	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
 		p.err := FALSE;
 		last.next := Statement(p, ds);
@@ -1321,9 +1321,8 @@ BEGIN
 			realEnd := nameEnd
 		END;
 		IF ~p.err & (realOfs >= 0) THEN
-			CheckAst(p,
-			         Ast.ImportAdd(p.module, p.s.buf, nameOfs, nameEnd,
-			                       realOfs, realEnd, p.provider)
+			CheckAst(p, Ast.ImportAdd(p.module, p.s.buf, nameOfs, nameEnd,
+			                          realOfs, realEnd)
 			)
 		ELSE
 			p.err := FALSE;
@@ -1339,21 +1338,21 @@ BEGIN
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
 END Imports;
 
-PROCEDURE Module(VAR p: Parser);
+PROCEDURE Module(VAR p: Parser; prov: Ast.Provider);
 BEGIN
 	Log.StrLn("Module");
 
 	Scan(p);
 	IF p.l # Scanner.Module THEN
-		p.module := Ast.ModuleNew("  ", 0, 0);
+		p.module := Ast.ModuleNew("  ", 0, 0, prov);
 		AddError(p, ErrExpectModule)
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
-			p.module := Ast.ModuleNew("  ", 0, 0);
+			p.module := Ast.ModuleNew("  ", 0, 0, prov);
 			AddError(p, ErrExpectIdent)
 		ELSE
-			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd);
+			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd, prov);
 			IF TakeComment(p) THEN
 				Ast.ModuleSetComment(p.module, p.s.buf,
 				                     p.comment.ofs, p.comment.end)
@@ -1399,25 +1398,45 @@ BEGIN
 	opt.printError := Blank
 END DefaultOptions;
 
-PROCEDURE Parse*(in: Stream.PIn; prov: Ast.Provider; opt: Options): Ast.Module;
-VAR p: Parser;
+PROCEDURE ParserInit(VAR p: Parser; in: Stream.PIn; scr: ARRAY OF CHAR; opt: Options);
+VAR ret: BOOLEAN;
 BEGIN
-	ASSERT(in # NIL);
-	ASSERT(prov # NIL);
 	V.Init(p);
 	p.opt := opt;
 	p.err := FALSE;
 	p.errorsCount := 0;
 	p.module := NIL;
-	p.provider := prov;
+	p.provider := NIL;
 	p.varParam := FALSE;
 	p.inLoops := 0;
 	p.inConditions := 0;
-	Scanner.Init(p.s, in);
+	IF in # NIL THEN
+		Scanner.Init(p.s, in)
+	ELSE
+		ret := Scanner.InitByString(p.s, scr);
+		ASSERT(ret)
+	END
+END ParserInit;
 
-	Module(p)
+PROCEDURE Parse*(in: Stream.PIn; prov: Ast.Provider; opt: Options): Ast.Module;
+VAR p: Parser;
+BEGIN
+	ASSERT(in # NIL);
+	ParserInit(p, in, "", opt);
+	Module(p, prov)
 	RETURN p.module
 END Parse;
+
+PROCEDURE Script*(in: ARRAY OF CHAR; prov: Ast.Provider; opt: Options): Ast.Module;
+VAR p: Parser;
+BEGIN
+	ParserInit(p, NIL, in, opt);
+	p.module := Ast.ScriptNew(prov);
+	Scan(p);
+	p.module.stats := Statements(p, p.module);
+	ASSERT(p.module.stats # NIL)
+	RETURN p.module
+END Script;
 
 BEGIN
 	declarations := Declarations;

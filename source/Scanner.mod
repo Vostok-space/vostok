@@ -21,6 +21,7 @@ IMPORT
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
+	Strings := StringStore,
 	Log;
 
 CONST
@@ -167,21 +168,37 @@ TYPE
 	Suit = PROCEDURE(ch: CHAR): BOOLEAN;
 	SuitDigit = PROCEDURE(ch: CHAR): INTEGER;
 
-PROCEDURE Init*(VAR s: Scanner; in: Stream.PIn);
+PROCEDURE PreInit(VAR s: Scanner);
 BEGIN
-	ASSERT(in # NIL);
-
 	V.Init(s);
 	s.column := 0;
 	s.tabs := 0;
 	s.line := 0;
+	s.commentOfs := -1
+END PreInit;
+
+PROCEDURE Init*(VAR s: Scanner; in: Stream.PIn);
+BEGIN
+	ASSERT(in # NIL);
+	PreInit(s);
 	s.in := in;
 	s.ind := LEN(s.buf) - 1;
 	s.buf[0] := NewPage;
 	s.buf[s.ind] := NewPage;
-
-	s.commentOfs := -1
 END Init;
+
+PROCEDURE InitByString*(VAR s: Scanner; in: ARRAY OF CHAR): BOOLEAN;
+VAR len: INTEGER;
+BEGIN
+	PreInit(s);
+	s.in := NIL;
+	s.ind := 0;
+	s.buf[0] := " ";
+
+	len := 1;
+	RETURN Strings.CopyCharsNull(s.buf, len, in)
+END InitByString;
+
 
 PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
 VAR size: INTEGER;

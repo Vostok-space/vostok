@@ -2749,7 +2749,7 @@ BEGIN
 END TagsInit;
 
 PROCEDURE Generate*(interface, implementation: Stream.POut;
-                    module: Ast.Module; cmd: Ast.Call; opt: Options);
+                    module: Ast.Module; cmd: Ast.Statement; opt: Options);
 VAR out: MOut;
 
 	PROCEDURE Init(VAR gen: Generator; out: Stream.POut;
@@ -2829,7 +2829,7 @@ VAR out: MOut;
 		END
 	END ModuleInit;
 
-	PROCEDURE Main(VAR gen: Generator; module: Ast.Module; cmd: Ast.Call);
+	PROCEDURE Main(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
 		Text.StrOpen(gen, "extern int main(int argc, char **argv) {");
 		Text.StrLn(gen, "o7c_init(argc, argv);");
@@ -2838,8 +2838,9 @@ VAR out: MOut;
 		IF module.stats # NIL THEN
 			Statements(gen, module.stats)
 		END;
-		IF cmd # NIL THEN
-			Statement(gen, cmd)
+		WHILE cmd # NIL DO
+			Statement(gen, cmd);
+			cmd := cmd.next
 		END;
 		Text.StrLn(gen, "return o7c_exit_code;");
 		Text.StrLnClose(gen, "}")

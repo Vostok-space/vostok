@@ -20,6 +20,7 @@ IMPORT
 	Log,
 	Out,
 	CLI,
+	Stream := VDataStream,
 	File := VFileStream,
 	Utf8,
 	Strings := StringStore,
@@ -229,6 +230,8 @@ BEGIN
 		O("Использование неинициализированной переменной")
 	| Ast.ErrDeclarationNotProc:
 		O("Имя должно указывать на процедуру")
+	| Ast.ErrProcNotCommandHaveReturn:
+		O("В качестве команды может выступать только процедура без возращаемого значения")
 	| Ast.ErrProcNotCommandHaveParams:
 		O("В качестве команды может выступать только процедура без параметров")
 	END
@@ -717,7 +720,7 @@ END GetTempOutC;
 
 PROCEDURE ToC(res: INTEGER): INTEGER;
 VAR ret: INTEGER;
-	src: ARRAY 1024 OF CHAR;
+	src: ARRAY 65536 OF CHAR;
 	srcLen, srcNameEnd: INTEGER;
 	resPath: ARRAY 1024 OF CHAR;
 	resPathLen: INTEGER;
@@ -727,6 +730,7 @@ VAR ret: INTEGER;
 	opt: GeneratorC.Options;
 	arg: INTEGER;
 	call: Ast.Call;
+	script: BOOLEAN;
 
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR bin: ARRAY OF CHAR): INTEGER;
@@ -793,12 +797,33 @@ VAR ret: INTEGER;
 		RETURN ret
 	END Run;
 
-	PROCEDURE ParseCommand(src: ARRAY OF CHAR): INTEGER;
-	VAR i: INTEGER;
+	PROCEDURE ParseCommand(src: ARRAY OF CHAR; VAR script: BOOLEAN): INTEGER;
+	VAR i, j: INTEGER;
+
+		PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
+		BEGIN
+			WHILE (src[j] = " ") OR (src[j] = Utf8.Tab) DO
+				INC(j)
+			END
+		END Empty;
 	BEGIN
 		i := 0;
 		WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
 			INC(i)
+		END;
+		IF src[i] = "." THEN
+			j := i + 1;
+			Empty(src, j);
+			WHILE (src[j] >= "a") & (src[j] <= "z")
+			   OR (src[j] >= "A") & (src[j] <= "Z")
+			   OR (src[j] >= "0") & (src[j] <= "9")
+			DO
+				INC(j)
+			END;
+			Empty(src, j);
+			script := src[j] # Utf8.Null
+		ELSE
+			script := FALSE
 		END
 		RETURN i
 	END ParseCommand;
@@ -817,8 +842,12 @@ BEGIN
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
 		ret := CopyPath(mp.path, mp.sing, cDirs, cc, arg);
 		IF ret = ErrNo THEN
-			srcNameEnd := ParseCommand(src);
-			module := GetModule(mp, NIL, src, 0, srcNameEnd);
+			srcNameEnd := ParseCommand(src, script);
+			IF script THEN
+				module := Parser.Script(src, mp, mp.opt)
+			ELSE
+				module := GetModule(mp, NIL, src, 0, srcNameEnd)
+			END;
 			resPathLen := 0;
 			resPath[0] := Utf8.Null;
 			IF module = NIL THEN
@@ -829,7 +858,7 @@ BEGIN
 			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
 				ret := ErrTooLongOutName
 			ELSE
-				IF srcNameEnd < srcLen - 1 THEN
+				IF ~script & (srcNameEnd < srcLen - 1) THEN
 					ret := Ast.CommandGet(call, module,
 					                      src, srcNameEnd + 1, srcLen - 1)
 				ELSE

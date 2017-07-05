@@ -8,4 +8,10 @@ BEGIN
 	Out.Ln
 END Go;
 
+PROCEDURE Stop*();
+BEGIN
+	Out.String("Bye");
+	Out.Ln
+END Stop;
+
 END Hello.
