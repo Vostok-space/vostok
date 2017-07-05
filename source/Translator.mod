@@ -354,14 +354,14 @@ BEGIN
 			err := err.next
 		END;
 		IF err # NIL THEN
-			err := m.errors;
 			Out.String("Найдены ошибки в модуле ");
 			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
-			Out.String("  ");
+			err := m.errors;
 			WHILE err # NIL DO
 				IF err.code # SkipError THEN
 					INC(i);
 
+					Out.String("  ");
 					Out.Int(i, 2); Out.String(") ");
 					ErrorMessage(err.code);
 					Out.String(" "); Out.Int(err.line + 1, 0);
@@ -844,7 +844,8 @@ BEGIN
 		IF ret = ErrNo THEN
 			srcNameEnd := ParseCommand(src, script);
 			IF script THEN
-				module := Parser.Script(src, mp, mp.opt)
+				module := Parser.Script(src, mp, mp.opt);
+				AddModule(mp, module, FALSE)
 			ELSE
 				module := GetModule(mp, NIL, src, 0, srcNameEnd)
 			END;
