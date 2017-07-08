@@ -866,7 +866,7 @@ BEGIN
 					call := NIL
 				END;
 				IF ret # Ast.ErrNo THEN
-					AstErrorMessage(ret);
+					AstErrorMessage(ret); Out.Ln;
 					ret := ErrParse
 				ELSE
 					opt := GeneratorC.DefaultOptions();
