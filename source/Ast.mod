@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log,
+	Log, Out,
 	Utf8,
 	Limits,
 	V,
@@ -947,12 +947,20 @@ BEGIN
 	RETURN d
 END DeclarationSearch;
 
+PROCEDURE TypeErrorNew(): Type;
+VAR type: Type;
+BEGIN
+	NEW(type); DeclInit(type, NIL);
+	type.id := IdError
+	RETURN type
+END TypeErrorNew;
+
 PROCEDURE DeclErrorNew*(ds: Declarations): Declaration;
 VAR d: Declaration;
 BEGIN
 	NEW(d); d.id := IdError;
 	DeclInit(d, ds);
-	NEW(d.type); DeclInit(d.type, NIL); d.type.id := IdError
+	d.type := TypeErrorNew()
 	RETURN d
 END DeclErrorNew;
 
@@ -1108,7 +1116,10 @@ BEGIN
 END ExprNilNew;
 
 PROCEDURE ExprErrNew*(): Expression;
-	RETURN ExprNilNew() (* TODO *)
+VAR e: Expression;
+BEGIN
+	NEW(e); ExprInit(e, IdError, TypeErrorNew());
+	RETURN e
 END ExprErrNew;
 
 PROCEDURE ExprBracesNew*(expr: Expression): ExprBraces;
@@ -1457,11 +1468,11 @@ BEGIN
 		 & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
 		THEN
 			CASE t1.id OF
-			  IdArray	: comp := CompatibleTypes(distance, t1.type, t2.type)
-			| IdPointer	: comp := (t1.type = NIL) OR (t2.type = NIL)
+			  IdArray   : comp := CompatibleTypes(distance, t1.type, t2.type)
+			| IdPointer : comp := (t1.type = NIL) OR (t2.type = NIL)
 			                   OR IsRecordExtension(distance, t1.type(Record),
 			                                                  t2.type(Record))
-			| IdRecord	: comp := IsRecordExtension(distance, t1(Record), t2(Record))
+			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
 			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 			END
 		END
@@ -2087,7 +2098,7 @@ VAR err, distance: INTEGER;
 				comp := tp.id = IdArray
 			ELSE
 				comp := (id = Scanner.Ord)
-				      & (tp.id IN {IdInteger, IdChar, IdSet, IdBoolean})
+				      & (tp.id IN {IdChar, IdSet, IdBoolean})
 			END
 		END
 		RETURN comp
@@ -2219,17 +2230,15 @@ BEGIN
 				ELSIF v IS ExprString THEN
 					IF v(ExprString).int > -1 THEN
 						call.value := ExprIntegerNew(v(ExprString).int)
-					ELSE
-						(* TODO *) ASSERT(FALSE)
 					END
 				ELSIF v.type.id = IdBoolean THEN
 					call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
 				ELSIF v.type.id = IdSet THEN
 					call.value := ExprIntegerNew(ORD(v(ExprSet).set))
-				ELSE
+				ELSIF v.type.id # IdError THEN
 					Log.Str("Неправильный id типа = ");
 					Log.Int(v.type.id); Log.Ln;
-					ASSERT(FALSE)
+					Log.Int(v.id); Log.Ln
 				END
 			| Scanner.Chr:
 				IF ~Limits.InCharRange(v(ExprInteger).int) THEN
