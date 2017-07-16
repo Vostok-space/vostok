@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log, Out,
+	Log,
 	Utf8,
 	Limits,
 	V,
@@ -1469,7 +1469,8 @@ BEGIN
 		THEN
 			CASE t1.id OF
 			  IdArray   : comp := CompatibleTypes(distance, t1.type, t2.type)
-			| IdPointer : comp := (t1.type = NIL) OR (t2.type = NIL)
+			| IdPointer : comp := (t1.type = t2.type)
+			                   OR (t1.type = NIL) OR (t2.type = NIL) (* TODO *)
 			                   OR IsRecordExtension(distance, t1.type(Record),
 			                                                  t2.type(Record))
 			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
