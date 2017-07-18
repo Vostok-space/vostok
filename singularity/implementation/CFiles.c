@@ -72,7 +72,8 @@ extern int CFiles_Write(CFiles_File file,
 }
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
-	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
+	assert((gibs >= 0) && ((INT_MAX < LONG_MAX / CFiles_GiB_cnst)
+	                   || (gibs < LONG_MAX / CFiles_GiB_cnst)));
 	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
 	return fseek(file->file, (long)gibs * CFiles_GiB_cnst + bytes, SEEK_SET) == 0;
 }
