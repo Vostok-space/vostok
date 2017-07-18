@@ -44,8 +44,16 @@ END L11;
 PROCEDURE L1(a: ARRAY OF ARRAY OF INTEGER): INTEGER;
 RETURN
 	L11(a[1])
+
 	(* a[1, 1] *)
 END L1;
+
+PROCEDURE S1(VAR a: ARRAY OF ARRAY OF INTEGER);
+BEGIN
+	a[LEN(a) - 1][LEN(a[0]) - 1] := 111;
+	a[0][0] := 111;
+	a[LEN(a) DIV 2][LEN(a[0]) DIV 2] := 111;
+END S1;
 
 PROCEDURE C;
 VAR c: ARRAY 3, 4, 5 OF INTEGER;
@@ -63,12 +71,23 @@ BEGIN
 	ASSERT(L11(bb[0][1]) = 6)
 END F;
 
+PROCEDURE Fs(VAR bb: ARRAY OF ARRAY OF ARRAY OF INTEGER);
+BEGIN
+	ASSERT(L0(bb[0]) = 5);
+	ASSERT(L1(bb[0]) = 6);
+	ASSERT(L11(bb[0][1]) = 6);
+	S1(bb[0]);
+	S1(bb[LEN(bb) - 1])
+END Fs;
+
 PROCEDURE Go*;
 BEGIN
 	p := A;
 	p(a);
 	A(a);
 	C;
+	S1(bb[0]);
+
 	ASSERT(LEN(bb) = 4);
 	ASSERT(LEN(bb[0]) = 5);
 	ASSERT(LEN(bb[0, 0]) = 6);
@@ -78,7 +97,8 @@ BEGIN
 	ASSERT(L1(bb[0]) = 6);
 	ASSERT(L11(bb[0][1]) = 6);
 
-	F(bb)
+	F(bb);
+	Fs(bb)
 END Go;
 
 END Array.
