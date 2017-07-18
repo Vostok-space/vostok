@@ -377,7 +377,7 @@ BEGIN
 			anon[l + 1] := "s";
 			anon[l + 2] := Utf8.Null;
 			Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
-		ELSE
+		ELSIF rec.base # NIL THEN
 			l := 0;
 			corr := Strings.CopyToChars(anon, l, rec.module.name);
 			anon[l] := "_";
@@ -398,6 +398,8 @@ BEGIN
 			END;
 			INC(gen.opt.index);
 			Ast.PutChars(rec.module, rec.name, anon, 0, l)
+		ELSE
+			corr := TRUE
 		END;
 		ASSERT(corr)
 	END
@@ -734,15 +736,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			END Len;
 
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
-			VAR ret: BOOLEAN;
 			BEGIN
 				Text.Str(gen, "O7C_NEW(&");
 				Expression(gen, e);
-				Text.Str(gen, ", ");
-				ret := CheckStructName(gen, e.type.type(Ast.Record));
-				ASSERT(ret);
-				GlobalName(gen, e.type.type);
-				Text.Str(gen, "_tag)")
+				IF CheckStructName(gen, e.type.type(Ast.Record)) THEN
+					Text.Str(gen, ", ");
+					GlobalName(gen, e.type.type);
+					Text.Str(gen, "_tag)")
+				ELSE
+					Text.Str(gen, ", NULL)")
+				END
 			END New;
 
 			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
