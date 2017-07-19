@@ -80,6 +80,17 @@ BEGIN
 	S1(bb[LEN(bb) - 1])
 END Fs;
 
+PROCEDURE For;
+VAR i: INTEGER;
+	a: ARRAY 3 OF INTEGER;
+BEGIN
+	a[0] := 0;
+	FOR i := -1 TO LEN(a) DO
+		INC(a[0])
+	END;
+	ASSERT(a[0] = 5)
+END For;
+
 PROCEDURE Go*;
 BEGIN
 	p := A;
@@ -98,7 +109,9 @@ BEGIN
 	ASSERT(L11(bb[0][1]) = 6);
 
 	F(bb);
-	Fs(bb)
+	Fs(bb);
+
+	For
 END Go;
 
 END Array.
