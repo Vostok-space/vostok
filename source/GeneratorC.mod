@@ -717,11 +717,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				IF (count # NIL) & ~sizeof THEN
 					Expression(gen, count)
 				ELSIF sizeof THEN
+					Text.Str(gen, "O7C_LEN(");
+					Designator(gen, des);
+					Text.Str(gen, ")");
+					(*
 					Text.Str(gen, "sizeof(");
 					Designator(gen, des);
 					Text.Str(gen, ") / sizeof (");
 					Designator(gen, des);
 					Text.Str(gen, "[0])")
+					*)
 				ELSE
 					GlobalName(gen, des.decl);
 					Text.Str(gen, "_len");

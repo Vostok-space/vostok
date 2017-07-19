@@ -178,6 +178,8 @@ O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
+#define O7C_LEN(array) ((o7c_int_t)(sizeof(array) / sizeof((array)[0])))
+
 O7C_INLINE o7c_bool o7c_bl(o7c_bool b) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
 	if ((sizeof(b) == sizeof(o7c_char)) && O7C_UNDEF) {
