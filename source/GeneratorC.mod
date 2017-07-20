@@ -999,7 +999,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
 			VAR brace: BOOLEAN;
 			BEGIN
-				brace := (e.type.id = Ast.IdSet)
+				brace := (e.type.id IN {Ast.IdSet, Ast.IdBoolean})
 				      & ~(e IS Ast.Factor);
 				IF brace THEN
 					Text.Str(gen, "(")
