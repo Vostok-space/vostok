@@ -1798,7 +1798,6 @@ END ExprSumAdd;
 
 PROCEDURE MultCalc(res: Expression; mult: INTEGER; b: Expression): INTEGER;
 VAR err: INTEGER;
-	bool: BOOLEAN;
 
 	PROCEDURE CheckType(e1, e2: Expression; mult: INTEGER; VAR err: INTEGER): BOOLEAN;
 	VAR continue: BOOLEAN;
@@ -1903,11 +1902,8 @@ BEGIN
 		| IdReal:
 			Rl(res, mult, b)
 		| IdBoolean:
-			bool := res.value(ExprBoolean).bool & b.value(ExprBoolean).bool;
-			IF res.value = NIL THEN
-				res.value := ExprBooleanNew(bool)
-			ELSE
-				res.value(ExprBoolean).bool := bool
+			IF res.value(ExprBoolean).bool & ~b.value(ExprBoolean).bool THEN
+				res.value := b.value
 			END
 		| IdSet:
 			St(res, mult, b)
