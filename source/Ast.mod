@@ -448,6 +448,7 @@ VAR
 	types: ARRAY PredefinedTypesCount OF Type;
 	predefined: ARRAY Scanner.PredefinedLast - Scanner.PredefinedFirst + 1
 	            OF Declaration;
+	booleans: ARRAY 2 OF ExprBoolean;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
@@ -1069,14 +1070,18 @@ BEGIN
 	RETURN e
 END ExprRealNewByValue;
 
-PROCEDURE ExprBooleanNew*(bool: BOOLEAN): ExprBoolean;
+PROCEDURE ExprBooleanGet*(bool: BOOLEAN): ExprBoolean;
 VAR e: ExprBoolean;
 BEGIN
-	NEW(e); ExprInit(e, IdBoolean, TypeGet(IdBoolean));
-	e.bool := bool;
-	e.value := e
+	e := booleans[ORD(bool)];
+	IF e = NIL THEN
+		NEW(e); ExprInit(e, IdBoolean, TypeGet(IdBoolean));
+		e.bool := bool;
+		e.value := e;
+		booleans[ORD(bool)] := e
+	END
 	RETURN e
-END ExprBooleanNew;
+END ExprBooleanGet;
 
 PROCEDURE ExprStringNew*(m: Module; buf: ARRAY OF CHAR; begin, end: INTEGER): ExprString;
 VAR e: ExprString;
@@ -1192,7 +1197,7 @@ BEGIN
 	ELSE
 		err := ErrNo;
 		IF expr.value # NIL THEN
-			neg.value := ExprBooleanNew(~expr.value(ExprBoolean).bool)
+			neg.value := ExprBooleanGet(~expr.value(ExprBoolean).bool)
 		END
 	END
 	RETURN err
@@ -1644,7 +1649,7 @@ BEGIN
 		| Scanner.In:
 			res := v1(ExprInteger).int IN v2(ExprSet).set
 		END;
-		e.value := ExprBooleanNew(res)
+		e.value := ExprBooleanGet(res)
 	END
 	RETURN err
 END ExprRelationNew;
@@ -1713,7 +1718,7 @@ BEGIN
 					e.value := ExprSetByValue(-term.value(ExprSet).set)
 				END
 			| IdBoolean:
-				e.value := ExprBooleanNew(term.value(ExprBoolean).bool)
+				e.value := ExprBooleanGet(term.value(ExprBoolean).bool)
 			END
 		END
 	END
@@ -1759,7 +1764,7 @@ BEGIN
 	THEN
 		IF add = Scanner.Or THEN
 			IF term.value(ExprBoolean).bool THEN
-				fullSum.value(ExprBoolean).bool := TRUE
+				fullSum.value := term.value
 			END
 		ELSE
 			CASE term.type.id OF
@@ -2195,7 +2200,7 @@ BEGIN
 					call.value := ExprIntegerNew(ABS(v(ExprInteger).int))
 				END
 			| Scanner.Odd:
-				call.value := ExprBooleanNew(ODD(v(ExprInteger).int))
+				call.value := ExprBooleanGet(ODD(v(ExprInteger).int))
 			| Scanner.Lsl:
 				IF call.params.next.expr.value # NIL THEN
 					call.value := ExprIntegerNew(LSL(
@@ -2755,5 +2760,7 @@ BEGIN
 END ProviderInit;
 
 BEGIN
-	PredefinedDeclarationsInit
+	PredefinedDeclarationsInit;
+	booleans[0] := NIL;
+	booleans[1] := NIL
 END Ast.

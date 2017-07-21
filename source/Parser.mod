@@ -419,7 +419,7 @@ BEGIN
 		END;
 		Scan(p)
 	ELSIF (p.l = Scanner.True) OR (p.l = Scanner.False) THEN
-		e := Ast.ExprBooleanNew(p.l = Scanner.True);
+		e := Ast.ExprBooleanGet(p.l = Scanner.True);
 		Scan(p)
 	ELSIF p.l = Scanner.Nil THEN
 		e := Ast.ExprNilNew();
