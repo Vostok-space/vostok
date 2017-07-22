@@ -361,47 +361,57 @@ BEGIN
 	END
 END Factor;
 
+PROCEDURE IsAnonStruct(rec: Ast.Record): BOOLEAN;
+BEGIN
+	RETURN ~Strings.IsDefined(rec.name)
+	    OR Strings.SearchSubString(rec.name, "_anon_")
+END IsAnonStruct;
+
+PROCEDURE TypeForTag(rec: Ast.Record): Ast.Type;
+BEGIN
+	IF IsAnonStruct(rec) THEN
+		rec := rec.base
+	END
+	RETURN rec
+END TypeForTag;
+
 PROCEDURE CheckStructName(VAR gen: Generator; rec: Ast.Record): BOOLEAN;
 VAR anon: ARRAY TranLim.MaxLenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
 	ret, corr: BOOLEAN;
 BEGIN
-	IF ~Strings.IsDefined(rec.name) THEN
-		IF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
-			l := 0;
-			ASSERT(rec.module # NIL);
-			rec.mark := TRUE;
-			corr := Strings.CopyToChars(anon, l, rec.pointer.name);
+	IF Strings.IsDefined(rec.name) THEN
+		;
+	ELSIF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
+		l := 0;
+		ASSERT(rec.module # NIL);
+		rec.mark := TRUE;
+		corr := Strings.CopyToChars(anon, l, rec.pointer.name);
+		ASSERT(corr);
+		anon[l] := "_";
+		anon[l + 1] := "s";
+		anon[l + 2] := Utf8.Null;
+		Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
+	ELSE
+		l := 0;
+		corr := Strings.CopyToChars(anon, l, rec.module.name);
+		ASSERT(corr);
 
-			anon[l] := "_";
-			anon[l + 1] := "s";
-			anon[l + 2] := Utf8.Null;
-			Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
-		ELSIF rec.base # NIL THEN
-			l := 0;
-			corr := Strings.CopyToChars(anon, l, rec.module.name);
-			anon[l] := "_";
-			INC(l);
+		Log.StrLn("Record");
 
-			Log.StrLn("Record");
-
-			ret := Strings.CopyChars(anon, l, "anon_0000", 0, 9);
-			ASSERT(ret);
-			ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
-			i := gen.opt.index;
-			(*Log.Int(i); Log.Ln;*)
-			j := l - 1;
-			WHILE i > 0 DO
-				anon[j] := CHR(ORD("0") + i MOD 10);
-				i := i DIV 10;
-				DEC(j)
-			END;
-			INC(gen.opt.index);
-			Ast.PutChars(rec.module, rec.name, anon, 0, l)
-		ELSE
-			corr := TRUE
+		ret := Strings.CopyChars(anon, l, "_anon_0000", 0, 10);
+		ASSERT(ret);
+		ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
+		i := gen.opt.index;
+		(*Log.Int(i); Log.Ln;*)
+		j := l - 1;
+		WHILE i > 0 DO
+			anon[j] := CHR(ORD("0") + i MOD 10);
+			i := i DIV 10;
+			DEC(j)
 		END;
-		ASSERT(corr)
+		INC(gen.opt.index);
+		Ast.PutChars(rec.module, rec.name, anon, 0, l)
 	END
 	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
@@ -741,12 +751,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			END Len;
 
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
+			VAR tagType: Ast.Type;
 			BEGIN
 				Text.Str(gen, "O7C_NEW(&");
 				Expression(gen, e);
-				IF CheckStructName(gen, e.type.type(Ast.Record)) THEN
+				tagType := TypeForTag(e.type.type(Ast.Record));
+				IF tagType # NIL THEN
 					Text.Str(gen, ", ");
-					GlobalName(gen, e.type.type);
+					GlobalName(gen, tagType);
 					Text.Str(gen, "_tag)")
 				ELSE
 					Text.Str(gen, ", NULL)")
