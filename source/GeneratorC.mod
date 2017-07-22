@@ -417,18 +417,21 @@ BEGIN
 END CheckStructName;
 
 PROCEDURE ArrayDeclLen(VAR gen: Generator; type: Ast.Type;
-                       decl: Ast.Declaration; sel: Ast.Selector);
-VAR i: INTEGER;
+                       decl: Ast.Declaration; sel: Ast.Selector;
+                       i: INTEGER);
 BEGIN
 	IF type(Ast.Array).count # NIL THEN
 		expression(gen, type(Ast.Array).count)
 	ELSE
-		GlobalName(gen, decl);
+		GlobalName(gen, decl);(*TODO*)
 		Text.Str(gen, "_len");
-		i := -1;
-		WHILE sel # NIL DO
-			INC(i);
-			sel := sel.next
+		IF i < 0 THEN
+			i := -1;
+			WHILE sel # NIL DO
+				INC(i);
+				sel := sel.next
+			END
+		ELSE ASSERT(sel = NIL);
 		END;
 		Text.Int(gen, i)
 	END
@@ -549,7 +552,7 @@ VAR sel: Ast.Selector;
 			   )
 			THEN
 				Text.Str(gen, "o7c_ind(");
-				ArrayDeclLen(gen, type, decl, sel);
+				ArrayDeclLen(gen, type, decl, sel, -1);
 				Text.Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Text.Str(gen, ")")
@@ -566,7 +569,7 @@ VAR sel: Ast.Selector;
 				   )
 				THEN
 					Text.Str(gen, "][o7c_ind(");
-					ArrayDeclLen(gen, type, decl, sel);
+					ArrayDeclLen(gen, type, decl, sel, -1);
 					Text.Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
 					Text.Str(gen, ")")
@@ -580,14 +583,22 @@ VAR sel: Ast.Selector;
 		ELSE
 			i := 0;
 			WHILE (sel.next # NIL) & (sel.next IS Ast.SelArray) DO
-				Factor(gen, sel(Ast.SelArray).index);
+				Text.Str(gen, "o7c_ind(");
+				ArrayDeclLen(gen, type, decl, NIL, i);
+				Text.Str(gen, ", ");
+				expression(gen, sel(Ast.SelArray).index);
+				Text.Str(gen, ")");
 				type := type.type;
 				Mult(gen, decl, i + 1, type);
 				sel := sel.next;
 				INC(i);
 				Text.Str(gen, " + ")
 			END;
-			Factor(gen, sel(Ast.SelArray).index);
+			Text.Str(gen, "o7c_ind(");
+			ArrayDeclLen(gen, type, decl, NIL, i);
+			Text.Str(gen, ", ");
+			expression(gen, sel(Ast.SelArray).index);
+			Text.Str(gen, ")");
 			Mult(gen, decl, i + 1, type.type)
 		END;
 		IF ~isDesignatorArray THEN
@@ -1041,7 +1052,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Expression(gen, e.type(Ast.Array).count)
 				ELSE
 					des := e(Ast.Designator);
-					ArrayDeclLen(gen, des.type, des.decl, des.sel)
+					ArrayDeclLen(gen, des.type, des.decl, des.sel, -1)
 				END
 			END Len;
 		BEGIN
