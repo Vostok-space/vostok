@@ -130,7 +130,12 @@ BEGIN
 	p^.b := 0.;
 	ptr2 := pointerToRecord;
 	a.c := 1;
-	b := a
+	b := a;
+
+	ptr2^ := pointerToRecord^;
+
+	NEW(pointerToRecord);
+	NEW(ptr2)
 END Doo;
 
 PROCEDURE Boo(VAR r: RecA);
