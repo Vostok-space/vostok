@@ -671,6 +671,17 @@ BEGIN
 	RETURN d
 END SearchName;
 
+PROCEDURE DeclarationLineSearch(ds: Declarations; buf: ARRAY OF CHAR;
+                             begin, end: INTEGER): Declaration;
+VAR d: Declaration;
+BEGIN
+	d := SearchName(ds.start, buf, begin, end);
+	IF (d = NIL) & (ds IS Procedure) THEN
+		d := SearchName(ds(Procedure).header.params, buf, begin, end)
+	END
+	RETURN d
+END DeclarationLineSearch;
+
 PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER)
                    : INTEGER;
 VAR c: Const;
@@ -678,7 +689,7 @@ VAR c: Const;
 BEGIN
 	ASSERT(~ds.module.fixed);
 
-	IF SearchName(ds.start, buf, begin, end) # NIL THEN
+	IF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
 		err := ErrDeclarationNameDuplicate
 	ELSE
 		err := ErrNo
@@ -730,7 +741,7 @@ VAR d: Declaration;
 BEGIN
 	ASSERT(~ds.module.fixed);
 
-	d := SearchName(ds.start, buf, begin, end);
+	d := DeclarationLineSearch(ds, buf, begin, end);
 	IF (d = NIL) OR (d.id = IdRecordForward) THEN
 		err := ErrNo
 	ELSE
@@ -767,7 +778,7 @@ VAR v: Var;
 	err: INTEGER;
 BEGIN
 	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
-	IF SearchName(ds.start, buf, begin, end) = NIL THEN
+	IF DeclarationLineSearch(ds, buf, begin, end) = NIL THEN
 		err := ErrNo
 	ELSE
 		err := ErrDeclarationNameDuplicate
@@ -935,7 +946,7 @@ BEGIN
 					d := SearchName(ds.start, buf, begin, end)
 				END
 			END
-		ELSE
+		ELSE (* TODO Нужно ли это ?*)
 			WHILE (d = NIL) & (ds.up # NIL) DO
 				ds := ds.up;
 				d := SearchName(ds.start, buf, begin, end)
@@ -2028,7 +2039,7 @@ PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
                         buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	IF SearchName(ds.start, buf, begin, end) = NIL THEN
+	IF DeclarationLineSearch(ds, buf, begin, end) = NIL THEN
 		err := ErrNo
 	ELSE
 		err := ErrDeclarationNameDuplicate
