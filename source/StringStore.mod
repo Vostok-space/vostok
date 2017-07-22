@@ -186,6 +186,31 @@ BEGIN
 	RETURN b.s[i] = s[j]
 END IsEqualToString;
 
+PROCEDURE SearchSubString*(w: String; s: ARRAY OF CHAR): BOOLEAN;
+VAR i, j: INTEGER;
+    b: Block;
+BEGIN
+	i := w.ofs;
+	b := w.block;
+	REPEAT
+		WHILE b.s[i] = Utf8.NewPage DO
+			b := b.next;
+			i := 0
+		ELSIF (b.s[i] # s[0]) & (b.s[i] # Utf8.Null) DO
+			INC(i)
+		END;
+		j := 0;
+		WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
+			INC(i);
+			INC(j)
+		ELSIF b.s[i] = Utf8.NewPage DO
+			b := b.next;
+			i := 0
+		END
+	UNTIL (s[j] = Utf8.Null) OR (b.s[i] = Utf8.Null)
+	RETURN s[j] = Utf8.Null
+END SearchSubString;
+
 PROCEDURE CopyToChars*(VAR d: ARRAY OF CHAR; VAR dofs: INTEGER; w: String): BOOLEAN;
 VAR b: Block;
 	i: INTEGER;
