@@ -91,6 +91,16 @@ BEGIN
 	ASSERT(a[0] = 5)
 END For;
 
+PROCEDURE Set(VAR a: ARRAY OF ARRAY OF ARRAY OF INTEGER; i: INTEGER);
+BEGIN
+	a[i][i - 1][i + 1] := 777
+END Set;
+
+PROCEDURE Setbb(i, j ,k: INTEGER);
+BEGIN
+	bb[i][j][k] := 0FFH
+END Setbb;
+
 PROCEDURE Go*;
 BEGIN
 	p := A;
@@ -111,7 +121,21 @@ BEGIN
 	F(bb);
 	Fs(bb);
 
-	For
+	Set(bb, 2);
+	ASSERT(bb[2][1][3] = 777);
+
+	Setbb(2, 1, 3);
+	ASSERT(bb[2][1][3] = 0FFH)
 END Go;
+
+PROCEDURE Error*(s: INTEGER);
+BEGIN
+	IF 0 = s THEN
+		Set(aaa, 0)
+	END;
+	IF 1 = s THEN
+		Set(aaa, 3)
+	END
+END Error;
 
 END Array.
