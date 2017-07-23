@@ -394,6 +394,23 @@ PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
 VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 	ret: INTEGER;
 	opt: ARRAY 256 OF CHAR;
+
+	PROCEDURE CopyInfrPart(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER;
+	                       add: ARRAY OF CHAR): BOOLEAN;
+	VAR ret: BOOLEAN;
+	BEGIN
+		ret := CLI.Get(str, i, arg);
+		IF ret THEN
+			DEC(i);
+			ret := Strings.CopyCharsNull(str, i, add);
+			IF ret THEN
+				INC(i);
+				str[i] := 0X;
+				INC(i)
+			END;
+		END
+		RETURN ret
+	END CopyInfrPart;
 BEGIN
 	i := 0;
 	dirsOfs := 0;
@@ -439,6 +456,19 @@ BEGIN
 				DEC(ccLen)
 			ELSE
 				ret := ErrTooLongCc
+			END
+		ELSIF opt = "-infr" THEN
+			INC(arg);
+			IF arg >= CLI.count THEN
+				ret := ErrNotEnoughArgs
+			ELSIF CopyInfrPart(str, i, arg, "/singularity/definition")
+			    & CopyInfrPart(str, i, arg, "/singularity/library")
+			    & CopyInfrPart(cDirs, dirsOfs, arg, "/singularity/implementation")
+			THEN
+				INCL(sing, count);
+				INC(count, 2)
+			ELSE
+				ret := ErrTooLongModuleDirs
 			END
 		ELSE
 			ret := ErrUnexpectArg
@@ -611,7 +641,9 @@ S("После трансляции указанного модуля вызыв�
 S("указанный после опции -cc, для сбора результата - исполнимого файла, в состав");
 S("которого также войдут .h,c файлы, находящиеся в каталогах, указанных после -c.");
 S("  4) o7c run команда {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
-S("Запускает собранный модуль с параметрами, указанными после --")
+S("Запускает собранный модуль с параметрами, указанными после --");
+S("Также, доступен параметр -infr путь , который эквивалентен совокупности:");
+S("-i путь/singularity/definition -c путь/singularity/implementation -m путь/library")
 END PrintUsage;
 
 PROCEDURE ErrMessage(err: INTEGER; cmd: ARRAY OF CHAR);
