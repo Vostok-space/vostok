@@ -1943,7 +1943,7 @@ BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
 
-	t := factorOrTerm.type;
+	t := factor.type;
 	IF (t # NIL) & (t.id = IdByte) THEN
 		t := TypeGet(IdInteger)
 	END;
