@@ -34,8 +34,9 @@ result/bs-o7c:
 
 result/test/% : always
 	@mkdir -p result/test
-	$(O7C) to-c $(@F).Go result/test -i $(SING_O7) -m test/source
-	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
+	echo "extern int useless;" > result/test/OsRand.c
+	$(O7C) to-c $(@F).Go result/test -i $(SING_O7) -m library -m test/source
+	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c result/test/OsRand.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
 test : result/o7c $(TESTS)
