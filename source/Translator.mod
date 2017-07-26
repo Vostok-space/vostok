@@ -462,7 +462,7 @@ BEGIN
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF CopyInfrPart(str, i, arg, "/singularity/definition")
-			    & CopyInfrPart(str, i, arg, "/singularity/library")
+			    & CopyInfrPart(str, i, arg, "/library")
 			    & CopyInfrPart(cDirs, dirsOfs, arg, "/singularity/implementation")
 			THEN
 				INCL(sing, count);
