@@ -23,7 +23,7 @@ char**	o7c_cli_argv;
 
 int o7c_exit_code;
 
-extern void o7c_init(int argc, char *argv[]) {
+extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
 	double undefined;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
@@ -79,33 +79,33 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 }
 
 #if defined O7C_BOOL_UNDEF
-	extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size) {
+	extern o7c_bool* o7c_bools_undef(int len, o7c_bool array[O7C_VLA_LEN(len)]) {
 		int i;
-		for (i = 0; i < size; ++i) {
+		for (i = 0; i < len; ++i) {
 			array[i] = O7C_BOOL_UNDEF;
 		}
 		return array;
 	}
 #endif
 
-extern double* o7c_doubles_undef(double array[], int size) {
+extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < size; ++i) {
+	for (i = 0; i < len; ++i) {
 		array[i] = O7C_DBL_UNDEF;
 	}
 	return array;
 }
 
-extern int* o7c_ints_undef(int array[], int size) {
+extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < size; ++i) {
+	for (i = 0; i < len; ++i) {
 		array[i] = O7C_INT_UNDEF;
 	}
 	return array;
 }
 
-extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
-                      o7c_char const s2[/*len*/], int s2_len) {
+extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
+                      int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)]) {
 	int i, len, c1, c2;
 	if (s1_len < s2_len) {
 		len = s1_len;

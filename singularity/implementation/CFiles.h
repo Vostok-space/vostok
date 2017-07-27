@@ -21,22 +21,24 @@
 
 typedef struct CFiles_Implement* CFiles_File;
 
-extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len, int ofs,
-							   char unsigned mode[/*len*/], int mode_len);
+extern CFiles_File CFiles_Open(
+	int name_len, char unsigned name[O7C_VLA_LEN(name_len)], int ofs,
+	int mode_len, char unsigned mode[O7C_VLA_LEN(mode_len)]);
 
 extern void CFiles_Close(CFiles_File *file);
 
 extern int CFiles_Read(CFiles_File file,
-					   char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+	int buf_len, char unsigned buf[O7C_VLA_LEN(buf_len)], int ofs, int count);
 
 extern int CFiles_Write(CFiles_File file,
-						char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+	int buf_len, char unsigned buf[O7C_VLA_LEN(buf_len)], int ofs, int count);
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 
 extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);
 
-extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int ofs);
+extern int CFiles_Remove(
+	int name_len, char unsigned const name[O7C_VLA_LEN(name_len)], int ofs);
 
 
 extern void CFiles_init(void);

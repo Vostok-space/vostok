@@ -22,10 +22,10 @@
 
 #include "Out.h"
 
-extern void Out_String(char unsigned s[/*len*/], int s_len) {
+extern void Out_String(int len, char unsigned s[O7C_VLA_LEN(len)]) {
 	int wr;
 	wr = printf("%s", (char unsigned *)s);
-	assert(wr < s_len);
+	assert(wr < len);
 }
 
 extern void Out_Char(char unsigned ch) {

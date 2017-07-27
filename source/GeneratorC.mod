@@ -924,6 +924,34 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expression(gen, p.expr);
 				Text.Str(gen, ")")
 			ELSE
+				j := 1;
+				IF fp.type.id # Ast.IdChar THEN
+					i := -1;
+					t := p.expr.type;
+					WHILE (t.id = Ast.IdArray)
+					    & (fp.type(Ast.Array).count = NIL)
+					DO
+						IF (i = -1) & (p.expr IS Ast.Designator) THEN
+							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
+							   - ArrayDeep(fp.type);
+							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
+							THEN
+								j := ArrayDeep(p.expr(Ast.Designator).type)
+							END
+						END;
+						IF t(Ast.Array).count # NIL THEN
+							Expression(gen, t(Ast.Array).count)
+						ELSE
+							Name(gen, p.expr(Ast.Designator).decl);
+							Text.Str(gen, "_len");
+							Text.Int(gen, i)
+						END;
+						Text.Str(gen, ", ");
+						INC(i);
+						t := t.type
+					END;
+					t := fp.type
+				END;
 				dist := p.distance;
 				IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
 				OR (t IS Ast.Record)
@@ -933,6 +961,10 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
 				Expression(gen, p.expr);
+				WHILE j > 1 DO
+					DEC(j);
+					Text.Str(gen, "[0]")
+				END;
 
 				IF (dist > 0) & ~gen.opt.plan9 THEN
 					IF t.id = Ast.IdPointer THEN
@@ -959,35 +991,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 							GlobalName(gen, t)
 						END;
 						Text.Str(gen, "_tag")
-					END
-				ELSIF fp.type.id # Ast.IdChar THEN
-					i := -1;
-					WHILE (t.id = Ast.IdArray)
-					    & (fp.type(Ast.Array).count = NIL)
-					DO
-						IF (i = -1) & (p.expr IS Ast.Designator) THEN
-							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
-							   - ArrayDeep(fp.type);
-							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
-							THEN
-								j := ArrayDeep(p.expr(Ast.Designator).type);
-								WHILE j > 1 DO
-									DEC(j);
-									Text.Str(gen, "[0]")
-								END
-							END
-						END;
-						IF t(Ast.Array).count # NIL THEN
-							Text.Str(gen, ", ");
-							Expression(gen, t(Ast.Array).count)
-						ELSE
-							Text.Str(gen, ", ");
-							Name(gen, p.expr(Ast.Designator).decl);
-							Text.Str(gen, "_len");
-							Text.Int(gen, i)
-						END;
-						INC(i);
-						t := t.type
 					END
 				END
 			END;
@@ -1063,15 +1066,15 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			THEN
 				Text.Str(gen, "o7c_strcmp(");
 
-				Expr(gen, rel.exprs[0], -rel.distance);
-				Text.Str(gen, ", ");
 				Len(gen, rel.exprs[0]);
+				Text.Str(gen, ", ");
+				Expr(gen, rel.exprs[0], -rel.distance);
 
 				Text.Str(gen, ", ");
 
-				Expr(gen, rel.exprs[1], rel.distance);
-				Text.Str(gen, ", ");
 				Len(gen, rel.exprs[1]);
+				Text.Str(gen, ", ");
+				Expr(gen, rel.exprs[1], rel.distance);
 
 				Text.Str(gen, ")");
 				Text.Str(gen, str);
@@ -1499,22 +1502,23 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 		VAR t: Ast.Type;
 			i: INTEGER;
 		BEGIN
-			declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE);
-			t := fp.type;
 			i := 0;
+			t := fp.type;
+			WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
+				Text.Str(gen, "int ");
+				Name(gen, fp);
+				Text.Str(gen, "_len");
+				Text.Int(gen, i);
+				Text.Str(gen, ", ");
+				INC(i);
+				t := t.type
+			END;
+			t := fp.type;
+			declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE);
 			IF t.id = Ast.IdRecord THEN
 				Text.Str(gen, ", o7c_tag_t ");
 				Name(gen, fp);
 				Text.Str(gen, "_tag")
-			ELSE
-				WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
-					Text.Str(gen, ", int ");
-					Name(gen, fp);
-					Text.Str(gen, "_len");
-					Text.Int(gen, i);
-					INC(i);
-					t := t.type
-				END
 			END
 		END Par;
 	BEGIN
@@ -2552,24 +2556,22 @@ BEGIN
 				ASSERT(gen.opt.varInit = VarInitUndefined);
 				CASE arrTypeId OF
 				  Ast.IdInteger:
-					Text.Str(gen, "o7c_ints_undef(")
+					Text.Str(gen, "o7c_ints_undef(O7C_LEN(")
 				| Ast.IdReal:
-					Text.Str(gen, "o7c_doubles_undef(")
+					Text.Str(gen, "o7c_doubles_undef(O7C_LEN(")
 				| Ast.IdBoolean:
-					Text.Str(gen, "o7c_bools_undef(")
+					Text.Str(gen, "o7c_bools_undef(O7C_LEN(")
 				END;
 				Name(gen, d);
 				FOR i := 2 TO arrDeep DO
 					Text.Str(gen, "[0]")
 				END;
-				Text.Str(gen, ", sizeof(");
-				Name(gen, d);
-				Text.Str(gen, ") / sizeof(");
+				Text.Str(gen, "), ");
 				Name(gen, d);
 				FOR i := 2 TO arrDeep DO
 					Text.Str(gen, "[0]")
 				END;
-				Text.StrLn(gen, "[0]));")
+				Text.Str(gen, ");")
 			END
 		END;
 		d := d.next
@@ -2862,7 +2864,7 @@ VAR out: MOut;
 
 	PROCEDURE Main(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
-		Text.StrOpen(gen, "extern int main(int argc, char **argv) {");
+		Text.StrOpen(gen, "extern int main(int argc, char *argv[]) {");
 		Text.StrLn(gen, "o7c_init(argc, argv);");
 		ImportInit(gen, module.import);
 		TagsInit(gen);

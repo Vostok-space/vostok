@@ -15,7 +15,7 @@
 #if !defined(MODULE_Out_HEADER)
 #define MODULE_Out_HEADER 1
 
-extern void Out_String(char unsigned s[/*len*/], int s_len);
+extern void Out_String(int len, char unsigned s[O7C_VLA_LEN(len)]);
 
 extern void Out_Char(char unsigned ch);
 

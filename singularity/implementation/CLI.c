@@ -22,7 +22,9 @@ int CLI_count;
 
 static char **CLI_argv;
 
-extern bool CLI_Get(char unsigned str[/*len*/], int str_len, int *ofs, int arg) {
+extern bool CLI_Get(
+	int str_len, char unsigned str[O7C_VLA_LEN(str_len)], int *ofs, int arg)
+{
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));
 	i = 0;

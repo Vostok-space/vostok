@@ -45,6 +45,12 @@
 #	endif
 #endif
 
+#if __STDC_VERSION__ >= 201101L
+#	define O7C_VLA_LEN(len) static len
+#else
+#	define O7C_VLA_LEN(len)
+#endif
+
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
 #elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
@@ -188,7 +194,7 @@ O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
 	return b;
 }
 
-extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size);
+extern o7c_bool* o7c_bools_undef(int len, o7c_bool array[O7C_VLA_LEN(len)]);
 
 O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE double o7c_dbl_undef(void) {
@@ -201,7 +207,7 @@ O7C_INLINE double o7c_dbl_undef(void) {
 	return undef;
 }
 
-extern double* o7c_doubles_undef(double array[], int size);
+extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]);
 
 O7C_INLINE double o7c_dbl(double d) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE double o7c_dbl(double d) {
@@ -246,7 +252,7 @@ O7C_INLINE int o7c_int(int i) {
 	return i;
 }
 
-extern int* o7c_ints_undef(int array[], int size);
+extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]);
 
 O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE int o7c_add(int a1, int a2) {
@@ -322,7 +328,7 @@ O7C_INLINE int o7c_mod(int n, int d) {
 
 O7C_INLINE int o7c_ind(int len, int ind) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE int o7c_ind(int len, int ind) {
-	assert(len > 0);
+	assert(len > 0);/* TODO remove */
 	assert((unsigned)ind < (unsigned)len);
 	return ind;
 }
@@ -405,7 +411,7 @@ O7C_INLINE void* o7c_unhold(void *mem) {
 }
 
 
-#define O7C_RELEASE_PARAMS(array) o7c_release_array(array, sizeof(array) / sizeof(array[0]))
+#define O7C_RELEASE_PARAMS(array) o7c_release_array(sizeof(array) / sizeof(array[0]), array)
 
 O7C_INLINE void o7c_null(void **mem) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE void o7c_null(void **mem) {
@@ -415,9 +421,9 @@ O7C_INLINE void o7c_null(void **mem) {
 
 #define O7C_NULL(mem) o7c_null((void **)(mem))
 
-O7C_INLINE void o7c_release_array(void *mem[], int count)
+O7C_INLINE void o7c_release_array(int count, void *mem[O7C_VLA_LEN(count)])
 	O7C_ATTR_ALWAYS_INLINE;
-O7C_INLINE void o7c_release_array(void *mem[], int count) {
+O7C_INLINE void o7c_release_array(int count, void *mem[O7C_VLA_LEN(count)]) {
 	int i;
 	if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
 		for (i = 0; i < count; ++i) {
@@ -518,10 +524,10 @@ O7C_INLINE char unsigned o7c_chr(int v) {
 	return (char unsigned)v;
 }
 
-extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
-                      o7c_char const s2[/*len*/], int s2_len);
+extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
+                      int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)]);
 
-extern void o7c_init(int argc, char *argv[]);
+extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]);
 
 extern int o7c_exit_code;
 

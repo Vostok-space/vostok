@@ -15,9 +15,12 @@
 #if !defined(HEADER_GUARD_CLI)
 #define HEADER_GUARD_CLI
 
+#include "o7c.h"
+
 extern int CLI_count;
 
-extern bool CLI_Get(char unsigned str[/*len*/], int str_len, int *ofs, int arg);
+extern bool CLI_Get(
+	int str_len, char unsigned str[O7C_VLA_LEN(str_len)], int *ofs, int arg);
 
 extern void CLI_SetExitCode(int code);
 
