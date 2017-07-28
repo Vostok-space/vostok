@@ -34,6 +34,7 @@ CONST
 
 	IsoC90* = 0;
 	IsoC99* = 1;
+	IsoC11* = 2;
 
 	VarInitUndefined*   = 0;
 	VarInitZero*        = 1;
@@ -50,6 +51,7 @@ TYPE
 		gnu*, plan9*,
 		procLocal*,
 		checkIndex*,
+		vla*,
 		checkArith*,
 		caseAbort*,
 		comment*,
@@ -103,7 +105,7 @@ TYPE
 	END;
 
 VAR
-	type: PROCEDURE(VAR gen: Generator; type: Ast.Type;
+	type: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
 	declarator: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration;
 	                      typeDecl, sameType, global: BOOLEAN);
@@ -431,7 +433,6 @@ BEGIN
 				INC(i);
 				sel := sel.next
 			END
-		ELSE ASSERT(sel = NIL);
 		END;
 		Text.Int(gen, i)
 	END
@@ -538,12 +539,13 @@ VAR sel: Ast.Selector;
 			END
 		END Mult;
 	BEGIN
-		IF isDesignatorArray THEN
+		IF isDesignatorArray & ~gen.opt.vla THEN
 			Text.Str(gen, " + ")
 		ELSE
 			Text.Str(gen, "[")
 		END;
 		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
+		OR gen.opt.vla
 		THEN
 			IF gen.opt.checkIndex
 			 & (   (sel(Ast.SelArray).index.value = NIL)
@@ -552,7 +554,7 @@ VAR sel: Ast.Selector;
 			   )
 			THEN
 				Text.Str(gen, "o7c_ind(");
-				ArrayDeclLen(gen, type, decl, sel, -1);
+				ArrayDeclLen(gen, type, decl, sel, 0);
 				Text.Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Text.Str(gen, ")")
@@ -561,6 +563,7 @@ VAR sel: Ast.Selector;
 			END;
 			type := type.type;
 			sel := sel.next;
+			i := 1;
 			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
 				IF gen.opt.checkIndex
 				 & (   (sel(Ast.SelArray).index.value = NIL)
@@ -569,7 +572,7 @@ VAR sel: Ast.Selector;
 				   )
 				THEN
 					Text.Str(gen, "][o7c_ind(");
-					ArrayDeclLen(gen, type, decl, sel, -1);
+					ArrayDeclLen(gen, type, decl, sel, i);
 					Text.Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
 					Text.Str(gen, ")")
@@ -577,6 +580,7 @@ VAR sel: Ast.Selector;
 					Text.Str(gen, "][");
 					expression(gen, sel(Ast.SelArray).index)
 				END;
+				INC(i);
 				sel := sel.next;
 				type := type.type
 			END
@@ -601,7 +605,7 @@ VAR sel: Ast.Selector;
 			Text.Str(gen, ")");
 			Mult(gen, decl, i + 1, type.type)
 		END;
-		IF ~isDesignatorArray THEN
+		IF ~isDesignatorArray OR gen.opt.vla THEN
 			Text.Str(gen, "]")
 		END
 	END Array;
@@ -961,9 +965,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
 				Expression(gen, p.expr);
-				WHILE j > 1 DO
-					DEC(j);
-					Text.Str(gen, "[0]")
+
+				IF ~gen.opt.vla THEN
+					WHILE j > 1 DO
+						DEC(j);
+						Text.Str(gen, "[0]")
+					END
 				END;
 
 				IF (dist > 0) & ~gen.opt.plan9 THEN
@@ -1539,7 +1546,7 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 BEGIN
 	Parameters(gen, proc);
 	Invert(gen);
-	type(gen, proc.type, FALSE, FALSE(* TODO *));
+	type(gen, NIL, proc.type, FALSE, FALSE(* TODO *));
 	MemWriteInvert(gen.out(PMemoryOut)^)
 END ProcHead;
 
@@ -1573,16 +1580,17 @@ BEGIN
 	ELSE
 		mo.invert := ~mo.invert;
 		IF decl IS Ast.Type THEN
-			type(g, decl(Ast.Type), typeDecl, FALSE)
+			type(g, decl, decl(Ast.Type), typeDecl, FALSE)
 		ELSE
-			type(g, decl.type, FALSE, sameType)
+			type(g, decl, decl.type, FALSE, sameType)
 		END
 	END;
 
 	MemWriteDirect(gen, mo^)
 END Declarator;
 
-PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
+PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
+               typeDecl, sameType: BOOLEAN);
 
 	PROCEDURE Simple(VAR gen: Generator; str: ARRAY OF CHAR);
 	BEGIN
@@ -1628,13 +1636,30 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	END Record;
 
-	PROCEDURE Array(VAR gen: Generator; arr: Ast.Array; sameType: BOOLEAN);
+	PROCEDURE Array(VAR gen: Generator; decl: Ast.Declaration; arr: Ast.Array;
+	                sameType: BOOLEAN);
 	VAR t: Ast.Type;
 		i: INTEGER;
 	BEGIN
 		t := arr.type;
 		MemWriteInvert(gen.out(PMemoryOut)^);
-		IF arr.count = NIL THEN
+		IF arr.count # NIL THEN
+			Text.Str(gen, "[");
+			Expression(gen, arr.count);
+			Text.Str(gen, "]")
+		ELSIF gen.opt.vla THEN
+			i := 0;
+			t := arr;
+			REPEAT
+				Text.Str(gen, "[");
+				Name(gen, decl);
+				Text.Str(gen, "_len");
+				Text.Int(gen, i);
+				Text.Str(gen, "]");
+				t := t.type;
+				INC(i)
+			UNTIL t.id # Ast.IdArray
+		ELSE
 			Text.Str(gen, "[/*len0");
 			i := 0;
 			WHILE t.id = Ast.IdArray DO
@@ -1644,13 +1669,9 @@ PROCEDURE Type(VAR gen: Generator; type: Ast.Type; typeDecl, sameType: BOOLEAN);
 				t := t.type
 			END;
 			Text.Str(gen, "*/]")
-		ELSE
-			Text.Str(gen, "[");
-			Expression(gen, arr.count);
-			Text.Str(gen, "]")
 		END;
 		Invert(gen);
-		Type(gen, t, FALSE, sameType)
+		Type(gen, decl, t, FALSE, sameType)
 	END Array;
 BEGIN
 	IF type = NIL THEN
@@ -1702,9 +1723,9 @@ BEGIN
 				Text.Str(gen, "*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
 				Invert(gen);
-				Type(gen, type.type, FALSE, sameType)
+				Type(gen, decl, type.type, FALSE, sameType)
 			| Ast.IdArray:
-				Array(gen, type(Ast.Array), sameType)
+				Array(gen, decl, type(Ast.Array), sameType)
 			| Ast.IdRecord:
 				Record(gen, type(Ast.Record))
 			| Ast.IdProcType:
@@ -2642,6 +2663,7 @@ BEGIN
 		o.plan9 := FALSE;
 		o.procLocal := FALSE;
 		o.checkIndex := TRUE;
+		o.vla := FALSE & (o.std >= IsoC99);
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
 		o.comment := TRUE;

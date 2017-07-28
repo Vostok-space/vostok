@@ -45,7 +45,7 @@
 #	endif
 #endif
 
-#if __STDC_VERSION__ >= 201101L
+#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__)
 #	define O7C_VLA_LEN(len) static len
 #else
 #	define O7C_VLA_LEN(len)
