@@ -76,6 +76,8 @@ BEGIN
 		O("Имя модуля уже встречается в списке импорта")
 	| Ast.ErrDeclarationNameDuplicate:
 		O("Повторное объявление имени в той же области видимости")
+	| Ast.ErrDeclarationNameHide:
+		O("Имя объявления затеняет объявление из модуля")
 	| Ast.ErrMultExprDifferentTypes:
 		O("Типы подвыражений в умножении несовместимы")
 	| Ast.ErrDivExprDifferentTypes:

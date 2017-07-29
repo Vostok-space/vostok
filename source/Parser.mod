@@ -268,7 +268,6 @@ PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations): Ast.Designator;
 VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
 	prev, sel: Ast.Selector;
-	type: Ast.Type;
 	nameBegin, nameEnd: INTEGER;
 
 	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector;
@@ -289,7 +288,6 @@ BEGIN
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
 		IF decl IS Ast.Var THEN
-			type := decl.type;
 			prev := NIL;
 
 			REPEAT
@@ -299,35 +297,34 @@ BEGIN
 					ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
 					IF nameBegin >= 0 THEN
 						CheckAst(p,
-							Ast.SelRecordNew(sel, type,
+							Ast.SelRecordNew(sel, des.type,
 							                 p.s.buf, nameBegin, nameEnd)
 						)
 					END
 				ELSIF p.l = Scanner.Brace1Open THEN
-					IF type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+					IF des.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
 						Scan(p);
-						var := ExpectRecordExtend(p, ds, type(Ast.Construct));
-						CheckAst(p, Ast.SelGuardNew(sel, type, var));
+						var := ExpectRecordExtend(p, ds, des.type(Ast.Construct));
+						CheckAst(p, Ast.SelGuardNew(sel, des.type, var));
 						Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-					ELSIF ~(type IS Ast.ProcType) THEN
+					ELSIF ~(des.type IS Ast.ProcType) THEN
 						AddError(p, ErrExpectVarRecordOrPointer)
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
 					Scan(p);
-					CheckAst(p, Ast.SelArrayNew(sel, type, expression(p, ds)));
+					CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)));
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
 						SetSel(prev, sel, des);
-						CheckAst(p, Ast.SelArrayNew(sel, type, expression(p, ds)))
+						CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)))
 					END;
 					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
 				ELSIF p.l = Scanner.Dereference THEN
-					CheckAst(p, Ast.SelPointerNew(sel, type));
+					CheckAst(p, Ast.SelPointerNew(sel, des.type));
 					Scan(p)
 				END;
 				SetSel(prev, sel, des)
-			UNTIL sel = NIL;
+			UNTIL sel = NIL
 
-			des.type := type
 		ELSIF ~((decl IS Ast.Const) OR (decl IS Ast.GeneralProcedure)
 		     OR (decl.id = Ast.IdError)
 		       )
@@ -691,7 +688,7 @@ VAR rec, base: Ast.Record;
 	t: Ast.Type;
 	decl: Ast.Declaration;
 
-	PROCEDURE Vars(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
+	PROCEDURE RecVars(VAR p: Parser; dsAdd: Ast.Record; dsTypes: Ast.Declarations);
 
 		PROCEDURE Declaration(VAR p: Parser; dsAdd: Ast.Record;
 		                      dsTypes: Ast.Declarations);
@@ -731,7 +728,7 @@ VAR rec, base: Ast.Record;
 				END
 			END
 		END
-	END Vars;
+	END RecVars;
 BEGIN
 	ASSERT(p.l = Scanner.Record);
 	Scan(p);
@@ -757,7 +754,7 @@ BEGIN
 		Strings.Undef(rec.name);
 		rec.module := p.module
 	END;
-	Vars(p, rec, ds);
+	RecVars(p, rec, ds);
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN rec
 END Record;
@@ -821,7 +818,7 @@ VAR braces: BOOLEAN;
 	PROCEDURE Section(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcType);
 	VAR isVar: BOOLEAN;
 		param: Ast.Declaration;
-		type: Ast.Type;
+		secType: Ast.Type;
 
 		PROCEDURE Name(VAR p: Parser; proc: Ast.ProcType);
 		BEGIN
@@ -859,10 +856,10 @@ VAR braces: BOOLEAN;
 			Name(p, proc)
 		END;
 		Expect(p, Scanner.Colon, ErrExpectColon);
-		type := Type(p, ds);
+		secType := Type(p, ds);
 		WHILE param # NIL DO
 			param(Ast.FormalParam).isVar := isVar;
-			param.type := type;
+			param.type := secType;
 			param := param.next
 		END
 	END Section;
@@ -893,7 +890,7 @@ VAR proc: Ast.ProcType;
 BEGIN
 	ASSERT(p.l = Scanner.Procedure);
 	Scan(p);
-	proc := Ast.ProcTypeNew();
+	proc := Ast.ProcTypeNew(TRUE);
 	IF nameBegin >= 0 THEN
 		t := proc;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
@@ -924,7 +921,7 @@ BEGIN
 END Type;
 
 PROCEDURE Types(VAR p: Parser; ds: Ast.Declarations);
-VAR type: Ast.Type;
+VAR typ: Ast.Type;
 	begin, end: INTEGER;
 	mark: BOOLEAN;
 BEGIN
@@ -935,14 +932,14 @@ BEGIN
 		Scan(p);
 		mark := ScanIfEqual(p, Scanner.Asterisk);
 		Expect(p, Scanner.Equal, ErrExpectEqual);
-		type := Type(p, ds, begin, end);
-		IF type # NIL THEN
-			type.mark := mark;
-			IF ~(type IS Ast.Construct) THEN
+		typ := Type(p, ds, begin, end);
+		IF typ # NIL THEN
+			typ.mark := mark;
+			IF ~(typ IS Ast.Construct) THEN
 				AddError(p, ErrExpectStructuredType)
 			(*
-			ELSIF type.next = NIL THEN
-				CheckAst(p, Ast.TypeAdd(ds, p.s.buf, begin, end, type))
+			ELSIF typ.next = NIL THEN
+				CheckAst(p, Ast.TypeAdd(ds, p.s.buf, begin, end, typ))
 			*)
 			END
 		END;

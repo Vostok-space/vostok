@@ -27,9 +27,10 @@ IMPORT
 	Arithmetic;
 
 CONST
-	ErrNo*                          = 0;
+	ErrNo*                          =  0;
 	ErrImportNameDuplicate*         = -1;
 	ErrDeclarationNameDuplicate*    = -2;
+	ErrDeclarationNameHide*         = -8;(* TODO *)
 	ErrMultExprDifferentTypes*      = -3;
 	ErrDivExprDifferentTypes*       = -4;
 	ErrNotBoolInLogicExpr*          = -5;
@@ -233,9 +234,15 @@ TYPE
 		isVar*: BOOLEAN
 	END;
 
-	ProcType* = POINTER TO RECORD(RConstruct)
+	RProcType = RECORD(RConstruct)
 		params*, end*: FormalParam
 		(* type - возвращаемый тип *)
+	END;
+
+	ProcType* = POINTER TO RProcType;
+
+	FormalProcType = POINTER TO RECORD(RProcType)
+
 	END;
 
 	Statement* = POINTER TO RStatement;
@@ -258,7 +265,8 @@ TYPE
 	RModule* = RECORD(RDeclarations)
 		store: Strings.Store;
 		provider: Provider;
-		script*: BOOLEAN;
+
+		script*, errorHide*: BOOLEAN;
 
 		import*: Import;
 
@@ -563,6 +571,7 @@ BEGIN
 	PutChars(m, m.name, name, begin, end);
 	m.module := m;
 	m.provider := p;
+	m.errorHide := TRUE;
 	m.script := FALSE;
 	Log.Str("Module "); Log.Str(m.name.block.s); Log.StrLn(" ")
 	RETURN m
@@ -682,6 +691,22 @@ BEGIN
 	RETURN d
 END DeclarationLineSearch;
 
+PROCEDURE CheckNameDuplicate(ds: Declarations;
+                             buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
+		err := ErrDeclarationNameDuplicate
+	ELSIF ds.module.errorHide & (ds.up # NIL)
+	    & (DeclarationLineSearch(ds.module, buf, begin, end) # NIL)
+	THEN
+		err := ErrDeclarationNameHide
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
+END CheckNameDuplicate;
+
 PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER)
                    : INTEGER;
 VAR c: Const;
@@ -689,11 +714,7 @@ VAR c: Const;
 BEGIN
 	ASSERT(~ds.module.fixed);
 
-	IF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
-		err := ErrDeclarationNameDuplicate
-	ELSE
-		err := ErrNo
-	END;
+	err := CheckNameDuplicate(ds, buf, begin, end);
 	NEW(c); c.id := IdConst;
 	DeclConnect(c, ds, buf, begin, end);
 	c.expr := NIL;
@@ -742,8 +763,13 @@ BEGIN
 	ASSERT(~ds.module.fixed);
 
 	d := DeclarationLineSearch(ds, buf, begin, end);
-	IF (d = NIL) OR (d.id = IdRecordForward) THEN
+	IF ((d = NIL) OR (d.id = IdRecordForward))
+	OR (d = NIL) & ((ds.up = NIL)
+	             OR (DeclarationLineSearch(ds.module, buf, begin, end) = NIL))
+	THEN
 		err := ErrNo
+	ELSIF d = NIL THEN
+		err := ErrDeclarationNameHide
 	ELSE
 		err := ErrDeclarationNameDuplicate
 	END;
@@ -778,11 +804,7 @@ VAR v: Var;
 	err: INTEGER;
 BEGIN
 	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
-	IF DeclarationLineSearch(ds, buf, begin, end) = NIL THEN
-		err := ErrNo
-	ELSE
-		err := ErrDeclarationNameDuplicate
-	END;
+	err := CheckNameDuplicate(ds, buf, begin, end);
 	ChecklessVarAdd(v, ds, buf, begin, end)
 	RETURN err
 END VarAdd;
@@ -795,10 +817,17 @@ BEGIN
 	t.array := NIL
 END TInit;
 
-PROCEDURE ProcTypeNew*(): ProcType;
+PROCEDURE ProcTypeNew*(forType: BOOLEAN): ProcType;
 VAR p: ProcType;
+    fp: FormalProcType;
 BEGIN
-	NEW(p); TInit(p, IdProcType);
+	IF forType THEN
+		NEW(fp);
+		p := fp
+	ELSE
+		NEW(p)
+	END;
+	TInit(p, IdProcType);
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -828,10 +857,14 @@ PROCEDURE ParamAdd*(module: Module; proc: ProcType;
                     buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	IF SearchName(proc.params, buf, begin, end) = NIL THEN
-		err := ErrNo
-	ELSE
+	IF SearchName(proc.params, buf, begin, end) # NIL THEN
 		err := ErrDeclarationNameDuplicate
+	ELSIF ~(proc IS FormalProcType)
+	    & (DeclarationLineSearch(module, buf, begin, end) # NIL)
+	THEN
+		err := ErrDeclarationNameHide
+	ELSE
+		err := ErrNo
 	END;
 	ParamAddPredefined(proc, NIL, FALSE);
 	PutChars(module, proc.end.name, buf, begin, end)
@@ -1995,7 +2028,7 @@ BEGIN
 		Log.Str("ExprCallCreate des.decl.id = "); Log.Int(des.decl.id);
 		Log.Ln;
 		IF des.decl.id = IdError THEN
-			pt := ProcTypeNew();
+			pt := ProcTypeNew(FALSE);
 			des.decl.type := pt;
 			des.type := pt
 		ELSIF des.type # NIL THEN
@@ -2039,14 +2072,10 @@ PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
                         buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	IF DeclarationLineSearch(ds, buf, begin, end) = NIL THEN
-		err := ErrNo
-	ELSE
-		err := ErrDeclarationNameDuplicate
-	END;
+	err := CheckNameDuplicate(ds, buf, begin, end);
 	NEW(p); NodeInit(p^);
 	DeclarationsConnect(p, ds, buf, begin, end);
-	p.header := ProcTypeNew();
+	p.header := ProcTypeNew(FALSE);
 	p.id := IdProcType;
 	p.return := NIL;
 	IF ds.procedures = NIL THEN
@@ -2679,7 +2708,7 @@ VAR tp: ProcType;
 	BEGIN
 		NEW(td); NodeInit(td^); DeclInit(td, NIL);
 		predefined[s - Scanner.PredefinedFirst] := td;
-		td.header := ProcTypeNew();
+		td.header := ProcTypeNew(FALSE);
 		td.type := td.header;
 		td.id := s;
 		IF t > NoId THEN

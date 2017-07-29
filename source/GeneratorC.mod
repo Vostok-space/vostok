@@ -418,12 +418,12 @@ BEGIN
 	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
 
-PROCEDURE ArrayDeclLen(VAR gen: Generator; type: Ast.Type;
+PROCEDURE ArrayDeclLen(VAR gen: Generator; arr: Ast.Type;
                        decl: Ast.Declaration; sel: Ast.Selector;
                        i: INTEGER);
 BEGIN
-	IF type(Ast.Array).count # NIL THEN
-		expression(gen, type(Ast.Array).count)
+	IF arr(Ast.Array).count # NIL THEN
+		expression(gen, arr(Ast.Array).count)
 	ELSE
 		GlobalName(gen, decl);(*TODO*)
 		Text.Str(gen, "_len");
@@ -464,7 +464,7 @@ PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
 VAR sel: Ast.Selector;
 	ret: BOOLEAN;
 
-	PROCEDURE Record(VAR gen: Generator; VAR type: Ast.Type; VAR sel: Ast.Selector);
+	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
 		up: Ast.Record;
 
@@ -479,13 +479,13 @@ VAR sel: Ast.Selector;
 		END Search;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
-		IF type IS Ast.Pointer THEN
-			up := type(Ast.Pointer).type(Ast.Record)
+		IF typ IS Ast.Pointer THEN
+			up := typ(Ast.Pointer).type(Ast.Record)
 		ELSE
-			up := type(Ast.Record)
+			up := typ(Ast.Record)
 		END;
 
-		IF type.id = Ast.IdPointer THEN
+		IF typ.id = Ast.IdPointer THEN
 			Text.Str(gen, "->")
 		ELSE
 			Text.Str(gen, ".")
@@ -500,17 +500,15 @@ VAR sel: Ast.Selector;
 
 		Name(gen, var);
 
-		type := var.type
+		typ := var.type
 	END Record;
 
 	PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration);
-	VAR type: Ast.Type;
 	BEGIN
-		type := decl.type;
 		IF	(decl IS Ast.FormalParam) & (
-				decl(Ast.FormalParam).isVar & (type.id # Ast.IdArray)
+				decl(Ast.FormalParam).isVar & (decl.type.id # Ast.IdArray)
 				OR
-				(type.id = Ast.IdRecord)
+				(decl.type.id = Ast.IdRecord)
 			)
 		THEN
 			Text.Str(gen, "(*");
@@ -521,7 +519,7 @@ VAR sel: Ast.Selector;
 		END
 	END Declarator;
 
-	PROCEDURE Array(VAR gen: Generator; VAR type: Ast.Type;
+	PROCEDURE Array(VAR gen: Generator; VAR typ: Ast.Type;
 	                VAR sel: Ast.Selector; decl: Ast.Declaration;
 	                isDesignatorArray: BOOLEAN);
 	VAR i: INTEGER;
@@ -544,35 +542,35 @@ VAR sel: Ast.Selector;
 		ELSE
 			Text.Str(gen, "[")
 		END;
-		IF (type.type.id # Ast.IdArray) OR (type(Ast.Array).count # NIL)
+		IF (typ.type.id # Ast.IdArray) OR (typ(Ast.Array).count # NIL)
 		OR gen.opt.vla
 		THEN
 			IF gen.opt.checkIndex
 			 & (   (sel(Ast.SelArray).index.value = NIL)
-			    OR (type(Ast.Array).count = NIL)
+			    OR (typ(Ast.Array).count = NIL)
 			     & (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 			   )
 			THEN
 				Text.Str(gen, "o7c_ind(");
-				ArrayDeclLen(gen, type, decl, sel, 0);
+				ArrayDeclLen(gen, typ, decl, sel, 0);
 				Text.Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Text.Str(gen, ")")
 			ELSE
 				expression(gen, sel(Ast.SelArray).index)
 			END;
-			type := type.type;
+			typ := typ.type;
 			sel := sel.next;
 			i := 1;
 			WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
 				IF gen.opt.checkIndex
 				 & (   (sel(Ast.SelArray).index.value = NIL)
-				    OR (type(Ast.Array).count = NIL)
+				    OR (typ(Ast.Array).count = NIL)
 				     & (sel(Ast.SelArray).index.value(Ast.ExprInteger).int # 0)
 				   )
 				THEN
 					Text.Str(gen, "][o7c_ind(");
-					ArrayDeclLen(gen, type, decl, sel, i);
+					ArrayDeclLen(gen, typ, decl, sel, i);
 					Text.Str(gen, ", ");
 					expression(gen, sel(Ast.SelArray).index);
 					Text.Str(gen, ")")
@@ -582,28 +580,28 @@ VAR sel: Ast.Selector;
 				END;
 				INC(i);
 				sel := sel.next;
-				type := type.type
+				typ := typ.type
 			END
 		ELSE
 			i := 0;
 			WHILE (sel.next # NIL) & (sel.next IS Ast.SelArray) DO
 				Text.Str(gen, "o7c_ind(");
-				ArrayDeclLen(gen, type, decl, NIL, i);
+				ArrayDeclLen(gen, typ, decl, NIL, i);
 				Text.Str(gen, ", ");
 				expression(gen, sel(Ast.SelArray).index);
 				Text.Str(gen, ")");
-				type := type.type;
-				Mult(gen, decl, i + 1, type);
+				typ := typ.type;
+				Mult(gen, decl, i + 1, typ);
 				sel := sel.next;
 				INC(i);
 				Text.Str(gen, " + ")
 			END;
 			Text.Str(gen, "o7c_ind(");
-			ArrayDeclLen(gen, type, decl, NIL, i);
+			ArrayDeclLen(gen, typ, decl, NIL, i);
 			Text.Str(gen, ", ");
 			expression(gen, sel(Ast.SelArray).index);
 			Text.Str(gen, ")");
-			Mult(gen, decl, i + 1, type.type)
+			Mult(gen, decl, i + 1, typ.type)
 		END;
 		IF ~isDesignatorArray OR gen.opt.vla THEN
 			Text.Str(gen, "]")
@@ -1589,7 +1587,7 @@ BEGIN
 	MemWriteDirect(gen, mo^)
 END Declarator;
 
-PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
+PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
 
 	PROCEDURE Simple(VAR gen: Generator; str: ARRAY OF CHAR);
@@ -1674,35 +1672,35 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
 		Type(gen, decl, t, FALSE, sameType)
 	END Array;
 BEGIN
-	IF type = NIL THEN
+	IF typ = NIL THEN
 		Text.Str(gen, "void ");
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	ELSE
-		IF ~typeDecl & Strings.IsDefined(type.name) THEN
+		IF ~typeDecl & Strings.IsDefined(typ.name) THEN
 			IF sameType THEN
-				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
+				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name)
 				THEN	Text.Str(gen, "*")
 				END
 			ELSE
-				IF (type IS Ast.Pointer) & Strings.IsDefined(type.type.name)
+				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name)
 				THEN
 					Text.Str(gen, "struct ");
-					GlobalName(gen, type.type); Text.Str(gen, " *")
-				ELSIF type IS Ast.Record THEN
+					GlobalName(gen, typ.type); Text.Str(gen, " *")
+				ELSIF typ IS Ast.Record THEN
 					Text.Str(gen, "struct ");
-					IF CheckStructName(gen, type(Ast.Record)) THEN
-						GlobalName(gen, type); Text.Str(gen, " ")
+					IF CheckStructName(gen, typ(Ast.Record)) THEN
+						GlobalName(gen, typ); Text.Str(gen, " ")
 					END
 				ELSE
-					GlobalName(gen, type); Text.Str(gen, " ")
+					GlobalName(gen, typ); Text.Str(gen, " ")
 				END;
 				IF gen.out IS PMemoryOut THEN
 					MemWriteInvert(gen.out(PMemoryOut)^)
 				END
 			END
-		ELSIF ~sameType OR (type.id IN {Ast.IdPointer, Ast.IdArray, Ast.IdProcType})
+		ELSIF ~sameType OR (typ.id IN {Ast.IdPointer, Ast.IdArray, Ast.IdProcType})
 		THEN
-			CASE type.id OF
+			CASE typ.id OF
 			  Ast.IdInteger:
 				Simple(gen, "int ")
 			| Ast.IdSet:
@@ -1723,16 +1721,16 @@ BEGIN
 				Text.Str(gen, "*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
 				Invert(gen);
-				Type(gen, decl, type.type, FALSE, sameType)
+				Type(gen, decl, typ.type, FALSE, sameType)
 			| Ast.IdArray:
-				Array(gen, decl, type(Ast.Array), sameType)
+				Array(gen, decl, typ(Ast.Array), sameType)
 			| Ast.IdRecord:
-				Record(gen, type(Ast.Record))
+				Record(gen, typ(Ast.Record))
 			| Ast.IdProcType:
 				Text.Str(gen, "(*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
 				Text.Str(gen, ")");
-				ProcHead(gen, type(Ast.ProcType))
+				ProcHead(gen, typ(Ast.ProcType))
 			END
 		END;
 		IF gen.out IS PMemoryOut THEN
@@ -1757,12 +1755,12 @@ BEGIN
 	END
 END RecordTag;
 
-PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
+PROCEDURE TypeDecl(VAR out: MOut; typ: Ast.Type);
 
-	PROCEDURE Typedef(VAR gen: Generator; type: Ast.Type);
+	PROCEDURE Typedef(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
 		Text.Str(gen, "typedef ");
-		Declarator(gen, type, TRUE, FALSE, TRUE);
+		Declarator(gen, typ, TRUE, FALSE, TRUE);
 		Text.StrLn(gen, ";")
 	END Typedef;
 
@@ -1777,21 +1775,21 @@ PROCEDURE TypeDecl(VAR out: MOut; type: Ast.Type);
 		ASSERT(rec.ext = NIL)
 	END LinkRecord;
 BEGIN
-	Typedef(out.g[ORD(type.mark & ~out.opt.main)], type);
-	IF (type.id = Ast.IdRecord)
-	OR (type.id = Ast.IdPointer) & (type.type.next = NIL)
+	Typedef(out.g[ORD(typ.mark & ~out.opt.main)], typ);
+	IF (typ.id = Ast.IdRecord)
+	OR (typ.id = Ast.IdPointer) & (typ.type.next = NIL)
 	THEN
-		IF type.id = Ast.IdPointer THEN
-			type := type.type
+		IF typ.id = Ast.IdPointer THEN
+			typ := typ.type
 		END;
-		type.mark := type.mark
-		          OR (type(Ast.Record).pointer # NIL)
-		           & (type(Ast.Record).pointer.mark);
-		IF type.mark & ~out.opt.main THEN
-			RecordTag(out.g[Interface], type(Ast.Record))
+		typ.mark := typ.mark
+		         OR (typ(Ast.Record).pointer # NIL)
+		          & (typ(Ast.Record).pointer.mark);
+		IF typ.mark & ~out.opt.main THEN
+			RecordTag(out.g[Interface], typ(Ast.Record))
 		END;
-		RecordTag(out.g[Implementation], type(Ast.Record));
-		LinkRecord(out.opt, type(Ast.Record))
+		RecordTag(out.g[Implementation], typ(Ast.Record));
+		LinkRecord(out.opt, typ(Ast.Record))
 	END
 END TypeDecl;
 
@@ -1950,7 +1948,7 @@ END IsCaseElementWithRange;
 PROCEDURE ExprSameType(VAR gen: Generator;
                        expr: Ast.Expression; expectType: Ast.Type);
 VAR reref, brace: BOOLEAN;
-	base, type: Ast.Record;
+	base, extend: Ast.Record;
 BEGIN
 	base := NIL;
 	reref := (expr.type.id = Ast.IdPointer)
@@ -1961,27 +1959,27 @@ BEGIN
 		Expression(gen, expr);
 		IF expr.type.id = Ast.IdRecord THEN
 			base := expectType(Ast.Record);
-			type := expr.type(Ast.Record)
+			extend := expr.type(Ast.Record)
 		END
 	ELSIF gen.opt.plan9 THEN
 		Expression(gen, expr);
 		brace := FALSE
 	ELSE
 		base := expectType.type(Ast.Record);
-		type := expr.type.type(Ast.Record).base;
+		extend := expr.type.type(Ast.Record).base;
 		Text.Str(gen, "(&(");
 		Expression(gen, expr);
 		Text.Str(gen, ")->_")
 	END;
-	IF (base # NIL) & (type # base) THEN
+	IF (base # NIL) & (extend # base) THEN
 		(*ASSERT(expectType.id = Ast.IdRecord);*)
 		IF gen.opt.plan9 THEN
 			Text.Str(gen, ".");
 			GlobalName(gen, expectType)
 		ELSE
-			WHILE type # base DO
+			WHILE extend # base DO
 				Text.Str(gen, "._");
-				type := type.base
+				extend := extend.base
 			END
 		END
 	END;
@@ -2331,9 +2329,9 @@ BEGIN
 	Text.StrLn(gen, ";")
 END ProcDecl;
 
-PROCEDURE Qualifier(VAR gen: Generator; type: Ast.Type);
+PROCEDURE Qualifier(VAR gen: Generator; typ: Ast.Type);
 BEGIN
-	CASE type.id OF
+	CASE typ.id OF
 	  Ast.IdInteger:
 		Text.Str(gen, "int")
 	| Ast.IdSet:
@@ -2351,7 +2349,7 @@ BEGIN
 	| Ast.IdReal:
 		Text.Str(gen, "double")
 	| Ast.IdPointer, Ast.IdProcType:
-		GlobalName(gen, type)
+		GlobalName(gen, typ)
 	END
 END Qualifier;
 
@@ -2550,14 +2548,14 @@ END LnIfWrote;
 PROCEDURE VarsInit(VAR gen: Generator; d: Ast.Declaration);
 VAR arrDeep, arrTypeId, i: INTEGER;
 
-	PROCEDURE IsConformArrayType(type: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
+	PROCEDURE IsConformArrayType(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 	BEGIN
 		deep := 0;
-		WHILE type.id = Ast.IdArray DO
+		WHILE typ.id = Ast.IdArray DO
 			INC(deep);
-			type := type.type
+			typ := typ.type
 		END;
-		id := type.id
+		id := typ.id
 		RETURN id IN {Ast.IdReal, Ast.IdInteger, Ast.IdBoolean}
 	END IsConformArrayType;
 BEGIN

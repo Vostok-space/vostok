@@ -7,17 +7,17 @@ VAR
 	p: Proc;
 
 	PROCEDURE P(i: INTEGER);
-		PROCEDURE P(i: INTEGER);
-			PROCEDURE P(i: INTEGER);
+		PROCEDURE R(i: INTEGER);
+			PROCEDURE R(i: INTEGER);
 			BEGIN
 				ASSERT(FALSE)
-			END P;
+			END R;
 		BEGIN
 			ASSERT(i = 1)
-		END P;
+		END R;
 	BEGIN
 		ASSERT(i = 0);
-		P(i + 1)
+		R(i + 1)
 	END P;
 
 PROCEDURE Go*;

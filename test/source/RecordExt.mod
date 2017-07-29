@@ -34,39 +34,39 @@ VAR
 	pb1	: PBase;
 	pe1	: PExt1;
 
-PROCEDURE Print(VAR b: Base);
+PROCEDURE Print(VAR par: Base);
 VAR i: INTEGER;
 	r1: REAL;
 BEGIN
 	Out.String("Print: "); Out.Char(09X);
-	IF b IS Ext1 THEN
-		r1 := b(Ext1).r;
+	IF par IS Ext1 THEN
+		r1 := par(Ext1).r;
 		i := FLOOR(r1);
 		Out.String("Ext1: r = "); Out.Int(i, 0)
-	ELSIF b IS Ext2 THEN
-		Out.String("Ext2: c = "); Out.Int(ORD(b(Ext2).c), 0)
+	ELSIF par IS Ext2 THEN
+		Out.String("Ext2: c = "); Out.Int(ORD(par(Ext2).c), 0)
 	ELSE
 		Out.String("Base:")
 	END;
-	Out.String(" a = "); Out.Int(b.a, 0); Out.Ln
+	Out.String(" a = "); Out.Int(par.a, 0); Out.Ln
 END Print;
 
-PROCEDURE PrintExt21(VAR b: Base);
+PROCEDURE PrintExt21(VAR par: Base);
 BEGIN
 	Out.String("PrintExt21: "); Out.Char(" ");
-	IF b IS Ext21 THEN
-		Out.String("Ext21: r = "); Out.Int(ORD(b(Ext21).c), 0);
-		Out.String(" b = "); Out.Int(ORD(b(Ext21).b), 0)
+	IF par IS Ext21 THEN
+		Out.String("Ext21: r = "); Out.Int(ORD(par(Ext21).c), 0);
+		Out.String(" par = "); Out.Int(ORD(par(Ext21).b), 0)
 	ELSE
 		Out.String("Base:")
 	END;
-	Out.String(" a = "); Out.Int(b.a, 0); Out.Ln
+	Out.String(" a = "); Out.Int(par.a, 0); Out.Ln
 END PrintExt21;
 
-PROCEDURE Pointer(pb: PBase);
+PROCEDURE Pointer(par: PBase);
 BEGIN
-	IF pb # NIL THEN
-		pb(PExt1).r := 111.0
+	IF par # NIL THEN
+		par(PExt1).r := 111.0
 	END
 END Pointer;
 
