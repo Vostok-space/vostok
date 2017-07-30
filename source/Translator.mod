@@ -952,4 +952,12 @@ BEGIN
 	END
 END Start;
 
+PROCEDURE Benchmark*;
+VAR i: INTEGER;
+BEGIN
+	FOR i := 0 TO 10 DO
+		Start
+	END
+END Benchmark;
+
 END Translator.
