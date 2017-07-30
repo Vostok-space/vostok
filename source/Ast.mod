@@ -1972,21 +1972,26 @@ END MultCalc;
 PROCEDURE ExprTermGeneral(VAR e: ExprTerm; result: Expression; factor: Factor;
                           mult: INTEGER; factorOrTerm: Expression): INTEGER;
 VAR t: Type;
+    val: Factor;
 BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
 	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
 
-	t := factor.type;
-	IF (t # NIL) & (t.id = IdByte) THEN
-		t := TypeGet(IdInteger)
+	IF factor # NIL THEN
+		t := factor.type;
+		val := factor.value;
+		IF (t # NIL) & (t.id = IdByte) THEN
+			t := TypeGet(IdInteger)
+		END;
+	ELSE
+		t := NIL;
+		val := NIL
 	END;
 
 	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
-		IF factor # NIL THEN
-			e.value := factor.value
-		END
+		e.value := val
 	END;
 	e.factor := factor;
 	e.mult := mult;
