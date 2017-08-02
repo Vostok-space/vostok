@@ -30,11 +30,11 @@ extern bool CLI_Get(
 	i = 0;
 	while ((*ofs < str_len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
-		++i;
-		++*ofs;
+		i += 1;
+		*ofs += 1;
 	}
 	str[*ofs] = '\0';
-	++*ofs;
+	*ofs += 1;
 	return '\0' == CLI_argv[arg][i];
 }
 

@@ -64,24 +64,24 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 		assert(ext[0] <= O7C_MAX_RECORD_EXT);
 		while (i < ext[0]) {
 			ext[i] = base[i];
-			++i;
+			i += 1;
 		}
 		ext[i] = id;
-		++i;
-		++id;
+		i += 1;
+		id += 1;
 	}
 	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
 	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
 	while (i <= O7C_MAX_RECORD_EXT) {
 		ext[i] = 0;
-		++i;
+		i += 1;
 	}
 }
 
 #if defined O7C_BOOL_UNDEF
 	extern o7c_bool* o7c_bools_undef(int len, o7c_bool array[O7C_VLA_LEN(len)]) {
 		int i;
-		for (i = 0; i < len; ++i) {
+		for (i = 0; i < len; i += 1) {
 			array[i] = O7C_BOOL_UNDEF;
 		}
 		return array;
@@ -90,7 +90,7 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 
 extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_DBL_UNDEF;
 	}
 	return array;
@@ -98,7 +98,7 @@ extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
 
 extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_INT_UNDEF;
 	}
 	return array;
@@ -114,7 +114,7 @@ extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
 	}
 	i = 0;
 	while ((i < len) && (s1[i] == s2[i]) && (s1[i] != '\0')) {
-		++i;
+		i += 1;
 	}
 	if (i < s1_len) {
 		c1 = (int)s1[i];

@@ -35,6 +35,7 @@ BEGIN
 	ASSERT(out # NIL);
 
 	V.Init(g);
+	g.tabs := 0;
 	g.out := out;
 	g.len := 0;
 	g.isNewLine := FALSE

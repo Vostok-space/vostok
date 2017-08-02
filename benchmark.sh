@@ -1,21 +1,22 @@
 RESULT=result/benchmark
 
-mkdir -p $RESULT
-result/o7c to-c Translator.Benchmark $RESULT -infr . -m source
+mkdir -p $RESULT/asrt $RESULT/san
+result/o7c to-c Translator.Benchmark $RESULT/asrt -infr . -m source
+result/o7c to-c Translator.Benchmark $RESULT/san -infr . -m source -init no
 
-MAIN="gcc -O3 -flto -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -I$RESULT -Isingularity/implementation $RESULT/*.c singularity/implementation/*.c"
+MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
 
-$MAIN -DNDEBUG -o $RESULT/o7c
+$MAIN -DNDEBUG -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c
 
-$MAIN -o $RESULT/o7c-asrt
+$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -o $RESULT/o7c-asrt
 
-$MAIN -fsanitize=undefined -DNDEBUG -o $RESULT/o7c-usan
+$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -o $RESULT/o7c-usan
 
-$MAIN -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -DNDEBUG -o $RESULT/o7c-asan
+$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-asan
 
-$MAIN -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -DNDEBUG -o $RESULT/o7c-uasan
+$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan
 
-$MAIN -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan-asrt
+$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan-asrt
 
 strip $RESULT/o7c*
 

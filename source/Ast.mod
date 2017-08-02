@@ -153,6 +153,7 @@ CONST
 	IdImport*           = 32;
 	IdConst*            = 33;
 	IdVar*              = 34;
+	LastId              = 34;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -468,10 +469,12 @@ BEGIN
 	END
 END PutChars;
 
-PROCEDURE NodeInit(VAR n: Node);
+PROCEDURE NodeInit(VAR n: Node; id: INTEGER);
 BEGIN
+	ASSERT((NoId <= id) & (id <= LastId)
+	    OR (Scanner.PredefinedFirst <= id) & (id <= Scanner.PredefinedLast));
 	V.Init(n);
-	n.id := -1;
+	n.id := id;
 	Strings.Undef(n.comment);
 	n.ext := NIL
 END NodeInit;
@@ -561,7 +564,7 @@ PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER; p: Provider): Mod
 VAR m: Module;
 BEGIN
 	NEW(m);
-	NodeInit(m^);
+	NodeInit(m^, NoId);
 	DeclarationsInit(m, NIL);
 	m.fixed := FALSE;
 	m.import := NIL;
@@ -647,7 +650,7 @@ BEGIN
 	IF i # NIL THEN
 		err := ErrImportNameDuplicate
 	ELSE
-		NEW(imp); imp.id := IdImport;
+		NEW(imp); NodeInit(imp^, IdImport);
 		DeclConnect(imp, m, buf, nameOfs, nameEnd);
 		imp.mark := TRUE;
 		IF m.import = NIL THEN
@@ -715,7 +718,7 @@ BEGIN
 	ASSERT(~ds.module.fixed);
 
 	err := CheckNameDuplicate(ds, buf, begin, end);
-	NEW(c); c.id := IdConst;
+	NEW(c); NodeInit(c^, IdConst);
 	DeclConnect(c, ds, buf, begin, end);
 	c.expr := NIL;
 	c.finished := FALSE;
@@ -789,7 +792,7 @@ END TypeAdd;
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
                           buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
-	NEW(v); v.id := IdVar;
+	NEW(v); NodeInit(v^, IdVar);
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
 	v.inited := FALSE;
@@ -811,9 +814,8 @@ END VarAdd;
 
 PROCEDURE TInit(t: Type; id: INTEGER);
 BEGIN
-	NodeInit(t^);
+	NodeInit(t^, id);
 	DeclInit(t, NIL);
-	t.id := id;
 	t.array := NIL
 END TInit;
 
@@ -836,7 +838,7 @@ END ProcTypeNew;
 PROCEDURE ParamAddPredefined(proc: ProcType; type: Type; isVar: BOOLEAN);
 VAR v: FormalParam;
 BEGIN
-	NEW(v); NodeInit(v^);
+	NEW(v); NodeInit(v^, NoId);
 	IF proc.end = NIL THEN
 		proc.params := v
 	ELSE
@@ -845,6 +847,8 @@ BEGIN
 	proc.end := v;
 
 	v.module := NIL;
+	v.up := NIL;
+
 	v.mark := FALSE;
 	v.next := NIL;
 
@@ -874,7 +878,7 @@ END ParamAdd;
 PROCEDURE AddError*(m: Module; error, line, column, tabs: INTEGER);
 VAR e: Error;
 BEGIN
-	NEW(e); NodeInit(e^);
+	NEW(e); NodeInit(e^, NoId);
 	e.next := NIL;
 	e.code := error;
 	e.line := line;
@@ -995,15 +999,14 @@ END DeclarationSearch;
 PROCEDURE TypeErrorNew(): Type;
 VAR type: Type;
 BEGIN
-	NEW(type); DeclInit(type, NIL);
-	type.id := IdError
+	NEW(type); NodeInit(type^, IdError); DeclInit(type, NIL)
 	RETURN type
 END TypeErrorNew;
 
 PROCEDURE DeclErrorNew*(ds: Declarations): Declaration;
 VAR d: Declaration;
 BEGIN
-	NEW(d); d.id := IdError;
+	NEW(d); NodeInit(d^, IdError);
 	DeclInit(d, ds);
 	d.type := TypeErrorNew()
 	RETURN d
@@ -1077,8 +1080,7 @@ END ForIteratorGet;
 
 PROCEDURE ExprInit(e: Expression; id: INTEGER; t: Type);
 BEGIN
-	NodeInit(e^);
-	e.id := id;
+	NodeInit(e^, id);
 	e.type := t;
 	e.value := NIL
 END ExprInit;
@@ -1300,7 +1302,7 @@ END IsRecordExtension;
 
 PROCEDURE SelInit(s: Selector);
 BEGIN
-	NodeInit(s^);
+	NodeInit(s^, NoId);
 	s.next := NIL
 END SelInit;
 
@@ -1366,7 +1368,7 @@ PROCEDURE RecordChecklessVarAdd(r: Record; name: ARRAY OF CHAR;
 VAR v: Var;
 	last: Declaration;
 BEGIN
-	NEW(v); DeclInit(v, NIL);
+	NEW(v); NodeInit(v^, IdVar); DeclInit(v, NIL);
 	v.module := r.module;
 	PutChars(v.module, v.name, name, begin, end);
 	IF r.vars = NIL THEN
@@ -2078,10 +2080,9 @@ PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
 VAR err: INTEGER;
 BEGIN
 	err := CheckNameDuplicate(ds, buf, begin, end);
-	NEW(p); NodeInit(p^);
+	NEW(p); NodeInit(p^, IdProcType);
 	DeclarationsConnect(p, ds, buf, begin, end);
 	p.header := ProcTypeNew(FALSE);
-	p.id := IdProcType;
 	p.return := NIL;
 	IF ds.procedures = NIL THEN
 		ds.procedures := p
@@ -2214,7 +2215,7 @@ BEGIN
 		NEW(lastParam.next);
 		lastParam := lastParam.next
 	END;
-	NodeInit(lastParam^);
+	NodeInit(lastParam^, NoId);
 	lastParam.expr := e;
 	lastParam.distance := distance;
 	lastParam.next := NIL
@@ -2308,7 +2309,7 @@ END CallParamsEnd;
 
 PROCEDURE StatInit(s: Statement; e: Expression);
 BEGIN
-	NodeInit(s^);
+	NodeInit(s^, NoId);
 	s.expr := e;
 	s.next := NIL
 END StatInit;
@@ -2501,9 +2502,8 @@ PROCEDURE CaseLabelNew*(VAR label: CaseLabel; id, value: INTEGER): INTEGER;
 BEGIN
 	ASSERT(id IN {IdInteger, IdChar});
 
-	NEW(label); NodeInit(label^);
+	NEW(label); NodeInit(label^, id);
 	label.qual := NIL;
-	label.id := id;
 	label.value := value;
 	label.right := NIL;
 	label.next := NIL
@@ -2628,7 +2628,7 @@ END CaseRangeListAdd;
 PROCEDURE CaseElementNew*(labels: CaseLabel): CaseElement;
 VAR elem: CaseElement;
 BEGIN
-	NEW(elem); NodeInit(elem^);
+	NEW(elem); NodeInit(elem^, NoId);
 	elem.next := NIL;
 	elem.labels := labels;
 	elem.stats := NIL
@@ -2711,11 +2711,10 @@ VAR tp: ProcType;
 	PROCEDURE ProcNew(s, t: INTEGER): ProcType;
 	VAR td: PredefinedProcedure;
 	BEGIN
-		NEW(td); NodeInit(td^); DeclInit(td, NIL);
+		NEW(td); NodeInit(td^, s); DeclInit(td, NIL);
 		predefined[s - Scanner.PredefinedFirst] := td;
 		td.header := ProcTypeNew(FALSE);
 		td.type := td.header;
-		td.id := s;
 		IF t > NoId THEN
 			td.header.type := TypeGet(t)
 		END
@@ -2728,9 +2727,8 @@ BEGIN
 	TypeNew(Scanner.Set, IdSet);
 	TypeNew(Scanner.Boolean, IdBoolean);
 	TypeNew(Scanner.Real, IdReal);
-	NEW(types[IdPointer]); NodeInit(types[IdPointer]^);
+	NEW(types[IdPointer]); NodeInit(types[IdPointer]^, IdPointer);
 	DeclInit(types[IdPointer], NIL);
-	types[IdPointer].id := IdPointer;
 
 	typeInt := TypeGet(IdInteger);
 	tp := ProcNew(Scanner.Abs, IdInteger);

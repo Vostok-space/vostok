@@ -58,6 +58,7 @@ END LogLoopStr;
 
 PROCEDURE Undef*(VAR s: String);
 BEGIN
+	V.Init(s);
 	s.block := NIL;
 	s.ofs := -1
 END Undef;
@@ -87,6 +88,7 @@ BEGIN
 	ASSERT((end >= 0) & (end < LEN(s) - 1));
 	b := store.last;
 	i := store.ofs;
+	V.Init(w);
 	w.block := b;
 	w.ofs := i;
 

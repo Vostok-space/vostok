@@ -2541,7 +2541,9 @@ PROCEDURE LnIfWrote(VAR out: MOut);
 		END
 	END Write;
 BEGIN
-	Write(out.g[Interface]);
+	IF ~out.opt.main THEN
+		Write(out.g[Interface])
+	END;
 	Write(out.g[Implementation])
 END LnIfWrote;
 

@@ -376,7 +376,7 @@ O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag) {
 O7C_INLINE void* o7c_retain(void *mem) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE void* o7c_retain(void *mem) {
 	if ((O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) && (NULL != mem)) {
-		++*((o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1);
+		*((o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1) += 1;
 	}
 	return mem;
 }
@@ -391,7 +391,7 @@ O7C_INLINE void o7c_release(void *mem) {
 			free(counter);
 		} else {
 			assert(*counter > 1);
-			--*counter;
+			*counter -= 1;
 		}
 	}
 }
@@ -405,7 +405,7 @@ O7C_INLINE void* o7c_unhold(void *mem) {
 	{
 		counter = (o7c_mmc_t *)((o7c_id_t **)mem - 1) - 1;
 		assert(*counter > 0);
-		--*counter;
+		*counter -= 1;
 	}
 	return mem;
 }
@@ -426,7 +426,7 @@ O7C_INLINE void o7c_release_array(int count, void *mem[O7C_VLA_LEN(count)])
 O7C_INLINE void o7c_release_array(int count, void *mem[O7C_VLA_LEN(count)]) {
 	int i;
 	if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
-		for (i = 0; i < count; ++i) {
+		for (i = 0; i < count; i += 1) {
 			o7c_null(mem + i);
 		}
 	}

@@ -50,9 +50,11 @@ CONST
 	ErrTooManyModuleDirs    = -11;
 	ErrTooLongCDirs         = -12;
 	ErrTooLongCc            = -13;
-	ErrCCompiler            = -14;
-	ErrTooLongRunArgs       = -15;
-	ErrUnexpectArg          = -16;
+	ErrTooLongInit          = -14;
+	ErrCCompiler            = -15;
+	ErrTooLongRunArgs       = -16;
+	ErrUnexpectArg          = -17;
+	ErrUnknownInit          = -18;
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
@@ -392,7 +394,7 @@ END IsEqualStr;
 
 PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
                    VAR cDirs: ARRAY OF CHAR; VAR cc: ARRAY OF CHAR;
-                   VAR arg: INTEGER): INTEGER;
+                   VAR init, arg: INTEGER): INTEGER;
 VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 	ret: INTEGER;
 	opt: ARRAY 256 OF CHAR;
@@ -422,6 +424,7 @@ BEGIN
 	sing := {};
 	ret := ErrNo;
 	optLen := 0;
+	init := -1;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -471,6 +474,22 @@ BEGIN
 				INC(count, 2)
 			ELSE
 				ret := ErrTooLongModuleDirs
+			END
+		ELSIF opt = "-init" THEN
+			INC(arg);
+			optLen := 0;
+			IF arg >= CLI.count THEN
+				ret := ErrNotEnoughArgs
+			ELSIF ~CLI.Get(opt, optLen, arg) THEN
+				ret := ErrTooLongInit
+			ELSIF opt = "no" THEN
+				init := GeneratorC.VarInitNo
+			ELSIF opt = "undef" THEN
+				init := GeneratorC.VarInitUndefined
+			ELSIF opt = "zero" THEN
+				init := GeneratorC.VarInitZero
+			ELSE
+				ret := ErrUnknownInit
 			END
 		ELSE
 			ret := ErrUnexpectArg
@@ -762,7 +781,7 @@ VAR ret: INTEGER;
 	mp: ModuleProvider;
 	module: Ast.Module;
 	opt: GeneratorC.Options;
-	arg: INTEGER;
+	init, arg: INTEGER;
 	call: Ast.Call;
 	script: BOOLEAN;
 
@@ -874,7 +893,7 @@ BEGIN
 		mp := NewProvider();
 		mp.fileExt := ".mod"; (* TODO *)
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
-		ret := CopyPath(mp.path, mp.sing, cDirs, cc, arg);
+		ret := CopyPath(mp.path, mp.sing, cDirs, cc, init, arg);
 		IF ret = ErrNo THEN
 			srcNameEnd := ParseCommand(src, script);
 			IF script THEN
@@ -904,6 +923,9 @@ BEGIN
 					ret := ErrParse
 				ELSE
 					opt := GeneratorC.DefaultOptions();
+					IF init >= 0 THEN
+						opt.varInit := init
+					END;
 					CASE res OF
 					  ResultC:
 						ret := GenerateC(module, call # NIL, call, opt, resPath, resPathLen)
@@ -955,7 +977,7 @@ END Start;
 PROCEDURE Benchmark*;
 VAR i: INTEGER;
 BEGIN
-	FOR i := 0 TO 10 DO
+	FOR i := 0 TO 9 DO
 		Start
 	END
 END Benchmark;
