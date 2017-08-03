@@ -4,6 +4,7 @@ mkdir -p $RESULT/asrt $RESULT/san
 result/o7c to-c Translator.Benchmark $RESULT/asrt -infr . -m source
 result/o7c to-c Translator.Benchmark $RESULT/san -infr . -m source -init no
 
+export ASAN_OPTIONS=detect_odr_violation=0
 MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
 
 $MAIN -DNDEBUG -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c
