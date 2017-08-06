@@ -58,6 +58,14 @@ BEGIN
 	l := LEN(p2.b)
 END Pr;
 
+PROCEDURE Fail*;
+VAR lr3: R3;
+	b: REAL;
+BEGIN
+	lr3.a := 0;
+	b := lr3.b + FLT(lr3.a)
+END Fail;
+
 PROCEDURE Go*;
 BEGIN
 	r1.a := 0;

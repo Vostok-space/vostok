@@ -63,7 +63,7 @@ TYPE
 		main: BOOLEAN;
 
 		index: INTEGER;
-		records, recordLast: V.PBase; (* для генерации тэгов *)
+		records, recordLast: Ast.Record; (* для генерации тэгов *)
 
 		lastSelectorDereference: BOOLEAN
 	END;
@@ -102,6 +102,11 @@ TYPE
 		decl: Ast.Declaration;
 		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
 		i: INTEGER
+	END;
+
+	RecExt = POINTER TO RECORD(V.Base)
+		anonName: Strings.String;
+		next: Ast.Record
 	END;
 
 VAR
@@ -387,7 +392,7 @@ BEGIN
 	ELSIF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
 		l := 0;
 		ASSERT(rec.module # NIL);
-		rec.mark := TRUE;
+		(*rec.mark := TRUE; TODO удалить? *)
 		corr := Strings.CopyToChars(anon, l, rec.pointer.name);
 		ASSERT(corr);
 		anon[l] := "_";
@@ -1587,6 +1592,118 @@ BEGIN
 	MemWriteDirect(gen, mo^)
 END Declarator;
 
+PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
+	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger, Ast.IdByte, Ast.IdReal, Ast.IdSet:
+			Text.Str(gen, " = 0")
+		| Ast.IdBoolean:
+			Text.Str(gen, " = 0 > 1")
+		| Ast.IdChar:
+			Text.Str(gen, " = '\0'")
+		| Ast.IdPointer, Ast.IdProcType:
+			Text.Str(gen, " = NULL")
+		| Ast.IdArray:
+			Text.Str(gen, " ")
+		| Ast.IdRecord:
+			Text.Str(gen, " ")
+		END
+	END InitZero;
+
+	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger:
+			Text.Str(gen, " = O7C_INT_UNDEF")
+		| Ast.IdBoolean:
+			Text.Str(gen, " = O7C_BOOL_UNDEF")
+		| Ast.IdByte:
+			Text.Str(gen, " = 0")
+		| Ast.IdChar:
+			Text.Str(gen, " = '\0'")
+		| Ast.IdReal:
+			Text.Str(gen, " = O7C_DBL_UNDEF")
+		| Ast.IdSet:
+			Text.Str(gen, " = 0")
+		| Ast.IdPointer, Ast.IdProcType:
+			Text.Str(gen, " = NULL")
+		| Ast.IdArray:
+			Text.Str(gen, " ")
+		| Ast.IdRecord:
+			Text.Str(gen, " ")
+		END
+	END InitUndef;
+BEGIN
+	CASE gen.opt.varInit OF
+	  VarInitUndefined:
+		InitUndef(gen, var)
+	| VarInitZero:
+		InitZero(gen, var)
+	| VarInitNo:
+		IF (var.type.id = Ast.IdPointer)
+		 & (gen.opt.memManager = MemManagerCounter)
+		THEN
+			Text.Str(gen, " = NULL")
+		END
+	END
+END VarInit;
+
+PROCEDURE RecordUndefHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
+BEGIN
+	IF rec.mark & ~gen.opt.main THEN
+		Text.Str(gen, "extern void ")
+	ELSE
+		Text.Str(gen, "static void ")
+	END;
+	GlobalName(gen, rec);
+	Text.Str(gen, "_undef(struct ");
+	GlobalName(gen, rec);
+	IF interf THEN
+		Text.StrLn(gen, " *r);")
+	ELSE
+		Text.StrOpen(gen, " *r) {")
+	END
+END RecordUndefHeader;
+
+PROCEDURE RecordUndef(VAR gen: Generator; rec: Ast.Record);
+VAR var: Ast.Declaration;
+BEGIN
+	RecordUndefHeader(gen, rec, FALSE);
+	IF rec.base # NIL THEN
+		GlobalName(gen, rec.base);
+		IF ~gen.opt.plan9 THEN
+			Text.StrLn(gen, "_undef(&r->_);")
+		ELSE
+			Text.StrLn(gen, "_undef(&r);")
+		END
+	END;
+	var := rec.vars;
+	WHILE var # NIL DO
+		IF ~(var.type.id IN {Ast.IdArray, Ast.IdRecord}) THEN
+			Text.Str(gen, "r->");
+			Name(gen, var);
+			VarInit(gen, var);
+			Text.StrLn(gen, ";");
+		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
+			GlobalName(gen, var.type);
+			Text.Str(gen, "_undef(&r->");
+			Name(gen, var);
+			Text.StrLn(gen, ");")
+		END;
+		var := var.next
+	END;
+	Text.StrLnClose(gen, "}")
+END RecordUndef;
+
+PROCEDURE RecordUndefCall(VAR gen: Generator; var: Ast.Declaration);
+BEGIN
+	GlobalName(gen, var.type);
+	Text.Str(gen, "_undef(&");
+	GlobalName(gen, var);
+	Text.StrLn(gen, ");")
+END RecordUndefCall;
+
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
 
@@ -1596,14 +1713,9 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 		MemWriteInvert(gen.out(PMemoryOut)^)
 	END Simple;
 
-(*	Поскольку в Си нельзя полагаться на стабильность смещения переменных
-	в структуре, неплохо бы добавить возможность генерации импортируемых или
-	наследуемых структур на массив байт со смещениями.
-*)
 	PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
 	VAR v: Ast.Declaration;
 	BEGIN
-
 		rec.module := gen.module;
 		Text.Str(gen, "struct ");
 		IF CheckStructName(gen, rec) THEN
@@ -1765,14 +1877,20 @@ PROCEDURE TypeDecl(VAR out: MOut; typ: Ast.Type);
 	END Typedef;
 
 	PROCEDURE LinkRecord(opt: Options; rec: Ast.Record);
+	VAR ext: RecExt;
 	BEGIN
+		ASSERT(rec.ext = NIL);
+		NEW(ext); V.Init(ext^);
+		Strings.Undef(ext.anonName);
+		ext.next := NIL;
+		rec.ext := ext;
+
 		IF opt.records = NIL THEN
 			opt.records := rec
 		ELSE
-			opt.recordLast(Ast.Record).ext := rec
+			opt.recordLast.ext(RecExt).next := rec
 		END;
-		opt.recordLast := rec;
-		ASSERT(rec.ext = NIL)
+		opt.recordLast := rec
 	END LinkRecord;
 BEGIN
 	Typedef(out.g[ORD(typ.mark & ~out.opt.main)], typ);
@@ -1785,11 +1903,17 @@ BEGIN
 		typ.mark := typ.mark
 		         OR (typ(Ast.Record).pointer # NIL)
 		          & (typ(Ast.Record).pointer.mark);
+		LinkRecord(out.opt, typ(Ast.Record));
 		IF typ.mark & ~out.opt.main THEN
-			RecordTag(out.g[Interface], typ(Ast.Record))
+			RecordTag(out.g[Interface], typ(Ast.Record));
+			IF out.opt.varInit = VarInitUndefined THEN
+				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
+			END
 		END;
 		RecordTag(out.g[Implementation], typ(Ast.Record));
-		LinkRecord(out.opt, typ(Ast.Record))
+		IF out.opt.varInit = VarInitUndefined THEN
+			RecordUndef(out.g[Implementation], typ(Ast.Record))
+		END
 	END
 END TypeDecl;
 
@@ -1840,48 +1964,6 @@ END Const;
 
 PROCEDURE Var(VAR out: MOut; prev, var: Ast.Declaration; last: BOOLEAN);
 VAR same, mark: BOOLEAN;
-
-	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
-	BEGIN
-		CASE var.type.id OF
-		  Ast.IdInteger, Ast.IdByte, Ast.IdReal, Ast.IdSet:
-			Text.Str(gen, " = 0")
-		| Ast.IdBoolean:
-			Text.Str(gen, " = 0 > 1")
-		| Ast.IdChar:
-			Text.Str(gen, " = '\0'")
-		| Ast.IdPointer, Ast.IdProcType:
-			Text.Str(gen, " = NULL")
-		| Ast.IdArray:
-			Text.Str(gen, " ")
-		| Ast.IdRecord:
-			Text.Str(gen, " ")
-		END
-	END InitZero;
-
-	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
-	BEGIN
-		CASE var.type.id OF
-		  Ast.IdInteger:
-			Text.Str(gen, " = O7C_INT_UNDEF")
-		| Ast.IdBoolean:
-			Text.Str(gen, " = O7C_BOOL_UNDEF")
-		| Ast.IdByte:
-			Text.Str(gen, " = 0")
-		| Ast.IdChar:
-			Text.Str(gen, " = '\0'")
-		| Ast.IdReal:
-			Text.Str(gen, " = O7C_DBL_UNDEF")
-		| Ast.IdSet:
-			Text.Str(gen, " = 0")
-		| Ast.IdPointer, Ast.IdProcType:
-			Text.Str(gen, " = NULL")
-		| Ast.IdArray:
-			Text.Str(gen, " ")
-		| Ast.IdRecord:
-			Text.Str(gen, " ")
-		END
-	END InitUndef;
 BEGIN
 	mark := var.mark & ~out.opt.main;
 	Comment(out.g[ORD(mark)], var.comment);
@@ -1909,18 +1991,7 @@ BEGIN
 
 	Declarator(out.g[Implementation], var, FALSE, same, TRUE);
 
-	CASE out.opt.varInit OF
-	  VarInitUndefined:
-		InitUndef(out.g[Implementation], var)
-	| VarInitZero:
-		InitZero(out.g[Implementation], var)
-	| VarInitNo:
-		IF (var.type.id = Ast.IdPointer)
-		 & (out.opt.memManager = MemManagerCounter)
-		THEN
-			Text.Str(out.g[Implementation], " = NULL")
-		END
-	END;
+	VarInit(out.g[Implementation], var);
 
 	IF last THEN
 		Text.StrLn(out.g[Implementation], ";")
@@ -2563,7 +2634,11 @@ VAR arrDeep, arrTypeId, i: INTEGER;
 BEGIN
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
-			IF (gen.opt.varInit = VarInitZero)
+			IF (gen.opt.varInit = VarInitUndefined)
+			 & (d.type.ext # NIL)
+			THEN
+				RecordUndefCall(gen, d)
+			ELSIF (gen.opt.varInit = VarInitZero)
 			OR (d.type.id = Ast.IdRecord)
 			OR    (d.type.id = Ast.IdArray)
 			    & ~IsConformArrayType(d.type, arrTypeId, arrDeep)
@@ -2784,9 +2859,9 @@ VAR r: Ast.Record;
 BEGIN
 	r := NIL;
 	WHILE gen.opt.records # NIL DO
-		r := gen.opt.records(Ast.Record);
-		gen.opt.records := r.ext;
-		r.ext := NIL;
+		r := gen.opt.records;
+		gen.opt.records := r.ext(RecExt).next;
+		r.ext(RecExt).next := NIL;
 
 		Text.Str(gen, "o7c_tag_init(");
 		GlobalName(gen, r);

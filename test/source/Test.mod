@@ -128,13 +128,14 @@ BEGIN
 	a := b;
 	p.a := 4444.;
 	p^.b := 0.;
+
+	NEW(pointerToRecord);
 	ptr2 := pointerToRecord;
 	a.c := 1;
 	b := a;
 
 	ptr2^ := pointerToRecord^;
 
-	NEW(pointerToRecord);
 	NEW(ptr2)
 END Doo;
 
@@ -152,10 +153,20 @@ PROCEDURE String(p: ARRAY OF CHAR);
 END String;
 
 PROCEDURE Go*;
+VAR p: PoToRe;
 BEGIN
+	NEW(p);
+	Doo(p);
 	variable1 := 0;
 	proc1 := Irma;
 	Out.String("Hello"); Out.Ln
 END Go;
+
+PROCEDURE Fail*;
+VAR rab: RecAB;
+BEGIN
+	rab.a := 4.0;
+	rab.a := rab.a + rab.b
+END Fail;
 
 END Test.
