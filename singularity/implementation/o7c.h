@@ -65,7 +65,7 @@
 #elif INT_MAX >= 2147483647
 	typedef int o7c_int_t;
 #elif LONG_MAX >= 2147483647
-	typedef int o7c_int_t;
+	typedef long o7c_int_t;
 #else
 #	error
 #endif
@@ -123,7 +123,7 @@ enum {
 #if defined(O7C_CHECK_DIV_BY_ZERO)
 	enum { O7C_DIV_ZERO = O7C_CHECK_DIV_BY_ZERO };
 #else
-	enum { O7C_DIV_ZERO };
+	enum { O7C_DIV_ZERO = 0 };
 #endif
 
 #if defined(O7C_CHECK_FLOAT_DIV_BY_ZERO)
