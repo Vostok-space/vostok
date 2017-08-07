@@ -1604,10 +1604,7 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 			Text.Str(gen, " = '\0'")
 		| Ast.IdPointer, Ast.IdProcType:
 			Text.Str(gen, " = NULL")
-		| Ast.IdArray:
-			Text.Str(gen, " ")
-		| Ast.IdRecord:
-			Text.Str(gen, " ")
+		| Ast.IdArray, Ast.IdRecord:
 		END
 	END InitZero;
 
@@ -1628,10 +1625,7 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 			Text.Str(gen, " = 0")
 		| Ast.IdPointer, Ast.IdProcType:
 			Text.Str(gen, " = NULL")
-		| Ast.IdArray:
-			Text.Str(gen, " ")
-		| Ast.IdRecord:
-			Text.Str(gen, " ")
+		| Ast.IdArray, Ast.IdRecord:
 		END
 	END InitUndef;
 BEGIN
