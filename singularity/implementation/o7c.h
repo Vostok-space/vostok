@@ -70,7 +70,6 @@
 #	error
 #endif
 
-
 #define O7C_MEM_MAN_NOFREE  0
 #define O7C_MEM_MAN_COUNTER 1
 #define O7C_MEM_MAN_GC      2
@@ -152,20 +151,7 @@ enum {
 	enum { O7C_UNDEF = 1 };
 #endif
 
-typedef char unsigned o7c_char;
-
 O7C_INLINE void* o7c_raw_alloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
-O7C_INLINE void* o7c_raw_alloc(size_t size) {
-	void *mem;
-	if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
-	 || (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER))
-	{
-		mem = calloc(1, size);
-	} else {
-		mem = malloc(size);
-	}
-	return mem;
-}
 
 O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
 #if O7C_MEM_MAN == O7C_MEM_MAN_GC
@@ -196,9 +182,23 @@ O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
 	typedef int o7c_id_t;
 #endif
 
+#define O7C_LEN(array) ((o7c_int_t)(sizeof(array) / sizeof((array)[0])))
+
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
-#define O7C_LEN(array) ((o7c_int_t)(sizeof(array) / sizeof((array)[0])))
+typedef char unsigned o7c_char;
+
+O7C_INLINE void* o7c_raw_alloc(size_t size) {
+	void *mem;
+	if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
+	 || (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER))
+	{
+		mem = calloc(1, size);
+	} else {
+		mem = malloc(size);
+	}
+	return mem;
+}
 
 O7C_INLINE o7c_bool o7c_bl(o7c_bool b) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_CONST;
 O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
@@ -282,13 +282,16 @@ O7C_INLINE int o7c_add(int a1, int a2) {
 		assert(!overflow && s >= -INT_MAX);
 	} else {
 		if (!O7C_OVERFLOW) {
-			;
+			if (O7C_UNDEF) {
+				assert(o7c_int_inited(a1));
+				assert(o7c_int_inited(a2));
+			}
 		} else if (a2 >= 0) {
-			assert(a1 <=  INT_MAX - a2);
+			assert(o7c_int(a1) <=  INT_MAX - a2);
 		} else {
-			assert(a1 >= -INT_MAX - a2);
+			assert(a1 >= -INT_MAX - o7c_int(a2));
 		}
-		s = o7c_int(a1) + o7c_int(a2);
+		s = a1 + a2;
 	}
 	return s;
 }
@@ -302,13 +305,16 @@ O7C_INLINE int o7c_sub(int m, int s) {
 		assert(!overflow && d >= -INT_MAX);
 	} else {
 		if (!O7C_OVERFLOW) {
-			;
+			if (O7C_UNDEF) {
+				assert(o7c_int_inited(m));
+				assert(o7c_int_inited(s));
+			}
 		} else if (s >= 0) {
 			assert(m >= -INT_MAX + s);
 		} else {
-			assert(m <=  INT_MAX + s);
+			assert(o7c_int(m) <= INT_MAX + o7c_int(s));
 		}
-		d = o7c_int(m) - o7c_int(s);
+		d = m - s;
 	}
 	return d;
 }
