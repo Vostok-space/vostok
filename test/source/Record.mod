@@ -66,6 +66,15 @@ BEGIN
 	b := lr3.b + FLT(lr3.a)
 END Fail;
 
+PROCEDURE Fail2*;
+VAR pr3: POINTER TO R3;
+	b: REAL;
+BEGIN
+	NEW(pr3);
+	pr3.a := 0;
+	b := pr3.b + FLT(pr3.a)
+END Fail2;
+
 PROCEDURE Go*;
 BEGIN
 	r1.a := 0;

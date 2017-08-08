@@ -395,12 +395,12 @@ O7C_INLINE void o7c_release(void *mem) {
 	}
 }
 
-O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag)
+O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag, void undef(void *))
 	O7C_ATTR_ALWAYS_INLINE;
-O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag) {
+O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag, void undef(void *)) {
 	void *mem;
 	mem = o7c_malloc(
-		sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
+	    sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
 	  + sizeof(o7c_id_t *) + size);
 	if (NULL != mem) {
 		if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
@@ -409,12 +409,19 @@ O7C_INLINE void o7c_new(void **pmem, int size, o7c_tag_t const tag) {
 		}
 		*(o7c_id_t const **)mem = tag;
 		mem = (void *)((o7c_id_t **)mem + 1);
+		if ((O7C_VAR_INIT == O7C_VAR_INIT_UNDEF) && (NULL != undef)) {
+			undef(mem);
+		}
 	}
 	o7c_release(*pmem);
 	*pmem = mem;
 }
 
-#define O7C_NEW(mem, tag) o7c_new((void **)mem, sizeof(**(mem)), tag)
+#define O7C_NEW(mem, name) \
+	o7c_new((void **)mem, sizeof(**(mem)), name##_tag, (void (*)(void *))name##_undef)
+
+#define O7C_NEW2(mem, tag, undef) \
+	o7c_new((void **)mem, sizeof(**(mem)), tag, (void (*)(void *))undef)
 
 O7C_INLINE void* o7c_retain(void *mem) O7C_ATTR_ALWAYS_INLINE;
 O7C_INLINE void* o7c_retain(void *mem) {

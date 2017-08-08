@@ -771,15 +771,23 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
 			VAR tagType: Ast.Type;
 			BEGIN
-				Text.Str(gen, "O7C_NEW(&");
-				Expression(gen, e);
 				tagType := TypeForTag(e.type.type(Ast.Record));
-				IF tagType # NIL THEN
+				IF (tagType # NIL) & (gen.opt.varInit = VarInitUndefined) THEN
+					Text.Str(gen, "O7C_NEW(&");
+					Expression(gen, e);
 					Text.Str(gen, ", ");
 					GlobalName(gen, tagType);
-					Text.Str(gen, "_tag)")
+					Text.Str(gen, ")")
 				ELSE
-					Text.Str(gen, ", NULL)")
+					Text.Str(gen, "O7C_NEW2(&");
+					Expression(gen, e);
+					IF tagType # NIL THEN
+						Text.Str(gen, ", ");
+						GlobalName(gen, tagType);
+						Text.Str(gen, "_tag, NULL)")
+					ELSE
+						Text.Str(gen, ", NULL, NULL)")
+					END
 				END
 			END New;
 
