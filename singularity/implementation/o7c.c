@@ -78,15 +78,13 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 	}
 }
 
-#if defined O7C_BOOL_UNDEF
-	extern o7c_bool* o7c_bools_undef(int len, o7c_bool array[O7C_VLA_LEN(len)]) {
-		int i;
-		for (i = 0; i < len; i += 1) {
-			array[i] = O7C_BOOL_UNDEF;
-		}
-		return array;
+extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]) {
+	int i;
+	for (i = 0; i < len; i += 1) {
+		array[i] = 0xff;
 	}
-#endif
+	return array;
+}
 
 extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
 	int i;

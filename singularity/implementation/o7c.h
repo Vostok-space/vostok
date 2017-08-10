@@ -51,13 +51,15 @@
 #	define O7C_VLA_LEN(len)
 #endif
 
+typedef char unsigned o7c_char;
+
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
 #elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
 	typedef _Bool o7c_bool;
 #else
 #	define O7C_BOOL_UNDEF 0xFF
-	typedef char unsigned o7c_bool;
+	typedef o7c_char o7c_bool;
 #endif
 
 #if defined(O7C_INT_T)
@@ -186,8 +188,6 @@ O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
-typedef char unsigned o7c_char;
-
 O7C_INLINE void* o7c_raw_alloc(size_t size) {
 	void *mem;
 	if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
@@ -208,7 +208,9 @@ O7C_INLINE o7c_bool o7c_bl(o7c_bool b) {
 	return b;
 }
 
-extern o7c_bool* o7c_bools_undef(int len, o7c_bool array[O7C_VLA_LEN(len)]);
+extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]);
+#define O7C_BOOLS_UNDEF(array) \
+	o7c_bools_undef(sizeof(array) / sizeof(o7c_char), (o7c_char *)(array))
 
 O7C_INLINE double o7c_dbl_undef(void) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_CONST;
 O7C_INLINE double o7c_dbl_undef(void) {
@@ -222,6 +224,8 @@ O7C_INLINE double o7c_dbl_undef(void) {
 }
 
 extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]);
+#define O7C_DOUBLES_UNDEF(array) \
+	o7c_doubles_undef(sizeof(array) / sizeof(double), (double *)(array))
 
 O7C_INLINE double o7c_dbl(double d) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_CONST;
 O7C_INLINE double o7c_dbl(double d) {
@@ -272,6 +276,8 @@ O7C_INLINE int o7c_int(int i) {
 }
 
 extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]);
+#define O7C_INTS_UNDEF(array) \
+	o7c_ints_undef((int)(sizeof(array) / (sizeof(int))), (int *)(array))
 
 O7C_INLINE int o7c_add(int a1, int a2) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_CONST;
 O7C_INLINE int o7c_add(int a1, int a2) {

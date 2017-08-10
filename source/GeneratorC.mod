@@ -106,6 +106,7 @@ TYPE
 
 	RecExt = POINTER TO RECORD(V.Base)
 		anonName: Strings.String;
+		undef: BOOLEAN;
 		next: Ast.Record
 	END;
 
@@ -1668,35 +1669,44 @@ BEGIN
 	END
 END RecordUndefHeader;
 
-PROCEDURE RecordUndef(VAR gen: Generator; rec: Ast.Record);
-VAR var: Ast.Declaration;
+PROCEDURE IsArrayTypeSimpleUndef(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 BEGIN
-	RecordUndefHeader(gen, rec, FALSE);
-	IF rec.base # NIL THEN
-		GlobalName(gen, rec.base);
-		IF ~gen.opt.plan9 THEN
-			Text.StrLn(gen, "_undef(&r->_);")
-		ELSE
-			Text.StrLn(gen, "_undef(&r);")
-		END
+	deep := 0;
+	WHILE typ.id = Ast.IdArray DO
+		INC(deep);
+		typ := typ.type
 	END;
-	var := rec.vars;
-	WHILE var # NIL DO
-		IF ~(var.type.id IN {Ast.IdArray, Ast.IdRecord}) THEN
-			Text.Str(gen, "r->");
-			Name(gen, var);
-			VarInit(gen, var);
-			Text.StrLn(gen, ";");
-		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
-			GlobalName(gen, var.type);
-			Text.Str(gen, "_undef(&r->");
-			Name(gen, var);
-			Text.StrLn(gen, ");")
-		END;
-		var := var.next
+	id := typ.id
+	RETURN id IN {Ast.IdReal, Ast.IdInteger, Ast.IdBoolean}
+END IsArrayTypeSimpleUndef;
+
+PROCEDURE ArraySimpleUndef(VAR gen: Generator; arrTypeId: INTEGER;
+                           d: Ast.Declaration; inRec: BOOLEAN);
+BEGIN
+	CASE arrTypeId OF
+	  Ast.IdInteger:
+		Text.Str(gen, "O7C_INTS_UNDEF(")
+	| Ast.IdReal:
+		Text.Str(gen, "O7C_DOUBLES_UNDEF(")
+	| Ast.IdBoolean:
+		Text.Str(gen, "O7C_BOOLS_UNDEF(")
 	END;
-	Text.StrLnClose(gen, "}")
-END RecordUndef;
+	IF inRec THEN
+		Text.Str(gen, "r->")
+	END;
+	Name(gen, d);
+	(*
+	FOR i := 2 TO arrDeep DO
+		Text.Str(gen, "[0]")
+	END;
+	Text.Str(gen, "), ");
+	Name(gen, d);
+	FOR i := 2 TO arrDeep DO
+		Text.Str(gen, "[0]")
+	END;
+	*)
+	Text.Str(gen, ");")
+END ArraySimpleUndef;
 
 PROCEDURE RecordUndefCall(VAR gen: Generator; var: Ast.Declaration);
 BEGIN
@@ -1705,6 +1715,92 @@ BEGIN
 	GlobalName(gen, var);
 	Text.StrLn(gen, ");")
 END RecordUndefCall;
+
+PROCEDURE TypeForUndef(t: Ast.Type): Ast.Type;
+BEGIN
+	IF (t.id # Ast.IdRecord) OR (t.ext = NIL) OR ~t.ext(RecExt).undef THEN
+		t := NIL
+	END
+	RETURN t
+END TypeForUndef;
+
+(* TODO Навести порядок *)
+PROCEDURE RecordUndef(VAR gen: Generator; rec: Ast.Record);
+VAR var: Ast.Declaration;
+	arrTypeId, arrDeep: INTEGER;
+	typeUndef: Ast.Type;
+
+	PROCEDURE IteratorIfNeed(VAR gen: Generator; var: Ast.Declaration);
+	VAR id, deep: INTEGER;
+	BEGIN
+		WHILE (var # NIL)
+		    & ((var.type.id # Ast.IdArray)
+		    OR IsArrayTypeSimpleUndef(var.type, id, deep)
+		    OR (TypeForUndef(var.type.type) = NIL))
+		DO
+			var := var.next
+		END;
+		IF var # NIL THEN
+			Text.StrLn(gen, "o7c_int_t i;")
+		END
+	END IteratorIfNeed;
+
+	PROCEDURE Memset(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		Text.Str(gen, "memset(&r->");
+		Name(gen, var);
+		Text.Str(gen, ", 0, sizeof(r->");
+		Name(gen, var);
+		Text.StrLn(gen, "));")
+	END Memset;
+BEGIN
+	RecordUndefHeader(gen, rec, FALSE);
+	IteratorIfNeed(gen, rec.vars);
+	IF rec.base # NIL THEN
+		GlobalName(gen, rec.base);
+		IF ~gen.opt.plan9 THEN
+			Text.StrLn(gen, "_undef(&r->_);")
+		ELSE
+			Text.StrLn(gen, "_undef(&r);")
+		END
+	END;
+	rec.ext(RecExt).undef := TRUE;
+	var := rec.vars;
+	WHILE var # NIL DO
+		IF ~(var.type.id IN {Ast.IdArray, Ast.IdRecord}) THEN
+			Text.Str(gen, "r->");
+			Name(gen, var);
+			VarInit(gen, var);
+			Text.StrLn(gen, ";");
+		ELSIF var.type.id = Ast.IdArray THEN
+			typeUndef := TypeForUndef(var.type.type);
+			IF IsArrayTypeSimpleUndef(var.type, arrTypeId, arrDeep) THEN
+				ArraySimpleUndef(gen, arrTypeId, var, TRUE)
+			ELSIF typeUndef # NIL THEN (* TODO вложенные циклы *)
+				Text.Str(gen, "for (i = 0; i < O7C_LEN(r->");
+				Name(gen, var);
+				Text.StrOpen(gen, "); i += 1) {");
+				GlobalName(gen, typeUndef);
+				Text.Str(gen, "_undef(r->");
+				Name(gen, var);
+				Text.StrLn(gen, " + i);");
+
+				Text.StrLnClose(gen, "}")
+			ELSE
+				Memset(gen, var)
+			END
+		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
+			GlobalName(gen, var.type);
+			Text.Str(gen, "_undef(&r->");
+			Name(gen, var);
+			Text.StrLn(gen, ");")
+		ELSE
+			Memset(gen, var)
+		END;
+		var := var.next
+	END;
+	Text.StrLnClose(gen, "}")
+END RecordUndef;
 
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
@@ -1885,6 +1981,7 @@ PROCEDURE TypeDecl(VAR out: MOut; typ: Ast.Type);
 		NEW(ext); V.Init(ext^);
 		Strings.Undef(ext.anonName);
 		ext.next := NIL;
+		ext.undef := FALSE;
 		rec.ext := ext;
 
 		IF opt.records = NIL THEN
@@ -2621,18 +2718,7 @@ BEGIN
 END LnIfWrote;
 
 PROCEDURE VarsInit(VAR gen: Generator; d: Ast.Declaration);
-VAR arrDeep, arrTypeId, i: INTEGER;
-
-	PROCEDURE IsConformArrayType(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
-	BEGIN
-		deep := 0;
-		WHILE typ.id = Ast.IdArray DO
-			INC(deep);
-			typ := typ.type
-		END;
-		id := typ.id
-		RETURN id IN {Ast.IdReal, Ast.IdInteger, Ast.IdBoolean}
-	END IsConformArrayType;
+VAR arrDeep, arrTypeId: INTEGER;
 BEGIN
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
@@ -2643,7 +2729,7 @@ BEGIN
 			ELSIF (gen.opt.varInit = VarInitZero)
 			OR (d.type.id = Ast.IdRecord)
 			OR    (d.type.id = Ast.IdArray)
-			    & ~IsConformArrayType(d.type, arrTypeId, arrDeep)
+			    & ~IsArrayTypeSimpleUndef(d.type, arrTypeId, arrDeep)
 			THEN
 				Text.Str(gen, "memset(&");
 				Name(gen, d);
@@ -2652,24 +2738,7 @@ BEGIN
 				Text.StrLn(gen, "));")
 			ELSE
 				ASSERT(gen.opt.varInit = VarInitUndefined);
-				CASE arrTypeId OF
-				  Ast.IdInteger:
-					Text.Str(gen, "o7c_ints_undef(O7C_LEN(")
-				| Ast.IdReal:
-					Text.Str(gen, "o7c_doubles_undef(O7C_LEN(")
-				| Ast.IdBoolean:
-					Text.Str(gen, "o7c_bools_undef(O7C_LEN(")
-				END;
-				Name(gen, d);
-				FOR i := 2 TO arrDeep DO
-					Text.Str(gen, "[0]")
-				END;
-				Text.Str(gen, "), ");
-				Name(gen, d);
-				FOR i := 2 TO arrDeep DO
-					Text.Str(gen, "[0]")
-				END;
-				Text.Str(gen, ");")
+				ArraySimpleUndef(gen, arrTypeId, d, FALSE)
 			END
 		END;
 		d := d.next
