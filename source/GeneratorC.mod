@@ -136,9 +136,17 @@ BEGIN
 	RETURN count
 END MemWrite;
 
+(* TODO заменить на NIL после иправления проверки совместимости ProcType и NIL*)
+PROCEDURE MemWriteBytes(VAR out: Stream.Out;
+                   buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+BEGIN
+	ASSERT(FALSE)
+	RETURN -1
+END MemWriteBytes;
+
 PROCEDURE MemoryOutInit(VAR mo: MemoryOut);
 BEGIN
-	Stream.InitOut(mo, MemWrite);
+	Stream.InitOut(mo, MemWriteBytes, MemWrite);
 	mo.mem[0].len := 0;
 	mo.mem[1].len := 0;
 	mo.invert := FALSE

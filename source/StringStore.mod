@@ -313,7 +313,7 @@ BEGIN
 	ofs := i;
 	len := 0;
 	WHILE block.s[i] = Utf8.NewPage DO
-		len := len + Stream.Write(out, block.s, ofs, i - ofs);
+		len := len + Stream.WriteChars(out, block.s, ofs, i - ofs);
 		block := block.next;
 		ofs := 0;
 		i := 0
@@ -321,7 +321,7 @@ BEGIN
 		INC(i)
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
-	len := Stream.Write(out, block.s, ofs, i - ofs)
+	len := Stream.WriteChars(out, block.s, ofs, i - ofs)
 	RETURN len
 END Write;
 

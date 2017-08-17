@@ -21,29 +21,38 @@ IMPORT V;
 TYPE
 	PIn* = POINTER TO In;
 	In* = RECORD(V.Base)
-		read: PROCEDURE(VAR in: In; VAR buf: ARRAY OF CHAR;
-		                ofs, count: INTEGER): INTEGER
+		read: PROCEDURE(VAR in: In; VAR buf: ARRAY OF BYTE;
+		                ofs, count: INTEGER): INTEGER;
+		readChars: PROCEDURE(VAR in: In; VAR buf: ARRAY OF CHAR;
+		                     ofs, count: INTEGER): INTEGER
 	END;
 
 	POut* = POINTER TO Out;
 	Out* = RECORD(V.Base)
 		write: PROCEDURE(VAR out: Out;
-		                 buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER
+		                 buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+		writeChars: PROCEDURE(VAR out: Out;
+		                      buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER
 	END;
 	(* Запись Out также служит сообщением для отладочного вывода*)
 
 	ReadProc*  = PROCEDURE(VAR in: In;
-	                       VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	                       VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+	ReadCharsProc* = PROCEDURE(VAR in: In;
+	                           VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	WriteProc* = PROCEDURE(VAR out: Out;
-	                       buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	                       buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+	WriteCharsProc* = PROCEDURE(VAR out: Out;
+	                            buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 
-PROCEDURE InitIn*(VAR in: In; read: ReadProc);
+PROCEDURE InitIn*(VAR in: In; read: ReadProc; readChars: ReadCharsProc);
 BEGIN
 	V.Init(in);
-	in.read := read
+	in.read := read;
+	in.readChars := readChars
 END InitIn;
 
-PROCEDURE Read*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Read*(VAR in: In; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 VAR r: INTEGER;
 BEGIN
 	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
@@ -52,13 +61,23 @@ BEGIN
 	RETURN r
 END Read;
 
-PROCEDURE InitOut*(VAR out: Out; write: WriteProc);
+PROCEDURE ReadChars*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+VAR r: INTEGER;
+BEGIN
+	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	r := in.readChars(in, buf, ofs, count);
+	ASSERT((r >= 0) & (r <= count))
+	RETURN r
+END ReadChars;
+
+PROCEDURE InitOut*(VAR out: Out; write: WriteProc; writeChars: WriteCharsProc);
 BEGIN
 	V.Init(out);
-	out.write := write
+	out.write := write;
+	out.writeChars := writeChars
 END InitOut;
 
-PROCEDURE Write*(VAR out: Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Write*(VAR out: Out; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 VAR w: INTEGER;
 BEGIN
 	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
@@ -66,5 +85,14 @@ BEGIN
 	ASSERT((0 <= w) & (w <= count))
 	RETURN w
 END Write;
+
+PROCEDURE WriteChars*(VAR out: Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+VAR w: INTEGER;
+BEGIN
+	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	w := out.writeChars(out, buf, ofs, count);
+	ASSERT((0 <= w) & (w <= count))
+	RETURN w
+END WriteChars;
 
 END VDataStream.

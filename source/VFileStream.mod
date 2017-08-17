@@ -31,9 +31,13 @@ TYPE
 		file: CFiles.File
 	END;
 
-PROCEDURE Read(VAR in: Stream.In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Read(VAR in: Stream.In; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.Read(in(RIn).file, buf, ofs, count)
 END Read;
+
+PROCEDURE ReadChars(VAR in: Stream.In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.ReadChars(in(RIn).file, buf, ofs, count)
+END ReadChars;
 
 PROCEDURE OpenIn*(name: ARRAY OF CHAR): In;
 VAR in: In;
@@ -45,7 +49,7 @@ BEGIN
 		IF file = NIL THEN
 			in := NIL
 		ELSE
-			Stream.InitIn(in^, Read);
+			Stream.InitIn(in^, Read, ReadChars);
 			in.file := file
 		END
 	END
@@ -58,9 +62,13 @@ BEGIN
 	in := NIL
 END CloseIn;
 
-PROCEDURE Write(VAR out: Stream.Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Write(VAR out: Stream.Out; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.Write(out(ROut).file, buf, ofs, count)
 END Write;
+
+PROCEDURE WriteChars(VAR out: Stream.Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.WriteChars(out(ROut).file, buf, ofs, count)
+END WriteChars;
 
 PROCEDURE OpenOut*(name: ARRAY OF CHAR): Out;
 VAR out: Out;
@@ -72,7 +80,7 @@ BEGIN
 		IF file = NIL THEN
 			out := NIL
 		ELSE
-			Stream.InitOut(out^, Write);
+			Stream.InitOut(out^, Write, WriteChars);
 			out.file := file
 		END
 	END

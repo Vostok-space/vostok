@@ -32,13 +32,21 @@ BEGIN
 	file := NIL
 END Close;
 
-PROCEDURE Read*(file: File; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Read*(file: File; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN 0
 END Read;
 
-PROCEDURE Write*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE Write*(file: File; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN 0
 END Write;
+
+PROCEDURE ReadChars*(file: File; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN 0
+END ReadChars;
+
+PROCEDURE WriteChars*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN 0
+END WriteChars;
 
 (* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB *)
 PROCEDURE Seek*(file: File; gibs, bytes: INTEGER): BOOLEAN;

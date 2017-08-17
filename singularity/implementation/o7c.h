@@ -359,7 +359,7 @@ O7C_INLINE int o7c_mod(int n, int d) {
 
 O7C_INLINE int o7c_ind(int len, int ind) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_CONST;
 O7C_INLINE int o7c_ind(int len, int ind) {
-	assert(len > 0);/* TODO remove */
+	assert(len > 0); /* TODO remove */
 	assert((unsigned)ind < (unsigned)len);
 	return ind;
 }

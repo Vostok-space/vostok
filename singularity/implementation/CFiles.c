@@ -57,21 +57,20 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-	int buf_len, char unsigned buf[O7C_VLA_LEN(buf_len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
 {
-	assert(buf != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(buf_len - count >= ofs);
+	assert(len - count >= ofs);
 	return fread(buf + ofs, 1, count, file->file);
 }
 
 extern int CFiles_Write(CFiles_File file,
-	int buf_len, char unsigned buf[O7C_VLA_LEN(buf_len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(buf_len - count >= ofs);
+	assert(len - count >= ofs);
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 

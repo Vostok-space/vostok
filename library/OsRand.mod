@@ -21,24 +21,24 @@ MODULE OsRand;
    File.Close(file)
  END Close;
 
- PROCEDURE Read*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER; count: INTEGER): BOOLEAN;
+ PROCEDURE Read*(VAR buf: ARRAY OF BYTE; VAR ofs: INTEGER; count: INTEGER): BOOLEAN;
  RETURN (file # NIL) & (count = File.Read(file, buf, ofs, count))
  END Read;
 
  PROCEDURE Int*(VAR i: INTEGER): BOOLEAN;
- VAR buf: ARRAY 4 OF CHAR;
+ VAR buf: ARRAY 4 OF BYTE;
      ofs: INTEGER;
      ret: BOOLEAN;
  BEGIN
    ofs := 0;
    ret := Read(buf, ofs, LEN(buf));
    IF ret THEN
-     i := (ORD(buf[0])
-         + ORD(buf[1])       * 100H
-         + ORD(buf[2])       * 10000H
-         + ORD(buf[3]) DIV 2 * 1000000H
+     i := (buf[0]
+         + buf[1]       * 100H
+         + buf[2]       * 10000H
+         + buf[3] DIV 2 * 1000000H
           )
-        * (ORD(buf[3]) MOD 2 * 2 - 1)
+        * (buf[3] MOD 2 * 2 - 1)
    END
    RETURN ret
  END Int;

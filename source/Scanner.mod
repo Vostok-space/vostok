@@ -221,7 +221,7 @@ BEGIN
 	ELSE
 		ind := ind MOD (LEN(buf) - 1);
 		IF buf[ind] = NewPage THEN
-			size := Stream.Read(in, buf, ind, LEN(buf) DIV 2);
+			size := Stream.ReadChars(in, buf, ind, LEN(buf) DIV 2);
 			Normalize(buf, ind, ind + size);
 			IF size = LEN(buf) DIV 2 THEN
 				buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage

@@ -32,6 +32,12 @@ extern int CFiles_Read(CFiles_File file,
 extern int CFiles_Write(CFiles_File file,
 						char unsigned buf[/*len*/], int buf_len, int ofs, int count);
 
+extern int CFiles_ReadChars(CFiles_File file,
+					   char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+
+extern int CFiles_WriteChars(CFiles_File file,
+						char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 
 extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);

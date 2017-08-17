@@ -67,6 +67,24 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
+extern int CFiles_ReadChars(CFiles_File file,
+                       char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+	assert(buf != NULL);
+	assert(ofs >= 0);
+	assert(count >= 0);
+	assert(buf_len - count >= ofs);
+	return fread(buf + ofs, 1, count, file->file);
+}
+
+extern int CFiles_WriteChars(CFiles_File file,
+                        char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+	assert(ofs >= 0);
+	assert(count >= 0);
+	assert(buf_len - count >= ofs);
+	return fwrite(buf + ofs, 1, count, file->file);
+}
+
+
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
 	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
 	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
