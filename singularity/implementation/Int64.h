@@ -50,15 +50,11 @@ typedef o7c_char Int64_Type[Int64_Size_cnst];
 static Int64_Type Int64_min;
 static Int64_Type Int64_max;
 
-static O7C_INLINE void Int64_FromInt(Int64_Type v, int high, int low)
-	O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void Int64_FromInt(Int64_Type v, int high, int low) {
+O7C_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, int high, int low) {
 	*(Int64_t *)v = o7c_int(high) * (Int64_t)INT_MAX + o7c_int(low);
 }
 
-static O7C_INLINE void Int64_ToInt(int *i, Int64_Type v)
-	O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void Int64_ToInt(int *i, Int64_Type v) {
+O7C_ALWAYS_INLINE void Int64_ToInt(int *i, Int64_Type v) {
 	o7c_bool ov;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		ov = __builtin_add_overflow(*(Int64_t *)v, 0, i);
@@ -71,9 +67,7 @@ static O7C_INLINE void Int64_ToInt(int *i, Int64_Type v) {
 	}
 }
 
-static O7C_INLINE void Int64_Add(Int64_Type sum,
-	Int64_Type a1, Int64_Type a2) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2)
 {
 	o7c_bool overflow;
@@ -93,9 +87,7 @@ static O7C_INLINE void
 	}
 }
 
-static O7C_INLINE void Int64_Sub(Int64_Type diff,
-	Int64_Type m, Int64_Type s) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_Sub(Int64_Type diff, Int64_Type m, Int64_Type s)
 {
 	o7c_bool overflow;
@@ -115,9 +107,7 @@ static O7C_INLINE void
 	}
 }
 
-static O7C_INLINE void Int64_Mul(Int64_Type prod,
-	Int64_Type m1, Int64_Type m2) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_Mul(Int64_Type prod, Int64_Type m1, Int64_Type m2)
 {
 	o7c_bool overflow;
@@ -148,9 +138,7 @@ static O7C_INLINE void
 	}
 }
 
-static O7C_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d)
-	O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
+O7C_ALWAYS_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
 	if (O7C_OVERFLOW) {
 		if (O7C_DIV_ZERO) {
 			assert(*(Int64_t *)d != 0);
@@ -161,27 +149,21 @@ static O7C_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
 	}
 }
 
-static O7C_INLINE void Int64_Div(Int64_Type div,
-	Int64_Type n, Int64_Type d) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_Div(Int64_Type div, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
 	*(Int64_t *)div = *(Int64_t *)n / *(Int64_t *)d;
 }
 
-static O7C_INLINE void Int64_Mod(Int64_Type mod,
-	Int64_Type n, Int64_Type d) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_Mod(Int64_Type mod, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
 	*(Int64_t *)mod = *(Int64_t *)n % *(Int64_t *)d;
 }
 
-static O7C_INLINE void Int64_DivMod(Int64_Type div, Int64_Type mod,
-	Int64_Type n, Int64_Type d) O7C_ATTR_ALWAYS_INLINE;
-static O7C_INLINE void
+O7C_ALWAYS_INLINE void
 	Int64_DivMod(Int64_Type div, Int64_Type mod, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
@@ -189,7 +171,7 @@ static O7C_INLINE void
 	*(Int64_t *)mod = *(Int64_t *)n % *(Int64_t *)d;
 }
 
-static O7C_INLINE void Int64_init(void) {
+O7C_ALWAYS_INLINE void Int64_init(void) {
 	*(Int64_t *)Int64_min = Int64_Min;
 	*(Int64_t *)Int64_max = Int64_Max;
 }
