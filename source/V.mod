@@ -26,15 +26,15 @@ TYPE
 	Message* = RECORD END;
 	PMessage* = POINTER TO Message;
 
+	Handle* = PROCEDURE(VAR this, mes: Message): BOOLEAN;
+
 	Base* = RECORD(Message)
-		do: PROCEDURE(VAR this: Base; VAR mes: Message): BOOLEAN
+		do: Handle
 	END;
 	PBase* = POINTER TO Base;
 
 	Error* = RECORD(Base) END;
 	PError* = POINTER TO Error;
-
-	Handle* = PROCEDURE(VAR this: Base; VAR mes: Message): BOOLEAN;
 
 	MsgFinalize*    = RECORD(Base) END;
 	MsgNeedMemory*  = RECORD(Base) END;
@@ -51,7 +51,7 @@ TYPE
 	                      hash*: INTEGER
 	                  END;
 
-PROCEDURE Nothing(VAR this: Base; VAR mes: Message): BOOLEAN;
+PROCEDURE Nothing(VAR this: Message; VAR mes: Message): BOOLEAN;
 	RETURN FALSE
 END Nothing;
 
