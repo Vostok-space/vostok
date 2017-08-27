@@ -27,9 +27,8 @@ func getModuleName(source string) (name string) {
   return name
 }
 
-func saveModule(source string) (tmp string, err error) {
-  var (name, filename string)
-  name = getModuleName(source);
+func saveModule(name, source string) (tmp string, err error) {
+  var (filename string)
   err = nil;
   if len(name) > 0 {
     tmp, err = ioutil.TempDir("/tmp/o7c", name);
@@ -45,15 +44,22 @@ func saveModule(source string) (tmp string, err error) {
 
 func run(source, script string) (output []byte, err error) {
   var (
-    tmp string;
+    name, tmp, bin string;
     cmd *exec.Cmd
   )
-  tmp, err = saveModule(source);
+  name = getModuleName(source);
+  tmp, err = saveModule(name, source);
   if err == nil {
-    cmd = exec.Command("vostok/result/o7c", "run", script,
+    bin = fmt.Sprintf("%v/%v", tmp, name);
+    cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
                        "-infr", "vostok", "-m", tmp, "-cc", "tcc");
     output, err = cmd.CombinedOutput();
-    fmt.Print(string(output))
+    fmt.Print(string(output));
+    if err == nil {
+      cmd = exec.Command("timeout", "5", bin);
+      output, err = cmd.CombinedOutput();
+      fmt.Print(string(output));
+    }
   } else {
     output = nil
   }
