@@ -5,13 +5,13 @@
 <style type="text/css" media="screen">
   #editor {
     width: 600px;
-    height: 800px;
+    height: 600px;
     font-size: 14px;
     float: left;
   }
   #log {
     width: 600px;
-    height: 800px;
+    height: 600px;
     overflow: auto;
     float:right;
     background-color: #EEEEEE;
@@ -37,7 +37,7 @@
  END Gone;
 
 END Hello.
-  </div>
+</div>
 
   <div id='log'></div>
 
@@ -63,9 +63,9 @@ END Hello.
   mlog = document.getElementById('log');
 
   editor = ace.edit('editor');
+  editor.setDisplayIndentGuides(true);
   session = editor.getSession();
-  session.setUseSoftTabs(true);
-  session.setTabSize(2);
+  session.setOptions({ tabSize: 2, useSoftTabs: true, navigateWithinSoftTabs: true});
 
   function requestRun(scr) {
     var req, data, pre;

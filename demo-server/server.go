@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "net/http"
+  "os"
   "os/exec"
   "strings"
   "io/ioutil"
@@ -29,9 +30,10 @@ func getModuleName(source string) (name string) {
 
 func saveModule(name, source string) (tmp string, err error) {
   var (filename string)
-  err = nil;
   if len(name) > 0 {
-    tmp, err = ioutil.TempDir("/tmp/o7c", name);
+    tmp = fmt.Sprintf("%s/o7c", os.TempDir());
+    err = os.Mkdir(tmp, 0777);
+    tmp, err = ioutil.TempDir(tmp, name);
     if err == nil {
       filename = fmt.Sprintf("%v/%v.mod", tmp, name);
       err = ioutil.WriteFile(filename, []byte(source), 0666);
