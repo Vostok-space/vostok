@@ -5,6 +5,7 @@ import (
   "net/http"
   "os"
   "os/exec"
+  "flag"
   "strings"
   "io/ioutil"
   "errors"
@@ -89,7 +90,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+  var (
+    port *int;
+    err error
+  )
+  port = flag.Int("port", 80, "");
+  flag.Parse();
+
   http.Handle("/", http.FileServer(http.Dir(".")));
   http.HandleFunc("/run", handler);
-  http.ListenAndServe(":8080", nil)
+  err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil);
+  if err != nil {
+    fmt.Println(err);
+    os.Exit(1)
+  }
 }

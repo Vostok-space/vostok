@@ -46,9 +46,9 @@ END Hello.
 <div id='runners'></div>
 
 <div>
-  <input type='text' id='script' value='Hello.Come'/>
+  <input type='text' id='script' value='Hello.Come; Hello.Gone'/>
   <button onclick='requestRun(script.value)'>Run</button>
-  <button onclick='addRunner()'>Add</button>
+  <button onclick='addRunner(script.value)'>Add</button>
 </div>
 
 <script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"
@@ -85,11 +85,11 @@ END Hello.
     req.send(data);
   }
 
-  function addRunner() {
+  function addRunner(command) {
     var div, inp, run, del;
     div = document.createElement('div');
     inp = document.createElement('input', 'type="text"');
-    inp.value = script.value;
+    inp.value = command;
     run = document.createElement('button');
     run.innerText = 'Run';
     run.onclick = function() {
@@ -107,6 +107,9 @@ END Hello.
 
     runners.appendChild(div);
   }
+
+  addRunner('Hello.Come');
+  addRunner('Hello.Gone');
 </script>
 
 </body>
