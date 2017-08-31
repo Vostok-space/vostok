@@ -120,6 +120,8 @@ CONST
 	                                (*-84*)
 	ErrProcNotCommandHaveParams*    = -85;
 
+	ErrReturnTypeArrayOrRecord*     = -86;
+
 	ErrMin*                         = -100;
 
 	NoId*                 =-1;
@@ -874,6 +876,18 @@ BEGIN
 	PutChars(module, proc.end.name, buf, begin, end)
 	RETURN err
 END ParamAdd;
+
+PROCEDURE ProcTypeSetReturn*(proc: ProcType; type: Type): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	proc.type := type;
+	IF ~(type.id IN {IdArray, IdRecord}) THEN
+		err := ErrNo
+	ELSE
+		err := ErrReturnTypeArrayOrRecord
+	END
+	RETURN err
+END ProcTypeSetReturn;
 
 PROCEDURE AddError*(m: Module; error, line, column, tabs: INTEGER);
 VAR e: Error;
@@ -2295,7 +2309,8 @@ BEGIN
 				call.value := v
 			END
 		ELSIF (call.designator.decl.id = Scanner.Len)
-		     & (call.params.expr.type IS Array) (* TODO заменить на общую проверку корректности выбора параметра *)
+		(* TODO заменить на общую проверку корректности выбора параметра *)
+		     & (call.params.expr.type IS Array)
 		     & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value

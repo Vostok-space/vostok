@@ -238,6 +238,8 @@ BEGIN
 		O("В качестве команды может выступать только процедура без возращаемого значения")
 	| Ast.ErrProcNotCommandHaveParams:
 		O("В качестве команды может выступать только процедура без параметров")
+	| Ast.ErrReturnTypeArrayOrRecord:
+		O("Тип возвращаемого значения процедуры не может быть массивом или записью")
 	END
 END AstErrorMessage;
 
@@ -816,6 +818,7 @@ VAR ret: INTEGER;
 				    & Exec.Add(cmd, cDirs, i);
 				i := i + Strings.CalcLen(cDirs, i) + 1
 			END;
+			ok := ok & Exec.Add(cmd, "-lm", 0);
 			Exec.Log(cmd);
 			ASSERT(ok);
 			IF Exec.Do(cmd) # Exec.Ok THEN

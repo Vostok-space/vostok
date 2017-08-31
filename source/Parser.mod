@@ -879,7 +879,7 @@ BEGIN
 			AddError(p, ErrFunctionWithoutBraces);
 			p.err := FALSE
 		END;
-		proc.type := TypeNamed(p, ds)
+		CheckAst(p, Ast.ProcTypeSetReturn(proc, TypeNamed(p, ds)))
 	END
 END FormalParameters;
 
