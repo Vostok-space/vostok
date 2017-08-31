@@ -16,6 +16,15 @@
     float:right;
     background-color: #EEEEEE;
   }
+  .log-script {
+    background-color: #F9F9F9;
+    padding: 4px;
+    border-radius: 6px;
+    margin: 0px;
+  }
+  .log-out {
+    margin: 0px;
+  }
 </style>
 </head>
 
@@ -68,20 +77,41 @@ END Hello.
   session.setOptions({ tabSize: 2, useSoftTabs: true, navigateWithinSoftTabs: true});
 
   function requestRun(scr) {
-    var req, data, pre;
+    var req, data, pre, div, table;
+
+    pre = document.createElement('pre');
+    pre.innerText = scr;
+    pre.className = 'log-script';
+    table = document.createElement('table');
+    table.appendChild(pre);
+    mlog.appendChild(table);
+
     req = new XMLHttpRequest();
     req.onreadystatechange = function() {
-      if (req.readyState == XMLHttpRequest.DONE && req.status == 200) {
-        pre = document.createElement("pre");
+      if ((XMLHttpRequest.DONE == req.readyState) && (200 == req.status)) {
+        pre = document.createElement('pre');
         pre.innerText = req.responseText;
+        pre.className = 'log-out';
         mlog.appendChild(pre);
         pre.scrollIntoView();
       }
+      if (400 <= req.status) {
+        div = document.createElement('div');
+        if (500 > req.status) {
+          div.innerText = 'Client error code : ' + req.status;
+        } else {
+          div.innerText = 'Server error code : ' + req.status;
+        }
+        mlog.appendChild(div);
+      }
     }
-    req.open("POST", "/run");
+    req.ontimeout = function (e) {
+      console.log('ontimeout ' + e);
+    };
+    req.open('POST', '/run');
     data = new FormData();
-    data.append("module", session.getValue());
-    data.append("script", scr);
+    data.append('module', session.getValue());
+    data.append('script', scr);
     req.send(data);
   }
 
