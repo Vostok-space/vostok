@@ -2883,17 +2883,13 @@ END MarkType;
 PROCEDURE MarkUsedInMarked(m: Ast.Module);
 VAR imp: Ast.Declaration;
 
-	PROCEDURE Consts(c: Ast.Const);
+	PROCEDURE Consts(c: Ast.Declaration);
 	BEGIN
-		WHILE c # NIL DO
+		WHILE (c # NIL) & (c IS Ast.Const) DO
 			IF c.mark THEN
-				MarkExpression(c.expr)
+				MarkExpression(c(Ast.Const).expr)
 			END;
-			IF (c.next # NIL) & (c.next IS Ast.Const) THEN
-				c := c.next(Ast.Const)
-			ELSE
-				c := NIL
-			END
+			c := c.next
 		END
 	END Consts;
 
@@ -2908,6 +2904,21 @@ VAR imp: Ast.Declaration;
 		END
 	END Types;
 
+	PROCEDURE Procs(p: Ast.Declaration);
+	VAR fp: Ast.Declaration;
+	BEGIN
+		WHILE (p # NIL) & (p IS Ast.Procedure) DO
+			IF p.mark THEN
+				fp := p(Ast.Procedure).header.params;
+				WHILE fp # NIL DO
+					MarkType(fp.type);
+					fp := fp.next
+				END
+			END;
+			p := p.next
+		END
+	END Procs;
+
 BEGIN
 	imp := m.import;
 	WHILE (imp # NIL) & (imp IS Ast.Import) DO
@@ -2915,7 +2926,8 @@ BEGIN
 		imp := imp.next
 	END;
 	Consts(m.consts);
-	Types(m.types)
+	Types(m.types);
+	Procs(m.procedures)
 END MarkUsedInMarked;
 
 PROCEDURE ImportInit(VAR gen: Generator; imp: Ast.Declaration);
