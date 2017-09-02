@@ -22,6 +22,10 @@ TYPE
 
 	PRec = POINTER TO Record;
 
+(*
+	PRec11 = POINTER TO Record11;
+*)
+
 VAR
 	r1: R1;
 	r2: R2;

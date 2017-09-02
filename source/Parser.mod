@@ -783,12 +783,11 @@ BEGIN
 	ELSIF p.l = Scanner.Ident THEN
 		decl := Ast.DeclarationSearch(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
 		IF decl = NIL THEN (* опережающее объявление записи *)
-			typeDecl := Ast.RecordNew(ds, NIL);
+			typeDecl := Ast.RecordForwardNew(ds);
 			CheckAst(p,
 				Ast.TypeAdd(ds, p.s.buf, p.s.lexStart, p.s.lexEnd, typeDecl)
 			);
 			ASSERT(tp.next = typeDecl);
-			typeDecl.id := Ast.IdRecordForward;
 			tp.type := typeDecl;
 			typeDecl(Ast.Record).pointer := tp
 		ELSIF decl IS Ast.Record THEN
@@ -944,7 +943,8 @@ BEGIN
 			END
 		END;
 		Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
-	END
+	END;
+	CheckAst(p, Ast.CheckUndefRecordForward(ds))
 END Types;
 
 PROCEDURE If(VAR p: Parser; ds: Ast.Declarations): Ast.If;

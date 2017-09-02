@@ -121,6 +121,7 @@ CONST
 	ErrProcNotCommandHaveParams*    = -85;
 
 	ErrReturnTypeArrayOrRecord*     = -86;
+	ErrRecordForwardUndefined*      = -87;
 
 	ErrMin*                         = -100;
 
@@ -257,6 +258,8 @@ TYPE
 		types*: Type;
 		vars*: Var;
 		procedures*: Procedure;
+
+		recordForwardCount: INTEGER;
 
 		stats*: Statement
 	END;
@@ -546,7 +549,9 @@ BEGIN
 	d.vars := NIL;
 	d.procedures := NIL;
 	d.up := up;
-	d.stats := NIL
+	d.stats := NIL;
+
+	d.recordForwardCount := 0
 END DeclarationsInit;
 
 PROCEDURE DeclarationsConnect(d, up: Declarations;
@@ -762,7 +767,9 @@ VAR d: Declaration;
 
 			ds.end.next := rec;
 			ds.end := rec
-		END
+		END;
+		DEC(ds.recordForwardCount);
+		ASSERT(ds.recordForwardCount >= 0)
 	END MoveForwardDeclToLast;
 BEGIN
 	ASSERT(~ds.module.fixed);
@@ -790,6 +797,17 @@ BEGIN
 	END
 	RETURN err
 END TypeAdd;
+
+PROCEDURE CheckUndefRecordForward*(ds: Declarations): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF ds.recordForwardCount = 0 THEN
+		err := ErrNo
+	ELSE
+		err := ErrRecordForwardUndefined
+	END
+	RETURN err
+END CheckUndefRecordForward;
 
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
                           buf: ARRAY OF CHAR; begin, end: INTEGER);
@@ -951,16 +969,30 @@ BEGIN
 	r.base := base
 END RecordSetBase;
 
-PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
-VAR r: Record;
+PROCEDURE RecNew*(VAR r: Record; id: INTEGER);
 BEGIN
-	NEW(r); TInit(r, IdRecord);
+	ASSERT(id IN {IdRecord, IdRecordForward});
+	NEW(r); TInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
+END RecNew;
+
+PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
+VAR r: Record;
+BEGIN
+	RecNew(r, IdRecord);
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
+
+PROCEDURE RecordForwardNew*(ds: Declarations): Record;
+VAR r: Record;
+BEGIN
+	RecNew(r, IdRecordForward);
+	INC(ds.recordForwardCount)
+	RETURN r
+END RecordForwardNew;
 
 PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
@@ -2077,7 +2109,7 @@ PROCEDURE IsChangeable*(cur: Module; v: Var): BOOLEAN;
 BEGIN
 	Log.StrLn("IsChangeable")
 	RETURN (*(v.module = cur) &*)
-		(~(v IS FormalParam)
+	    (~(v IS FormalParam)
 	 OR (v(FormalParam).isVar)
 	 OR ~((v.type IS Array)
 	 OR (v.type IS Record)))
@@ -2392,7 +2424,7 @@ BEGIN
 			err := ErrNotBoolInWhileCondition + adder
 		ELSIF expr.value # NIL THEN
 			err := ErrWhileConditionAlwaysFalse + adder
-				 - ORD(expr.value(ExprBoolean).bool)
+			     - ORD(expr.value(ExprBoolean).bool)
 		END
 	END
 END CheckCondition;
