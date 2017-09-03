@@ -55,6 +55,8 @@ CONST
 	ErrTooLongRunArgs       = -16;
 	ErrUnexpectArg          = -17;
 	ErrUnknownInit          = -18;
+	ErrCantCreateOutDir     = -19;
+	ErrCantRemoveOutDir     = -20;
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
@@ -85,7 +87,7 @@ BEGIN
 	| Ast.ErrDivExprDifferentTypes:
 		O("Типы подвыражений в делении несовместимы")
 	| Ast.ErrNotBoolInLogicExpr:
-		O("В логическом выражении должны использоваться подвыражении логического типа")
+		O("В логическом выражении должны использоваться подвыражения логического же типа")
 	| Ast.ErrNotIntInDivOrMod:
 		O("В целочисленном делении допустимы только целочисленные подвыражения")
 	| Ast.ErrNotRealTypeForRealDiv:
@@ -710,6 +712,12 @@ BEGIN
 			Out.String("Слишком длинные параметры командной строки")
 		| ErrUnexpectArg:
 			Out.String("Неожиданный аргумент")
+		| ErrUnknownInit:
+			Out.String("Указанный способ инициализации науке неизвестен")
+		| ErrCantCreateOutDir:
+			Out.String("Не получается создать выходной каталог")
+		| ErrCantRemoveOutDir:
+			Out.String("Не получается удалить выходной каталог")
 		END;
 		Out.Ln
 	END
@@ -733,7 +741,7 @@ BEGIN
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen - 1);
+		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen);
 		IF ret = ErrNo THEN
 			GeneratorC.Generate(iface, impl, module, cmd, opt);
 			File.CloseOut(iface);
@@ -743,43 +751,66 @@ BEGIN
 	RETURN ret
 END GenerateC;
 
-PROCEDURE GetTempOutC(VAR dirCOut, bin: ARRAY OF CHAR; name: Strings.String)
-                     : INTEGER;
-VAR len, binLen: INTEGER;
+PROCEDURE MakeDir(name: ARRAY OF CHAR): BOOLEAN;
+VAR cmd: Exec.Code;
+    ok: BOOLEAN;
+BEGIN
+	ok := Exec.Init(cmd, "mkdir")
+	    & Exec.Add(cmd, name, 0);
+	ASSERT(ok)
+	RETURN Exec.Do(cmd) = Exec.Ok
+END MakeDir;
+
+PROCEDURE RemoveDir(name: ARRAY OF CHAR): BOOLEAN;
+VAR cmd: Exec.Code;
+    ok: BOOLEAN;
+BEGIN
+	ok := Exec.Init(cmd, "rm")
+	    & Exec.Add(cmd, "-r", 0)
+	    & Exec.Add(cmd, name, 0);
+	ASSERT(ok)
+	RETURN Exec.Do(cmd) = Exec.Ok
+END RemoveDir;
+
+PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
+                      VAR bin: ARRAY OF CHAR; name: Strings.String): BOOLEAN;
+VAR binLen, i: INTEGER;
 	ok: BOOLEAN;
 	cmd: Exec.Code;
 BEGIN
-	dirCOut := "/tmp/o7c-";
-	len := Strings.CalcLen(dirCOut, 0);
-	ok := Strings.CopyToChars(dirCOut, len, name);
+	len := 0;
+	ok := Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
+	    & Strings.CopyToChars(dirCOut, len, name);
 	ASSERT(ok);
-	IF bin[0] = Utf8.Null THEN
+
+	i := 0;
+	ok := MakeDir(dirCOut);
+	WHILE ~ok & (i < 100) DO
+		IF i = 0 THEN
+			ok := Strings.CopyCharsNull(dirCOut, len, "-00");
+			ASSERT(ok)
+		ELSE
+			dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
+			dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
+		END;
+		ok := MakeDir(dirCOut);
+		INC(i)
+	END;
+	IF ok & (bin[0] = Utf8.Null) THEN
 		binLen := 0;
-		ok := Strings.CopyChars(bin, binLen, dirCOut, 0, len)
+		ok := Strings.CopyCharsNull(bin, binLen, dirCOut)
 		    & Strings.CopyCharsNull(bin, binLen, "/")
 		    & Strings.CopyToChars(bin, binLen, name);
 		ASSERT(ok)
-	END;
-	ok := Exec.Init(cmd, "rm")
-	    & Exec.Add(cmd, "-rf", 0)
-	    & Exec.Add(cmd, dirCOut, 0);
-	ASSERT(ok);
-	ok := Exec.Do(cmd) = Exec.Ok;
-
-	ok := Exec.Init(cmd, "mkdir")
-	    & Exec.Add(cmd, "-p", 0)
-	    & Exec.Add(cmd, dirCOut, 0);
-	ASSERT(ok);
-	ok := Exec.Do(cmd) = Exec.Ok
-
-	RETURN len + 1
+	END
+	RETURN ok
 END GetTempOutC;
 
 PROCEDURE ToC(res: INTEGER): INTEGER;
 VAR ret: INTEGER;
 	src: ARRAY 65536 OF CHAR;
 	srcLen, srcNameEnd: INTEGER;
-	resPath: ARRAY 1024 OF CHAR;
+	outC, resPath: ARRAY 1024 OF CHAR;
 	resPathLen: INTEGER;
 	cDirs, cc: ARRAY 4096 OF CHAR;
 	mp: ModuleProvider;
@@ -790,41 +821,44 @@ VAR ret: INTEGER;
 	script: BOOLEAN;
 
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
-	              cDirs, cc: ARRAY OF CHAR; VAR bin: ARRAY OF CHAR): INTEGER;
-	VAR outC: ARRAY 1024 OF CHAR;
-		cmd: Exec.Code;
+	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR): INTEGER;
+	VAR cmd: Exec.Code;
 		outCLen: INTEGER;
 		ret, i: INTEGER;
 		ok: BOOLEAN;
 	BEGIN
-		outCLen := GetTempOutC(outC, bin, module.name);
-		ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
-		outC[outCLen] := Utf8.Null;
-		IF ret = ErrNo THEN
-			ok := Exec.Init(cmd, "");
-			IF cc[0] = Utf8.Null THEN
-				ok := ok & Exec.AddClean(cmd, "cc -g -O1");
-			ELSE
-				ok := ok & Exec.AddClean(cmd, cc)
-			END;
-			ok := ok
-			    & Exec.Add(cmd, "-o", 0)
-			    & Exec.Add(cmd, bin, 0)
-			    & Exec.Add(cmd, outC, 0)
-			    & Exec.AddClean(cmd, "*.c -I")
-			    & Exec.Add(cmd, outC, 0);
-			i := 0;
-			WHILE ok & (cDirs[i] # Utf8.Null) DO
-				ok := Exec.Add(cmd, cDirs, i)
+		ok := GetTempOutC(outC, outCLen, bin, module.name);
+		IF ~ok THEN
+			ret := ErrCantCreateOutDir
+		ELSE
+			ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
+			outC[outCLen] := Utf8.Null;
+			IF ret = ErrNo THEN
+				ok := Exec.Init(cmd, "");
+				IF cc[0] = Utf8.Null THEN
+					ok := ok & Exec.AddClean(cmd, "cc -g -O1");
+				ELSE
+					ok := ok & Exec.AddClean(cmd, cc)
+				END;
+				ok := ok
+				    & Exec.Add(cmd, "-o", 0)
+				    & Exec.Add(cmd, bin, 0)
+				    & Exec.Add(cmd, outC, 0)
 				    & Exec.AddClean(cmd, "/*.c -I")
-				    & Exec.Add(cmd, cDirs, i);
-				i := i + Strings.CalcLen(cDirs, i) + 1
-			END;
-			ok := ok & Exec.Add(cmd, "-lm", 0);
-			Exec.Log(cmd);
-			ASSERT(ok);
-			IF Exec.Do(cmd) # Exec.Ok THEN
-				ret := ErrCCompiler
+				    & Exec.Add(cmd, outC, 0);
+				i := 0;
+				WHILE ok & (cDirs[i] # Utf8.Null) DO
+					ok := Exec.Add(cmd, cDirs, i)
+					    & Exec.AddClean(cmd, "/*.c -I")
+					    & Exec.Add(cmd, cDirs, i);
+					i := i + Strings.CalcLen(cDirs, i) + 1
+				END;
+				ok := ok & Exec.Add(cmd, "-lm", 0);
+				Exec.Log(cmd);
+				ASSERT(ok);
+				IF Exec.Do(cmd) # Exec.Ok THEN
+					ret := ErrCCompiler
+				END
 			END
 		END
 		RETURN ret
@@ -933,11 +967,15 @@ BEGIN
 					END;
 					CASE res OF
 					  ResultC:
+						DEC(resPathLen);
 						ret := GenerateC(module, call # NIL, call, opt, resPath, resPathLen)
 					| ResultBin, ResultRun:
-						ret := Bin(module, call, opt, cDirs, cc, resPath);
+						ret := Bin(module, call, opt, cDirs, cc, outC, resPath);
 						IF (res = ResultRun) & (ret = ErrNo) THEN
 							ret := Run(resPath, arg)
+						END;
+						IF ~RemoveDir(outC) & (ret = ErrNo) THEN
+							ret := ErrCantRemoveOutDir
 						END
 					END
 				END

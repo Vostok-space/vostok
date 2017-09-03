@@ -2217,7 +2217,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			Text.StrLn(gen, ");")
 		ELSE
 			Text.StrClose(gen, "} while (!(");
-			Expression(gen, st.expr);
+			CheckExpr(gen, st.expr);
 			Text.StrLn(gen, "));")
 		END
 	END Repeat;
