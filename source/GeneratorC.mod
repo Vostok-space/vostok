@@ -2107,7 +2107,7 @@ END Var;
 
 PROCEDURE ExprThenStats(VAR gen: Generator; VAR wi: Ast.WhileIf);
 BEGIN
-	Expression(gen, wi.expr);
+	CheckExpr(gen, wi.expr);
 	Text.StrOpen(gen, ") {");
 	statements(gen, wi.stats);
 	wi := wi.elsif

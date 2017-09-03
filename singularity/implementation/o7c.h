@@ -53,10 +53,20 @@
 
 typedef char unsigned o7c_char;
 
+#if (__STDC_VERSION__ >= 199901L)
+	typedef _Bool o7c_c_bool;
+#elif defined(__cplusplus)
+	typedef bool o7c_c_bool;
+#else
+	typedef int o7c_c_bool;
+#endif
+
 #if defined(O7C_BOOL)
 	typedef O7C_BOOL o7c_bool;
 #elif (__STDC_VERSION__ >= 199901L) && !defined(O7C_BOOL_UNDEFINED)
 	typedef _Bool o7c_bool;
+#elif defined(__cplusplus) && !defined(O7C_BOOL_UNDEFINED)
+	typedef bool o7c_bool;
 #else
 #	define O7C_BOOL_UNDEF 0xFF
 	typedef o7c_char o7c_bool;
@@ -201,11 +211,15 @@ O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
 
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+o7c_c_bool o7c_bool_inited(o7c_bool b) {
+	return *(o7c_char *)&b < 2;
+}
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 o7c_bool o7c_bl(o7c_bool b) {
 	if ((sizeof(b) == sizeof(o7c_char)) && O7C_UNDEF) {
-		assert(*(o7c_char *)&b < 2);
+		assert(o7c_bool_inited(b));
 	}
 	return b;
 }

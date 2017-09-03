@@ -969,13 +969,13 @@ BEGIN
 	r.base := base
 END RecordSetBase;
 
-PROCEDURE RecNew*(VAR r: Record; id: INTEGER);
+PROCEDURE RecNew(VAR r: Record; id: INTEGER);
 BEGIN
 	ASSERT(id IN {IdRecord, IdRecordForward});
 	NEW(r); TInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
-	r.base := NIL;
+	r.base := NIL
 END RecNew;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
