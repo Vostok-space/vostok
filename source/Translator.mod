@@ -968,7 +968,8 @@ BEGIN
 					CASE res OF
 					  ResultC:
 						DEC(resPathLen);
-						ret := GenerateC(module, call # NIL, call, opt, resPath, resPathLen)
+						ret := GenerateC(module, (call # NIL) OR script, call,
+						                 opt, resPath, resPathLen)
 					| ResultBin, ResultRun:
 						ret := Bin(module, call, opt, cDirs, cc, outC, resPath);
 						IF (res = ResultRun) & (ret = ErrNo) THEN
@@ -1016,13 +1017,5 @@ BEGIN
 		ErrMessage(ret, cmd)
 	END
 END Start;
-
-PROCEDURE Benchmark*;
-VAR i: INTEGER;
-BEGIN
-	FOR i := 0 TO 9 DO
-		Start
-	END
-END Benchmark;
 
 END Translator.

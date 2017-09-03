@@ -1,8 +1,8 @@
 RESULT=result/benchmark
 
 mkdir -p $RESULT/asrt $RESULT/san
-result/o7c to-c Translator.Benchmark $RESULT/asrt -infr . -m source
-result/o7c to-c Translator.Benchmark $RESULT/san -infr . -m source -init no
+result/o7c to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/benchmark
+result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init no
 
 export ASAN_OPTIONS=detect_odr_violation=0
 MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
@@ -28,6 +28,6 @@ for o7c in $LIST; do
 	echo
 	ls -l $o7c
 	for i in 0 1 2; do
-		/usr/bin/time -p $o7c to-c Translator.Benchmark /tmp/o7c-bench -infr . -m source 2>&1 | grep real
+		/usr/bin/time -p $o7c to-c "RepeatTran.Go(10)" /tmp/o7c-bench -infr . -m source -m test/benchmark 2>&1 | grep real
 	done
 done
