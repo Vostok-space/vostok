@@ -4,6 +4,9 @@ MODULE For;
 PROCEDURE Mistakes;
 VAR i, j: INTEGER;
 BEGIN
+	FOR i := 0 TO Count DO
+		j := i
+	END;
 	j := 0;
 	FOR i := 0 TO -1 DO
 		INC(j)

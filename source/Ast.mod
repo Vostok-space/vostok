@@ -1049,11 +1049,12 @@ BEGIN
 	RETURN type
 END TypeErrorNew;
 
-PROCEDURE DeclErrorNew*(ds: Declarations): Declaration;
+PROCEDURE DeclErrorNew*(ds: Declarations;
+                        VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 BEGIN
 	NEW(d); NodeInit(d^, IdError);
-	DeclInit(d, ds);
+	DeclConnect(d, ds, buf, begin, end);
 	d.type := TypeErrorNew()
 	RETURN d
 END DeclErrorNew;
@@ -1070,8 +1071,8 @@ BEGIN
 		END;
 		IF d = NIL THEN
 			err := ErrDeclarationNotFound;
-			d := DeclErrorNew(ds);
-			DeclConnect(d, ds, buf, begin, end)
+			d := DeclErrorNew(ds, buf, begin, end);
+			ASSERT(d.type # NIL)
 		END
 	ELSIF ~d.mark & (d.module # NIL) & d.module.fixed THEN
 		err := ErrDeclarationIsPrivate
@@ -1300,14 +1301,14 @@ BEGIN
 	NEW(d); ExprInit(d, IdDesignator, NIL);
 	d.decl := decl;
 	d.sel := NIL;
-	IF decl # NIL THEN
+	(* IF decl # NIL THEN *)
 		d.type := decl.type;
 		IF decl IS Const THEN
 			d.value := decl(Const).expr.value
 		ELSIF decl IS GeneralProcedure THEN
 			d.type := decl(GeneralProcedure).header
 		END
-	END
+	(* END *)
 	RETURN ErrNo
 END DesignatorNew;
 

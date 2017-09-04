@@ -234,7 +234,7 @@ PROCEDURE ExpectDecl(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	IF p.l # Scanner.Ident THEN
-		d := Ast.DeclErrorNew(ds);
+		d := Ast.DeclErrorNew(ds, p.s.buf, -1, -1);
 		AddError(p, ErrExpectIdent)
 	ELSE
 		d := DeclarationGet(ds, p);
