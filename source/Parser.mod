@@ -671,7 +671,8 @@ BEGIN
 	WHILE var # NIL DO
 		var.type := typ;
 		var := var.next
-	END
+	END;
+	CheckAst(p, Ast.CheckUndefRecordForward(dsAdd))
 END VarDeclaration;
 
 PROCEDURE Vars(VAR p: Parser; ds: Ast.Declarations);
@@ -764,7 +765,7 @@ PROCEDURE Pointer(VAR p: Parser; ds: Ast.Declarations;
 VAR tp: Ast.Pointer;
 	t: Ast.Type;
 	decl: Ast.Declaration;
-	typeDecl: Ast.Type;
+	typeDecl: Ast.Record;
 BEGIN
 	ASSERT(p.l = Scanner.Pointer);
 	Scan(p);
@@ -782,29 +783,18 @@ BEGIN
 		END
 	ELSIF p.l = Scanner.Ident THEN
 		decl := Ast.DeclarationSearch(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
-		IF decl = NIL THEN (* опережающее объявление записи *)
-			typeDecl := Ast.RecordForwardNew(ds);
-			CheckAst(p,
-				Ast.TypeAdd(ds, p.s.buf, p.s.lexStart, p.s.lexEnd, typeDecl)
-			);
+		IF decl = NIL THEN (* опережающее объявление ссылка на запись *)
+			typeDecl := Ast.RecordForwardNew(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
 			ASSERT(tp.next = typeDecl);
-			tp.type := typeDecl;
-			typeDecl(Ast.Record).pointer := tp
-		ELSIF decl IS Ast.Record THEN
-			tp.type := decl(Ast.Record);
-			decl(Ast.Record).pointer := tp
-		ELSE
-			tp.type := TypeNamed(p, ds);
+			Ast.PointerSetRecord(tp, typeDecl);
 
-			IF tp.type # NIL THEN
-				IF tp.type IS Ast.Record THEN
-					tp.type(Ast.Record).pointer := tp
-				ELSE
-					AddError(p, ErrExpectRecord)
-				END
-			END
-		END;
-		Scan(p)
+			Scan(p)
+		ELSIF decl IS Ast.Record THEN
+			Ast.PointerSetRecord(tp, decl(Ast.Record));
+			Scan(p)
+		ELSE
+			CheckAst(p, Ast.PointerSetType(tp, TypeNamed(p, ds)))
+		END
 	ELSE
 		AddError(p, ErrExpectRecord)
 	END

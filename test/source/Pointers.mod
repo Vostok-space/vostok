@@ -1,9 +1,20 @@
 MODULE Pointers;
 
+(*
+ IMPORT Record;
+*)
+
  TYPE
    R = RECORD END;
    P1 = POINTER TO R;
    P2 = POINTER TO R;
+
+(*
+   Pi = POINTER TO INTEGER;
+
+ VAR vp: POINTER TO Record.Record;
+*)
+
 
  PROCEDURE Go*();
  VAR p1: P1;

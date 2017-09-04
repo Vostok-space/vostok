@@ -122,6 +122,7 @@ CONST
 
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
+	ErrPointerToNotRecord*          = -88;
 
 	ErrMin*                         = -100;
 
@@ -804,7 +805,8 @@ BEGIN
 	IF ds.recordForwardCount = 0 THEN
 		err := ErrNo
 	ELSE
-		err := ErrRecordForwardUndefined
+		err := ErrRecordForwardUndefined;
+		ds.recordForwardCount := 0
 	END
 	RETURN err
 END CheckUndefRecordForward;
@@ -962,6 +964,26 @@ BEGIN
 	RETURN p
 END PointerGet;
 
+PROCEDURE PointerSetRecord*(tp: Pointer; subtype: Record);
+BEGIN
+	tp.type := subtype;
+	subtype.pointer := tp
+END PointerSetRecord;
+
+PROCEDURE PointerSetType*(tp: Pointer; subtype: Type): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF subtype.id IN {IdRecord, IdRecordForward} THEN
+		PointerSetRecord(tp, subtype(Record));
+		err := ErrNo
+	ELSE
+		(* TODO Установить ошибочную запись *)
+		tp.type := subtype;
+		err := ErrPointerToNotRecord
+	END
+	RETURN err
+END PointerSetType;
+
 PROCEDURE RecordSetBase*(r, base: Record);
 BEGIN
 	ASSERT(r.base = NIL);
@@ -986,10 +1008,12 @@ BEGIN
 	RETURN r
 END RecordNew;
 
-PROCEDURE RecordForwardNew*(ds: Declarations): Record;
+PROCEDURE RecordForwardNew*(ds: Declarations;
+                            name: ARRAY OF CHAR; begin, end: INTEGER): Record;
 VAR r: Record;
 BEGIN
 	RecNew(r, IdRecordForward);
+	DeclConnect(r, ds, name, begin, end);
 	INC(ds.recordForwardCount)
 	RETURN r
 END RecordForwardNew;
