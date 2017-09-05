@@ -1059,7 +1059,7 @@ BEGIN
 				d := SearchName(ds.start, buf, begin, end)
 			END
 		END;
-		IF d = NIL THEN
+		IF (d = NIL) & (ds IS Module) & ~ds(Module).fixed THEN
 			d := SearchPredefined(buf, begin, end)
 		END
 	END
@@ -1089,7 +1089,7 @@ VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
-		IF ds.module.script THEN
+		IF (ds.module # NIL) & ds.module.script THEN
 			err := ImportAdd(ds.module, buf, begin, end, begin, end);
 			d := ds.end
 		END;

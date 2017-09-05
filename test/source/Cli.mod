@@ -10,6 +10,7 @@ VAR
 	buf: ARRAY 1024 * 1024 OF CHAR;
 	ret: BOOLEAN;
 	ofs, i: INTEGER;
+	(* v: Out.INTEGER; *)
 
 PROCEDURE Go*;
 BEGIN
