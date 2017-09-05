@@ -28,7 +28,6 @@ CONST
 	NewPage = Utf8.NewPage;
 
 	EndOfFile*      = 00;
-	UnexpectChar*   = 01;
 
 	Plus*           = 10;
 	Minus*          = 11;
@@ -729,7 +728,7 @@ BEGIN
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
 		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0FFX:
-			lex := UnexpectChar;
+			lex := ErrUnexpectChar;
 			INC(s.ind)
 		| Utf8.TransmissionEnd:
 			lex := EndOfFile
