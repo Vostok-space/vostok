@@ -139,9 +139,13 @@ BEGIN
 	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
 		p.l := Scanner.Next(p.s);
 		IF p.l < ErrNo THEN
-			AddError(p, p.l);
-			IF p.l = Scanner.ErrNumberTooBig THEN
-				p.l := Scanner.Number
+			IF (p.l = Scanner.ErrUnexpectChar) & p.module.script THEN
+				p.l := Scanner.EndOfFile
+			ELSE
+				AddError(p, p.l);
+				IF p.l = Scanner.ErrNumberTooBig THEN
+					p.l := Scanner.Number
+				END
 			END
 		ELSIF p.l = Scanner.Semicolon THEN
 			Scanner.ResetComment(p.s)
