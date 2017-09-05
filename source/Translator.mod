@@ -417,8 +417,7 @@ VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 			ret := Strings.CopyCharsNull(str, i, add);
 			IF ret THEN
 				INC(i);
-				str[i] := 0X;
-				INC(i)
+				str[i] := Utf8.Null
 			END;
 		END
 		RETURN ret
@@ -445,7 +444,6 @@ BEGIN
 				IF opt = "-i" THEN
 					INCL(sing, count)
 				END;
-				INC(i);
 				INC(count)
 			ELSE
 				ret := ErrTooLongModuleDirs
@@ -571,7 +569,7 @@ VAR m: Ast.Module;
 		ELSE
 			in := NIL
 		END;
-		pathOfs := pathOfs + len + 2
+		pathOfs := pathOfs + len + 1
 		RETURN in
 	END Open;
 BEGIN
