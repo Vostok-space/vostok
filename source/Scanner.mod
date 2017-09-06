@@ -188,6 +188,7 @@ END Init;
 
 PROCEDURE InitByString*(VAR s: Scanner; in: ARRAY OF CHAR): BOOLEAN;
 VAR len: INTEGER;
+    ret: BOOLEAN;
 BEGIN
 	PreInit(s);
 	s.in := NIL;
@@ -195,7 +196,9 @@ BEGIN
 	s.buf[0] := " ";
 
 	len := 1;
-	RETURN Strings.CopyCharsNull(s.buf, len, in)
+	ret := Strings.CopyCharsNull(s.buf, len, in);
+	s.buf[len] := Utf8.TransmissionEnd
+	RETURN ret
 END InitByString;
 
 
