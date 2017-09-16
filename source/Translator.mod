@@ -29,34 +29,18 @@ IMPORT
 	Ast,
 	GeneratorC,
 	TranLim := TranslatorLimits,
-	Exec := PlatformExec;
+	Exec := PlatformExec,
+	Message := MessageRu,
+	Cli := CliParser;
 
 CONST
 	ResultC   = 0;
 	ResultBin = 1;
 	ResultRun = 2;
 
-	ErrNo                   =   0;
-	ErrWrongArgs            = - 1;
-	ErrTooLongSourceName    = - 2;
-	ErrTooLongOutName       = - 3;
-	ErrOpenSource           = - 4;
-	ErrOpenH                = - 5;
-	ErrOpenC                = - 6;
-	ErrParse                = - 7;
-	ErrUnknownCommand       = - 8;
-	ErrNotEnoughArgs        = - 9;
-	ErrTooLongModuleDirs    = -10;
-	ErrTooManyModuleDirs    = -11;
-	ErrTooLongCDirs         = -12;
-	ErrTooLongCc            = -13;
-	ErrTooLongInit          = -14;
-	ErrCCompiler            = -15;
-	ErrTooLongRunArgs       = -16;
-	ErrUnexpectArg          = -17;
-	ErrUnknownInit          = -18;
-	ErrCantCreateOutDir     = -19;
-	ErrCantRemoveOutDir     = -20;
+	ErrNo    =  0;
+	ErrParse = -1;
+
 TYPE
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
@@ -69,288 +53,13 @@ TYPE
 		END
 	END;
 
-PROCEDURE AstErrorMessage(code: INTEGER);
-	PROCEDURE O(s: ARRAY OF CHAR);
-	BEGIN
-		Out.String(s)
-	END O;
-BEGIN
-	CASE code OF
-	  Ast.ErrImportNameDuplicate:
-		O("Имя модуля уже встречается в списке импорта")
-	| Ast.ErrDeclarationNameDuplicate:
-		O("Повторное объявление имени в той же области видимости")
-	| Ast.ErrDeclarationNameHide:
-		O("Имя объявления затеняет объявление из модуля")
-	| Ast.ErrMultExprDifferentTypes:
-		O("Типы подвыражений в умножении несовместимы")
-	| Ast.ErrDivExprDifferentTypes:
-		O("Типы подвыражений в делении несовместимы")
-	| Ast.ErrNotBoolInLogicExpr:
-		O("В логическом выражении должны использоваться подвыражения логического же типа")
-	| Ast.ErrNotIntInDivOrMod:
-		O("В целочисленном делении допустимы только целочисленные подвыражения")
-	| Ast.ErrNotRealTypeForRealDiv:
-		O("В дробном делении допустимы только подвыражения дробного типа")
-	| Ast.ErrNotIntSetElem:
-		O("В качестве элементов множества допустимы только целые числа")
-	| Ast.ErrSetElemOutOfRange:
-		O("Элемент множества выходит за границы возможных значений - 0 .. 31")
-	| Ast.ErrSetLeftElemBiggerRightElem:
-		O("Левый элемент диапазона больше правого")
-	| Ast.ErrAddExprDifferenTypes:
-		O("Типы подвыражений в сложении несовместимы")
-	| Ast.ErrNotNumberAndNotSetInMult:
-		O("В выражениях *, /, DIV, MOD допустимы только числа и множества")
-	| Ast.ErrNotNumberAndNotSetInAdd:
-		O("В выражениях +, - допустимы только числа и множества")
-	| Ast.ErrSignForBool:
-		O("Унарный знак не применим к логическому выражению")
-	| Ast.ErrRelationExprDifferenTypes:
-		O("Типы подвыражений в сравнении не совпадают")
-	| Ast.ErrExprInWrongTypes:
-		O("Ast.ErrExprInWrongTypes")
-	| Ast.ErrExprInRightNotSet:
-		O("Ast.ErrExprInRightNotSet")
-	| Ast.ErrExprInLeftNotInteger:
-		O("Левый член выражения IN должен быть целочисленным")
-	| Ast.ErrRelIncompatibleType:
-		O("В сравнении выражения несовместимых типов")
-	| Ast.ErrIsExtTypeNotRecord:
-		O("Проверка IS применима только к записям")
-	| Ast.ErrIsExtVarNotRecord:
-		O("Левый член проверки IS должен иметь тип записи или указателя на неё")
-	| Ast.ErrConstDeclExprNotConst:
-		O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
-	| Ast.ErrAssignIncompatibleType:
-		O("Несовместимые типы в присваивании")
-	| Ast.ErrAssignExpectVarParam:
-		O("Ожидалось изменяемое выражение в присваивании")
-	| Ast.ErrCallNotProc:
-		O("Вызов допустим только для процедур и переменных процедурного типа")
-	| Ast.ErrCallIgnoredReturn:
-		O("Возвращаемое значение не задействовано в выражении")
-	| Ast.ErrCallExprWithoutReturn:
-		O("Вызываемая процедура не возвращает значения")
-	| Ast.ErrCallExcessParam:
-		O("Лишние параметры при вызове процедуры")
-	| Ast.ErrCallIncompatibleParamType:
-		O("Несовместимый тип параметра")
-	| Ast.ErrCallExpectVarParam:
-		O("Параметр должен быть изменяемым значением")
-	| Ast.ErrCallVarPointerTypeNotSame:
-		O("Для переменного параметра - указателя должен использоваться аргумент того же типа")
-	| Ast.ErrCallParamsNotEnough:
-		O("Не хватает фактических параметров в вызове процедуры")
-	| Ast.ErrCaseExprNotIntOrChar:
-		O("Выражение в CASE должно быть целочисленным или литерой")
-	| Ast.ErrCaseElemExprTypeMismatch:
-		O("Метки CASE должно быть целочисленными или литерами")
-	| Ast.ErrCaseElemDuplicate:
-		O("Дублирование значения меток в CASE")
-	| Ast.ErrCaseRangeLabelsTypeMismatch:
-		O("Не совпадает тип меток CASE")
-	| Ast.ErrCaseLabelLeftNotLessRight:
-		O("Левая часть диапазона значений в метке CASE должна быть меньше правой")
-	| Ast.ErrCaseLabelNotConst:
-		O("Метки CASE должны быть константами")
-	| Ast.ErrProcHasNoReturn:
-		O("Процедура не имеет возвращаемого значения")
-	| Ast.ErrReturnIncompatibleType:
-		O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры")
-	| Ast.ErrExpectReturn:
-		O("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип")
-	| Ast.ErrDeclarationNotFound:
-		O("Предварительное объявление имени не было найдено")
-	| Ast.ErrConstRecursive:
-		O("Недопустимое использование константы для задания собственного значения")
-	| Ast.ErrImportModuleNotFound:
-		O("Импортированный модуль не был найден")
-	| Ast.ErrImportModuleWithError:
-		O("Импортированный модуль содержит ошибки")
-	| Ast.ErrDerefToNotPointer:
-		O("Разыменовывание применено не к указателю")
-	| Ast.ErrArrayItemToNotArray:
-		O("Получение элемента не массива")
-	| Ast.ErrArrayIndexNotInt:
-		O("Индекс массива не целочисленный")
-	| Ast.ErrArrayIndexNegative:
-		O("Отрицательный индекс массива")
-	| Ast.ErrArrayIndexOutOfRange:
-		O("Индекс массива выходит за его границы")
-	| Ast.ErrGuardExpectRecordExt:
-		O("В защите типа ожидается расширенная запись")
-	| Ast.ErrGuardExpectPointerExt:
-		O("В защите типа ожидается указатель на расширенную запись")
-	| Ast.ErrGuardedTypeNotExtensible:
-		O("В защите типа переменная должна быть либо записью, либо указателем на запись")
-	| Ast.ErrDotSelectorToNotRecord:
-		O("Селектор элемента записи применён не к записи")
-	| Ast.ErrDeclarationNotVar:
-		O("Ожидалась переменная")
-	| Ast.ErrForIteratorNotInteger:
-		O("Итератор FOR не целочисленного типа")
-	| Ast.ErrNotBoolInIfCondition:
-		O("Выражение в охране условного оператора должно быть логическим")
-	| Ast.ErrNotBoolInWhileCondition:
-		O("Выражение в охране цикла WHILE должно быть логическим")
-	| Ast.ErrWhileConditionAlwaysFalse:
-		O("Охрана цикла WHILE всегда ложна")
-	| Ast.ErrWhileConditionAlwaysTrue:
-		O("Цикл бесконечен, так как охрана WHILE всегда истинна")
-	| Ast.ErrNotBoolInUntil:
-		O("Выражение в условии завершения цикла REPEAT должно быть логическим")
-	| Ast.ErrUntilAlwaysFalse:
-		O("Цикл бесконечен, так как условие завершения всегда ложно")
-	| Ast.ErrUntilAlwaysTrue:
-		O("Условие завершения всегда истинно")
-	| Ast.ErrDeclarationIsPrivate:
-		O("Объявление не экспортировано")
-	| Ast.ErrNegateNotBool:
-		O("Логическое отрицание применено не к логическому типу")
-	| Ast.ErrConstAddOverflow:
-		O("Переполнение при сложении постоянных")
-	| Ast.ErrConstSubOverflow:
-		O("Переполнение при вычитании постоянных")
-	| Ast.ErrConstMultOverflow:
-		O("Переполнение при умножении постоянных")
-	| Ast.ErrConstDivByZero:
-		O("Деление на 0")
-	| Ast.ErrValueOutOfRangeOfByte:
-		O("Значение выходит за границы BYTE")
-	| Ast.ErrValueOutOfRangeOfChar:
-		O("Значение выходит за границы CHAR")
-	| Ast.ErrExpectIntExpr:
-		O("Ожидается целочисленное выражение")
-	| Ast.ErrExpectConstIntExpr:
-		O("Ожидается константное целочисленное выражение")
-	| Ast.ErrForByZero:
-		O("Шаг итератора не может быть равен 0")
-	| Ast.ErrByShouldBePositive:
-		O("Для прохода от меньшего к большему шаг итератора должен быть > 0")
-	| Ast.ErrByShouldBeNegative:
-		O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
-	| Ast.ErrForPossibleOverflow:
-		O("Во время итерации в FOR возможно переполнение")
-	| Ast.ErrVarUninitialized:
-		O("Использование неинициализированной переменной")
-	| Ast.ErrDeclarationNotProc:
-		O("Имя должно указывать на процедуру")
-	| Ast.ErrProcNotCommandHaveReturn:
-		O("В качестве команды может выступать только процедура без возращаемого значения")
-	| Ast.ErrProcNotCommandHaveParams:
-		O("В качестве команды может выступать только процедура без параметров")
-	| Ast.ErrReturnTypeArrayOrRecord:
-		O("Тип возвращаемого значения процедуры не может быть массивом или записью")
-	| Ast.ErrRecordForwardUndefined:
-		O("Есть необъявленная запись, на которую предварительно ссылается указатель")
-	| Ast.ErrPointerToNotRecord:
-		O("Указатель может ссылаться только на запись")
-	END
-END AstErrorMessage;
-
-PROCEDURE ParseErrorMessage(code: INTEGER);
-	PROCEDURE O(s: ARRAY OF CHAR);
-	BEGIN
-		Out.String(s)
-	END O;
-BEGIN
-	CASE code OF
-	  Scanner.ErrUnexpectChar:
-		O("Неожиданный символ в тексте")
-	| Scanner.ErrNumberTooBig:
-		O("Значение константы слишком велико")
-	| Scanner.ErrRealScaleTooBig:
-		O("ErrRealScaleTooBig")
-	| Scanner.ErrWordLenTooBig:
-		O("ErrWordLenTooBig")
-	| Scanner.ErrExpectHOrX:
-		O("В конце 16-ричного числа ожидается 'H' или 'X'")
-	| Scanner.ErrExpectDQuote:
-		O("Ожидалась "); O(Utf8.DQuote)
-	| Scanner.ErrExpectDigitInScale:
-		O("ErrExpectDigitInScale")
-	| Scanner.ErrUnclosedComment:
-		O("Незакрытый комментарий")
-
-	| Parser.ErrExpectModule:
-		O("Ожидается 'MODULE'")
-	| Parser.ErrExpectIdent:
-		O("Ожидается имя")
-	| Parser.ErrExpectColon:
-		O("Ожидается ':'")
-	| Parser.ErrExpectSemicolon:
-		O("Ожидается ';'")
-	| Parser.ErrExpectEnd:
-		O("Ожидается 'END'")
-	| Parser.ErrExpectDot:
-		O("Ожидается '.'")
-	| Parser.ErrExpectModuleName:
-		O("Ожидается имя модуля")
-	| Parser.ErrExpectEqual:
-		O("Ожидается '='")
-	| Parser.ErrExpectBrace1Close:
-		O("Ожидается ')'")
-	| Parser.ErrExpectBrace2Close:
-		O("Ожидается ']'")
-	| Parser.ErrExpectBrace3Close:
-		O("Ожидается '}'")
-	| Parser.ErrExpectOf:
-		O("Ожидается OF")
-	| Parser.ErrExpectTo:
-		O("Ожидается TO")
-	| Parser.ErrExpectStructuredType:
-		O("Ожидается структурный тип: массив, запись, указатель, процедурный")
-	| Parser.ErrExpectRecord:
-		O("Ожидается запись")
-	| Parser.ErrExpectStatement:
-		O("Ожидается оператор")
-	| Parser.ErrExpectThen:
-		O("Ожидается THEN")
-	| Parser.ErrExpectAssign:
-		O("Ожидается :=")
-	| Parser.ErrExpectVarRecordOrPointer:
-		O("Ожидается переменная типа запись либо указателя на неё")
-	| Parser.ErrExpectType:
-		O("Ожидается тип")
-	| Parser.ErrExpectUntil:
-		O("Ожидается UNTIL")
-	| Parser.ErrExpectDo:
-		O("Ожидается DO")
-	| Parser.ErrExpectDesignator:
-		O("Ожидается обозначение")
-	| Parser.ErrExpectProcedure:
-		O("Ожидается процедура")
-	| Parser.ErrExpectConstName:
-		O("Ожидается имя константы")
-	| Parser.ErrExpectProcedureName:
-		O("Ожидается завершающее имя процедуры")
-	| Parser.ErrExpectExpression:
-		O("Ожидается выражение")
-	| Parser.ErrExcessSemicolon:
-		O("Лишняя ';'")
-	| Parser.ErrEndModuleNameNotMatch:
-		O("Завершающее имя в конце модуля не совпадает с его именем")
-	| Parser.ErrArrayDimensionsTooMany:
-		O("Слишком большая n-мерность массива")
-	| Parser.ErrEndProcedureNameNotMatch:
-		O("Завершающее имя в теле процедуры не совпадает с её именем")
-	| Parser.ErrFunctionWithoutBraces:
-		O("Объявление процедуры с возвращаемым значением не содержит скобки")
-	| Parser.ErrArrayLenLess1:
-		O("Длина массива должна быть > 0")
-	| Parser.ErrExpectIntOrStrOrQualident:
-		O("Ожидалось число или строка")
-	END
-END ParseErrorMessage;
-
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
 	Out.Int(code - Parser.ErrAstBegin, 0); Out.String(" ");
 	IF code <= Parser.ErrAstBegin THEN
-		AstErrorMessage(code - Parser.ErrAstBegin)
+		Message.AstError(code - Parser.ErrAstBegin)
 	ELSE
-		ParseErrorMessage(code)
+		Message.ParseError(code)
 	END
 END ErrorMessage;
 
@@ -439,39 +148,39 @@ BEGIN
 		IF (opt = "-i") OR (opt = "-m") THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
+				ret := Cli.ErrNotEnoughArgs
 			ELSIF CLI.Get(str, i, arg) THEN
 				IF opt = "-i" THEN
 					INCL(sing, count)
 				END;
 				INC(count)
 			ELSE
-				ret := ErrTooLongModuleDirs
+				ret := Cli.ErrTooLongModuleDirs
 			END
 		ELSIF opt = "-c" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
+				ret := Cli.ErrNotEnoughArgs
 			ELSIF CLI.Get(cDirs, dirsOfs, arg) & (dirsOfs < LEN(cDirs)) THEN
 				cDirs[dirsOfs] := Utf8.Null;
 				Log.Str("cDirs = ");
 				Log.StrLn(cDirs)
 			ELSE
-				ret := ErrTooLongCDirs
+				ret := Cli.ErrTooLongCDirs
 			END
 		ELSIF opt = "-cc" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
+				ret := Cli.ErrNotEnoughArgs
 			ELSIF CLI.Get(cc, ccLen, arg) THEN
 				DEC(ccLen)
 			ELSE
-				ret := ErrTooLongCc
+				ret := Cli.ErrTooLongCc
 			END
 		ELSIF opt = "-infr" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
+				ret := Cli.ErrNotEnoughArgs
 			ELSIF CopyInfrPart(str, i, arg, "/singularity/definition")
 			    & CopyInfrPart(str, i, arg, "/library")
 			    & CopyInfrPart(cDirs, dirsOfs, arg, "/singularity/implementation")
@@ -479,15 +188,15 @@ BEGIN
 				INCL(sing, count);
 				INC(count, 2)
 			ELSE
-				ret := ErrTooLongModuleDirs
+				ret := Cli.ErrTooLongModuleDirs
 			END
 		ELSIF opt = "-init" THEN
 			INC(arg);
 			optLen := 0;
 			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
+				ret := Cli.ErrNotEnoughArgs
 			ELSIF ~CLI.Get(opt, optLen, arg) THEN
-				ret := ErrTooLongInit
+				ret := Cli.ErrTooLongInit
 			ELSIF opt = "no" THEN
 				init := GeneratorC.VarInitNo
 			ELSIF opt = "undef" THEN
@@ -495,20 +204,20 @@ BEGIN
 			ELSIF opt = "zero" THEN
 				init := GeneratorC.VarInitZero
 			ELSE
-				ret := ErrUnknownInit
+				ret := Cli.ErrUnknownInit
 			END
 		ELSE
-			ret := ErrUnexpectArg
+			ret := Cli.ErrUnexpectArg
 		END;
 		INC(arg)
 	END;
 	IF i + 1 < LEN(str) THEN
 		str[i + 1] := Utf8.Null;
 		IF count >= 32 THEN
-			ret := ErrTooManyModuleDirs
+			ret := Cli.ErrTooManyModuleDirs
 		END;
 	ELSE
-		ret := ErrTooLongModuleDirs;
+		ret := Cli.ErrTooLongModuleDirs;
 		str[LEN(str) - 1] := Utf8.Null;
 		str[LEN(str) - 2] := Utf8.Null;
 		str[LEN(str) - 3] := "#"
@@ -611,7 +320,7 @@ BEGIN
 	OR ~Strings.CopyToChars(dir, destLen, module.name)
 	OR (destLen > LEN(dir) - 3)
 	THEN
-		ret := ErrTooLongOutName
+		ret := Cli.ErrTooLongOutName
 	ELSE
 		dir[destLen] := ".";
 		dir[destLen + 2] := Utf8.Null;
@@ -620,14 +329,14 @@ BEGIN
 			interface := File.OpenOut(dir)
 		END;
 		IF  ~isMain & (interface = NIL) THEN
-			ret := ErrOpenH
+			ret := Cli.ErrOpenH
 		ELSE
 			dir[destLen + 1] := "c";
 			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
 				File.CloseOut(interface);
-				ret := ErrOpenC
+				ret := Cli.ErrOpenC
 			ELSE
 				ret := ErrNo
 			END
@@ -647,81 +356,6 @@ BEGIN
 	mp.extLen := 0;
 	RETURN mp
 END NewProvider;
-
-PROCEDURE PrintUsage;
-	PROCEDURE S(s: ARRAY OF CHAR);
-	BEGIN
-		Out.String(s);
-		Out.Ln
-	END S;
-BEGIN
-S("Использование: ");
-S("  1) o7c help");
-S("  2) o7c to-c команда вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
-S("Команда - это модуль[.процедура_без_параметров] .");
-S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
-S("соответствующих как самому исходному модулю, так и используемых им модулей,");
-S("кроме лежащих в каталогах, указанным после опции -i, служащих интерфейсами");
-S("для других .h и .с-файлов.");
-S("  3) o7c to-bin ком-да результат {-m пКм | -i кИм | -c .h,c-файлы} [-cc компил.]");
-S("После трансляции указанного модуля вызывает компилятор cc по умолчанию, либо");
-S("указанный после опции -cc, для сбора результата - исполнимого файла, в состав");
-S("которого также войдут .h,c файлы, находящиеся в каталогах, указанных после -c.");
-S("  4) o7c run команда {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
-S("Запускает собранный модуль с параметрами, указанными после --");
-S("Также, доступен параметр -infr путь , который эквивалентен совокупности:");
-S("-i путь/singularity/definition -c путь/singularity/implementation -m путь/library")
-END PrintUsage;
-
-PROCEDURE ErrMessage(err: INTEGER; cmd: ARRAY OF CHAR);
-BEGIN
-	IF err # ErrParse THEN
-		CASE err OF
-		  ErrWrongArgs:
-			PrintUsage
-		| ErrTooLongSourceName:
-			Out.String("Слишком длинное имя исходного файла"); Out.Ln
-		| ErrTooLongOutName:
-			Out.String("Слишком длинное выходное имя"); Out.Ln
-		| ErrOpenSource:
-			Out.String("Не получается открыть исходный файл")
-		| ErrOpenH:
-			Out.String("Не получается открыть выходной .h файл")
-		| ErrOpenC:
-			Out.String("Не получается открыть выходной .c файл")
-		| ErrParse:
-			Out.String("Ошибка разбора исходного файла")
-		| ErrUnknownCommand:
-			Out.String("Неизвестная команда: ");
-			Out.String(cmd); Out.Ln;
-			PrintUsage
-		| ErrNotEnoughArgs:
-			Out.String("Недостаточно аргументов для команды: ");
-			Out.String(cmd)
-		| ErrTooLongModuleDirs:
-			Out.String("Суммарная длина путей с модулями слишком велика")
-		| ErrTooManyModuleDirs:
-			Out.String("Cлишком много путей с модулями")
-		| ErrTooLongCDirs:
-			Out.String("Суммарная длина путей с .c-файлами слишком велика")
-		| ErrTooLongCc:
-			Out.String("Длина опций компилятора C слишком велика")
-		| ErrCCompiler:
-			Out.String("Ошибка при вызове компилятора C")
-		| ErrTooLongRunArgs:
-			Out.String("Слишком длинные параметры командной строки")
-		| ErrUnexpectArg:
-			Out.String("Неожиданный аргумент")
-		| ErrUnknownInit:
-			Out.String("Указанный способ инициализации науке неизвестен")
-		| ErrCantCreateOutDir:
-			Out.String("Не получается создать выходной каталог")
-		| ErrCantRemoveOutDir:
-			Out.String("Не получается удалить выходной каталог")
-		END;
-		Out.Ln
-	END
-END ErrMessage;
 
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     opt: GeneratorC.Options;
@@ -829,7 +463,7 @@ VAR ret: INTEGER;
 	BEGIN
 		ok := GetTempOutC(outC, outCLen, bin, module.name);
 		IF ~ok THEN
-			ret := ErrCantCreateOutDir
+			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
 			outC[outCLen] := Utf8.Null;
@@ -857,7 +491,7 @@ VAR ret: INTEGER;
 				Exec.Log(cmd);
 				ASSERT(ok);
 				IF Exec.Do(cmd) # Exec.Ok THEN
-					ret := ErrCCompiler
+					ret := Cli.ErrCCompiler
 				END
 			END
 		END
@@ -870,7 +504,7 @@ VAR ret: INTEGER;
 		len: INTEGER;
 		ret: INTEGER;
 	BEGIN
-		ret := ErrTooLongRunArgs;
+		ret := Cli.ErrTooLongRunArgs;
 		IF Exec.Init(cmd, bin) THEN
 			INC(arg);
 			len := 0;
@@ -925,9 +559,9 @@ BEGIN
 	srcLen := 0;
 	arg := 3 + ORD(res # ResultRun);
 	IF CLI.count < arg THEN
-		ret := ErrNotEnoughArgs
+		ret := Cli.ErrNotEnoughArgs
 	ELSIF ~CLI.Get(src, srcLen, 2) THEN
-		ret := ErrTooLongSourceName
+		ret := Cli.ErrTooLongSourceName
 	ELSE
 		mp := NewProvider();
 		mp.fileExt := ".mod"; (* TODO *)
@@ -949,7 +583,7 @@ BEGIN
 				PrintErrors(mp.modules.first);
 				ret := ErrParse
 			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
-				ret := ErrTooLongOutName
+				ret := Cli.ErrTooLongOutName
 			ELSE
 				IF ~script & (srcNameEnd < srcLen - 1) THEN
 					ret := Ast.CommandGet(call, module,
@@ -958,7 +592,7 @@ BEGIN
 					call := NIL
 				END;
 				IF ret # Ast.ErrNo THEN
-					AstErrorMessage(ret); Out.Ln;
+					Message.AstError(ret); Out.Ln;
 					ret := ErrParse
 				ELSE
 					opt := GeneratorC.DefaultOptions();
@@ -976,7 +610,7 @@ BEGIN
 							ret := Run(resPath, arg)
 						END;
 						IF ~RemoveDir(outC) & (ret = ErrNo) THEN
-							ret := ErrCantRemoveOutDir
+							ret := Cli.ErrCantRemoveOutDir
 						END
 					END
 				END
@@ -996,11 +630,11 @@ BEGIN
 
 	cmdLen := 0;
 	IF (CLI.count <= 1) OR ~CLI.Get(cmd, cmdLen, 1) THEN
-		ret := ErrWrongArgs
+		ret := Cli.ErrWrongArgs
 	ELSE
-		ret := ErrNo;
 		IF cmd = "help" THEN
-			PrintUsage;
+			ret := ErrNo;
+			Message.Usage;
 			Out.Ln
 		ELSIF cmd = "to-c" THEN
 			ret := ToC(ResultC)
@@ -1009,12 +643,14 @@ BEGIN
 		ELSIF cmd = "run" THEN
 			ret := ToC(ResultRun)
 		ELSE
-			ret := ErrUnknownCommand
+			ret := Cli.ErrUnknownCommand
 		END
 	END;
 	IF ret # ErrNo THEN
 		CLI.SetExitCode(1);
-		ErrMessage(ret, cmd)
+		IF ret # ErrParse THEN
+			Message.CliError(ret, cmd)
+		END
 	END
 END Start;
 
