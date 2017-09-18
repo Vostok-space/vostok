@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE MessageRu;
+MODULE MessageEn;
 
 IMPORT Ast, Parser, Cli := CliParser, Scanner, Out, Utf8;
 
@@ -164,45 +164,45 @@ BEGIN
 	| Ast.ErrDeclarationIsPrivate:
 		O("Declaration is not exported")
 	| Ast.ErrNegateNotBool:
-		O("Логическое отрицание применено не к логическому типу")
+		O("Logic negative ~ applicable only to boolean values")
 	| Ast.ErrConstAddOverflow:
-		O("Переполнение при сложении постоянных")
+		O("Overflow in constants sum")
 	| Ast.ErrConstSubOverflow:
-		O("Переполнение при вычитании постоянных")
+		O("Overflow in constants difference")
 	| Ast.ErrConstMultOverflow:
-		O("Переполнение при умножении постоянных")
-	| Ast.ErrConstDivByZero:
-		O("Деление на 0")
+		O("Overflow in constants multiplication")
+	| Ast.ErrComDivByZero:
+		O("Division by zero")
 	| Ast.ErrValueOutOfRangeOfByte:
-		O("Значение выходит за границы BYTE")
+		O("Value out of byte's range")
 	| Ast.ErrValueOutOfRangeOfChar:
-		O("Значение выходит за границы CHAR")
+		O("Value out of char's range")
 	| Ast.ErrExpectIntExpr:
-		O("Expected целочисленное выражение")
+		O("Expected integer expression")
 	| Ast.ErrExpectConstIntExpr:
-		O("Expected константное целочисленное выражение")
+		O("Expected constant integer expression")
 	| Ast.ErrForByZero:
-		O("Шаг итератора не может быть равен 0")
+		O("Iterator's step can not be 0")
 	| Ast.ErrByShouldBePositive:
-		O("Для прохода от меньшего к большему шаг итератора должен быть > 0")
+		O("For enumeration from low to high iterator's step must be > 0")
 	| Ast.ErrByShouldBeNegative:
-		O("Для прохода от большего к меньшему шаг итератора должен быть < 0")
+		O("For enumeration from low to high iterator's step must be < 0")
 	| Ast.ErrForPossibleOverflow:
-		O("Во время итерации в FOR возможно переполнение")
+		O("Iterator in FOR can overflow")
 	| Ast.ErrVarUninitialized:
-		O("Использование неинициализированной переменной")
+		O("Using uninitialized variable")
 	| Ast.ErrDeclarationNotProc:
-		O("Имя должно указывать на процедуру")
+		O("Expected name of procedure")
 	| Ast.ErrProcNotCommandHaveReturn:
-		O("В качестве команды может выступать только процедура без возращаемого значения")
+		O("As command can be procedure without return")
 	| Ast.ErrProcNotCommandHaveParams:
-		O("В качестве команды может выступать только процедура без параметров")
+		O("As command can be procedure without parameters")
 	| Ast.ErrReturnTypeArrayOrRecord:
-		O("Тип возвращаемого значения процедуры не может быть массивом или записью")
+		O("Returned type can not be array or record")
 	| Ast.ErrRecordForwardUndefined:
-		O("Есть необъявленная запись, на которую предварительно ссылается указатель")
+		O("Exist undeclared record, previously referenced in pointer")
 	| Ast.ErrPointerToNotRecord:
-		O("Указатель может ссылаться только на запись")
+		O("Pointer can reference only to record")
 	END
 END AstError;
 
@@ -210,21 +210,21 @@ PROCEDURE ParseError*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  Scanner.ErrUnexpectChar:
-		O("Неожиданный символ в тексте")
+		O("Unexpected char in text")
 	| Scanner.ErrNumberTooBig:
-		O("Значение константы слишком велико")
+		O("Value of constant is too big")
 	| Scanner.ErrRealScaleTooBig:
-		O("ErrRealScaleTooBig")
+		O("Scale of real value is too big")
 	| Scanner.ErrWordLenTooBig:
-		O("ErrWordLenTooBig")
+		O("Length of word too big")
 	| Scanner.ErrExpectHOrX:
-		O("В конце 16-ричного числа ожидается 'H' или 'X'")
+		O("In end of hexadecimal number expected 'H' for number or 'X' for char")
 	| Scanner.ErrExpectDQuote:
-		O("Ожидалась "); O(Utf8.DQuote)
+		O("Expected "); O(Utf8.DQuote)
 	| Scanner.ErrExpectDigitInScale:
 		O("ErrExpectDigitInScale")
 	| Scanner.ErrUnclosedComment:
-		O("Незакрытый комментарий")
+		O("Unclosed comment")
 
 	| Parser.ErrExpectModule:
 		O("Expected 'MODULE'")
@@ -283,15 +283,15 @@ BEGIN
 	| Parser.ErrExcessSemicolon:
 		O("Excess ';'")
 	| Parser.ErrEndModuleNameNotMatch:
-		O("Завершающее имя в конце модуля не совпадает с его именем")
+		O("Name after end do not match with module's name")
 	| Parser.ErrArrayDimensionsTooMany:
-		O("Слишком большая n-мерность массива")
+		O("Too many dimensions in array")
 	| Parser.ErrEndProcedureNameNotMatch:
-		O("Завершающее имя в теле процедуры не совпадает с её именем")
+		O("Name after end do not match with procedure's name")
 	| Parser.ErrFunctionWithoutBraces:
-		O("Объявление процедуры с возвращаемым значением не содержит скобки")
+		O("Declaration of procedure with return must have ()")
 	| Parser.ErrArrayLenLess1:
-		O("Длина массива должна быть > 0")
+		O("Array's length must be > 0")
 	| Parser.ErrExpectIntOrStrOrQualident:
 		O("Expected number or string")
 	END
@@ -299,22 +299,18 @@ END ParseError;
 
 PROCEDURE Usage*;
 BEGIN
-S("Использование: ");
+S("Usage: ");
 S("  1) o7c help");
-S("  2) o7c to-c команда вых.каталог {-m путьКмодулям | -i кат.с_интерф-ми_мод-ми}");
-S("Команда - это модуль[.процедура_без_параметров] .");
-S("В случае успешной трансляции создаст в выходном каталоге набор .h и .c-файлов,");
-S("соответствующих как самому исходному модулю, так и используемых им модулей,");
-S("кроме лежащих в каталогах, указанным после опции -i, служащих интерфейсами");
-S("для других .h и .с-файлов.");
-S("  3) o7c to-bin ком-да результат {-m пКм | -i кИм | -c .h,c-файлы} [-cc компил.]");
-S("После трансляции указанного модуля вызывает компилятор cc по умолчанию, либо");
-S("указанный после опции -cc, для сбора результата - исполнимого файла, в состав");
-S("которого также войдут .h,c файлы, находящиеся в каталогах, указанных после -c.");
-S("  4) o7c run команда {-m путь_к_м. | -i к.с_инт_м. | -c .h,c-файлы} -- параметры");
-S("Запускает собранный модуль с параметрами, указанными после --");
-S("Также, доступен параметр -infr путь , который эквивалентен совокупности:");
-S("-i путь/singularity/definition -c путь/singularity/implementation -m путь/library")
+S("  2) o7c to-c   Script OutDir {-m PTM|-i PTI|-infr Infr}");
+S("  3) o7c to-bin Script Result {-m PTM|-i PTI|-infr Infr|-c PTHC|-cc CComp}");
+S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} -- options");
+S("Script = Call { ; Call } . Call = Module.Procedure[(Parameters)] .");
+S("PTM - Path To directories with Modules for search");
+S("PTI - Path To directories with Interface Modules without real implementation");
+S("PTHC - Path To directories with .H & .C -implementations of interface modules");
+S("Infr - path to infrastructure. '-infr p' is shortening to:");
+S("  -i p/singularity/definition -c p/singularity/implementation -m p/library");
+S("CComp - C Compiler for build generated .c-files")
 END Usage;
 
 PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
@@ -323,43 +319,43 @@ BEGIN
 	  Cli.ErrWrongArgs:
 		Usage
 	| Cli.ErrTooLongSourceName:
-		S("Слишком длинное имя исходного файла"); Out.Ln
+		S("Too long name of source file"); Out.Ln
 	| Cli.ErrTooLongOutName:
-		S("Слишком длинное выходное имя"); Out.Ln
+		S("Too long destination name"); Out.Ln
 	| Cli.ErrOpenSource:
-		S("Не получается открыть исходный файл")
+		S("Can not open source file")
 	| Cli.ErrOpenH:
-		S("Не получается открыть выходной .h файл")
+		S("Can not open destination .h file")
 	| Cli.ErrOpenC:
-		S("Не получается открыть выходной .c файл")
+		S("Can not open destination .c file")
 	| Cli.ErrUnknownCommand:
-		O("Неизвестная команда: ");
+		O("Unknown command: ");
 		S(cmd);
 		Usage
 	| Cli.ErrNotEnoughArgs:
-		O("Недостаточно аргументов для команды: ");
+		O("Not enough count of arguments for command: ");
 		S(cmd)
 	| Cli.ErrTooLongModuleDirs:
-		S("Суммарная длина путей с модулями слишком велика")
+		S("Too long overall length of paths to modules")
 	| Cli.ErrTooManyModuleDirs:
-		S("Cлишком много путей с модулями")
+		S("Too many paths to modules")
 	| Cli.ErrTooLongCDirs:
-		S("Суммарная длина путей с .c-файлами слишком велика")
+		S("Too long overall length of paths to .c files")
 	| Cli.ErrTooLongCc:
-		S("Длина опций компилятора C слишком велика")
+		S("Too long length of C compiler options")
 	| Cli.ErrCCompiler:
-		S("Ошибка при вызове компилятора C")
+		S("Error during C compiler call")
 	| Cli.ErrTooLongRunArgs:
-		S("Слишком длинные параметры командной строки")
+		S("Too long command line options")
 	| Cli.ErrUnexpectArg:
-		S("Неожиданный аргумент")
+		S("Unexpected option")
 	| Cli.ErrUnknownInit:
-		S("Указанный способ инициализации науке неизвестен")
+		S("Unknown initialization method")
 	| Cli.ErrCantCreateOutDir:
-		S("Не получается создать выходной каталог")
+		S("Can not create output directory")
 	| Cli.ErrCantRemoveOutDir:
-		S("Не получается удалить выходной каталог")
+		S("Can not remove output directory")
 	END
 END CliError;
 
-END MessageRu.
+END MessageEn.

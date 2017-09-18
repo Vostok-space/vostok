@@ -170,7 +170,7 @@ BEGIN
 		O("Переполнение при вычитании постоянных")
 	| Ast.ErrConstMultOverflow:
 		O("Переполнение при умножении постоянных")
-	| Ast.ErrConstDivByZero:
+	| Ast.ErrComDivByZero:
 		O("Деление на 0")
 	| Ast.ErrValueOutOfRangeOfByte:
 		O("Значение выходит за границы BYTE")

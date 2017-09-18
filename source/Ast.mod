@@ -101,7 +101,7 @@ CONST
 	ErrConstAddOverflow*            = -69;
 	ErrConstSubOverflow*            = -ErrConstAddOverflow - 1;
 	ErrConstMultOverflow*           = -71;
-	ErrConstDivByZero*              = -72;
+	ErrComDivByZero*                = -72;
 
 	ErrValueOutOfRangeOfByte*       = -73;
 	ErrValueOutOfRangeOfChar*       = -74;
@@ -1969,7 +1969,7 @@ VAR err: INTEGER;
 				err := ErrConstMultOverflow
 			END
 		ELSIF i2 = 0 THEN
-			err := ErrConstDivByZero
+			err := ErrComDivByZero
 		ELSIF mult = Scanner.Div THEN
 			i := i1 DIV i2
 		ELSE
@@ -2036,7 +2036,7 @@ BEGIN
 		 & (b.value # NIL) & (b.value.type.id = IdInteger)
 		 & (b.value(ExprInteger).int = 0)
 		THEN
-			err := ErrConstDivByZero
+			err := ErrComDivByZero
 		END
 	END
 	RETURN err
