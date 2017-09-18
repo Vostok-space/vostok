@@ -562,7 +562,10 @@ BEGIN
 			Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
 		END;
 		IF p.err THEN
-			WHILE (p.l < Scanner.Import (* TODO *)) & (p.l # Scanner.Semicolon) DO
+			WHILE (Scanner.EndOfFile < p.l)
+			    & (p.l < Scanner.Import (* TODO *))
+			    & (p.l # Scanner.Semicolon)
+			DO
 				Scan(p)
 			END;
 			p.err := FALSE
