@@ -113,8 +113,7 @@ BEGIN
 		p.err := err > ErrAstBegin;
 		IF p.module # NIL THEN
 			Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
-		END;
-		p.l := Scanner.EndOfFile
+		END
 	END;
 	IF p.opt.multiErrors THEN
 		p.opt.printError(err);
