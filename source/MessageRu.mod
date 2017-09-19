@@ -361,4 +361,15 @@ BEGIN
 	END
 END CliError;
 
+PROCEDURE Text*(str: ARRAY OF CHAR);
+BEGIN
+	IF str = "Found errors in the module " THEN
+		O("Найдены ошибки в модуле ")
+	ELSIF str = "Can not found or open file of module" THEN
+		O("Не получается найти или открыть файл модуля")
+	ELSE
+		O(str)
+	END
+END Text;
+
 END MessageRu.

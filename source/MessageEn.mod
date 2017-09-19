@@ -358,4 +358,9 @@ BEGIN
 	END
 END CliError;
 
+PROCEDURE Text*(str: ARRAY OF CHAR);
+BEGIN
+	O(str)
+END Text;
+
 END MessageEn.

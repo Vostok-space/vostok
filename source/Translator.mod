@@ -75,7 +75,7 @@ BEGIN
 			err := err.next
 		END;
 		IF err # NIL THEN
-			Out.String("Найдены ошибки в модуле ");
+			Message.Text("Found errors in the module ");
 			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
 			err := m.errors;
 			WHILE err # NIL DO
@@ -300,7 +300,7 @@ BEGIN
 				AddModule(mp, m, pathInd IN mp.sing)
 			END
 		ELSE
-			Out.String("Не получается найти или открыть файл модуля");
+			Message.Text("Can not found or open file of module");
 			Out.Ln
 		END
 	END
