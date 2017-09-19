@@ -53,7 +53,9 @@ self-full : result/self/o7c
 	+make self O7C:=$< SELF:=result/self2
 
 help :
-	@echo "Основные цели Makefile:\n\
+	@echo "Help in English:\n\
+	   make help-en\n\
+	Основные цели Makefile:\n\
 	   result/o7c - цель по умолчанию, сбор транслятора через bootstrap\n\
 	   test       - прогон тестов первичным транслятором\n\
 	   self       - сбор транслятора им самим и прогон тестов\n\
@@ -63,7 +65,22 @@ help :
 	   CC       - компилятор C\n\
 	   SANITIZE - опции компиляторов gcc-v5 и clang для контроля корректности\n\
 	   OPTIM    - уровень оптимизации\n\
-	Пример сбора транслятора без опций -sanitize с помощью tcc:\n\
+	Пример сбора транслятора без опций -fsanitize с помощью tcc:\n\
+	   make CC:=tcc SANITIZE:=\n\
+	"
+
+help-en :
+	@echo "Main targets of Makefile:\n\
+	   result/o7c - default target, build translator from bootstrap\n\
+	   test       - tests by 1st generation translator\n\
+	   self       - build itself then tests\n\
+	   self-full  - build translator by 2nd generation translator then tests\n\
+	   clean      - remove all buile results\n\
+	Main variables-options:\n\
+	   CC       - C compiler\n\
+	   SANITIZE - options of gcc-v5 and clang for correctness control\n\
+	   OPTIM    - optimization level\n\
+	Example of build translator without -fsanitize by Tiny C:\n\
 	   make CC:=tcc SANITIZE:=\n\
 	"
 

@@ -1,3 +1,19 @@
+Project "Vostok"
+=======================
+Oberon-07 translator to C.
+
+Short build help:
+
+	make help
+
+Build translator:
+
+	make
+
+Test:
+
+	make test self self-full
+
 Проект "Восток"
 =======================
 Ранняя стадия развития транслятора Oberon-07.
@@ -19,6 +35,4 @@
 
 Тестирование:
 
-	make test
-	make self
-	make self-full
+	make test self self-full
