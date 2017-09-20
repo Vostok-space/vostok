@@ -45,6 +45,17 @@ CONST
 	MemManagerGC*       = 2;
 
 TYPE
+	PMemoryOut = POINTER TO MemoryOut;
+	MemoryOut = RECORD(Stream.Out)
+		mem: ARRAY 2 OF RECORD
+				buf: ARRAY 4096 OF CHAR;
+				len: INTEGER
+			END;
+		invert: BOOLEAN;
+
+		next: PMemoryOut
+	END;
+
 	Options* = POINTER TO RECORD(V.Base)
 		std*: INTEGER;
 
@@ -65,7 +76,9 @@ TYPE
 		index: INTEGER;
 		records, recordLast: Ast.Record; (* для генерации тэгов *)
 
-		lastSelectorDereference: BOOLEAN
+		lastSelectorDereference: BOOLEAN;
+
+		memOuts: PMemoryOut
 	END;
 
 	Generator* = RECORD(Text.Out)
@@ -81,16 +94,6 @@ TYPE
 		expressionSemicolon,
 		insideSizeOf       : BOOLEAN
 	END;
-
-	MemoryOut = RECORD(Stream.Out)
-		mem: ARRAY 2 OF RECORD
-				buf: ARRAY 4096 OF CHAR;
-				len: INTEGER
-			END;
-		invert: BOOLEAN
-	END;
-
-	PMemoryOut = POINTER TO MemoryOut;
 
 	MOut = RECORD
 		g: ARRAY 2 OF Generator;
@@ -144,13 +147,29 @@ BEGIN
 	RETURN -1
 END MemWriteBytes;
 
-PROCEDURE MemoryOutInit(VAR mo: MemoryOut);
+PROCEDURE PMemoryOutGet(opt: Options): PMemoryOut;
+VAR m: PMemoryOut;
 BEGIN
-	Stream.InitOut(mo, MemWriteBytes, MemWrite);
-	mo.mem[0].len := 0;
-	mo.mem[1].len := 0;
-	mo.invert := FALSE
-END MemoryOutInit;
+	IF opt.memOuts = NIL THEN
+		NEW(m);
+		Stream.InitOut(m^, MemWriteBytes, MemWrite)
+	ELSE
+		m := opt.memOuts;
+		opt.memOuts := m.next
+	END;
+	m.mem[0].len := 0;
+	m.mem[1].len := 0;
+	m.invert := FALSE;
+	m.next := NIL
+
+	RETURN m
+END PMemoryOutGet;
+
+PROCEDURE PMemoryOutBack(opt: Options; m: PMemoryOut);
+BEGIN
+	m.next := opt.memOuts;
+	opt.memOuts := m
+END PMemoryOutBack;
 
 PROCEDURE MemWriteInvert(VAR mo: MemoryOut);
 VAR inv: INTEGER;
@@ -1622,7 +1641,8 @@ PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
 VAR g: Generator;
 	mo: PMemoryOut;
 BEGIN
-	NEW(mo); MemoryOutInit(mo^);
+	mo := PMemoryOutGet(gen.opt);
+
 	Text.Init(g, mo);
 	Text.SetTabs(g, gen);
 	g.module := gen.module;
@@ -1653,7 +1673,9 @@ BEGIN
 		END
 	END;
 
-	MemWriteDirect(gen, mo^)
+	MemWriteDirect(gen, mo^);
+
+	PMemoryOutBack(gen.opt, mo)
 END Declarator;
 
 PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
@@ -2871,7 +2893,9 @@ BEGIN
 		o.generatorNote := TRUE;
 		o.varInit := VarInitUndefined;
 		o.memManager := MemManagerNoFree;
-		o.main := FALSE
+		o.main := FALSE;
+
+		o.memOuts := NIL
 	END
 	RETURN o
 END DefaultOptions;
