@@ -86,10 +86,21 @@ typedef char unsigned o7c_char;
 #define O7C_MEM_MAN_COUNTER 1
 #define O7C_MEM_MAN_GC      2
 
+#if !defined(O7C_MEM_ALIGN)
+#	define O7C_MEM_ALIGN (8u > sizeof(void *) ? 8u : sizeof(void *))
+#endif
+
 #if defined(O7C_MEM_MAN_MODEL)
 #	define O7C_MEM_MAN O7C_MEM_MAN_MODEL
 #else
 #	define O7C_MEM_MAN O7C_MEM_MAN_NOFREE
+#endif
+
+#if defined(O7C_MEM_MAN_NOFREE_BUFFER_SIZE)
+#elif O7C_MEM_MAN == O7C_MEM_MAN_NOFREE
+#	define O7C_MEM_MAN_NOFREE_BUFFER_SIZE (256lu * 1024 * 1024)
+#else
+#	define O7C_MEM_MAN_NOFREE_BUFFER_SIZE 1lu
 #endif
 
 #if __GNUC__ >= 2
@@ -126,13 +137,13 @@ O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 #if defined(O7C_MEM_MAN_COUNTER_TYPE)
 	typedef O7C_MEM_MAN_COUNTER_TYPE o7c_mmc_t;
 #else
-	typedef long o7c_mmc_t;
+	typedef o7c_int_t o7c_mmc_t;
 #endif
 
 enum {
-	O7C_VAR_INIT_UNDEF,
-	O7C_VAR_INIT_ZERO,
-	O7C_VAR_INIT_NO,
+	O7C_VAR_INIT_UNDEF = 0,
+	O7C_VAR_INIT_ZERO  = 1,
+	O7C_VAR_INIT_NO    = 2,
 
 #if defined(O7C_VAR_INIT_MODEL)
 	O7C_VAR_INIT = O7C_VAR_INIT_MODEL
@@ -167,9 +178,21 @@ enum {
 
 O7C_ATTR_MALLOC O7C_ALWAYS_INLINE
 void* o7c_raw_alloc(size_t size) {
+	extern char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
+	extern size_t o7c_allocated;
 	void *mem;
-	if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
-	 || (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER))
+	if ((O7C_MEM_MAN == O7C_MEM_MAN_NOFREE)
+	 && (1 < O7C_MEM_MAN_NOFREE_BUFFER_SIZE))
+	{
+		if (o7c_allocated < (size_t)O7C_MEM_MAN_NOFREE_BUFFER_SIZE - size) {
+			mem = (void *)(o7c_memory + o7c_allocated);
+			o7c_allocated +=
+				(size - 1 + O7C_MEM_ALIGN) / O7C_MEM_ALIGN * O7C_MEM_ALIGN;
+		} else {
+			mem = NULL;
+		}
+	} else if ((O7C_VAR_INIT == O7C_VAR_INIT_ZERO)
+	        || (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER))
 	{
 		mem = calloc(1, size);
 	} else {
@@ -178,7 +201,7 @@ void* o7c_raw_alloc(size_t size) {
 	return mem;
 }
 
-O7C_INLINE void* o7c_malloc(size_t size) O7C_ATTR_ALWAYS_INLINE O7C_ATTR_MALLOC;
+O7C_ATTR_MALLOC O7C_ALWAYS_INLINE void* o7c_malloc(size_t size);
 #if O7C_MEM_MAN == O7C_MEM_MAN_GC
 	O7C_INLINE void* o7c_malloc(size_t size) {
 		return GC_MALLOC(size);
@@ -375,7 +398,7 @@ int o7c_mod(int n, int d) {
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_ind(int len, int ind) {
-	assert(len > 0); /* TODO remove */
+	/*assert(len > 0);  TODO remove */
 	assert((unsigned)ind < (unsigned)len);
 	return ind;
 }

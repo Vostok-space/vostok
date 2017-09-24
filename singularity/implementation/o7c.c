@@ -18,10 +18,14 @@
 
 #include "o7c.h"
 
-int		o7c_cli_argc;
-char**	o7c_cli_argv;
+int     o7c_cli_argc;
+char**  o7c_cli_argv;
 
 int o7c_exit_code;
+
+size_t o7c_allocated;
+
+char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
 
 extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
 	double undefined;
@@ -33,7 +37,6 @@ extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
 		|| (sizeof(long) * 2 == sizeof(double)));
 	undefined = o7c_dbl_undef();
 	assert(undefined != undefined);
-	assert(sizeof(o7c_mmc_t) == sizeof(void *));
 
 	/* для случая использования int в качестве INTEGER */
 	assert(INT_MAX >= 2147483647);

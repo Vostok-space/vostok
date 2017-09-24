@@ -48,11 +48,7 @@ extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
 		(*file)->file = NULL;
-		if (O7C_MEM_MAN == O7C_MEM_MAN_NOFREE) {
-			free((void **)*file - 1); *file = NULL;
-		} else {
-			O7C_NULL(file);
-		}
+		O7C_NULL(file);
 	}
 }
 
