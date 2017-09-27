@@ -84,7 +84,7 @@ BEGIN
 	| Ast.ErrAssignExpectVarParam:
 		O("Expected variable expression in assignment")
 	| Ast.ErrCallNotProc:
-		O("Call applicable onlty to procedures and procedure's variables")
+		O("Call applicable only to procedures and procedure's variables")
 	| Ast.ErrCallIgnoredReturn:
 		O("Returned value can not be ignored")
 	| Ast.ErrCallExprWithoutReturn:
@@ -114,7 +114,7 @@ BEGIN
 	| Ast.ErrProcHasNoReturn:
 		O("Procedure have not return")
 	| Ast.ErrReturnIncompatibleType:
-		O("Type of  expression in return is not compatible with declared type in header")
+		O("Type of expression in return is not compatible with declared type in header")
 	| Ast.ErrExpectReturn:
 		O("Expected return")
 	| Ast.ErrDeclarationNotFound:
