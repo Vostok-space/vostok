@@ -1214,9 +1214,8 @@ BEGIN
 	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
 		p.err := FALSE;
-		last.next := Statement(p, ds);
-		IF last.next # NIL THEN
-			last := last.next
+		WHILE (p.l # Scanner.Semicolon) & NotEnd(p.l) DO
+			Scan(p)
 		END
 	END
 	RETURN stats
