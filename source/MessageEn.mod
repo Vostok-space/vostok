@@ -294,6 +294,8 @@ BEGIN
 		O("Array's length must be > 0")
 	| Parser.ErrExpectIntOrStrOrQualident:
 		O("Expected number or string")
+	| Parser.ErrMaybeAssignInsteadEqual:
+		O("Unexpected '='. Maybe, you mean ':=' for assignment")
 	END
 END ParseError;
 

@@ -58,6 +58,7 @@ CONST
 	ErrExpectExpression*            = Err - 33;
 	ErrExpectIntOrStrOrQualident*   = Err - 34;
 	ErrExcessSemicolon*             = Err - 35;
+	ErrMaybeAssignInsteadEqual*     = Err - 36;
 
 	ErrEndModuleNameNotMatch*       = Err - 50;
 	ErrArrayDimensionsTooMany*      = Err - 51;
@@ -1169,6 +1170,8 @@ VAR stats, last: Ast.Statement;
 			des := Designator(p, ds);
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
+			ELSIF p.l = Scanner.Equal THEN
+				AddError(p, ErrMaybeAssignInsteadEqual);
 			ELSE
 				st := Call(p, ds, des)
 			END

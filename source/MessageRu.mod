@@ -293,6 +293,8 @@ BEGIN
 		O("Длина массива должна быть > 0")
 	| Parser.ErrExpectIntOrStrOrQualident:
 		O("Ожидалось число или строка")
+	| Parser.ErrMaybeAssignInsteadEqual:
+		O("Неуместный '='. Возможно, имелcя ввиду ':=' для присваивания")
 	END
 END ParseError;
 
