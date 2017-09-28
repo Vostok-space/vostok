@@ -2046,9 +2046,13 @@ PROCEDURE ExprTermGeneral(VAR e: ExprTerm; result: Expression; factor: Factor;
                           mult: INTEGER; factorOrTerm: Expression): INTEGER;
 VAR t: Type;
     val: Factor;
+    err: INTEGER;
 BEGIN
 	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
-	ASSERT((factorOrTerm IS Factor) OR (factorOrTerm IS ExprTerm));
+
+	ASSERT((factorOrTerm.id = IdError)
+	    OR (factorOrTerm IS Factor)
+	    OR (factorOrTerm IS ExprTerm));
 
 	IF factor # NIL THEN
 		t := factor.type;
@@ -2069,8 +2073,14 @@ BEGIN
 	e.factor := factor;
 	e.mult := mult;
 	e.expr := factorOrTerm;
-	e.factor := factor
-	RETURN MultCalc(result, mult, factorOrTerm)
+	e.factor := factor;
+
+	IF factorOrTerm.id # IdError THEN
+		err := MultCalc(result, mult, factorOrTerm)
+	ELSE
+		err := ErrNo
+	END
+	RETURN err
 END ExprTermGeneral;
 
 PROCEDURE ExprTermNew*(VAR e: ExprTerm; factor: Factor; mult: INTEGER;
