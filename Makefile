@@ -44,7 +44,7 @@ test : result/o7c $(TESTS)
 
 $(SELF)/o7c : $(O7C) $(SRC) Makefile
 	mkdir -p $(SELF)
-	$(O7C) to-c Translator.Start $(SELF) -m source -i $(SING_O7)
+	$(O7C) to-c Translator.Start $(SELF) -m source -m library -i $(SING_O7)
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
 
 self : $(SELF)/o7c
