@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016-2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@
 struct CFiles_Implement {
 	FILE *file;
 };
+
+CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
 	int name_len, char unsigned name[O7C_VLA_LEN(name_len)], int ofs,
@@ -70,6 +72,10 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
+extern o7c_bool CFiles_Flush(CFiles_File file) {
+	return (o7c_bool)(0 == fflush(file->file));
+}
+
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
 	assert((gibs >= 0) && ((INT_MAX < LONG_MAX / CFiles_GiB_cnst)
 	                   || (gibs < LONG_MAX / CFiles_GiB_cnst)));
@@ -99,5 +105,12 @@ extern int CFiles_Remove(
 }
 
 extern void CFiles_init(void) {
-	;
+	O7C_NEW2(&CFiles_in, NULL, NULL);
+	CFiles_in->file = stdin;
+
+	O7C_NEW2(&CFiles_out, NULL, NULL);
+	CFiles_out->file = stdout;
+
+	O7C_NEW2(&CFiles_err, NULL, NULL);
+	CFiles_err->file = stderr;
 }

@@ -21,6 +21,8 @@
 
 typedef struct CFiles_Implement* CFiles_File;
 
+extern CFiles_File CFiles_in, CFiles_out, CFiles_err;
+
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len, int ofs,
 							   char unsigned mode[/*len*/], int mode_len);
 
@@ -37,6 +39,8 @@ extern int CFiles_ReadChars(CFiles_File file,
 
 extern int CFiles_WriteChars(CFiles_File file,
 						char unsigned buf[/*len*/], int buf_len, int ofs, int count);
+
+extern o7c_bool CFiles_Flush(CFiles_File file);
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 

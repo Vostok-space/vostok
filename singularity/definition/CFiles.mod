@@ -1,4 +1,4 @@
-(* Copyright 2016 ComdivByZero
+(* Copyright 2016-2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ CONST
 TYPE
 	File* = POINTER TO RECORD
 	END;
+
+VAR
+	in*, out*, err*: File;
 
 PROCEDURE Open*(name: ARRAY OF CHAR; ofs: INTEGER; mode: ARRAY OF CHAR): File;
 	RETURN NIL
@@ -48,6 +51,10 @@ PROCEDURE WriteChars*(file: File; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTE
 	RETURN 0
 END WriteChars;
 
+PROCEDURE Flush*(file: File): BOOLEAN;
+	RETURN FALSE
+END Flush;
+
 (* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB *)
 PROCEDURE Seek*(file: File; gibs, bytes: INTEGER): BOOLEAN;
 	RETURN FALSE
@@ -60,5 +67,11 @@ END Tell;
 PROCEDURE Remove*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 	RETURN FALSE
 END Remove;
+
+BEGIN
+	in  := NIL;
+	out := NIL;
+	err := NIL;
+	ASSERT(FALSE);
 
 END CFiles.

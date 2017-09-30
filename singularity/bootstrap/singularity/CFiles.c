@@ -27,6 +27,8 @@ struct CFiles_Implement {
 	FILE *file;
 };
 
+CFiles_File CFiles_in, CFiles_out, CFiles_err;
+
 extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
                                int ofs, char unsigned mode[/*len*/], int mode_len) {
 	CFiles_File file = NULL;
@@ -84,6 +86,9 @@ extern int CFiles_WriteChars(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
+extern o7c_bool CFiles_Flush(CFiles_File file) {
+	return (o7c_bool)(0 == fflush(file->file));
+}
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
 	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
@@ -111,5 +116,12 @@ extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int of
 }
 
 extern void CFiles_init(void) {
-	;
+	O7C_NEW(&CFiles_in, NULL);
+	CFiles_in->file = stdin;
+
+	O7C_NEW(&CFiles_out, NULL);
+	CFiles_out->file = stdout;
+
+	O7C_NEW(&CFiles_err, NULL);
+	CFiles_err->file = stderr;
 }

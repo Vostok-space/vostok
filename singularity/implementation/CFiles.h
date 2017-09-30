@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016-2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 #define CFiles_GiB_cnst (CFiles_MiB_cnst * 1024)
 
 typedef struct CFiles_Implement* CFiles_File;
+
+
+extern CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
 	int name_len, char unsigned name[O7C_VLA_LEN(name_len)], int ofs,
@@ -43,6 +46,8 @@ O7C_INLINE int CFiles_WriteChars(CFiles_File file,
 {
 	return CFiles_Write(file, len, buf, ofs, count);
 }
+
+extern o7c_bool CFiles_Flush(CFiles_File file);
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 
