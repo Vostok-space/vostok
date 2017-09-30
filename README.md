@@ -4,7 +4,7 @@ Oberon-07 translator to C.
 
 Short build help:
 
-	make help
+	make help-en
 
 Build translator:
 
