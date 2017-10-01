@@ -34,6 +34,8 @@ BEGIN
 	CASE code OF
 	  Ast.ErrImportNameDuplicate:
 		O("Module name already declare in the import list")
+	| Ast.ErrImportSelf:
+		O("Module import itself")
 	| Ast.ErrDeclarationNameDuplicate:
 		O("Redeclaration of name in the same scope")
 	| Ast.ErrDeclarationNameHide:

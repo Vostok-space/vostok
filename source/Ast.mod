@@ -29,6 +29,7 @@ IMPORT
 CONST
 	ErrNo*                          =  0;
 	ErrImportNameDuplicate*         = -1;
+	ErrImportSelf*                  = -89;
 	ErrDeclarationNameDuplicate*    = -2;
 	ErrDeclarationNameHide*         = -8;(* TODO *)
 	ErrMultExprDifferentTypes*      = -3;
@@ -123,6 +124,7 @@ CONST
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
 	ErrPointerToNotRecord*          = -88;
+	                                (*-89*)
 
 	ErrMin*                         = -100;
 
@@ -641,30 +643,36 @@ VAR imp: Import;
 	PROCEDURE IsDup(i: Import; buf: ARRAY OF CHAR;
 	                nameOfs, nameEnd, realOfs, realEnd: INTEGER): BOOLEAN;
 		RETURN Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd)
-			OR (realOfs # nameOfs) & (
-			   (i.name.ofs # i.module.name.ofs)
-			    OR (i.name.block # i.module.name.block)
-			   )
-			  & Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
+		    OR (realOfs # nameOfs) & (
+		          (i.name.ofs # i.module.name.ofs)
+		       OR (i.name.block # i.module.name.block)
+		       )
+		       & Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
 	END IsDup;
 BEGIN
 	ASSERT(~m.fixed);
 
 	i := m.import;
 	ASSERT((i = NIL) OR (m.end IS Import));
-	WHILE (i # NIL) & ~IsDup(i(Import), buf, nameOfs, nameEnd, realOfs, realEnd)
-	DO    i := i.next
-	END;
-	IF i # NIL THEN
-		err := ErrImportNameDuplicate
+	IF Strings.IsEqualToChars(m.name, buf, realOfs, realEnd) THEN
+		err := ErrImportSelf
 	ELSE
-		NEW(imp); NodeInit(imp^, IdImport);
-		DeclConnect(imp, m, buf, nameOfs, nameEnd);
-		imp.mark := TRUE;
-		IF m.import = NIL THEN
-			m.import := imp
+		WHILE (i # NIL)
+		    & ~IsDup(i(Import), buf, nameOfs, nameEnd, realOfs, realEnd)
+		DO
+			i := i.next
 		END;
-		err := Load(imp.module, m, buf, realOfs, realEnd)
+		IF i # NIL THEN
+			err := ErrImportNameDuplicate
+		ELSE
+			NEW(imp); NodeInit(imp^, IdImport);
+			DeclConnect(imp, m, buf, nameOfs, nameEnd);
+			imp.mark := TRUE;
+			IF m.import = NIL THEN
+				m.import := imp
+			END;
+			err := Load(imp.module, m, buf, realOfs, realEnd)
+		END
 	END
 	RETURN err
 END ImportAdd;
