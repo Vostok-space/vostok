@@ -36,6 +36,8 @@ BEGIN
 		O("Module name already declare in the import list")
 	| Ast.ErrImportSelf:
 		O("Module import itself")
+	| Ast.ErrImportLoop:
+		O("Cyclic import of modules is prohibited")
 	| Ast.ErrDeclarationNameDuplicate:
 		O("Redeclaration of name in the same scope")
 	| Ast.ErrDeclarationNameHide:

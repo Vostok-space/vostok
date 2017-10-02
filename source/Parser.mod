@@ -1302,6 +1302,7 @@ END Declarations;
 PROCEDURE Imports(VAR p: Parser);
 VAR nameOfs, nameEnd, realOfs, realEnd: INTEGER;
 BEGIN
+	Ast.ImportHandle(p.module);
 	REPEAT
 		Scan(p);
 		ExpectIdent(p, nameOfs, nameEnd, ErrExpectModuleName);
@@ -1326,7 +1327,8 @@ BEGIN
 			END
 		END
 	UNTIL p.l # Scanner.Comma;
-	Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
+	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
+	Ast.ImportEnd(p.module)
 END Imports;
 
 PROCEDURE Module(VAR p: Parser; prov: Ast.Provider);
@@ -1348,8 +1350,12 @@ BEGIN
 				Ast.ModuleSetComment(p.module, p.s.buf,
 				                     p.comment.ofs, p.comment.end)
 			END;
+			Ast.RegModule(prov, p.module);
+		ASSERT(p.module # NIL);
+		ASSERT(p.module.module # NIL);
 			Scan(p)
 		END;
+
 		Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
 		IF p.l = Scanner.Import THEN
 			Imports(p)

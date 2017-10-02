@@ -44,7 +44,7 @@ MODULE Out;
    neg := FALSE;
    IF x = 0 THEN
      DEC(i);
-     s[i] := "0";
+     s[i] := "0"
    ELSE
      IF x < 0 THEN
        neg := TRUE;

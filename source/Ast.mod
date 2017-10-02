@@ -30,6 +30,7 @@ CONST
 	ErrNo*                          =  0;
 	ErrImportNameDuplicate*         = -1;
 	ErrImportSelf*                  = -89;
+	ErrImportLoop*                  = -90;
 	ErrDeclarationNameDuplicate*    = -2;
 	ErrDeclarationNameHide*         = -8;(* TODO *)
 	ErrMultExprDifferentTypes*      = -3;
@@ -124,7 +125,7 @@ CONST
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
 	ErrPointerToNotRecord*          = -88;
-	                                (*-89*)
+	                                (*-89, -90*)
 
 	ErrMin*                         = -100;
 
@@ -169,8 +170,11 @@ TYPE
 	Provide* = PROCEDURE(p: Provider; host: Module;
 	                     name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
 
+	Register* = PROCEDURE(p: Provider; m: Module);
+
 	RProvider* = RECORD(V.Base)
-		get: Provide
+		get: Provide;
+		reg: Register
 	END;
 
 	Node* = RECORD(V.Base)
@@ -277,6 +281,7 @@ TYPE
 
 		script*, errorHide*: BOOLEAN;
 
+		handleImport: BOOLEAN;
 		import*: Import;
 
 		fixed: BOOLEAN;
@@ -583,12 +588,15 @@ BEGIN
 
 	PutChars(m, m.name, name, begin, end);
 	m.module := m;
+	ASSERT(m.module # NIL);
 	m.provider := p;
 	m.errorHide := TRUE;
+	m.handleImport := FALSE;
 	m.script := FALSE;
 	Log.Str("Module "); Log.Str(m.name.block.s); Log.StrLn(" ")
 	RETURN m
 END ModuleNew;
+
 
 PROCEDURE ScriptNew*(p: Provider): Module;
 VAR m: Module;
@@ -603,12 +611,29 @@ PROCEDURE GetModuleByName*(host: Module;
 	RETURN host.provider.get(host.provider, host, name, ofs, end)
 END GetModuleByName;
 
+PROCEDURE RegModule*(provider: Provider; m: Module);
+BEGIN
+	provider.reg(provider, m)
+END RegModule;
+
 PROCEDURE ModuleEnd*(m: Module): INTEGER;
 BEGIN
 	ASSERT(~m.fixed);
 	m.fixed := TRUE
 	RETURN ErrNo
 END ModuleEnd;
+
+PROCEDURE ImportHandle*(m: Module);
+BEGIN
+	ASSERT(~m.handleImport);
+	m.handleImport := TRUE
+END ImportHandle;
+
+PROCEDURE ImportEnd*(m: Module);
+BEGIN
+	ASSERT(m.handleImport);
+	m.handleImport := FALSE
+END ImportEnd;
 
 PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
                      nameOfs, nameEnd, realOfs, realEnd: INTEGER): INTEGER;
@@ -633,6 +658,8 @@ VAR imp: Import;
 			err := ErrImportModuleNotFound
 		ELSIF res.errors # NIL THEN
 			err := ErrImportModuleWithError
+		ELSIF res.handleImport THEN
+			err := ErrImportLoop
 		ELSE
 			err := ErrNo
 		END;
@@ -836,7 +863,7 @@ PROCEDURE VarAdd*(ds: Declarations;
 VAR v: Var;
 	err: INTEGER;
 BEGIN
-	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
+	(*ASSERT((ds.module = NIL) OR ~ds.module.fixed);*)
 	err := CheckNameDuplicate(ds, buf, begin, end);
 	ChecklessVarAdd(v, ds, buf, begin, end)
 	RETURN err
@@ -2886,10 +2913,14 @@ PROCEDURE HasError*(m: Module): BOOLEAN;
 	RETURN m.errLast # NIL
 END HasError;
 
-PROCEDURE ProviderInit*(p: Provider; get: Provide);
+PROCEDURE ProviderInit*(p: Provider; get: Provide; reg: Register);
 BEGIN
+	(*ASSERT(get # NIL);
+	ASSERT(reg # NIL);*)
+
 	V.Init(p^);
-	p.get := get
+	p.get := get;
+	p.reg := reg
 END ProviderInit;
 
 BEGIN

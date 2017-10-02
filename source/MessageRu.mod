@@ -36,6 +36,8 @@ BEGIN
 		O("Имя модуля уже встречается в списке импорта")
 	| Ast.ErrImportSelf:
 		O("Модуль импортирует себя")
+	| Ast.ErrImportLoop:
+		O("Прямой или косвенный циклический импорт запрещён")
 	| Ast.ErrDeclarationNameDuplicate:
 		O("Повторное объявление имени в той же области видимости")
 	| Ast.ErrDeclarationNameHide:

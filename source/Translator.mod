@@ -42,6 +42,11 @@ CONST
 	ErrParse = -1;
 
 TYPE
+	Container = POINTER TO RECORD
+		next: Container;
+		m: Ast.Module
+	END;
+
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
 		fileExt: ARRAY 32 OF CHAR;
@@ -49,7 +54,7 @@ TYPE
 		path: ARRAY 4096 OF CHAR;
 		sing: SET;
 		modules: RECORD
-			first, last: Ast.Module
+			first, last: Container
 		END
 	END;
 
@@ -63,21 +68,21 @@ BEGIN
 	END
 END ErrorMessage;
 
-PROCEDURE PrintErrors(m: Ast.Module);
+PROCEDURE PrintErrors(mc: Container);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
 	err: Ast.Error;
 BEGIN
 	i := 0;
-	WHILE m # NIL DO
-		err := m.errors;
+	WHILE mc.m # NIL DO
+		err := mc.m.errors;
 		WHILE (err # NIL) & (err.code = SkipError) DO
 			err := err.next
 		END;
 		IF err # NIL THEN
 			Message.Text("Found errors in the module ");
-			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
-			err := m.errors;
+			Out.String(mc.m.name.block.s); Out.String(": "); Out.Ln;
+			err := mc.m.errors;
 			WHILE err # NIL DO
 				IF err.code # SkipError THEN
 					INC(i);
@@ -93,7 +98,7 @@ BEGIN
 				err := err.next
 			END
 		END;
-		m := m.module
+		mc := mc.next
 	END
 END PrintErrors;
 
@@ -227,29 +232,27 @@ END CopyPath;
 
 PROCEDURE SearchModule(mp: ModuleProvider;
                        name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
-VAR m: Ast.Module;
+VAR mc: Container;
 BEGIN
-	m := mp.modules.first;
-	WHILE (m # NIL) & ~Strings.IsEqualToChars(m.name, name, ofs, end) DO
-		ASSERT(m # m.module);
-		m := m.module
+	mc := mp.modules.first.next;
+	WHILE (mc # mp.modules.first)
+	    & ~Strings.IsEqualToChars(mc.m.name, name, ofs, end)
+	DO
+		mc := mc.next
 	END
-	RETURN m
+	RETURN mc.m
 END SearchModule;
 
-PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module; sing: BOOLEAN);
+PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module);
+VAR mc: Container;
 BEGIN
 	ASSERT(m.module = m);
-	m.module := NIL;
-	IF mp.modules.first = NIL THEN
-		mp.modules.first := m
-	ELSE
-		mp.modules.last.module := m
-	END;
-	mp.modules.last := m;
-	IF sing THEN
-		m.mark := TRUE
-	END
+	NEW(mc);
+	mc.m := m;
+	mc.next := mp.modules.first;
+
+	mp.modules.last.next := mc;
+	mp.modules.last := mc
 END AddModule;
 
 PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
@@ -295,10 +298,10 @@ BEGIN
 		UNTIL (source # NIL) OR (mp.path[pathOfs] = Utf8.Null);
 		IF source # NIL THEN
 			m := Parser.Parse(source, p, mp.opt);
+			IF pathInd IN mp.sing THEN
+				m.mark := TRUE
+			END;
 			File.CloseIn(source);
-			IF m # NIL THEN
-				AddModule(mp, m, pathInd IN mp.sing)
-			END
 		ELSE
 			Message.Text("Can not found or open file of module");
 			Out.Ln
@@ -306,6 +309,12 @@ BEGIN
 	END
 	RETURN m
 END GetModule;
+
+PROCEDURE RegModule(p: Ast.Provider; m: Ast.Module);
+BEGIN
+	Log.Str("RegModule "); Log.StrLn(m.name.block.s);
+	AddModule(p(ModuleProvider), m)
+END RegModule;
 
 PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
                       module: Ast.Module; isMain: BOOLEAN;
@@ -345,16 +354,17 @@ BEGIN
 	RETURN ret
 END OpenCOutput;
 
-PROCEDURE NewProvider(): ModuleProvider;
-VAR mp: ModuleProvider;
+PROCEDURE NewProvider(VAR mp: ModuleProvider);
 BEGIN
-	NEW(mp); Ast.ProviderInit(mp, GetModule);
+	NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
 	Parser.DefaultOptions(mp.opt);
 	mp.opt.printError := ErrorMessage;
-	mp.modules.first := NIL;
-	mp.modules.last := NIL;
 	mp.extLen := 0;
-	RETURN mp
+
+	NEW(mp.modules.first);
+	mp.modules.first.m := NIL;
+	mp.modules.first.next := mp.modules.first;
+	mp.modules.last := mp.modules.first
 END NewProvider;
 
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
@@ -563,7 +573,7 @@ BEGIN
 	ELSIF ~CLI.Get(src, srcLen, 2) THEN
 		ret := Cli.ErrTooLongSourceName
 	ELSE
-		mp := NewProvider();
+		NewProvider(mp);
 		mp.fileExt := ".mod"; (* TODO *)
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
 		ret := CopyPath(mp.path, mp.sing, cDirs, cc, init, arg);
@@ -571,7 +581,7 @@ BEGIN
 			srcNameEnd := ParseCommand(src, script);
 			IF script THEN
 				module := Parser.Script(src, mp, mp.opt);
-				AddModule(mp, module, FALSE)
+				AddModule(mp, module)
 			ELSE
 				module := GetModule(mp, NIL, src, 0, srcNameEnd)
 			END;
@@ -580,7 +590,7 @@ BEGIN
 			IF module = NIL THEN
 				ret := ErrParse
 			ELSIF module.errors # NIL THEN
-				PrintErrors(mp.modules.first);
+				PrintErrors(mp.modules.first.next);
 				ret := ErrParse
 			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
 				ret := Cli.ErrTooLongOutName
