@@ -79,6 +79,8 @@ CONST
 	ErrImportModuleNotFound*        = -45;
 	ErrImportModuleWithError*       = -46;
 	ErrDerefToNotPointer*           = -47;
+	ErrArrayLenLess1*               = -91;(*TODO*)
+	ErrArrayLenTooBig*              = -92;(*TODO*)
 	ErrArrayItemToNotArray*         = -48;
 	ErrArrayIndexNotInt*            = -49;
 	ErrArrayIndexNegative*          = -50;
@@ -125,7 +127,7 @@ CONST
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
 	ErrPointerToNotRecord*          = -88;
-	                                (*-89, -90*)
+	                                (*-89 .. -92*)
 
 	ErrMin*                         = -100;
 
@@ -984,6 +986,31 @@ BEGIN
 	RETURN a
 END ArrayGet;
 
+PROCEDURE MultArrayLenByExpr*(VAR size: INTEGER; e: Expression): INTEGER;
+VAR i, err: INTEGER;
+BEGIN
+	err := ErrNo;
+	IF (e # NIL) & (e.value # NIL) & (e.value IS ExprInteger) THEN
+		i := e.value(ExprInteger).int;
+		IF i <= 0 THEN
+			err := ErrArrayLenLess1;
+			i := 1
+		ELSE
+			Log.Str("Array Len "); Log.Int(i); Log.Ln
+		END
+	ELSE
+		i := 1;
+		IF e # NIL THEN
+			err := ErrExpectConstIntExpr
+		END
+	END;
+	IF ~Arithmetic.Mul(size, size, i) THEN
+		size := 0;
+		err := ErrArrayLenTooBig
+	END
+	RETURN err
+END MultArrayLenByExpr;
+
 PROCEDURE PointerGet*(t: Record): Pointer;
 VAR p: Pointer;
 BEGIN
@@ -1101,7 +1128,7 @@ BEGIN
 	RETURN d
 END DeclarationSearch;
 
-PROCEDURE TypeErrorNew(): Type;
+PROCEDURE TypeErrorNew*(): Type;
 VAR type: Type;
 BEGIN
 	NEW(type); NodeInit(type^, IdError); DeclInit(type, NIL)

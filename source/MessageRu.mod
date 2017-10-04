@@ -1,5 +1,5 @@
 (*  Russian messages for interface
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2017  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -130,6 +130,10 @@ BEGIN
 		O("Импортированный модуль содержит ошибки")
 	| Ast.ErrDerefToNotPointer:
 		O("Разыменовывание применено не к указателю")
+	| Ast.ErrArrayLenLess1:
+		O("Длина массива должна быть > 0")
+	| Ast.ErrArrayLenTooBig:
+		O("Общая длина массива слишком большая")
 	| Ast.ErrArrayItemToNotArray:
 		O("Получение элемента не массива")
 	| Ast.ErrArrayIndexNotInt:
@@ -293,8 +297,6 @@ BEGIN
 		O("Завершающее имя в теле процедуры не совпадает с её именем")
 	| Parser.ErrFunctionWithoutBraces:
 		O("Объявление процедуры с возвращаемым значением не содержит скобки")
-	| Parser.ErrArrayLenLess1:
-		O("Длина массива должна быть > 0")
 	| Parser.ErrExpectIntOrStrOrQualident:
 		O("Ожидалось число или строка")
 	| Parser.ErrMaybeAssignInsteadEqual:

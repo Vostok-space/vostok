@@ -1,5 +1,5 @@
 (*  English messages for interface
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -131,6 +131,10 @@ BEGIN
 		O("Imported module contain mistakes")
 	| Ast.ErrDerefToNotPointer:
 		O("Dereference applicable only to pointers")
+	| Ast.ErrArrayLenLess1:
+		O("Array's length must be > 0")
+	| Ast.ErrArrayLenTooBig:
+		O("Overall length of array too big")
 	| Ast.ErrArrayItemToNotArray:
 		O("[ index ] applicable only to array")
 	| Ast.ErrArrayIndexNotInt:
@@ -294,8 +298,6 @@ BEGIN
 		O("Name after end do not match with procedure's name")
 	| Parser.ErrFunctionWithoutBraces:
 		O("Declaration of procedure with return must have ()")
-	| Parser.ErrArrayLenLess1:
-		O("Array's length must be > 0")
 	| Parser.ErrExpectIntOrStrOrQualident:
 		O("Expected number or string")
 	| Parser.ErrMaybeAssignInsteadEqual:

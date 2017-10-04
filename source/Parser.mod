@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017  ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -64,7 +64,6 @@ CONST
 	ErrArrayDimensionsTooMany*      = Err - 51;
 	ErrEndProcedureNameNotMatch*    = Err - 52;
 	ErrFunctionWithoutBraces*       = Err - 53;
-	ErrArrayLenLess1*               = Err - 54;
 
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
@@ -157,8 +156,7 @@ BEGIN
 		Scan(p)
 	ELSE
 		AddError(p, error)
-	END(*;
-	RETURN p.l = expect*)
+	END
 END Expect;
 
 PROCEDURE ScanIfEqual(VAR p: Parser; lex: INTEGER): BOOLEAN;
@@ -573,26 +571,6 @@ BEGIN
 	END
 END Consts;
 
-(* TODO в Ast *)
-PROCEDURE ExprToArrayLen(VAR p: Parser; e: Ast.Expression): INTEGER;
-VAR i: INTEGER;
-BEGIN
-	IF (e # NIL) & (e.value # NIL) & (e.value IS Ast.ExprInteger) THEN
-		i := e.value(Ast.ExprInteger).int;
-		IF i <= 0 THEN
-			AddError(p, ErrArrayLenLess1)
-		ELSE
-			Log.Str("Array Len "); Log.Int(i); Log.Ln
-		END
-	ELSE
-		i := -1;
-		IF e # NIL THEN
-			AddError(p, Ast.ErrExpectConstIntExpr)
-		END
-	END
-	RETURN i
-END ExprToArrayLen;
-
 PROCEDURE Array(VAR p: Parser; ds: Ast.Declarations;
                 nameBegin, nameEnd: INTEGER): Ast.Array;
 VAR a: Ast.Array;
@@ -609,11 +587,12 @@ BEGIN
 		t := a;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
 	END;
-	size := ExprToArrayLen(p, a.count);
+	size := 1;
+	CheckAst(p, Ast.MultArrayLenByExpr(size, a.count));
 	i := 0;
 	WHILE ScanIfEqual(p, Scanner.Comma) DO
 		exprLen := Expression(p, ds);
-		size := size * ExprToArrayLen(p, exprLen);
+		CheckAst(p, Ast.MultArrayLenByExpr(size, exprLen));
 		IF i < LEN(lens) THEN
 			lens[i] := exprLen
 		END;
@@ -645,8 +624,7 @@ BEGIN
 		END
 	END;
 	IF t = NIL THEN
-		(* TODO Заменить на некий ErrorType *)
-		t := Ast.TypeGet(Ast.IdInteger)
+		t := Ast.TypeErrorNew()
 	END
 	RETURN t
 END TypeNamed;
@@ -906,7 +884,7 @@ BEGIN
 	ELSIF p.l = Scanner.Ident THEN
 		t := TypeNamed(p, ds)
 	ELSE
-		t := Ast.TypeGet(Ast.IdInteger);
+		t := Ast.TypeErrorNew();
 		AddError(p, ErrExpectType)
 	END
 	RETURN t
