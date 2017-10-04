@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1360,22 +1360,20 @@ BEGIN
 	NEW(d); ExprInit(d, IdDesignator, NIL);
 	d.decl := decl;
 	d.sel := NIL;
-	(* IF decl # NIL THEN *)
-		d.type := decl.type;
-		IF decl IS Const THEN
-			d.value := decl(Const).expr.value
-		ELSIF decl IS GeneralProcedure THEN
-			d.type := decl(GeneralProcedure).header
-		END
-	(* END *)
+	d.type := decl.type;
+	IF decl IS Const THEN
+		d.value := decl(Const).expr.value
+	ELSIF decl IS GeneralProcedure THEN
+		d.type := decl(GeneralProcedure).header
+	END
 	RETURN ErrNo
 END DesignatorNew;
 
 PROCEDURE CheckDesignatorAsValue*(d: Designator): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	IF (d.decl.up # NIL) & (d.decl.up.up # NIL)
-	 & (d.decl IS Var)
+	IF (d.decl IS Var)
+	 & ((d.decl.up # NIL) & (d.decl.up.up # NIL) OR (d.decl IS FormalParam))
 	 & ~d.decl(Var).inited
 	THEN
 		err := ErrVarUninitialized;
@@ -1621,8 +1619,10 @@ BEGIN
 		Log.Str("Идентификаторы типов : ");
 		Log.Int(t1.id); Log.Str(" : ");
 		Log.Int(t2.id); Log.Ln;
-		IF ~comp & (t1.id = t2.id)
-		 & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
+		IF comp THEN
+			;
+		ELSIF (t1.id = t2.id)
+		    & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
 		THEN
 			CASE t1.id OF
 			  IdArray   : comp := CompatibleTypes(distance, t1.type, t2.type)
@@ -1633,6 +1633,10 @@ BEGIN
 			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
 			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 			END
+		ELSIF t1.id = IdProcType THEN
+			comp := (t2.id = IdPointer) & (t2.type = NIL)
+		ELSIF t2.id = IdProcType THEN
+			comp := (t1.id = IdPointer) & (t1.type = NIL)
 		END
 	END
 	RETURN comp
@@ -2915,8 +2919,10 @@ END HasError;
 
 PROCEDURE ProviderInit*(p: Provider; get: Provide; reg: Register);
 BEGIN
-	(*ASSERT(get # NIL);
-	ASSERT(reg # NIL);*)
+	(* TODO удалить комментарий
+	ASSERT(get # NIL);
+	ASSERT(reg # NIL);
+	*)
 
 	V.Init(p^);
 	p.get := get;
