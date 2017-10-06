@@ -302,6 +302,8 @@ BEGIN
 		O("Expected number or string")
 	| Parser.ErrMaybeAssignInsteadEqual:
 		O("Unexpected '='. Maybe, you mean ':=' for assignment")
+	| Parser.ErrUnexpectStringInCaseLabel:
+		O("As label in CASE not accepted not 1 char strings")
 	END
 END ParseError;
 

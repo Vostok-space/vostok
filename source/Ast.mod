@@ -590,7 +590,6 @@ BEGIN
 
 	PutChars(m, m.name, name, begin, end);
 	m.module := m;
-	ASSERT(m.module # NIL);
 	m.provider := p;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
@@ -865,7 +864,7 @@ PROCEDURE VarAdd*(ds: Declarations;
 VAR v: Var;
 	err: INTEGER;
 BEGIN
-	(*ASSERT((ds.module = NIL) OR ~ds.module.fixed);*)
+	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
 	err := CheckNameDuplicate(ds, buf, begin, end);
 	ChecklessVarAdd(v, ds, buf, begin, end)
 	RETURN err

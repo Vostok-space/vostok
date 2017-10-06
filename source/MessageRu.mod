@@ -301,6 +301,8 @@ BEGIN
 		O("Ожидалось число или строка")
 	| Parser.ErrMaybeAssignInsteadEqual:
 		O("Неуместный '='. Возможно, имелcя ввиду ':=' для присваивания")
+	| Parser.ErrUnexpectStringInCaseLabel:
+		O("В качестве метки CASE недопустимы не односимвольные строки")
 	END
 END ParseError;
 

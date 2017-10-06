@@ -59,6 +59,7 @@ CONST
 	ErrExpectIntOrStrOrQualident*   = Err - 34;
 	ErrExcessSemicolon*             = Err - 35;
 	ErrMaybeAssignInsteadEqual*     = Err - 36;
+	ErrUnexpectStringInCaseLabel*   = Err - 37;
 
 	ErrEndModuleNameNotMatch*       = Err - 50;
 	ErrArrayDimensionsTooMany*      = Err - 51;
@@ -969,13 +970,19 @@ VAR case: Ast.Case;
 
 				PROCEDURE Label(VAR p: Parser; ds: Ast.Declarations): Ast.CaseLabel;
 				VAR l: Ast.CaseLabel;
+				    i: INTEGER;
 				BEGIN
 					IF (p.l = Scanner.Number) & ~p.s.isReal THEN
 						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdInteger, p.s.integer));
 						Scan(p)
 					ELSIF p.l = Scanner.String THEN
-						ASSERT(p.s.isChar);
-						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdChar, p.s.integer));
+						IF p.s.isChar THEN
+							i := p.s.integer
+						ELSE
+							AddError(p, ErrUnexpectStringInCaseLabel);
+							i := -1
+						END;
+						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdChar, i));
 						Scan(p)
 					ELSIF p.l = Scanner.Ident THEN
 						CheckAst(p, Ast.CaseLabelQualNew(l, Qualident(p, ds)))
@@ -1329,8 +1336,6 @@ BEGIN
 				                     p.comment.ofs, p.comment.end)
 			END;
 			Ast.RegModule(prov, p.module);
-		ASSERT(p.module # NIL);
-		ASSERT(p.module.module # NIL);
 			Scan(p)
 		END;
 
