@@ -60,6 +60,7 @@ VAR c: ARRAY 3, 4, 5 OF INTEGER;
 	i: INTEGER;
 BEGIN
 	c[2][2][2] := 222;
+	c[1][2][3] := 0;
 	i := c[1][2][3];
 	i := aaa[2, 1, 0]
 END C;

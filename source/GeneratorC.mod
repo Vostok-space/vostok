@@ -802,10 +802,17 @@ PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
 BEGIN
 	IF (gen.opt.varInit = VarInitUndefined)
 	 & (e IS Ast.Designator)
-	 & (e.type.id = Ast.IdBoolean)
 	 & (e.value = NIL)
+	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdReal})
 	THEN
-		Text.Str(gen, "o7c_bl(");
+		CASE e.type.id OF
+		  Ast.IdBoolean:
+			Text.Str(gen, "o7c_bl(")
+		| Ast.IdInteger:
+			Text.Str(gen, "o7c_int(")
+		| Ast.IdReal:
+			Text.Str(gen, "o7c_dbl(")
+		END;
 		expression(gen, e);
 		Text.Str(gen, ")")
 	ELSE
@@ -2752,7 +2759,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			IF gen.opt.memManager = MemManagerCounter THEN
 				IF proc.return.type.id = Ast.IdPointer THEN
 					Text.Str(gen, "O7C_ASSIGN(&o7c_return, ");
-					CheckExpr(gen, proc.return);
+					Expression(gen, proc.return);
 					Text.StrLn(gen, ");")
 				ELSE
 					Text.Str(gen, "o7c_return = ");
@@ -2766,8 +2773,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				END;
 				Text.StrLn(gen, "return o7c_return;")
 			ELSE
-				ReleaseVars(gen, proc.vars);
-				ReleaseParams(gen, retainParams);
 				Text.Str(gen, "return ");
 				ExprSameType(gen, proc.return, proc.header.type);
 				Text.StrLn(gen, ";")
