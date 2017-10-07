@@ -2945,10 +2945,8 @@ END HasError;
 
 PROCEDURE ProviderInit*(p: Provider; get: Provide; reg: Register);
 BEGIN
-	(* TODO удалить комментарий
 	ASSERT(get # NIL);
 	ASSERT(reg # NIL);
-	*)
 
 	V.Init(p^);
 	p.get := get;

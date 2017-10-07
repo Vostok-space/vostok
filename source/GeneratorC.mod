@@ -139,20 +139,12 @@ BEGIN
 	RETURN count
 END MemWrite;
 
-(* TODO заменить на NIL после иправления проверки совместимости ProcType и NIL*)
-PROCEDURE MemWriteBytes(VAR out: Stream.Out;
-                   buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
-BEGIN
-	ASSERT(FALSE)
-	RETURN -1
-END MemWriteBytes;
-
 PROCEDURE PMemoryOutGet(opt: Options): PMemoryOut;
 VAR m: PMemoryOut;
 BEGIN
 	IF opt.memOuts = NIL THEN
 		NEW(m);
-		Stream.InitOut(m^, MemWriteBytes, MemWrite)
+		Stream.InitOut(m^, NIL, MemWrite)
 	ELSE
 		m := opt.memOuts;
 		opt.memOuts := m.next
