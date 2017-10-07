@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016-2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,14 @@ struct CFiles_Implement {
 
 CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
-extern CFiles_File CFiles_Open(char unsigned name[/*len*/], int name_len,
-                               int ofs, char unsigned mode[/*len*/], int mode_len) {
+extern CFiles_File CFiles_Open(
+	int name_len, char unsigned name[O7C_VLA_LEN(name_len)], int ofs,
+	int mode_len, char unsigned mode[O7C_VLA_LEN(mode_len)])
+{
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
-	O7C_NEW(&file, NULL);
+	O7C_NEW2(&file, NULL, NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), (char *)mode);
 		if (NULL == file->file) {
@@ -53,36 +55,20 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-                       char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
-	assert(buf != NULL);
+	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+{
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(buf_len - count >= ofs);
+	assert(len - count >= ofs);
 	return fread(buf + ofs, 1, count, file->file);
 }
 
 extern int CFiles_Write(CFiles_File file,
-                        char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
+	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+{
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(buf_len - count >= ofs);
-	return fwrite(buf + ofs, 1, count, file->file);
-}
-
-extern int CFiles_ReadChars(CFiles_File file,
-                       char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
-	assert(buf != NULL);
-	assert(ofs >= 0);
-	assert(count >= 0);
-	assert(buf_len - count >= ofs);
-	return fread(buf + ofs, 1, count, file->file);
-}
-
-extern int CFiles_WriteChars(CFiles_File file,
-                        char unsigned buf[/*len*/], int buf_len, int ofs, int count) {
-	assert(ofs >= 0);
-	assert(count >= 0);
-	assert(buf_len - count >= ofs);
+	assert(len - count >= ofs);
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
@@ -91,7 +77,8 @@ extern o7c_bool CFiles_Flush(CFiles_File file) {
 }
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
-	assert((gibs >= 0) && (gibs < LONG_MAX / CFiles_GiB_cnst));
+	assert((gibs >= 0) && ((INT_MAX < LONG_MAX / CFiles_GiB_cnst)
+	                   || (gibs < LONG_MAX / CFiles_GiB_cnst)));
 	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
 	return fseek(file->file, (long)gibs * CFiles_GiB_cnst + bytes, SEEK_SET) == 0;
 }
@@ -109,19 +96,21 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 	return pos >= 0;
 }
 
-extern int CFiles_Remove(char unsigned const name[/*len*/], int name_len, int ofs) {
+extern int CFiles_Remove(
+	int name_len, char unsigned const name[O7C_VLA_LEN(name_len)], int ofs)
+{
 	assert(ofs >= 0);
 	assert(name_len > 1);
 	return remove((char const *)name) == 0;
 }
 
 extern void CFiles_init(void) {
-	O7C_NEW(&CFiles_in, NULL);
+	O7C_NEW2(&CFiles_in, NULL, NULL);
 	CFiles_in->file = stdin;
 
-	O7C_NEW(&CFiles_out, NULL);
+	O7C_NEW2(&CFiles_out, NULL, NULL);
 	CFiles_out->file = stdout;
 
-	O7C_NEW(&CFiles_err, NULL);
+	O7C_NEW2(&CFiles_err, NULL, NULL);
 	CFiles_err->file = stderr;
 }

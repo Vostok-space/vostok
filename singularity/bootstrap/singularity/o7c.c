@@ -18,12 +18,16 @@
 
 #include "o7c.h"
 
-int		o7c_cli_argc;
-char**	o7c_cli_argv;
+int     o7c_cli_argc;
+char**  o7c_cli_argv;
 
 int o7c_exit_code;
 
-extern void o7c_init(int argc, char *argv[]) {
+size_t o7c_allocated;
+
+char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
+
+extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
 	double undefined;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
@@ -33,7 +37,6 @@ extern void o7c_init(int argc, char *argv[]) {
 		|| (sizeof(long) * 2 == sizeof(double)));
 	undefined = o7c_dbl_undef();
 	assert(undefined != undefined);
-	assert(sizeof(o7c_mmc_t) == sizeof(void *));
 
 	/* для случая использования int в качестве INTEGER */
 	assert(INT_MAX >= 2147483647);
@@ -64,48 +67,46 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 		assert(ext[0] <= O7C_MAX_RECORD_EXT);
 		while (i < ext[0]) {
 			ext[i] = base[i];
-			++i;
+			i += 1;
 		}
 		ext[i] = id;
-		++i;
-		++id;
+		i += 1;
+		id += 1;
 	}
 	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
 	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
 	while (i <= O7C_MAX_RECORD_EXT) {
 		ext[i] = 0;
-		++i;
+		i += 1;
 	}
 }
 
-#if defined O7C_BOOL_UNDEF
-	extern o7c_bool* o7c_bools_undef(o7c_bool array[], int size) {
-		int i;
-		for (i = 0; i < size; ++i) {
-			array[i] = O7C_BOOL_UNDEF;
-		}
-		return array;
-	}
-#endif
-
-extern double* o7c_doubles_undef(double array[], int size) {
+extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < size; ++i) {
+	for (i = 0; i < len; i += 1) {
+		array[i] = 0xff;
+	}
+	return array;
+}
+
+extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
+	int i;
+	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_DBL_UNDEF;
 	}
 	return array;
 }
 
-extern int* o7c_ints_undef(int array[], int size) {
+extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]) {
 	int i;
-	for (i = 0; i < size; ++i) {
+	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_INT_UNDEF;
 	}
 	return array;
 }
 
-extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
-                      o7c_char const s2[/*len*/], int s2_len) {
+extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
+                      int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)]) {
 	int i, len, c1, c2;
 	if (s1_len < s2_len) {
 		len = s1_len;
@@ -114,7 +115,7 @@ extern int o7c_strcmp(o7c_char const s1[/*len*/], int s1_len,
 	}
 	i = 0;
 	while ((i < len) && (s1[i] == s2[i]) && (s1[i] != '\0')) {
-		++i;
+		i += 1;
 	}
 	if (i < s1_len) {
 		c1 = (int)s1[i];
