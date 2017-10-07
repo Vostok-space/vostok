@@ -2236,13 +2236,13 @@ BEGIN
 	       & (expr.id # Ast.IdPointer);
 	brace := reref;
 	IF ~reref THEN
-		Expression(gen, expr);
+		CheckExpr(gen, expr);
 		IF expr.type.id = Ast.IdRecord THEN
 			base := expectType(Ast.Record);
 			extend := expr.type(Ast.Record)
 		END
 	ELSIF gen.opt.plan9 THEN
-		Expression(gen, expr);
+		CheckExpr(gen, expr);
 		brace := FALSE
 	ELSE
 		base := expectType.type(Ast.Record);
