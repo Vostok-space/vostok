@@ -393,7 +393,6 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		         OR Eq(n, "instanceof")
 		         OR Eq(n, "interface")
 		| "l": o := Eq(n, "let")
-		| "m":
 		| "n": o := Eq(n, "native")
 		         OR Eq(n, "null")
 		| "p": o := Eq(n, "package")
@@ -403,7 +402,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		| "t": o := Eq(n, "throws")
 		         OR Eq(n, "transient")
 		| "v": o := Eq(n, "var")
-		| "c", "g", "h", "j", "k", "o", "q", "r", "u", "w" .. "z": o := FALSE
+		| "c", "g", "h", "j", "k", "m", "o", "q", "r", "u", "w" .. "z": o := FALSE
 		END
 		RETURN o
 	END JsKeyWord;
