@@ -176,6 +176,26 @@ enum {
 	enum { O7C_UNDEF = 1 };
 #endif
 
+#if defined(O7C_CHECK_NULL)
+	enum { O7C_CHECK_NIL = O7C_CHECK_NULL };
+#else
+	enum { O7C_CHECK_NIL = 1};
+#endif
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+void* o7c_ref(void *ptr) {
+	if (O7C_CHECK_NIL) {
+		assert(NULL != ptr);
+	}
+	return ptr;
+}
+
+#if __GNUC__ >= 2
+#	define O7C_REF(ptr) ((__typeof__(ptr))o7c_ref(ptr))
+#else
+#	define O7C_REF(ptr) ptr
+#endif
+
 O7C_ATTR_MALLOC O7C_ALWAYS_INLINE
 void* o7c_raw_alloc(size_t size) {
 	extern char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
@@ -398,7 +418,7 @@ int o7c_mod(int n, int d) {
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_ind(int len, int ind) {
-	/*assert(len > 0);  TODO remove */
+	/*assert(len > 0); TODO remove */
 	assert((unsigned)ind < (unsigned)len);
 	return ind;
 }

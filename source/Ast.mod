@@ -314,13 +314,13 @@ TYPE
 
 	Selector* = POINTER TO RSelector;
 	RSelector* = RECORD(Node)
+		type*: Type;
 		next*: Selector
 	END;
 
 	SelPointer* = POINTER TO RECORD(RSelector) END;
 
 	SelGuard* = POINTER TO RECORD(RSelector)
-		type*: Type
 	END;
 
 	SelArray* = POINTER TO RECORD(RSelector)
@@ -1433,6 +1433,7 @@ END IsRecordExtension;
 PROCEDURE SelInit(s: Selector);
 BEGIN
 	NodeInit(s^, NoId);
+	s.type := NIL;
 	s.next := NIL
 END SelInit;
 
@@ -1444,7 +1445,8 @@ BEGIN
 	sel := sp;
 	IF type IS Pointer THEN
 		err := ErrNo;
-		type := type.type
+		type := type.type;
+		sel.type := type
 	ELSE
 		err := ErrDerefToNotPointer
 	END
@@ -1473,7 +1475,8 @@ BEGIN
 	ELSE
 		err := ErrNo
 	END;
-	type := type.type
+	type := type.type;
+	sel.type := type
 	RETURN err
 END SelArrayNew;
 
@@ -1576,7 +1579,8 @@ BEGIN
 		END
 	END;
 	sr.var := var;
-	sel := sr
+	sel := sr;
+	sel.type := type
 	RETURN err
 END SelRecordNew;
 

@@ -65,6 +65,7 @@ TYPE
 		vla*,
 		checkArith*,
 		caseAbort*,
+		checkNil*,
 		comment*,
 		generatorNote*: BOOLEAN;
 
@@ -102,6 +103,7 @@ TYPE
 
 	Selectors = RECORD
 		des: Ast.Designator;
+		assign: BOOLEAN;
 		decl: Ast.Declaration;
 		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
 		i: INTEGER
@@ -575,7 +577,7 @@ END ArrayLen;
 PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
                    VAR typ: Ast.Type; desType: Ast.Type);
 VAR sel: Ast.Selector;
-	ret: BOOLEAN;
+	ret, ref: BOOLEAN;
 
 	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
@@ -721,10 +723,25 @@ VAR sel: Ast.Selector;
 		END
 	END Array;
 BEGIN
+	IF i >= 0 THEN
+		sel := sels.list[i]
+	END;
+	IF gen.opt.checkNil THEN
+		ref := FALSE
+	ELSIF i < 0 THEN
+		ref := (sels.i >= 0)
+		     & (sels.decl.type # NIL) & (sels.decl.type.id = Ast.IdPointer)
+	ELSE
+		ref := (sel.type.id = Ast.IdPointer)
+		     & (sel.next # NIL) & ~(sel.next IS Ast.SelGuard)
+		     & ~(sel IS Ast.SelGuard)
+	END;
+	IF ref THEN
+		Text.Str(gen, "O7C_REF(")
+	END;
 	IF i < 0 THEN
 		Declarator(gen, sels.decl)
 	ELSE
-		sel := sels.list[i];
 		DEC(i);
 		IF sel IS Ast.SelRecord THEN
 			Selector(gen, sels, i, typ, desType);
@@ -742,18 +759,22 @@ BEGIN
 				Selector(gen, sels, i, typ, desType)
 			END
 		ELSIF sel IS Ast.SelGuard THEN
-			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
+			IF sel.type.id = Ast.IdPointer THEN
 				Text.Str(gen, "O7C_GUARD(");
-				ret := CheckStructName(gen, sel(Ast.SelGuard).type.type(Ast.Record));
+				ret := CheckStructName(gen, sel.type.type(Ast.Record));
 				ASSERT(ret);
-				GlobalName(gen, sel(Ast.SelGuard).type.type)
+				GlobalName(gen, sel.type.type)
 			ELSE
 				Text.Str(gen, "O7C_GUARD_R(");
-				GlobalName(gen, sel(Ast.SelGuard).type)
+				GlobalName(gen, sel.type)
 			END;
 			Text.Str(gen, ", &");
-			Selector(gen, sels, i, typ, desType);
-			IF sel(Ast.SelGuard).type.id = Ast.IdPointer THEN
+			IF i < 0 THEN
+				Declarator(gen, sels.decl)
+			ELSE
+				Selector(gen, sels, i, typ, desType)
+			END;
+			IF sel.type.id = Ast.IdPointer THEN
 				Text.Str(gen, ")")
 			ELSE
 				Text.Str(gen, ", ");
@@ -763,7 +784,10 @@ BEGIN
 			typ := sel(Ast.SelGuard).type
 		ELSE
 			ASSERT(FALSE)
-		END
+		END;
+	END;
+	IF ref THEN
+		Text.Str(gen, ")")
 	END
 END Selector;
 
@@ -772,7 +796,7 @@ VAR
 	sels: Selectors;
 	typ: Ast.Type;
 
-	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
+	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector; typ: Ast.Type);
 	BEGIN
 		sels.i := -1;
 		WHILE sel # NIL DO
@@ -789,8 +813,8 @@ VAR
 	END Put;
 
 BEGIN
-	Put(sels, des.sel);
 	typ := des.decl.type;
+	Put(sels, des.sel, typ);
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
 	gen.opt.lastSelectorDereference := (sels.i > 0)
@@ -889,13 +913,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				tagType := TypeForTag(e.type.type(Ast.Record));
 				IF (tagType # NIL) & (gen.opt.varInit = VarInitUndefined) THEN
 					Text.Str(gen, "O7C_NEW(&");
-					Expression(gen, e);
+					Designator(gen, e(Ast.Designator));
 					Text.Str(gen, ", ");
 					GlobalName(gen, tagType);
 					Text.Str(gen, ")")
 				ELSE
 					Text.Str(gen, "O7C_NEW2(&");
-					Expression(gen, e);
+					Designator(gen, e(Ast.Designator));
 					IF tagType # NIL THEN
 						Text.Str(gen, ", ");
 						GlobalName(gen, tagType);
@@ -2927,6 +2951,7 @@ BEGIN
 		o.vla := FALSE & (o.std >= IsoC99);
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
+		o.checkNil := TRUE;
 		o.comment := TRUE;
 		o.generatorNote := TRUE;
 		o.varInit := VarInitUndefined;
