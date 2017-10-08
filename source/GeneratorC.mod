@@ -726,7 +726,7 @@ BEGIN
 	IF i >= 0 THEN
 		sel := sels.list[i]
 	END;
-	IF gen.opt.checkNil THEN
+	IF ~gen.opt.checkNil THEN
 		ref := FALSE
 	ELSIF i < 0 THEN
 		ref := (sels.i >= 0)
