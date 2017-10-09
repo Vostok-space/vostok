@@ -80,6 +80,10 @@ BEGIN
 		O("Проверка IS применима только к записям")
 	| Ast.ErrIsExtVarNotRecord:
 		O("Левый член проверки IS должен иметь тип записи или указателя на неё")
+	| Ast.ErrIsExtMeshupPtrAndRecord:
+		O("Тип переменной слева от IS должен быть того же сорта, что и тип справа")
+	| Ast.ErrIsExtExpectRecordExt:
+		O("Справа от IS нужен расширенный тип по отношению к типу переменной слева")
 	| Ast.ErrConstDeclExprNotConst:
 		O("Постоянная сопоставляется выражению, невычислимым на этапе перевода")
 	| Ast.ErrAssignIncompatibleType:

@@ -52,6 +52,8 @@ CONST
 	ErrRelIncompatibleType*         = -21;
 	ErrIsExtTypeNotRecord*          = -22;
 	ErrIsExtVarNotRecord*           = -23;
+	ErrIsExtMeshupPtrAndRecord*     = -93;(*TODO*)
+	ErrIsExtExpectRecordExt*        = -94;(*TODO*)
 	ErrConstDeclExprNotConst*       = -24;
 	ErrAssignIncompatibleType*      = -25;
 	ErrAssignExpectVarParam*        = -84;(*TODO*)
@@ -1674,7 +1676,7 @@ END CompatibleTypes;
 
 PROCEDURE ExprIsExtensionNew*(VAR e: ExprIsExtension; VAR des: Expression;
                               type: Type): INTEGER;
-VAR err: INTEGER;
+VAR err, dist: INTEGER;
 BEGIN
 	NEW(e); ExprInit(e, IdIsExtension, TypeGet(IdBoolean));
 	e.designator := NIL;
@@ -1686,8 +1688,19 @@ BEGIN
 		IF des IS Designator THEN
 			e.designator := des(Designator);
 			(* TODO проверка возможности проверки *)
-			IF (des.type # NIL) & ~(des.type.id IN {IdPointer, IdRecord}) THEN
-				err := ErrIsExtVarNotRecord
+			IF des.type # NIL THEN
+				IF ~(des.type.id IN {IdPointer, IdRecord}) THEN
+					err := ErrIsExtVarNotRecord
+				ELSIF type.id # des.type.id THEN
+					err := ErrIsExtMeshupPtrAndRecord
+				ELSIF (type.id = IdRecord)
+					& ~IsRecordExtension(dist, des.type(Record), type(Record))
+					OR
+					  (type.id = IdPointer)
+					& ~IsRecordExtension(dist, des.type.type(Record), type.type(Record))
+				THEN
+					err := ErrIsExtExpectRecordExt
+				END
 			END
 		ELSE
 			err := ErrIsExtVarNotRecord

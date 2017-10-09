@@ -81,6 +81,10 @@ BEGIN
 		O("IS applicable only to records")
 	| Ast.ErrIsExtVarNotRecord:
 		O("Left part of IS be record or pointer to record")
+	| Ast.ErrIsExtMeshupPtrAndRecord:
+		O("Type of left part of IS expression must be same kind that right type")
+	| Ast.ErrIsExtExpectRecordExt:
+		O("In right part of IS expected extended record")
 	| Ast.ErrConstDeclExprNotConst:
 		O("Constant declaration matched to not constant expression")
 	| Ast.ErrAssignIncompatibleType:
