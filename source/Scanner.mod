@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -247,13 +247,12 @@ BEGIN
 	RETURN ch
 END ScanChar;
 
-PROCEDURE ScanChars(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; suit: Suit;
-                    VAR in: Stream.In);
+PROCEDURE ScanChars(VAR s: Scanner; suit: Suit);
 BEGIN
-	WHILE suit(buf[i]) DO
-		INC(i)
-	ELSIF buf[i] = NewPage DO
-		FillBuf(buf, i, in)
+	WHILE suit(s.buf[s.ind]) DO
+		INC(s.ind)
+	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
+		FillBuf(s.buf, s.ind, s.in^)
 	END
 END ScanChars;
 
@@ -400,14 +399,14 @@ VAR
 	END ValReal;
 BEGIN
 	lex := Number;
-	ScanChars(s.buf, s.ind, IsDigit, s.in^);
+	ScanChars(s, IsDigit);
 	ch := s.buf[s.ind];
 	s.isReal := ch = ".";
 	IF s.isReal THEN
 		INC(s.ind);
 		ValReal(s, lex)
 	ELSIF (ch >= "A") & (ch <= "F") OR (ch = "H") OR (ch = "X") THEN
-		ScanChars(s.buf, s.ind, IsHexDigit, s.in^);
+		ScanChars(s, IsHexDigit);
 		ch := s.buf[s.ind];
 		Val(s, lex, 16, ValHexDigit);
 		IF ch = "X" THEN
@@ -597,7 +596,7 @@ PROCEDURE SWord(VAR s: Scanner): INTEGER;
 VAR
 	len, l: INTEGER;
 BEGIN
-	ScanChars(s.buf, s.ind, IsLetterOrDigit, s.in^);
+	ScanChars(s, IsLetterOrDigit);
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(len > 0);
 	IF len <= TranLim.MaxLenName THEN
