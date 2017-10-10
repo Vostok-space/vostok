@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016-2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@
 #	endif
 #endif
 
-#define O7C_INT_UNDEF INT_MIN
-
-#define O7C_DBL_UNDEF o7c_dbl_undef()
-
 #if defined(O7C_USE_GNUC_BUILTIN_OVERFLOW)
 #	define O7C_GNUC_BUILTIN_OVERFLOW O7C_USE_GNUC_BUILTIN_OVERFLOW
 #elif __GNUC__ >= 5
@@ -51,6 +47,27 @@
 #	define O7C_VLA_LEN(len)
 #endif
 
+
+#define O7C_VAR_INIT_UNDEF 0
+#define O7C_VAR_INIT_ZERO  1
+#define O7C_VAR_INIT_NO    2
+
+#if defined(O7C_VAR_INIT_MODEL)
+#	define O7C_VAR_INIT O7C_VAR_INIT_MODEL
+#else
+#	define O7C_VAR_INIT O7C_VAR_INIT_ZERO
+#endif
+
+#if O7C_VAR_INIT == O7C_VAR_INIT_UNDEF
+#	define O7C_INT_UNDEF  INT_MIN
+#	define O7C_DBL_UNDEF  o7c_dbl_undef()
+#	define O7C_BOOL_UNDEF 0xFF
+#else
+#	define O7C_INT_UNDEF  0
+#	define O7C_DBL_UNDEF  0.0
+#	define O7C_BOOL_UNDEF (0<1)
+#endif
+
 typedef char unsigned o7c_char;
 
 #if (__STDC_VERSION__ >= 199901L)
@@ -68,7 +85,6 @@ typedef char unsigned o7c_char;
 #elif defined(__cplusplus) && !defined(O7C_BOOL_UNDEFINED)
 	typedef bool o7c_bool;
 #else
-#	define O7C_BOOL_UNDEF 0xFF
 	typedef o7c_char o7c_bool;
 #endif
 
@@ -139,18 +155,6 @@ O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 #else
 	typedef o7c_int_t o7c_mmc_t;
 #endif
-
-enum {
-	O7C_VAR_INIT_UNDEF = 0,
-	O7C_VAR_INIT_ZERO  = 1,
-	O7C_VAR_INIT_NO    = 2,
-
-#if defined(O7C_VAR_INIT_MODEL)
-	O7C_VAR_INIT = O7C_VAR_INIT_MODEL
-#else
-	O7C_VAR_INIT = O7C_VAR_INIT_ZERO
-#endif
-};
 
 #if defined(O7C_CHECK_OVERFLOW)
 	enum { O7C_OVERFLOW = O7C_CHECK_OVERFLOW };
@@ -418,7 +422,6 @@ int o7c_mod(int n, int d) {
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_ind(int len, int ind) {
-	/*assert(len > 0); TODO remove */
 	assert((unsigned)ind < (unsigned)len);
 	return ind;
 }
