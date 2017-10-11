@@ -598,7 +598,7 @@ VAR
 BEGIN
 	ScanChars(s, IsLetterOrDigit);
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
-	ASSERT(len > 0);
+	ASSERT(0 < len);
 	IF len <= TranLim.MaxLenName THEN
 		l := CheckWord(s.buf, s.lexStart, s.ind)
 	ELSE
@@ -614,7 +614,7 @@ VAR start, i, comment, commentsCount: INTEGER;
 BEGIN
 	i := s.ind;
 	(*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*)
-	ASSERT(i >= 0);
+	ASSERT(0 <= i);
 	start := i;
 	comment := 0;
 	commentsCount := 0;
@@ -663,7 +663,7 @@ BEGIN
 		INC(i)
 	END;
 	s.column := s.column + (i - start);
-	ASSERT(s.column >= 0);
+	ASSERT(0 <= s.column);
 	s.ind := i
 	RETURN comment <= 0
 END ScanBlank;
@@ -768,9 +768,9 @@ BEGIN
 		s.lexEnd := s.ind;
 		s.lexLen := s.lexEnd + ORD(s.lexEnd < s.lexStart) * (LEN(s.buf) - 1)
 		          - s.lexStart;
-		ASSERT((s.lexLen > 0) OR (lex = EndOfFile));
+		ASSERT((0 < s.lexLen) OR (lex = EndOfFile));
 		s.column := s.column + s.lexLen;
-		ASSERT(s.column >= 0)
+		ASSERT(0 <= s.column)
 	END
 	RETURN lex
 END Next;

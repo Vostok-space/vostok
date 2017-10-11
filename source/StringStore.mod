@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -84,8 +84,8 @@ VAR
 	END AddBlock;
 BEGIN
 	ASSERT(ODD(LEN(s)) OR (j <= end));
-	ASSERT((j >= 0) & (j < LEN(s) - 1));
-	ASSERT((end >= 0) & (end < LEN(s) - 1));
+	ASSERT((0 <= j) & (j < LEN(s) - 1));
+	ASSERT((0 <= end) & (end < LEN(s) - 1));
 	b := store.last;
 	i := store.ofs;
 	V.Init(w);
@@ -116,7 +116,7 @@ END Put;
 
 PROCEDURE GetIter*(VAR iter: Iterator; s: String; ofs: INTEGER): BOOLEAN;
 BEGIN
-	ASSERT(ofs >= 0);
+	ASSERT(0 <= ofs);
 	IF s.block # NIL THEN
 		V.Init(iter);
 		iter.b := s.block;
@@ -152,7 +152,7 @@ VAR i: INTEGER;
 BEGIN
 	(*ASSERT(ODD(LEN(s)));*)
 	ASSERT((j >= 0) & (j < LEN(s) - 1));
-	ASSERT((end >= 0) & (end < LEN(s) - 1));
+	ASSERT((0 <= end) & (end < LEN(s) - 1));
 	i := w.ofs;
 	b := w.block;
 	WHILE (b.s[i] = s[j]) & (j # end) DO
@@ -260,8 +260,8 @@ BEGIN
 	Log.Str(", "); Log.Int(srcEnd);
 	Log.Str(" "); Log.StrLn(src);
 	*)
-	ASSERT((destOfs >= 0)
-		 & (srcOfs >= 0) & (srcEnd >= srcOfs)
+	ASSERT((0 <= destOfs)
+		 & (0 <= srcOfs) & (srcOfs <= srcEnd)
 		 & (srcEnd <= LEN(src)));
 
 	ret := destOfs + srcEnd - srcOfs < LEN(dest) - 1;
@@ -280,7 +280,7 @@ PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                          src: ARRAY OF CHAR): BOOLEAN;
 VAR i: INTEGER;
 BEGIN
-	ASSERT(destOfs >= 0);
+	ASSERT(0 <= destOfs);
 
 	i := 0;
 	WHILE (destOfs < LEN(dest) - 1) & (src[i] # Utf8.Null) DO

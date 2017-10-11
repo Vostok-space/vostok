@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -397,22 +397,18 @@ END GenerateC;
 
 PROCEDURE MakeDir(name: ARRAY OF CHAR): BOOLEAN;
 VAR cmd: Exec.Code;
-    ok: BOOLEAN;
 BEGIN
-	ok := Exec.Init(cmd, "mkdir")
-	    & Exec.Add(cmd, name, 0);
-	ASSERT(ok)
+	ASSERT(Exec.Init(cmd, "mkdir")
+	     & Exec.Add(cmd, name, 0))
 	RETURN Exec.Do(cmd) = Exec.Ok
 END MakeDir;
 
 PROCEDURE RemoveDir(name: ARRAY OF CHAR): BOOLEAN;
 VAR cmd: Exec.Code;
-    ok: BOOLEAN;
 BEGIN
-	ok := Exec.Init(cmd, "rm")
-	    & Exec.Add(cmd, "-r", 0)
-	    & Exec.Add(cmd, name, 0);
-	ASSERT(ok)
+	ASSERT(Exec.Init(cmd, "rm")
+	     & Exec.Add(cmd, "-r", 0)
+	     & Exec.Add(cmd, name, 0))
 	RETURN Exec.Do(cmd) = Exec.Ok
 END RemoveDir;
 
@@ -423,16 +419,14 @@ VAR binLen, i: INTEGER;
 	cmd: Exec.Code;
 BEGIN
 	len := 0;
-	ok := Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
-	    & Strings.CopyToChars(dirCOut, len, name);
-	ASSERT(ok);
+	ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
+	     & Strings.CopyToChars(dirCOut, len, name));
 
 	i := 0;
 	ok := MakeDir(dirCOut);
 	WHILE ~ok & (i < 100) DO
 		IF i = 0 THEN
-			ok := Strings.CopyCharsNull(dirCOut, len, "-00");
-			ASSERT(ok)
+			ASSERT(Strings.CopyCharsNull(dirCOut, len, "-00"))
 		ELSE
 			dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
 			dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
@@ -442,10 +436,9 @@ BEGIN
 	END;
 	IF ok & (bin[0] = Utf8.Null) THEN
 		binLen := 0;
-		ok := Strings.CopyCharsNull(bin, binLen, dirCOut)
-		    & Strings.CopyCharsNull(bin, binLen, "/")
-		    & Strings.CopyToChars(bin, binLen, name);
-		ASSERT(ok)
+		ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
+		     & Strings.CopyCharsNull(bin, binLen, "/")
+		     & Strings.CopyToChars(bin, binLen, name))
 	END
 	RETURN ok
 END GetTempOutC;

@@ -648,11 +648,9 @@ VAR imp: Import;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
 	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
 		l, err: INTEGER;
-		ret: BOOLEAN;
 	BEGIN
 		l := 0;
-		ret := Strings.CopyChars(n, l, buf, realOfs, realEnd);
-		ASSERT(ret);
+		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
 		(* TODO сделать загрузку модуля из символьного файла *)
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
 		res := GetModuleByName(host, buf, realOfs, realEnd);
@@ -1785,7 +1783,7 @@ VAR err: INTEGER;
 		RETURN continue
 	END CheckType;
 BEGIN
-	ASSERT((relation >= Scanner.RelationFirst) & (relation < Scanner.RelationLast));
+	ASSERT((Scanner.RelationFirst <= relation) & (relation < Scanner.RelationLast));
 
 	NEW(e); ExprInit(e, IdRelation, TypeGet(IdBoolean));
 	e.exprs[0] := expr1;
@@ -2130,7 +2128,7 @@ VAR t: Type;
     val: Factor;
     err: INTEGER;
 BEGIN
-	ASSERT((mult >= Scanner.MultFirst) & (mult <= Scanner.MultLast));
+	ASSERT((Scanner.MultFirst <= mult) & (mult <= Scanner.MultLast));
 
 	ASSERT((factorOrTerm.id = IdError)
 	    OR (factorOrTerm IS Factor)
@@ -2649,7 +2647,7 @@ END CaseNew;
 PROCEDURE CaseRangeSearch*(case: Case; int: INTEGER): INTEGER;
 VAR e: CaseElement;
 BEGIN
-	ASSERT(FALSE);
+	ASSERT(FALSE); (* TODO *)
 	e := case.elements;
 	IF e # NIL THEN
 		WHILE e.next # NIL DO

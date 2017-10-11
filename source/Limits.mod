@@ -1,5 +1,5 @@
 (*  Oberon-07 types limits
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,11 +31,11 @@ PROCEDURE IsNan*(r: REAL): BOOLEAN;
 END IsNan;
 
 PROCEDURE InByteRange*(v: INTEGER): BOOLEAN;
-	RETURN (v >= 0) & (v <= ByteMax)
+	RETURN (0 <= v) & (v <= ByteMax)
 END InByteRange;
 
 PROCEDURE InCharRange*(v: INTEGER): BOOLEAN;
-	RETURN (v >= 0) & (v <= ORD(CharMax))
+	RETURN (0 <= v) & (v <= ORD(CharMax))
 END InCharRange;
 
 END Limits.

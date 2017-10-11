@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,6 +66,7 @@ TYPE
 		checkArith*,
 		caseAbort*,
 		checkNil*,
+		o7cAssert*,
 		comment*,
 		generatorNote*: BOOLEAN;
 
@@ -125,13 +126,11 @@ VAR
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression);
 
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
-VAR ret: BOOLEAN;
 BEGIN
-	ret := Strings.CopyChars(
+	ASSERT(Strings.CopyChars(
 		out.mem[ORD(out.invert)].buf, out.mem[ORD(out.invert)].len,
 		buf, ofs, ofs + count
-	);
-	ASSERT(ret)
+	))
 END MemoryWrite;
 
 PROCEDURE MemWrite(VAR out: Stream.Out;
@@ -167,15 +166,13 @@ END PMemoryOutBack;
 
 PROCEDURE MemWriteInvert(VAR mo: MemoryOut);
 VAR inv: INTEGER;
-	ret: BOOLEAN;
 BEGIN
 	inv := ORD(mo.invert);
 	IF mo.mem[inv].len = 0 THEN
 		mo.invert := ~mo.invert
 	ELSE
-		ret := Strings.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
-		                         mo.mem[1 - inv].buf, 0, mo.mem[1 - inv].len);
-		ASSERT(ret);
+		ASSERT(Strings.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
+		                         mo.mem[1 - inv].buf, 0, mo.mem[1 - inv].len));
 		mo.mem[1 - inv].len := 0
 	END
 END MemWriteInvert;
@@ -495,7 +492,6 @@ END TypeForTag;
 PROCEDURE CheckStructName(VAR gen: Generator; rec: Ast.Record): BOOLEAN;
 VAR anon: ARRAY TranLim.MaxLenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
-	ret, corr: BOOLEAN;
 BEGIN
 	IF Strings.IsDefined(rec.name) THEN
 		;
@@ -503,21 +499,18 @@ BEGIN
 		l := 0;
 		ASSERT(rec.module # NIL);
 		(*rec.mark := TRUE; TODO удалить? *)
-		corr := Strings.CopyToChars(anon, l, rec.pointer.name);
-		ASSERT(corr);
+		ASSERT(Strings.CopyToChars(anon, l, rec.pointer.name));
 		anon[l] := "_";
 		anon[l + 1] := "s";
 		anon[l + 2] := Utf8.Null;
 		Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
 	ELSE
 		l := 0;
-		corr := Strings.CopyToChars(anon, l, rec.module.name);
-		ASSERT(corr);
+		ASSERT(Strings.CopyToChars(anon, l, rec.module.name));
 
 		Log.StrLn("Record");
 
-		ret := Strings.CopyChars(anon, l, "_anon_0000", 0, 10);
-		ASSERT(ret);
+		ASSERT(Strings.CopyChars(anon, l, "_anon_0000", 0, 10));
 		ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
 		i := gen.opt.index;
 		(*Log.Int(i); Log.Ln;*)
@@ -577,7 +570,7 @@ END ArrayLen;
 PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
                    VAR typ: Ast.Type; desType: Ast.Type);
 VAR sel: Ast.Selector;
-	ret, ref: BOOLEAN;
+	ref: BOOLEAN;
 
 	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector);
 	VAR var: Ast.Declaration;
@@ -761,8 +754,7 @@ BEGIN
 		ELSIF sel IS Ast.SelGuard THEN
 			IF sel.type.id = Ast.IdPointer THEN
 				Text.Str(gen, "O7C_GUARD(");
-				ret := CheckStructName(gen, sel.type.type(Ast.Record));
-				ASSERT(ret);
+				ASSERT(CheckStructName(gen, sel.type.type(Ast.Record)));
 				GlobalName(gen, sel.type.type)
 			ELSE
 				Text.Str(gen, "O7C_GUARD_R(");
@@ -1040,7 +1032,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.New:
 				New(gen, e1)
 			| Scanner.Assert:
-				Text.Str(gen, "assert(");
+				IF gen.opt.o7cAssert THEN
+					Text.Str(gen, "O7C_ASSERT(")
+				ELSE
+					Text.Str(gen, "assert(")
+				END;
 				CheckExpr(gen, e1);
 				Text.Str(gen, ")")
 			| Scanner.Pack:
@@ -1464,7 +1460,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 		PROCEDURE ToHex(d: INTEGER): CHAR;
 		BEGIN
-			ASSERT((d >= 0) & (d < 16));
+			ASSERT(d IN {0 .. 16});
 			IF d < 10 THEN
 				INC(d, ORD("0"))
 			ELSE
@@ -1564,14 +1560,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	PROCEDURE IsExtension(VAR gen: Generator; is: Ast.ExprIsExtension);
 	VAR decl: Ast.Declaration;
 		extType: Ast.Type;
-		ret: BOOLEAN;
 	BEGIN
 		decl := is.designator.decl;
 		extType := is.extType;
 		IF is.designator.type.id = Ast.IdPointer THEN
 			extType := extType.type;
-			ret := CheckStructName(gen, extType(Ast.Record));
-			ASSERT(ret);
+			ASSERT(CheckStructName(gen, extType(Ast.Record)));
 			Text.Str(gen, "o7c_is(");
 			Expression(gen, is.designator);
 			Text.Str(gen, ", ")
@@ -2952,6 +2946,7 @@ BEGIN
 		o.checkArith := TRUE;
 		o.caseAbort := TRUE;
 		o.checkNil := TRUE;
+		o.o7cAssert := TRUE;
 		o.comment := TRUE;
 		o.generatorNote := TRUE;
 		o.varInit := VarInitUndefined;

@@ -200,6 +200,13 @@ void* o7c_ref(void *ptr) {
 #	define O7C_REF(ptr) ptr
 #endif
 
+#if defined(NDEBUG)
+	O7C_ALWAYS_INLINE void o7c_assert(o7c_c_bool cond) { assert(cond); }
+#	define O7C_ASSERT(condition) o7c_assert(condition)
+#else
+#	define O7C_ASSERT(condition) assert(condition)
+#endif
+
 O7C_ATTR_MALLOC O7C_ALWAYS_INLINE
 void* o7c_raw_alloc(size_t size) {
 	extern char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];

@@ -49,7 +49,7 @@ END SetTabs;
 PROCEDURE Chars(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
-	ASSERT(count >= 0);
+	ASSERT(0 <= count);
 	c[0] := ch;
 	WHILE count > 0 DO
 		gen.len := gen.len + Stream.WriteChars(gen.out^, c, 0, 1);
@@ -99,7 +99,7 @@ END IndentOpen;
 
 PROCEDURE IndentClose*(VAR gen: Out);
 BEGIN
-	ASSERT(gen.tabs > 0);
+	ASSERT(0 < gen.tabs);
 	DEC(gen.tabs)
 END IndentClose;
 

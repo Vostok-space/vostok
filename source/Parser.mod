@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2017  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ END AddError;
 PROCEDURE CheckAst(VAR p: Parser; err: INTEGER);
 BEGIN
 	IF err # Ast.ErrNo THEN
-		ASSERT((err < ErrNo) & (err >= Ast.ErrMin));
+		ASSERT((Ast.ErrMin <= err) & (err < ErrNo));
 		AddError(p, ErrAstBegin + err)
 	END
 END CheckAst;
@@ -462,14 +462,14 @@ BEGIN
 		CheckAst(p, Ast.ExprTermNew(term, e(Ast.Factor), l, Factor(p, ds)));
 		ASSERT((term.expr # NIL) & (term.factor # NIL));
 		e := term;
-		WHILE (p.l >= Scanner.MultFirst) & (p.l <= Scanner.MultLast) DO
+		WHILE (Scanner.MultFirst <= p.l) & (p.l <= Scanner.MultLast) DO
 			l := p.l;
 			Scan(p);
 			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds)))
 		END;
 		IF inc THEN
 			DEC(p.inConditions);
-			ASSERT(p.inConditions >= 0)
+			ASSERT(0 <= p.inConditions)
 		END
 	END
 	RETURN e
@@ -507,7 +507,7 @@ BEGIN
 	END;
 	IF inc THEN
 		DEC(p.inConditions);
-		ASSERT(p.inConditions >= 0)
+		ASSERT(0 <= p.inConditions)
 	END
 	RETURN e
 END Sum;
@@ -1379,7 +1379,6 @@ BEGIN
 END DefaultOptions;
 
 PROCEDURE ParserInit(VAR p: Parser; in: Stream.PIn; scr: ARRAY OF CHAR; opt: Options);
-VAR ret: BOOLEAN;
 BEGIN
 	V.Init(p);
 	p.opt := opt;
@@ -1393,8 +1392,7 @@ BEGIN
 	IF in # NIL THEN
 		Scanner.Init(p.s, in)
 	ELSE
-		ret := Scanner.InitByString(p.s, scr);
-		ASSERT(ret)
+		ASSERT(Scanner.InitByString(p.s, scr))
 	END
 END ParserInit;
 

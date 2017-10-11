@@ -1,5 +1,5 @@
 (*  Abstract interfaces for data input and output
- *  Copyright (C) 2016  ComdivByZero
+ *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,18 +55,18 @@ END InitIn;
 PROCEDURE Read*(VAR in: In; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 VAR r: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	ASSERT((0 <= ofs) & (0 <= count) & (ofs <= LEN(buf) - count));
 	r := in.read(in, buf, ofs, count);
-	ASSERT((r >= 0) & (r <= count))
+	ASSERT((0 <= r) & (r <= count))
 	RETURN r
 END Read;
 
 PROCEDURE ReadChars*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 VAR r: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	ASSERT((0 <= ofs) & (0 <= count) & (ofs <= LEN(buf) - count));
 	r := in.readChars(in, buf, ofs, count);
-	ASSERT((r >= 0) & (r <= count))
+	ASSERT((0 <= r) & (r <= count))
 	RETURN r
 END ReadChars;
 
@@ -80,7 +80,7 @@ END InitOut;
 PROCEDURE Write*(VAR out: Out; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 VAR w: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	ASSERT((0 <= ofs) & (0 <= count) & (ofs <= LEN(buf) - count));
 	w := out.write(out, buf, ofs, count);
 	ASSERT((0 <= w) & (w <= count))
 	RETURN w
@@ -89,7 +89,7 @@ END Write;
 PROCEDURE WriteChars*(VAR out: Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 VAR w: INTEGER;
 BEGIN
-	ASSERT((ofs >= 0) & (count >= 0) & (LEN(buf) - count >= ofs));
+	ASSERT((0 <= ofs) & (0 <= count) & (ofs <= LEN(buf) - count));
 	w := out.writeChars(out, buf, ofs, count);
 	ASSERT((0 <= w) & (w <= count))
 	RETURN w
