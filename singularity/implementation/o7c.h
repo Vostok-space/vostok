@@ -180,6 +180,14 @@ O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 	enum { O7C_UNDEF = 1 };
 #endif
 
+#if defined(O7C_CHECK_ARRAY_INDEX)
+	enum { O7C_ARRAY_INDEX = O7C_CHECK_ARRAY_INDEX };
+#elif !defined(__BOUNDS_CHECKING_ON)
+	enum { O7C_ARRAY_INDEX = 1 };
+#else
+	enum { O7C_ARRAY_INDEX = 0 };
+#endif
+
 #if defined(O7C_CHECK_NULL)
 	enum { O7C_CHECK_NIL = O7C_CHECK_NULL };
 #else
@@ -194,7 +202,7 @@ void* o7c_ref(void *ptr) {
 	return ptr;
 }
 
-#if __GNUC__ >= 2
+#if (__GNUC__ >= 2) || defined(__TINYC__)
 #	define O7C_REF(ptr) ((__typeof__(ptr))o7c_ref(ptr))
 #else
 #	define O7C_REF(ptr) ptr
@@ -429,7 +437,9 @@ int o7c_mod(int n, int d) {
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_ind(int len, int ind) {
-	assert((unsigned)ind < (unsigned)len);
+	if (O7C_ARRAY_INDEX) {
+		assert((unsigned)ind < (unsigned)len);
+	}
 	return ind;
 }
 
