@@ -65,7 +65,7 @@
 #else
 #	define O7C_INT_UNDEF  0
 #	define O7C_DBL_UNDEF  0.0
-#	define O7C_BOOL_UNDEF (0<1)
+#	define O7C_BOOL_UNDEF (0>1)
 #endif
 
 typedef char unsigned o7c_char;

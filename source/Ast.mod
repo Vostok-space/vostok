@@ -1299,7 +1299,7 @@ BEGIN
 END ExprNilNew;
 
 PROCEDURE ExprErrNew*(): Expression;
-VAR e: Expression;
+VAR e: Factor;
 BEGIN
 	NEW(e); ExprInit(e, IdError, TypeErrorNew());
 	RETURN e

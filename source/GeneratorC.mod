@@ -1460,7 +1460,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 		PROCEDURE ToHex(d: INTEGER): CHAR;
 		BEGIN
-			ASSERT(d IN {0 .. 16});
+			ASSERT(d IN {0 .. 0FH});
 			IF d < 10 THEN
 				INC(d, ORD("0"))
 			ELSE
