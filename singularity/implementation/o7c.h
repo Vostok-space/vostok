@@ -272,6 +272,7 @@ O7C_ATTR_MALLOC O7C_ALWAYS_INLINE void* o7c_malloc(size_t size);
 #define O7C_LEN(array) ((o7c_int_t)(sizeof(array) / sizeof((array)[0])))
 
 typedef o7c_id_t o7c_tag_t[O7C_MAX_RECORD_EXT + 1];
+extern o7c_tag_t o7c_base_tag;
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 o7c_c_bool o7c_bool_inited(o7c_bool b) {

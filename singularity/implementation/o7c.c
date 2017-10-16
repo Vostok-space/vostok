@@ -25,6 +25,8 @@ int o7c_exit_code;
 
 size_t o7c_allocated;
 
+o7c_tag_t o7c_base_tag;
+
 char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
 
 extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
