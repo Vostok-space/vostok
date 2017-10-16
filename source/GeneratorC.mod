@@ -1901,7 +1901,7 @@ BEGIN
 		IF ~gen.opt.plan9 THEN
 			Text.StrLn(gen, "_undef(&r->_);")
 		ELSE
-			Text.StrLn(gen, "_undef(&r);")
+			Text.StrLn(gen, "_undef(r);")
 		END
 	END;
 	rec.ext(RecExt).undef := TRUE;
@@ -2095,6 +2095,12 @@ BEGIN
 		Text.Str(gen, "#define ");
 		GlobalName(gen, rec);
 		Text.StrLn(gen, "_tag o7c_base_tag");
+	ELSIF ~rec.needTag & gen.opt.skipUnusedTag THEN
+		Text.Str(gen, "#define ");
+		GlobalName(gen, rec);
+		Text.Str(gen, "_tag ");
+		GlobalName(gen, rec.base);
+		Text.StrLn(gen, "_tag")
 	ELSE
 		IF ~rec.mark OR gen.opt.main THEN
 			Text.Str(gen, "static o7c_tag_t ")
@@ -2155,7 +2161,9 @@ BEGIN
 				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
 			END
 		END;
-		IF (~typ.mark OR out.opt.main) OR (typ(Ast.Record).base # NIL) THEN
+		IF (~typ.mark OR out.opt.main)
+		OR (typ(Ast.Record).base # NIL) OR ~typ(Ast.Record).needTag
+		THEN
 			RecordTag(out.g[Implementation], typ(Ast.Record))
 		END;
 		IF out.opt.varInit = VarInitUndefined THEN
@@ -2950,21 +2958,23 @@ BEGIN
 	NEW(o);
 	IF o # NIL THEN
 		V.Init(o^);
-		o.std := IsoC99;
-		o.gnu := FALSE;
-		o.plan9 := FALSE;
-		o.procLocal := FALSE;
-		o.checkIndex := TRUE;
-		o.vla := FALSE & (o.std >= IsoC99);
-		o.checkArith := TRUE;
-		o.caseAbort := TRUE;
-		o.checkNil := TRUE;
-		o.o7cAssert := TRUE;
+
+		o.std           := IsoC99;
+		o.gnu           := FALSE;
+		o.plan9         := FALSE;
+		o.procLocal     := FALSE;
+		o.checkIndex    := TRUE;
+		o.vla           := FALSE & (o.std >= IsoC99);
+		o.checkArith    := TRUE;
+		o.caseAbort     := TRUE;
+		o.checkNil      := TRUE;
+		o.o7cAssert     := TRUE;
 		o.skipUnusedTag := TRUE;
-		o.comment := TRUE;
+		o.comment       := TRUE;
 		o.generatorNote := TRUE;
-		o.varInit := VarInitUndefined;
-		o.memManager := MemManagerNoFree;
+		o.varInit       := VarInitUndefined;
+		o.memManager    := MemManagerNoFree;
+
 		o.main := FALSE;
 
 		o.memOuts := NIL
@@ -3097,7 +3107,7 @@ BEGIN
 		gen.opt.records := r.ext(RecExt).next;
 		r.ext(RecExt).next := NIL;
 
-		IF r.base # NIL THEN
+		IF (r.base # NIL) & r.needTag THEN
 			Text.Str(gen, "o7c_tag_init(");
 			GlobalName(gen, r);
 			Text.Str(gen, "_tag, ");

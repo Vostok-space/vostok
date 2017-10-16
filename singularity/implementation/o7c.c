@@ -61,20 +61,19 @@ extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
 extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 	static int id = 1;
 	int i;
+	assert(NULL != base);
 	i = 1;
-	if (NULL == base) {
-		ext[0] = 0;
-	} else {
-		ext[0] = base[0] + 1;
-		assert(ext[0] <= O7C_MAX_RECORD_EXT);
-		while (i < ext[0]) {
-			ext[i] = base[i];
-			i += 1;
-		}
-		ext[i] = id;
+
+	ext[0] = base[0] + 1;
+	assert(ext[0] <= O7C_MAX_RECORD_EXT);
+	while (i < ext[0]) {
+		ext[i] = base[i];
 		i += 1;
-		id += 1;
 	}
+	ext[i] = id;
+	i += 1;
+	id += 1;
+
 	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
 	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
 	while (i <= O7C_MAX_RECORD_EXT) {
