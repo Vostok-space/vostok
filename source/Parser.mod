@@ -304,7 +304,7 @@ BEGIN
 					IF des.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
 						Scan(p);
 						var := ExpectRecordExtend(p, ds, des.type(Ast.Construct));
-						CheckAst(p, Ast.SelGuardNew(sel, des.type, var));
+						CheckAst(p, Ast.SelGuardNew(sel, des, var));
 						Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 					ELSIF ~(des.type IS Ast.ProcType) THEN
 						AddError(p, ErrExpectVarRecordOrPointer)

@@ -67,6 +67,7 @@ TYPE
 		caseAbort*,
 		checkNil*,
 		o7cAssert*,
+		skipUnusedTag*,
 		comment*,
 		generatorNote*: BOOLEAN;
 
@@ -788,7 +789,7 @@ VAR
 	sels: Selectors;
 	typ: Ast.Type;
 
-	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector; typ: Ast.Type);
+	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
 	BEGIN
 		sels.i := -1;
 		WHILE sel # NIL DO
@@ -806,7 +807,7 @@ VAR
 
 BEGIN
 	typ := des.decl.type;
-	Put(sels, des.sel, typ);
+	Put(sels, des.sel);
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
 	gen.opt.lastSelectorDereference := (sels.i > 0)
@@ -1131,7 +1132,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 
 				t := p.expr.type;
-				IF t.id = Ast.IdRecord THEN
+				IF (t.id = Ast.IdRecord)
+				 & (~gen.opt.skipUnusedTag OR Ast.IsNeedTag(fp(Ast.FormalParam)))
+				THEN
 					IF gen.opt.lastSelectorDereference THEN
 						Text.Str(gen, ", NULL")
 					ELSE
@@ -1666,7 +1669,9 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			END;
 			t := fp.type;
 			declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE);
-			IF t.id = Ast.IdRecord THEN
+			IF (t.id = Ast.IdRecord)
+			 & (~gen.opt.skipUnusedTag OR Ast.IsNeedTag(fp))
+			THEN
 				Text.Str(gen, ", o7c_tag_t ");
 				Name(gen, fp);
 				Text.Str(gen, "_tag")
@@ -2947,6 +2952,7 @@ BEGIN
 		o.caseAbort := TRUE;
 		o.checkNil := TRUE;
 		o.o7cAssert := TRUE;
+		o.skipUnusedTag := TRUE;
 		o.comment := TRUE;
 		o.generatorNote := TRUE;
 		o.varInit := VarInitUndefined;

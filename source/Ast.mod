@@ -236,17 +236,28 @@ TYPE
 	END;
 
 	Record* = POINTER TO RECORD(RConstruct)
-		base*: Record;
-		vars*: Var;
-		pointer*: Pointer
+		base*   : Record;
+		vars*   : Var;
+		pointer*: Pointer;
+		needTag*: BOOLEAN
 	END;
 
 	RPointer* = RECORD(RConstruct)
 		(* type - ссылка на record *)
 	END;
 
+	NeedTagList = POINTER TO RNeedTagList;
 	FormalParam* = POINTER TO RECORD(RVar)
-		isVar*: BOOLEAN
+		isVar*: BOOLEAN;
+
+		needTag*: NeedTagList;
+		link: FormalParam
+	END;
+	RNeedTagList = RECORD(V.Base)
+		value: BOOLEAN;
+
+		count: INTEGER;
+		first, last: FormalParam
 	END;
 
 	RProcType = RECORD(RConstruct)
@@ -909,9 +920,11 @@ BEGIN
 
 	v.mark := FALSE;
 	v.next := NIL;
+	v.link := NIL;
 
 	v.type := type;
 	v.isVar := isVar;
+	v.needTag := NIL;
 	v.inited := TRUE
 END ParamAddPredefined;
 
@@ -932,6 +945,104 @@ BEGIN
 	PutChars(module, proc.end.name, buf, begin, end)
 	RETURN err
 END ParamAdd;
+
+PROCEDURE IsNeedTag*(p: FormalParam): BOOLEAN;
+	RETURN (p.needTag # NIL) & (p.needTag.value)
+END IsNeedTag;
+
+PROCEDURE NewNeedTag(p: FormalParam; need: BOOLEAN);
+VAR n: ARRAY 256 OF CHAR;
+    i: INTEGER;
+BEGIN
+	ASSERT(p.needTag = NIL);
+	ASSERT(p.link = NIL);
+
+	Log.Str("NewNeedTag ");
+	i := 0;
+	ASSERT(Strings.CopyToChars(n, i, p.name));
+	Log.Str(n);
+	Log.Str(" = "); Log.Bool(need);
+	Log.Ln;
+
+	NEW(p.needTag);
+	p.needTag.count := 1;
+	p.needTag.first := p;
+	p.needTag.last := p;
+
+	p.needTag.value := need
+END NewNeedTag;
+
+PROCEDURE SetNeedTag(p: FormalParam);
+VAR n: ARRAY 256 OF CHAR;
+    i: INTEGER;
+BEGIN
+	Log.Str("SetNeedTag ");
+	i := 0;
+	ASSERT(Strings.CopyToChars(n, i, p.name));
+	Log.Str(n); Log.Str(":");
+	i := 0;
+	ASSERT(Strings.CopyToChars(n, i, p.type.name));
+	Log.Str(n);
+	Log.Ln;
+	IF p.needTag = NIL THEN
+		NewNeedTag(p, TRUE)
+	ELSE
+		p.needTag.value := TRUE
+	END
+END SetNeedTag;
+
+PROCEDURE ExchangeParamsNeedTag(p1, p2: FormalParam);
+
+	PROCEDURE Merge(list, del: NeedTagList);
+	BEGIN
+		ASSERT(list # del);
+		ASSERT(list.last.link = NIL);
+		ASSERT(del.last # NIL);
+
+		IF del.value THEN
+			list.value := TRUE
+		END;
+		list.count := list.count + del.count;
+		list.last.link := del.first;
+		list.last := del.last;
+		ASSERT(list.last.link = NIL);
+		del.last := NIL;
+		WHILE del.first # NIL DO
+			del.first.needTag := list;
+			del.last := del.first.link;
+			del.first := del.last
+		END;
+		ASSERT(list.last # NIL);
+	END Merge;
+
+	PROCEDURE Add(list: NeedTagList; p: FormalParam);
+	BEGIN
+		ASSERT(p.link = NIL);
+		ASSERT(p.needTag = NIL);
+
+		list.last.link := p;
+		list.last := p;
+		ASSERT(list.last # NIL);
+		p.needTag := list
+	END Add;
+BEGIN
+	IF p1 = p2 THEN
+		;
+	ELSIF p1.needTag = NIL THEN
+		IF p2.needTag = NIL THEN
+			NewNeedTag(p2, FALSE);
+		END;
+		Add(p2.needTag, p1)
+	ELSE
+		IF p2.needTag = NIL THEN
+			Add(p1.needTag, p2)
+		ELSIF p2.needTag.count > p1.needTag.count THEN
+			Merge(p2.needTag, p1.needTag)
+		ELSIF p1.needTag # p2.needTag THEN
+			Merge(p1.needTag, p2.needTag)
+		END
+	END
+END ExchangeParamsNeedTag;
 
 PROCEDURE ProcTypeSetReturn*(proc: ProcType; type: Type): INTEGER;
 VAR err: INTEGER;
@@ -1058,7 +1169,8 @@ BEGIN
 	NEW(r); TInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
-	r.base := NIL
+	r.base := NIL;
+	r.needTag := FALSE
 END RecNew;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
@@ -1584,34 +1696,39 @@ BEGIN
 	RETURN err
 END SelRecordNew;
 
-PROCEDURE SelGuardNew*(VAR sel: Selector; VAR type: Type; guard: Declaration): INTEGER;
+PROCEDURE SelGuardNew*(VAR sel: Selector; des: Designator; guard: Declaration): INTEGER;
 VAR sg: SelGuard;
 	err, dist: INTEGER;
 BEGIN
 	NEW(sg); SelInit(sg);
 	err := ErrNo;
-	IF ~(type.id IN {IdRecord, IdPointer}) THEN
+	IF ~(des.type.id IN {IdRecord, IdPointer}) THEN
 		err := ErrGuardedTypeNotExtensible
-	ELSIF type.id = IdRecord THEN
+	ELSIF des.type.id = IdRecord THEN
 		IF (guard = NIL)
 		OR ~(guard IS Record)
-		OR ~IsRecordExtension(dist, type(Record), guard(Record))
+		OR ~IsRecordExtension(dist, des.type(Record), guard(Record))
 		THEN
 			err := ErrGuardExpectRecordExt
 		ELSE
-			type := guard(Record)
+			des.type := guard(Record);
+			guard(Record).needTag := TRUE;
+			IF (des.sel = NIL) & (des.decl IS FormalParam) THEN
+				SetNeedTag(des.decl(FormalParam))
+			END
 		END
 	ELSE
 		IF (guard = NIL)
 		OR ~(guard IS Pointer)
-		OR ~IsRecordExtension(dist, type(Pointer).type(Record), guard(Pointer).type(Record))
+		OR ~IsRecordExtension(dist, des.type(Pointer).type(Record), guard(Pointer).type(Record))
 		THEN
 			err := ErrGuardExpectPointerExt
 		ELSE
-			type := guard(Pointer)
+			des.type := guard(Pointer);
+			guard.type(Record).needTag := TRUE
 		END
 	END;
-	sg.type := type;
+	sg.type := des.type;
 	sel := sg
 	RETURN err
 END SelGuardNew;
@@ -1621,7 +1738,7 @@ VAR comp: BOOLEAN;
 
 	PROCEDURE EqualProcTypes(t1, t2: ProcType): BOOLEAN;
 	VAR comp: BOOLEAN;
-		fp1, fp2: Declaration;
+	    fp1, fp2: Declaration;
 	BEGIN
 		comp := t1.type = t2.type;
 		IF comp THEN
@@ -1632,6 +1749,7 @@ VAR comp: BOOLEAN;
 			    & (fp1.type = fp2.type)
 			    & (fp1(FormalParam).isVar = fp2(FormalParam).isVar)
 			DO
+				ExchangeParamsNeedTag(fp1(FormalParam), fp2(FormalParam));
 				fp1 := fp1.next;
 				fp2 := fp2.next
 			END;
@@ -1672,9 +1790,10 @@ BEGIN
 	RETURN comp
 END CompatibleTypes;
 
-PROCEDURE ExprIsExtensionNew*(VAR e: ExprIsExtension; VAR des: Expression;
+PROCEDURE ExprIsExtensionNew*(VAR e: ExprIsExtension; des: Expression;
                               type: Type): INTEGER;
 VAR err, dist: INTEGER;
+    desType: Type;
 BEGIN
 	NEW(e); ExprInit(e, IdIsExtension, TypeGet(IdBoolean));
 	e.designator := NIL;
@@ -1682,27 +1801,33 @@ BEGIN
 	err := ErrNo;
 	IF (type # NIL) & ~(type.id IN {IdPointer, IdRecord}) THEN
 		err := ErrIsExtTypeNotRecord
-	ELSIF des # NIL THEN
-		IF des IS Designator THEN
-			e.designator := des(Designator);
-			(* TODO проверка возможности проверки *)
-			IF des.type # NIL THEN
-				IF ~(des.type.id IN {IdPointer, IdRecord}) THEN
-					err := ErrIsExtVarNotRecord
-				ELSIF type.id # des.type.id THEN
-					err := ErrIsExtMeshupPtrAndRecord
-				ELSIF (type.id = IdRecord)
-					& ~IsRecordExtension(dist, des.type(Record), type(Record))
-					OR
-					  (type.id = IdPointer)
-					& ~IsRecordExtension(dist, des.type.type(Record), type.type(Record))
-				THEN
-					err := ErrIsExtExpectRecordExt
-				END
-			END
-		ELSE
+	ELSIF des = NIL THEN
+		;
+	ELSIF des IS Designator THEN
+		e.designator := des(Designator);
+		desType := des.type;
+		IF desType = NIL THEN
+			;
+		ELSIF ~(des.type.id IN {IdPointer, IdRecord}) THEN
 			err := ErrIsExtVarNotRecord
+		ELSIF type.id # des.type.id THEN
+			err := ErrIsExtMeshupPtrAndRecord
+		ELSE
+			IF type.id = IdPointer THEN
+				type := type.type;
+				desType := desType.type
+			ELSIF (e.designator.sel = NIL) & (e.designator.decl IS FormalParam)
+			THEN
+				SetNeedTag(e.designator.decl(FormalParam))
+			END;
+			IF IsRecordExtension(dist, desType(Record), type(Record)) THEN
+				type(Record).needTag := TRUE;
+			ELSE
+				err := ErrIsExtExpectRecordExt
+			END
 		END
+	ELSE
+		err := ErrIsExtVarNotRecord
 	END
 	RETURN err
 END ExprIsExtensionNew;
@@ -2290,6 +2415,7 @@ END ProcedureEnd;
 PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
                         VAR currentFormalParam: FormalParam): INTEGER;
 VAR err, distance: INTEGER;
+    fp: FormalParam;
 
 	PROCEDURE TypeVariation(call: ExprCall; tp: Type; fp: FormalParam): BOOLEAN;
 	VAR comp: BOOLEAN;
@@ -2327,40 +2453,50 @@ VAR err, distance: INTEGER;
 			END
 		END
 	END ParamsVariation;
+
+	PROCEDURE CheckNeedTag(fp: FormalParam; e: Expression);
+	BEGIN
+		IF (fp.type.id = IdRecord)
+		 & (e IS Designator) & (e(Designator).sel = NIL) & (e(Designator).decl IS FormalParam)
+		THEN
+			ExchangeParamsNeedTag(fp, e(Designator).decl(FormalParam))
+		END
+	END CheckNeedTag;
 BEGIN
 	err := ErrNo;
-	IF currentFormalParam # NIL THEN
-		IF ~CompatibleTypes(distance, currentFormalParam.type, e.type)
+	fp := currentFormalParam;
+	IF fp # NIL THEN
+		IF ~CompatibleTypes(distance, fp.type, e.type)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
-		 &     (currentFormalParam.isVar
-		    OR ~CompatibleAsIntAndByte(currentFormalParam.type, e.type)
+		 &     (fp.isVar
+		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
 		       )
-		 & ~TypeVariation(call, e.type, currentFormalParam)
+		 & ~TypeVariation(call, e.type, fp)
 		THEN
 			err := ErrCallIncompatibleParamType
-		ELSIF currentFormalParam.isVar THEN
+		ELSIF fp.isVar THEN
 			IF ~(IsVar(e)
 			   & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
 			    )
 			THEN
 				err := ErrCallExpectVarParam
 			ELSIF (e.type # NIL) & (e.type.id = IdPointer)
-			    & (e.type # currentFormalParam.type)
-			    & (currentFormalParam.type # NIL)
-			    & (currentFormalParam.type.type # NIL)
+			    & (e.type # fp.type)
+			    & (fp.type # NIL)
+			    & (fp.type.type # NIL)
 			    & (e.type.type # NIL)
 			THEN
 				err := ErrCallVarPointerTypeNotSame
 			END
-		ELSIF (currentFormalParam.type.id = IdByte) & (e.type.id = IdInteger)
+		ELSIF (fp.type.id = IdByte) & (e.type.id = IdInteger)
 		    & (e.value # NIL) & ~Limits.InByteRange(e.value(ExprInteger).int)
 		THEN
 			err := ErrValueOutOfRangeOfByte
 		END;
-		IF (currentFormalParam.next # NIL)
-		 & (currentFormalParam.next IS FormalParam)
+		IF (fp.next # NIL)
+		 & (fp.next IS FormalParam)
 		THEN
-			currentFormalParam := currentFormalParam.next(FormalParam)
+			currentFormalParam := fp.next(FormalParam)
 		ELSE
 			currentFormalParam := NIL
 		END
@@ -2376,6 +2512,9 @@ BEGIN
 		NEW(lastParam.next);
 		lastParam := lastParam.next
 	END;
+	IF (err = ErrNo) & (fp # NIL) THEN
+		CheckNeedTag(fp, e)
+	END;
 	NodeInit(lastParam^, NoId);
 	lastParam.expr := e;
 	lastParam.distance := distance;
@@ -2384,87 +2523,88 @@ BEGIN
 END CallParamNew;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam): INTEGER;
-VAR v: Factor;
-	err: INTEGER;
+VAR err: INTEGER;
+
+	PROCEDURE CalcPredefined(call: ExprCall; v: Factor; VAR err: INTEGER);
+	BEGIN
+		CASE call.designator.decl.id OF
+		  Scanner.Abs:
+			IF v.type.id = IdReal THEN
+				IF v(ExprReal).real < 0.0 THEN
+					call.value := ExprRealNewByValue(-v(ExprReal).real)
+				ELSE
+					call.value := v
+				END
+			ELSE ASSERT(v.type.id = IdInteger);
+				call.value := ExprIntegerNew(ABS(v(ExprInteger).int))
+			END
+		| Scanner.Odd:
+			call.value := ExprBooleanGet(ODD(v(ExprInteger).int))
+		| Scanner.Lsl:
+			IF call.params.next.expr.value # NIL THEN
+				call.value := ExprIntegerNew(LSL(
+					v(ExprInteger).int,
+					call.params.next.expr.value(ExprInteger).int
+				))
+			END
+		| Scanner.Asr:
+			IF call.params.next.expr.value # NIL THEN
+				call.value := ExprIntegerNew(ASR(
+					v(ExprInteger).int,
+					call.params.next.expr.value(ExprInteger).int
+				))
+			END
+		| Scanner.Ror:
+			IF call.params.next.expr.value # NIL THEN
+				call.value := ExprIntegerNew(ASR(
+					v(ExprInteger).int,
+					call.params.next.expr.value(ExprInteger).int
+				))
+			END
+		| Scanner.Floor:
+			call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
+		| Scanner.Flt:
+			call.value := ExprRealNewByValue(FLT(v(ExprInteger).int))
+		| Scanner.Ord:
+			IF v.type.id = IdChar THEN
+				call.value := v
+			ELSIF v IS ExprString THEN
+				IF v(ExprString).int > -1 THEN
+					call.value := ExprIntegerNew(v(ExprString).int)
+				END
+			ELSIF v.type.id = IdBoolean THEN
+				call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
+			ELSIF v.type.id = IdSet THEN
+				call.value := ExprIntegerNew(ORD(v(ExprSet).set))
+			ELSIF v.type.id # IdError THEN
+				Log.Str("Неправильный id типа = ");
+				Log.Int(v.type.id); Log.Ln;
+				Log.Int(v.id); Log.Ln
+			END
+		| Scanner.Chr:
+			IF ~Limits.InCharRange(v(ExprInteger).int) THEN
+				err := ErrValueOutOfRangeOfChar
+			END;
+			call.value := v
+		END
+	END CalcPredefined;
 BEGIN
 	err := ErrNo;
-	IF (currentFormalParam = NIL)
-	 & (call.designator.decl IS PredefinedProcedure)
-	 (* TODO заменить на общую проверку корректности выбора параметра *)
-	 & (call.designator.decl.type.type # NIL)
-	THEN
-		v := call.params.expr.value;
-		IF (v # NIL) & (call.designator.decl.id # Scanner.Len) THEN
-			CASE call.designator.decl.id OF
-			  Scanner.Abs:
-				IF v.type.id = IdReal THEN
-					IF v(ExprReal).real < 0.0 THEN
-						call.value := ExprRealNewByValue(-v(ExprReal).real)
-					ELSE
-						call.value := v
-					END
-				ELSE ASSERT(v.type.id = IdInteger);
-					call.value := ExprIntegerNew(ABS(v(ExprInteger).int))
-				END
-			| Scanner.Odd:
-				call.value := ExprBooleanGet(ODD(v(ExprInteger).int))
-			| Scanner.Lsl:
-				IF call.params.next.expr.value # NIL THEN
-					call.value := ExprIntegerNew(LSL(
-						v(ExprInteger).int,
-						call.params.next.expr.value(ExprInteger).int
-					))
-				END
-			| Scanner.Asr:
-				IF call.params.next.expr.value # NIL THEN
-					call.value := ExprIntegerNew(ASR(
-						v(ExprInteger).int,
-						call.params.next.expr.value(ExprInteger).int
-					))
-				END
-			| Scanner.Ror:
-				IF call.params.next.expr.value # NIL THEN
-					call.value := ExprIntegerNew(ASR(
-						v(ExprInteger).int,
-						call.params.next.expr.value(ExprInteger).int
-					))
-				END
-			| Scanner.Floor:
-				call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
-			| Scanner.Flt:
-				call.value := ExprRealNewByValue(FLT(v(ExprInteger).int))
-			| Scanner.Ord:
-				IF v.type.id = IdChar THEN
-					call.value := v
-				ELSIF v IS ExprString THEN
-					IF v(ExprString).int > -1 THEN
-						call.value := ExprIntegerNew(v(ExprString).int)
-					END
-				ELSIF v.type.id = IdBoolean THEN
-					call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
-				ELSIF v.type.id = IdSet THEN
-					call.value := ExprIntegerNew(ORD(v(ExprSet).set))
-				ELSIF v.type.id # IdError THEN
-					Log.Str("Неправильный id типа = ");
-					Log.Int(v.type.id); Log.Ln;
-					Log.Int(v.id); Log.Ln
-				END
-			| Scanner.Chr:
-				IF ~Limits.InCharRange(v(ExprInteger).int) THEN
-					err := ErrValueOutOfRangeOfChar
-				END;
-				call.value := v
-			END
-		ELSIF (call.designator.decl.id = Scanner.Len)
+	IF currentFormalParam # NIL THEN
+		err := ErrCallParamsNotEnough
+	ELSIF call.designator.decl.id = Scanner.Len THEN
 		(* TODO заменить на общую проверку корректности выбора параметра *)
-		     & (call.params.expr.type IS Array)
-		     & (call.params.expr.type(Array).count # NIL)
+		IF (call.params.expr.type IS Array)
+		 & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value
 		END
-	END;
-	IF currentFormalParam # NIL THEN
-		err := ErrCallParamsNotEnough
+	ELSIF (call.designator.decl IS PredefinedProcedure)
+	 (* TODO заменить на общую проверку корректности выбора параметра *)
+	    & (call.designator.decl.type.type # NIL)
+	    & (call.params.expr.value # NIL)
+	THEN
+		CalcPredefined(call, call.params.expr.value, err);
 	END
 	RETURN err
 END CallParamsEnd;
@@ -2687,17 +2827,15 @@ BEGIN
 	THEN
 		(*Log.Str("Label type id "); Log.Int(decl(Const).expr.type.id); Log.Ln;*)
 		err := ErrCaseLabelNotIntOrChar
+	ELSIF decl(Const).expr.type.id = IdInteger THEN
+		err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)
 	ELSE
-		IF decl(Const).expr.type.id = IdInteger THEN
-			err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)
-		ELSE
-			i := decl(Const).expr.value(ExprString).int;
-			IF i < 0 THEN
-				(* TODO *) ASSERT(FALSE);
-				i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])
-			END;
-			err := CaseLabelNew(label, IdChar, i)
-		END
+		i := decl(Const).expr.value(ExprString).int;
+		IF i < 0 THEN
+			(* TODO *) ASSERT(FALSE);
+			i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])
+		END;
+		err := CaseLabelNew(label, IdChar, i)
 	END;
 	IF label = NIL THEN
 		err := err + CaseLabelNew(label, IdInteger, 0) * 0
@@ -2714,12 +2852,12 @@ BEGIN
 	left.right := right;
 
 	err := ErrNo;
-	IF right # NIL THEN
-		IF left.id # right.id THEN
-			err := ErrCaseRangeLabelsTypeMismatch
-		ELSIF left.value >= right.value THEN
-			err := ErrCaseLabelLeftNotLessRight
-		END
+	IF right = NIL THEN
+		;
+	ELSIF left.id # right.id THEN
+		err := ErrCaseRangeLabelsTypeMismatch
+	ELSIF left.value >= right.value THEN
+		err := ErrCaseLabelLeftNotLessRight
 	END
 	RETURN err
 END CaseRangeNew;
