@@ -30,8 +30,8 @@ struct CFiles_Implement {
 CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
-	int name_len, char unsigned name[O7C_VLA_LEN(name_len)], int ofs,
-	int mode_len, char unsigned mode[O7C_VLA_LEN(mode_len)])
+	int name_len, o7c_char name[O7C_VLA_LEN(name_len)], int ofs,
+	int mode_len, o7c_char mode[O7C_VLA_LEN(mode_len)])
 {
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
@@ -97,7 +97,7 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 }
 
 extern int CFiles_Remove(
-	int name_len, char unsigned const name[O7C_VLA_LEN(name_len)], int ofs)
+	int name_len, o7c_char const name[O7C_VLA_LEN(name_len)], int ofs)
 {
 	assert(ofs >= 0);
 	assert(name_len > 1);
