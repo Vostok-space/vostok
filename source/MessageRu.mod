@@ -214,6 +214,8 @@ BEGIN
 		O("Есть необъявленная запись, на которую предварительно ссылается указатель")
 	| Ast.ErrPointerToNotRecord:
 		O("Указатель может ссылаться только на запись")
+	| Ast.ErrAssertConstFalse:
+		O("Выражение в Assert всегда ложно")
 	END
 END AstError;
 

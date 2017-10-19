@@ -215,6 +215,8 @@ BEGIN
 		O("Exist undeclared record, previously referenced in pointer")
 	| Ast.ErrPointerToNotRecord:
 		O("Pointer can reference only to record")
+	| Ast.ErrAssertConstFalse:
+		O("Assert expression always false")
 	END
 END AstError;
 

@@ -129,7 +129,8 @@ CONST
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
 	ErrPointerToNotRecord*          = -88;
-	                                (*-89 .. -92*)
+	                                (*-89 .. -94*)
+	ErrAssertConstFalse*            = -95;
 
 	ErrMin*                         = -100;
 
@@ -1437,7 +1438,8 @@ BEGIN
 	RETURN e
 END ExprSetByValue;
 
-PROCEDURE ExprSetNew*(VAR e: ExprSet; expr1, expr2: Expression): INTEGER;
+(* TODO сделать дизайн получше *)
+PROCEDURE ExprSetNew*(VAR base, e: ExprSet; expr1, expr2: Expression): INTEGER;
 VAR err: INTEGER;
 
 	PROCEDURE CheckRange(int: INTEGER): BOOLEAN;
@@ -1449,8 +1451,9 @@ BEGIN
 	e.exprs[1] := expr2;
 	e.next := NIL;
 	err := ErrNo;
+	e.set := {};
 	IF (expr1 = NIL) & (expr2 = NIL) THEN
-		e.set := {}
+		;
 	ELSIF (expr1 # NIL) & (expr1.type # NIL)
 		& ((expr2 = NIL) OR (expr2.type # NIL))
 	THEN
@@ -1473,6 +1476,11 @@ BEGIN
 				e.value := e
 			END
 		END
+	END;
+	IF base = NIL THEN
+		base := e
+	ELSE
+		base.set := base.set + e.set;
 	END
 	RETURN err
 END ExprSetNew;
@@ -1924,12 +1932,23 @@ BEGIN
 		CASE relation OF
 		  Scanner.Equal:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar : res := v1(ExprInteger).int = v2(ExprInteger).int
+			  IdInteger,
+			  IdChar     : res := v1(ExprInteger).int = v2(ExprInteger).int
 			| IdBoolean  : res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
-			| IdReal     : res := v1(ExprReal).real = v2(ExprReal).real
+			| IdReal     :
+				(* TODO правильная обработка *)
+				res := (v1(ExprReal).real = v2(ExprReal).real) OR TRUE
 			| IdSet      : res := v1(ExprSet).set = v2(ExprSet).set
 			| IdPointer  : (* TODO *) res := FALSE
-			| IdArray    : (* TODO *) res := FALSE
+			| IdArray    :
+				(* TODO обработка смешанных сравнений *)
+				IF v1 IS ExprInteger THEN
+					res := v1(ExprInteger).int = v2(ExprInteger).int
+				ELSE
+					res := Strings.Compare(v1(ExprString).string,
+					                       v2(ExprString).string
+					                      ) = 0
+				END
 			| IdProcType : (* TODO *) res := FALSE
 			END
 		| Scanner.Inequal:
@@ -2598,6 +2617,14 @@ BEGIN
 		 & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value
+		END
+	ELSIF call.designator.decl.id = Scanner.Assert THEN
+		IF (call.params.expr.value # NIL)
+		 & (call.params.expr.value IS ExprBoolean)
+		 & ~call.params.expr.value(ExprBoolean).bool
+		 & (call.params.expr # ExprBooleanGet(FALSE))
+		THEN
+			err := ErrAssertConstFalse
 		END
 	ELSIF (call.designator.decl IS PredefinedProcedure)
 	 (* TODO заменить на общую проверку корректности выбора параметра *)

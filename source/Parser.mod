@@ -186,7 +186,7 @@ PROCEDURE Set(VAR p: Parser; ds: Ast.Declarations): Ast.ExprSet;
 VAR e, next: Ast.ExprSet;
 	err: INTEGER;
 
-	PROCEDURE Element(VAR e: Ast.ExprSet; VAR p: Parser; ds: Ast.Declarations)
+	PROCEDURE Element(VAR base, e: Ast.ExprSet; VAR p: Parser; ds: Ast.Declarations)
 	                 : INTEGER;
 	VAR left: Ast.Expression;
 		err: INTEGER;
@@ -194,9 +194,9 @@ VAR e, next: Ast.ExprSet;
 		left := expression(p, ds);
 		IF p.l = Scanner.Range THEN
 			Scan(p);
-			err := Ast.ExprSetNew(e, left, expression(p, ds))
+			err := Ast.ExprSetNew(base, e, left, expression(p, ds))
 		ELSE
-			err := Ast.ExprSetNew(e, left, NIL)
+			err := Ast.ExprSetNew(base, e, left, NIL)
 		END
 		RETURN err
 	END Element;
@@ -204,18 +204,19 @@ BEGIN
 	ASSERT(p.l = Scanner.Brace3Open);
 	Scan(p);
 	IF p.l # Scanner.Brace3Close THEN
-		err := Element(e, p, ds);
+		e := NIL;
+		err := Element(e, e, p, ds);
 		CheckAst(p, err);
 		next := e;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
-			err := Element(next.next, p, ds);
+			err := Element(e, next.next, p, ds);
 			CheckAst(p, err);
 
 			next := next.next
 		END;
 		Expect(p, Scanner.Brace3Close, ErrExpectBrace3Close)
 	ELSE (* Пустое множество *)
-		CheckAst(p, Ast.ExprSetNew(e, NIL, NIL));
+		CheckAst(p, Ast.ExprSetNew(e, e, NIL, NIL));
 		Scan(p)
 	END
 	RETURN e

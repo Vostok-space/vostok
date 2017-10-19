@@ -188,6 +188,34 @@ BEGIN
 	RETURN b.s[i] = s[j]
 END IsEqualToString;
 
+PROCEDURE Compare*(w1, w2: String): INTEGER;
+VAR i1, i2, res: INTEGER;
+	b1, b2: Block;
+BEGIN
+	i1 := w1.ofs;
+	i2 := w2.ofs;
+	b1 := w1.block;
+	b2 := w2.block;
+	WHILE b1.s[i1] = Utf8.NewPage DO
+		b1 := b1.next;
+		i1 := 0
+	ELSIF b2.s[i2] = Utf8.NewPage DO
+		b2 := b2.next;
+		i2 := 0
+	ELSIF (b1.s[i1] = b2.s[i2]) & (b1.s[i1] # Utf8.Null) DO
+		INC(i1);
+		INC(i2)
+	END;
+	IF b1.s[i1] = b2.s[i2] THEN
+		res := 0
+	ELSIF b1.s[i1] < b2.s[i2] THEN
+		res := -1
+	ELSE
+		res := 1
+	END
+	RETURN res
+END Compare;
+
 PROCEDURE SearchSubString*(w: String; s: ARRAY OF CHAR): BOOLEAN;
 VAR i, j: INTEGER;
     b: Block;
