@@ -216,6 +216,10 @@ BEGIN
 		O("Указатель может ссылаться только на запись")
 	| Ast.ErrAssertConstFalse:
 		O("Выражение в Assert всегда ложно")
+	| Ast.ErrVarOfRecordForward:
+		O("Объявлена переменная, чей тип - это недообъявленная запись")
+	| Ast.ErrArrayTypeOfRecordForward:
+		O("Недообъявленная запись в качесиве подтипа массива")
 	END
 END AstError;
 

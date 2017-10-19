@@ -23,7 +23,8 @@ IMPORT
 	Scanner,
 	Strings := StringStore,
 	Ast,
-	Stream := VDataStream;
+	Stream := VDataStream,
+	Limits := TranslatorLimits;
 
 CONST
 	ErrNo = 0;
@@ -578,7 +579,7 @@ PROCEDURE Array(VAR p: Parser; ds: Ast.Declarations;
 VAR a: Ast.Array;
 	t: Ast.Type;
 	exprLen: Ast.Expression;
-	lens: ARRAY 16 OF Ast.Expression;
+	lens: ARRAY Limits.MaxArrayDimension OF Ast.Expression;
 	i, size: INTEGER;
 BEGIN
 	Log.StrLn("Array");
@@ -604,9 +605,10 @@ BEGIN
 		AddError(p, ErrArrayDimensionsTooMany)
 	END;
 	Expect(p, Scanner.Of, ErrExpectOf);
-	a.type := type(p, ds, -1, -1);
+	CheckAst(p, Ast.ArraySetType(a, type(p, ds, -1, -1)));
 	WHILE i > 0 DO
 		DEC(i);
+		(* TODO сделать нормально *)
 		a.type := Ast.ArrayGet(a.type, lens[i])
 	END
 	RETURN a
@@ -695,10 +697,7 @@ VAR rec, base: Ast.Record;
 			END;
 			Expect(p, Scanner.Colon, ErrExpectColon);
 			typ := type(p, dsTypes, -1, -1);
-			WHILE d # NIL DO
-				d.type := typ;
-				d := d.next
-			END
+			CheckAst(p, Ast.VarListSetType(d, typ))
 		END Declaration;
 	BEGIN
 		IF p.l = Scanner.Ident THEN
@@ -739,7 +738,8 @@ BEGIN
 		rec.module := p.module
 	END;
 	RecVars(p, rec, ds);
-	Expect(p, Scanner.End, ErrExpectEnd)
+	Expect(p, Scanner.End, ErrExpectEnd);
+	CheckAst(p, Ast.RecordEnd(rec))
 	RETURN rec
 END Record;
 
@@ -837,14 +837,12 @@ VAR braces: BOOLEAN;
 	END Section;
 BEGIN
 	braces := ScanIfEqual(p, Scanner.Brace1Open);
-	IF braces THEN
-		IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
-			Section(p, ds, proc);
-			WHILE ScanIfEqual(p, Scanner.Semicolon) DO
-				Section(p, ds, proc)
-			END;
-			Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-		END
+	IF braces & ~ScanIfEqual(p, Scanner.Brace1Close) THEN
+		Section(p, ds, proc);
+		WHILE ScanIfEqual(p, Scanner.Semicolon) DO
+			Section(p, ds, proc)
+		END;
+		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;
 	IF ScanIfEqual(p, Scanner.Colon) THEN
 		IF ~braces THEN

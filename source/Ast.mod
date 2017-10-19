@@ -129,6 +129,8 @@ CONST
 	ErrReturnTypeArrayOrRecord*     = -86;
 	ErrRecordForwardUndefined*      = -87;
 	ErrPointerToNotRecord*          = -88;
+	ErrVarOfRecordForward*          = -96;
+	ErrArrayTypeOfRecordForward*    = -97;
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
 
@@ -809,7 +811,6 @@ VAR d: Declaration;
 	BEGIN
 		(* TODO это может быть и не так *)
 		ASSERT(rec.pointer.next = rec);
-		rec.id := IdRecord;
 		IF rec.next # NIL THEN
 			rec.pointer.next := rec.next;
 			rec.next := NIL;
@@ -1177,7 +1178,7 @@ END RecNew;
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
 VAR r: Record;
 BEGIN
-	RecNew(r, IdRecord);
+	RecNew(r, IdRecordForward);
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
@@ -1191,6 +1192,13 @@ BEGIN
 	INC(ds.recordForwardCount)
 	RETURN r
 END RecordForwardNew;
+
+PROCEDURE RecordEnd*(r: Record): INTEGER;
+BEGIN
+	ASSERT(r.id = IdRecordForward);
+	r.id := IdRecord
+	RETURN ErrNo
+END RecordEnd;
 
 PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
@@ -1666,6 +1674,36 @@ BEGIN
 	END
 	RETURN err
 END RecordVarGet;
+
+PROCEDURE VarListSetType*(first: Declaration; t: Type): INTEGER;
+VAR d: Declaration;
+    err: INTEGER;
+BEGIN
+	d := first;
+	WHILE d # NIL DO
+		d.type := t;
+		d := d.next
+	END;
+	IF t.id # IdRecordForward THEN
+		err := ErrNo
+	ELSE
+		err := ErrVarOfRecordForward
+	END
+	RETURN err
+END VarListSetType;
+
+PROCEDURE ArraySetType*(a: Array; t: Type): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	ASSERT(a.type = NIL);
+	a.type := t;
+	IF t.id # IdRecordForward THEN
+		err := ErrNo
+	ELSE
+		err := ErrArrayTypeOfRecordForward
+	END
+	RETURN err
+END ArraySetType;
 
 PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
                         name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;

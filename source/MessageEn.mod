@@ -217,6 +217,10 @@ BEGIN
 		O("Pointer can reference only to record")
 	| Ast.ErrAssertConstFalse:
 		O("Assert expression always false")
+	| Ast.ErrVarOfRecordForward:
+		O("Declared variable which type is incompletely declared record")
+	| Ast.ErrArrayTypeOfRecordForward:
+		O("Incompletely declared record as subtype of array")
 	END
 END AstError;
 
