@@ -2686,6 +2686,9 @@ VAR err: INTEGER;
 	e: ExprCall;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
+	IF err = ErrNo THEN
+		err := CheckDesignatorAsValue(des)
+	END;
 	NEW(c); StatInit(c, e)
 	RETURN err
 END CallNew;
