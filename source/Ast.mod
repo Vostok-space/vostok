@@ -3025,7 +3025,12 @@ BEGIN
 	err := ErrNo;
 	IF des # NIL THEN
 		IF (des.decl IS Var) & IsChangeable(des.decl.module, des.decl(Var)) THEN
-			des.decl(Var).inited := TRUE;
+			IF (des.decl.type.id = IdPointer) & (des.sel # NIL)
+			 & ~des.decl(Var).inited
+			THEN
+				err := ErrVarUninitialized
+			END;
+			des.decl(Var).inited := TRUE
 		ELSE
 			err := ErrAssignExpectVarParam
 		END;
