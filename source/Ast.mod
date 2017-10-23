@@ -204,7 +204,8 @@ TYPE
 		up*: Declarations;
 
 		name*: Strings.String;
-		mark*: BOOLEAN;
+		mark*,
+		used*: BOOLEAN;
 		type*: Type;
 		next*: Declaration
 	END;
@@ -538,6 +539,7 @@ BEGIN
 	END;
 	d.up := ds;
 	d.mark := FALSE;
+	d.used := FALSE;
 	Strings.Undef(d.name);
 	d.type := NIL;
 	d.next := NIL
@@ -1523,20 +1525,41 @@ BEGIN
 	RETURN ErrNo
 END DesignatorNew;
 
-PROCEDURE CheckDesignatorAsValue*(d: Designator): INTEGER;
+PROCEDURE DesignatorUsed*(d: Designator; varParam, inCondition: BOOLEAN): INTEGER;
 VAR err: INTEGER;
+	v: Var;
 BEGIN
-	IF (d.decl IS Var)
-	 & ((d.decl.up # NIL) & (d.decl.up.up # NIL) OR (d.decl IS FormalParam))
-	 & ~d.decl(Var).inited
-	THEN
-		err := ErrVarUninitialized;
-		d.decl(Var).inited := TRUE
+	err := ErrNo;
+	IF d.decl IS Var THEN
+		v := d.decl(Var);
+		IF varParam THEN
+			v.inited := TRUE
+		ELSIF ~inCondition
+		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam)) & ~v.inited
+		THEN
+			err := ErrVarUninitialized;
+			v.inited := TRUE
+		END
+	END;
+	d.decl.used := TRUE
+	RETURN err
+END DesignatorUsed;
+
+PROCEDURE CheckInited*(ds: Declarations): INTEGER;
+VAR err: INTEGER;
+	d: Declaration;
+BEGIN
+	d := ds.vars;
+	WHILE (d # NIL) & (d IS Var) & (~d.used OR d(Var).inited) DO
+		d := d.next
+	END;
+	IF (d # NIL) & (d IS Var) THEN
+		err := ErrVarUninitialized
 	ELSE
 		err := ErrNo
 	END
 	RETURN err
-END CheckDesignatorAsValue;
+END CheckInited;
 
 PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
 VAR dist: INTEGER;
@@ -2669,7 +2692,7 @@ BEGIN
 	    & (call.designator.decl.type.type # NIL)
 	    & (call.params.expr.value # NIL)
 	THEN
-		CalcPredefined(call, call.params.expr.value, err);
+		CalcPredefined(call, call.params.expr.value, err)
 	END
 	RETURN err
 END CallParamsEnd;
@@ -2686,6 +2709,9 @@ VAR err: INTEGER;
 	e: ExprCall;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
+	IF err = ErrNo THEN
+		err := DesignatorUsed(des, FALSE, FALSE)
+	END;
 	NEW(c); StatInit(c, e)
 	RETURN err
 END CallNew;
@@ -2830,6 +2856,7 @@ BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
 	var.inited := TRUE;
+	var.used := TRUE;
 	err := ForSetTo(f, to);
 	f.by := by;
 	f.stats := stats
@@ -3025,7 +3052,13 @@ BEGIN
 	err := ErrNo;
 	IF des # NIL THEN
 		IF (des.decl IS Var) & IsChangeable(des.decl.module, des.decl(Var)) THEN
-			des.decl(Var).inited := TRUE;
+			IF des.decl.type.id = IdPointer THEN
+				IF (des.sel # NIL) & ~des.decl(Var).inited THEN
+					err := ErrVarUninitialized
+				END;
+				des.decl.used := TRUE
+			END;
+			des.decl(Var).inited := TRUE
 		ELSE
 			err := ErrAssignExpectVarParam
 		END;

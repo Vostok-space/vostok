@@ -380,17 +380,9 @@ VAR e: Ast.Expression;
 	VAR des: Ast.Designator;
 	BEGIN
 		des := Designator(p, ds);
+		CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inConditions > 0));
+		p.varParam := FALSE;
 		IF p.l # Scanner.Brace1Open THEN
-			IF p.varParam THEN
-				p.varParam := FALSE;
-				IF des.decl IS Ast.Var THEN
-					des.decl(Ast.Var).inited := TRUE (* TODO *)
-				END
-			ELSIF p.inConditions = 0 THEN
-				CheckAst(p, Ast.CheckDesignatorAsValue(des))
-			ELSE
-				(* TODO вместо отмены проверки, отложить её до конце цикла *)
-			END;
 			e := des
 		ELSE
 			e := ExprCall(p, ds, des)
@@ -445,6 +437,12 @@ BEGIN
 	RETURN e
 END Factor;
 
+PROCEDURE DecInConditions(VAR p: Parser);
+BEGIN
+	DEC(p.inConditions);
+	ASSERT(0 <= p.inConditions);
+END DecInConditions;
+
 PROCEDURE Term(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 VAR e: Ast.Expression;
 	term: Ast.ExprTerm;
@@ -470,8 +468,7 @@ BEGIN
 			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds)))
 		END;
 		IF inc THEN
-			DEC(p.inConditions);
-			ASSERT(0 <= p.inConditions)
+			DecInConditions(p)
 		END
 	END
 	RETURN e
@@ -508,8 +505,7 @@ BEGIN
 		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))
 	END;
 	IF inc THEN
-		DEC(p.inConditions);
-		ASSERT(0 <= p.inConditions)
+		DecInConditions(p)
 	END
 	RETURN e
 END Sum;
@@ -947,8 +943,7 @@ BEGIN
 		elsif.elsif := else
 	END;
 	IF p.inLoops > 0 THEN
-		DEC(p.inConditions);
-		ASSERT(p.inConditions >= 0)
+		DecInConditions(p)
 	END;
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN if
@@ -1031,6 +1026,15 @@ BEGIN
 	RETURN case
 END Case;
 
+PROCEDURE DecInLoops(VAR p: Parser; ds: Ast.Declarations);
+BEGIN
+	DEC(p.inLoops);
+	ASSERT(0 <= p.inLoops);
+	IF (p.inLoops = 0) & (ds.up # NIL) THEN
+		CheckAst(p, Ast.CheckInited(ds))
+	END
+END DecInLoops;
+
 PROCEDURE Repeat(VAR p: Parser; ds: Ast.Declarations): Ast.Repeat;
 VAR r: Ast.Repeat;
 BEGIN
@@ -1039,7 +1043,7 @@ BEGIN
 		Scan(p);
 		CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
 		Expect(p, Scanner.Until, ErrExpectUntil);
-	DEC(p.inLoops);
+	DecInLoops(p, ds);
 	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds)))
 	RETURN r
 END Repeat;
@@ -1074,7 +1078,7 @@ BEGIN
 		Expect(p, Scanner.Do, ErrExpectDo);
 		f.stats := statements(p, ds);
 		Expect(p, Scanner.End, ErrExpectEnd);
-		DEC(p.inLoops)
+	DecInLoops(p, ds)
 	RETURN f
 END For;
 
@@ -1098,7 +1102,7 @@ BEGIN
 			elsif.stats := statements(p, ds)
 		END;
 		Expect(p, Scanner.End, ErrExpectEnd);
-	DEC(p.inLoops)
+	DecInLoops(p, ds)
 	RETURN w
 END While;
 
