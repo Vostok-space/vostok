@@ -349,13 +349,13 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		p.varParam := (fp = NIL) OR fp.isVar
+		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access)
 		           OR (e.designator.decl.id = Scanner.Len);
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		p.varParam := FALSE;
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
-			p.varParam := (fp = NIL) OR fp.isVar;
+			p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
 			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 			p.varParam := FALSE
 		END;
@@ -784,17 +784,18 @@ PROCEDURE FormalParameters(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcTy
 VAR braces: BOOLEAN;
 
 	PROCEDURE Section(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcType);
-	VAR isVar: BOOLEAN;
+	VAR access: SET;
 		param: Ast.Declaration;
-		secType: Ast.Type;
 
-		PROCEDURE Name(VAR p: Parser; proc: Ast.ProcType);
+		PROCEDURE Name(VAR p: Parser; proc: Ast.ProcType; access: SET);
 		BEGIN
 			IF p.l # Scanner.Ident THEN
 				AddError(p, ErrExpectIdent)
 			ELSE
 				CheckAst(p,
-					Ast.ParamAdd(p.module, proc, p.s.buf, p.s.lexStart, p.s.lexEnd)
+					Ast.ParamAdd(p.module, proc,
+					             p.s.buf, p.s.lexStart, p.s.lexEnd,
+					             access)
 				);
 				Scan(p)
 			END
@@ -817,19 +818,18 @@ VAR braces: BOOLEAN;
 			RETURN t
 		END Type;
 	BEGIN
-		isVar := ScanIfEqual(p, Scanner.Var);
-		Name(p, proc);
+		IF ScanIfEqual(p, Scanner.Var) THEN
+			access := {Ast.ParamIn, Ast.ParamOut}
+		ELSE
+			access := {}
+		END;
+		Name(p, proc, access);
 		param := proc.end;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
-			Name(p, proc)
+			Name(p, proc, access)
 		END;
 		Expect(p, Scanner.Colon, ErrExpectColon);
-		secType := Type(p, ds);
-		WHILE param # NIL DO
-			param(Ast.FormalParam).isVar := isVar;
-			param.type := secType;
-			param := param.next
-		END
+		CheckAst(p, Ast.VarListSetType(param, Type(p, ds)))
 	END Section;
 BEGIN
 	braces := ScanIfEqual(p, Scanner.Brace1Open);

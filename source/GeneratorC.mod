@@ -134,7 +134,7 @@ BEGIN
 	))
 END MemoryWrite;
 
-PROCEDURE MemWrite(VAR out: Stream.Out;
+PROCEDURE MemWrite(VAR out: V.Base;
                    buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 BEGIN
 	MemoryWrite(out(MemoryOut), buf, ofs, count)
@@ -614,11 +614,12 @@ VAR sel: Ast.Selector;
 
 	PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration);
 	BEGIN
-		IF	(decl IS Ast.FormalParam) & (
-				decl(Ast.FormalParam).isVar & (decl.type.id # Ast.IdArray)
-				OR
-				(decl.type.id = Ast.IdRecord)
-			)
+		IF (decl IS Ast.FormalParam)
+		   &
+		   (  (Ast.ParamOut IN decl(Ast.FormalParam).access)
+		    & (decl.type.id # Ast.IdArray)
+		   OR (decl.type.id = Ast.IdRecord)
+		   )
 		THEN
 			Text.Str(gen, "(*");
 			GlobalName(gen, decl);
@@ -1104,7 +1105,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					t := fp.type
 				END;
 				dist := p.distance;
-				IF (fp(Ast.FormalParam).isVar & ~(t IS Ast.Array))
+				IF ((Ast.ParamOut IN fp(Ast.FormalParam).access)
+				 & ~(t IS Ast.Array))
 				OR (t IS Ast.Record)
 				OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
 				THEN
@@ -1714,8 +1716,10 @@ BEGIN
 	g.opt := gen.opt;
 
 	IF (decl IS Ast.FormalParam) &
-	   ((decl(Ast.FormalParam).isVar & ~(decl.type IS Ast.Array)) OR
-	   (decl.type IS Ast.Record))
+	   ((Ast.ParamOut IN decl(Ast.FormalParam).access)
+	   & ~(decl.type IS Ast.Array)
+	   OR (decl.type IS Ast.Record)
+	   )
 	THEN
 		Text.Str(g, "*")
 	ELSIF decl IS Ast.Const THEN
@@ -2699,7 +2703,9 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		PROCEDURE SearchRetain(gen: Generator; fp: Ast.Declaration): Ast.Declaration;
 		BEGIN
 			WHILE (fp # NIL)
-			    & ((fp.type.id # Ast.IdPointer) OR fp(Ast.FormalParam).isVar)
+			    & ((fp.type.id # Ast.IdPointer)
+			    OR (Ast.ParamOut IN fp(Ast.FormalParam).access)
+			      )
 			DO
 				fp := fp.next
 			END
@@ -2713,7 +2719,8 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				Name(gen, fp);
 				fp := fp.next;
 				WHILE fp # NIL DO
-					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
+					IF (fp.type.id = Ast.IdPointer)
+					 & ~(Ast.ParamOut IN fp(Ast.FormalParam).access)
 					THEN
 						Text.Str(gen, "); o7c_retain(");
 						Name(gen, fp)
@@ -2731,7 +2738,8 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 				Name(gen, fp);
 				fp := fp.next;
 				WHILE fp # NIL DO
-					IF (fp.type.id = Ast.IdPointer) & ~fp(Ast.FormalParam).isVar
+					IF (fp.type.id = Ast.IdPointer)
+					 & ~(Ast.ParamOut IN fp(Ast.FormalParam).access)
 					THEN
 						Text.Str(gen, "); o7c_release(");
 						Name(gen, fp)

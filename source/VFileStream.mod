@@ -17,6 +17,7 @@
 MODULE VFileStream;
 
 IMPORT
+	V,
 	Stream := VDataStream,
 	CFiles;
 
@@ -31,11 +32,11 @@ TYPE
 		file: CFiles.File
 	END;
 
-PROCEDURE Read(VAR in: Stream.In; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+PROCEDURE Read(VAR in: V.Base; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.Read(in(RIn).file, buf, ofs, count)
 END Read;
 
-PROCEDURE ReadChars(VAR in: Stream.In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE ReadChars(VAR in: V.Base; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.ReadChars(in(RIn).file, buf, ofs, count)
 END ReadChars;
 
@@ -62,11 +63,11 @@ BEGIN
 	in := NIL
 END CloseIn;
 
-PROCEDURE Write(VAR out: Stream.Out; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+PROCEDURE Write(VAR out: V.Base; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.Write(out(ROut).file, buf, ofs, count)
 END Write;
 
-PROCEDURE WriteChars(VAR out: Stream.Out; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+PROCEDURE WriteChars(VAR out: V.Base; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.WriteChars(out(ROut).file, buf, ofs, count)
 END WriteChars;
 

@@ -137,6 +137,9 @@ CONST
 
 	ErrMin*                         = -100;
 
+	ParamIn*     = 0;
+	ParamOut*    = 1;
+
 	NoId*                 =-1;
 	IdInteger*            = 0;
 	IdBoolean*            = 1;
@@ -253,7 +256,7 @@ TYPE
 
 	NeedTagList = POINTER TO RNeedTagList;
 	FormalParam* = POINTER TO RECORD(RVar)
-		isVar*: BOOLEAN;
+		access*: SET;
 
 		needTag*: NeedTagList;
 		link: FormalParam
@@ -934,7 +937,7 @@ BEGIN
 	RETURN p
 END ProcTypeNew;
 
-PROCEDURE ParamAddPredefined(proc: ProcType; type: Type; isVar: BOOLEAN);
+PROCEDURE ParamAddPredefined(proc: ProcType; type: Type; access: SET);
 VAR v: FormalParam;
 BEGIN
 	NEW(v); NodeInit(v^, NoId);
@@ -953,13 +956,18 @@ BEGIN
 	v.link := NIL;
 
 	v.type := type;
-	v.isVar := isVar;
+	IF access = {} THEN
+		v.access := {ParamIn}
+	ELSE
+		v.access := access
+	END;
 	v.needTag := NIL;
-	v.inited := TRUE
+	v.inited := (ParamIn IN v.access)
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
-                    buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                    buf: ARRAY OF CHAR; begin, end: INTEGER;
+                    access: SET): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	IF SearchName(proc.params, buf, begin, end) # NIL THEN
@@ -971,7 +979,7 @@ BEGIN
 	ELSE
 		err := ErrNo
 	END;
-	ParamAddPredefined(proc, NIL, FALSE);
+	ParamAddPredefined(proc, NIL, access);
 	PutChars(module, proc.end.name, buf, begin, end)
 	RETURN err
 END ParamAdd;
@@ -1193,10 +1201,9 @@ BEGIN
 	r.base := base
 END RecordSetBase;
 
-PROCEDURE RecNew(VAR r: Record; id: INTEGER);
+PROCEDURE RecNew(VAR r: Record);
 BEGIN
-	ASSERT(id IN {IdRecord, IdRecordForward});
-	NEW(r); TInit(r, id);
+	NEW(r); TInit(r, IdRecordForward);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
@@ -1206,7 +1213,7 @@ END RecNew;
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
 VAR r: Record;
 BEGIN
-	RecNew(r, IdRecordForward);
+	RecNew(r);
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
@@ -1215,7 +1222,7 @@ PROCEDURE RecordForwardNew*(ds: Declarations;
                             name: ARRAY OF CHAR; begin, end: INTEGER): Record;
 VAR r: Record;
 BEGIN
-	RecNew(r, IdRecordForward);
+	RecNew(r);
 	DeclConnect(r, ds, name, begin, end);
 	INC(ds.recordForwardCount)
 	RETURN r
@@ -1851,7 +1858,7 @@ VAR comp: BOOLEAN;
 			WHILE (fp1 # NIL) & (fp2 # NIL)
 			    & (fp1 IS FormalParam) & (fp2 IS FormalParam)
 			    & (fp1.type = fp2.type)
-			    & (fp1(FormalParam).isVar = fp2(FormalParam).isVar)
+			    & (fp1(FormalParam).access = fp2(FormalParam).access)
 			DO
 				ExchangeParamsNeedTag(fp1(FormalParam), fp2(FormalParam));
 				fp1 := fp1.next;
@@ -2465,7 +2472,7 @@ BEGIN
 	Log.StrLn("IsChangeable")
 	RETURN (*(v.module = cur) &*)
 	    (~(v IS FormalParam)
-	 OR (v(FormalParam).isVar)
+	 OR (ParamOut IN v(FormalParam).access)
 	 OR ~((v.type IS Array)
 	 OR (v.type IS Record)))
 END IsChangeable;
@@ -2583,13 +2590,13 @@ BEGIN
 	IF fp # NIL THEN
 		IF ~CompatibleTypes(distance, fp.type, e.type)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
-		 &     (fp.isVar
+		 &     ((ParamOut IN fp.access)
 		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
 		       )
 		 & ~TypeVariation(call, e.type, fp)
 		THEN
 			err := ErrCallIncompatibleParamType
-		ELSIF fp.isVar THEN
+		ELSIF ParamOut IN fp.access THEN
 			IF ~(IsVar(e)
 			   & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
 			    )
@@ -3165,64 +3172,64 @@ BEGIN
 
 	typeInt := TypeGet(IdInteger);
 	tp := ProcNew(Scanner.Abs, IdInteger);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Asr, IdInteger);
-	ParamAddPredefined(tp, typeInt, FALSE);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Assert, NoId);
-	ParamAddPredefined(tp, TypeGet(IdBoolean), FALSE);
+	ParamAddPredefined(tp, TypeGet(IdBoolean), {ParamIn});
 
 	tp := ProcNew(Scanner.Chr, IdChar);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Dec, NoId);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Excl, NoId);
-	ParamAddPredefined(tp, TypeGet(IdSet), TRUE);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	typeReal := TypeGet(IdReal);
 	tp := ProcNew(Scanner.Floor, IdInteger);
-	ParamAddPredefined(tp, typeReal, FALSE);
+	ParamAddPredefined(tp, typeReal, {ParamIn});
 
 	tp := ProcNew(Scanner.Flt, IdReal);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Inc, NoId);
-	ParamAddPredefined(tp, typeInt, TRUE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Incl, NoId);
-	ParamAddPredefined(tp, TypeGet(IdSet), TRUE);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Len, IdInteger);
-	ParamAddPredefined(tp, ArrayGet(typeInt, NIL), FALSE);
+	ParamAddPredefined(tp, ArrayGet(typeInt, NIL), {ParamIn});
 
 	tp := ProcNew(Scanner.Lsl, IdInteger);
-	ParamAddPredefined(tp, typeInt, FALSE);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.New, NoId);
-	ParamAddPredefined(tp, TypeGet(IdPointer), TRUE);
+	ParamAddPredefined(tp, TypeGet(IdPointer), {ParamIn, ParamOut});
 
 	tp := ProcNew(Scanner.Odd, IdBoolean);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Ord, IdInteger);
-	ParamAddPredefined(tp, TypeGet(IdChar), FALSE);
+	ParamAddPredefined(tp, TypeGet(IdChar), {ParamIn});
 
 	tp := ProcNew(Scanner.Pack, IdReal);
-	ParamAddPredefined(tp, typeReal, TRUE);
+	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 
 	tp := ProcNew(Scanner.Ror, IdInteger);
-	ParamAddPredefined(tp, typeInt, FALSE);
-	ParamAddPredefined(tp, typeInt, FALSE);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Unpk, IdReal);
-	ParamAddPredefined(tp, typeReal, TRUE)
+	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut})
 END PredefinedDeclarationsInit;
 
 PROCEDURE HasError*(m: Module): BOOLEAN;

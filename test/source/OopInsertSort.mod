@@ -6,8 +6,10 @@ TYPE
 	RElement = RECORD END;
 	Element = POINTER TO RElement;
 
-	Comparator = RECORD
-		compare: PROCEDURE(c: Comparator; a, b: Element): INTEGER
+	Base = RECORD END;
+
+	Comparator = RECORD(Base)
+		compare: PROCEDURE(c: Base; a, b: Element): INTEGER
 	END;
 
 	(*
@@ -53,7 +55,7 @@ BEGIN
 RETURN p
 END NewPoint;
 
-PROCEDURE compare(c: Comparator; a, b: Element): INTEGER;
+PROCEDURE compare(c: Base; a, b: Element): INTEGER;
 	PROCEDURE cmp(c: PointComparator; a, b: IntPoint): INTEGER;
 	VAR ax, ay, bx, by: INTEGER;
 	BEGIN
