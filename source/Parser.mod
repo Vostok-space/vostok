@@ -70,7 +70,7 @@ CONST
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
 
-	ErrMin = ErrAstEnd;
+	ErrMin* = ErrAstEnd;
 
 TYPE
 	Options* = RECORD(V.Base)

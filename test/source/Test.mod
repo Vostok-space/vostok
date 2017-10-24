@@ -154,12 +154,30 @@ END String;
 
 PROCEDURE Go*;
 VAR p: PoToRe;
+    r: RecA;
+    aor: ARRAY 2 OF REAL;
+    i: INTEGER;
+    b: BOOLEAN;
+    aop: ArOfPoToAr;
 BEGIN
 	NEW(p);
 	Doo(p);
 	variable1 := 0;
 	proc1 := Irma;
-	Out.String("Hello"); Out.Ln
+	Out.String("Hello"); Out.Ln;
+	String("Hello");
+
+	IF 0 > 1 THEN
+		Boo(r);
+		P2(aor);
+		b := FALSE;
+		rer := b;
+		i := A(i, bfd, b);
+		aaaa[0,0,0] := 3;
+		aop[0] := NIL;
+		i := LEN(str);
+		aor[0] := real
+	END
 END Go;
 
 PROCEDURE Fail*;
@@ -169,4 +187,8 @@ BEGIN
 	rab.a := rab.a + rab.b
 END Fail;
 
+BEGIN
+	r1 := NIL;
+	r2 := NIL;
+	r3 := NIL
 END Test.

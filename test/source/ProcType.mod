@@ -13,7 +13,10 @@ VAR
 				ASSERT(FALSE)
 			END R;
 		BEGIN
-			ASSERT(i = 1)
+			ASSERT(i = 1);
+			IF 0 > 1 THEN
+				R(0)
+			END
 		END R;
 	BEGIN
 		ASSERT(i = 0);

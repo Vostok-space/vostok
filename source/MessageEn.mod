@@ -221,6 +221,8 @@ BEGIN
 		O("Declared variable which type is incompletely declared record")
 	| Ast.ErrArrayTypeOfRecordForward:
 		O("Incompletely declared record as subtype of array")
+	| Ast.ErrDeclarationUnused:
+		O("Exist unused declaration in the scope")
 	END
 END AstError;
 

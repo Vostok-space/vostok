@@ -30,7 +30,9 @@ BEGIN
 
 	b := FALSE;
 	ASSERT(R2());
-	ASSERT(~R2())
+	ASSERT(~R2());
+
+	ASSERT(R3() = 0)
 END Go;
 
 END Return.

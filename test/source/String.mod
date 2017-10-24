@@ -3,7 +3,7 @@ MODULE String;
 CONST S = "0123";
       L = LEN(S);
 
-PROCEDURE Err;
+PROCEDURE Err*;
 VAR s1, s2: ARRAY 11 OF CHAR;
 	i: INTEGER;
 BEGIN

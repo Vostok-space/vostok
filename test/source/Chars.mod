@@ -18,6 +18,8 @@ BEGIN
 	O.Char(c2);
 	O.Char(ch);
 	O.Ln;
+	O.String(str);
+	O.Ln;
 	ch := c2
 END Go;
 

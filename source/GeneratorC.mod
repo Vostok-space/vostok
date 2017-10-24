@@ -1185,7 +1185,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				      & ~(e IS Ast.Factor);
 				IF brace THEN
 					Text.Str(gen, "(")
-				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
+				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9
+				THEN
 					Text.Str(gen, "&")
 				END;
 				Expression(gen, e);
@@ -2794,28 +2795,26 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		IF proc.return = NIL THEN
 			ReleaseVars(gen, proc.vars);
 			ReleaseParams(gen, retainParams)
-		ELSE
-			IF gen.opt.memManager = MemManagerCounter THEN
-				IF proc.return.type.id = Ast.IdPointer THEN
-					Text.Str(gen, "O7C_ASSIGN(&o7c_return, ");
-					Expression(gen, proc.return);
-					Text.StrLn(gen, ");")
-				ELSE
-					Text.Str(gen, "o7c_return = ");
-					CheckExpr(gen, proc.return);
-					Text.StrLn(gen, ";")
-				END;
-				ReleaseVars(gen, proc.vars);
-				ReleaseParams(gen, retainParams);
-				IF proc.return.type.id = Ast.IdPointer THEN
-					Text.StrLn(gen, "o7c_unhold(o7c_return);")
-				END;
-				Text.StrLn(gen, "return o7c_return;")
+		ELSIF gen.opt.memManager = MemManagerCounter THEN
+			IF proc.return.type.id = Ast.IdPointer THEN
+				Text.Str(gen, "O7C_ASSIGN(&o7c_return, ");
+				Expression(gen, proc.return);
+				Text.StrLn(gen, ");")
 			ELSE
-				Text.Str(gen, "return ");
-				ExprSameType(gen, proc.return, proc.header.type);
+				Text.Str(gen, "o7c_return = ");
+				CheckExpr(gen, proc.return);
 				Text.StrLn(gen, ";")
-			END
+			END;
+			ReleaseVars(gen, proc.vars);
+			ReleaseParams(gen, retainParams);
+			IF proc.return.type.id = Ast.IdPointer THEN
+				Text.StrLn(gen, "o7c_unhold(o7c_return);")
+			END;
+			Text.StrLn(gen, "return o7c_return;")
+		ELSE
+			Text.Str(gen, "return ");
+			ExprSameType(gen, proc.return, proc.header.type);
+			Text.StrLn(gen, ";")
 		END;
 
 		DEC(gen.localDeep);

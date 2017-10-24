@@ -126,7 +126,9 @@ BEGIN
 	ASSERT(bb[2][1][3] = 777);
 
 	Setbb(2, 1, 3);
-	ASSERT(bb[2][1][3] = 0FFH)
+	ASSERT(bb[2][1][3] = 0FFH);
+
+	For
 END Go;
 
 PROCEDURE Error*(s: INTEGER);

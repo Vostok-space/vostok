@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log,
+	Log, Out,
 	Utf8,
 	Limits,
 	V,
@@ -133,6 +133,7 @@ CONST
 	ErrArrayTypeOfRecordForward*    = -97;
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
+	ErrDeclarationUnused*           = -98;
 
 	ErrMin*                         = -100;
 
@@ -635,11 +636,36 @@ BEGIN
 	provider.reg(provider, m)
 END RegModule;
 
+PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
+VAR d: Declaration;
+    err: INTEGER;
+    str: ARRAY 256 OF CHAR;
+
+BEGIN
+	d := ds.start;
+	WHILE (d # NIL) & (d IS Import) DO
+		d := d.next
+	END;
+	WHILE (d # NIL) & (d.mark OR d.used OR (d IS Var) & d(Var).inited) DO
+		d := d.next
+	END;
+	IF d = NIL THEN
+		err := ErrNo
+	ELSE
+		err := 0;
+		ASSERT(Strings.CopyToChars(str ,err, d.name));
+		Out.String(str); Out.Ln;
+
+		err := ErrDeclarationUnused;
+	END
+	RETURN err
+END CheckUnusedDeclarations;
+
 PROCEDURE ModuleEnd*(m: Module): INTEGER;
 BEGIN
 	ASSERT(~m.fixed);
 	m.fixed := TRUE
-	RETURN ErrNo
+	RETURN CheckUnusedDeclarations(m)
 END ModuleEnd;
 
 PROCEDURE ImportHandle*(m: Module);
@@ -1198,7 +1224,8 @@ END RecordForwardNew;
 PROCEDURE RecordEnd*(r: Record): INTEGER;
 BEGIN
 	ASSERT(r.id = IdRecordForward);
-	r.id := IdRecord
+	r.id := IdRecord;
+	r.used := TRUE
 	RETURN ErrNo
 END RecordEnd;
 
@@ -1246,6 +1273,9 @@ BEGIN
 		IF (d = NIL) & (ds IS Module) & ~ds(Module).fixed THEN
 			d := SearchPredefined(buf, begin, end)
 		END
+	END;
+	IF (d # NIL) & (d IS Type) THEN
+		d.used := TRUE
 	END
 	RETURN d
 END DeclarationSearch;
@@ -1336,6 +1366,9 @@ END ForIteratorGet;
 PROCEDURE ExprInit(e: Expression; id: INTEGER; t: Type);
 BEGIN
 	NodeInit(e^, id);
+	IF t # NIL THEN
+		t.used := TRUE
+	END;
 	e.type := t;
 	e.value := NIL
 END ExprInit;
@@ -1594,6 +1627,7 @@ VAR sp: SelPointer;
 BEGIN
 	NEW(sp); SelInit(sp);
 	sel := sp;
+	type.used := TRUE;
 	IF type IS Pointer THEN
 		err := ErrNo;
 		type := type.type;
@@ -1703,6 +1737,7 @@ VAR d: Declaration;
     err: INTEGER;
 BEGIN
 	d := first;
+	t.used := TRUE;
 	WHILE d # NIL DO
 		d.type := t;
 		d := d.next
@@ -2487,7 +2522,7 @@ BEGIN
 	IF (p.header.type # NIL) & (p.return = NIL) THEN
 		err := ErrExpectReturn
 	ELSE
-		err := ErrNo
+		err := CheckUnusedDeclarations(p)
 	END
 	RETURN err
 END ProcedureEnd;

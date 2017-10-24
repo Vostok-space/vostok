@@ -116,4 +116,8 @@ BEGIN
 	ASSERT(r3.r2.a = 4)
 END Go;
 
+BEGIN
+	IF 0 > 1 THEN
+		Pr(NIL)
+	END
 END Record.

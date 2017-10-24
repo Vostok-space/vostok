@@ -10,7 +10,9 @@ TYPE
 		compare: PROCEDURE(c: Comparator; a, b: Element): INTEGER
 	END;
 
+	(*
 	Compare = PROCEDURE(c: Comparator; a, b: Element): INTEGER;
+	*)
 
 	IntPoint = POINTER TO RECORD(RElement)
 		x, y: INTEGER

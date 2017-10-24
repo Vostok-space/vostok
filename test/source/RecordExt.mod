@@ -19,7 +19,7 @@ TYPE
 		b: BOOLEAN
 	END;
 
-	Pr = POINTER TO RECORD
+	Pr* = POINTER TO RECORD
 	END;
 
 	PBase = POINTER TO Base;
@@ -99,7 +99,10 @@ BEGIN
 	pb1 := NIL;
 	pe1 := NIL;
 	ASSERT(pb1 = pe1);
-	ASSERT(pe1 = pb1)
+	ASSERT(pe1 = pb1);
+
+	Pointer(pb1);
+	pb := pb1
 END Go;
 
 END RecordExt.

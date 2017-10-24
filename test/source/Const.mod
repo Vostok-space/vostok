@@ -18,7 +18,8 @@ BEGIN
 	ASSERT(E = F);
 	ASSERT(E = CHR(255));
 	ASSERT(CHR(255) = E);
-	ASSERT(F = CHR(256 - 1))
+	ASSERT(F = CHR(256 - 1));
+	ASSERT(Const = 5+4)
 END Go;
 
 END Const.
