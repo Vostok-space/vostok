@@ -26,6 +26,9 @@
   .log-out {
     margin: 0px;
   }
+  .command-line {
+    width: 400px;
+  }
 </style>
 </head>
 
@@ -56,7 +59,7 @@ END Hello.
 <div id='runners'></div>
 
 <div>
-  <input type='text' id='script' value='Hello.Come; Hello.Gone'/>
+  <input class='command-line' type='text' id='script' value='Hello.Come; Hello.Gone'/>
   <button onclick='requestRun(script.value)'>Run</button>
   <button onclick='addRunner(script.value)'>Add</button>
 </div>
@@ -120,6 +123,7 @@ END Hello.
     var div, inp, run, del;
     div = document.createElement('div');
     inp = document.createElement('input', 'type="text"');
+    inp.className = 'command-line';
     inp.value = command;
     run = document.createElement('button');
     run.innerText = 'Run';
