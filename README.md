@@ -15,6 +15,7 @@ Test:
 	make test self self-full
 
 Demo server:
+
 	cd demo-server
 	go run server.go
 
