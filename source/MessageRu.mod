@@ -108,6 +108,8 @@ BEGIN
 		O("Не хватает фактических параметров в вызове процедуры")
 	| Ast.ErrCaseExprNotIntOrChar:
 		O("Выражение в CASE должно быть целочисленным или литерой")
+	| Ast.ErrCaseLabelNotIntOrChar:
+		O("Метка CASE должна быть целочисленной или литерой")
 	| Ast.ErrCaseElemExprTypeMismatch:
 		O("Метки CASE должно быть целочисленными или литерами")
 	| Ast.ErrCaseElemDuplicate:

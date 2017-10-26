@@ -105,7 +105,7 @@ CONST
 	ErrNegateNotBool*               = -67;
 	                                (*-68*)
 	ErrConstAddOverflow*            = -69;
-	ErrConstSubOverflow*            = -ErrConstAddOverflow - 1;
+	ErrConstSubOverflow*            = -70;
 	ErrConstMultOverflow*           = -71;
 	ErrComDivByZero*                = -72;
 
@@ -1242,7 +1242,7 @@ VAR d: Declaration;
 BEGIN
 	l := Scanner.CheckPredefined(buf, begin, end);
 	Log.Str("SearchPredefined "); Log.Int(l); Log.Ln;
-	IF (l >= Scanner.PredefinedFirst) & (l <= Scanner.PredefinedLast) THEN
+	IF (Scanner.PredefinedFirst <= l) & (l <= Scanner.PredefinedLast) THEN
 		d := predefined[l - Scanner.PredefinedFirst];
 		ASSERT(d # NIL)
 	ELSE
@@ -2213,11 +2213,15 @@ BEGIN
 		ELSE
 			CASE term.type.id OF
 			  IdInteger:
-				IF ~Arithmetic.Add(fullSum.value(ExprInteger).int,
+				IF Arithmetic.Add(fullSum.value(ExprInteger).int,
 						fullSum.value(ExprInteger).int,
 						term.value(ExprInteger).int * LexToSign(add))
 				THEN
-					err := ErrConstAddOverflow + ORD(add = Scanner.Minus)
+					;
+				ELSIF add = Scanner.Minus THEN
+					err := ErrConstSubOverflow
+				ELSE
+					err := ErrConstAddOverflow
 				END
 			| IdReal:
 				fullSum.value(ExprReal).real :=

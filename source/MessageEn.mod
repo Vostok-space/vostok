@@ -109,6 +109,8 @@ BEGIN
 		O("Not enough parameters in call of procedure")
 	| Ast.ErrCaseExprNotIntOrChar:
 		O("Expression in CASE must be integer or char")
+	| Ast.ErrCaseLabelNotIntOrChar:
+		O("Case label must have integer or char type")
 	| Ast.ErrCaseElemExprTypeMismatch:
 		O("Label of CASE must be integer or char")
 	| Ast.ErrCaseElemDuplicate:
