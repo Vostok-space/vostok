@@ -628,6 +628,12 @@ char unsigned o7c_chr(int v) {
 	return (char unsigned)v;
 }
 
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+int o7c_sti(unsigned v) {
+	assert(v <= (unsigned)INT_MAX);
+	return (int)v;
+}
+
 extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
                       int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)])
 	O7C_ATTR_PURE;

@@ -41,6 +41,7 @@ CONST
 	ErrNotIntSetElem*               = -9;(*TODO*)
 	ErrSetElemOutOfRange*           = -10;
 	ErrSetLeftElemBiggerRightElem*  = -11;
+	ErrSetElemMaxNotConvertToInt*   = -35;(*TODO*)
 	ErrAddExprDifferenTypes*        = -12;
 	ErrNotNumberAndNotSetInMult*    = -13;
 	ErrNotNumberAndNotSetInAdd*     = -14;
@@ -2701,7 +2702,11 @@ VAR err: INTEGER;
 			ELSIF v.type.id = IdBoolean THEN
 				call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
 			ELSIF v.type.id = IdSet THEN
-				call.value := ExprIntegerNew(ORD(v(ExprSet).set))
+				IF ~(Limits.SetMax IN v(ExprSet).set) THEN
+					call.value := ExprIntegerNew(ORD(v(ExprSet).set))
+				ELSE
+					err := ErrSetElemMaxNotConvertToInt
+				END
 			ELSIF v.type.id # IdError THEN
 				Log.Str("Неправильный id типа = ");
 				Log.Int(v.type.id); Log.Ln;

@@ -537,7 +537,7 @@ BEGIN
 		GlobalName(gen, decl);(*TODO*)
 		Text.Str(gen, "_len");
 		IF i < 0 THEN
-			i := -1;
+			i := 0;
 			WHILE sel # NIL DO
 				INC(i);
 				sel := sel.next
@@ -926,8 +926,19 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
-				Text.Str(gen, "(int)");
-				Factor(gen, e)
+				CASE e.type.id OF
+				  Ast.IdChar, Ast.IdArray:
+					Text.Str(gen, "(int)");
+					Factor(gen, e)
+				| Ast.IdBoolean:
+					Text.Str(gen, "(int)o7c_bl(");
+					Expression(gen, e);
+					Text.Str(gen, ")")
+				| Ast.IdSet:
+					Text.Str(gen, "o7c_sti(");
+					Expression(gen, e);
+					Text.Str(gen, ")")
+				END
 			END Ord;
 
 			PROCEDURE Inc(VAR gen: Generator;
@@ -1043,11 +1054,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, ")")
 			| Scanner.Pack:
 				Expression(gen, e1);
-				Text.Str(gen, " *= 1 << ");
+				Text.Str(gen, " *= 1u << ");
 				Expression(gen, p2.expr)
 			| Scanner.Unpk:
 				Expression(gen, e1);
-				Text.Str(gen, " /= 1 << ");
+				Text.Str(gen, " /= 1u << ");
 				Expression(gen, p2.expr)
 			END
 		END Predefined;
@@ -1534,7 +1545,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, "0")
 			ELSE
 				IF set.exprs[1] = NIL THEN
-					Text.Str(gen, "(1 << ");
+					Text.Str(gen, "(1u << ");
 					Factor(gen, set.exprs[0])
 				ELSE
 					IF (set.exprs[0].value = NIL) OR (set.exprs[1].value = NIL)

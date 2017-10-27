@@ -58,6 +58,8 @@ BEGIN
 		O("Item's  value of set out of range - [0 .. 31]")
 	| Ast.ErrSetLeftElemBiggerRightElem:
 		O("Left item of range bigger then right item")
+	| Ast.ErrSetElemMaxNotConvertToInt:
+		O("Set, which contain 31 can not be converted to integer")
 	| Ast.ErrAddExprDifferenTypes:
 		O("Subexpressions types in sum are incompatible")
 	| Ast.ErrNotNumberAndNotSetInMult:

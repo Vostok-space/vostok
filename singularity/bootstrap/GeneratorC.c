@@ -516,7 +516,7 @@ static void ArrayDeclLen(struct GeneratorC_Generator *gen, o7c_tag_t gen_tag, st
 		/*TODO*/
 		TextGenerator_Str(&(*gen)._, gen_tag, 5, (o7c_char *)"_len");
 		if (o7c_cmp(i, 0) <  0) {
-			i =  - 1;
+			i = 0;
 			while (sel != NULL) {
 				i = o7c_add(i, 1);
 				sel = sel->next;
@@ -1111,7 +1111,7 @@ static void Simple_Relation_Expression_Len(struct GeneratorC_Generator *gen, o7c
 		Expression(&(*gen), gen_tag, O7C_GUARD(Ast_RArray, &e->type)->count);
 	} else {
 		des = O7C_GUARD(Ast_Designator_s, &e);
-		ArrayDeclLen(&(*gen), gen_tag, des->_._.type, des->decl, des->sel,  - 1);
+		ArrayDeclLen(&(*gen), gen_tag, des->_._.type, des->decl, des->sel, 0);
 	}
 }
 

@@ -58,6 +58,8 @@ BEGIN
 		O("Элемент множества выходит за границы возможных значений - 0 .. 31")
 	| Ast.ErrSetLeftElemBiggerRightElem:
 		O("Левый элемент диапазона больше правого")
+	| Ast.ErrSetElemMaxNotConvertToInt:
+		O("Множество, содержащее 31 не может быть преобразовано в целое")
 	| Ast.ErrAddExprDifferenTypes:
 		O("Типы подвыражений в сложении несовместимы")
 	| Ast.ErrNotNumberAndNotSetInMult:
