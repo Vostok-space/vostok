@@ -105,7 +105,6 @@ TYPE
 
 	Selectors = RECORD
 		des: Ast.Designator;
-		assign: BOOLEAN;
 		decl: Ast.Declaration;
 		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
 		i: INTEGER
@@ -1053,9 +1052,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				CheckExpr(gen, e1);
 				Text.Str(gen, ")")
 			| Scanner.Pack:
+				Text.Str(gen, "o7c_scalbn(&");
 				Expression(gen, e1);
-				Text.Str(gen, " *= 1u << ");
-				Expression(gen, p2.expr)
+				Text.Str(gen, ", ");
+				Expression(gen, p2.expr);
+				Text.Str(gen, ")")
 			| Scanner.Unpk:
 				Expression(gen, e1);
 				Text.Str(gen, " /= 1u << ");

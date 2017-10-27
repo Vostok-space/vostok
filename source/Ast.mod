@@ -3230,7 +3230,7 @@ BEGIN
 	tp := ProcNew(Scanner.Ord, IdInteger);
 	ParamAddPredefined(tp, TypeGet(IdChar), {ParamIn});
 
-	tp := ProcNew(Scanner.Pack, IdReal);
+	tp := ProcNew(Scanner.Pack, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
@@ -3238,7 +3238,7 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Unpk, IdReal);
+	tp := ProcNew(Scanner.Unpk, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut})
 END PredefinedDeclarationsInit;

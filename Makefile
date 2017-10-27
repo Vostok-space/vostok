@@ -13,7 +13,7 @@ SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNO
 SANITIZE_TEST := $(SANITIZE)
 O7C_OPT := -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE
 #LD_OPT := -lgc
-LD_OPT :=
+LD_OPT := -lm
 WARN := -Wall -Wno-parentheses
 DEBUG := -g
 OPTIM := -O1

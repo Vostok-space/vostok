@@ -16,6 +16,7 @@
 #define HEADER_GUARD_o7c
 
 #include <limits.h>
+#include <math.h>
 
 #if !defined(O7C_INLINE)
 #	if __STDC_VERSION__ >= 199901L
@@ -633,6 +634,12 @@ O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_sti(unsigned v) {
 	assert(v <= (unsigned)INT_MAX);
 	return (int)v;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+o7c_c_bool o7c_scalbn(double *f, int n) {
+	*f = scalbn(o7c_dbl(*f), o7c_int(n));
+	return 0 < 1;/* TODO */
 }
 
 extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
