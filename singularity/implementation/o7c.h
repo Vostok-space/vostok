@@ -480,8 +480,8 @@ O7C_ALWAYS_INLINE void o7c_release(void *mem) {
 	}
 }
 
-O7C_ALWAYS_INLINE
-void o7c_new(void **pmem, int size, o7c_tag_t const tag, void undef(void *)) {
+O7C_ALWAYS_INLINE o7c_c_bool
+o7c_new(void **pmem, int size, o7c_tag_t const tag, void undef(void *)) {
 	void *mem;
 	mem = o7c_malloc(
 	    sizeof(o7c_mmc_t) * (int)(O7C_MEM_MAN == O7C_MEM_MAN_COUNTER)
@@ -499,6 +499,7 @@ void o7c_new(void **pmem, int size, o7c_tag_t const tag, void undef(void *)) {
 	}
 	o7c_release(*pmem);
 	*pmem = mem;
+	return NULL != mem;
 }
 
 #define O7C_NEW(mem, name) \
