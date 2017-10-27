@@ -3194,7 +3194,7 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Dec, NoId);
-	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut});
 
 	tp := ProcNew(Scanner.Excl, NoId);
 	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
@@ -3208,7 +3208,7 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Inc, NoId);
-	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut});
 
 	tp := ProcNew(Scanner.Incl, NoId);
 	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
@@ -3232,13 +3232,15 @@ BEGIN
 
 	tp := ProcNew(Scanner.Pack, IdReal);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Ror, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(Scanner.Unpk, IdReal);
-	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut})
+	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
+	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut})
 END PredefinedDeclarationsInit;
 
 PROCEDURE HasError*(m: Module): BOOLEAN;
