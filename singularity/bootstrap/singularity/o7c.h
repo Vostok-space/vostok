@@ -98,7 +98,7 @@ typedef char unsigned o7c_char;
 
 #if defined(O7C_MEM_MAN_NOFREE_BUFFER_SIZE)
 #elif O7C_MEM_MAN == O7C_MEM_MAN_NOFREE
-#	define O7C_MEM_MAN_NOFREE_BUFFER_SIZE (256lu * 1024 * 1024)
+#	define O7C_MEM_MAN_NOFREE_BUFFER_SIZE (32lu * 1024 * 1024)
 #else
 #	define O7C_MEM_MAN_NOFREE_BUFFER_SIZE 1lu
 #endif

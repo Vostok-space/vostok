@@ -19,7 +19,7 @@
 #if !defined(HEADER_GUARD_Arithmetic)
 #define HEADER_GUARD_Arithmetic
 
-#include "Limits.h"
+#include "Limits_.h"
 
 extern o7c_bool Arithmetic_Add(int *sum, int a1, int a2);
 

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <o7c.h>
+#include "o7c.h"
 
 int     o7c_cli_argc;
 char**  o7c_cli_argv;

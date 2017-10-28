@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #define O7C_BOOL_UNDEFINED
-#include <o7c.h>
+#include "o7c.h"
 
 #include "OsExec.h"
 

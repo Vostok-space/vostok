@@ -27,7 +27,7 @@
 #include "TextGenerator.h"
 #include "Utf8.h"
 #include "Log.h"
-#include "Limits.h"
+#include "Limits_.h"
 #include "TranslatorLimits.h"
 
 #define GeneratorC_IsoC90_cnst 0

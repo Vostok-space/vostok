@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <o7c.h>
+#include "o7c.h"
 
 #include "CFiles.h"
 
@@ -36,6 +36,7 @@ extern CFiles_File CFiles_Open(
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
+	/*puts(name + ofs);*/
 	O7C_NEW2(&file, NULL, NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), (char *)mode);

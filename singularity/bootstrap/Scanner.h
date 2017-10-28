@@ -131,7 +131,7 @@
 #define Scanner_ErrExpectDigitInScale_cnst (-7)
 #define Scanner_ErrUnclosedComment_cnst (-8)
 #define Scanner_ErrMin_cnst (-100)
-#define Scanner_BlockSize_cnst 262144
+#define Scanner_BlockSize_cnst (4096 * 2)
 
 typedef struct Scanner_Scanner {
 	V_Base _;

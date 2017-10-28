@@ -21,7 +21,7 @@
 
 #include "Log.h"
 #include "Utf8.h"
-#include "Limits.h"
+#include "Limits_.h"
 #include "V.h"
 #include "Scanner.h"
 #include "StringStore.h"
