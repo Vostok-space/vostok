@@ -637,8 +637,16 @@ int o7c_sti(unsigned v) {
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
-o7c_c_bool o7c_scalbn(double *f, int n) {
-	*f = scalbn(o7c_dbl(*f), o7c_int(n));
+o7c_c_bool o7c_ldexp(double *f, int n) {
+	*f = ldexp(o7c_dbl(*f), o7c_int(n));
+	return 0 < 1;/* TODO */
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+o7c_c_bool o7c_frexp(double *f, int *n) {
+	int p;
+	*f = frexp(o7c_dbl(*f), &p) * 2.0;
+	*n = p - 1;
 	return 0 < 1;/* TODO */
 }
 

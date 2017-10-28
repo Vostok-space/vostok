@@ -1052,15 +1052,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				CheckExpr(gen, e1);
 				Text.Str(gen, ")")
 			| Scanner.Pack:
-				Text.Str(gen, "o7c_scalbn(&");
+				Text.Str(gen, "o7c_ldexp(&");
 				Expression(gen, e1);
 				Text.Str(gen, ", ");
 				Expression(gen, p2.expr);
 				Text.Str(gen, ")")
 			| Scanner.Unpk:
+				Text.Str(gen, "o7c_frexp(&");
 				Expression(gen, e1);
-				Text.Str(gen, " /= 1u << ");
-				Expression(gen, p2.expr)
+				Text.Str(gen, ", &");
+				Expression(gen, p2.expr);
+				Text.Str(gen, ")")
 			END
 		END Predefined;
 
