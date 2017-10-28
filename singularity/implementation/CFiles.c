@@ -12,15 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdlib.h>
-#include <stddef.h>
-#include <assert.h>
-#include <math.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include <o7c.h>
-
 #include "CFiles.h"
 
 struct CFiles_Implement {
@@ -30,8 +24,8 @@ struct CFiles_Implement {
 CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
-	int name_len, o7c_char name[O7C_VLA_LEN(name_len)], int ofs,
-	int mode_len, o7c_char mode[O7C_VLA_LEN(mode_len)])
+	int name_len, o7c_char name[O7C_VLA(name_len)], int ofs,
+	int mode_len, o7c_char mode[O7C_VLA(mode_len)])
 {
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
@@ -55,7 +49,7 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -64,7 +58,7 @@ extern int CFiles_Read(CFiles_File file,
 }
 
 extern int CFiles_Write(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -97,7 +91,7 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 }
 
 extern int CFiles_Remove(
-	int name_len, o7c_char const name[O7C_VLA_LEN(name_len)], int ofs)
+	int name_len, o7c_char const name[O7C_VLA(name_len)], int ofs)
 {
 	assert(ofs >= 0);
 	assert(name_len > 1);

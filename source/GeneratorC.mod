@@ -62,7 +62,7 @@ TYPE
 		gnu*, plan9*,
 		procLocal*,
 		checkIndex*,
-		vla*,
+		vla*, vlaMark*,
 		checkArith*,
 		caseAbort*,
 		checkNil*,
@@ -2018,11 +2018,11 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			i := 0;
 			t := arr;
 			REPEAT
-				Text.Str(gen, "[");
+				Text.Data(gen, "[O7C_VLA(", 0, 1 + ORD(gen.opt.vlaMark) * 8);
 				Name(gen, decl);
 				Text.Str(gen, "_len");
 				Text.Int(gen, i);
-				Text.Str(gen, "]");
+				Text.Data(gen, ")]", ORD(gen.opt.vlaMark), 1 + ORD(gen.opt.vlaMark));
 				t := t.type;
 				INC(i)
 			UNTIL t.id # Ast.IdArray
@@ -2986,6 +2986,7 @@ BEGIN
 		o.procLocal     := FALSE;
 		o.checkIndex    := TRUE;
 		o.vla           := FALSE & (o.std >= IsoC99);
+		o.vlaMark       := TRUE;
 		o.checkArith    := TRUE;
 		o.caseAbort     := TRUE;
 		o.checkNil      := TRUE;
@@ -3163,11 +3164,6 @@ VAR out: MOut;
 
 	PROCEDURE Includes(VAR gen: Generator);
 	BEGIN
-		Text.StrLn(gen, "#include <stdlib.h>");
-		Text.StrLn(gen, "#include <stddef.h>");
-		Text.StrLn(gen, "#include <string.h>");
-		Text.StrLn(gen, "#include <assert.h>");
-		Text.StrLn(gen, "#include <math.h>");
 		IF gen.opt.std >= IsoC99 THEN
 			Text.StrLn(gen, "#include <stdbool.h>")
 		END;

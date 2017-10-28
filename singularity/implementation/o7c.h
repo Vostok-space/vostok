@@ -15,6 +15,10 @@
 #if !defined(HEADER_GUARD_o7c)
 #define HEADER_GUARD_o7c
 
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <assert.h>
 #include <limits.h>
 #include <math.h>
 
@@ -43,9 +47,9 @@
 #endif
 
 #if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__)
-#	define O7C_VLA_LEN(len) static len
+#	define O7C_VLA(len) static len
 #else
-#	define O7C_VLA_LEN(len)
+#	define O7C_VLA(len)
 #endif
 
 
@@ -288,7 +292,7 @@ o7c_bool o7c_bl(o7c_bool b) {
 	return b;
 }
 
-extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]);
+extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA(len)]);
 #define O7C_BOOLS_UNDEF(array) \
 	o7c_bools_undef(sizeof(array) / sizeof(o7c_char), (o7c_char *)(array))
 
@@ -303,7 +307,7 @@ double o7c_dbl_undef(void) {
 	return undef;
 }
 
-extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]);
+extern double* o7c_doubles_undef(int len, double array[O7C_VLA(len)]);
 #define O7C_DOUBLES_UNDEF(array) \
 	o7c_doubles_undef(sizeof(array) / sizeof(double), (double *)(array))
 
@@ -355,7 +359,7 @@ int o7c_int(int i) {
 	return i;
 }
 
-extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]);
+extern int* o7c_ints_undef(int len, int array[O7C_VLA(len)]);
 #define O7C_INTS_UNDEF(array) \
 	o7c_ints_undef((int)(sizeof(array) / (sizeof(int))), (int *)(array))
 
@@ -539,7 +543,7 @@ O7C_ALWAYS_INLINE void o7c_null(void **mem) {
 
 #define O7C_NULL(mem) o7c_null((void **)(mem))
 
-O7C_ALWAYS_INLINE void o7c_release_array(int count, void *mem[O7C_VLA_LEN(count)]) {
+O7C_ALWAYS_INLINE void o7c_release_array(int count, void *mem[O7C_VLA(count)]) {
 	int i;
 	if (O7C_MEM_MAN == O7C_MEM_MAN_COUNTER) {
 		for (i = 0; i < count; i += 1) {
@@ -636,25 +640,23 @@ int o7c_sti(unsigned v) {
 	return (int)v;
 }
 
-O7C_ATTR_CONST O7C_ALWAYS_INLINE
-o7c_c_bool o7c_ldexp(double *f, int n) {
+O7C_ALWAYS_INLINE o7c_c_bool o7c_ldexp(double *f, int n) {
 	*f = ldexp(o7c_dbl(*f), o7c_int(n));
 	return 0 < 1;/* TODO */
 }
 
-O7C_ATTR_CONST O7C_ALWAYS_INLINE
-o7c_c_bool o7c_frexp(double *f, int *n) {
+O7C_ALWAYS_INLINE o7c_c_bool o7c_frexp(double *f, int *n) {
 	int p;
 	*f = frexp(o7c_dbl(*f), &p) * 2.0;
 	*n = p - 1;
 	return 0 < 1;/* TODO */
 }
 
-extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
-                      int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)])
+extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA(s1_len)],
+                      int s2_len, o7c_char const s2[O7C_VLA(s2_len)])
 	O7C_ATTR_PURE;
 
-extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]);
+extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]);
 
 extern int o7c_exit_code;
 

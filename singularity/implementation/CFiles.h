@@ -25,24 +25,24 @@ typedef struct CFiles_Implement* CFiles_File;
 extern CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
-	int name_len, o7c_char name[O7C_VLA_LEN(name_len)], int ofs,
-	int mode_len, o7c_char mode[O7C_VLA_LEN(mode_len)]);
+	int name_len, o7c_char name[O7C_VLA(name_len)], int ofs,
+	int mode_len, o7c_char mode[O7C_VLA(mode_len)]);
 
 extern void CFiles_Close(CFiles_File *file);
 
 extern int CFiles_Read(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count);
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count);
 extern int CFiles_Write(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count);
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count);
 
 O7C_INLINE int CFiles_ReadChars(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
 {
 	return CFiles_Read(file, len, buf, ofs, count);
 }
 
 O7C_INLINE int CFiles_WriteChars(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA_LEN(len)], int ofs, int count)
+	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
 {
 	return CFiles_Write(file, len, buf, ofs, count);
 }
@@ -53,7 +53,7 @@ extern int CFiles_Seek(CFiles_File file, int gibs, int bytes);
 
 extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);
 
-extern int CFiles_Remove(int len, o7c_char const name[O7C_VLA_LEN(len)], int ofs);
+extern int CFiles_Remove(int len, o7c_char const name[O7C_VLA(len)], int ofs);
 
 
 extern void CFiles_init(void);

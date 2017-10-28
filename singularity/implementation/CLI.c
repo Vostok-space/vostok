@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdlib.h>
-#include <stdbool.h>
-#include <assert.h>
+
+#define O7C_BOOL_UNDEFINED
+#include <o7c.h>
 
 #include "CLI.h"
 
@@ -22,8 +22,8 @@ int CLI_count;
 
 static char **CLI_argv;
 
-extern bool CLI_Get(
-	int str_len, char unsigned str[O7C_VLA_LEN(str_len)], int *ofs, int arg)
+extern o7c_c_bool CLI_Get(
+	int str_len, char unsigned str[O7C_VLA(str_len)], int *ofs, int arg)
 {
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));

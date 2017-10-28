@@ -12,11 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stddef.h>
-#include <stdlib.h>
-#include <assert.h>
 
-#include "o7c.h"
+#include <o7c.h>
 
 int     o7c_cli_argc;
 char**  o7c_cli_argv;
@@ -29,7 +26,7 @@ o7c_tag_t o7c_base_tag;
 
 char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
 
-extern void o7c_init(int argc, char *argv[O7C_VLA_LEN(argc)]) {
+extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
 	double undefined;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
@@ -82,7 +79,7 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 	}
 }
 
-extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]) {
+extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = 0xff;
@@ -90,7 +87,7 @@ extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA_LEN(len)]) {
 	return array;
 }
 
-extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
+extern double* o7c_doubles_undef(int len, double array[O7C_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_DBL_UNDEF;
@@ -98,7 +95,7 @@ extern double* o7c_doubles_undef(int len, double array[O7C_VLA_LEN(len)]) {
 	return array;
 }
 
-extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]) {
+extern int* o7c_ints_undef(int len, int array[O7C_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_INT_UNDEF;
@@ -106,8 +103,8 @@ extern int* o7c_ints_undef(int len, int array[O7C_VLA_LEN(len)]) {
 	return array;
 }
 
-extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA_LEN(s1_len)],
-                      int s2_len, o7c_char const s2[O7C_VLA_LEN(s2_len)]) {
+extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA(s1_len)],
+                      int s2_len, o7c_char const s2[O7C_VLA(s2_len)]) {
 	int i, len, c1, c2;
 	if (s1_len < s2_len) {
 		len = s1_len;
