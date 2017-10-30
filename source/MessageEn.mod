@@ -123,6 +123,8 @@ BEGIN
 		O("Left part of range in label of CASE must be less than right part")
 	| Ast.ErrCaseLabelNotConst:
 		O("Labels in CASE must be constant")
+	| Ast.ErrCaseElseAlreadyExist:
+		O("Else branch in CASE already exist")
 	| Ast.ErrProcHasNoReturn:
 		O("Procedure have not return")
 	| Ast.ErrReturnIncompatibleType:

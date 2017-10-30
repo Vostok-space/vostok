@@ -103,7 +103,7 @@ typedef char unsigned o7c_char;
 #		error
 #	endif
 #else
-	#define O7C_INT_MAX 2147483647
+#	define O7C_INT_MAX 2147483647
 #	if INT_MAX    >= O7C_INT_MAX
 		typedef int   o7c_int_t;
 #	elif LONG_MAX >= O7C_INT_MAX
@@ -131,6 +131,8 @@ typedef char unsigned o7c_char;
 #		error
 #	endif
 #endif
+
+typedef o7c_ulong_t o7c_set64_t;
 
 #define O7C_MEM_MAN_NOFREE  0
 #define O7C_MEM_MAN_COUNTER 1
@@ -377,6 +379,24 @@ float o7c_flt(float d) {
 		assert(*(unsigned long *)&d != 0x7FFFFFFF);
 	}
 	return d;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+char unsigned o7c_byte(int v) {
+	assert((unsigned)v <= 255);
+	return (char unsigned)v;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+char unsigned o7c_lbyte(o7c_long_t v) {
+	assert((o7c_ulong_t)v <= 255);
+	return (char unsigned)v;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+char unsigned o7c_chr(int v) {
+	assert((unsigned)v <= 255);
+	return (char unsigned)v;
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
@@ -738,24 +758,6 @@ o7c_bool o7c_in(int n, unsigned set) {
 }
 
 #define O7C_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != (set) & (1u << (n))))
-
-O7C_ATTR_CONST O7C_ALWAYS_INLINE
-char unsigned o7c_byte(int v) {
-	assert((unsigned)v <= 255);
-	return (char unsigned)v;
-}
-
-O7C_ATTR_CONST O7C_ALWAYS_INLINE
-char unsigned o7c_lbyte(o7c_long_t v) {
-	assert((o7c_ulong_t)v <= 255);
-	return (char unsigned)v;
-}
-
-O7C_ATTR_CONST O7C_ALWAYS_INLINE
-char unsigned o7c_chr(int v) {
-	assert((unsigned)v <= 255);
-	return (char unsigned)v;
-}
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_sti(unsigned v) {

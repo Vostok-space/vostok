@@ -122,6 +122,8 @@ BEGIN
 		O("Левая часть диапазона значений в метке CASE должна быть меньше правой")
 	| Ast.ErrCaseLabelNotConst:
 		O("Метки CASE должны быть константами")
+	| Ast.ErrCaseElseAlreadyExist:
+		O("ELSE ветка в CASE уже есть")
 	| Ast.ErrProcHasNoReturn:
 		O("Процедура не имеет возвращаемого значения")
 	| Ast.ErrReturnIncompatibleType:

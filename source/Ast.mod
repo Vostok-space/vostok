@@ -73,6 +73,7 @@ CONST
 	ErrCaseRangeLabelsTypeMismatch* = -37;
 	ErrCaseLabelLeftNotLessRight*   = -38;
 	ErrCaseLabelNotConst*           = -39;
+	ErrCaseElseAlreadyExist*        = -99;
 	ErrProcHasNoReturn*             = -40;
 	ErrReturnIncompatibleType*      = -41;
 	ErrExpectReturn*                = -42;
@@ -135,8 +136,8 @@ CONST
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
 	ErrDeclarationUnused*           = -98;
-
-	ErrMin*                         = -100;
+                                     (*-99, 100*)
+	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
 	ParamOut*    = 1;
@@ -465,7 +466,9 @@ TYPE
 		next*: CaseElement
 	END;
 	Case* = POINTER TO RECORD(RStatement)
-		elements*: CaseElement
+		elements*: CaseElement;
+
+		else*: Statement
 	END;
 
 	Repeat* = POINTER TO RECORD(RStatement)
@@ -2922,6 +2925,7 @@ VAR err: INTEGER;
 BEGIN
 	NEW(case); StatInit(case, expr);
 	case.elements := NIL;
+	case.else := NIL;
 	IF (expr.type # NIL) & ~(expr.type.id IN {IdInteger, IdChar}) THEN
 		err := ErrCaseExprNotIntOrChar
 	ELSE
@@ -2929,6 +2933,18 @@ BEGIN
 	END
 	RETURN err
 END CaseNew;
+
+PROCEDURE CaseElseSet*(case: Case; else: Statement): INTEGER;
+VAR err: INTEGER;
+BEGIN
+	IF case.else # NIL THEN
+		err := ErrCaseElseAlreadyExist
+	ELSE
+		case.else := else;
+		err := ErrNo
+	END
+	RETURN err
+END CaseElseSet;
 
 PROCEDURE CaseRangeSearch*(case: Case; int: INTEGER): INTEGER;
 VAR e: CaseElement;
@@ -3043,6 +3059,7 @@ PROCEDURE CaseRangeListAdd*(case: Case; first, new: CaseLabel): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	ASSERT(new.next = NIL);
+	ASSERT(case.else = NIL);
 	IF (case.expr.type.id # new.id)
 	 & ~((case.expr.type.id IN {IdInteger, IdByte})
 	   & (new.id IN {IdInteger, IdByte})
@@ -3085,6 +3102,7 @@ PROCEDURE CaseElementAdd*(case: Case; elem: CaseElement): INTEGER;
 VAR err: INTEGER;
 	last: CaseElement;
 BEGIN
+	ASSERT(case.else = NIL);
 	IF case.elements = NIL THEN
 		case.elements := elem
 	ELSE

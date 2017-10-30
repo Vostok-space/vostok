@@ -2060,7 +2060,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				Name(gen, decl);
 				Text.Str(gen, "_len");
 				Text.Int(gen, i);
-				Text.Data(gen, ")]", ORD(gen.opt.vlaMark), 1 + ORD(gen.opt.vlaMark));
+				Text.Data(gen, ")]", ORD(gen.opt.vlaMark), 2 - ORD(gen.opt.vlaMark));
 				t := t.type;
 				INC(i)
 			UNTIL t.id # Ast.IdArray
@@ -3179,7 +3179,7 @@ BEGIN
 		gen.opt.records := r.ext(RecExt).next;
 		r.ext(RecExt).next := NIL;
 
-		IF (r.base # NIL) & r.needTag THEN
+		IF (r.base # NIL) & (r.needTag OR ~gen.opt.skipUnusedTag) THEN
 			Text.Str(gen, "o7c_tag_init(");
 			GlobalName(gen, r);
 			Text.Str(gen, "_tag, ");
