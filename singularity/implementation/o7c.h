@@ -64,12 +64,16 @@
 #endif
 
 #if O7C_VAR_INIT == O7C_VAR_INIT_UNDEF
-#	define O7C_INT_UNDEF  INT_MIN
+#	define O7C_INT_UNDEF  (-1 - O7C_INT_MAX)
+#	define O7C_LONG_UNDEF (-1 - O7C_LONG_MAX)
 #	define O7C_DBL_UNDEF  o7c_dbl_undef()
+#	define O7C_FLT_UNDEF  o7c_flt_undef()
 #	define O7C_BOOL_UNDEF 0xFF
 #else
 #	define O7C_INT_UNDEF  0
+#	define O7C_LONG_UNDEF 0
 #	define O7C_DBL_UNDEF  0.0
+#	define O7C_FLT_UNDEF  0.0f
 #	define O7C_BOOL_UNDEF (0>1)
 #endif
 
@@ -95,12 +99,37 @@ typedef char unsigned o7c_char;
 
 #if defined(O7C_INT_T)
 	typedef O7C_INT_T o7c_int_t;
-#elif INT_MAX >= 2147483647
-	typedef int o7c_int_t;
-#elif LONG_MAX >= 2147483647
-	typedef long o7c_int_t;
+#	if !defined(O7C_INT_MAX)
+#		error
+#	endif
 #else
-#	error
+	#define O7C_INT_MAX 2147483647
+#	if INT_MAX    >= O7C_INT_MAX
+		typedef int   o7c_int_t;
+#	elif LONG_MAX >= O7C_INT_MAX
+		typedef long  o7c_int_t;
+#	else
+#		error
+#	endif
+#endif
+
+#if defined(O7C_LONG_T)
+	typedef O7C_LONG_T             o7c_long_t;
+	typedef O7C_ULONG_T            o7c_ulong_t;
+#	if !defined(O7C_LONG_MAX)
+#		error
+#	endif
+#else
+#	define O7C_LONG_MAX 9223372036854775807
+#	if LONG_MAX    >= O7C_LONG_MAX
+		typedef long               o7c_long_t;
+		typedef long unsigned      o7c_ulong_t;
+#	elif LLONG_MAX >= O7C_LONG_MAX
+		typedef long long          o7c_long_t;
+		typedef long long unsigned o7c_ulong_t;
+#	else
+#		error
+#	endif
 #endif
 
 #define O7C_MEM_MAN_NOFREE  0
@@ -196,7 +225,7 @@ O7C_INLINE void o7c_gc_init(void) O7C_ATTR_ALWAYS_INLINE;
 #if defined(O7C_CHECK_NULL)
 	enum { O7C_CHECK_NIL = O7C_CHECK_NULL };
 #else
-	enum { O7C_CHECK_NIL = 1};
+	enum { O7C_CHECK_NIL = 1 };
 #endif
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
@@ -324,6 +353,33 @@ double o7c_dbl(double d) {
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
+double o7c_flt_undef(void) {
+	float undef;
+	if (sizeof(unsigned) == sizeof(float)) {
+		*(unsigned *)&undef = 0x7FFFFFFF;
+	} else {
+		*(unsigned long *)&undef = 0x7FFFFFFF;
+	}
+	return undef;
+}
+
+extern float* o7c_floats_undef(int len, float array[O7C_VLA(len)]);
+#define O7C_FLOATS_UNDEF(array) \
+	o7c_floats_undef(sizeof(array) / sizeof(float), (float *)(array))
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+float o7c_flt(float d) {
+	if (!O7C_UNDEF) {
+		;
+	} else if (sizeof(unsigned) == sizeof(float)) {
+		assert(*(unsigned *)&d != 0x7FFFFFFF);
+	} else {
+		assert(*(unsigned long *)&d != 0x7FFFFFFF);
+	}
+	return d;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_fadd(double a1, double a2) {
 	return o7c_dbl(a1) + o7c_dbl(a2);
 }
@@ -347,6 +403,29 @@ double o7c_fdiv(double n, double d) {
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
+float o7c_faddf(float a1, float a2) {
+	return o7c_flt(a1) + o7c_flt(a2);
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+float o7c_fsubf(float m, float s) {
+	return o7c_flt(m) - o7c_flt(s);
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+float o7c_fmulf(float m1, float m2) {
+	return o7c_flt(m1) * o7c_flt(m2);
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+float o7c_fdivf(float n, float d) {
+	if (O7C_FLOAT_DIV_ZERO) {
+		assert(d != 0.0f);
+	}
+	return o7c_flt(n) / o7c_flt(d);
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
 o7c_bool o7c_int_inited(int i) {
 	return i >= -INT_MAX;
 }
@@ -362,6 +441,23 @@ int o7c_int(int i) {
 extern int* o7c_ints_undef(int len, int array[O7C_VLA(len)]);
 #define O7C_INTS_UNDEF(array) \
 	o7c_ints_undef((int)(sizeof(array) / (sizeof(int))), (int *)(array))
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+o7c_bool o7c_long_inited(o7c_long_t i) {
+	return i >= -O7C_LONG_MAX;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+o7c_long_t o7c_long(o7c_long_t i) {
+	if (O7C_UNDEF) {
+		assert(o7c_long_inited(i));
+	}
+	return i;
+}
+
+extern o7c_long_t* o7c_longs_undef(int len, o7c_long_t array[O7C_VLA(len)]);
+#define O7C_LONGS_UNDEF(array) \
+	o7c_longs_undef((int)(sizeof(array) / (sizeof(int))), (o7c_long_t *)(array))
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_add(int a1, int a2) {
@@ -460,6 +556,27 @@ int o7c_cmp(int a, int b) {
 	} else {
 		if (O7C_UNDEF) {
 			assert(o7c_int_inited(b));
+		}
+		if (a == b) {
+			cmp = 0;
+		} else {
+			cmp = 1;
+		}
+	}
+	return cmp;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+int o7c_lcmp(o7c_long_t a, o7c_long_t b) {
+	int cmp;
+	if (a < b) {
+		if (O7C_UNDEF) {
+			assert(o7c_long_inited(a));
+		}
+		cmp = -1;
+	} else {
+		if (O7C_UNDEF) {
+			assert(o7c_long_inited(b));
 		}
 		if (a == b) {
 			cmp = 0;
@@ -625,6 +742,12 @@ o7c_bool o7c_in(int n, unsigned set) {
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 char unsigned o7c_byte(int v) {
 	assert((unsigned)v <= 255);
+	return (char unsigned)v;
+}
+
+O7C_ATTR_CONST O7C_ALWAYS_INLINE
+char unsigned o7c_lbyte(o7c_long_t v) {
+	assert((o7c_ulong_t)v <= 255);
 	return (char unsigned)v;
 }
 

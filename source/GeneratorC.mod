@@ -827,6 +827,8 @@ BEGIN
 			Text.Str(gen, "o7c_bl(")
 		| Ast.IdInteger:
 			Text.Str(gen, "o7c_int(")
+		| Ast.IdLongInt:
+			Text.Str(gen, "o7c_long(")
 		| Ast.IdReal:
 			Text.Str(gen, "o7c_dbl(")
 		END;
@@ -990,6 +992,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			  Scanner.Abs:
 				IF call.type.id = Ast.IdInteger THEN
 					Text.Str(gen, "abs(")
+				ELSIF call.type.id = Ast.IdLongInt THEN
+					Text.Str(gen, "o7c_labs(")
 				ELSE
 					Text.Str(gen, "fabs(")
 				END;
@@ -1083,10 +1087,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			END ArrayDeep;
 		BEGIN
 			t := fp.type;
-			IF (t.id = Ast.IdByte) & (p.expr.type.id = Ast.IdInteger)
+			IF (t.id = Ast.IdByte) & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 			 & gen.opt.checkArith & (p.expr.value = NIL)
 			THEN
-				Text.Str(gen, "o7c_byte(");
+				IF p.expr.type.id = Ast.IdInteger THEN
+					Text.Str(gen, "o7c_byte(");
+				ELSE
+					Text.Str(gen, "o7c_lbyte(")
+				END;
 				Expression(gen, p.expr);
 				Text.Str(gen, ")")
 			ELSE
@@ -1254,9 +1262,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, "0")
 			ELSIF (gen.opt.varInit = VarInitUndefined)
 			    & (rel.value = NIL)
-			    & (rel.exprs[0].type.id = Ast.IdInteger) (* TODO *)
+			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
 			THEN
-				Text.Str(gen, "o7c_cmp(");
+				IF rel.exprs[0].type.id  = Ast.IdInteger THEN
+					Text.Str(gen, "o7c_cmp(")
+				ELSE
+					Text.Str(gen, "o7c_lcmp(")
+				END;
 				Expr(gen, rel.exprs[0], -rel.distance);
 				Text.Str(gen, ", ");
 				Expr(gen, rel.exprs[1], rel.distance);
@@ -1354,6 +1366,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				DEC(i)
 			END
+		ELSIF arr[0].type.id = Ast.IdLongInt THEN
+			WHILE i > 0 DO
+				CASE arr[i].add OF
+				  Scanner.Minus:
+					Text.Str(gen, "o7c_lsub(")
+				| Scanner.Plus:
+					Text.Str(gen, "o7c_ladd(")
+				END;
+				DEC(i)
+			END
 		ELSE ASSERT(arr[0].type.id = Ast.IdReal);
 			WHILE i > 0 DO
 				CASE arr[i].add OF
@@ -1368,6 +1390,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		IF arr[0].add = Scanner.Minus THEN
 			IF arr[0].type.id = Ast.IdInteger THEN
 				Text.Str(gen, "o7c_sub(0, ")
+			ELSIF arr[0].type.id = Ast.IdLongInt THEN
+				Text.Str(gen, "o7c_lsub(0, ")
 			ELSE
 				Text.Str(gen, "o7c_fsub(0, ")
 			END;
@@ -1541,6 +1565,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END
 	END ExprInt;
 
+	PROCEDURE ExprLongInt(VAR gen: Generator; int: INTEGER);
+	BEGIN
+		ASSERT(FALSE);
+		IF int >= 0 THEN
+			Text.Int(gen, int)
+		ELSE
+			Text.Str(gen, "(-");
+			Text.Int(gen, -int);
+			Text.Str(gen, ")")
+		END
+	END ExprLongInt;
+
 	PROCEDURE Set(VAR gen: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR gen: Generator; set: Ast.ExprSet);
 		BEGIN
@@ -1603,9 +1639,11 @@ BEGIN
 	CASE expr.id OF
 	  Ast.IdInteger:
 		ExprInt(gen, expr(Ast.ExprInteger).int)
+	| Ast.IdLongInt:
+		ExprLongInt(gen, expr(Ast.ExprInteger).int)
 	| Ast.IdBoolean:
 		Boolean(gen, expr(Ast.ExprBoolean))
-	| Ast.IdReal:
+	| Ast.IdReal, Ast.IdReal32:
 		IF Strings.IsDefined(expr(Ast.ExprReal).str)
 		THEN	Text.String(gen, expr(Ast.ExprReal).str)
 		ELSE	Text.Real(gen, expr(Ast.ExprReal).real)
@@ -2072,8 +2110,12 @@ BEGIN
 			CASE typ.id OF
 			  Ast.IdInteger:
 				Simple(gen, "int ")
+			| Ast.IdLongInt:
+				Simple(gen, "o7c_long_t ")
 			| Ast.IdSet:
 				Simple(gen, "unsigned ")
+			| Ast.IdLongSet:
+				Simple(gen, "o7c_set64_t ")
 			| Ast.IdBoolean:
 				IF (gen.opt.std >= IsoC99)
 				 & (gen.opt.varInit # VarInitUndefined)
@@ -2086,6 +2128,8 @@ BEGIN
 				Simple(gen, "o7c_char ")
 			| Ast.IdReal:
 				Simple(gen, "double ")
+			| Ast.IdReal32:
+				Simple(gen, "float ")
 			| Ast.IdPointer:
 				Text.Str(gen, "*");
 				MemWriteInvert(gen.out(PMemoryOut)^);
@@ -2679,8 +2723,12 @@ BEGIN
 	CASE typ.id OF
 	  Ast.IdInteger:
 		Text.Str(gen, "int")
+	| Ast.IdLongInt:
+		Text.Str(gen, "o7c_long_t")
 	| Ast.IdSet:
 		Text.Str(gen, "unsigned")
+	| Ast.IdLongSet:
+		Text.Str(gen, "o7c_set64_t")
 	| Ast.IdBoolean:
 		IF (gen.opt.std >= IsoC99)
 		 & (gen.opt.varInit # VarInitUndefined)
@@ -2693,6 +2741,8 @@ BEGIN
 		Text.Str(gen, "o7c_char")
 	| Ast.IdReal:
 		Text.Str(gen, "double")
+	| Ast.IdReal32:
+		Text.Str(gen, "float")
 	| Ast.IdPointer, Ast.IdProcType:
 		GlobalName(gen, typ)
 	END

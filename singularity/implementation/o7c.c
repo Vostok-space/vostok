@@ -95,10 +95,26 @@ extern double* o7c_doubles_undef(int len, double array[O7C_VLA(len)]) {
 	return array;
 }
 
+extern float* o7c_floats_undef(int len, float array[O7C_VLA(len)]) {
+	int i;
+	for (i = 0; i < len; i += 1) {
+		array[i] = O7C_FLT_UNDEF;
+	}
+	return array;
+}
+
 extern int* o7c_ints_undef(int len, int array[O7C_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7C_INT_UNDEF;
+	}
+	return array;
+}
+
+extern o7c_long_t* o7c_longs_undef(int len, o7c_long_t array[O7C_VLA(len)]) {
+	int i;
+	for (i = 0; i < len; i += 1) {
+		array[i] = O7C_LONG_UNDEF;
 	}
 	return array;
 }

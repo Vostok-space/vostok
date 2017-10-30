@@ -143,20 +143,23 @@ CONST
 
 	NoId*                 =-1;
 	IdInteger*            = 0;
-	IdBoolean*            = 1;
-	IdByte*               = 2;
-	IdChar*               = 3;
-	IdReal*               = 4;
-	IdSet*                = 5;
-	IdPointer*            = 6;
-	PredefinedTypesCount* = 7;
+	IdLongInt*            = 1;
+	IdBoolean*            = 2;
+	IdByte*               = 3;
+	IdChar*               = 4;
+	IdReal*               = 5;
+	IdReal32*             = 6;
+	IdSet*                = 7;
+	IdLongSet*            = 8;
+	IdPointer*            = 9;
+	PredefinedTypesCount* = 10;
 
-	IdArray*            = 7;
-	IdRecord*           = 8;
-	IdRecordForward*    = 9;
-	IdProcType*         = 10;
-	IdNamed*            = 11;
-	IdString*           = 12;
+	IdArray*            = 10;
+	IdRecord*           = 11;
+	IdRecordForward*    = 12;
+	IdProcType*         = 13;
+	IdNamed*            = 14;
+	IdString*           = 15;
 
 	IdDesignator*       = 20;
 	IdRelation*         = 21;
@@ -3143,15 +3146,8 @@ VAR tp: ProcType;
 
 	PROCEDURE TypeNew(s, t: INTEGER);
 	VAR td: Type;
-		tb: Byte;
 	BEGIN
-		IF TRUE (* TODO *) OR (s # Scanner.Byte) THEN
-			NEW(td)
-		ELSE
-			NEW(tb);
-			td := tb
-		END;
-		TInit(td, t);
+		NEW(td); TInit(td, t);
 
 		predefined[s - Scanner.PredefinedFirst] := td;
 		types[t] := td
@@ -3172,10 +3168,13 @@ VAR tp: ProcType;
 BEGIN
 	TypeNew(Scanner.Byte, IdByte);
 	TypeNew(Scanner.Integer, IdInteger);
+	TypeNew(Scanner.LongInt, IdLongInt);
 	TypeNew(Scanner.Char, IdChar);
 	TypeNew(Scanner.Set, IdSet);
+	TypeNew(Scanner.LongSet, IdLongSet);
 	TypeNew(Scanner.Boolean, IdBoolean);
 	TypeNew(Scanner.Real, IdReal);
+	TypeNew(Scanner.Real32, IdReal32);
 	NEW(types[IdPointer]); NodeInit(types[IdPointer]^, IdPointer);
 	DeclInit(types[IdPointer], NIL);
 
