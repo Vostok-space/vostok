@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #if !defined(HEADER_GUARD_Int64)
-#define HEADER_GUARD_Int64
+#define HEADER_GUARD_Int64 1
 
 #if !O7C_GNUC_BUILTIN_OVERFLOW
 #	define O7C_GNUC_BUILTIN_OVERFLOW (0 > 1)
@@ -55,7 +55,7 @@ O7C_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, int high, int low) {
 }
 
 O7C_ALWAYS_INLINE void Int64_ToInt(int *i, Int64_Type v) {
-	o7c_bool ov;
+	o7c_c_bool ov;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		ov = __builtin_add_overflow(*(Int64_t *)v, 0, i);
 		assert(!ov);
@@ -70,7 +70,7 @@ O7C_ALWAYS_INLINE void Int64_ToInt(int *i, Int64_Type v) {
 O7C_ALWAYS_INLINE void
 	Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2)
 {
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_add_overflow(*(Int64_t *)a1, *(Int64_t *)a2,
 		                                  (Int64_t *)sum);
@@ -90,7 +90,7 @@ O7C_ALWAYS_INLINE void
 O7C_ALWAYS_INLINE void
 	Int64_Sub(Int64_Type diff, Int64_Type m, Int64_Type s)
 {
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_sub_overflow(*(Int64_t *)m, *(Int64_t *)s,
 		                                  (Int64_t *)diff);
@@ -110,7 +110,7 @@ O7C_ALWAYS_INLINE void
 O7C_ALWAYS_INLINE void
 	Int64_Mul(Int64_Type prod, Int64_Type m1, Int64_Type m2)
 {
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_mul_overflow(*(Int64_t *)m1, *(Int64_t *)m2,
 		                                  (Int64_t *)prod);

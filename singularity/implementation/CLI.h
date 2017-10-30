@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #if !defined(HEADER_GUARD_CLI)
-#define HEADER_GUARD_CLI
+#define HEADER_GUARD_CLI 1
 
 extern int CLI_count;
 

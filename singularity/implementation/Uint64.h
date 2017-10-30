@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #if !defined(HEADER_GUARD_Int64)
-#define HEADER_GUARD_Int64
+#define HEADER_GUARD_Int64 1
 
 #if !O7C_GNUC_BUILTIN_OVERFLOW
 #	define O7C_GNUC_BUILTIN_OVERFLOW (0 > 1)

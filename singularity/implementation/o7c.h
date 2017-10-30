@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #if !defined(HEADER_GUARD_o7c)
-#define HEADER_GUARD_o7c
+#define HEADER_GUARD_o7c 1
 
 #include <stdlib.h>
 #include <stddef.h>

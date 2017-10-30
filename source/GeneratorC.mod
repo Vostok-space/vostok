@@ -306,6 +306,10 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		RETURN o
 	END CLib;
 
+	PROCEDURE CMacros(n: Strings.String): BOOLEAN;
+		RETURN Eq(n, "unix") OR Eq(n, "linux")
+	END CMacros;
+
 	PROCEDURE CppKeyWord(n: Strings.String): BOOLEAN;
 	VAR o: BOOLEAN;
 	BEGIN
@@ -411,6 +415,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 	    OR ("a" <= n.block.s[n.ofs]) & (n.block.s[n.ofs] <= "z")
 	    &  (CKeyWord(n)
 	     OR CLib(n)
+	     OR CMacros(n)
 	     OR CppKeyWord(n)
 	     OR JsKeyWord(n)
 	       )
@@ -3232,7 +3237,8 @@ VAR out: MOut;
 		Text.StrLn(gen, ")");
 		Text.Str(gen, "#define HEADER_GUARD_");
 		Text.String(gen, gen.module.name);
-		Text.Ln(gen); Text.Ln(gen)
+		Text.StrLn(gen, " 1");
+		Text.Ln(gen)
 	END HeaderGuard;
 
 	PROCEDURE ModuleInit(VAR interf, impl: Generator; module: Ast.Module);

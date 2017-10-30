@@ -14,7 +14,7 @@
  */
 
 #if !defined(HEADER_GUARD_OsExec)
-#define HEADER_GUARD_OsExec
+#define HEADER_GUARD_OsExec 1
 
 #define OsExec_Ok_cnst 0
 
