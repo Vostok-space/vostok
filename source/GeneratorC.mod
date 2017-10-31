@@ -307,7 +307,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 	END CLib;
 
 	PROCEDURE CMacros(n: Strings.String): BOOLEAN;
-		RETURN Eq(n, "unix") OR Eq(n, "linux")
+		RETURN Eq(n, "unix") OR Eq(n, "linux") OR Eq(n, "BSD")
 	END CMacros;
 
 	PROCEDURE CppKeyWord(n: Strings.String): BOOLEAN;
