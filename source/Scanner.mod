@@ -237,9 +237,9 @@ BEGIN
 	END
 END FillBuf;
 
+(* TODO убрать*)
 PROCEDURE ScanChar(VAR s: Scanner): CHAR;
-VAR
-	ch: CHAR;
+VAR ch: CHAR;
 BEGIN
 	INC(s.ind);
 	ch := s.buf[s.ind];
@@ -249,6 +249,16 @@ BEGIN
 	END
 	RETURN ch
 END ScanChar;
+
+PROCEDURE Lookup(VAR s: Scanner): CHAR;
+VAR i: INTEGER;
+BEGIN
+	i := s.ind + 1;
+	IF s.buf[i] = NewPage THEN
+		FillBuf(s.buf, i, s.in^)
+	END
+	RETURN s.buf[i]
+END Lookup;
 
 PROCEDURE ScanChars(VAR s: Scanner; suit: Suit);
 BEGIN
@@ -404,7 +414,7 @@ BEGIN
 	lex := Number;
 	ScanChars(s, IsDigit);
 	ch := s.buf[s.ind];
-	s.isReal := ch = ".";
+	s.isReal := (ch = ".") & (Lookup(s) # ".");
 	IF s.isReal THEN
 		INC(s.ind);
 		ValReal(s, lex)
