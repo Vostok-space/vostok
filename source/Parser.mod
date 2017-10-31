@@ -342,7 +342,7 @@ VAR par: Ast.Parameter;
 BEGIN
 	ASSERT(p.l = Scanner.Brace1Open);
 	Scan(p);
-	IF e.designator.type IS Ast.ProcType THEN
+	IF (e.designator.type # NIL) & (e.designator.type IS Ast.ProcType) THEN
 		fp := e.designator.type(Ast.ProcType).params
 	ELSE
 		fp := NIL
