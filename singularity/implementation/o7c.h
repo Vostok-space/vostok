@@ -331,9 +331,11 @@ O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_dbl_undef(void) {
 	double undef = 0.0;
 	if (sizeof(unsigned) == sizeof(double) / 2) {
-		((unsigned *)&undef)[1] = 0x7FFFFFFF;
+		unsigned const u = 0x7FFFFFFFul;
+		memcpy((unsigned *)&undef + 1, &u, sizeof(u));
 	} else {
-		((unsigned long *)&undef)[1] = 0x7FFFFFFF;
+		unsigned long const u = 0x7FFFFFFFul;
+		memcpy((unsigned long *)&undef + 1, &u, sizeof(u));
 	}
 	return undef;
 }
@@ -347,9 +349,13 @@ double o7c_dbl(double d) {
 	if (!O7C_UNDEF) {
 		;
 	} else if (sizeof(unsigned) == sizeof(double) / 2) {
-		assert(((unsigned *)&d)[1] != 0x7FFFFFFF);
+		unsigned u;
+		memcpy(&u, (unsigned *)&d + 1, sizeof(u));
+		assert(u != 0x7FFFFFFFul);
 	} else {
-		assert(((unsigned long *)&d)[1] != 0x7FFFFFFF);
+		unsigned long u;
+		memcpy(&u, (unsigned long *)&d + 1, sizeof(u));
+		assert(u != 0x7FFFFFFFul);
 	}
 	return d;
 }
@@ -358,9 +364,11 @@ O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_flt_undef(void) {
 	float undef;
 	if (sizeof(unsigned) == sizeof(float)) {
-		*(unsigned *)&undef = 0x7FFFFFFF;
+		unsigned const u = 0x7FFFFFFFul;
+		memcpy(&undef, &u, sizeof(u));
 	} else {
-		*(unsigned long *)&undef = 0x7FFFFFFF;
+		unsigned long const u = 0x7FFFFFFFul;
+		memcpy(&undef, &u, sizeof(u));
 	}
 	return undef;
 }
@@ -373,10 +381,14 @@ O7C_ATTR_CONST O7C_ALWAYS_INLINE
 float o7c_flt(float d) {
 	if (!O7C_UNDEF) {
 		;
-	} else if (sizeof(unsigned) == sizeof(float)) {
-		assert(*(unsigned *)&d != 0x7FFFFFFF);
+	} else if (sizeof(unsigned) == sizeof(double) / 2) {
+		unsigned u;
+		memcpy(&u, &d, sizeof(u));
+		assert(u != 0x7FFFFFFFul);
 	} else {
-		assert(*(unsigned long *)&d != 0x7FFFFFFF);
+		unsigned long u;
+		memcpy(&u, &d, sizeof(u));
+		assert(u != 0x7FFFFFFFul);
 	}
 	return d;
 }
@@ -399,19 +411,45 @@ char unsigned o7c_chr(int v) {
 	return (char unsigned)v;
 }
 
+#if (__STDC_VERSION__ >= 199901L)
+/* TODO в вычислительных функциях можно будет убрать o7c_dbl после проверки*/
+	O7C_ATTR_CONST O7C_ALWAYS_INLINE
+	double o7c_dbl_finite(double v) {
+		assert(isfinite(v));
+		return v;
+	}
+
+	O7C_ATTR_CONST O7C_ALWAYS_INLINE
+	float o7c_flt_finite(float v) {
+		assert(isfinite(v));
+		return v;
+	}
+#else
+	/* TODO */
+	O7C_ATTR_CONST O7C_ALWAYS_INLINE
+	double o7c_dbl_finite(double v) {
+		return v;
+	}
+
+	O7C_ATTR_CONST O7C_ALWAYS_INLINE
+	float o7c_flt_finite(float v) {
+		return v;
+	}
+#endif
+
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_fadd(double a1, double a2) {
-	return o7c_dbl(a1) + o7c_dbl(a2);
+	return o7c_dbl_finite(o7c_dbl(a1) + o7c_dbl(a2));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_fsub(double m, double s) {
-	return o7c_dbl(m) - o7c_dbl(s);
+	return o7c_dbl_finite(o7c_dbl(m) - o7c_dbl(s));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 double o7c_fmul(double m1, double m2) {
-	return o7c_dbl(m1) * o7c_dbl(m2);
+	return o7c_dbl_finite(o7c_dbl(m1) * o7c_dbl(m2));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
@@ -419,22 +457,22 @@ double o7c_fdiv(double n, double d) {
 	if (O7C_FLOAT_DIV_ZERO) {
 		assert(d != 0.0);
 	}
-	return o7c_dbl(n) / o7c_dbl(d);
+	return o7c_dbl_finite(o7c_dbl(n) / o7c_dbl(d));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 float o7c_faddf(float a1, float a2) {
-	return o7c_flt(a1) + o7c_flt(a2);
+	return o7c_flt_finite(o7c_flt(a1) + o7c_flt(a2));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 float o7c_fsubf(float m, float s) {
-	return o7c_flt(m) - o7c_flt(s);
+	return o7c_flt_finite(o7c_flt(m) - o7c_flt(s));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 float o7c_fmulf(float m1, float m2) {
-	return o7c_flt(m1) * o7c_flt(m2);
+	return o7c_flt_finite(o7c_flt(m1) * o7c_flt(m2));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
@@ -442,7 +480,7 @@ float o7c_fdivf(float n, float d) {
 	if (O7C_FLOAT_DIV_ZERO) {
 		assert(d != 0.0f);
 	}
-	return o7c_flt(n) / o7c_flt(d);
+	return o7c_flt_finite(o7c_flt(n) / o7c_flt(d));
 }
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
@@ -482,7 +520,7 @@ extern o7c_long_t* o7c_longs_undef(int len, o7c_long_t array[O7C_VLA(len)]);
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_add(int a1, int a2) {
 	int s;
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_sadd_overflow(o7c_int(a1), o7c_int(a2), &s);
 		assert(!overflow && s >= -INT_MAX);
@@ -505,7 +543,7 @@ int o7c_add(int a1, int a2) {
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_sub(int m, int s) {
 	int d;
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_ssub_overflow(o7c_int(m), o7c_int(s), &d);
 		assert(!overflow && d >= -INT_MAX);
@@ -528,7 +566,7 @@ int o7c_sub(int m, int s) {
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 int o7c_mul(int m1, int m2) {
 	int p;
-	o7c_bool overflow;
+	o7c_c_bool overflow;
 	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_smul_overflow(o7c_int(m1), o7c_int(m2), &p);
 		assert(!overflow && p >= -INT_MAX);

@@ -28,6 +28,7 @@ char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
 
 extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
 	double undefined;
+	float undefinedf;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
 	assert(INT_MIN < -INT_MAX);
@@ -36,6 +37,8 @@ extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
 		|| (sizeof(long) * 2 == sizeof(double)));
 	undefined = o7c_dbl_undef();
 	assert(undefined != undefined);
+	undefinedf = o7c_flt_undef();
+	assert(undefinedf != undefinedf);
 
 	/* для случая использования int в качестве INTEGER */
 	assert(INT_MAX >= 2147483647);

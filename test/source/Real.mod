@@ -29,9 +29,26 @@ BEGIN
 	ASSERT(n = 57)
 END Pack;
 
+PROCEDURE Fail*;
+VAR a, b, c, d, e: REAL;
+BEGIN
+	b := 0.0;
+	c := 0.1;
+	a := b / c;
+	Out.Real(a, 0); Out.Ln;
+	(*b := 0.0 / 0.0;*)
+
+	d := 1.0 / 1.0E-30;
+	IF FALSE THEN
+		d := 1.0;
+		e := 1.0
+	END;
+	a := d * e;
+	Out.Real(a, 0); Out.Ln
+END Fail;
+
 PROCEDURE Go*;
 VAR a, b, c: REAL;
-
 BEGIN
 	a := 0.1;
 	b := 0.2;
