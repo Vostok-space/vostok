@@ -428,11 +428,13 @@ char unsigned o7c_chr(int v) {
 	/* TODO */
 	O7C_ATTR_CONST O7C_ALWAYS_INLINE
 	double o7c_dbl_finite(double v) {
+		assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
 		return v;
 	}
 
 	O7C_ATTR_CONST O7C_ALWAYS_INLINE
 	float o7c_flt_finite(float v) {
+		assert((v == v) && (-FLT_MAX <= v) && (v <= FLT_MAX));
 		return v;
 	}
 #endif
