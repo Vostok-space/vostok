@@ -25,7 +25,7 @@ TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.m
 
 result/o7c : $(SRC) $(O7CI)
 	@mkdir -p result
-	$(O7CI) to-c Translator.Start result -m source -m library -i $(SING_O7)
+	$(O7CI) to-c Translator.Start result -infr . -m source
 	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
 result/bs-o7c:
@@ -34,9 +34,9 @@ result/bs-o7c:
 
 result/test/% : always
 	@mkdir -p result/test
-	echo "extern int osrand_useless;" > result/test/OsRand.c
-	echo "extern int out_useless;" > result/test/Out.c
-	$(O7C) to-c $(@F).Go result/test -i $(SING_O7) -m library -m test/source
+	@echo "extern int osrand_useless;" > result/test/OsRand.c
+	@echo "extern int out_useless;" > result/test/Out.c
+	$(O7C) to-c $(@F).Go result/test -infr . -m test/source
 	$(CC) -g $(SANITIZE_TEST) -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE $@.c result/test/OsRand.c result/test/Out.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
@@ -44,7 +44,7 @@ test : result/o7c $(TESTS)
 
 $(SELF)/o7c : $(O7C) $(SRC) Makefile
 	mkdir -p $(SELF)
-	$(O7C) to-c Translator.Start $(SELF) -m source -m library -i $(SING_O7)
+	$(O7C) to-c Translator.Start $(SELF) -infr . -m source
 	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
 
 self : $(SELF)/o7c
@@ -72,11 +72,11 @@ help :
 
 help-en :
 	@echo "Main targets of Makefile:\n\
-	   result/o7c - default target, build translator from bootstrap\n\
+	   result/o7c - default target, build translator by bootstrap\n\
 	   test       - tests by 1st generation translator\n\
 	   self       - build itself then tests\n\
 	   self-full  - build translator by 2nd generation translator then tests\n\
-	   clean      - remove all buile results\n\
+	   clean      - remove all builded results\n\
 	Main variables-options:\n\
 	   CC       - C compiler\n\
 	   SANITIZE - options of gcc-v5 and clang for correctness control\n\
