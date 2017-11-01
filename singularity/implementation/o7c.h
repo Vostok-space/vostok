@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
+#include <float.h>
 
 #if !defined(O7C_INLINE)
 #	if __STDC_VERSION__ >= 199901L
