@@ -66,12 +66,12 @@ END Real;
 
 PROCEDURE Bool*(b: BOOLEAN);
 BEGIN
-	IF state THEN
-		IF b THEN
-			Out.String("TRUE")
-		ELSE
-			Out.String("FALSE")
-		END
+	IF ~state THEN
+		;
+	ELSIF b THEN
+		Out.String("TRUE")
+	ELSE
+		Out.String("FALSE")
 	END
 END Bool;
 

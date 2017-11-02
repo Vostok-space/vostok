@@ -327,6 +327,7 @@ END ParseError;
 
 PROCEDURE Usage*;
 BEGIN
+S("Translator from Oberon-07 to C. 2017");
 S("Usage: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Script OutDir {-m PTM|-i PTI|-infr Infr}");
@@ -335,7 +336,7 @@ S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} -- options");
 S("Script = Call { ; Call } . Call = Module.Procedure[(Parameters)] .");
 S("PTM - Path To directories with Modules for search");
 S("PTI - Path To directories with Interface Modules without real implementation");
-S("PTHC - Path To directories with .H & .C -implementations of interface modules");
+S("PTHC - Path To directories with .h & .c -implementations of interface modules");
 S("Infr - path to infrastructure. '-infr p' is shortening to:");
 S("  -i p/singularity/definition -c p/singularity/implementation -m p/library");
 S("CComp - C Compiler for build generated .c-files")
