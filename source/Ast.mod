@@ -33,6 +33,7 @@ CONST
 	ErrImportLoop*                  = -90;
 	ErrDeclarationNameDuplicate*    = -2;
 	ErrDeclarationNameHide*         = -8;(* TODO *)
+	ErrPredefinedNameHide*          = -101;(* TODO *)
 	ErrMultExprDifferentTypes*      = -3;
 	ErrDivExprDifferentTypes*       = -4;
 	ErrNotBoolInLogicExpr*          = -5;
@@ -136,7 +137,7 @@ CONST
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
 	ErrDeclarationUnused*           = -98;
-                                     (*-99, 100*)
+                                     (*-99, 101*)
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -791,7 +792,7 @@ BEGIN
 END DeclarationLineSearch;
 
 PROCEDURE CheckNameDuplicate(ds: Declarations;
-                             buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                             VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	IF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
@@ -800,13 +801,17 @@ BEGIN
 	    & (DeclarationLineSearch(ds.module, buf, begin, end) # NIL)
 	THEN
 		err := ErrDeclarationNameHide
+	ELSIF ds.module.errorHide
+	    & (Scanner.Ident # Scanner.CheckPredefined(buf, begin, end))
+	THEN
+		err := ErrPredefinedNameHide
 	ELSE
 		err := ErrNo
 	END
 	RETURN err
 END CheckNameDuplicate;
 
-PROCEDURE ConstAdd*(ds: Declarations; buf: ARRAY OF CHAR; begin, end: INTEGER)
+PROCEDURE ConstAdd*(ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGER)
                    : INTEGER;
 VAR c: Const;
 	err: INTEGER;
@@ -840,7 +845,7 @@ BEGIN
 END ConstSetExpression;
 
 PROCEDURE TypeAdd*(ds: Declarations;
-                   buf: ARRAY OF CHAR; begin, end: INTEGER;
+                   VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
                    VAR td: Type): INTEGER;
 VAR d: Declaration;
 	err: INTEGER;
@@ -867,7 +872,11 @@ BEGIN
 	OR (d = NIL) & ((ds.up = NIL)
 	             OR (DeclarationLineSearch(ds.module, buf, begin, end) = NIL))
 	THEN
-		err := ErrNo
+		IF Scanner.Ident = Scanner.CheckPredefined(buf, begin, end) THEN
+			err := ErrNo
+		ELSE
+			err := ErrPredefinedNameHide
+		END
 	ELSIF d = NIL THEN
 		err := ErrDeclarationNameHide
 	ELSE
@@ -911,7 +920,7 @@ BEGIN
 END ChecklessVarAdd;
 
 PROCEDURE VarAdd*(ds: Declarations;
-                  buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                  VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR v: Var;
 	err: INTEGER;
 BEGIN
@@ -973,7 +982,7 @@ BEGIN
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
-                    buf: ARRAY OF CHAR; begin, end: INTEGER;
+                    VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
                     access: SET): INTEGER;
 VAR err: INTEGER;
 BEGIN
@@ -983,6 +992,10 @@ BEGIN
 	    & (DeclarationLineSearch(module, buf, begin, end) # NIL)
 	THEN
 		err := ErrDeclarationNameHide
+	ELSIF module.errorHide
+	    & (Scanner.Ident # Scanner.CheckPredefined(buf, begin, end))
+	THEN
+		err := ErrPredefinedNameHide
 	ELSE
 		err := ErrNo
 	END;
@@ -2461,12 +2474,15 @@ BEGIN
 			IF des.type IS ProcType THEN
 				t := des.type.type;
 				IF (t # NIL) # func THEN
-					err := ErrCallIgnoredReturn + ORD(func)
+					err := ErrCallIgnoredReturn + ORD(func);
 				END
 			ELSE
 				err := ErrCallNotProc
 			END
 		END
+	END;
+	IF (t = NIL) & func THEN
+		t := TypeErrorNew()
 	END;
 	NEW(e); ExprInit(e, IdCall, t);
 	e.designator := des;
@@ -2495,7 +2511,7 @@ BEGIN
 END IsVar;
 
 PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
-                        buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                        VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	err := CheckNameDuplicate(ds, buf, begin, end);

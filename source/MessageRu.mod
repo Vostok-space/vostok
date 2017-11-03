@@ -42,6 +42,8 @@ BEGIN
 		O("Повторное объявление имени в той же области видимости")
 	| Ast.ErrDeclarationNameHide:
 		O("Имя объявления затеняет объявление из модуля")
+	| Ast.ErrPredefinedNameHide:
+		O("Имя объявления затеняет предопределённое имя")
 	| Ast.ErrMultExprDifferentTypes:
 		O("Типы подвыражений в умножении несовместимы")
 	| Ast.ErrDivExprDifferentTypes:

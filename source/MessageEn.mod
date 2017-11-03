@@ -42,6 +42,8 @@ BEGIN
 		O("Redeclaration of name in the same scope")
 	| Ast.ErrDeclarationNameHide:
 		O("Declaration's name shadow module's declaration")
+	| Ast.ErrPredefinedNameHide:
+		O("Declaration's name shadow predefined identifier")
 	| Ast.ErrMultExprDifferentTypes:
 		O("Subexpressions types are incompatible")
 	| Ast.ErrDivExprDifferentTypes:
