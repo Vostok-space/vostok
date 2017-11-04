@@ -73,9 +73,9 @@ BEGIN
 	| Ast.ErrRelationExprDifferenTypes:
 		O("Типы подвыражений в сравнении не совпадают")
 	| Ast.ErrExprInWrongTypes:
-		O("Ast.ErrExprInWrongTypes")
+		O("Левый член выражения должен быть целочисленным, правый - множеством")
 	| Ast.ErrExprInRightNotSet:
-		O("Ast.ErrExprInRightNotSet")
+		O("Правый член выражения IN должен быть множеством")
 	| Ast.ErrExprInLeftNotInteger:
 		O("Левый член выражения IN должен быть целочисленным")
 	| Ast.ErrRelIncompatibleType:

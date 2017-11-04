@@ -33,17 +33,17 @@ PROCEDURE AstError*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  Ast.ErrImportNameDuplicate:
-		O("Module name already declare in the import list")
+		O("Module's name already declared in the import list")
 	| Ast.ErrImportSelf:
-		O("Module import itself")
+		O("Module imports itself")
 	| Ast.ErrImportLoop:
 		O("Cyclic import of modules is prohibited")
 	| Ast.ErrDeclarationNameDuplicate:
 		O("Redeclaration of name in the same scope")
 	| Ast.ErrDeclarationNameHide:
-		O("Declaration's name shadow module's declaration")
+		O("Declaration's name shadows module's declaration")
 	| Ast.ErrPredefinedNameHide:
-		O("Declaration's name shadow predefined identifier")
+		O("Declaration's name shadows predefined identifier")
 	| Ast.ErrMultExprDifferentTypes:
 		O("Subexpressions types are incompatible")
 	| Ast.ErrDivExprDifferentTypes:
@@ -57,9 +57,9 @@ BEGIN
 	| Ast.ErrNotIntSetElem:
 		O("Set can contain only integers")
 	| Ast.ErrSetElemOutOfRange:
-		O("Item's  value of set out of range - [0 .. 31]")
+		O("Item's value of set is out of range - [0 .. 31]")
 	| Ast.ErrSetLeftElemBiggerRightElem:
-		O("Left item of range bigger then right item")
+		O("Left item of range is bigger then right item")
 	| Ast.ErrSetElemMaxNotConvertToInt:
 		O("Set, which contain 31 can not be converted to integer")
 	| Ast.ErrAddExprDifferenTypes:
@@ -74,15 +74,15 @@ BEGIN
 	| Ast.ErrRelationExprDifferenTypes:
 		O("Subexpressions types in comparison are not compatible")
 	| Ast.ErrExprInWrongTypes:
-		O("Ast.ErrExprInWrongTypes")
+		O("Left subexpression must be integer, right - Set")
 	| Ast.ErrExprInRightNotSet:
-		O("Ast.ErrExprInRightNotSet")
+		O("Right subexpression after IN must be Set")
 	| Ast.ErrExprInLeftNotInteger:
-		O("Left subexpression of IN must be integer")
+		O("Left subexpression before IN must be integer")
 	| Ast.ErrRelIncompatibleType:
 		O("Relation not applicable to such type")
 	| Ast.ErrIsExtTypeNotRecord:
-		O("IS applicable only to records")
+		O("IS applicable only to records and pointers")
 	| Ast.ErrIsExtVarNotRecord:
 		O("Left part of IS be record or pointer to record")
 	| Ast.ErrIsExtMeshupPtrAndRecord:
