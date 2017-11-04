@@ -3,8 +3,10 @@ MODULE Real;
 IMPORT Out;
 
 CONST
+	ac = 1.0E307;
+	bc* = ac;
 
-TYPE
+VAR p1, p2: POINTER TO RECORD END;
 
 PROCEDURE Pack;
 VAR a, b: REAL;
@@ -61,5 +63,7 @@ BEGIN
 END Go;
 
 BEGIN
+	p1 := NIL;
+	p2 := NIL;
 	Out.Open
 END Real.

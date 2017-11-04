@@ -2121,7 +2121,9 @@ BEGIN
 		| Scanner.In:
 			res := v1(ExprInteger).int IN v2(ExprSet).set
 		END;
-		e.value := ExprBooleanGet(res)
+		IF expr1.type.id # IdReal THEN
+			e.value := ExprBooleanGet(res)
+		END
 	END
 	RETURN err
 END ExprRelationNew;
@@ -2180,9 +2182,12 @@ BEGIN
 					term.value(ExprInteger).int * LexToSign(add)
 				)
 			| IdReal:
+				(* из-за отсутствия точности в вычислениях
 				e.value := ExprRealNewByValue(
 					term.value(ExprReal).real * FLT(LexToSign(add))
 				)
+				*)
+				e.value := NIL
 			| IdSet:
 				IF add # Scanner.Minus THEN
 					e.value := ExprSetByValue(term.value(ExprSet).set)
@@ -2252,9 +2257,11 @@ BEGIN
 					err := ErrConstAddOverflow
 				END
 			| IdReal:
+				(* из-за отсутствия точности в вычислениях
 				fullSum.value(ExprReal).real :=
 				    fullSum.value(ExprReal).real
 				  + term.value(ExprReal).real * FLT(LexToSign(add))
+				*)
 			| IdSet:
 				IF add = Scanner.Plus THEN
 					fullSum.value(ExprSet).set :=
@@ -2381,7 +2388,11 @@ BEGIN
 		  IdInteger:
 			Int(res, mult, b, err)
 		| IdReal:
-			Rl(res, mult, b)
+			(* из-за отсутствия точности в вычислениях *)
+			IF FALSE THEN
+				Rl(res, mult, b)
+			END;
+			res.value := NIL
 		| IdBoolean:
 			IF res.value(ExprBoolean).bool & ~b.value(ExprBoolean).bool THEN
 				res.value := b.value
@@ -2427,7 +2438,9 @@ BEGIN
 	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
-		e.value := val
+		IF e.type.id # IdReal THEN
+			e.value := val
+		END
 	END;
 	e.factor := factor;
 	e.mult := mult;
@@ -2687,11 +2700,14 @@ VAR err: INTEGER;
 		CASE call.designator.decl.id OF
 		  Scanner.Abs:
 			IF v.type.id = IdReal THEN
+				call.value := NIL
+				(* Из-за -0.0 NaN
 				IF v(ExprReal).real < 0.0 THEN
 					call.value := ExprRealNewByValue(-v(ExprReal).real)
 				ELSE
 					call.value := v
 				END
+				*)
 			ELSE ASSERT(v.type.id = IdInteger);
 				call.value := ExprIntegerNew(ABS(v(ExprInteger).int))
 			END
@@ -2719,7 +2735,9 @@ VAR err: INTEGER;
 				))
 			END
 		| Scanner.Floor:
-			call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
+			IF FALSE THEN
+				call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
+			END
 		| Scanner.Flt:
 			call.value := ExprRealNewByValue(FLT(v(ExprInteger).int))
 		| Scanner.Ord:
