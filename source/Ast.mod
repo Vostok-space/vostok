@@ -574,7 +574,11 @@ BEGIN
 	END;
 	ASSERT(~(ds.start IS Module));
 	ds.end := d;
-	PutChars(d.module, d.name, name, start, end)
+	IF start >= 0 THEN
+		PutChars(d.module, d.name, name, start, end)
+	ELSE
+		PutChars(d.module, d.name, "#ERROR", 0, 5)
+	END
 END DeclConnect;
 
 PROCEDURE DeclarationsInit(d, up: Declarations);
@@ -795,7 +799,9 @@ PROCEDURE CheckNameDuplicate(ds: Declarations;
                              VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	IF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
+	IF begin < 0 THEN
+		err := ErrNo
+	ELSIF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
 		err := ErrDeclarationNameDuplicate
 	ELSIF ds.module.errorHide & (ds.up # NIL)
 	    & (DeclarationLineSearch(ds.module, buf, begin, end) # NIL)
@@ -818,8 +824,8 @@ VAR c: Const;
 BEGIN
 	ASSERT(~ds.module.fixed);
 
-	err := CheckNameDuplicate(ds, buf, begin, end);
 	NEW(c); NodeInit(c^, IdConst);
+	err := CheckNameDuplicate(ds, buf, begin, end);
 	DeclConnect(c, ds, buf, begin, end);
 	c.expr := NIL;
 	c.finished := FALSE;
