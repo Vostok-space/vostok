@@ -9,6 +9,8 @@ CONST
 	F = E;
 	Const = 4 + 5;
 
+	Nil = NIL;
+
 PROCEDURE Go*;
 BEGIN
 	ASSERT(A = 66 + 11);
@@ -19,7 +21,14 @@ BEGIN
 	ASSERT(E = CHR(255));
 	ASSERT(CHR(255) = E);
 	ASSERT(F = CHR(256 - 1));
-	ASSERT(Const = 5+4)
+	ASSERT(Const = 5+4);
+
+	ASSERT(NIL = NIL);
+	ASSERT(Nil = NIL);
+	ASSERT(NIL = Nil);
+	ASSERT(~(NIL # NIL));
+	ASSERT(~(Nil # NIL));
+	ASSERT(~(NIL # Nil))
 END Go;
 
 END Const.

@@ -412,7 +412,7 @@ BEGIN
 		e := Ast.ExprBooleanGet(p.l = Scanner.True);
 		Scan(p)
 	ELSIF p.l = Scanner.Nil THEN
-		e := Ast.ExprNilNew();
+		e := Ast.ExprNilGet();
 		Scan(p)
 	ELSIF p.l = Scanner.String THEN
 		e := Ast.ExprStringNew(p.module, p.s.buf, p.s.lexStart, p.s.lexEnd);

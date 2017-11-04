@@ -502,6 +502,7 @@ VAR
 	predefined: ARRAY Scanner.PredefinedLast - Scanner.PredefinedFirst + 1
 	            OF Declaration;
 	booleans: ARRAY 2 OF ExprBoolean;
+	nil: ExprNil;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
@@ -1478,14 +1479,15 @@ BEGIN
 	RETURN e
 END ExprCharNew;
 
-PROCEDURE ExprNilNew*(): ExprNil;
-VAR e: ExprNil;
+PROCEDURE ExprNilGet*(): ExprNil;
 BEGIN
-	NEW(e); ExprInit(e, IdPointer, TypeGet(IdPointer));
-	ASSERT(e.type.type = NIL);
-	e.value := e
-	RETURN e
-END ExprNilNew;
+	IF nil = NIL THEN
+		NEW(nil); ExprInit(nil, IdPointer, TypeGet(IdPointer));
+		ASSERT(nil.type.type = NIL);
+		nil.value := nil
+	END
+	RETURN nil
+END ExprNilGet;
 
 PROCEDURE ExprErrNew*(): Expression;
 VAR e: Factor;
@@ -2068,7 +2070,7 @@ BEGIN
 				(* TODO правильная обработка *)
 				res := (v1(ExprReal).real = v2(ExprReal).real) OR TRUE
 			| IdSet      : res := v1(ExprSet).set = v2(ExprSet).set
-			| IdPointer  : (* TODO *) res := FALSE
+			| IdPointer  : ASSERT(v1 = v2); res := TRUE
 			| IdArray    :
 				(* TODO обработка смешанных сравнений *)
 				IF v1 IS ExprInteger THEN
@@ -2086,7 +2088,7 @@ BEGIN
 			| IdBoolean         : res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
 			| IdReal            : res := v1(ExprReal).real # v2(ExprReal).real
 			| IdSet             : res := v1(ExprSet).set # v2(ExprSet).set
-			| IdPointer         : (* TODO *) res := FALSE
+			| IdPointer         : ASSERT(v1 = v2); res := FALSE
 			| IdArray           : (* TODO *) res := FALSE
 			| IdProcType        : (* TODO *) res := FALSE
 			END
@@ -3299,5 +3301,6 @@ END ProviderInit;
 BEGIN
 	PredefinedDeclarationsInit;
 	booleans[0] := NIL;
-	booleans[1] := NIL
+	booleans[1] := NIL;
+	nil := NIL
 END Ast.
