@@ -31,7 +31,8 @@ IMPORT
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
 	Message := MessageEn,
-	Cli := CliParser;
+	Cli := CliParser,
+	Platform;
 
 CONST
 	ResultC   = 0;
@@ -398,17 +399,34 @@ END GenerateC;
 PROCEDURE MakeDir(name: ARRAY OF CHAR): BOOLEAN;
 VAR cmd: Exec.Code;
 BEGIN
-	ASSERT(Exec.Init(cmd, "mkdir")
-	     & Exec.Add(cmd, name, 0))
+	IF Platform.Posix THEN
+		ASSERT(Exec.Init(cmd, "mkdir")
+		     & Exec.Add(cmd, name, 0)
+		     & Exec.AddClean(cmd, " 2>/dev/null"))
+	ELSIF Platform.Windows THEN
+		ASSERT(Exec.Init(cmd, "mkdir")
+		     & Exec.Add(cmd, name, 0))
+	ELSE
+		ASSERT(FALSE)
+	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END MakeDir;
 
 PROCEDURE RemoveDir(name: ARRAY OF CHAR): BOOLEAN;
 VAR cmd: Exec.Code;
 BEGIN
-	ASSERT(Exec.Init(cmd, "rm")
-	     & Exec.Add(cmd, "-r", 0)
-	     & Exec.Add(cmd, name, 0))
+	IF Platform.Posix THEN
+		ASSERT(Exec.Init(cmd, "rm")
+		     & Exec.Add(cmd, "-r", 0)
+		     & Exec.Add(cmd, name, 0)
+		     & Exec.AddClean(cmd, " 2>/dev/null"))
+	ELSIF Platform.Windows THEN
+		ASSERT(Exec.Init(cmd, "rmdir")
+		     & Exec.AddClean(cmd, " /s/q")
+		     & Exec.Add(cmd, name, 0))
+	ELSE
+		ASSERT(FALSE)
+	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END RemoveDir;
 

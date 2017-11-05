@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE Limits;
+MODULE TypeLimits;
 
 CONST
 	IntegerMax* = 7FFFFFFFH;
@@ -38,4 +38,4 @@ PROCEDURE InCharRange*(v: INTEGER): BOOLEAN;
 	RETURN (0 <= v) & (v <= ORD(CharMax))
 END InCharRange;
 
-END Limits.
+END TypeLimits.

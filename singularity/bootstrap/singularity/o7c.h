@@ -16,6 +16,7 @@
 #define HEADER_GUARD_o7c
 
 #include <limits.h>
+#include <stddef.h>
 
 #if !defined(O7C_INLINE)
 #	if __STDC_VERSION__ >= 199901L

@@ -412,7 +412,7 @@ char unsigned o7c_chr(int v) {
 	return (char unsigned)v;
 }
 
-#if (__STDC_VERSION__ >= 199901L)
+#if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64)))
 /* TODO в вычислительных функциях можно будет убрать o7c_dbl после проверки*/
 	O7C_ATTR_CONST O7C_ALWAYS_INLINE
 	double o7c_dbl_finite(double v) {
@@ -785,9 +785,8 @@ void * o7c_must_r(o7c_tag_t const base, void *strct, o7c_tag_t const ext) {
 
 O7C_ATTR_CONST O7C_ALWAYS_INLINE
 unsigned o7c_set(int low, int high) {
-	assert(low >= 0);
 	assert(high <= 31);
-	assert(low <= high);
+	assert(0 <= low && low <= high);
 	return (~0u << low) & (~0u >> (31 - high));
 }
 

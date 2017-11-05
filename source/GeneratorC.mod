@@ -25,7 +25,7 @@ IMPORT
 	Text := TextGenerator,
 	Utf8,
 	Log,
-	Limits,
+	Limits := TypeLimits,
 	TranLim := TranslatorLimits;
 
 CONST

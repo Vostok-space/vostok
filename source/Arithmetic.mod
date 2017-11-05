@@ -16,7 +16,7 @@
  *)
 MODULE Arithmetic;
 
-IMPORT Limits;
+IMPORT Limits := TypeLimits;
 
 CONST
 	Min = Limits.IntegerMin;

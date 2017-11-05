@@ -19,7 +19,7 @@ MODULE Ast;
 IMPORT
 	Log, Out,
 	Utf8,
-	Limits,
+	Limits := TypeLimits,
 	V,
 	Scanner,
 	Strings := StringStore,

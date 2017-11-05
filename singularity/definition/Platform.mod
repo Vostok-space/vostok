@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+(* Copyright 2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,13 +11,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-#define O7C_BOOL_UNDEFINED
-#include <o7c.h>
+ *)
+MODULE Platform;
 
-#include "OsExec.h"
+ VAR
+   Posix*,
+   Linux*,
+   Bsd*,
+   Dos*,
+   Windows*: BOOLEAN;
 
-extern int OsExec_Do(int len, o7c_char const cmd[O7C_VLA(len)]) {
-	return system((char const *)cmd);
-}
-
+BEGIN
+  Posix   := FALSE;
+  Linux   := FALSE;
+  Bsd     := FALSE;
+  Dos     := FALSE;
+  Windows := FALSE;
+  ASSERT(FALSE)
+END Platform.

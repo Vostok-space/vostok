@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2017 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,12 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define O7C_BOOL_UNDEFINED
+#if !defined(HEADER_GUARD_Platform)
+#define HEADER_GUARD_Platform 1
+
 #include <o7c.h>
 
-#include "OsExec.h"
+extern o7c_bool const
+  Platform_Posix,
+  Platform_Linux,
+  Platform_Bsd,
+  Platform_Dos,
+  Platform_Windows;
 
-extern int OsExec_Do(int len, o7c_char const cmd[O7C_VLA(len)]) {
-	return system((char const *)cmd);
-}
-
+O7C_ALWAYS_INLINE void Platform_init(void) {}
+#endif
