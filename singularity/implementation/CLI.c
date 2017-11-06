@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#define O7C_BOOL_UNDEFINED
-#include <o7c.h>
+#define O7_BOOL_UNDEFINED
+#include <o7.h>
 
 #include "CLI.h"
 
@@ -22,8 +22,8 @@ int CLI_count;
 
 static char **CLI_argv;
 
-extern o7c_c_bool CLI_Get(
-	int str_len, char unsigned str[O7C_VLA(str_len)], int *ofs, int arg)
+extern o7_cbool CLI_Get(
+	int str_len, char unsigned str[O7_VLA(str_len)], int *ofs, int arg)
 {
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));
@@ -39,14 +39,14 @@ extern o7c_c_bool CLI_Get(
 }
 
 extern void CLI_SetExitCode(int code) {
-	extern int o7c_exit_code;
-	o7c_exit_code = code;
+	extern int o7_exit_code;
+	o7_exit_code = code;
 }
 
 extern void CLI_init(void) {
-	extern int o7c_cli_argc;
-	extern char **o7c_cli_argv;
+	extern int o7_cli_argc;
+	extern char **o7_cli_argv;
 
-	CLI_count = o7c_cli_argc;
-	CLI_argv = o7c_cli_argv;
+	CLI_count = o7_cli_argc;
+	CLI_argv = o7_cli_argv;
 }

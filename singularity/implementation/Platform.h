@@ -15,14 +15,14 @@
 #if !defined(HEADER_GUARD_Platform)
 #define HEADER_GUARD_Platform 1
 
-#include <o7c.h>
+#include <o7.h>
 
-extern o7c_bool const
+extern o7_bool const
   Platform_Posix,
   Platform_Linux,
   Platform_Bsd,
   Platform_Dos,
   Platform_Windows;
 
-O7C_ALWAYS_INLINE void Platform_init(void) {}
+O7_ALWAYS_INLINE void Platform_init(void) {}
 #endif

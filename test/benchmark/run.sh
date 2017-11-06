@@ -5,19 +5,19 @@ result/o7c to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/bench
 result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init no
 
 export ASAN_OPTIONS=detect_odr_violation=0
-MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7C_MEM_MAN_MODEL=O7C_MEM_MAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
+MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7_MEM_MAN_MODEL=O7_MEMAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
 
-$MAIN -DNDEBUG -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c
+$MAIN -DNDEBUG -DO7_VAR_INIT_MODEL=O7_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c
 
-$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -o $RESULT/o7c-asrt
+$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -o $RESULT/o7c-asrt
 
-$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -o $RESULT/o7c-usan
+$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -o $RESULT/o7c-usan
 
-$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-asan
+$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=address -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-asan
 
-$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan
+$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -fsanitize=address -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan
 
-$MAIN -DO7C_VAR_INIT_MODEL=O7C_VAR_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -fsanitize=undefined -fsanitize=address -DO7C_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan-asrt
+$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -fsanitize=undefined -fsanitize=address -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan-asrt
 
 strip $RESULT/o7c*
 

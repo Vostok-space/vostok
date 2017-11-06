@@ -15,10 +15,10 @@
 #if !defined(HEADER_GUARD_Int64)
 #define HEADER_GUARD_Int64 1
 
-#if !O7C_GNUC_BUILTIN_OVERFLOW
-#	define O7C_GNUC_BUILTIN_OVERFLOW (0 > 1)
+#if !O7_GNUC_BUILTIN_OVERFLOW
+#	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #	if !defined(__builtin_add_overflow)
-#		define O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
+#		define O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
 #		define __builtin_add_overflow(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
 #		define __builtin_sub_overflow(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
 #		define __builtin_mul_overflow(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
@@ -45,38 +45,38 @@
 
 #define Int64_Size_cnst sizeof(Int64_t)
 
-typedef o7c_char Int64_Type[Int64_Size_cnst];
+typedef o7_char Int64_Type[Int64_Size_cnst];
 
 static Int64_Type Int64_min;
 static Int64_Type Int64_max;
 
-O7C_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, int high, int low) {
-	*(Int64_t *)v = o7c_int(high) * (Int64_t)INT_MAX + o7c_int(low);
+O7_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, int high, int low) {
+	*(Int64_t *)v = o7_int(high) * (Int64_t)INT_MAX + o7_int(low);
 }
 
-O7C_ALWAYS_INLINE void Int64_ToInt(int *i, Int64_Type v) {
-	o7c_c_bool ov;
-	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+O7_ALWAYS_INLINE void Int64_ToInt(int *i, Int64_Type v) {
+	o7_cbool ov;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		ov = __builtin_add_overflow(*(Int64_t *)v, 0, i);
 		assert(!ov);
 	} else {
-		if (O7C_OVERFLOW) {
+		if (O7_OVERFLOW) {
 			assert((-INT_MAX <= *(Int64_t *)v) && (*(Int64_t *)v <= INT_MAX));
 		}
 		*i = *(Int64_t *)v;
 	}
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2)
 {
-	o7c_c_bool overflow;
-	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_add_overflow(*(Int64_t *)a1, *(Int64_t *)a2,
 		                                  (Int64_t *)sum);
 		assert(!overflow);
 	} else {
-		if (!O7C_OVERFLOW) {
+		if (!O7_OVERFLOW) {
 			;
 		} else if (*(Int64_t *)a2 >= 0) {
 			assert(*(Int64_t *)a1 <= Int64_Max - *(Int64_t *)a2);
@@ -87,16 +87,16 @@ O7C_ALWAYS_INLINE void
 	}
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_Sub(Int64_Type diff, Int64_Type m, Int64_Type s)
 {
-	o7c_c_bool overflow;
-	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_sub_overflow(*(Int64_t *)m, *(Int64_t *)s,
 		                                  (Int64_t *)diff);
 		assert(!overflow);
 	} else {
-		if (!O7C_OVERFLOW) {
+		if (!O7_OVERFLOW) {
 			;
 		} else if (*(Int64_t *)s >= 0) {
 			assert(*(Int64_t *)m >= Int64_Min + *(Int64_t *)s);
@@ -107,16 +107,16 @@ O7C_ALWAYS_INLINE void
 	}
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_Mul(Int64_Type prod, Int64_Type m1, Int64_Type m2)
 {
-	o7c_c_bool overflow;
-	if (O7C_OVERFLOW && O7C_GNUC_BUILTIN_OVERFLOW) {
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = __builtin_mul_overflow(*(Int64_t *)m1, *(Int64_t *)m2,
 		                                  (Int64_t *)prod);
 		assert(!overflow);
 	} else {
-		if (!O7C_OVERFLOW) {
+		if (!O7_OVERFLOW) {
 			;
 		} else if (*(Int64_t *)m2 > 0) {
 			if (*(Int64_t *)m1 >= 0) {
@@ -138,9 +138,9 @@ O7C_ALWAYS_INLINE void
 	}
 }
 
-O7C_ALWAYS_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
-	if (O7C_OVERFLOW) {
-		if (O7C_DIV_ZERO) {
+O7_ALWAYS_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
+	if (O7_OVERFLOW) {
+		if (O7_DIV_ZERO) {
 			assert(*(Int64_t *)d != 0);
 		}
 		if (Int64_Min < -Int64_Max) {
@@ -149,21 +149,21 @@ O7C_ALWAYS_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
 	}
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_Div(Int64_Type div, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
 	*(Int64_t *)div = *(Int64_t *)n / *(Int64_t *)d;
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_Mod(Int64_Type mod, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
 	*(Int64_t *)mod = *(Int64_t *)n % *(Int64_t *)d;
 }
 
-O7C_ALWAYS_INLINE void
+O7_ALWAYS_INLINE void
 	Int64_DivMod(Int64_Type div, Int64_Type mod, Int64_Type n, Int64_Type d)
 {
 	Int64_CheckDiv(n, d);
@@ -171,13 +171,13 @@ O7C_ALWAYS_INLINE void
 	*(Int64_t *)mod = *(Int64_t *)n % *(Int64_t *)d;
 }
 
-O7C_ALWAYS_INLINE void Int64_init(void) {
+O7_ALWAYS_INLINE void Int64_init(void) {
 	*(Int64_t *)Int64_min = Int64_Min;
 	*(Int64_t *)Int64_max = Int64_Max;
 }
 
-#if defined(O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF)
-#	undef O7C_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
+#if defined(O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF)
+#	undef O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
 #	undef __builtin_add_overflow
 #	undef __builtin_sub_overflow
 #	undef __builtin_mul_overflow

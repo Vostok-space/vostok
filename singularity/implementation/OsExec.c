@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define O7C_BOOL_UNDEFINED
-#include <o7c.h>
+#define O7_BOOL_UNDEFINED
+#include <o7.h>
 
 #include "OsExec.h"
 
-extern int OsExec_Do(int len, o7c_char const cmd[O7C_VLA(len)]) {
+extern int OsExec_Do(int len, o7_char const cmd[O7_VLA(len)]) {
 	return system((char const *)cmd);
 }
 

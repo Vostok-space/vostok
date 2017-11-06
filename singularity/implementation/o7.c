@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-#include "o7c.h"
+#include "o7.h"
 
-int     o7c_cli_argc;
-char**  o7c_cli_argv;
+int     o7_cli_argc;
+char**  o7_cli_argv;
 
-int o7c_exit_code;
+int o7_exit_code;
 
-size_t o7c_allocated;
+size_t o7_allocated;
 
-o7c_tag_t o7c_base_tag;
+o7_tag_t o7_base_tag;
 
-char o7c_memory[O7C_MEM_MAN_NOFREE_BUFFER_SIZE];
+char o7_memory[O7_MEMAN_NOFREE_BUFFER_SIZE];
 
-extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
+extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined;
 	float undefinedf;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
@@ -35,9 +35,9 @@ extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
 
 	assert((sizeof(int ) * 2 == sizeof(double))
 		|| (sizeof(long) * 2 == sizeof(double)));
-	undefined = o7c_dbl_undef();
+	undefined = o7_dbl_undef();
 	assert(undefined != undefined);
-	undefinedf = o7c_flt_undef();
+	undefinedf = o7_flt_undef();
 	assert(undefinedf != undefinedf);
 
 	/* для случая использования int в качестве INTEGER */
@@ -48,24 +48,24 @@ extern void o7c_init(int argc, char *argv[O7C_VLA(argc)]) {
 
 	assert((argc > 0) == (argv != NULL));
 
-	o7c_exit_code = 0;
+	o7_exit_code = 0;
 
-	o7c_cli_argc = argc;
-	o7c_cli_argv = argv;
+	o7_cli_argc = argc;
+	o7_cli_argv = argv;
 
-	if (O7C_MEM_MAN == O7C_MEM_MAN_GC) {
-		o7c_gc_init();
+	if (O7_MEMAN == O7_MEMAN_GC) {
+		o7_gc_init();
 	}
 }
 
-extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
+extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base) {
 	static int id = 1;
 	int i;
 	assert(NULL != base);
 	i = 1;
 
 	ext[0] = base[0] + 1;
-	assert(ext[0] <= O7C_MAX_RECORD_EXT);
+	assert(ext[0] <= O7_MAX_RECORD_EXT);
 	while (i < ext[0]) {
 		ext[i] = base[i];
 		i += 1;
@@ -76,13 +76,13 @@ extern void o7c_tag_init(o7c_tag_t ext, o7c_tag_t const base) {
 
 	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
 	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
-	while (i <= O7C_MAX_RECORD_EXT) {
+	while (i <= O7_MAX_RECORD_EXT) {
 		ext[i] = 0;
 		i += 1;
 	}
 }
 
-extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA(len)]) {
+extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = 0xff;
@@ -90,40 +90,40 @@ extern o7c_char* o7c_bools_undef(int len, o7c_char array[O7C_VLA(len)]) {
 	return array;
 }
 
-extern double* o7c_doubles_undef(int len, double array[O7C_VLA(len)]) {
+extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
-		array[i] = O7C_DBL_UNDEF;
+		array[i] = O7_DBL_UNDEF;
 	}
 	return array;
 }
 
-extern float* o7c_floats_undef(int len, float array[O7C_VLA(len)]) {
+extern float* o7_floats_undef(int len, float array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
-		array[i] = O7C_FLT_UNDEF;
+		array[i] = O7_FLT_UNDEF;
 	}
 	return array;
 }
 
-extern int* o7c_ints_undef(int len, int array[O7C_VLA(len)]) {
+extern int* o7_ints_undef(int len, int array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
-		array[i] = O7C_INT_UNDEF;
+		array[i] = O7_INT_UNDEF;
 	}
 	return array;
 }
 
-extern o7c_long_t* o7c_longs_undef(int len, o7c_long_t array[O7C_VLA(len)]) {
+extern o7_long_t* o7_longs_undef(int len, o7_long_t array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
-		array[i] = O7C_LONG_UNDEF;
+		array[i] = O7_LONG_UNDEF;
 	}
 	return array;
 }
 
-extern int o7c_strcmp(int s1_len, o7c_char const s1[O7C_VLA(s1_len)],
-                      int s2_len, o7c_char const s2[O7C_VLA(s2_len)]) {
+extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
+                      int s2_len, o7_char const s2[O7_VLA(s2_len)]) {
 	int i, len, c1, c2;
 	if (s1_len < s2_len) {
 		len = s1_len;

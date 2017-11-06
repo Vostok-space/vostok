@@ -10,5 +10,5 @@ cd ..\..
 result\bs-o7c to-c Translator.Start result -infr . -m source
 
 cd result
-%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c MessageEn.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c ..\%SING_IMPL%\CFiles.c ..\%SING_IMPL%\CLI.c ..\%SING_IMPL%\o7c.c ..\%SING_IMPL%\OsExec.c ..\%SING_IMPL%\Platform.c -I . -I ..\%SING_IMPL% -o o7c.exe
+%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c MessageEn.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c ..\%SING_IMPL%\CFiles.c ..\%SING_IMPL%\CLI.c ..\%SING_IMPL%\o7.c ..\%SING_IMPL%\OsExec.c ..\%SING_IMPL%\Platform.c -I . -I ..\%SING_IMPL% -o o7c.exe
 cd ..

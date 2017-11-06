@@ -12,40 +12,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define O7C_BOOL_UNDEFINED
-#include <o7c.h>
+#define O7_BOOL_UNDEFINED
+#include <o7.h>
 
 #include "Platform.h"
 
 
 #if defined(__linux__) || defined(__linux)
-  o7c_bool const Platform_Linux = 0 < 1;
+  o7_bool const Platform_Linux = 0 < 1;
 #else
-  o7c_bool const Platform_Linux = 0 > 1;
+  o7_bool const Platform_Linux = 0 > 1;
 #endif
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
-  o7c_bool const Platform_Windows = 0 < 1;
+  o7_bool const Platform_Windows = 0 < 1;
 #else
-  o7c_bool const Platform_Windows = 0 > 1;
+  o7_bool const Platform_Windows = 0 > 1;
 #endif
 
 #if defined(BSD) || defined(__bsdi__)
-  o7c_bool const Platform_Bsd = 0 < 1;
+  o7_bool const Platform_Bsd = 0 < 1;
 #else
-  o7c_bool const Platform_Bsd = 0 > 1;
+  o7_bool const Platform_Bsd = 0 > 1;
 #endif
 
 #if defined(MSDOS) || defined(__MSDOS__) || defined(__DOS__)
-  o7c_bool const Platform_Dos = 0 < 1;
+  o7_bool const Platform_Dos = 0 < 1;
 #else
-  o7c_bool const Platform_Dos = 0 > 1;
+  o7_bool const Platform_Dos = 0 > 1;
 #endif
 
 #if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__)
-  o7c_bool const Platform_Posix = 0 < 1;
+  o7_bool const Platform_Posix = 0 < 1;
 #else
-  o7c_bool const Platform_Posix = 0 > 1;
+  o7_bool const Platform_Posix = 0 > 1;
 #endif
 
 
