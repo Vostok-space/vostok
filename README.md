@@ -2,7 +2,7 @@ Project "Vostok"
 =======================
 Oberon-07 translator to C.
 
-Short build help:
+Short build help for POSIX systems:
 
 	make help-en
 
@@ -20,6 +20,11 @@ Demo server:
 	go run server.go
 
 
+Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
+
+	buid.cmd
+
+
 Проект "Восток"
 =======================
 Транслятор Oberon-07.
@@ -32,7 +37,8 @@ Demo server:
 Написан на собственном входном языке.
 Генерирует совместимый с gcc, clang и tcc код на С.
 
-Короткая справка по главным целям и переменным Makefile:
+Короткая справка по главным целям и переменным Makefile для сборки в POSIX
+системах:
 
 	make help
 
@@ -48,3 +54,8 @@ Demo server:
 
 	cd demo-server
 	go run server.go
+
+Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
+каталог с которым должен быть прописан в переменной окружения PATH
+
+	buid.cmd
