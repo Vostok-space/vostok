@@ -5,7 +5,7 @@ result/o7c to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/bench
 result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init no
 
 export ASAN_OPTIONS=detect_odr_violation=0
-MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7_MEM_MAN_MODEL=O7_MEMAN_NOFREE -Isingularity/implementation singularity/implementation/*.c"
+MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation singularity/implementation/*.c"
 
 $MAIN -DNDEBUG -DO7_VAR_INIT_MODEL=O7_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c
 

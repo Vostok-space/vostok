@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <o7c.h>
+#include <o7.h>
 
 #include "CFiles.h"
 
@@ -30,20 +30,20 @@ struct CFiles_Implement {
 CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
-	int name_len, o7c_char name[O7C_VLA(name_len)], int ofs,
-	int mode_len, o7c_char mode[O7C_VLA(mode_len)])
+	int name_len, o7_char name[O7_VLA(name_len)], int ofs,
+	int mode_len, o7_char mode[O7_VLA(mode_len)])
 {
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
-	if ((0 == o7c_strcmp(name_len, name, 13, "/dev/urandom"))
-	 || (0 == o7c_strcmp(name_len, name, 12, "/dev/random")))
+	if ((0 == o7_strcmp(name_len, name, 13, "/dev/urandom"))
+	 || (0 == o7_strcmp(name_len, name, 12, "/dev/random")))
 	{
-		O7C_NEW2(&file, NULL, NULL);
+		O7_NEW2(&file, NULL, NULL);
 		if (NULL != file) {
 			file->file = fopen((char *)(name + ofs), (char *)mode);
 			if (NULL == file->file) {
-				O7C_NULL(&file);
+				O7_NULL(&file);
 			}
 		}
 	}
@@ -54,12 +54,12 @@ extern void CFiles_Close(CFiles_File *file) {
 	if (*file != NULL) {
 		fclose((*file)->file);
 		(*file)->file = NULL;
-		O7C_NULL(file);
+		O7_NULL(file);
 	}
 }
 
 extern int CFiles_Read(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
+	int len, o7_char buf[O7_VLA(len)], int ofs, int count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -68,7 +68,7 @@ extern int CFiles_Read(CFiles_File file,
 }
 
 extern int CFiles_Write(CFiles_File file,
-	int len, o7c_char buf[O7C_VLA(len)], int ofs, int count)
+	int len, o7_char buf[O7_VLA(len)], int ofs, int count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -76,8 +76,8 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
-extern o7c_bool CFiles_Flush(CFiles_File file) {
-	return (o7c_bool)(0 == fflush(file->file));
+extern o7_bool CFiles_Flush(CFiles_File file) {
+	return (o7_bool)(0 == fflush(file->file));
 }
 
 extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
@@ -101,7 +101,7 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 }
 
 extern int CFiles_Remove(
-	int name_len, o7c_char const name[O7C_VLA(name_len)], int ofs)
+	int name_len, o7_char const name[O7_VLA(name_len)], int ofs)
 {
 	assert(ofs >= 0);
 	assert(name_len > 1);
@@ -109,12 +109,12 @@ extern int CFiles_Remove(
 }
 
 extern void CFiles_init(void) {
-	O7C_NEW2(&CFiles_in, NULL, NULL);
+	O7_NEW2(&CFiles_in, NULL, NULL);
 	CFiles_in->file = stdin;
 
-	O7C_NEW2(&CFiles_out, NULL, NULL);
+	O7_NEW2(&CFiles_out, NULL, NULL);
 	CFiles_out->file = stdout;
 
-	O7C_NEW2(&CFiles_err, NULL, NULL);
+	O7_NEW2(&CFiles_err, NULL, NULL);
 	CFiles_err->file = stderr;
 }

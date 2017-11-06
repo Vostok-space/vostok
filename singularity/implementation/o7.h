@@ -133,25 +133,25 @@ typedef char unsigned o7_char;
 
 typedef o7_ulong_t o7_set64_t;
 
-#define O7_MEMAN_NOFREE  0
-#define O7_MEMAN_COUNTER 1
-#define O7_MEMAN_GC      2
+#define O7_MEMNG_NOFREE  0
+#define O7_MEMNG_COUNTER 1
+#define O7_MEMNG_GC      2
 
 #if !defined(O7_MEM_ALIGN)
 #	define O7_MEM_ALIGN (8u > sizeof(void *) ? 8u : sizeof(void *))
 #endif
 
-#if defined(O7_MEMAN_MODEL)
-#	define O7_MEMAN O7_MEMAN_MODEL
+#if defined(O7_MEMNG_MODEL)
+#	define O7_MEMNG O7_MEMNG_MODEL
 #else
-#	define O7_MEMAN O7_MEMAN_NOFREE
+#	define O7_MEMNG O7_MEMNG_NOFREE
 #endif
 
-#if defined(O7_MEMAN_NOFREE_BUFFER_SIZE)
-#elif O7_MEMAN == O7_MEMAN_NOFREE
-#	define O7_MEMAN_NOFREE_BUFFER_SIZE (256lu * 1024 * 1024)
+#if defined(O7_MEMNG_NOFREE_BUFFER_SIZE)
+#elif O7_MEMNG == O7_MEMNG_NOFREE
+#	define O7_MEMNG_NOFREE_BUFFER_SIZE (256lu * 1024 * 1024)
 #else
-#	define O7_MEMAN_NOFREE_BUFFER_SIZE 1lu
+#	define O7_MEMNG_NOFREE_BUFFER_SIZE 1lu
 #endif
 
 #if __GNUC__ >= 2
@@ -178,15 +178,15 @@ typedef o7_ulong_t o7_set64_t;
 
 O7_INLINE void o7_gc_init(void) O7_ATTR_ALWAYS_INLINE;
 
-#if O7_MEMAN == O7_MEMAN_GC
+#if O7_MEMNG == O7_MEMNG_GC
 #	include "gc.h"
 	O7_INLINE void o7_gc_init(void) { GC_INIT(); }
 #else
 	O7_INLINE void o7_gc_init(void) { assert(0 > 1); }
 #endif
 
-#if defined(O7_MEMAN_COUNTER_TYPE)
-	typedef O7_MEMAN_COUNTER_TYPE o7_mmc_t;
+#if defined(O7_MEMNG_COUNTER_TYPE)
+	typedef O7_MEMNG_COUNTER_TYPE o7_mmc_t;
 #else
 	typedef o7_int_t o7_mmc_t;
 #endif
@@ -252,13 +252,13 @@ void* o7_ref(void *ptr) {
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
 void* o7_raw_alloc(size_t size) {
-	extern char o7_memory[O7_MEMAN_NOFREE_BUFFER_SIZE];
+	extern char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 	extern size_t o7_allocated;
 	void *mem;
-	if ((O7_MEMAN == O7_MEMAN_NOFREE)
-	 && (1 < O7_MEMAN_NOFREE_BUFFER_SIZE))
+	if ((O7_MEMNG == O7_MEMNG_NOFREE)
+	 && (1 < O7_MEMNG_NOFREE_BUFFER_SIZE))
 	{
-		if (o7_allocated < (size_t)O7_MEMAN_NOFREE_BUFFER_SIZE - size) {
+		if (o7_allocated < (size_t)O7_MEMNG_NOFREE_BUFFER_SIZE - size) {
 			mem = (void *)(o7_memory + o7_allocated);
 			o7_allocated +=
 				(size - 1 + O7_MEM_ALIGN) / O7_MEM_ALIGN * O7_MEM_ALIGN;
@@ -266,7 +266,7 @@ void* o7_raw_alloc(size_t size) {
 			mem = NULL;
 		}
 	} else if ((O7_INIT == O7_INIT_ZERO)
-	        || (O7_MEMAN == O7_MEMAN_COUNTER))
+	        || (O7_MEMNG == O7_MEMNG_COUNTER))
 	{
 		mem = calloc(1, size);
 	} else {
@@ -276,7 +276,7 @@ void* o7_raw_alloc(size_t size) {
 }
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
-#if O7_MEMAN == O7_MEMAN_GC
+#if O7_MEMNG == O7_MEMNG_GC
 	O7_INLINE void* o7_malloc(size_t size) {
 		return GC_MALLOC(size);
 	}
@@ -648,7 +648,7 @@ int o7_lcmp(o7_long_t a, o7_long_t b) {
 
 O7_ALWAYS_INLINE void o7_release(void *mem) {
 	o7_mmc_t *counter;
-	if ((O7_MEMAN == O7_MEMAN_COUNTER)
+	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
 		counter = (o7_mmc_t *)((o7_id_t **)mem - 1) - 1;
@@ -665,10 +665,10 @@ O7_ALWAYS_INLINE o7_cbool
 o7_new(void **pmem, int size, o7_tag_t const tag, void undef(void *)) {
 	void *mem;
 	mem = o7_malloc(
-	    sizeof(o7_mmc_t) * (int)(O7_MEMAN == O7_MEMAN_COUNTER)
+	    sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
 	  + sizeof(o7_id_t *) + size);
 	if (NULL != mem) {
-		if (O7_MEMAN == O7_MEMAN_COUNTER) {
+		if (O7_MEMNG == O7_MEMNG_COUNTER) {
 			*(o7_mmc_t *)mem = 1;
 			mem = (void *)((o7_mmc_t *)mem + 1);
 		}
@@ -690,7 +690,7 @@ o7_new(void **pmem, int size, o7_tag_t const tag, void undef(void *)) {
 	o7_new((void **)mem, sizeof(**(mem)), tag, (void (*)(void *))undef)
 
 O7_ALWAYS_INLINE void* o7_retain(void *mem) {
-	if ((O7_MEMAN == O7_MEMAN_COUNTER) && (NULL != mem)) {
+	if ((O7_MEMNG == O7_MEMNG_COUNTER) && (NULL != mem)) {
 		*((o7_mmc_t *)((o7_id_t **)mem - 1) - 1) += 1;
 	}
 	return mem;
@@ -699,7 +699,7 @@ O7_ALWAYS_INLINE void* o7_retain(void *mem) {
 /** уменьшает счётчик на 1, но не освобождает объект при достижении 0 */
 O7_ALWAYS_INLINE void* o7_unhold(void *mem) {
 	o7_mmc_t *counter;
-	if ((O7_MEMAN == O7_MEMAN_COUNTER)
+	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
 		counter = (o7_mmc_t *)((o7_id_t **)mem - 1) - 1;
@@ -721,7 +721,7 @@ O7_ALWAYS_INLINE void o7_null(void **mem) {
 
 O7_ALWAYS_INLINE void o7_release_array(int count, void *mem[O7_VLA(count)]) {
 	int i;
-	if (O7_MEMAN == O7_MEMAN_COUNTER) {
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
 		for (i = 0; i < count; i += 1) {
 			o7_null(mem + i);
 		}

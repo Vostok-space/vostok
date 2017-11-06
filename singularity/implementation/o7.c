@@ -24,7 +24,7 @@ size_t o7_allocated;
 
 o7_tag_t o7_base_tag;
 
-char o7_memory[O7_MEMAN_NOFREE_BUFFER_SIZE];
+char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined;
@@ -53,7 +53,7 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	o7_cli_argc = argc;
 	o7_cli_argv = argv;
 
-	if (O7_MEMAN == O7_MEMAN_GC) {
+	if (O7_MEMNG == O7_MEMNG_GC) {
 		o7_gc_init();
 	}
 }

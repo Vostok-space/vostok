@@ -11,7 +11,7 @@ SELF := result/self
 SRC := $(wildcard source/*.mod)
 SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7_LSAN_LEAK_IGNORE
 SANITIZE_TEST := $(SANITIZE)
-O7_OPT := -DO7_MEM_MAN_MODEL=O7_MEM_MAN_NOFREE
+O7_OPT := -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE
 #LD_OPT := -lgc
 LD_OPT := -lm
 WARN := -Wall -Wno-parentheses
@@ -37,7 +37,7 @@ result/test/% : always
 	@echo "extern int osrand_useless;" > result/test/OsRand.c
 	@echo "extern int out_useless;" > result/test/Out.c
 	$(O7C) to-c $(@F).Go result/test -infr . -m test/source
-	$(CC) -g $(SANITIZE_TEST) -DO7_MEM_MAN_MODEL=O7_MEM_MAN_NOFREE $@.c result/test/OsRand.c result/test/Out.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
+	$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $@.c result/test/OsRand.c result/test/Out.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
 	$@
 
 test : result/o7c $(TESTS)
