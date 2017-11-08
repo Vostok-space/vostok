@@ -2515,14 +2515,30 @@ PROCEDURE ExprCallNew*(VAR e: ExprCall; des: Designator): INTEGER;
 	RETURN ExprCallCreate(e, des, TRUE)
 END ExprCallNew;
 
-PROCEDURE IsChangeable*(cur: Module; v: Var): BOOLEAN;
+PROCEDURE IsChangeable*(des: Designator): BOOLEAN;
+VAR v: Var;
+    sel: Selector;
+    tid: INTEGER;
+    able: BOOLEAN;
 BEGIN
-	Log.StrLn("IsChangeable")
-	RETURN (*(v.module = cur) &*)
-	    (~(v IS FormalParam)
-	 OR (ParamOut IN v(FormalParam).access)
-	 OR ~((v.type IS Array)
-	 OR (v.type IS Record)))
+	v := des.decl(Var);
+	IF (v.up # NIL) & (v.up.up = NIL) THEN
+		able := ~v.module.fixed
+	ELSE
+		able := ~(v IS FormalParam)
+		     OR (ParamOut IN v(FormalParam).access)
+		     OR ~(v.type.id IN {IdArray, IdRecord})
+	END;
+	IF ~able THEN
+		tid := des.decl.type.id;
+		sel := des.sel;
+		WHILE (sel # NIL) & (tid # IdPointer) DO
+			tid := sel.type.id;
+			sel := sel.next
+		END;
+		able := sel # NIL
+	END
+	RETURN able
 END IsChangeable;
 
 PROCEDURE IsVar*(e: Expression): BOOLEAN;
@@ -2645,9 +2661,7 @@ BEGIN
 		THEN
 			err := ErrCallIncompatibleParamType
 		ELSIF ParamOut IN fp.access THEN
-			IF ~(IsVar(e)
-			   & IsChangeable(call.designator.decl.module, e(Designator).decl(Var))
-			    )
+			IF ~(IsVar(e) & IsChangeable(e(Designator)))
 			THEN
 				err := ErrCallExpectVarParam
 			ELSIF (e.type # NIL) & (e.type.id = IdPointer)
@@ -3165,7 +3179,7 @@ BEGIN
 	a.designator := des;
 	err := ErrNo;
 	IF des # NIL THEN
-		IF (des.decl IS Var) & IsChangeable(des.decl.module, des.decl(Var)) THEN
+		IF (des.decl IS Var) & IsChangeable(des) THEN
 			IF des.decl.type.id = IdPointer THEN
 				IF (des.sel # NIL) & ~des.decl(Var).inited THEN
 					err := ErrVarUninitialized
