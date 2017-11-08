@@ -102,7 +102,28 @@ BEGIN
 	bb[i][j][k] := 0FFH
 END Setbb;
 
+PROCEDURE CopyChars(a2: ARRAY OF CHAR);
+VAR a1: ARRAY 32 OF CHAR;
+BEGIN
+	a1 := a2;
+	IF LEN(a1) = LEN("0123456789") THEN
+		ASSERT(a1 = "0123456789");
+		ASSERT(a2 = "0123456789");
+		ASSERT(a2 = a1)
+	END
+END CopyChars;
+
+PROCEDURE CopyInts(VAR a1: ARRAY OF INTEGER; a2: ARRAY OF INTEGER);
+VAR i: INTEGER;
+BEGIN
+	a1 := a2;
+	FOR i := 0 TO LEN(a2) - 1 DO
+		ASSERT(a1[i] = a2[i])
+	END
+END CopyInts;
+
 PROCEDURE Go*;
+VAR i: INTEGER;
 BEGIN
 	p := A;
 	p(a);
@@ -128,11 +149,25 @@ BEGIN
 	Setbb(2, 1, 3);
 	ASSERT(bb[2][1][3] = 0FFH);
 
-	For
+	For;
+
+	CopyChars("0123456789");
+	CopyChars("0123456789012345678901234567890");
+
+	FOR i := 0 TO LEN(bb[2][1]) - 1 DO
+		bb[2, 1][i] := 3 * i + 2
+	END;
+	CopyInts(bb[1, 0], bb[2][1]);
+	FOR i := 0 TO LEN(bb[2][1]) - 1 DO
+		ASSERT(bb[1][0,i] = 3 * i + 2)
+	END
 END Go;
 
 PROCEDURE Error*(s: INTEGER);
+VAR ai1, ai2: ARRAY 7 OF INTEGER;
 BEGIN
+	ai2[0] := 0;
+	ai1 := ai2;
 	IF 0 = s THEN
 		Set(aaa, 0)
 	END;
