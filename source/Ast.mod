@@ -137,7 +137,9 @@ CONST
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
 	ErrDeclarationUnused*           = -98;
-                                     (*-99, 101*)
+	                                 (*-99 .. 101*)
+	ErrProcNestedTooDeep*           = 102;
+
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -325,7 +327,7 @@ TYPE
 	END;
 
 	RProcedure* = RECORD(RGeneralProcedure)
-		distance*: INTEGER (* TODO заменить все distance на deep в записях *)
+		deep*: INTEGER
 	END;
 
 	PredefinedProcedure* = POINTER TO RECORD(RGeneralProcedure)
@@ -2556,6 +2558,14 @@ BEGIN
 	DeclarationsConnect(p, ds, buf, begin, end);
 	p.header := ProcTypeNew(FALSE);
 	p.return := NIL;
+	IF ds.up = NIL THEN
+		p.deep := 0
+	ELSE
+		p.deep := ds(Procedure).deep + 1;
+		IF (err = ErrNo) & (TranLim.MaxDeepProcedures <= p.deep) THEN
+			err := ErrProcNestedTooDeep
+		END
+	END;
 	IF ds.procedures = NIL THEN
 		ds.procedures := p
 	END
@@ -2563,7 +2573,7 @@ BEGIN
 END ProcedureAdd;
 
 PROCEDURE ProcedureSetReturn*(p: Procedure; e: Expression): INTEGER;
-VAR err: INTEGER;
+VAR err, distance: INTEGER;
 BEGIN
 	ASSERT(p.return = NIL);
 	err := ErrNo;
@@ -2571,7 +2581,7 @@ BEGIN
 		err := ErrProcHasNoReturn
 	ELSIF e # NIL THEN
 		p.return := e;
-		IF ~CompatibleTypes(p.distance, p.header.type, e.type)
+		IF ~CompatibleTypes(distance, p.header.type, e.type)
 		 & ~CompatibleAsCharAndString(p.header.type, p.return)
 		THEN
 			IF ~CompatibleAsIntAndByte(p.header.type, p.return.type) THEN

@@ -231,6 +231,8 @@ BEGIN
 		O("Incompletely declared record as subtype of array")
 	| Ast.ErrDeclarationUnused:
 		O("Exist unused declaration in the scope")
+	| Ast.ErrProcNestedTooDeep:
+		O("Too deep nesting of subroutines")
 	END
 END AstError;
 

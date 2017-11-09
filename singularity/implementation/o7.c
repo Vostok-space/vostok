@@ -123,7 +123,7 @@ extern o7_long_t* o7_longs_undef(int len, o7_long_t array[O7_VLA(len)]) {
 }
 
 extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
-                      int s2_len, o7_char const s2[O7_VLA(s2_len)]) {
+                     int s2_len, o7_char const s2[O7_VLA(s2_len)]) {
 	int i, len, c1, c2;
 	if (s1_len < s2_len) {
 		len = s1_len;

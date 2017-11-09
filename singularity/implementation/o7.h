@@ -816,8 +816,16 @@ O7_ALWAYS_INLINE o7_cbool o7_frexp(double *f, int *n) {
 }
 
 extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
-                      int s2_len, o7_char const s2[O7_VLA(s2_len)])
+                     int s2_len, o7_char const s2[O7_VLA(s2_len)])
 	O7_ATTR_PURE;
+
+O7_ALWAYS_INLINE
+void o7_memcpy(int dest_len, o7_char dest[O7_VLA(dest_len)],
+               int src_len, o7_char const src[O7_VLA(src_len)])
+{
+	assert(src_len <= dest_len);
+	memcpy(dest, dest, src_len);
+}
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]);
 

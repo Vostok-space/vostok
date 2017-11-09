@@ -595,11 +595,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 	END JsKeyWord;
 
 	PROCEDURE O7(n: Strings.String): BOOLEAN;
-	BEGIN
-	RETURN Eq(n, "o7c")
-	    OR Eq(n, "O7C")
-	    OR Eq(n, "initialized")
-	    OR Eq(n, "init")
+	RETURN Eq(n, "initialized")
 	    OR Eq(n, "NULL")
 	END O7;
 
@@ -616,15 +612,23 @@ END IsNameOccupied;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
+    prs: ARRAY TranLim.MaxDeepProcedures + 1 OF Ast.Declarations;
+    i: INTEGER;
 BEGIN
 	IF (decl IS Ast.Type) & (decl.up # decl.module) & (decl.up # NIL)
 	OR ~gen.opt.procLocal & (decl IS Ast.Procedure)
 	THEN
 		up := decl.up;
-		WHILE ~(up IS Ast.Module) DO
-			Text.String(gen, up.name);
-			Text.Str(gen, "_");
+		i := 0;
+		WHILE up.up # NIL DO
+			prs[i] := up;
+			INC(i);
 			up := up.up
+		END;
+		WHILE i > 0 DO
+			DEC(i);
+			Text.String(gen, prs[i].name);
+			Text.Str(gen, "_")
 		END
 	END;
 	Text.String(gen, decl.name);
@@ -640,7 +644,16 @@ BEGIN
 	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module) THEN
 		ASSERT(decl.module # NIL);
 		Text.String(gen, decl.module.name);
-		Text.Str(gen, "_");
+
+		Text.Data(gen, "__", 0,
+		    ORD(
+		        Eq(decl.module.name, "O7")
+		     OR Eq(decl.module.name, "o7")
+		     OR Eq(decl.name, "init")
+		     OR Eq(decl.name, "cnst")
+		     OR Eq(decl.name, "len")
+		    ) + 1
+		);
 		Text.String(gen, decl.name);
 		IF decl IS Ast.Const THEN
 			Text.Str(gen, "_cnst")
