@@ -96,13 +96,13 @@ BEGIN
 	| Ast.ErrAssignExpectVarParam:
 		O("Expected variable expression in assignment")
 	| Ast.ErrCallNotProc:
-		O("Call applicable only to procedures and procedure's variables")
+		O("Call applicable only to subroutines and subroutine's variables")
 	| Ast.ErrCallIgnoredReturn:
 		O("Returned value can not be ignored")
 	| Ast.ErrCallExprWithoutReturn:
-		O("Called procedure not return value")
+		O("Called subroutine not return value")
 	| Ast.ErrCallExcessParam:
-		O("Excess parameters in procedure call")
+		O("Excess parameter in subroutine's call")
 	| Ast.ErrCallIncompatibleParamType:
 		O("Incompatible parameter's type")
 	| Ast.ErrCallExpectVarParam:
@@ -110,7 +110,7 @@ BEGIN
 	| Ast.ErrCallVarPointerTypeNotSame:
 		O("For variable parameter - pointer must used argument of same type")
 	| Ast.ErrCallParamsNotEnough:
-		O("Not enough parameters in call of procedure")
+		O("Not enough parameters in subroutine's call")
 	| Ast.ErrCaseExprNotIntOrChar:
 		O("Expression in CASE must be integer or char")
 	| Ast.ErrCaseLabelNotIntOrChar:
@@ -128,7 +128,7 @@ BEGIN
 	| Ast.ErrCaseElseAlreadyExist:
 		O("Else branch in CASE already exist")
 	| Ast.ErrProcHasNoReturn:
-		O("Procedure have not return")
+		O("Subroutine have not return")
 	| Ast.ErrReturnIncompatibleType:
 		O("Type of expression in return is not compatible with declared type in header")
 	| Ast.ErrExpectReturn:
@@ -166,7 +166,7 @@ BEGIN
 	| Ast.ErrDeclarationNotVar:
 		O("Expected variable")
 	| Ast.ErrForIteratorNotInteger:
-		O("Iterato of FOR not integer")
+		O("Iterator of 'FOR'-loop not integer")
 	| Ast.ErrNotBoolInIfCondition:
 		O("Expression in IF must be of boolean type")
 	| Ast.ErrNotBoolInWhileCondition:
@@ -214,9 +214,9 @@ BEGIN
 	| Ast.ErrDeclarationNotProc:
 		O("Expected name of procedure")
 	| Ast.ErrProcNotCommandHaveReturn:
-		O("As command can be procedure without return")
+		O("As command can be subroutine without return")
 	| Ast.ErrProcNotCommandHaveParams:
-		O("As command can be procedure without parameters")
+		O("As command can be subroutine without parameters")
 	| Ast.ErrReturnTypeArrayOrRecord:
 		O("Returned type can not be array or record")
 	| Ast.ErrRecordForwardUndefined:
@@ -224,11 +224,11 @@ BEGIN
 	| Ast.ErrPointerToNotRecord:
 		O("Pointer can reference only to record")
 	| Ast.ErrAssertConstFalse:
-		O("Assert expression always false")
+		O("Assertion always false")
 	| Ast.ErrVarOfRecordForward:
 		O("Declared variable which type is incompletely declared record")
 	| Ast.ErrArrayTypeOfRecordForward:
-		O("Incompletely declared record as subtype of array")
+		O("Incompletely declared record is used as subtype of array")
 	| Ast.ErrDeclarationUnused:
 		O("Exist unused declaration in the scope")
 	| Ast.ErrProcNestedTooDeep:

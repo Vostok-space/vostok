@@ -1375,23 +1375,23 @@ PROCEDURE DefaultOptions*(VAR opt: Options);
 BEGIN
 	V.Init(opt);
 	opt.strictSemicolon := TRUE;
-	opt.strictReturn := TRUE;
-	opt.saveComments := TRUE;
-	opt.multiErrors := FALSE;
-	opt.printError := Blank
+	opt.strictReturn    := TRUE;
+	opt.saveComments    := TRUE;
+	opt.multiErrors     := FALSE;
+	opt.printError      := Blank
 END DefaultOptions;
 
 PROCEDURE ParserInit(VAR p: Parser; in: Stream.PIn; scr: ARRAY OF CHAR; opt: Options);
 BEGIN
 	V.Init(p);
-	p.opt := opt;
-	p.err := FALSE;
-	p.errorsCount := 0;
-	p.module := NIL;
-	p.provider := NIL;
-	p.varParam := FALSE;
-	p.inLoops := 0;
-	p.inConditions := 0;
+	p.opt           := opt;
+	p.err           := FALSE;
+	p.errorsCount   := 0;
+	p.module        := NIL;
+	p.provider      := NIL;
+	p.varParam      := FALSE;
+	p.inLoops       := 0;
+	p.inConditions  := 0;
 	IF in # NIL THEN
 		Scanner.Init(p.s, in)
 	ELSE
@@ -1421,7 +1421,7 @@ END Script;
 
 BEGIN
 	declarations := Declarations;
-	type := Type;
-	statements := Statements;
-	expression := Expression
+	type         := Type;
+	statements   := Statements;
+	expression   := Expression
 END Parser.
