@@ -1227,11 +1227,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expression(gen, p2.expr);
 				Text.Str(gen, ")")
 			| Scanner.Floor:
-				Text.Str(gen, "(int)");
-				Factor(gen, e1)
+				Text.Str(gen, "o7_floor(");
+				Expression(gen, e1);
+				Text.Str(gen, ")")
 			| Scanner.Flt:
-				Text.Str(gen, "(double)");
-				Factor(gen, e1)
+				Text.Str(gen, "o7_flt(");
+				Expression(gen, e1);
+				Text.Str(gen, ")")
 			| Scanner.Ord:
 				Ord(gen, e1)
 			| Scanner.Chr:
@@ -1240,7 +1242,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Expression(gen, e1);
 					Text.Str(gen, ")")
 				ELSE
-					Text.Str(gen, "(char unsigned)");
+					Text.Str(gen, "(o7_char)");
 					Factor(gen, e1)
 				END
 			| Scanner.Inc:

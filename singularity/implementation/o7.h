@@ -377,7 +377,7 @@ extern float* o7_floats_undef(int len, float array[O7_VLA(len)]);
 	o7_floats_undef(sizeof(array) / sizeof(float), (float *)(array))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_flt(float d) {
+float o7_fl(float d) {
 	if (!O7_UNDEF) {
 		;
 	} else if (sizeof(unsigned) == sizeof(double) / 2) {
@@ -440,17 +440,17 @@ char unsigned o7_chr(int v) {
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_fadd(double a1, double a2) {
-	return o7_dbl_finite(o7_dbl(a1) + o7_dbl(a2));
+	return o7_dbl_finite(a1 + a2);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_fsub(double m, double s) {
-	return o7_dbl_finite(o7_dbl(m) - o7_dbl(s));
+	return o7_dbl_finite(m - s);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_fmul(double m1, double m2) {
-	return o7_dbl_finite(o7_dbl(m1) * o7_dbl(m2));
+	return o7_dbl_finite(m1 * m2);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
@@ -458,22 +458,22 @@ double o7_fdiv(double n, double d) {
 	if (O7_FLOAT_DIV_ZERO) {
 		assert(d != 0.0);
 	}
-	return o7_dbl_finite(o7_dbl(n) / o7_dbl(d));
+	return o7_dbl_finite(n / d);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 float o7_faddf(float a1, float a2) {
-	return o7_flt_finite(o7_flt(a1) + o7_flt(a2));
+	return o7_flt_finite(a1 + a2);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 float o7_fsubf(float m, float s) {
-	return o7_flt_finite(o7_flt(m) - o7_flt(s));
+	return o7_flt_finite(m - s);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 float o7_fmulf(float m1, float m2) {
-	return o7_flt_finite(o7_flt(m1) * o7_flt(m2));
+	return o7_flt_finite(m1 * m2);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
@@ -481,7 +481,7 @@ float o7_fdivf(float n, float d) {
 	if (O7_FLOAT_DIV_ZERO) {
 		assert(d != 0.0f);
 	}
-	return o7_flt_finite(o7_flt(n) / o7_flt(d));
+	return o7_flt_finite(n / d);
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
@@ -801,6 +801,17 @@ O7_ATTR_CONST O7_ALWAYS_INLINE
 int o7_sti(unsigned v) {
 	assert(v <= (unsigned)INT_MAX);
 	return (int)v;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+int o7_floor(double v) {
+	assert((double)(-INT_MAX) <= v && v <= (double)INT_MAX);
+	return (int)v;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+double o7_flt(int v) {
+	return (double)o7_int(v);
 }
 
 O7_ALWAYS_INLINE o7_cbool o7_ldexp(double *f, int n) {
