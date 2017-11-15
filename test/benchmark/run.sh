@@ -27,7 +27,7 @@ mkdir -p /tmp/o7c-bench
 for o7c in $LIST; do
 	echo
 	ls -l $o7c
-	for i in 0 1 2; do
+	for i in 0 1 2 3 4; do
 		/usr/bin/time -p $o7c to-c "RepeatTran.Go(10)" /tmp/o7c-bench -infr . -m source -m test/benchmark 2>&1 | grep real
 	done
 done

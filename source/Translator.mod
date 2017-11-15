@@ -59,6 +59,9 @@ TYPE
 		END
 	END;
 
+VAR
+	pathSep: ARRAY 2 OF CHAR;
+
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
 	Out.Int(code - Parser.ErrAstBegin, 0); Out.String(" ");
@@ -187,9 +190,14 @@ BEGIN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := Cli.ErrNotEnoughArgs
-			ELSIF CopyInfrPart(str, i, arg, "/singularity/definition")
+			ELSIF Platform.Posix
+			    & CopyInfrPart(str, i, arg, "/singularity/definition")
 			    & CopyInfrPart(str, i, arg, "/library")
 			    & CopyInfrPart(cDirs, dirsOfs, arg, "/singularity/implementation")
+			   OR Platform.Windows
+			    & CopyInfrPart(str, i, arg, "\singularity\definition")
+			    & CopyInfrPart(str, i, arg, "\library")
+			    & CopyInfrPart(cDirs, dirsOfs, arg, "\singularity\implementation")
 			THEN
 				INCL(sing, count);
 				INC(count, 2)
@@ -273,11 +281,10 @@ VAR m: Ast.Module;
 		l := 0;
 		IF (len > 0)
 		 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
-		 & Strings.CopyChars(n, l, "/", 0, 1)
+		 & Strings.CopyCharsNull(n, l, pathSep)
 		 & Strings.CopyChars(n, l, name, ofs, end)
 		 & Strings.CopyChars(n, l, p.fileExt, 0, p.extLen)
 		THEN
-			Log.Str("Открыть "); Log.Str(n); Log.Ln;
 			in := File.OpenIn(n)
 		ELSE
 			in := NIL
@@ -319,14 +326,15 @@ END RegModule;
 
 PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
                       module: Ast.Module; isMain: BOOLEAN;
-                      VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+                      VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                      VAR exec: Exec.Code): INTEGER;
 VAR destLen: INTEGER;
-	ret: INTEGER;
+    ret: INTEGER;
 BEGIN
 	interface := NIL;
 	implementation := NIL;
 	destLen := dirLen;
-	IF ~Strings.CopyChars(dir, destLen, "/", 0, 1)
+	IF ~Strings.CopyCharsNull(dir, destLen, pathSep)
 	OR ~Strings.CopyToChars(dir, destLen, module.name)
 	OR (destLen > LEN(dir) - 3)
 	THEN
@@ -342,6 +350,8 @@ BEGIN
 			ret := Cli.ErrOpenH
 		ELSE
 			dir[destLen + 1] := "c";
+			(* TODO *)
+			ASSERT(Exec.Add(exec, dir, 0));
 			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
@@ -370,27 +380,37 @@ END NewProvider;
 
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     opt: GeneratorC.Options;
-                    VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+                    VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                    cDirs: ARRAY OF CHAR;
+                    VAR exec: Exec.Code): INTEGER;
 VAR imp: Ast.Declaration;
 	ret: INTEGER;
 	iface, impl: File.Out;
 BEGIN
-	module.mark := TRUE;
+	module.used := TRUE;
 
 	ret := ErrNo;
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.mark THEN
-			ret := GenerateC(imp.module, FALSE, NIL, opt, dir, dirLen)
+		IF ~imp.module.used THEN
+			ret := GenerateC(imp.module, FALSE, NIL, opt, dir, dirLen, cDirs, exec)
 		END;
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen);
-		IF ret = ErrNo THEN
-			GeneratorC.Generate(iface, impl, module, cmd, opt);
-			File.CloseOut(iface);
-			File.CloseOut(impl)
+		IF ~module.mark THEN
+			ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, exec);
+			IF ret = ErrNo THEN
+				GeneratorC.Generate(iface, impl, module, cmd, opt);
+				File.CloseOut(iface);
+				File.CloseOut(impl)
+			END
+		ELSIF cDirs[0] # Utf8.Null THEN
+			(* TODO *)
+			ASSERT(Exec.FirstPart(exec, cDirs)
+			     & Exec.AddPart(exec, pathSep)
+			     & Exec.AddPart(exec, module.name.block.s)
+			     & Exec.LastPart(exec, ".c"))
 		END
 	END
 	RETURN ret
@@ -406,8 +426,6 @@ BEGIN
 	ELSIF Platform.Windows THEN
 		ASSERT(Exec.Init(cmd, "mkdir")
 		     & Exec.Add(cmd, name, 0))
-	ELSE
-		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END MakeDir;
@@ -424,8 +442,6 @@ BEGIN
 		ASSERT(Exec.Init(cmd, "rmdir")
 		     & Exec.AddClean(cmd, " /s/q")
 		     & Exec.Add(cmd, name, 0))
-	ELSE
-		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END RemoveDir;
@@ -437,8 +453,14 @@ VAR binLen, i: INTEGER;
 	cmd: Exec.Code;
 BEGIN
 	len := 0;
-	ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
-	     & Strings.CopyToChars(dirCOut, len, name));
+	IF Platform.Posix THEN
+		ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
+		     & Strings.CopyToChars(dirCOut, len, name))
+	ELSIF Platform.Windows THEN
+		(* TODO temp *)
+		ASSERT(Strings.CopyCharsNull(dirCOut, len, "temp\o7c-")
+		     & Strings.CopyToChars(dirCOut, len, name))
+	END;
 
 	i := 0;
 	ok := MakeDir(dirCOut);
@@ -455,8 +477,9 @@ BEGIN
 	IF ok & (bin[0] = Utf8.Null) THEN
 		binLen := 0;
 		ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
-		     & Strings.CopyCharsNull(bin, binLen, "/")
-		     & Strings.CopyToChars(bin, binLen, name))
+		     & Strings.CopyCharsNull(bin, binLen, pathSep)
+		     & Strings.CopyToChars(bin, binLen, name)
+		     & (~Platform.Windows OR Strings.CopyCharsNull(bin, binLen, ".exe")))
 	END
 	RETURN ok
 END GetTempOutC;
@@ -474,11 +497,12 @@ VAR ret: INTEGER;
 	init, arg: INTEGER;
 	call: Ast.Call;
 	script: BOOLEAN;
+	exec: Exec.Code;
 
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
-	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR): INTEGER;
-	VAR cmd: Exec.Code;
-		outCLen: INTEGER;
+	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
+	              VAR cmd: Exec.Code): INTEGER;
+	VAR outCLen: INTEGER;
 		ret, i: INTEGER;
 		ok: BOOLEAN;
 	BEGIN
@@ -486,30 +510,31 @@ VAR ret: INTEGER;
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
-			ret := GenerateC(module, TRUE, call, opt, outC, outCLen);
+			IF cc[0] = Utf8.Null THEN
+				ok := Exec.AddClean(cmd, "cc -g -O1")
+			ELSE
+				ok := Exec.AddClean(cmd, cc)
+			END;
+			ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd);
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
-				ok := Exec.Init(cmd, "");
-				IF cc[0] = Utf8.Null THEN
-					ok := ok & Exec.AddClean(cmd, "cc -g -O1");
-				ELSE
-					ok := ok & Exec.AddClean(cmd, cc)
-				END;
 				ok := ok
 				    & Exec.Add(cmd, "-o", 0)
 				    & Exec.Add(cmd, bin, 0)
-				    & Exec.Add(cmd, outC, 0)
-				    & Exec.AddClean(cmd, "/*.c -I")
+				    & Exec.Add(cmd, "-I", 0)
 				    & Exec.Add(cmd, outC, 0);
 				i := 0;
 				WHILE ok & (cDirs[i] # Utf8.Null) DO
-					ok := Exec.Add(cmd, cDirs, i)
-					    & Exec.AddClean(cmd, "/*.c -I")
-					    & Exec.Add(cmd, cDirs, i);
+					ok := Exec.Add(cmd, "-I", 0)
+					    & Exec.Add(cmd, cDirs, i)
+					    & Exec.FirstPart(cmd, cDirs)
+					    & Exec.AddPart(cmd, pathSep)
+					    & Exec.LastPart(cmd, "o7.c");
 					i := i + Strings.CalcLen(cDirs, i) + 1
 				END;
-				ok := ok & Exec.Add(cmd, "-lm", 0);
+				ok := ok & (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
 				Exec.Log(cmd);
+				(* TODO *)
 				ASSERT(ok);
 				IF Exec.Do(cmd) # Exec.Ok THEN
 					ret := Cli.ErrCCompiler
@@ -561,9 +586,9 @@ VAR ret: INTEGER;
 		IF src[i] = "." THEN
 			j := i + 1;
 			Empty(src, j);
-			WHILE (src[j] >= "a") & (src[j] <= "z")
-			   OR (src[j] >= "A") & (src[j] <= "Z")
-			   OR (src[j] >= "0") & (src[j] <= "9")
+			WHILE ("a" <= src[j]) & (src[j] <= "z")
+			   OR ("A" <= src[j]) & (src[j] <= "Z")
+			   OR ("0" <= src[j]) & (src[j] <= "9")
 			DO
 				INC(j)
 			END;
@@ -620,13 +645,14 @@ BEGIN
 					IF init >= 0 THEN
 						opt.varInit := init
 					END;
+					ASSERT(Exec.Init(exec, ""));
 					CASE res OF
 					  ResultC:
 						DEC(resPathLen);
 						ret := GenerateC(module, (call # NIL) OR script, call,
-						                 opt, resPath, resPathLen)
+						                 opt, resPath, resPathLen, cDirs, exec)
 					| ResultBin, ResultRun:
-						ret := Bin(module, call, opt, cDirs, cc, outC, resPath);
+						ret := Bin(module, call, opt, cDirs, cc, outC, resPath, exec);
 						IF (res = ResultRun) & (ret = ErrNo) THEN
 							ret := Run(resPath, arg)
 						END;
@@ -675,4 +701,12 @@ BEGIN
 	END
 END Start;
 
+BEGIN
+	IF Platform.Posix THEN
+		pathSep := "/"
+	ELSIF Platform.Windows THEN
+		pathSep := "\"
+	ELSE
+		ASSERT(FALSE)
+	END
 END Translator.

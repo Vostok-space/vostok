@@ -20,7 +20,8 @@ IMPORT
 	V,
 	Utf8,
 	OsExec,
-	Vlog := Log;
+	Vlog := Log,
+	Platform;
 
 CONST
 	CodeSize* = 65536;
@@ -54,12 +55,16 @@ END Copy;
 PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
 VAR ret: BOOLEAN;
 BEGIN
-	d[i] := "'";
-	INC(i);
+	IF Platform.Posix THEN
+		d[i] := "'";
+		INC(i)
+	END;
 	ret := Copy(d, i, s, j) & (i < LEN(d) - 1);
 	IF ret THEN
-		d[i] := "'";
-		INC(i);
+		IF Platform.Posix THEN
+			d[i] := "'";
+			INC(i)
+		END;
 		d[i] := Utf8.Null
 	END
 	RETURN s[j] = Utf8.Null
@@ -99,8 +104,11 @@ BEGIN
 	ret := c.len < LEN(c.buf) - 2;
 	IF ret THEN
 		c.buf[c.len] := " ";
-		c.buf[c.len + 1] := "'";
-		INC(c.len, 2);
+		INC(c.len);
+		IF Platform.Posix THEN
+			c.buf[c.len] := "'";
+			INC(c.len, 1)
+		END;
 		ofs := 0;
 		ret := Copy(c.buf, c.len, arg, ofs)
 	END
@@ -120,10 +128,10 @@ VAR ret: BOOLEAN;
 BEGIN
 	ofs := 0;
 	ret := Copy(c.buf, c.len, arg, ofs) & (c.len < LEN(c.buf) - 1);
-	IF ret THEN
+	IF ret & Platform.Posix THEN
 		c.buf[c.len] := "'";
-		c.buf[c.len + 1] := Utf8.Null;
-		INC(c.len, 2);
+		INC(c.len, 1);
+		c.buf[c.len] := Utf8.Null;
 	END
 	RETURN ret
 END LastPart;
