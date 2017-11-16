@@ -105,6 +105,18 @@ extern int CFiles_Remove(
 	return remove((char const *)name) == 0;
 }
 
+extern int CFiles_Exist(int len, char unsigned const name[O7C_VLA_LEN(len)], int ofs) {
+	FILE *file;
+	assert(0 <= ofs);
+	assert(ofs < len - 1);
+	/* TODO менее ресурсоёмкий способ */
+	file = fopen((char const *)(name + ofs), "rb");
+	if (NULL != file) {
+		fclose(file);
+	}
+	return NULL != file;
+}
+
 extern void CFiles_init(void) {
 	O7C_NEW2(&CFiles_in, NULL, NULL);
 	CFiles_in->file = stdin;

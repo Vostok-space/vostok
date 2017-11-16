@@ -55,6 +55,7 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes);
 
 extern int CFiles_Remove(int len, o7_char const name[O7_VLA(len)], int ofs);
 
+extern o7_bool CFiles_Exist(int len, o7_char const name[O7_VLA(len)], int ofs);
 
 extern void CFiles_init(void);
 

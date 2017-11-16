@@ -68,6 +68,10 @@ PROCEDURE Remove*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 	RETURN FALSE
 END Remove;
 
+PROCEDURE Exist*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+	RETURN FALSE
+END Exist;
+
 BEGIN
 	in  := NIL;
 	out := NIL;

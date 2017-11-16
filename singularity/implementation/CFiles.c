@@ -90,13 +90,25 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 	return pos >= 0;
 }
 
-extern int CFiles_Remove(
-	int name_len, o7_char const name[O7_VLA(name_len)], int ofs)
+extern int CFiles_Remove(int len, o7_char const name[O7_VLA(len)], int ofs)
 {
-	assert(ofs >= 0);
-	assert(name_len > 1);
-	return remove((char const *)name) == 0;
+	assert(0 <= ofs);
+	assert(ofs < len - 1);
+	return remove((char const *)name + ofs) == 0;
 }
+
+extern o7_bool CFiles_Exist(int len, o7_char const name[O7_VLA(len)], int ofs) {
+	FILE *file;
+	assert(0 <= ofs);
+	assert(ofs < len - 1);
+	/* TODO менее ресурсоёмкий способ */
+	file = fopen((char const *)(name + ofs), "rb");
+	if (NULL != file) {
+		fclose(file);
+	}
+	return NULL != file;
+}
+
 
 extern void CFiles_init(void) {
 	O7_NEW2(&CFiles_in, NULL, NULL);
