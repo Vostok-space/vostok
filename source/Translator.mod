@@ -32,7 +32,8 @@ IMPORT
 	Exec := PlatformExec,
 	Message := MessageEn,
 	Cli := CliParser,
-	Platform;
+	Platform,
+	Files := CFiles;
 
 CONST
 	ResultC   = 0;
@@ -384,7 +385,8 @@ PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     cDirs: ARRAY OF CHAR;
                     VAR exec: Exec.Code): INTEGER;
 VAR imp: Ast.Declaration;
-	ret: INTEGER;
+	ret, i, cDirsLen, nameLen: INTEGER;
+	name: ARRAY 512 OF CHAR;
 	iface, impl: File.Out;
 BEGIN
 	module.used := TRUE;
@@ -397,20 +399,29 @@ BEGIN
 		END;
 		imp := imp.next
 	END;
-	IF ret = ErrNo THEN
-		IF ~module.mark THEN
-			ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, exec);
-			IF ret = ErrNo THEN
-				GeneratorC.Generate(iface, impl, module, cmd, opt);
-				File.CloseOut(iface);
-				File.CloseOut(impl)
-			END
-		ELSIF cDirs[0] # Utf8.Null THEN
+	IF ret # ErrNo THEN
+		;
+	ELSIF ~module.mark THEN
+		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, exec);
+		IF ret = ErrNo THEN
+			GeneratorC.Generate(iface, impl, module, cmd, opt);
+			File.CloseOut(iface);
+			File.CloseOut(impl)
+		END
+	ELSE
+		i := 0;
+		WHILE cDirs[i] # Utf8.Null DO
+			nameLen := 0;
+			cDirsLen := Strings.CalcLen(cDirs, i);
 			(* TODO *)
-			ASSERT(Exec.FirstPart(exec, cDirs)
-			     & Exec.AddPart(exec, pathSep)
-			     & Exec.AddPart(exec, module.name.block.s)
-			     & Exec.LastPart(exec, ".c"))
+			ASSERT(Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
+			     & Strings.CopyCharsNull(name, nameLen, pathSep)
+			     & Strings.CopyToChars(name, nameLen, module.name)
+			     & Strings.CopyCharsNull(name, nameLen, ".c")
+
+			     & (~Files.Exist(name, 0) OR Exec.Add(exec, name, 0))
+			);
+			i := i + cDirsLen + 1
 		END
 	END
 	RETURN ret
@@ -503,8 +514,9 @@ VAR ret: INTEGER;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
 	              VAR cmd: Exec.Code): INTEGER;
 	VAR outCLen: INTEGER;
-		ret, i: INTEGER;
+		ret, i, nameLen, cDirsLen: INTEGER;
 		ok: BOOLEAN;
+		name: ARRAY 512 OF CHAR;
 	BEGIN
 		ok := GetTempOutC(outC, outCLen, bin, module.name);
 		IF ~ok THEN
@@ -525,12 +537,17 @@ VAR ret: INTEGER;
 				    & Exec.Add(cmd, outC, 0);
 				i := 0;
 				WHILE ok & (cDirs[i] # Utf8.Null) DO
+					nameLen := 0;
+					cDirsLen := Strings.CalcLen(cDirs, i);
 					ok := Exec.Add(cmd, "-I", 0)
 					    & Exec.Add(cmd, cDirs, i)
-					    & Exec.FirstPart(cmd, cDirs)
-					    & Exec.AddPart(cmd, pathSep)
-					    & Exec.LastPart(cmd, "o7.c");
-					i := i + Strings.CalcLen(cDirs, i) + 1
+
+					    & Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
+					    & Strings.CopyCharsNull(name, nameLen, pathSep)
+					    & Strings.CopyCharsNull(name, nameLen, "o7.c")
+
+					    & (~Files.Exist(name, 0) OR Exec.Add(cmd, name, 0));
+					i := i + cDirsLen + 1
 				END;
 				ok := ok & (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
 				Exec.Log(cmd);
