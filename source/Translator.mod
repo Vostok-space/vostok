@@ -33,7 +33,8 @@ IMPORT
 	Message := MessageEn,
 	Cli := CliParser,
 	Platform,
-	Files := CFiles;
+	Files := CFiles,
+	OsEnv;
 
 CONST
 	ResultC   = 0;
@@ -468,8 +469,9 @@ BEGIN
 		ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
 		     & Strings.CopyToChars(dirCOut, len, name))
 	ELSIF Platform.Windows THEN
-		(* TODO temp *)
-		ASSERT(Strings.CopyCharsNull(dirCOut, len, "temp\o7c-")
+		(* TODO *)
+		ASSERT(OsEnv.Get(dirCOut, len, "temp")
+		     & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
 		     & Strings.CopyToChars(dirCOut, len, name))
 	END;
 
