@@ -1031,7 +1031,7 @@ BEGIN
 	IF (gen.opt.varInit = VarInitUndefined)
 	 & (e IS Ast.Designator)
 	 & (e.value = NIL)
-	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdReal})
+	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 	THEN
 		CASE e.type.id OF
 		  Ast.IdBoolean:
@@ -1042,6 +1042,8 @@ BEGIN
 			Text.Str(gen, "o7_long(")
 		| Ast.IdReal:
 			Text.Str(gen, "o7_dbl(")
+		| Ast.IdReal32:
+			Text.Str(gen, "o7_fl(")
 		END;
 		expression(gen, e);
 		Text.Str(gen, ")")
@@ -1561,58 +1563,49 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	PROCEDURE SumCheck(VAR gen: Generator; sum: Ast.ExprSum);
 	VAR arr: ARRAY TranLim.MaxTermsInSum OF Ast.ExprSum;
 		i, last: INTEGER;
+
+		PROCEDURE GenArrOfAddOrSub(VAR gen: Generator;
+		                           arr: ARRAY OF Ast.ExprSum; last: INTEGER;
+		                           add, sub: ARRAY OF CHAR);
+		VAR i: INTEGER;
+		BEGIN
+			i := last;
+			WHILE i > 0 DO
+				CASE arr[i].add OF
+				  Scanner.Minus:
+					Text.Str(gen, sub)
+				| Scanner.Plus:
+					Text.Str(gen, add)
+				END;
+				DEC(i)
+			END;
+			IF arr[0].add = Scanner.Minus THEN
+				Text.Str(gen, sub);
+				Text.Str(gen, "0, ");
+				Expression(gen, arr[0].term);
+				Text.Str(gen, ")")
+			ELSE
+				Expression(gen, arr[0].term)
+			END
+		END GenArrOfAddOrSub;
 	BEGIN
-		i := -1;
+		last := -1;
 		REPEAT
-			INC(i);
-			arr[i] := sum;
+			INC(last);
+			arr[last] := sum;
 			sum := sum.next
 		UNTIL sum = NIL;
-		last := i;
-		IF arr[0].type.id = Ast.IdInteger THEN
-			WHILE i > 0 DO
-				CASE arr[i].add OF
-				  Scanner.Minus:
-					Text.Str(gen, "o7_sub(")
-				| Scanner.Plus:
-					Text.Str(gen, "o7_add(")
-				END;
-				DEC(i)
-			END
-		ELSIF arr[0].type.id = Ast.IdLongInt THEN
-			WHILE i > 0 DO
-				CASE arr[i].add OF
-				  Scanner.Minus:
-					Text.Str(gen, "o7_lsub(")
-				| Scanner.Plus:
-					Text.Str(gen, "o7_ladd(")
-				END;
-				DEC(i)
-			END
-		ELSE ASSERT(arr[0].type.id = Ast.IdReal);
-			WHILE i > 0 DO
-				CASE arr[i].add OF
-				  Scanner.Minus:
-					Text.Str(gen, "o7_fsub(")
-				| Scanner.Plus:
-					Text.Str(gen, "o7_fadd(")
-				END;
-				DEC(i)
-			END
+		CASE arr[0].type.id OF
+		  Ast.IdInteger:
+			GenArrOfAddOrSub(gen, arr, last, "o7_add("  , "o7_sub(")
+		| Ast.IdLongInt:
+			GenArrOfAddOrSub(gen, arr, last, "o7_ladd(" , "o7_lsub(")
+		| Ast.IdReal:
+			GenArrOfAddOrSub(gen, arr, last, "o7_fadd(" , "o7_fsub(")
+		| Ast.IdReal32:
+			GenArrOfAddOrSub(gen, arr, last, "o7_faddf(", "o7_fsubf(")
 		END;
-		IF arr[0].add = Scanner.Minus THEN
-			IF arr[0].type.id = Ast.IdInteger THEN
-				Text.Str(gen, "o7_sub(0, ")
-			ELSIF arr[0].type.id = Ast.IdLongInt THEN
-				Text.Str(gen, "o7_lsub(0, ")
-			ELSE
-				Text.Str(gen, "o7_fsub(0, ")
-			END;
-			Expression(gen, arr[0].term);
-			Text.Str(gen, ")")
-		ELSE
-			Expression(gen, arr[0].term)
-		END;
+		i := 0;
 		WHILE i < last DO
 			INC(i);
 			Text.Str(gen, ", ");
@@ -1663,7 +1656,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			arr[i] := term
 		END;
 		last := i;
-		IF term.type.id = Ast.IdInteger THEN
+		CASE term.type.id OF
+		  Ast.IdInteger:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
 				  Scanner.Asterisk : Text.Str(gen, "o7_mul(")
@@ -1672,11 +1666,28 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				DEC(i)
 			END
-		ELSE ASSERT(term.type.id = Ast.IdReal);
+		| Ast.IdLongInt:
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk : Text.Str(gen, "o7_lmul(")
+				| Scanner.Div      : Text.Str(gen, "o7_ldiv(")
+				| Scanner.Mod      : Text.Str(gen, "o7_lmod(")
+				END;
+				DEC(i)
+			END
+		| Ast.IdReal:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
 				  Scanner.Asterisk : Text.Str(gen, "o7_fmul(")
 				| Scanner.Slash    : Text.Str(gen, "o7_fdiv(")
+				END;
+				DEC(i)
+			END
+		| Ast.IdReal32:
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk : Text.Str(gen, "o7_fmulf(")
+				| Scanner.Slash    : Text.Str(gen, "o7_fdivf(")
 				END;
 				DEC(i)
 			END
@@ -1881,20 +1892,20 @@ BEGIN
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
 		IF	  gen.opt.checkArith
-			& (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
+			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 			& (expr.value = NIL)
 		THEN	SumCheck(gen, expr(Ast.ExprSum))
 		ELSE	Sum(gen, expr(Ast.ExprSum))
 		END
 	| Ast.IdTerm:
 		IF	  gen.opt.checkArith
-			& (expr.type.id IN {Ast.IdInteger, Ast.IdReal})
+			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 			& (expr.value = NIL)
 		THEN	TermCheck(gen, expr(Ast.ExprTerm))
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:
-		IF expr.type.id = Ast.IdSet
+		IF expr.type.id IN { Ast.IdSet, Ast.IdLongSet }
 		THEN	Text.Str(gen, "~")
 		ELSE	Text.Str(gen, "!")
 		END;
@@ -2015,7 +2026,8 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
 	BEGIN
 		CASE var.type.id OF
-		  Ast.IdInteger, Ast.IdByte, Ast.IdReal, Ast.IdSet:
+		  Ast.IdInteger, Ast.IdLongInt, Ast.IdByte, Ast.IdReal, Ast.IdReal32,
+		  Ast.IdSet, Ast.IdLongSet:
 			Text.Str(gen, " = 0")
 		| Ast.IdBoolean:
 			Text.Str(gen, " = 0 > 1")
@@ -2032,6 +2044,8 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 		CASE var.type.id OF
 		  Ast.IdInteger:
 			Text.Str(gen, " = O7_INT_UNDEF")
+		| Ast.IdLongInt:
+			Text.Str(gen, " = O7_LONG_UNDEF")
 		| Ast.IdBoolean:
 			Text.Str(gen, " = O7_BOOL_UNDEF")
 		| Ast.IdByte:
@@ -2040,7 +2054,9 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 			Text.Str(gen, " = '\0'")
 		| Ast.IdReal:
 			Text.Str(gen, " = O7_DBL_UNDEF")
-		| Ast.IdSet:
+		| Ast.IdReal32:
+			Text.Str(gen, " = O7_FLT_UNDEF")
+		| Ast.IdSet, Ast.IdLongSet:
 			Text.Str(gen, " = 0")
 		| Ast.IdPointer, Ast.IdProcType:
 			Text.Str(gen, " = NULL")
@@ -2087,7 +2103,7 @@ BEGIN
 		typ := typ.type
 	END;
 	id := typ.id
-	RETURN id IN {Ast.IdReal, Ast.IdInteger, Ast.IdBoolean}
+	RETURN id IN {Ast.IdReal, Ast.IdReal32, Ast.IdInteger, Ast.IdLongInt, Ast.IdBoolean}
 END IsArrayTypeSimpleUndef;
 
 PROCEDURE ArraySimpleUndef(VAR gen: Generator; arrTypeId: INTEGER;
@@ -2096,8 +2112,12 @@ BEGIN
 	CASE arrTypeId OF
 	  Ast.IdInteger:
 		Text.Str(gen, "O7_INTS_UNDEF(")
+	| Ast.IdLongInt:
+		Text.Str(gen, "O7_LONGS_UNDEF(")
 	| Ast.IdReal:
 		Text.Str(gen, "O7_DOUBLES_UNDEF(")
+	| Ast.IdReal32:
+		Text.Str(gen, "O7_FLOATS_UNDEF(")
 	| Ast.IdBoolean:
 		Text.Str(gen, "O7_BOOLS_UNDEF(")
 	END;
@@ -2716,7 +2736,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END AssertArraySize;
 	BEGIN
 		toByte := (st.designator.type.id = Ast.IdByte)
-		        & (st.expr.type.id = Ast.IdInteger)
+		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 		        & gen.opt.checkArith & (st.expr.value = NIL);
 		retain := (st.designator.type.id = Ast.IdPointer)
 		        & (gen.opt.memManager = MemManagerCounter);
@@ -2737,7 +2757,11 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Text.Str(gen, ", ")
 			ELSIF toByte THEN
 				Designator(gen, st.designator);
-				Text.Str(gen, " = o7_byte(")
+				IF st.expr.type.id = Ast.IdInteger THEN
+					Text.Str(gen, " = o7_byte(")
+				ELSE
+					Text.Str(gen, " = o7_lbyte(")
+				END
 			ELSE
 				Designator(gen, st.designator);
 				Text.Str(gen, " = ")

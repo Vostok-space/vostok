@@ -597,6 +597,84 @@ int o7_mod(int n, int d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
+	o7_long_t s;
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_saddl_overflow(o7_long(a1), o7_long(a2), &s);
+		assert(!overflow && s >= -O7_LONG_MAX);
+	} else {
+		if (!O7_OVERFLOW) {
+			if (O7_UNDEF) {
+				assert(o7_long_inited(a1));
+				assert(o7_long_inited(a2));
+			}
+		} else if (a2 >= 0) {
+			assert(o7_long(a1) <=  O7_LONG_MAX - a2);
+		} else {
+			assert(a1 >= -O7_LONG_MAX - o7_long(a2));
+		}
+		s = a1 + a2;
+	}
+	return s;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
+	o7_long_t d;
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_ssubl_overflow(o7_long(m), o7_long(s), &d);
+		assert(!overflow && d >= -O7_LONG_MAX);
+	} else {
+		if (!O7_OVERFLOW) {
+			if (O7_UNDEF) {
+				assert(o7_long_inited(m));
+				assert(o7_long_inited(s));
+			}
+		} else if (s >= 0) {
+			assert(m >= -O7_LONG_MAX + s);
+		} else {
+			assert(o7_long(m) <= O7_LONG_MAX + o7_long(s));
+		}
+		d = m - s;
+	}
+	return d;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
+	o7_long_t p;
+	o7_cbool overflow;
+	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+		overflow = __builtin_smull_overflow(o7_long(m1), o7_long(m2), &p);
+		assert(!overflow && p >= -O7_LONG_MAX);
+	} else {
+		if (O7_OVERFLOW && (0 != m2)) {
+			assert(abs(m1) <= O7_LONG_MAX / abs(m2));
+		}
+		p = o7_long(m1) * o7_long(m2);
+	}
+	return p;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
+	if (O7_OVERFLOW && O7_DIV_ZERO) {
+		assert(d != 0);
+	}
+	return o7_long(n) / o7_long(d);
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
+	if (O7_OVERFLOW && O7_DIV_ZERO) {
+		assert(d != 0);
+	}
+	return o7_long(n) % o7_long(d);
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
 int o7_ind(int len, int ind) {
 	if (O7_ARRAY_INDEX) {
 		assert((unsigned)ind < (unsigned)len);
@@ -788,14 +866,21 @@ unsigned o7_set(int low, int high) {
 	return (~0u << low) & (~0u >> (31 - high));
 }
 
-#define O7_SET(low, high) ((~0u << low) & (~0u >> (31 - high)))
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_ulong_t o7_lset(int low, int high) {
+	assert(high <= 63);
+	assert(0 <= low && low <= high);
+	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
+}
+
+#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_bool o7_in(int n, unsigned set) {
-	return (n >= 0) && (n <= 31) && (0 != (set & (1u << n)));
+	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
 }
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != (set) & (1u << (n))))
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != (set) & ((o7_ulong_t)1u << (n))))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 int o7_sti(unsigned v) {
