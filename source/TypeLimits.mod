@@ -25,6 +25,7 @@ CONST
 	ByteMax* = 0FFH;
 
 	SetMax* = 31;
+	LongSetMax* = 63;
 
 PROCEDURE IsNan*(r: REAL): BOOLEAN;
 	RETURN r # r
