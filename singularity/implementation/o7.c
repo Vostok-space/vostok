@@ -31,20 +31,21 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	float undefinedf;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
-	assert(INT_MIN < -INT_MAX);
+	O7_STATIC_ASSERT(INT_MIN < -INT_MAX);
 
-	assert((sizeof(int ) * 2 == sizeof(double))
-		|| (sizeof(long) * 2 == sizeof(double)));
+	O7_STATIC_ASSERT((sizeof(int ) * 2 == sizeof(double))
+	              || (sizeof(long) * 2 == sizeof(double)));
+
+	/* для случая использования int в качестве INTEGER */
+	O7_STATIC_ASSERT(INT_MAX >= 2147483647);
+
+	O7_STATIC_ASSERT((int)(0 < 1) == 1);
+	O7_STATIC_ASSERT((int)(0 > 1) == 0);
+
 	undefined = o7_dbl_undef();
 	assert(undefined != undefined);
 	undefinedf = o7_flt_undef();
 	assert(undefinedf != undefinedf);
-
-	/* для случая использования int в качестве INTEGER */
-	assert(INT_MAX >= 2147483647);
-
-	assert((int)(0 < 1) == 1);
-	assert((int)(0 > 1) == 0);
 
 	assert((argc > 0) == (argv != NULL));
 

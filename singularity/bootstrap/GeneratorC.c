@@ -954,12 +954,12 @@ static void Call_Expression_Predefined(struct GeneratorC_Generator *gen, o7c_tag
 		break;
 	case 109:
 		Expression(&(*gen), gen_tag, e1);
-		TextGenerator_Str(&(*gen)._, gen_tag, 10, (o7c_char *)" *= 1 << ");
+		TextGenerator_Str(&(*gen)._, gen_tag, 10, (o7c_char *)" *= 1u<< ");
 		Expression(&(*gen), gen_tag, p2->expr);
 		break;
 	case 113:
 		Expression(&(*gen), gen_tag, e1);
-		TextGenerator_Str(&(*gen)._, gen_tag, 10, (o7c_char *)" /= 1 << ");
+		TextGenerator_Str(&(*gen)._, gen_tag, 10, (o7c_char *)" /= 1u<< ");
 		Expression(&(*gen), gen_tag, p2->expr);
 		break;
 	default:
@@ -1478,7 +1478,7 @@ static void Set_Expression_Item(struct GeneratorC_Generator *gen, o7c_tag_t gen_
 		TextGenerator_Str(&(*gen)._, gen_tag, 2, (o7c_char *)"0");
 	} else {
 		if (set->exprs[1] == NULL) {
-			TextGenerator_Str(&(*gen)._, gen_tag, 7, (o7c_char *)"(1 << ");
+			TextGenerator_Str(&(*gen)._, gen_tag, 7, (o7c_char *)"(1u<< ");
 			Factor(&(*gen), gen_tag, set->exprs[0]);
 		} else {
 			if ((set->exprs[0]->value_ == NULL) || (set->exprs[1]->value_ == NULL)) {

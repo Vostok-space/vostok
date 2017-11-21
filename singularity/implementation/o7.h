@@ -250,6 +250,14 @@ void* o7_ref(void *ptr) {
 #	define O7_ASSERT(condition) assert(condition)
 #endif
 
+#if __STDC_VERSION__ >= 201112L
+#	define O7_STATIC_ASSERT(cond) static_assert(cond, "")
+#else
+#	define O7_STATIC_ASSERT_(cond, line) \
+	{ struct o7_static_assert { int a:(int)!!(cond); }; }
+#	define O7_STATIC_ASSERT(cond) O7_STATIC_ASSERT_(cond)
+#endif
+
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
 void* o7_raw_alloc(size_t size) {
 	extern char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];

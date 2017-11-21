@@ -66,7 +66,7 @@ TYPE
 		checkArith*,
 		caseAbort*,
 		checkNil*,
-		o7cAssert*,
+		o7Assert*,
 		skipUnusedTag*,
 		comment*,
 		generatorNote*: BOOLEAN;
@@ -1263,7 +1263,10 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.New:
 				New(gen, e1)
 			| Scanner.Assert:
-				IF gen.opt.o7cAssert THEN
+				IF (e1.value # NIL) & (e1.value # Ast.ExprBooleanGet(FALSE))
+				THEN
+					Text.Str(gen, "O7_STATIC_ASSERT(")
+				ELSIF gen.opt.o7Assert THEN
 					Text.Str(gen, "O7_ASSERT(")
 				ELSE
 					Text.Str(gen, "assert(")
@@ -1460,21 +1463,25 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			   OR ~rel.exprs[0].value(Ast.ExprString).asChar
 			   )
 			THEN
-				Text.Str(gen, "o7_strcmp(");
+				IF rel.value # NIL THEN
+					Expression(gen, rel.value)
+				ELSE
+					Text.Str(gen, "o7_strcmp(");
 
-				Len(gen, rel.exprs[0]);
-				Text.Str(gen, ", ");
-				Expr(gen, rel.exprs[0], -rel.distance);
+					Len(gen, rel.exprs[0]);
+					Text.Str(gen, ", ");
+					Expr(gen, rel.exprs[0], -rel.distance);
 
-				Text.Str(gen, ", ");
+					Text.Str(gen, ", ");
 
-				Len(gen, rel.exprs[1]);
-				Text.Str(gen, ", ");
-				Expr(gen, rel.exprs[1], rel.distance);
+					Len(gen, rel.exprs[1]);
+					Text.Str(gen, ", ");
+					Expr(gen, rel.exprs[1], rel.distance);
 
-				Text.Str(gen, ")");
-				Text.Str(gen, str);
-				Text.Str(gen, "0")
+					Text.Str(gen, ")");
+					Text.Str(gen, str);
+					Text.Str(gen, "0")
+				END
 			ELSIF (gen.opt.varInit = VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
@@ -1920,6 +1927,36 @@ BEGIN
 		IsExtension(gen, expr(Ast.ExprIsExtension))
 	END
 END Expression;
+
+PROCEDURE Qualifier(VAR gen: Generator; typ: Ast.Type);
+BEGIN
+	CASE typ.id OF
+	  Ast.IdInteger:
+		Text.Str(gen, "int")
+	| Ast.IdLongInt:
+		Text.Str(gen, "o7_long_t")
+	| Ast.IdSet:
+		Text.Str(gen, "unsigned")
+	| Ast.IdLongSet:
+		Text.Str(gen, "o7_set64_t")
+	| Ast.IdBoolean:
+		IF (gen.opt.std >= IsoC99)
+		 & (gen.opt.varInit # VarInitUndefined)
+		THEN	Text.Str(gen, "bool")
+		ELSE	Text.Str(gen, "o7_bool")
+		END
+	| Ast.IdByte:
+		Text.Str(gen, "char unsigned")
+	| Ast.IdChar:
+		Text.Str(gen, "o7_char")
+	| Ast.IdReal:
+		Text.Str(gen, "double")
+	| Ast.IdReal32:
+		Text.Str(gen, "float")
+	| Ast.IdPointer, Ast.IdProcType:
+		GlobalName(gen, typ)
+	END
+END Qualifier;
 
 PROCEDURE Invert(VAR gen: Generator);
 BEGIN
@@ -2955,36 +2992,6 @@ BEGIN
 	Text.StrLn(gen, ";")
 END ProcDecl;
 
-PROCEDURE Qualifier(VAR gen: Generator; typ: Ast.Type);
-BEGIN
-	CASE typ.id OF
-	  Ast.IdInteger:
-		Text.Str(gen, "int")
-	| Ast.IdLongInt:
-		Text.Str(gen, "o7_long_t")
-	| Ast.IdSet:
-		Text.Str(gen, "unsigned")
-	| Ast.IdLongSet:
-		Text.Str(gen, "o7_set64_t")
-	| Ast.IdBoolean:
-		IF (gen.opt.std >= IsoC99)
-		 & (gen.opt.varInit # VarInitUndefined)
-		THEN	Text.Str(gen, "bool")
-		ELSE	Text.Str(gen, "o7_bool")
-		END
-	| Ast.IdByte:
-		Text.Str(gen, "char unsigned")
-	| Ast.IdChar:
-		Text.Str(gen, "o7_char")
-	| Ast.IdReal:
-		Text.Str(gen, "double")
-	| Ast.IdReal32:
-		Text.Str(gen, "float")
-	| Ast.IdPointer, Ast.IdProcType:
-		GlobalName(gen, typ)
-	END
-END Qualifier;
-
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 	PROCEDURE Implement(VAR out: MOut; VAR gen: Generator; proc: Ast.Procedure);
@@ -3277,7 +3284,7 @@ BEGIN
 		o.checkArith    := TRUE;
 		o.caseAbort     := TRUE;
 		o.checkNil      := TRUE;
-		o.o7cAssert     := TRUE;
+		o.o7Assert      := TRUE;
 		o.skipUnusedTag := TRUE;
 		o.comment       := TRUE;
 		o.generatorNote := TRUE;
