@@ -375,6 +375,7 @@ END ExprCall;
 
 PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 VAR e: Ast.Expression;
+    charStr: ARRAY 5 OF CHAR;
 
 	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; VAR e: Ast.Expression);
 	VAR des: Ast.Designator;
@@ -415,9 +416,18 @@ BEGIN
 		e := Ast.ExprNilGet();
 		Scan(p)
 	ELSIF p.l = Scanner.String THEN
-		e := Ast.ExprStringNew(p.module, p.s.buf, p.s.lexStart, p.s.lexEnd);
-		IF (e # NIL) & p.s.isChar THEN
-			e(Ast.ExprString).int := p.s.integer
+		IF p.s.isChar THEN
+			(*charStr[0] := Utf8.DQuote;
+			charStr[1] := CHR(p.s.integer);
+			charStr[2] := Utf8.DQuote;
+			charStr[3] := Utf8.Null;
+			e := Ast.ExprStringNew(p.module, charStr, 0, 3);
+			IF e # NIL THEN
+				e(Ast.ExprString).int := p.s.integer
+			END*)
+			e := Ast.ExprCharNew(p.s.integer)
+		ELSE
+			e := Ast.ExprStringNew(p.module, p.s.buf, p.s.lexStart, p.s.lexEnd);
 		END;
 		Scan(p)
 	ELSIF p.l = Scanner.Brace1Open THEN

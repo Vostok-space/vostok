@@ -79,7 +79,9 @@ TYPE
 		index: INTEGER;
 		records, recordLast: Ast.Record; (* для генерации тэгов *)
 
-		lastSelectorDereference: BOOLEAN;
+		lastSelectorDereference,
+		(* TODO для более сложных случаев *)
+		expectArray: BOOLEAN;
 
 		memOuts: PMemoryOut
 	END;
@@ -1353,7 +1355,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Text.Str(gen, "&")
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
+				gen.opt.expectArray := fp.type.id = Ast.IdArray;
 				Expression(gen, p.expr);
+				gen.opt.expectArray := FALSE;
 
 				IF ~gen.opt.vla THEN
 					WHILE j > 1 DO
@@ -1745,7 +1749,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END ToHex;
 	BEGIN
 		w := e.string;
-		IF e.asChar THEN
+		IF (e.asChar) & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
 				Text.Str(gen, "(char unsigned)'\''")
@@ -1770,7 +1774,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF ~gen.insideSizeOf THEN
 				Text.Str(gen, "(o7_char *)")
 			END;
-			IF w.block.s[w.ofs] = Utf8.DQuote THEN
+			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
 				Text.ScreeningString(gen, w)
 			ELSE
 				s1[0] := Utf8.DQuote;
@@ -2791,7 +2795,8 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				AssertArraySize(gen, st.designator, st.expr);
 				Text.Str(gen, "memcpy(");
 				Designator(gen, st.designator);
-				Text.Str(gen, ", ")
+				Text.Str(gen, ", ");
+				gen.opt.expectArray := TRUE
 			ELSIF toByte THEN
 				Designator(gen, st.designator);
 				IF st.expr.type.id = Ast.IdInteger THEN
@@ -2804,12 +2809,19 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				Text.Str(gen, " = ")
 			END;
 			ExprSameType(gen, st.expr, st.designator.type);
+			gen.opt.expectArray := FALSE;
 			IF st.designator.type.id # Ast.IdArray THEN
 				;
-			ELSIF st.expr.type(Ast.Array).count # NIL THEN
-				Text.Str(gen, ", sizeof(");
-				ExprForSize(gen, st.expr);
-				Text.Str(gen, ")")
+			ELSIF (st.expr.type(Ast.Array).count # NIL) THEN
+				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar
+				THEN
+					Text.Str(gen, ", ");
+					ArrayLen(gen, st.expr)
+				ELSE
+					Text.Str(gen, ", sizeof(");
+					ExprForSize(gen, st.expr);
+					Text.Str(gen, ")")
+				END
 			ELSE
 				Text.Str(gen, ", (");
 				ArrayLen(gen, st.expr);

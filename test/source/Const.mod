@@ -1,5 +1,7 @@
 MODULE Const;
 
+IMPORT Out;
+
 CONST
 	A* = 77;
 	B = -A;
@@ -22,6 +24,9 @@ BEGIN
 	ASSERT(CHR(255) = E);
 	ASSERT(F = CHR(256 - 1));
 	ASSERT(Const = 5+4);
+
+	Out.Int(LEN(E),0); Out.Ln;
+
 
 	ASSERT(NIL = NIL);
 	ASSERT(Nil = NIL);
