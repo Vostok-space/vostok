@@ -417,14 +417,6 @@ BEGIN
 		Scan(p)
 	ELSIF p.l = Scanner.String THEN
 		IF p.s.isChar THEN
-			(*charStr[0] := Utf8.DQuote;
-			charStr[1] := CHR(p.s.integer);
-			charStr[2] := Utf8.DQuote;
-			charStr[3] := Utf8.Null;
-			e := Ast.ExprStringNew(p.module, charStr, 0, 3);
-			IF e # NIL THEN
-				e(Ast.ExprString).int := p.s.integer
-			END*)
 			e := Ast.ExprCharNew(p.s.integer)
 		ELSE
 			e := Ast.ExprStringNew(p.module, p.s.buf, p.s.lexStart, p.s.lexEnd);

@@ -3417,7 +3417,7 @@ BEGIN
 		ASSERT(imp IS Ast.Import);
 
 		REPEAT
-			Text.String(gen, imp.module.name);
+			Name(gen, imp.module);
 			Text.StrLn(gen, "_init();");
 
 			imp := imp.next
