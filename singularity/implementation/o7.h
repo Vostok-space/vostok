@@ -39,12 +39,24 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 < 1)
 #else
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
-#	if !defined(__builtin_sadd_overflow)
-#		define O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
-#		define __builtin_sadd_overflow(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
-#		define __builtin_ssub_overflow(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
-#		define __builtin_smul_overflow(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
-#	endif
+#endif
+
+#if O7_GNUC_BUILTIN_OVERFLOW
+#	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
+#	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
+#	define O7_GNUC_SMUL(a, b, res)  __builtin_smul_overflow(a, b, res)
+
+#	define O7_GNUC_SADDL(a, b, res) __builtin_saddl_overflow(a, b, res)
+#	define O7_GNUC_SSUBL(a, b, res) __builtin_ssubl_overflow(a, b, res)
+#	define O7_GNUC_SMULL(a, b, res) __builtin_smull_overflow(a, b, res)
+#else
+#	define O7_GNUC_SADD(a, b, res)  (0 < sizeof(*(res) = (a)+(b)))
+#	define O7_GNUC_SSUB(a, b, res)  (0 < sizeof(*(res) = (a)-(b)))
+#	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
+
+#	define O7_GNUC_SADDL(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
+#	define O7_GNUC_SSUBL(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
+#	define O7_GNUC_SMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
 #if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__)
@@ -253,9 +265,8 @@ void* o7_ref(void *ptr) {
 #if __STDC_VERSION__ >= 201112L
 #	define O7_STATIC_ASSERT(cond) static_assert(cond, "")
 #else
-#	define O7_STATIC_ASSERT_(cond, line) \
-	{ struct o7_static_assert { int a:(int)!!(cond); }; }
-#	define O7_STATIC_ASSERT(cond) O7_STATIC_ASSERT_(cond)
+#	define O7_STATIC_ASSERT(cond) \
+		do { struct o7_static_assert { int a:(int)!!(cond); }; } while(0>1)
 #endif
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
@@ -531,7 +542,7 @@ int o7_add(int a1, int a2) {
 	int s;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_sadd_overflow(o7_int(a1), o7_int(a2), &s);
+		overflow = O7_GNUC_SADD(o7_int(a1), o7_int(a2), &s);
 		assert(!overflow && s >= -INT_MAX);
 	} else {
 		if (!O7_OVERFLOW) {
@@ -554,7 +565,7 @@ int o7_sub(int m, int s) {
 	int d;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_ssub_overflow(o7_int(m), o7_int(s), &d);
+		overflow = O7_GNUC_SSUB(o7_int(m), o7_int(s), &d);
 		assert(!overflow && d >= -INT_MAX);
 	} else {
 		if (!O7_OVERFLOW) {
@@ -577,7 +588,7 @@ int o7_mul(int m1, int m2) {
 	int p;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_smul_overflow(o7_int(m1), o7_int(m2), &p);
+		overflow = O7_GNUC_SMUL(o7_int(m1), o7_int(m2), &p);
 		assert(!overflow && p >= -INT_MAX);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
@@ -609,7 +620,7 @@ o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
 	o7_long_t s;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_saddl_overflow(o7_long(a1), o7_long(a2), &s);
+		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s);
 		assert(!overflow && s >= -O7_LONG_MAX);
 	} else {
 		if (!O7_OVERFLOW) {
@@ -632,7 +643,7 @@ o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
 	o7_long_t d;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_ssubl_overflow(o7_long(m), o7_long(s), &d);
+		overflow = O7_GNUC_SSUBL(o7_long(m), o7_long(s), &d);
 		assert(!overflow && d >= -O7_LONG_MAX);
 	} else {
 		if (!O7_OVERFLOW) {
@@ -655,7 +666,7 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 	o7_long_t p;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_smull_overflow(o7_long(m1), o7_long(m2), &p);
+		overflow = O7_GNUC_SMULL(o7_long(m1), o7_long(m2), &p);
 		assert(!overflow && p >= -O7_LONG_MAX);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
@@ -935,11 +946,11 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]);
 
 extern int o7_exit_code;
 
-#if defined(O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF)
-#	undef O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
-#	undef __builtin_sadd_overflow
-#	undef __builtin_ssub_overflow
-#	undef __builtin_smul_overflow
-#endif
+#undef O7_GNUC_SADD
+#undef O7_GNUC_SSUB
+#undef O7_GNUC_SMUL
+#undef O7_GNUC_SADDL
+#undef O7_GNUC_SSUBL
+#undef O7_GNUC_SMULL
 
 #endif

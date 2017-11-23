@@ -25,5 +25,5 @@ extern o7_bool OsEnv_Exist(int len, o7_char const name[O7_VLA(len)]);
 extern o7_bool OsEnv_Get(int len, o7_char val[O7_VLA(len)], int *ofs,
                          int name_len, o7_char const name[O7_VLA(name_len)]);
 
-static inline void OsEnv_init(void) { ; }
+O7_INLINE void OsEnv_init(void) { ; }
 #endif

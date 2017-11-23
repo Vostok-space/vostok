@@ -20,5 +20,5 @@
 
 extern int OsExec_Do(int len, o7_char const cmd[O7_VLA(len)]);
 
-static inline void OsExec_init(void) { ; }
+O7_INLINE void OsExec_init(void) { ; }
 #endif
