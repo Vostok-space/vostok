@@ -175,7 +175,7 @@ BEGIN
 	j := 0;
 	i := w.ofs;
 	b := w.block;
-	WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
+	WHILE (j < LEN(s)) & (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
 		(*Log.Char(b.s[i]); Log.Char(s[j]);*)
 		INC(i);
 		INC(j)
@@ -185,7 +185,7 @@ BEGIN
 	END
 	(*Log.Int(ORD(b.s[i])); Log.Ln;
 	Log.Int(j); Log.Ln*)
-	RETURN b.s[i] = s[j]
+	RETURN (b.s[i] = Utf8.Null) & ((j = LEN(s)) OR (s[j] = Utf8.Null))
 END IsEqualToString;
 
 PROCEDURE Compare*(w1, w2: String): INTEGER;
@@ -230,15 +230,15 @@ BEGIN
 			INC(i)
 		END;
 		j := 0;
-		WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
+		WHILE (j < LEN(s)) & (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
 			INC(i);
 			INC(j)
 		ELSIF b.s[i] = Utf8.NewPage DO
 			b := b.next;
 			i := 0
 		END
-	UNTIL (s[j] = Utf8.Null) OR (b.s[i] = Utf8.Null)
-	RETURN s[j] = Utf8.Null
+	UNTIL (j = LEN(s)) OR (s[j] = Utf8.Null) OR (b.s[i] = Utf8.Null)
+	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
 END SearchSubString;
 
 PROCEDURE CopyToChars*(VAR d: ARRAY OF CHAR; VAR dofs: INTEGER; w: String): BOOLEAN;
@@ -304,6 +304,7 @@ BEGIN
 	RETURN ret
 END CopyChars;
 
+(* TODO Не использовать для константных строк, не заканчивающихся 0 *)
 PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                          src: ARRAY OF CHAR): BOOLEAN;
 VAR i: INTEGER;
@@ -311,13 +312,13 @@ BEGIN
 	ASSERT(0 <= destOfs);
 
 	i := 0;
-	WHILE (destOfs < LEN(dest) - 1) & (src[i] # Utf8.Null) DO
+	WHILE (destOfs < LEN(dest) - 1) & (i < LEN(src)) & (src[i] # Utf8.Null) DO
 		dest[destOfs] := src[i];
 		INC(destOfs);
 		INC(i)
 	END;
 	dest[destOfs] := Utf8.Null
-	RETURN src[i] = Utf8.Null
+	RETURN (i >= LEN(src)) OR (src[i] = Utf8.Null)
 END CopyCharsNull;
 
 PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;

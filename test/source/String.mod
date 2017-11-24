@@ -1,7 +1,7 @@
 MODULE String;
 
-CONST S = "0123";
-      L = LEN(S);
+CONST S  = "0123";
+      L  = LEN(S);
 
 PROCEDURE Err*;
 VAR s1, s2: ARRAY 11 OF CHAR;
@@ -59,9 +59,9 @@ BEGIN
 	ASSERT(s1 # s2);
 	ASSERT(s2 # s1);
 
-	ASSERT(LEN("1234") = 5);
-	ASSERT(5 = L);
-	ASSERT(LEN(S) = 5);
+	ASSERT(LEN("1234") = 4);
+	ASSERT(4 = L);
+	ASSERT(LEN(S) = 4);
 
 	ASSERT(s2 = s3[1]);
 

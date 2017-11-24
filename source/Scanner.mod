@@ -448,12 +448,12 @@ BEGIN
 	ASSERT(LEN(str) <= LEN(buf) DIV 2);
 	j := 1;
 	i := ind + 1;
-	WHILE buf[i] = str[j] DO
+	WHILE (j < LEN(str)) & (buf[i] = str[j]) DO
 		INC(i); INC(j)
 	ELSIF buf[i] = NewPage DO
 		i := 0
 	END
-	RETURN (buf[i] = Utf8.BackSpace) & (str[j] = 0X)
+	RETURN (buf[i] = Utf8.BackSpace) & ((j = LEN(str)) OR (str[j] = Utf8.Null))
 END IsWordEqual;
 
 PROCEDURE CheckPredefined*(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;

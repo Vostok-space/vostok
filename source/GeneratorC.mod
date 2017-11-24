@@ -1732,8 +1732,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	END Boolean;
 
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
-	VAR s1: ARRAY 7 OF CHAR;
-		s2: ARRAY 4 OF CHAR;
+	VAR s1: ARRAY 6 OF CHAR;
+		s2: ARRAY 3 OF CHAR;
 		ch: CHAR;
 		w: Strings.String;
 
@@ -1760,14 +1760,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				s2[0] := "'";
 				s2[1] := ch;
 				s2[2] := "'";
-				s2[3] := Utf8.Null;
 				Text.Str(gen, s2)
 			ELSE
 				Text.Str(gen, "0x");
 				s2[0] := ToHex(e.int DIV 16);
 				s2[1] := ToHex(e.int MOD 16);
 				s2[2] := "u";
-				s2[3] := Utf8.Null;
 				Text.Str(gen, s2)
 			END
 		ELSE
@@ -1783,7 +1781,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				s1[3] := ToHex(e.int DIV 16);
 				s1[4] := ToHex(e.int MOD 16);
 				s1[5] := Utf8.DQuote;
-				s1[6] := Utf8.Null;
 				Text.Str(gen, s1)
 			END
 		END

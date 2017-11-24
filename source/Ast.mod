@@ -1462,7 +1462,7 @@ BEGIN
 		len := len + LEN(buf) - 1
 	END;
 	DEC(len, 2);
-	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len + 1)));
+	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
 	e.int := -1;
 	e.asChar := FALSE;
 	PutChars(m, e.string, buf, begin, end);

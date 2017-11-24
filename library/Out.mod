@@ -22,7 +22,7 @@ MODULE Out;
  VAR i: INTEGER;
  BEGIN
    i := 0;
-   WHILE s[i] # 0X DO
+   WHILE (i < LEN(s)) & (s[i] # 0X) DO
      INC(i)
    END;
    success := i = File.WriteChars(File.out, s, 0, i)

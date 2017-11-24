@@ -46,6 +46,16 @@ BEGIN
 	g.tabs := d.tabs
 END SetTabs;
 
+PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
+VAR i: INTEGER;
+BEGIN
+	i := ofs;
+	WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
+		INC(i)
+	END
+	RETURN i - ofs
+END CalcLen;
+
 PROCEDURE Chars(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
@@ -67,15 +77,14 @@ END NewLine;
 
 PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	ASSERT(str[LEN(str) - 1] = Utf8.Null);
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, LEN(str) - 1)
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0))
 END Str;
 
 PROCEDURE StrLn*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, LEN(str) - 1);
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0));
 	gen.len := gen.len + Stream.WriteChars(gen.out^, Utf8.NewLine, 0, 1);
 	gen.isNewLine := TRUE
 END StrLn;
@@ -117,8 +126,7 @@ END StrLnClose;
 
 PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	ASSERT(str[LEN(str) - 1] = Utf8.Null);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, LEN(str) - 1)
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0))
 END StrIgnoreIndent;
 
 PROCEDURE String*(VAR gen: Out; word: Strings.String);
