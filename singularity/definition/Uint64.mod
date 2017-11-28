@@ -18,7 +18,7 @@ CONST
 	Size = 8;
 
 TYPE
-	Type* = ARRAY Size OF CHAR;
+	Type* = ARRAY Size OF BYTE;
 
 VAR
 	max*: Type;
