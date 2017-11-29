@@ -36,14 +36,14 @@ TYPE
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
 BEGIN
-	WHILE (s[j] = "'") & (i < LEN(d) - 4) DO
+	WHILE (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
 		d[i] := "'";
 		d[i + 1] := "\";
 		d[i + 2] := "'";
 		d[i + 3] := "'";
 		INC(i, 4);
 		INC(j)
-	ELSIF (s[j] # Utf8.Null) & (i < LEN(d) - 1) DO
+	ELSIF (j < LEN(s)) & (s[j] # Utf8.Null) & (i < LEN(d) - 1) DO
 		d[i] := s[j];
 		INC(i);
 		INC(j)
