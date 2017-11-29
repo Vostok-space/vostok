@@ -146,6 +146,20 @@ BEGIN
 	RETURN iter.char # Utf8.Null
 END IterNext;
 
+PROCEDURE GetChar*(s: String; i: INTEGER): CHAR;
+VAR ofs: INTEGER;
+    b: Block;
+BEGIN
+	ASSERT((0 <= i) & (i < BlockSize * BlockSize));
+	ofs := s.ofs + i;
+	b   := s.block;
+	WHILE BlockSize <= ofs DO
+		b := b.next;
+		DEC(ofs, BlockSize)
+	END
+	RETURN b.s[ofs]
+END GetChar;
+
 PROCEDURE IsEqualToChars*(w: String; s: ARRAY OF CHAR; j, end: INTEGER): BOOLEAN;
 VAR i: INTEGER;
 	b: Block;

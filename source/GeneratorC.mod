@@ -954,6 +954,7 @@ BEGIN
 			Selector(gen, sels, i, typ, desType);
 			Record(gen, typ, sel)
 		ELSIF sel IS Ast.SelArray THEN
+			Log.StrLn("SelArray");
 			Selector(gen, sels, i, typ, desType);
 			Array(gen, typ, sel, sels.decl,
 			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
@@ -1749,14 +1750,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END ToHex;
 	BEGIN
 		w := e.string;
-		IF (e.asChar) & ~gen.opt.expectArray THEN
+		Log.Str("e.asChar = "); Log.Bool(e.asChar);
+		Log.Str(" expectArray = "); Log.Bool(gen.opt.expectArray); Log.Ln;
+		IF e.asChar & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
-				Text.Str(gen, "(char unsigned)'\''")
+				Text.Str(gen, "(o7_char)'\''")
 			ELSIF ch = "\" THEN
-				Text.Str(gen, "(char unsigned)'\\'")
+				Text.Str(gen, "(o7_char)'\\'")
 			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
-				Text.Str(gen, "(char unsigned)");
+				Text.Str(gen, "(o7_char)");
 				s2[0] := "'";
 				s2[1] := ch;
 				s2[2] := "'";
@@ -1890,7 +1893,11 @@ BEGIN
 		Log.Str("Expr Designator type.id = ");
 		Log.Int(expr.type.id);
 		Log.Str(" (expr.value # NIL) = ");
-		Log.Int(ORD(expr.value # NIL));
+		Log.Bool(expr.value # NIL);
+		IF expr.value # NIL THEN
+			Log.Str(" expr.value.id = ");
+			Log.Int(expr.value.id)
+		END;
 		Log.Ln;
 		IF (expr.value # NIL) & (expr.value.id = Ast.IdString)
 		THEN	CString(gen, expr.value(Ast.ExprString))
@@ -1913,11 +1920,13 @@ BEGIN
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:
-		IF expr.type.id IN { Ast.IdSet, Ast.IdLongSet }
-		THEN	Text.Str(gen, "~")
-		ELSE	Text.Str(gen, "!")
-		END;
-		Expression(gen, expr(Ast.ExprNegate).expr)
+		IF expr.type.id IN { Ast.IdSet, Ast.IdLongSet } THEN
+			Text.Str(gen, "~");
+			Expression(gen, expr(Ast.ExprNegate).expr)
+		ELSE
+			Text.Str(gen, "!");
+			CheckExpr(gen, expr(Ast.ExprNegate).expr)
+		END
 	| Ast.IdBraces:
 		Text.Str(gen, "(");
 		Expression(gen, expr(Ast.ExprBraces).expr);
@@ -3299,6 +3308,8 @@ BEGIN
 		o.generatorNote := TRUE;
 		o.varInit       := VarInitUndefined;
 		o.memManager    := MemManagerNoFree;
+
+		o.expectArray := FALSE;
 
 		o.main := FALSE;
 

@@ -1473,7 +1473,7 @@ END ExprStringNew;
 PROCEDURE ExprCharNew*(int: INTEGER): ExprString;
 VAR e: ExprString;
 BEGIN
-	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(2)));
+	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(1)));
 	Strings.Undef(e.string);
 	e.int := int;
 	e.asChar := TRUE;
@@ -1717,7 +1717,11 @@ BEGIN
 	ELSE
 		err := ErrNo
 	END;
+	Log.Str("SelArrayNew tid="); Log.Int(type.id); Log.Str(" -> ");
 	type := type.type;
+	IF type # NIL THEN
+		Log.Int(type.id); Log.Ln;
+	END;
 	sel.type := type
 	RETURN err
 END SelArrayNew;
@@ -3248,6 +3252,7 @@ BEGIN
 		 & ~CompatibleAsCharAndString(des.type, a.expr)
 		THEN
 			IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
+				Out.Int(des.type.id, 0); Out.String(" "); Out.Int(expr.type.id, 0); Out.Ln;
 				err := ErrAssignIncompatibleType
 			ELSIF (des.type.id = IdByte)
 			    & (expr.value # NIL)

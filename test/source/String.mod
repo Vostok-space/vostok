@@ -3,6 +3,9 @@ MODULE String;
 CONST S  = "0123";
       L  = LEN(S);
 
+      S1 = "0";
+      S2 = CHR(ORD("0"));
+
 PROCEDURE Err*;
 VAR s1, s2: ARRAY 11 OF CHAR;
 	i: INTEGER;
@@ -70,7 +73,19 @@ BEGIN
 
 	ASSERT(Eq1(s3, s4));
 	s3[1][7] := "Z";
-	ASSERT(~Eq1(s3, s4))
+	ASSERT(~Eq1(s3, s4));
+
+	ASSERT(S1 = S2);
+	ASSERT(LEN(S1) = 1);
+	i := LEN(S1);
+	ASSERT(i = 1);
+
+	s1[0] := S[0];
+	ASSERT(s1[0] = "0");
+
+	ASSERT(S1 = S1[0]);
+
+	ASSERT(Eq(S1, "0"))
 END Go;
 
 END String.

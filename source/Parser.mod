@@ -269,7 +269,8 @@ PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations): Ast.Designator;
 VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
 	prev, sel: Ast.Selector;
-	nameBegin, nameEnd: INTEGER;
+	nameBegin, nameEnd, ind, val: INTEGER;
+	str: Strings.String;
 
 	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector;
 	                 des: Ast.Designator);
@@ -288,7 +289,7 @@ BEGIN
 	decl := Qualident(p, ds);
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
-		IF decl IS Ast.Var THEN
+		IF (decl IS Ast.Var) OR (decl IS Ast.Const) THEN
 			prev := NIL;
 
 			REPEAT
@@ -314,6 +315,23 @@ BEGIN
 				ELSIF p.l = Scanner.Brace2Open THEN
 					Scan(p);
 					CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)));
+					IF des.value = NIL THEN
+						;
+					ELSIF (des.value IS Ast.ExprString)
+					    & (sel(Ast.SelArray).index.value # NIL)
+					THEN
+						val := des.value(Ast.ExprString).int;
+						ind := sel(Ast.SelArray).index.value(Ast.ExprInteger).int;
+						IF val < 0 THEN
+							str := des.value(Ast.ExprString).string;
+							val := ORD(Strings.GetChar(str, ind + 1))
+						ELSE
+							ASSERT(ind = 0)
+						END;
+						des.value := Ast.ExprCharNew(val)
+					ELSE
+						des.value := NIL
+					END;
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
 						SetSel(prev, sel, des);
 						CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)))
