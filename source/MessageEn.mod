@@ -336,7 +336,7 @@ S("Usage: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Script OutDir {-m PTM|-i PTI|-infr Infr}");
 S("  3) o7c to-bin Script Result {-m PTM|-i PTI|-infr Infr|-c PTHC|-cc CComp}");
-S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} -- options");
+S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} [-t temp] -- opts");
 S("Script = Call { ; Call } . Call = Module.Procedure[(Parameters)] .");
 S("PTM - Path To directories with Modules for search");
 S("PTI - Path To directories with Interface Modules without real implementation");
@@ -376,6 +376,8 @@ BEGIN
 		S("Too long overall length of paths to .c files")
 	| Cli.ErrTooLongCc:
 		S("Too long length of C compiler options")
+	| Cli.ErrTooLongTemp:
+		S("Too long name of temporary directory")
 	| Cli.ErrCCompiler:
 		S("Error during C compiler call")
 	| Cli.ErrTooLongRunArgs:

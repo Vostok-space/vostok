@@ -36,7 +36,7 @@ TYPE
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
 BEGIN
-	WHILE (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
+	WHILE Platform.Posix & (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
 		d[i] := "'";
 		d[i + 1] := "\";
 		d[i + 2] := "'";

@@ -122,7 +122,9 @@ END IsEqualStr;
 
 PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
                    VAR cDirs: ARRAY OF CHAR; VAR cc: ARRAY OF CHAR;
-                   VAR init, arg: INTEGER): INTEGER;
+                   VAR init: INTEGER;
+                   VAR tmp: ARRAY OF CHAR;
+                   VAR arg: INTEGER): INTEGER;
 VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 	ret: INTEGER;
 	opt: ARRAY 256 OF CHAR;
@@ -146,6 +148,7 @@ BEGIN
 	i := 0;
 	dirsOfs := 0;
 	cDirs[0] := Utf8.Null;
+	tmp[0] := Utf8.Null;
 	ccLen := 0;
 	count := 0;
 	sing := {};
@@ -208,11 +211,10 @@ BEGIN
 			END
 		ELSIF opt = "-init" THEN
 			INC(arg);
-			optLen := 0;
 			IF arg >= CLI.count THEN
 				ret := Cli.ErrNotEnoughArgs
 			ELSIF ~CLI.Get(opt, optLen, arg) THEN
-				ret := Cli.ErrTooLongInit
+				ret := Cli.ErrUnknownInit
 			ELSIF opt = "no" THEN
 				init := GeneratorC.VarInitNo
 			ELSIF opt = "undef" THEN
@@ -221,7 +223,16 @@ BEGIN
 				init := GeneratorC.VarInitZero
 			ELSE
 				ret := Cli.ErrUnknownInit
-			END
+			END;
+			optLen := 0
+		ELSIF opt = "-t" THEN
+			INC(arg);
+			IF arg >= CLI.count THEN
+				ret := Cli.ErrNotEnoughArgs
+			ELSIF ~CLI.Get(tmp, optLen, arg) THEN
+				ret := Cli.ErrTooLongTemp
+			END;
+			optLen := 0
 		ELSE
 			ret := Cli.ErrUnexpectArg
 		END;
@@ -459,40 +470,48 @@ BEGIN
 END RemoveDir;
 
 PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
-                      VAR bin: ARRAY OF CHAR; name: Strings.String): BOOLEAN;
+                      VAR bin: ARRAY OF CHAR; name: Strings.String;
+                      tmp: ARRAY OF CHAR): BOOLEAN;
 VAR binLen, i: INTEGER;
 	ok: BOOLEAN;
 	cmd: Exec.Code;
 BEGIN
 	len := 0;
-	IF Platform.Posix THEN
+	IF tmp # "" THEN
+		ok := TRUE;
+		ASSERT(Strings.CopyCharsNull(dirCOut, len, tmp))
+	ELSIF Platform.Posix THEN
+		ok := TRUE;
 		ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
 		     & Strings.CopyToChars(dirCOut, len, name))
 	ELSIF Platform.Windows THEN
-		(* TODO *)
-		ASSERT(OsEnv.Get(dirCOut, len, "temp")
-		     & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
-		     & Strings.CopyToChars(dirCOut, len, name))
+		ok := OsEnv.Get(dirCOut, len, "temp")
+		    & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
+		    & Strings.CopyToChars(dirCOut, len, name)
 	END;
 
-	i := 0;
-	ok := MakeDir(dirCOut);
-	WHILE ~ok & (i < 100) DO
-		IF i = 0 THEN
-			ASSERT(Strings.CopyCharsNull(dirCOut, len, "-00"))
-		ELSE
-			dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
-			dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
-		END;
+	IF ok THEN
+		i := 0;
 		ok := MakeDir(dirCOut);
-		INC(i)
-	END;
-	IF ok & (bin[0] = Utf8.Null) THEN
-		binLen := 0;
-		ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
-		     & Strings.CopyCharsNull(bin, binLen, pathSep)
-		     & Strings.CopyToChars(bin, binLen, name)
-		     & (~Platform.Windows OR Strings.CopyCharsNull(bin, binLen, ".exe")))
+		IF ~ok & (tmp = "") THEN
+			WHILE ~ok & (i < 100) DO
+				IF i = 0 THEN
+					ASSERT(Strings.CopyCharsNull(dirCOut, len, "-00"))
+				ELSE
+					dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
+					dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
+				END;
+				ok := MakeDir(dirCOut);
+				INC(i)
+			END
+		END;
+		IF ok & (bin[0] = Utf8.Null) THEN
+			binLen := 0;
+			ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
+			     & Strings.CopyCharsNull(bin, binLen, pathSep)
+			     & Strings.CopyToChars(bin, binLen, name)
+			     & (~Platform.Windows OR Strings.CopyCharsNull(bin, binLen, ".exe")))
+		END
 	END
 	RETURN ok
 END GetTempOutC;
@@ -501,7 +520,7 @@ PROCEDURE ToC(res: INTEGER): INTEGER;
 VAR ret: INTEGER;
 	src: ARRAY 65536 OF CHAR;
 	srcLen, srcNameEnd: INTEGER;
-	outC, resPath: ARRAY 1024 OF CHAR;
+	outC, resPath, tmp: ARRAY 1024 OF CHAR;
 	resPathLen: INTEGER;
 	cDirs, cc: ARRAY 4096 OF CHAR;
 	mp: ModuleProvider;
@@ -514,13 +533,13 @@ VAR ret: INTEGER;
 
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
-	              VAR cmd: Exec.Code): INTEGER;
+	              VAR cmd: Exec.Code; tmp: ARRAY OF CHAR): INTEGER;
 	VAR outCLen: INTEGER;
 		ret, i, nameLen, cDirsLen: INTEGER;
 		ok: BOOLEAN;
 		name: ARRAY 512 OF CHAR;
 	BEGIN
-		ok := GetTempOutC(outC, outCLen, bin, module.name);
+		ok := GetTempOutC(outC, outCLen, bin, module.name, tmp);
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
@@ -631,7 +650,7 @@ BEGIN
 		NewProvider(mp);
 		mp.fileExt := ".mod"; (* TODO *)
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
-		ret := CopyPath(mp.path, mp.sing, cDirs, cc, init, arg);
+		ret := CopyPath(mp.path, mp.sing, cDirs, cc, init, tmp, arg);
 		IF ret = ErrNo THEN
 			srcNameEnd := ParseCommand(src, script);
 			IF script THEN
@@ -671,11 +690,12 @@ BEGIN
 						ret := GenerateC(module, (call # NIL) OR script, call,
 						                 opt, resPath, resPathLen, cDirs, exec)
 					| ResultBin, ResultRun:
-						ret := Bin(module, call, opt, cDirs, cc, outC, resPath, exec);
+						ret := Bin(module, call, opt, cDirs, cc, outC, resPath,
+						           exec, tmp);
 						IF (res = ResultRun) & (ret = ErrNo) THEN
 							ret := Run(resPath, arg)
 						END;
-						IF ~RemoveDir(outC) & (ret = ErrNo) THEN
+						IF (tmp = "") & ~RemoveDir(outC) & (ret = ErrNo) THEN
 							ret := Cli.ErrCantRemoveOutDir
 						END
 					END

@@ -35,7 +35,7 @@ CONST
 	ErrTooManyModuleDirs*    = -19;
 	ErrTooLongCDirs*         = -20;
 	ErrTooLongCc*            = -21;
-	ErrTooLongInit*          = -22;
+	ErrTooLongTemp*          = -22;
 	ErrCCompiler*            = -23;
 	ErrTooLongRunArgs*       = -24;
 	ErrUnexpectArg*          = -25;
