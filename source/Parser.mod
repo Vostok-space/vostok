@@ -471,7 +471,7 @@ VAR e: Ast.Expression;
 BEGIN
 	Log.StrLn("Term");
 	e := Factor(p, ds);
-	IF (p.l >= Scanner.MultFirst) & (p.l <= Scanner.MultLast) THEN
+	IF (Scanner.MultFirst <= p.l) & (p.l <= Scanner.MultLast) THEN
 		l := p.l;
 		inc := (l = Scanner.And) & (p.inLoops > 0);
 		IF inc THEN

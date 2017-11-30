@@ -639,7 +639,7 @@ END ModuleNew;
 PROCEDURE ScriptNew*(p: Provider): Module;
 VAR m: Module;
 BEGIN
-	m := ModuleNew("script ", 0, 6, p);
+	m := ModuleNew("script  ", 0, 6, p);
 	m.script := TRUE
 	RETURN m
 END ScriptNew;

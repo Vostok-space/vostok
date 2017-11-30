@@ -37,7 +37,7 @@ TYPE
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
 BEGIN
 	WHILE Platform.Posix & (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
-		d[i] := "'";
+		d[i    ] := "'";
 		d[i + 1] := "\";
 		d[i + 2] := "'";
 		d[i + 3] := "'";
@@ -49,7 +49,7 @@ BEGIN
 		INC(j)
 	END;
 	d[i] := Utf8.Null
-	RETURN s[j] = Utf8.Null
+	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
 END Copy;
 
 PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
@@ -67,7 +67,7 @@ BEGIN
 		END;
 		d[i] := Utf8.Null
 	END
-	RETURN s[j] = Utf8.Null
+	RETURN ret
 END FullCopy;
 
 PROCEDURE Init*(VAR c: Code; name: ARRAY OF CHAR): BOOLEAN;
