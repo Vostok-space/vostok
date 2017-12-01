@@ -24,7 +24,6 @@ RM := trash
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
 result/o7c : $(SRC) $(O7CI)
-	@mkdir -p result
 	$(O7CI) to-c Translator.Start result -infr . -m source
 	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
 
@@ -34,18 +33,15 @@ result/bs-o7c:
 
 result/test/% : always
 	@mkdir -p result/test
-	@echo "extern int osrand_useless;" > result/test/OsRand.c
-	@echo "extern int out_useless;" > result/test/Out.c
-	$(O7C) to-c $(@F).Go result/test -infr . -m test/source
-	$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $@.c result/test/OsRand.c result/test/Out.c $(SING_C)/*.c -I $(SING_C) $(LD_OPT) -o $@
+	-rm -rf $@.src
+	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $(LD_OPT)"
 	$@
 
 test : result/o7c $(TESTS)
 
 $(SELF)/o7c : $(O7C) $(SRC) Makefile
-	mkdir -p $(SELF)
-	$(O7C) to-c Translator.Start $(SELF) -infr . -m source
-	$(CC) $(CC_OPT) $(SANITIZE) -I$(SELF) -I$(SING_C) $(SELF)/*.c $(SING_C)/*.c $(LD_OPT) -o $@
+	-rm -rf $(SELF)
+	$(O7C) to-bin Translator.Start $@ -infr . -m source -t $(SELF) -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
 
 self : $(SELF)/o7c
 	+make test O7C:=$(SELF)/o7c
