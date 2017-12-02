@@ -651,6 +651,9 @@ BEGIN
 		    ORD(
 		        Eq(decl.module.name, "O7")
 		     OR Eq(decl.module.name, "o7")
+		     OR Eq(decl.module.name, "math")
+		     OR Eq(decl.module.name, "Math")
+		     OR Eq(decl.module.name, "limits")
 		     OR Eq(decl.name, "init")
 		     OR Eq(decl.name, "cnst")
 		     OR Eq(decl.name, "len")
@@ -2279,6 +2282,13 @@ BEGIN
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
 
+PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
+BEGIN
+	IF d.emptyLines > 0 THEN
+		Text.Ln(gen)
+	END
+END EmptyLines;
+
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
 
@@ -2312,6 +2322,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			END;
 
 			WHILE v # NIL DO
+				EmptyLines(gen, v);
 				Declarator(gen, v, FALSE, FALSE, FALSE);
 				Text.StrLn(gen, ";");
 				v := v.next
@@ -2464,6 +2475,7 @@ PROCEDURE TypeDecl(VAR out: MOut; typ: Ast.Type);
 
 	PROCEDURE Typedef(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
+		EmptyLines(gen, typ);
 		Text.Str(gen, "typedef ");
 		Declarator(gen, typ, TRUE, FALSE, TRUE);
 		Text.StrLn(gen, ";")
@@ -2548,6 +2560,7 @@ END Comment;
 PROCEDURE Const(VAR gen: Generator; const: Ast.Const);
 BEGIN
 	Comment(gen, const.comment);
+	EmptyLines(gen, const);
 	Text.StrIgnoreIndent(gen, "#");
 	Text.Str(gen, "define ");
 	GlobalName(gen, const);
@@ -2565,6 +2578,7 @@ VAR same, mark: BOOLEAN;
 BEGIN
 	mark := var.mark & ~out.opt.main;
 	Comment(out.g[ORD(mark)], var.comment);
+	EmptyLines(out.g[ORD(mark)], var);
 	same := (prev # NIL) & (prev.mark = mark) & (prev.type = var.type);
 	IF ~same THEN
 		IF prev # NIL THEN
@@ -2968,6 +2982,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END Case;
 BEGIN
 	Comment(gen, st.comment);
+	IF st.emptyLines > 0 THEN
+		Text.Ln(gen)
+	END;
 	IF st IS Ast.Assign THEN
 		Assign(gen, st(Ast.Assign))
 	ELSIF st IS Ast.Call THEN
@@ -3234,6 +3251,7 @@ END VarsInit;
 
 PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
 VAR d, prev: Ast.Declaration;
+
 BEGIN
 	d := ds.start;
 	ASSERT((d = NIL) OR ~(d IS Ast.Module));

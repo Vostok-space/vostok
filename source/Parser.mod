@@ -564,15 +564,17 @@ BEGIN
 END Mark;
 
 PROCEDURE Consts(VAR p: Parser; ds: Ast.Declarations);
-VAR begin, end: INTEGER;
-	const: Ast.Const;
+VAR begin, end, emptyLines: INTEGER;
+    const: Ast.Const;
 BEGIN
 	Scan(p);
 	WHILE p.l = Scanner.Ident DO
 		IF ~p.err THEN
+			emptyLines := p.s.emptyLines;
 			ExpectIdent(p, begin, end, ErrExpectConstName);
 			CheckAst(p, Ast.ConstAdd(ds, p.s.buf, begin, end));
 			const := ds.end(Ast.Const);
+			const.emptyLines := emptyLines;
 			Mark(p, const);
 			Expect(p, Scanner.Equal, ErrExpectEqual);
 			CheckAst(p, Ast.ConstSetExpression(const, Expression(p, ds)));
@@ -654,10 +656,12 @@ VAR var: Ast.Declaration;
 	typ: Ast.Type;
 
 	PROCEDURE Name(VAR p: Parser; ds: Ast.Declarations);
-	VAR begin, end: INTEGER;
+	VAR begin, end, emptyLines: INTEGER;
 	BEGIN
+		emptyLines := p.s.emptyLines;
 		ExpectIdent(p, begin, end, ErrExpectIdent);
 		CheckAst(p, Ast.VarAdd(ds, p.s.buf, begin, end));
+		ds.end.emptyLines := emptyLines;
 		DeclComment(p, ds.end);
 		Mark(p, ds.end)
 	END Name;
@@ -699,10 +703,12 @@ VAR rec, base: Ast.Record;
 			typ: Ast.Type;
 
 			PROCEDURE Name(VAR v: Ast.Var; VAR p: Parser; ds: Ast.Record);
-			VAR begin, end: INTEGER;
+			VAR begin, end, emptyLines: INTEGER;
 			BEGIN
+				emptyLines := p.s.emptyLines;
 				ExpectIdent(p, begin, end, ErrExpectIdent);
 				CheckAst(p, Ast.RecordVarAdd(v, ds, p.s.buf, begin, end));
+				v.emptyLines := emptyLines;
 				Mark(p, v)
 			END Name;
 		BEGIN
@@ -908,11 +914,12 @@ END Type;
 
 PROCEDURE Types(VAR p: Parser; ds: Ast.Declarations);
 VAR typ: Ast.Type;
-	begin, end: INTEGER;
-	mark: BOOLEAN;
+    begin, end, emptyLines: INTEGER;
+    mark: BOOLEAN;
 BEGIN
 	Scan(p);
 	WHILE p.l = Scanner.Ident DO
+		emptyLines := p.s.emptyLines;
 		begin := p.s.lexStart;
 		end := p.s.lexEnd;
 		Scan(p);
@@ -920,6 +927,7 @@ BEGIN
 		Expect(p, Scanner.Equal, ErrExpectEqual);
 		typ := Type(p, ds, begin, end);
 		IF typ # NIL THEN
+			typ.emptyLines := emptyLines;
 			typ.mark := mark;
 			IF ~(typ IS Ast.Construct) THEN
 				AddError(p, ErrExpectStructuredType)
@@ -1166,7 +1174,7 @@ VAR stats, last: Ast.Statement;
 	PROCEDURE Statement(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
 	VAR des: Ast.Designator;
 		st: Ast.Statement;
-		commentOfs, commentEnd: INTEGER;
+		commentOfs, commentEnd, emptyLines: INTEGER;
 	BEGIN
 		(* Log.StrLn("Statement"); *)
 		IF ~p.opt.saveComments
@@ -1174,6 +1182,7 @@ VAR stats, last: Ast.Statement;
 		THEN
 			commentOfs := -1
 		END;
+		emptyLines := p.s.emptyLines;
 		IF p.l = Scanner.Ident      THEN
 			des := Designator(p, ds);
 			IF p.l = Scanner.Assign THEN
@@ -1196,8 +1205,13 @@ VAR stats, last: Ast.Statement;
 		ELSE
 			st := NIL
 		END;
-		IF (st # NIL) & (commentOfs >= 0) THEN
-			Ast.NodeSetComment(st^, p.module, p.s.buf, commentOfs, commentEnd)
+		IF st # NIL THEN
+			IF commentOfs >= 0 THEN
+				Ast.NodeSetComment(st^, p.module, p.s.buf, commentOfs, commentEnd)
+			END;
+			IF emptyLines > 0 THEN
+				st.emptyLines := emptyLines
+			END
 		END;
 		IF p.err THEN
 			Log.StrLn("Error");

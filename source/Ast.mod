@@ -199,6 +199,7 @@ TYPE
 	Node* = RECORD(V.Base)
 		id*: INTEGER;
 		comment*: Strings.String;
+		emptyLines*: INTEGER;
 		ext*: V.PBase
 	END;
 
@@ -522,6 +523,7 @@ BEGIN
 	    OR (Scanner.PredefinedFirst <= id) & (id <= Scanner.PredefinedLast));
 	V.Init(n);
 	n.id := id;
+	n.emptyLines := 0;
 	Strings.Undef(n.comment);
 	n.ext := NIL
 END NodeInit;
@@ -658,7 +660,6 @@ PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
 VAR d: Declaration;
     err: INTEGER;
     str: ARRAY 256 OF CHAR;
-
 BEGIN
 	d := ds.start;
 	WHILE (d # NIL) & (d IS Import) DO

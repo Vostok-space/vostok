@@ -158,7 +158,7 @@ TYPE
 		buf*: ARRAY BlockSize * 2 + 1 OF CHAR;
 		ind: INTEGER;
 
-		lexStart*, lexEnd*, lexLen*: INTEGER;
+		lexStart*, lexEnd*, lexLen*, emptyLines*: INTEGER;
 
 		isReal*, isChar*: BOOLEAN;
 		integer*: INTEGER;
@@ -631,6 +631,7 @@ BEGIN
 	start := i;
 	comment := 0;
 	commentsCount := 0;
+	s.emptyLines := -1;
 	WHILE (s.buf[i] = " ") OR (s.buf[i] = Utf8.CarRet) DO
 		INC(i)
 	ELSIF s.buf[i] = Utf8.Tab DO
@@ -638,6 +639,7 @@ BEGIN
 		INC(s.tabs)
 	ELSIF s.buf[i] = Utf8.NewLine DO
 		INC(s.line);
+		INC(s.emptyLines);
 		s.column := 0; s.tabs := 0;
 		INC(i);
 		start := i
