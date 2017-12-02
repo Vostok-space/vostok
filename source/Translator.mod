@@ -473,8 +473,7 @@ PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
                       VAR bin: ARRAY OF CHAR; name: Strings.String;
                       tmp: ARRAY OF CHAR): BOOLEAN;
 VAR binLen, i: INTEGER;
-	ok: BOOLEAN;
-	cmd: Exec.Code;
+    ok: BOOLEAN;
 BEGIN
 	len := 0;
 	IF tmp # "" THEN

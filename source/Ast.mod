@@ -2638,6 +2638,9 @@ BEGIN
 			THEN
 				err := ErrValueOutOfRangeOfByte
 			END
+		END;
+		IF err = ErrNo THEN
+			err := CheckUnusedDeclarations(p)
 		END
 	END
 	RETURN err

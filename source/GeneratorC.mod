@@ -1093,6 +1093,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					        OR ~(des.decl IS Ast.FormalParam)
 					           )
 				ELSE
+					ASSERT(count # NIL);
 					sizeof := FALSE
 				END;
 				IF (count # NIL) & ~sizeof THEN
@@ -1151,9 +1152,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Text.Str(gen, "(int)");
 					Factor(gen, e)
 				| Ast.IdBoolean:
-					Text.Str(gen, "(int)o7_bl(");
-					Expression(gen, e);
-					Text.Str(gen, ")")
+					IF (e IS Ast.Designator)
+					 & (gen.opt.varInit = VarInitUndefined)
+					THEN
+						Text.Str(gen, "(int)o7_bl(");
+						Expression(gen, e);
+						Text.Str(gen, ")")
+					ELSE
+						Text.Str(gen, "(int)");
+						Factor(gen, e)
+					END
 				| Ast.IdSet:
 					Text.Str(gen, "o7_sti(");
 					Expression(gen, e);
@@ -1204,6 +1212,37 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Expression(gen, p2.expr)
 				END
 			END Dec;
+
+			PROCEDURE Assert(VAR gen: Generator; e: Ast.Expression);
+			VAR c11Assert: BOOLEAN;
+			    buf: ARRAY 5 OF CHAR;
+			BEGIN
+				c11Assert := FALSE;
+				IF (e.value # NIL) & (e.value # Ast.ExprBooleanGet(FALSE))
+				THEN
+					IF gen.opt.std >= IsoC11 THEN
+						c11Assert := TRUE;
+						Text.Str(gen, "static_assert(")
+					ELSE
+						Text.Str(gen, "O7_STATIC_ASSERT(")
+					END
+				ELSIF gen.opt.o7Assert THEN
+					Text.Str(gen, "O7_ASSERT(")
+				ELSE
+					Text.Str(gen, "assert(")
+				END;
+				CheckExpr(gen, e);
+				IF c11Assert THEN
+					buf[0] := ",";
+					buf[1] := " ";
+					buf[2] := Utf8.DQuote;
+					buf[3] := Utf8.DQuote;
+					buf[4] := ")";
+					Text.Str(gen, buf)
+				ELSE
+					Text.Str(gen, ")")
+				END
+			END Assert;
 		BEGIN
 			e1 := call.params.expr;
 			p2 := call.params.next;
@@ -1269,16 +1308,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| Scanner.New:
 				New(gen, e1)
 			| Scanner.Assert:
-				IF (e1.value # NIL) & (e1.value # Ast.ExprBooleanGet(FALSE))
-				THEN
-					Text.Str(gen, "O7_STATIC_ASSERT(")
-				ELSIF gen.opt.o7Assert THEN
-					Text.Str(gen, "O7_ASSERT(")
-				ELSE
-					Text.Str(gen, "assert(")
-				END;
-				CheckExpr(gen, e1);
-				Text.Str(gen, ")")
+				Assert(gen, e1)
 			| Scanner.Pack:
 				Text.Str(gen, "o7_ldexp(&");
 				Expression(gen, e1);
@@ -2351,7 +2381,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				Name(gen, decl);
 				Text.Str(gen, "_len");
 				Text.Int(gen, i);
-				Text.Data(gen, ")]", ORD(gen.opt.vlaMark), 2 - ORD(gen.opt.vlaMark));
+				Text.Data(gen, ")]", ORD(~gen.opt.vlaMark), 2 - ORD(~gen.opt.vlaMark));
 				t := t.type;
 				INC(i)
 			UNTIL t.id # Ast.IdArray

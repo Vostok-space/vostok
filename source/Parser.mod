@@ -393,7 +393,6 @@ END ExprCall;
 
 PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
 VAR e: Ast.Expression;
-    charStr: ARRAY 5 OF CHAR;
 
 	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; VAR e: Ast.Expression);
 	VAR des: Ast.Designator;
@@ -1189,6 +1188,7 @@ VAR stats, last: Ast.Statement;
 				st := Assign(p, ds, des)
 			ELSIF p.l = Scanner.Equal THEN
 				AddError(p, ErrMaybeAssignInsteadEqual);
+				st := Ast.StatementErrorNew()
 			ELSE
 				st := Call(p, ds, des)
 			END
@@ -1449,7 +1449,7 @@ BEGIN
 	p.module := Ast.ScriptNew(prov);
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
-	ASSERT(p.module.stats # NIL)
+	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL))
 	RETURN p.module
 END Script;
 

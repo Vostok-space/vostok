@@ -670,7 +670,8 @@ BEGIN
 			IF ScanChar(s) = ")" THEN
 				DEC(comment);
 				IF comment = 0 THEN
-					s.commentEnd := i
+					s.commentEnd := i;
+					s.emptyLines := -1
 				END;
 				i := s.ind
 			END

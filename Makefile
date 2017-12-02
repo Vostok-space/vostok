@@ -17,7 +17,8 @@ LD_OPT := -lm
 WARN := -Wall -Wno-parentheses
 DEBUG := -g
 OPTIM := -O1
-CC_OPT:= $(WARN) $(OPTIM) $(DEBUG) $(O7_OPT)
+OPT :=
+CC_OPT:= $(WARN) $(OPTIM) $(DEBUG) $(O7_OPT) $(OPT)
 
 RM := trash
 
@@ -34,7 +35,7 @@ result/bs-o7c:
 result/test/% : always
 	@mkdir -p result/test
 	-rm -rf $@.src
-	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $(LD_OPT)"
+	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $(LD_OPT) $(OPT)"
 	$@
 
 test : result/o7c $(TESTS)
@@ -62,6 +63,7 @@ help :
 	   CC       - компилятор C\n\
 	   SANITIZE - опции компиляторов gcc-v5 и clang для контроля корректности\n\
 	   OPTIM    - уровень оптимизации\n\
+	   OPT      - дополнительные опции компилятора\n\
 	Пример сбора транслятора без опций -fsanitize с помощью tcc:\n\
 	   make CC:=tcc SANITIZE:=\n\
 	"
@@ -77,6 +79,7 @@ help-en :
 	   CC       - C compiler\n\
 	   SANITIZE - options of gcc-v5 and clang for correctness control\n\
 	   OPTIM    - optimization level\n\
+	   OPT      - extra compiler's options\n\
 	Example of build translator without -fsanitize by Tiny C:\n\
 	   make CC:=tcc SANITIZE:=\n\
 	"
