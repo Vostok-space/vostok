@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 #if !defined(HEADER_GUARD_Out)
-#define HEADER_GUARD_Out
+#define HEADER_GUARD_Out 1
 
 #include "CFiles.h"
 
-extern void Out_String(int s_len0, o7c_char s[/*len0*/]);
+extern void Out_String(int s_len0, o7_char s[/*len0*/]);
 
-extern void Out_Char(o7c_char ch);
+extern void Out_Char(o7_char ch);
 
 extern void Out_Int(int x, int n);
 

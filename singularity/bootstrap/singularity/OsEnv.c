@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 #include <stdbool.h>
-#include <assert.h>
-#include <stdlib.h>
 
 #define O7_BOOL_UNDEFINED
-#include <o7c.h>
+#include <o7.h>
 
 #include "OsEnv.h"
 
-extern o7c_bool OsEnv_Exist(int len, o7c_char const name[O7C_VLA_LEN(len)]) {
+extern o7_bool OsEnv_Exist(int len, o7_char const name[O7_VLA(len)]) {
 	return NULL != getenv((char *)name);
 }
 
-extern o7c_bool OsEnv_Get(int len, o7c_char val[O7C_VLA_LEN(len)], int *ofs,
-                         int name_len, o7c_char const name[O7C_VLA_LEN(name_len)])
+extern o7_bool OsEnv_Get(int len, o7_char val[O7_VLA(len)], int *ofs,
+                         int name_len, o7_char const name[O7_VLA(name_len)])
 {
 	char *env;
 	int i, j;
@@ -39,7 +37,7 @@ extern o7c_bool OsEnv_Get(int len, o7c_char val[O7C_VLA_LEN(len)], int *ofs,
 		i = *ofs;
 		j = 0;
 		while ((i < len - 1) && (env[j] != '\0')) {
-			val[i] = (o7c_char)env[j];
+			val[i] = (o7_char)env[j];
 			i += 1;
 			j += 1;
 		}

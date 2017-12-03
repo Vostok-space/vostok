@@ -4,8 +4,8 @@
  *  Copyright (C) 2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
+ *  it under the terms of the GNU Lesser General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -17,7 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #if !defined(HEADER_GUARD_TextGenerator)
-#define HEADER_GUARD_TextGenerator
+#define HEADER_GUARD_TextGenerator 1
 
 #include "V.h"
 #include "Utf8.h"
@@ -29,43 +29,45 @@ typedef struct TextGenerator_Out {
 	struct VDataStream_Out *out;
 	int len;
 	int tabs;
-	o7c_bool isNewLine;
+	o7_bool isNewLine;
 } TextGenerator_Out;
-extern o7c_tag_t TextGenerator_Out_tag;
+#define TextGenerator_Out_tag V_Base_tag
 
 extern void TextGenerator_Out_undef(struct TextGenerator_Out *r);
 
-extern void TextGenerator_Init(struct TextGenerator_Out *g, o7c_tag_t g_tag, struct VDataStream_Out *out);
+extern void TextGenerator_Init(struct TextGenerator_Out *g, struct VDataStream_Out *out);
 
-extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, o7c_tag_t g_tag, struct TextGenerator_Out *d, o7c_tag_t d_tag);
+extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, struct TextGenerator_Out *d);
 
-extern void TextGenerator_Str(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern int TextGenerator_CalcLen(int str_len0, o7_char str[/*len0*/], int ofs);
 
-extern void TextGenerator_StrLn(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern void TextGenerator_Str(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_Ln(struct TextGenerator_Out *gen, o7c_tag_t gen_tag);
+extern void TextGenerator_StrLn(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_StrOpen(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern void TextGenerator_Ln(struct TextGenerator_Out *gen);
 
-extern void TextGenerator_IndentOpen(struct TextGenerator_Out *gen, o7c_tag_t gen_tag);
+extern void TextGenerator_StrOpen(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_IndentClose(struct TextGenerator_Out *gen, o7c_tag_t gen_tag);
+extern void TextGenerator_IndentOpen(struct TextGenerator_Out *gen);
 
-extern void TextGenerator_StrClose(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern void TextGenerator_IndentClose(struct TextGenerator_Out *gen);
 
-extern void TextGenerator_StrLnClose(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern void TextGenerator_StrClose(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_StrIgnoreIndent(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int str_len0, o7c_char str[/*len0*/]);
+extern void TextGenerator_StrLnClose(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_String(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, struct StringStore_String *word, o7c_tag_t word_tag);
+extern void TextGenerator_StrIgnoreIndent(struct TextGenerator_Out *gen, int str_len0, o7_char str[/*len0*/]);
 
-extern void TextGenerator_Data(struct TextGenerator_Out *g, o7c_tag_t g_tag, int data_len0, o7c_char data[/*len0*/], int ofs, int count);
+extern void TextGenerator_String(struct TextGenerator_Out *gen, struct StringStore_String *word);
 
-extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, struct StringStore_String *str, o7c_tag_t str_tag);
+extern void TextGenerator_Data(struct TextGenerator_Out *g, int data_len0, o7_char data[/*len0*/], int ofs, int count);
 
-extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, int int_);
+extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct StringStore_String *str);
 
-extern void TextGenerator_Real(struct TextGenerator_Out *gen, o7c_tag_t gen_tag, double real);
+extern void TextGenerator_Int(struct TextGenerator_Out *gen, int int_);
+
+extern void TextGenerator_Real(struct TextGenerator_Out *gen, double real);
 
 extern void TextGenerator_init(void);
 #endif

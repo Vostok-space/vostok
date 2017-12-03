@@ -4,8 +4,8 @@
  *  Copyright (C) 2016-2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
+ *  it under the terms of the GNU Lesser General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -17,13 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #if !defined(HEADER_GUARD_CliParser)
-#define HEADER_GUARD_CliParser
+#define HEADER_GUARD_CliParser 1
 
 
 #define CliParser_ResultC_cnst 0
 #define CliParser_ResultBin_cnst 1
 #define CliParser_ResultRun_cnst 2
+
 #define CliParser_ErrNo_cnst 0
+
 #define CliParser_ErrWrongArgs_cnst (-10)
 #define CliParser_ErrTooLongSourceName_cnst (-11)
 #define CliParser_ErrTooLongOutName_cnst (-12)
@@ -36,7 +38,7 @@
 #define CliParser_ErrTooManyModuleDirs_cnst (-19)
 #define CliParser_ErrTooLongCDirs_cnst (-20)
 #define CliParser_ErrTooLongCc_cnst (-21)
-#define CliParser_ErrTooLongInit_cnst (-22)
+#define CliParser_ErrTooLongTemp_cnst (-22)
 #define CliParser_ErrCCompiler_cnst (-23)
 #define CliParser_ErrTooLongRunArgs_cnst (-24)
 #define CliParser_ErrUnexpectArg_cnst (-25)

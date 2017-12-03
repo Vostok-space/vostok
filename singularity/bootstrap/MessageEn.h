@@ -4,8 +4,8 @@
  *  Copyright (C) 2017 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
+ *  it under the terms of the GNU Lesser General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -17,7 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #if !defined(HEADER_GUARD_MessageEn)
-#define HEADER_GUARD_MessageEn
+#define HEADER_GUARD_MessageEn 1
 
 #include "Ast.h"
 #include "Parser.h"
@@ -32,9 +32,9 @@ extern void MessageEn_ParseError(int code);
 
 extern void MessageEn_Usage(void);
 
-extern void MessageEn_CliError(int err, int cmd_len0, o7c_char cmd[/*len0*/]);
+extern void MessageEn_CliError(int err, int cmd_len0, o7_char cmd[/*len0*/]);
 
-extern void MessageEn_Text(int str_len0, o7c_char str[/*len0*/]);
+extern void MessageEn_Text(int str_len0, o7_char str[/*len0*/]);
 
 extern void MessageEn_init(void);
 #endif
