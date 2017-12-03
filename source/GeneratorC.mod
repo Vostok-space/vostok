@@ -2862,7 +2862,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			gen.opt.expectArray := FALSE;
 			IF st.designator.type.id # Ast.IdArray THEN
 				;
-			ELSIF (st.expr.type(Ast.Array).count # NIL) THEN
+			ELSIF (st.expr.type(Ast.Array).count # NIL)
+			    & ~Ast.IsFormalParam(st.expr)
+			THEN
 				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar
 				THEN
 					Text.Str(gen, ", ");

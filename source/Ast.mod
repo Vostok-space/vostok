@@ -390,10 +390,12 @@ TYPE
 		asChar*: BOOLEAN
 	END;
 
+	LongSet = ARRAY 2 OF SET;
+
 	ExprNil* = POINTER TO RECORD(RFactor) END;
 
 	ExprSet* = POINTER TO RECORD(RFactor)
-		set*: ARRAY 2 OF SET;
+		set*: LongSet;
 		exprs*: ARRAY 2 OF Expression;
 
 		next*: ExprSet
@@ -1508,7 +1510,7 @@ BEGIN
 	RETURN e
 END ExprBracesNew;
 
-PROCEDURE ExprSetByValue*(set: ARRAY OF SET): ExprSet;
+PROCEDURE ExprSetByValue*(set: LongSet): ExprSet;
 VAR e: ExprSet;
 BEGIN
 	NEW(e); ExprInit(e, IdSet, TypeGet(IdSet));
@@ -2070,11 +2072,11 @@ VAR err: INTEGER;
 		RETURN continue
 	END CheckType;
 
-	PROCEDURE IsEqualSets(s1, s2: ARRAY OF SET): BOOLEAN;
+	PROCEDURE IsEqualSets(s1, s2: LongSet): BOOLEAN;
 		RETURN (s1[0] = s2[0]) & (s1[1] = s2[1])
 	END IsEqualSets;
 
-	PROCEDURE InSet(i: INTEGER; s: ARRAY OF SET): BOOLEAN;
+	PROCEDURE InSet(i: INTEGER; s: LongSet): BOOLEAN;
 	BEGIN
 		RETURN CheckSetRange(i)
 		     & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
@@ -2196,7 +2198,7 @@ END ExprSumCreate;
 
 PROCEDURE ExprSumNew*(VAR e: ExprSum; add: INTEGER; term: Expression): INTEGER;
 VAR err: INTEGER;
-	PROCEDURE SetNeg(VAR s: ARRAY OF SET);
+	PROCEDURE SetNeg(VAR s: LongSet);
 	BEGIN
 		s[0] := -s[0];
 		s[1] := -s[1]
@@ -2267,13 +2269,13 @@ VAR e: ExprSum;
 		RETURN continue
 	END CheckType;
 
-	PROCEDURE AddSet(VAR s: ARRAY OF SET; a: ARRAY OF SET);
+	PROCEDURE AddSet(VAR s: LongSet; a: LongSet);
 	BEGIN
 		s[0] := s[0] + a[0];
 		s[1] := s[1] + a[1]
 	END AddSet;
 
-	PROCEDURE SubSet(VAR s: ARRAY OF SET; a: ARRAY OF SET);
+	PROCEDURE SubSet(VAR s: LongSet; a: LongSet);
 	BEGIN
 		s[0] := s[0] - a[0];
 		s[1] := s[1] - a[1]
@@ -2595,6 +2597,12 @@ BEGIN
 	RETURN (e IS Designator) & (e(Designator).decl IS Var)
 END IsVar;
 
+PROCEDURE IsFormalParam*(e: Expression): BOOLEAN;
+RETURN (e IS Designator)
+     & (e(Designator).sel = NIL)
+     & (e(Designator).decl IS FormalParam)
+END IsFormalParam;
+
 PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
@@ -2701,9 +2709,7 @@ VAR err, distance: INTEGER;
 
 	PROCEDURE CheckNeedTag(fp: FormalParam; e: Expression);
 	BEGIN
-		IF (fp.type.id = IdRecord)
-		 & (e IS Designator) & (e(Designator).sel = NIL) & (e(Designator).decl IS FormalParam)
-		THEN
+		IF (fp.type.id = IdRecord) & IsFormalParam(e) THEN
 			ExchangeParamsNeedTag(fp, e(Designator).decl(FormalParam))
 		END
 	END CheckNeedTag;
