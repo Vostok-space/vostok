@@ -181,6 +181,10 @@ CONST
 	IdVar*              = 34;
 	LastId              = 34;
 
+	InitedNo*     = 0;
+	InitedPartly* = 1;
+	Inited*       = 2;
+
 TYPE
 	Module* = POINTER TO RModule;
 
@@ -247,9 +251,14 @@ TYPE
 
 	Pointer* = POINTER TO RPointer;
 
+	VarState = POINTER TO RECORD
+		inited*: INTEGER;
+		used*: BOOLEAN
+	END;
+
 	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
-		inited*: BOOLEAN
+		state, stateCurrent: VarState
 	END;
 
 	Record* = POINTER TO RECORD(RConstruct)
@@ -584,7 +593,7 @@ BEGIN
 	IF start >= 0 THEN
 		PutChars(d.module, d.name, name, start, end)
 	ELSE
-		PutChars(d.module, d.name, "#ERROR", 0, 5)
+		PutChars(d.module, d.name, "#ERROR ", 0, 5)
 	END
 END DeclConnect;
 
@@ -667,7 +676,7 @@ BEGIN
 	WHILE (d # NIL) & (d IS Import) DO
 		d := d.next
 	END;
-	WHILE (d # NIL) & (d.mark OR d.used OR (d IS Var) & d(Var).inited) DO
+	WHILE (d # NIL) & (d.mark OR d.used OR (d IS Var) & (d(Var).state.inited > 0)) DO
 		d := d.next
 	END;
 	IF d = NIL THEN
@@ -919,13 +928,26 @@ BEGIN
 	RETURN err
 END CheckUndefRecordForward;
 
+PROCEDURE VarStateNew(up: VarState): VarState;
+VAR vs: VarState;
+BEGIN
+	NEW(vs);
+	vs.inited := InitedNo;
+	vs.used   := FALSE;
+
+	RETURN vs
+END VarStateNew;
+
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
                           buf: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
 	NEW(v); NodeInit(v^, IdVar);
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
-	v.inited := FALSE;
+
+	v.state := VarStateNew(NIL);
+	v.stateCurrent := v.state;
+
 	IF ds.vars = NIL THEN
 		ds.vars := v
 	END
@@ -990,7 +1012,10 @@ BEGIN
 		v.access := access
 	END;
 	v.needTag := NIL;
-	v.inited := (ParamIn IN v.access)
+
+	v.state := VarStateNew(NIL);
+	v.stateCurrent := v.state;
+	v.state.inited := ORD(ParamIn IN v.access) * Inited
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
@@ -1618,7 +1643,7 @@ BEGIN
 	RETURN ErrNo
 END DesignatorNew;
 
-PROCEDURE DesignatorUsed*(d: Designator; varParam, inCondition: BOOLEAN): INTEGER;
+PROCEDURE DesignatorUsed*(d: Designator; varParam, inCondition, inLoop: BOOLEAN): INTEGER;
 VAR err: INTEGER;
 	v: Var;
 BEGIN
@@ -1626,12 +1651,12 @@ BEGIN
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
 		IF varParam THEN
-			v.inited := TRUE
-		ELSIF ~inCondition
-		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam)) & ~v.inited
+			v.state.inited := Inited
+		ELSIF (v.state.inited < Inited - ORD(inCondition)) & ~inLoop
+		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
 			err := ErrVarUninitialized;
-			v.inited := TRUE
+			v.state.inited := Inited
 		END
 	END;
 	d.decl.used := TRUE
@@ -1643,7 +1668,9 @@ VAR err: INTEGER;
 	d: Declaration;
 BEGIN
 	d := ds.vars;
-	WHILE (d # NIL) & (d IS Var) & (~d.used OR d(Var).inited) DO
+	WHILE (d # NIL) & (d IS Var)
+	    & (~d.used OR (d(Var).state.inited > InitedNo))
+	DO
 		d := d.next
 	END;
 	IF (d # NIL) & (d IS Var) THEN
@@ -2890,7 +2917,7 @@ VAR err: INTEGER;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
 	IF err = ErrNo THEN
-		err := DesignatorUsed(des, FALSE, FALSE)
+		err := DesignatorUsed(des, FALSE, FALSE, FALSE)
 	END;
 	NEW(c); StatInit(c, e)
 	RETURN err
@@ -3035,7 +3062,10 @@ VAR err: INTEGER;
 BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
-	var.inited := TRUE;
+
+	var.stateCurrent.inited := Inited;
+	var.stateCurrent.used := TRUE;
+
 	var.used := TRUE;
 	err := ForSetTo(f, to);
 	f.by := by;
@@ -3248,12 +3278,14 @@ BEGIN
 	IF des # NIL THEN
 		IF (des.decl IS Var) & IsChangeable(des) THEN
 			IF des.decl.type.id = IdPointer THEN
-				IF (des.sel # NIL) & ~des.decl(Var).inited THEN
+				IF (des.sel # NIL)
+				 & (des.decl(Var).stateCurrent.inited = InitedNo)
+				THEN
 					err := ErrVarUninitialized
 				END;
 				des.decl.used := TRUE
 			END;
-			des.decl(Var).inited := TRUE
+			des.decl(Var).stateCurrent.inited := Inited
 		ELSE
 			err := ErrAssignExpectVarParam
 		END;

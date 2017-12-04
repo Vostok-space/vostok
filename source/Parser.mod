@@ -398,7 +398,7 @@ VAR e: Ast.Expression;
 	VAR des: Ast.Designator;
 	BEGIN
 		des := Designator(p, ds);
-		CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inConditions > 0));
+		CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inConditions > 0, p.inLoops > 0));
 		p.varParam := FALSE;
 		IF p.l # Scanner.Brace1Open THEN
 			e := des
