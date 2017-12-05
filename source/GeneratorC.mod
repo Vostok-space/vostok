@@ -1034,12 +1034,24 @@ BEGIN
 	Selector(gen, sels, sels.i, typ, des.type)
 END Designator;
 
+PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
+VAR des: Ast.Designator;
+BEGIN
+	IF e IS Ast.Designator THEN
+		des := e(Ast.Designator)
+	ELSE
+		des := NIL
+	END
+	RETURN (des # NIL)
+	     & ((des.inited # Ast.Inited) OR (des.sel # NIL))
+END IsMayNotInited;
+
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
 BEGIN
 	IF (gen.opt.varInit = VarInitUndefined)
-	 & (e IS Ast.Designator)
 	 & (e.value = NIL)
 	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
+	 & IsMayNotInited(e)
 	THEN
 		CASE e.type.id OF
 		  Ast.IdBoolean:
@@ -1526,6 +1538,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			ELSIF (gen.opt.varInit = VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
+			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
 			THEN
 				IF rel.exprs[0].type.id  = Ast.IdInteger THEN
 					Text.Str(gen, "o7_cmp(")
