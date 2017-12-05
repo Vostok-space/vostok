@@ -379,7 +379,7 @@ BEGIN
 		END;
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;
-	CheckAst(p, Ast.CallParamsEnd(e, fp))
+	CheckAst(p, Ast.CallParamsEnd(e, fp, ds))
 END CallParams;
 
 PROCEDURE ExprCall(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator)
@@ -996,6 +996,7 @@ END If;
 
 PROCEDURE Case(VAR p: Parser; ds: Ast.Declarations): Ast.Case;
 VAR case: Ast.Case;
+    i: INTEGER;
 
 	PROCEDURE Element(VAR p: Parser; ds: Ast.Declarations; case: Ast.Case);
 	VAR elem: Ast.CaseElement;
@@ -1063,10 +1064,21 @@ BEGIN
 	Scan(p);
 	CheckAst(p, Ast.CaseNew(case, Expression(p, ds)));
 	Expect(p, Scanner.Of, ErrExpectOf);
+	i := 1;
+	Ast.TurnIf(ds);
 	Element(p, ds, case);
 	WHILE ScanIfEqual(p, Scanner.Alternative) DO
+		INC(i);
+		Ast.TurnElse(ds);
+		Ast.TurnIf(ds);
 		Element(p, ds, case)
 	END;
+	Ast.TurnElse(ds);
+	Ast.TurnFail(ds);
+	REPEAT
+		DEC(i);
+		Ast.BackFromBranch(ds)
+	UNTIL i = 0;
 	Expect(p, Scanner.End, ErrExpectEnd)
 	RETURN case
 END Case;
@@ -1169,7 +1181,8 @@ BEGIN
 		CallParams(p, ds, st.expr(Ast.ExprCall))
 	ELSIF (des # NIL) & (des.type # NIL) & (des.type IS Ast.ProcType) THEN
 		CheckAst(p, Ast.CallParamsEnd(st.expr(Ast.ExprCall),
-		                              des.type(Ast.ProcType).params)
+		                              des.type(Ast.ProcType).params,
+		                              ds)
 		)
 	END
 	RETURN st

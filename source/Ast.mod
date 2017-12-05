@@ -184,6 +184,7 @@ CONST
 	InitedNo*     = 0;
 	InitedPartly* = 1;
 	Inited*       = 2;
+	InitedFail*   = 3;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -965,12 +966,12 @@ BEGIN
 	v.state := v.state.root;
 	IF v.state.inited = Inited THEN
 		;
-	ELSIF (v.state.if.inited = Inited)
-	    & (v.state.else # NIL) & (v.state.else.inited = Inited)
+	ELSIF (v.state.if.inited IN {Inited, InitedFail})
+	    & (v.state.else # NIL) & (v.state.else.inited IN {Inited, InitedFail})
 	THEN
 		v.state.inited := Inited
-	ELSIF (v.state.if.inited >= InitedPartly)
-	   OR (v.state.else # NIL) & (v.state.else.inited >= InitedPartly)
+	ELSIF (v.state.if.inited IN {InitedPartly, Inited})
+	   OR (v.state.else # NIL) & (v.state.else.inited IN {InitedPartly, Inited})
 	THEN
 		v.state.inited := InitedPartly
 	END;
@@ -1013,6 +1014,18 @@ BEGIN
 		END
 	END
 END TurnElse;
+
+PROCEDURE TurnFail*(ds: Declarations);
+VAR d: Declaration;
+BEGIN
+	IF ds IS Procedure THEN
+		d := ds.vars;
+		WHILE (d # NIL) & (d IS Var) DO
+			d(Var).state.inited := InitedFail;
+			d := d.next
+		END
+	END
+END TurnFail;
 
 PROCEDURE BackFromBranch*(ds: Declarations);
 VAR d: Declaration;
@@ -2908,7 +2921,8 @@ BEGIN
 	RETURN err
 END CallParamNew;
 
-PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam): INTEGER;
+PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
+                         ds: Declarations): INTEGER;
 VAR err: INTEGER;
 
 	PROCEDURE CalcPredefined(call: ExprCall; v: Factor; VAR err: INTEGER);
@@ -3000,9 +3014,12 @@ BEGIN
 		IF (call.params.expr.value # NIL)
 		 & (call.params.expr.value IS ExprBoolean)
 		 & ~call.params.expr.value(ExprBoolean).bool
-		 & (call.params.expr # ExprBooleanGet(FALSE))
 		THEN
-			err := ErrAssertConstFalse
+			IF call.params.expr = ExprBooleanGet(FALSE) THEN
+				TurnFail(ds)
+			ELSE
+				err := ErrAssertConstFalse
+			END
 		END
 	ELSIF (call.designator.decl IS PredefinedProcedure)
 	 (* TODO заменить на общую проверку корректности выбора параметра *)

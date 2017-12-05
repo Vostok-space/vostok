@@ -42,6 +42,7 @@ BEGIN
 	|"f" : n := 5
 	|"g" : n := 6
 	|"h" : n := 7
+	|"z" : ASSERT(FALSE)
 	END;
 	ASSERT(ORD(c) - ORD("a") = n)
 END caseChar;

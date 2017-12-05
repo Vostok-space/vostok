@@ -449,6 +449,8 @@ BEGIN
 	ELSIF Platform.Windows THEN
 		ASSERT(Exec.Init(cmd, "mkdir")
 		     & Exec.Add(cmd, name, 0))
+	ELSE
+		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END MakeDir;
@@ -465,6 +467,8 @@ BEGIN
 		ASSERT(Exec.Init(cmd, "rmdir")
 		     & Exec.AddClean(cmd, " /s/q")
 		     & Exec.Add(cmd, name, 0))
+	ELSE
+		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END RemoveDir;
@@ -488,7 +492,7 @@ BEGIN
 		    & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
 		    & Strings.CopyToChars(dirCOut, len, name)
 	ELSE
-		ok := FALSE (* TODO Убрать *)
+		ASSERT(FALSE)
 	END;
 
 	IF ok THEN

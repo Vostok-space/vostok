@@ -136,7 +136,7 @@ BEGIN
 	RETURN ret
 END LastPart;
 
-PROCEDURE Do*(VAR c: Code): INTEGER;
+PROCEDURE Do*(c: Code): INTEGER;
 BEGIN
 	ASSERT(0 < c.len)
 	RETURN OsExec.Do(c.buf)
