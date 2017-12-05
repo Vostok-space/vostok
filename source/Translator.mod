@@ -487,6 +487,8 @@ BEGIN
 		ok := OsEnv.Get(dirCOut, len, "temp")
 		    & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
 		    & Strings.CopyToChars(dirCOut, len, name)
+	ELSE
+		ok := FALSE (* TODO Убрать *)
 	END;
 
 	IF ok THEN

@@ -649,6 +649,7 @@ BEGIN
 	ELSIF (s.buf[i] = "(") & (comment >= 0) DO
 		s.ind := i;
 		IF ScanChar(s) = "*" THEN
+			start := start - ORD(s.ind < start) * (LEN(s.buf) - 1);
 			INC(s.ind);
 			INC(comment);
 			INC(commentsCount);
@@ -668,6 +669,7 @@ BEGIN
 		IF s.buf[i] = "*" THEN
 			s.ind := i;
 			IF ScanChar(s) = ")" THEN
+				start := start - ORD(s.ind < start) * (LEN(s.buf) - 1);
 				DEC(comment);
 				IF comment = 0 THEN
 					s.commentEnd := i;

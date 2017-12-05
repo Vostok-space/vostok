@@ -44,6 +44,8 @@ BEGIN
 	IF FALSE THEN
 		d := 1.0;
 		e := 1.0
+	ELSE
+		e := 0.0(* Убрать *)
 	END;
 	a := d * e;
 	Out.Real(a, 0); Out.Ln

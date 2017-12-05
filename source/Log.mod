@@ -84,6 +84,16 @@ BEGIN
 	state := st
 END Turn;
 
+PROCEDURE On*;
+BEGIN
+	Turn(TRUE)
+END On;
+
+PROCEDURE Off*;
+BEGIN
+	Turn(FALSE)
+END Off;
+
 BEGIN
 	init := FALSE;
 	state := FALSE

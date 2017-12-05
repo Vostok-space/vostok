@@ -134,7 +134,7 @@ BEGIN
 	| Ast.ErrExpectReturn:
 		O("Expected return")
 	| Ast.ErrDeclarationNotFound:
-		O("Declaraion not found")
+		O("Declaration not found")
 	| Ast.ErrConstRecursive:
 		O("Recursive declaration of constant denied")
 	| Ast.ErrImportModuleNotFound:

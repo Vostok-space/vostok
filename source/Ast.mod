@@ -253,12 +253,14 @@ TYPE
 
 	VarState = POINTER TO RECORD
 		inited*: INTEGER;
-		used*: BOOLEAN
+		used*  : BOOLEAN;
+
+		root, if, else: VarState
 	END;
 
 	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
-		state, stateCurrent: VarState
+		state, stateRoot: VarState
 	END;
 
 	Record* = POINTER TO RECORD(RConstruct)
@@ -374,6 +376,7 @@ TYPE
 
 	Designator* = POINTER TO RECORD(RFactor)
 		decl*: Declaration;
+		inited*: INTEGER;
 		sel*: Selector
 	END;
 
@@ -928,15 +931,100 @@ BEGIN
 	RETURN err
 END CheckUndefRecordForward;
 
-PROCEDURE VarStateNew(up: VarState): VarState;
-VAR vs: VarState;
+PROCEDURE VarStateInit(vs, root: VarState);
 BEGIN
-	NEW(vs);
-	vs.inited := InitedNo;
 	vs.used   := FALSE;
 
+	IF root # NIL THEN
+		ASSERT(root.else = NIL);
+		vs.inited := root.inited;
+		vs.root := root;
+		IF root.if = NIL THEN
+			root.if   := vs
+		ELSE
+			root.else := vs
+		END
+	ELSE
+		vs.inited := InitedNo;
+		vs.if   := NIL;
+		vs.else := NIL;
+		vs.root := NIL
+	END
+END VarStateInit;
+
+PROCEDURE VarStateNew(root: VarState): VarState;
+VAR vs: VarState;
+BEGIN
+	NEW(vs); VarStateInit(vs, root)
 	RETURN vs
 END VarStateNew;
+
+PROCEDURE VarStateUp(v: Var);
+BEGIN
+	ASSERT((v.state.root.if = v.state) OR (v.state.root.else = v.state));
+	v.state := v.state.root;
+	IF v.state.inited = Inited THEN
+		;
+	ELSIF (v.state.if.inited = Inited)
+	    & (v.state.else # NIL) & (v.state.else.inited = Inited)
+	THEN
+		v.state.inited := Inited
+	ELSIF (v.state.if.inited >= InitedPartly)
+	   OR (v.state.else # NIL) & (v.state.else.inited >= InitedPartly)
+	THEN
+		v.state.inited := InitedPartly
+	END;
+	v.state.if   := NIL;
+	v.state.else := NIL
+END VarStateUp;
+
+PROCEDURE TurnIf*(ds: Declarations);
+VAR d: Declaration;
+    v: Var;
+    vs: VarState;
+BEGIN
+	IF ds IS Procedure THEN
+		d := ds.vars;
+		WHILE (d # NIL) & (d IS Var) DO
+			v := d(Var);
+			ASSERT(v.state.if = NIL);
+			vs := VarStateNew(v.state);
+			ASSERT(v.state.if = vs);
+			v.state := vs;
+			d := d.next
+		END
+	END
+END TurnIf;
+
+PROCEDURE TurnElse*(ds: Declarations);
+VAR d: Declaration;
+    v: Var;
+    vs: VarState;
+BEGIN
+	IF ds IS Procedure THEN
+		d := ds.vars;
+		WHILE (d # NIL) & (d IS Var) DO
+			v := d(Var);
+			ASSERT(v.state.root # NIL);
+			vs := VarStateNew(v.state.root);
+			ASSERT(v.state.root.else = vs);
+			v.state := vs;
+			d := d.next
+		END
+	END
+END TurnElse;
+
+PROCEDURE BackFromBranch*(ds: Declarations);
+VAR d: Declaration;
+BEGIN
+	IF ds IS Procedure THEN
+		d := ds.vars;
+		WHILE (d # NIL) & (d IS Var) DO
+			VarStateUp(d(Var));
+			d := d.next
+		END
+	END
+END BackFromBranch;
 
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
                           buf: ARRAY OF CHAR; begin, end: INTEGER);
@@ -946,7 +1034,7 @@ BEGIN
 	v.type := NIL;
 
 	v.state := VarStateNew(NIL);
-	v.stateCurrent := v.state;
+	v.stateRoot := v.state;
 
 	IF ds.vars = NIL THEN
 		ds.vars := v
@@ -1014,7 +1102,7 @@ BEGIN
 	v.needTag := NIL;
 
 	v.state := VarStateNew(NIL);
-	v.stateCurrent := v.state;
+	v.stateRoot := v.state;
 	v.state.inited := ORD(ParamIn IN v.access) * Inited
 END ParamAddPredefined;
 
@@ -1339,7 +1427,10 @@ BEGIN
 		END
 	END;
 	IF (d # NIL) & (d IS Type) THEN
-		d.used := TRUE
+		d.used := TRUE;
+		IF d IS Var THEN
+			d(Var).state.used := TRUE
+		END
 	END
 	RETURN d
 END DeclarationSearch;
@@ -1370,6 +1461,8 @@ BEGIN
 		IF (ds.module # NIL) & ds.module.script THEN
 			err := ImportAdd(ds.module, buf, begin, end, begin, end);
 			d := ds.end
+		ELSE
+			err := ErrNo
 		END;
 		IF d = NIL THEN
 			err := ErrDeclarationNotFound;
@@ -1574,6 +1667,8 @@ BEGIN
 			left := expr1.value(ExprInteger).int;
 			IF expr2 # NIL THEN
 				right := expr2.value(ExprInteger).int
+			ELSE
+				right := 0 (* TODO Убрать *)
 			END;
 			IF ~CheckSetRange(left)
 			OR (expr2 # NIL) & ~CheckSetRange(right)
@@ -1635,10 +1730,15 @@ BEGIN
 	d.decl := decl;
 	d.sel := NIL;
 	d.type := decl.type;
-	IF decl IS Const THEN
-		d.value := decl(Const).expr.value
-	ELSIF decl IS GeneralProcedure THEN
-		d.type := decl(GeneralProcedure).header
+	IF decl IS Var THEN
+		d.inited := decl(Var).state.inited
+	ELSE
+		d.inited := Inited;
+		IF decl IS Const THEN
+			d.value := decl(Const).expr.value
+		ELSIF decl IS GeneralProcedure THEN
+			d.type := decl(GeneralProcedure).header
+		END
 	END
 	RETURN ErrNo
 END DesignatorNew;
@@ -1659,21 +1759,30 @@ BEGIN
 			v.state.inited := Inited
 		END
 	END;
-	d.decl.used := TRUE
+	d.decl.used := TRUE;
+	IF d.decl IS Var THEN
+		d.decl(Var).state.used := TRUE
+	END
 	RETURN err
 END DesignatorUsed;
 
 PROCEDURE CheckInited*(ds: Declarations): INTEGER;
 VAR err: INTEGER;
-	d: Declaration;
+    d: Declaration;
+    name: ARRAY 128 OF CHAR;
+    len: INTEGER;
 BEGIN
 	d := ds.vars;
 	WHILE (d # NIL) & (d IS Var)
-	    & (~d.used OR (d(Var).state.inited > InitedNo))
+	    & (~d(Var).state.used OR (d(Var).state.inited > InitedNo))
 	DO
 		d := d.next
 	END;
 	IF (d # NIL) & (d IS Var) THEN
+		len := 0;
+		IF Strings.CopyToChars(name, len, d.name) THEN
+			Out.String(name); Out.Ln
+		END;
 		err := ErrVarUninitialized
 	ELSE
 		err := ErrNo
@@ -2410,6 +2519,7 @@ VAR err: INTEGER;
 				err := ErrConstMultOverflow
 			END
 		ELSIF i2 = 0 THEN
+			i := 0;(* Убрать *)
 			err := ErrComDivByZero
 		ELSIF mult = Scanner.Div THEN
 			i := i1 DIV i2
@@ -3063,8 +3173,8 @@ BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
 
-	var.stateCurrent.inited := Inited;
-	var.stateCurrent.used := TRUE;
+	var.state.inited := Inited;
+	var.state.used := TRUE;
 
 	var.used := TRUE;
 	err := ForSetTo(f, to);
@@ -3279,13 +3389,13 @@ BEGIN
 		IF (des.decl IS Var) & IsChangeable(des) THEN
 			IF des.decl.type.id = IdPointer THEN
 				IF (des.sel # NIL)
-				 & (des.decl(Var).stateCurrent.inited = InitedNo)
+				 & (des.decl(Var).state.inited = InitedNo)
 				THEN
 					err := ErrVarUninitialized
 				END;
 				des.decl.used := TRUE
 			END;
-			des.decl(Var).stateCurrent.inited := Inited
+			des.decl(Var).state.inited := Inited
 		ELSE
 			err := ErrAssignExpectVarParam
 		END;

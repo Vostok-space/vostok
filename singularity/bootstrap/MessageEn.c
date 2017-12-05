@@ -170,7 +170,7 @@ extern void MessageEn_AstError(int code) {
 		O(15, (o7_char *)"Expected return");
 		break;
 	case -43:
-		O(20, (o7_char *)"Declaraion not found");
+		O(20, (o7_char *)"Declaration not found");
 		break;
 	case -44:
 		O(40, (o7_char *)"Recursive declaration of constant denied");

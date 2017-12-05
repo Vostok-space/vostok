@@ -22,7 +22,7 @@ Demo server:
 
 Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
 
-	buid.cmd
+	make.cmd
 
 
 Проект "Восток"
@@ -58,4 +58,4 @@ Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc
 Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
 каталог с которым должен быть прописан в переменной окружения PATH
 
-	buid.cmd
+	make.cmd

@@ -474,7 +474,8 @@ BEGIN
 		l := p.l;
 		inc := (l = Scanner.And) & (p.inLoops > 0);
 		IF inc THEN
-			INC(p.inConditions)
+			INC(p.inConditions);
+			Ast.TurnIf(ds)
 		END;
 		Scan(p);
 		term := NIL;
@@ -487,7 +488,8 @@ BEGIN
 			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds)))
 		END;
 		IF inc THEN
-			DecInConditions(p)
+			DecInConditions(p);
+			Ast.BackFromBranch(ds)
 		END
 	END
 	RETURN e
@@ -521,7 +523,13 @@ BEGIN
 	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
 		l := p.l;
 		Scan(p);
-		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))
+		IF p.l # Scanner.Or THEN
+			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))
+		ELSE
+			Ast.TurnIf(ds);
+			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)));
+			Ast.BackFromBranch(ds);
+		END
 	END;
 	IF inc THEN
 		DecInConditions(p)
@@ -943,13 +951,15 @@ END Types;
 
 PROCEDURE If(VAR p: Parser; ds: Ast.Declarations): Ast.If;
 VAR if, else: Ast.If;
-	elsif: Ast.WhileIf;
+    elsif: Ast.WhileIf;
+    i: INTEGER;
 
 	PROCEDURE Branch(VAR p: Parser; ds: Ast.Declarations; first: BOOLEAN): Ast.If;
 	VAR if: Ast.If;
 	BEGIN
 		Scan(p);
 		CheckAst(p, Ast.IfNew(if, Expression(p, ds), NIL));
+		Ast.TurnIf(ds);
 		Expect(p, Scanner.Then, ErrExpectThen);
 		IF first & (p.inLoops > 0) THEN
 			INC(p.inConditions)
@@ -961,14 +971,22 @@ BEGIN
 	ASSERT(p.l = Scanner.If);
 	if := Branch(p, ds, TRUE);
 	elsif := if;
+	i := 1;
 	WHILE p.l = Scanner.Elsif DO
+		INC(i);
+		Ast.TurnElse(ds);
 		elsif.elsif := Branch(p, ds, FALSE);
 		elsif := elsif.elsif
 	END;
 	IF ScanIfEqual(p, Scanner.Else) THEN
+		Ast.TurnElse(ds);
 		CheckAst(p, Ast.IfNew(else, NIL, statements(p, ds)));
 		elsif.elsif := else
 	END;
+	REPEAT
+		DEC(i);
+		Ast.BackFromBranch(ds)
+	UNTIL i = 0;
 	IF p.inLoops > 0 THEN
 		DecInConditions(p)
 	END;

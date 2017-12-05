@@ -13,9 +13,13 @@ BEGIN
 	IF FALSE THEN
 		ASSERT(FALSE);
 		d := TRUE
+	ELSE
+		d := FALSE (*TODO Убрать*)
 	END;
-	IF d THEN
-		ASSERT(FALSE)
+	IF TRUE THEN
+		IF d THEN
+			ASSERT(FALSE)
+		END
 	END
 END Fail;
 
