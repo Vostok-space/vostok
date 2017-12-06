@@ -424,7 +424,7 @@ static void DeclConnect(struct Ast_RDeclaration *d, struct Ast_RDeclarations *ds
 	if (o7_cmp(start, 0) >=  0) {
 		Ast_PutChars(O7_REF(d)->module, &O7_REF(d)->name, name_len0, name, start, end);
 	} else {
-		Ast_PutChars(O7_REF(d)->module, &O7_REF(d)->name, 6, (o7_char *)"#ERROR", 0, 5);
+		Ast_PutChars(O7_REF(d)->module, &O7_REF(d)->name, 7, (o7_char *)"#ERROR ", 0, 5);
 	}
 }
 

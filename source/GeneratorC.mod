@@ -971,7 +971,7 @@ BEGIN
 			ELSE
 				Selector(gen, sels, i, typ, desType)
 			END
-		ELSIF sel IS Ast.SelGuard THEN
+		ELSE ASSERT(sel IS Ast.SelGuard);
 			IF sel.type.id = Ast.IdPointer THEN
 				Text.Str(gen, "O7_GUARD(");
 				ASSERT(CheckStructName(gen, sel.type.type(Ast.Record)));
@@ -994,8 +994,6 @@ BEGIN
 				Text.Str(gen, "_tag)")
 			END;
 			typ := sel(Ast.SelGuard).type
-		ELSE
-			ASSERT(FALSE)
 		END;
 	END;
 	IF ref THEN
@@ -1035,15 +1033,21 @@ BEGIN
 END Designator;
 
 PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
-VAR des: Ast.Designator;
+VAR des: Ast.Designator; var: Ast.Var;
 BEGIN
+	var := NIL;
 	IF e IS Ast.Designator THEN
-		des := e(Ast.Designator)
+		des := e(Ast.Designator);
+		IF des.decl IS Ast.Var THEN
+			var := des.decl(Ast.Var)
+		ELSE
+			des := NIL
+		END
 	ELSE
 		des := NIL
 	END
 	RETURN (des # NIL)
-	     & ((des.inited # Ast.Inited) OR (des.sel # NIL))
+	     & ((des.inited # Ast.Inited) OR (des.sel # NIL) OR var.checkInit)
 END IsMayNotInited;
 
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
@@ -1550,7 +1554,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expr(gen, rel.exprs[1], rel.distance);
 				Text.Str(gen, ")");
 				Text.Str(gen, str);
-				Text.Str(gen, " 0")
+				Text.Str(gen, "0")
 			ELSE
 				Expr(gen, rel.exprs[0], -rel.distance);
 				Text.Str(gen, str);
@@ -2118,7 +2122,7 @@ BEGIN
 	PMemoryOutBack(gen.opt, mo)
 END Declarator;
 
-PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
+PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
 	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
 	BEGIN
 		CASE var.type.id OF
@@ -2160,17 +2164,16 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration);
 		END
 	END InitUndef;
 BEGIN
-	CASE gen.opt.varInit OF
-	  VarInitUndefined:
-		InitUndef(gen, var)
-	| VarInitZero:
-		InitZero(gen, var)
-	| VarInitNo:
+	IF (gen.opt.varInit = VarInitNo) OR (~record & ~var(Ast.Var).checkInit) THEN
 		IF (var.type.id = Ast.IdPointer)
 		 & (gen.opt.memManager = MemManagerCounter)
 		THEN
 			Text.Str(gen, " = NULL")
 		END
+	ELSIF gen.opt.varInit = VarInitUndefined THEN
+		InitUndef(gen, var)
+	ELSE ASSERT(gen.opt.varInit = VarInitZero);
+		InitZero(gen, var)
 	END
 END VarInit;
 
@@ -2296,7 +2299,7 @@ BEGIN
 		IF ~(var.type.id IN {Ast.IdArray, Ast.IdRecord}) THEN
 			Text.Str(gen, "r->");
 			Name(gen, var);
-			VarInit(gen, var);
+			VarInit(gen, var, TRUE);
 			Text.StrLn(gen, ";");
 		ELSIF var.type.id = Ast.IdArray THEN
 			typeUndef := TypeForUndef(var.type.type);
@@ -2649,7 +2652,7 @@ BEGIN
 
 	Declarator(out.g[Implementation], var, FALSE, same, TRUE);
 
-	VarInit(out.g[Implementation], var);
+	VarInit(out.g[Implementation], var, FALSE);
 
 	IF last THEN
 		Text.StrLn(out.g[Implementation], ";")
@@ -3052,10 +3055,8 @@ BEGIN
 		Repeat(gen, st(Ast.Repeat))
 	ELSIF st IS Ast.For THEN
 		For(gen, st(Ast.For))
-	ELSIF st IS Ast.Case THEN
+	ELSE ASSERT(st IS Ast.Case);
 		Case(gen, st(Ast.Case))
-	ELSE
-		ASSERT(FALSE)
 	END
 END Statement;
 
@@ -3302,7 +3303,6 @@ END VarsInit;
 
 PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
 VAR d, prev: Ast.Declaration;
-
 BEGIN
 	d := ds.start;
 	ASSERT((d = NIL) OR ~(d IS Ast.Module));

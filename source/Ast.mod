@@ -262,7 +262,8 @@ TYPE
 
 	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
-		state, stateRoot: VarState
+		state: VarState;
+		checkInit*: BOOLEAN
 	END;
 
 	Record* = POINTER TO RECORD(RConstruct)
@@ -1047,8 +1048,8 @@ BEGIN
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
 
-	v.state := VarStateNew(NIL);
-	v.stateRoot := v.state;
+	v.state     := VarStateNew(NIL);
+	v.checkInit := FALSE;
 
 	IF ds.vars = NIL THEN
 		ds.vars := v
@@ -1058,7 +1059,7 @@ END ChecklessVarAdd;
 PROCEDURE VarAdd*(ds: Declarations;
                   VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR v: Var;
-	err: INTEGER;
+    err: INTEGER;
 BEGIN
 	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
 	err := CheckNameDuplicate(ds, buf, begin, end);
@@ -1115,8 +1116,8 @@ BEGIN
 	END;
 	v.needTag := NIL;
 
-	v.state := VarStateNew(NIL);
-	v.stateRoot := v.state;
+	v.state     := VarStateNew(NIL);
+	v.checkInit := FALSE;
 	v.state.inited := ORD(ParamIn IN v.access) * Inited
 END ParamAddPredefined;
 
@@ -1759,24 +1760,33 @@ END DesignatorNew;
 
 PROCEDURE DesignatorUsed*(d: Designator; varParam, inCondition, inLoop: BOOLEAN): INTEGER;
 VAR err: INTEGER;
-	v: Var;
+    v: Var;
 BEGIN
 	err := ErrNo;
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
+
 		IF varParam THEN
-			v.state.inited := Inited
+			IF v.state.inited # Inited THEN
+				(* TODO Зависит от типа varParam, доработать *)
+				v.state.inited := InitedPartly;
+				v.checkInit := TRUE
+			END;
+
+			(* TODO временный код *)
+			v.state.inited := Inited;
+
 		ELSIF (v.state.inited < Inited - ORD(inCondition)) & ~inLoop
 		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
 			err := ErrVarUninitialized - ORD(v.state.inited = InitedPartly);
 			v.state.inited := Inited
-		END
+		ELSIF v.state.inited = InitedPartly THEN
+			v.checkInit := TRUE
+		END;
+		v.state.used := TRUE
 	END;
-	d.decl.used := TRUE;
-	IF d.decl IS Var THEN
-		d.decl(Var).state.used := TRUE
-	END
+	d.decl.used := TRUE
 	RETURN err
 END DesignatorUsed;
 
@@ -1788,7 +1798,7 @@ VAR err: INTEGER;
 BEGIN
 	d := ds.vars;
 	WHILE (d # NIL) & (d IS Var)
-	    & (~d(Var).state.used OR (d(Var).state.inited > InitedNo))
+	    & (~d(Var).state.used OR (d(Var).state.inited IN {Inited, InitedPartly}))
 	DO
 		d := d.next
 	END;

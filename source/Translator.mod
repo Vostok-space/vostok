@@ -446,11 +446,9 @@ BEGIN
 		ASSERT(Exec.Init(cmd, "mkdir")
 		     & Exec.Add(cmd, name, 0)
 		     & Exec.AddClean(cmd, " 2>/dev/null"))
-	ELSIF Platform.Windows THEN
+	ELSE ASSERT(Platform.Windows);
 		ASSERT(Exec.Init(cmd, "mkdir")
 		     & Exec.Add(cmd, name, 0))
-	ELSE
-		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END MakeDir;
@@ -463,12 +461,10 @@ BEGIN
 		     & Exec.Add(cmd, "-r", 0)
 		     & Exec.Add(cmd, name, 0)
 		     & Exec.AddClean(cmd, " 2>/dev/null"))
-	ELSIF Platform.Windows THEN
+	ELSE ASSERT(Platform.Windows);
 		ASSERT(Exec.Init(cmd, "rmdir")
 		     & Exec.AddClean(cmd, " /s/q")
 		     & Exec.Add(cmd, name, 0))
-	ELSE
-		ASSERT(FALSE)
 	END
 	RETURN Exec.Do(cmd) = Exec.Ok
 END RemoveDir;
@@ -487,12 +483,10 @@ BEGIN
 		ok := TRUE;
 		ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
 		     & Strings.CopyToChars(dirCOut, len, name))
-	ELSIF Platform.Windows THEN
+	ELSE ASSERT(Platform.Windows);
 		ok := OsEnv.Get(dirCOut, len, "temp")
 		    & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
 		    & Strings.CopyToChars(dirCOut, len, name)
-	ELSE
-		ASSERT(FALSE)
 	END;
 
 	IF ok THEN
@@ -748,9 +742,7 @@ END Start;
 BEGIN
 	IF Platform.Posix THEN
 		pathSep := "/"
-	ELSIF Platform.Windows THEN
+	ELSE ASSERT(Platform.Windows);
 		pathSep := "\"
-	ELSE
-		ASSERT(FALSE)
 	END
 END Translator.
