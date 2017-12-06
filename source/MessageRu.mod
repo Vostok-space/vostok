@@ -210,6 +210,8 @@ BEGIN
 		O("Во время итерации в FOR возможно переполнение")
 	| Ast.ErrVarUninitialized:
 		O("Использование неинициализированной переменной")
+	| Ast.ErrVarMayUninitialized:
+		O("Использование переменной, которая может быть не иниализирована")
 	| Ast.ErrDeclarationNotProc:
 		O("Имя должно указывать на процедуру")
 	| Ast.ErrProcNotCommandHaveReturn:

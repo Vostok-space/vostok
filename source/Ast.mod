@@ -123,23 +123,24 @@ CONST
 	ErrForPossibleOverflow*         = -80;
 
 	ErrVarUninitialized*            = -81;
+	ErrVarMayUninitialized*         = ErrVarUninitialized - 1;
 
-	ErrDeclarationNotProc*          = -82;
-	ErrProcNotCommandHaveReturn*    = -83;
+	ErrDeclarationNotProc*          = -83;
+	ErrProcNotCommandHaveReturn*    = -85;
 	                                (*-84*)
-	ErrProcNotCommandHaveParams*    = -85;
+	ErrProcNotCommandHaveParams*    = -86;
 
-	ErrReturnTypeArrayOrRecord*     = -86;
-	ErrRecordForwardUndefined*      = -87;
-	ErrPointerToNotRecord*          = -88;
+	ErrReturnTypeArrayOrRecord*     = -87;
+	ErrRecordForwardUndefined*      = -88;
+	ErrPointerToNotRecord*          = -103;
 	ErrVarOfRecordForward*          = -96;
 	ErrArrayTypeOfRecordForward*    = -97;
 	                                (*-89 .. -94*)
 	ErrAssertConstFalse*            = -95;
 	ErrDeclarationUnused*           = -98;
-	                                 (*-99 .. 101*)
-	ErrProcNestedTooDeep*           = 102;
-
+	                                (*-99 .. -101*)
+	ErrProcNestedTooDeep*           = -102;
+	                               (* -103 *)
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -1768,7 +1769,7 @@ BEGIN
 		ELSIF (v.state.inited < Inited - ORD(inCondition)) & ~inLoop
 		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
-			err := ErrVarUninitialized;
+			err := ErrVarUninitialized - ORD(v.state.inited = InitedPartly);
 			v.state.inited := Inited
 		END
 	END;
@@ -1796,7 +1797,7 @@ BEGIN
 		IF Strings.CopyToChars(name, len, d.name) THEN
 			Out.String(name); Out.Ln
 		END;
-		err := ErrVarUninitialized
+		err := ErrVarMayUninitialized
 	ELSE
 		err := ErrNo
 	END
@@ -3408,7 +3409,7 @@ BEGIN
 				IF (des.sel # NIL)
 				 & (des.decl(Var).state.inited = InitedNo)
 				THEN
-					err := ErrVarUninitialized
+					err := ErrVarUninitialized (* TODO *)
 				END;
 				des.decl.used := TRUE
 			END;

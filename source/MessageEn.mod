@@ -211,6 +211,8 @@ BEGIN
 		O("Iterator in FOR can overflow")
 	| Ast.ErrVarUninitialized:
 		O("Using uninitialized variable")
+	| Ast.ErrVarMayUninitialized:
+		O("Using variable, which may be uninitialized")
 	| Ast.ErrDeclarationNotProc:
 		O("Expected name of procedure")
 	| Ast.ErrProcNotCommandHaveReturn:
