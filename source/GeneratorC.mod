@@ -935,8 +935,6 @@ VAR sel: Ast.Selector;
 BEGIN
 	IF i >= 0 THEN
 		sel := sels.list[i]
-	ELSE
-		sel := NIL (* Убрать *)
 	END;
 	IF ~gen.opt.checkNil THEN
 		ref := FALSE
@@ -1111,7 +1109,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					        OR ~(des.decl IS Ast.FormalParam)
 					           )
 				ELSE
-					des := NIL; (* Убрать *)
 					ASSERT(count # NIL);
 					sizeof := FALSE
 				END;
@@ -1364,7 +1361,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			 & gen.opt.checkArith & (p.expr.value = NIL)
 			THEN
 				IF p.expr.type.id = Ast.IdInteger THEN
-					Text.Str(gen, "o7_byte(");
+					Text.Str(gen, "o7_byte(")
 				ELSE
 					Text.Str(gen, "o7_lbyte(")
 				END;
@@ -2692,11 +2689,8 @@ BEGIN
 		IF expr.type.id = Ast.IdRecord THEN
 			base := expectType(Ast.Record);
 			extend := expr.type(Ast.Record)
-		ELSE
-			extend := NIL (* Убрать *)
 		END
 	ELSIF gen.opt.plan9 THEN
-		extend := NIL; (* Убрать *)
 		CheckExpr(gen, expr);
 		brace := FALSE
 	ELSE

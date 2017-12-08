@@ -256,6 +256,7 @@ TYPE
 	VarState = POINTER TO RECORD
 		inited*: INTEGER;
 		used*  : BOOLEAN;
+		inCondition: BOOLEAN;
 
 		root, if, else: VarState
 	END;
@@ -941,6 +942,7 @@ BEGIN
 	IF root # NIL THEN
 		ASSERT(root.else = NIL);
 		vs.inited := root.inited;
+		vs.inCondition := root.inited = InitedPartly;
 		vs.root := root;
 		IF root.if = NIL THEN
 			root.if   := vs
@@ -949,6 +951,7 @@ BEGIN
 		END
 	ELSE
 		vs.inited := InitedNo;
+		vs.inCondition := FALSE;
 		vs.if   := NIL;
 		vs.else := NIL;
 		vs.root := NIL
@@ -1682,8 +1685,6 @@ BEGIN
 			left := expr1.value(ExprInteger).int;
 			IF expr2 # NIL THEN
 				right := expr2.value(ExprInteger).int
-			ELSE
-				right := 0 (* TODO Убрать *)
 			END;
 			IF ~CheckSetRange(left)
 			OR (expr2 # NIL) & ~CheckSetRange(right)
@@ -1758,7 +1759,7 @@ BEGIN
 	RETURN ErrNo
 END DesignatorNew;
 
-PROCEDURE DesignatorUsed*(d: Designator; varParam, inCondition, inLoop: BOOLEAN): INTEGER;
+PROCEDURE DesignatorUsed*(d: Designator; varParam, inLoop: BOOLEAN): INTEGER;
 VAR err: INTEGER;
     v: Var;
 BEGIN
@@ -1776,7 +1777,7 @@ BEGIN
 			(* TODO временный код *)
 			v.state.inited := Inited;
 
-		ELSIF (v.state.inited < Inited - ORD(inCondition)) & ~inLoop
+		ELSIF (v.state.inited < Inited - ORD(v.state.inCondition)) & ~inLoop
 		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
 			err := ErrVarUninitialized - ORD(v.state.inited = InitedPartly);
@@ -2543,7 +2544,6 @@ VAR err: INTEGER;
 				err := ErrConstMultOverflow
 			END
 		ELSIF i2 = 0 THEN
-			i := 0;(* Убрать *)
 			err := ErrComDivByZero
 		ELSIF mult = Scanner.Div THEN
 			i := i1 DIV i2
@@ -3055,7 +3055,7 @@ VAR err: INTEGER;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
 	IF err = ErrNo THEN
-		err := DesignatorUsed(des, FALSE, FALSE, FALSE)
+		err := DesignatorUsed(des, FALSE, FALSE)
 	END;
 	NEW(c); StatInit(c, e)
 	RETURN err

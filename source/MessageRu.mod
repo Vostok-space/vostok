@@ -99,7 +99,7 @@ BEGIN
 	| Ast.ErrCallIgnoredReturn:
 		O("Возвращаемое значение не задействовано в выражении")
 	| Ast.ErrCallExprWithoutReturn:
-		O("Вызываемая процедура не возвращает значения")
+		O("Вызываемая подпрограмма не возвращает значения")
 	| Ast.ErrCallExcessParam:
 		O("Лишние параметры при вызове процедуры")
 	| Ast.ErrCallIncompatibleParamType:
@@ -127,7 +127,7 @@ BEGIN
 	| Ast.ErrCaseElseAlreadyExist:
 		O("ELSE ветка в CASE уже есть")
 	| Ast.ErrProcHasNoReturn:
-		O("Процедура не имеет возвращаемого значения")
+		O("Подпрограмма не имеет возвращаемого значения")
 	| Ast.ErrReturnIncompatibleType:
 		O("Тип возвращаемого значения не совместим типом, указанном в заголовке процедуры")
 	| Ast.ErrExpectReturn:
@@ -211,7 +211,7 @@ BEGIN
 	| Ast.ErrVarUninitialized:
 		O("Использование неинициализированной переменной")
 	| Ast.ErrVarMayUninitialized:
-		O("Использование переменной, которая может быть не иниализирована")
+		O("Использование переменной, которая может быть не инициализирована")
 	| Ast.ErrDeclarationNotProc:
 		O("Имя должно указывать на процедуру")
 	| Ast.ErrProcNotCommandHaveReturn:
@@ -229,7 +229,7 @@ BEGIN
 	| Ast.ErrVarOfRecordForward:
 		O("Объявлена переменная, чей тип - это недообъявленная запись")
 	| Ast.ErrArrayTypeOfRecordForward:
-		O("Недообъявленная запись в качесиве подтипа массива")
+		O("Недообъявленная запись в качестве подтипа массива")
 	| Ast.ErrDeclarationUnused:
 		O("Существует незадействованное объявление в этой области видимости")
 	| Ast.ErrProcNestedTooDeep:
@@ -382,7 +382,7 @@ BEGIN
 	| Cli.ErrTooLongCc:
 		S("Длина опций компилятора C слишком велика")
 	| Cli.ErrTooLongTemp:
-		S("Имя временного катплого слишком велико")
+		S("Имя временного каталога слишком велико")
 	| Cli.ErrCCompiler:
 		S("Ошибка при вызове компилятора C")
 	| Cli.ErrTooLongRunArgs:
@@ -390,7 +390,7 @@ BEGIN
 	| Cli.ErrUnexpectArg:
 		S("Неожиданный аргумент")
 	| Cli.ErrUnknownInit:
-		S("Указанный способ инициализации науке неизвестен")
+		S("Указанный способ инициализации переменных науке неизвестен")
 	| Cli.ErrCantCreateOutDir:
 		S("Не получается создать выходной каталог")
 	| Cli.ErrCantRemoveOutDir:

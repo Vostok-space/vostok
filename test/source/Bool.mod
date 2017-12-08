@@ -13,8 +13,6 @@ BEGIN
 	IF FALSE THEN
 		ASSERT(FALSE);
 		d := TRUE
-	ELSE
-		d := FALSE (*TODO Убрать*)
 	END;
 	IF TRUE THEN
 		IF d THEN
