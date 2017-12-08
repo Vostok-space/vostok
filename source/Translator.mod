@@ -30,7 +30,7 @@ IMPORT
 	GeneratorC,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
-	Message := MessageRu,
+	Message := MessageEn,
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
