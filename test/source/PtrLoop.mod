@@ -9,10 +9,19 @@ TYPE
 		next: Ptr
 	END;
 
-VAR
-	p: Ptr;
+(*
+PROCEDURE Fail*;
+VAR p: Ptr;
+BEGIN
+	p := NIL;
+	IF p.i = 3 THEN
+		p := NIL
+	END
+END Fail;
+*)
 
 PROCEDURE Go*;
+VAR p: Ptr;
 BEGIN
 	NEW(p); p.next := p;
 	p.i := 2;

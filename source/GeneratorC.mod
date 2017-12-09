@@ -1045,7 +1045,7 @@ BEGIN
 		des := NIL
 	END
 	RETURN (des # NIL)
-	     & ((des.inited # Ast.Inited) OR (des.sel # NIL) OR var.checkInit)
+	     & ((des.inited # {Ast.InitedValue}) OR (des.sel # NIL) OR var.checkInit)
 END IsMayNotInited;
 
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);

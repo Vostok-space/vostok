@@ -270,11 +270,11 @@ BEGIN
 END ScanChars;
 
 PROCEDURE IsDigit(ch: CHAR): BOOLEAN;
-	RETURN (ch >= "0") & (ch <= "9")
+	RETURN ("0" <= ch) & (ch <= "9")
 END IsDigit;
 
 PROCEDURE IsHexDigit(ch: CHAR): BOOLEAN;
-	RETURN (ch >= "0") & (ch <= "9") OR (ch >= "A") & (ch <= "F")
+	RETURN ("0" <= ch) & (ch <= "9") OR ("A" <= ch) & (ch <= "F")
 END IsHexDigit;
 
 PROCEDURE ValDigit(ch: CHAR): INTEGER;

@@ -182,10 +182,10 @@ CONST
 	IdVar*              = 34;
 	LastId              = 34;
 
-	InitedNo*     = 0;
-	InitedPartly* = 1;
-	Inited*       = 2;
-	InitedFail*   = 3;
+	InitedNo*    = 0;
+	InitedNil*   = 1;
+	InitedValue* = 2;
+	InitedFail*  = 3;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -254,7 +254,7 @@ TYPE
 	Pointer* = POINTER TO RPointer;
 
 	VarState = POINTER TO RECORD
-		inited*: INTEGER;
+		inited*: SET;
 		used*  : BOOLEAN;
 		inCondition: BOOLEAN;
 
@@ -380,7 +380,7 @@ TYPE
 
 	Designator* = POINTER TO RECORD(RFactor)
 		decl*: Declaration;
-		inited*: INTEGER;
+		inited*: SET;
 		sel*: Selector
 	END;
 
@@ -676,24 +676,28 @@ END RegModule;
 
 PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
 VAR d: Declaration;
-    err: INTEGER;
+    err, i: INTEGER;
     str: ARRAY 256 OF CHAR;
 BEGIN
 	d := ds.start;
 	WHILE (d # NIL) & (d IS Import) DO
 		d := d.next
 	END;
-	WHILE (d # NIL) & (d.mark OR d.used OR (d IS Var) & (d(Var).state.inited > 0)) DO
+	WHILE (d # NIL)
+	    & (d.mark OR d.used
+	    OR (d IS Var) & ({} # {InitedValue, InitedNil} * d(Var).state.inited)
+	      )
+	DO
 		d := d.next
 	END;
 	IF d = NIL THEN
 		err := ErrNo
 	ELSE
-		err := 0;
-		ASSERT(Strings.CopyToChars(str ,err, d.name));
+		i := 0;
+		ASSERT(Strings.CopyToChars(str, i, d.name));
 		Out.String(str); Out.Ln;
 
-		err := ErrDeclarationUnused;
+		err := ErrDeclarationUnused
 	END
 	RETURN err
 END CheckUnusedDeclarations;
@@ -937,26 +941,28 @@ END CheckUndefRecordForward;
 
 PROCEDURE VarStateInit(vs, root: VarState);
 BEGIN
-	vs.used   := FALSE;
+	ASSERT(root.else = NIL);
 
-	IF root # NIL THEN
-		ASSERT(root.else = NIL);
-		vs.inited := root.inited;
-		vs.inCondition := root.inited = InitedPartly;
-		vs.root := root;
-		IF root.if = NIL THEN
-			root.if   := vs
-		ELSE
-			root.else := vs
-		END
+	vs.used   := FALSE;
+	vs.inited := root.inited;
+	vs.inCondition := root.inited # {InitedValue};
+	vs.root := root;
+	IF root.if = NIL THEN
+		root.if   := vs
 	ELSE
-		vs.inited := InitedNo;
-		vs.inCondition := FALSE;
-		vs.if   := NIL;
-		vs.else := NIL;
-		vs.root := NIL
+		root.else := vs
 	END
 END VarStateInit;
+
+PROCEDURE VarStateRootInit(vs: VarState);
+BEGIN
+	vs.inited      := {InitedNo};
+	vs.used        := FALSE;
+	vs.inCondition := FALSE;
+	vs.if   := NIL;
+	vs.else := NIL;
+	vs.root := NIL
+END VarStateRootInit;
 
 PROCEDURE VarStateNew(root: VarState): VarState;
 VAR vs: VarState;
@@ -965,32 +971,30 @@ BEGIN
 	RETURN vs
 END VarStateNew;
 
-PROCEDURE VarStateUp(v: Var);
+PROCEDURE VarStateUp(VAR vs: VarState);
 BEGIN
-	ASSERT((v.state.root.if = v.state) OR (v.state.root.else = v.state));
-	v.state := v.state.root;
-	IF v.state.inited = Inited THEN
-		;
-	ELSIF (v.state.if.inited IN {Inited, InitedFail})
-	    & (v.state.else # NIL) & (v.state.else.inited IN {Inited, InitedFail})
-	THEN
-		v.state.inited := Inited
-	ELSIF (v.state.if.inited IN {InitedPartly, Inited})
-	   OR (v.state.else # NIL) & (v.state.else.inited IN {InitedPartly, Inited})
-	THEN
-		v.state.inited := InitedPartly
+	Log.StrLn("VarStateUp");
+	ASSERT((vs.root.if = vs) OR (vs.root.else = vs));
+
+	vs := vs.root;
+	IF vs.else # NIL THEN
+		IF InitedFail IN vs.else.inited THEN
+			vs.inited := vs.if.inited
+		ELSE
+			vs.inited := vs.if.inited + vs.else.inited
+		END;
+		vs.else := NIL
+	ELSE
+		vs.inited := vs.inited + vs.if.inited
 	END;
-	v.state.if   := NIL;
-	v.state.else := NIL
+	vs.if   := NIL
 END VarStateUp;
 
 PROCEDURE TurnIf*(ds: Declarations);
-VAR d: Declaration;
-    v: Var;
-    vs: VarState;
-BEGIN
-	IF ds IS Procedure THEN
-		d := ds.vars;
+
+	PROCEDURE Handle(d: Declaration);
+	VAR v: Var; vs: VarState;
+	BEGIN
 		WHILE (d # NIL) & (d IS Var) DO
 			v := d(Var);
 			ASSERT(v.state.if = NIL);
@@ -999,48 +1003,70 @@ BEGIN
 			v.state := vs;
 			d := d.next
 		END
+	END Handle;
+BEGIN
+	Log.StrLn("TurnIf");
+
+	IF ds IS Procedure THEN
+		Handle(ds(Procedure).header.params);
+		Handle(ds.vars)
 	END
 END TurnIf;
 
 PROCEDURE TurnElse*(ds: Declarations);
-VAR d: Declaration;
-    v: Var;
-    vs: VarState;
-BEGIN
-	IF ds IS Procedure THEN
-		d := ds.vars;
+
+	PROCEDURE Handle(d: Declaration);
+	VAR v: Var; vs: VarState;
+	BEGIN
 		WHILE (d # NIL) & (d IS Var) DO
 			v := d(Var);
-			ASSERT(v.state.root # NIL);
+			ASSERT(v.state.root.if = v.state);
 			vs := VarStateNew(v.state.root);
+			Log.Int(ORD(vs.inited));
 			ASSERT(v.state.root.else = vs);
+			ASSERT(v.state.root.if = v.state);
 			v.state := vs;
 			d := d.next
 		END
+	END Handle;
+BEGIN
+	Log.StrLn("TurnElse: ");
+
+	IF ds IS Procedure THEN
+		Handle(ds(Procedure).header.params);
+		Handle(ds.vars)
 	END
 END TurnElse;
 
 PROCEDURE TurnFail*(ds: Declarations);
-VAR d: Declaration;
-BEGIN
-	IF ds IS Procedure THEN
-		d := ds.vars;
+	PROCEDURE Handle(d: Declaration);
+	BEGIN
 		WHILE (d # NIL) & (d IS Var) DO
-			d(Var).state.inited := InitedFail;
+			INCL(d(Var).state.inited, InitedFail);
 			d := d.next
 		END
+	END Handle;
+BEGIN
+	Log.StrLn("TurnFail");
+	IF ds IS Procedure THEN
+		Handle(ds(Procedure).header.params);
+		Handle(ds.vars)
 	END
 END TurnFail;
 
 PROCEDURE BackFromBranch*(ds: Declarations);
-VAR d: Declaration;
-BEGIN
-	IF ds IS Procedure THEN
-		d := ds.vars;
+	PROCEDURE Handle(d: Declaration);
+	BEGIN
 		WHILE (d # NIL) & (d IS Var) DO
-			VarStateUp(d(Var));
+			VarStateUp(d(Var).state);
 			d := d.next
 		END
+	END Handle;
+BEGIN
+	Log.StrLn("BackFromBranch");
+	IF ds IS Procedure THEN
+		Handle(ds(Procedure).header.params);
+		Handle(ds.vars)
 	END
 END BackFromBranch;
 
@@ -1051,7 +1077,7 @@ BEGIN
 	DeclConnect(v, ds, buf, begin, end);
 	v.type := NIL;
 
-	v.state     := VarStateNew(NIL);
+	NEW(v.state); VarStateRootInit(v.state);
 	v.checkInit := FALSE;
 
 	IF ds.vars = NIL THEN
@@ -1119,9 +1145,13 @@ BEGIN
 	END;
 	v.needTag := NIL;
 
-	v.state     := VarStateNew(NIL);
+	NEW(v.state); VarStateRootInit(v.state);
 	v.checkInit := FALSE;
-	v.state.inited := ORD(ParamIn IN v.access) * Inited
+	IF ParamIn IN v.access THEN
+		v.state.inited := {InitedValue}
+	ELSE
+		v.state.inited := {InitedNo}
+	END
 END ParamAddPredefined;
 
 PROCEDURE ParamAdd*(module: Module; proc: ProcType;
@@ -1749,7 +1779,7 @@ BEGIN
 	IF decl IS Var THEN
 		d.inited := decl(Var).state.inited
 	ELSE
-		d.inited := Inited;
+		d.inited := {InitedValue};
 		IF decl IS Const THEN
 			d.value := decl(Const).expr.value
 		ELSIF decl IS GeneralProcedure THEN
@@ -1767,22 +1797,37 @@ BEGIN
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
 
-		IF varParam THEN
+		IF (v.type.id = IdPointer)
+		 & (d.sel # NIL)
+		 & (~(InitedValue IN v.state.inited)
+		 OR ~v.state.inCondition
+		  & ({} # (v.state.inited * {InitedNo, InitedNil}))
+		   )
+
+		THEN
+			Log.Turn(TRUE); Log.Int(ORD(v.state.inited)); Log.Ln; Log.Turn(FALSE);
+			err := ErrVarUninitialized (* TODO *)
+		ELSIF varParam THEN
+			(*
 			IF v.state.inited # Inited THEN
 				(* TODO Зависит от типа varParam, доработать *)
 				v.state.inited := InitedPartly;
 				v.checkInit := TRUE
 			END;
-
+			*)
 			(* TODO временный код *)
-			v.state.inited := Inited;
+			v.state.inited := { InitedValue }
 
-		ELSIF (v.state.inited < Inited - ORD(v.state.inCondition)) & ~inLoop
+		ELSIF ~(~(InitedNo IN v.state.inited)
+		    OR v.state.inCondition & ({} # v.state.inited - {InitedNo})
+		       )
+		   & ~inLoop (* TODO *)
 		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
-			err := ErrVarUninitialized - ORD(v.state.inited = InitedPartly);
-			v.state.inited := Inited
-		ELSIF v.state.inited = InitedPartly THEN
+			Log.Turn(TRUE); Log.Int(ORD(v.state.inited)); Log.Ln; Log.Turn(FALSE);
+			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
+			v.state.inited := { InitedValue }
+		ELSIF InitedNo IN v.state.inited THEN
 			v.checkInit := TRUE
 		END;
 		v.state.used := TRUE
@@ -1799,7 +1844,7 @@ VAR err: INTEGER;
 BEGIN
 	d := ds.vars;
 	WHILE (d # NIL) & (d IS Var)
-	    & (~d(Var).state.used OR (d(Var).state.inited IN {Inited, InitedPartly}))
+	    & (~d(Var).state.used OR (InitedValue IN d(Var).state.inited))
 	DO
 		d := d.next
 	END;
@@ -3201,7 +3246,7 @@ BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
 
-	var.state.inited := Inited;
+	var.state.inited := { InitedValue };
 	var.state.used := TRUE;
 
 	var.used := TRUE;
@@ -3409,24 +3454,39 @@ END CaseElementAdd;
 
 PROCEDURE AssignNew*(VAR a: Assign; des: Designator; expr: Expression): INTEGER;
 VAR err: INTEGER;
+    var: Var;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
 	err := ErrNo;
 	IF des # NIL THEN
 		IF (des.decl IS Var) & IsChangeable(des) THEN
-			IF des.decl.type.id = IdPointer THEN
+			var := des.decl(Var);
+			IF var.type.id = IdPointer THEN
 				IF (des.sel # NIL)
-				 & (des.decl(Var).state.inited = InitedNo)
+				 & (~(InitedValue IN var.state.inited)
+				 OR ~var.state.inCondition
+				  & ({} # (var.state.inited * {InitedNo, InitedNil}))
+				   )
 				THEN
 					err := ErrVarUninitialized (* TODO *)
 				END;
-				des.decl.used := TRUE
+				var.used := TRUE
 			END;
-			des.decl(Var).state.inited := Inited
+
+			IF (des.sel = NIL)
+			 & ((var.up # NIL) & (var.up.up # NIL) OR (var IS FormalParam))
+			 & (expr # NIL) & (expr.value # NIL) & (expr.value = ExprNilGet())
+			THEN
+				var.state.inited := { InitedNil }
+			ELSE
+				var.state.inited := { InitedValue }
+			END;
+			des.inited := var.state.inited
 		ELSE
 			err := ErrAssignExpectVarParam
 		END;
+
 		IF (expr # NIL)
 		 & ~CompatibleTypes(a.distance, des.type, expr.type)
 		 & ~CompatibleAsCharAndString(des.type, a.expr)
