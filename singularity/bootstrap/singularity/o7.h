@@ -77,8 +77,13 @@
 #endif
 
 #if O7_INIT == O7_INIT_UNDEF
-#	define O7_INT_UNDEF  (-1 - O7_INT_MAX)
-#	define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
+#	if INT_MIN < -INT_MAX
+#		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
+#		define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
+#	else
+#		define O7_INT_UNDEF  0
+#		define O7_LONG_UNDEF 0
+#	endif
 #	define O7_DBL_UNDEF  o7_dbl_undef()
 #	define O7_FLT_UNDEF  o7_flt_undef()
 #	define O7_BOOL_UNDEF 0xFF
@@ -127,6 +132,7 @@ typedef char unsigned o7_char;
 #if defined(O7_LONG_T)
 	typedef O7_LONG_T             o7_long_t;
 	typedef O7_ULONG_T            o7_ulong_t;
+#	define O7_LABS(val)           O7_LONG_ABS(val)
 #	if !defined(O7_LONG_MAX)
 #		error
 #	endif
@@ -135,9 +141,11 @@ typedef char unsigned o7_char;
 #	if LONG_MAX    >= O7_LONG_MAX
 		typedef long               o7_long_t;
 		typedef long unsigned      o7_ulong_t;
+#		define O7_LABS(val)        labs(val)
 #	elif LLONG_MAX >= O7_LONG_MAX
 		typedef long long          o7_long_t;
 		typedef long long unsigned o7_ulong_t;
+#		define O7_LABS(val)        llabs(val)
 #	else
 #		error
 #	endif
@@ -264,9 +272,15 @@ void* o7_ref(void *ptr) {
 
 #if __STDC_VERSION__ >= 201112L
 #	define O7_STATIC_ASSERT(cond) static_assert(cond, "")
+#	define O7_NORETURN _Noreturn
 #else
 #	define O7_STATIC_ASSERT(cond) \
 		do { struct o7_static_assert { int a:(int)!!(cond); }; } while(0>1)
+#	if __GNUC__ >= 2
+#		define O7_NORETURN __attribute__((noreturn))
+#	else
+#		define O7_NORETURN
+#	endif
 #endif
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
@@ -670,7 +684,7 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 		assert(!overflow && p >= -O7_LONG_MAX);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
-			assert(abs(m1) <= O7_LONG_MAX / abs(m2));
+			assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
 		}
 		p = o7_long(m1) * o7_long(m2);
 	}
@@ -941,6 +955,8 @@ void o7_memcpy(int dest_len, o7_char dest[O7_VLA(dest_len)],
 	assert(src_len <= dest_len);
 	memcpy(dest, dest, src_len);
 }
+
+extern O7_NORETURN void o7_case_fail(int i);
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]);
 
