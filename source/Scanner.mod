@@ -620,8 +620,6 @@ BEGIN
 	RETURN l
 END SWord;
 
-(*	TODO поправить обработку комментариев - иногда ложно воспринимаются как
-	комментарии строки с '(' и '*' *)
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
 VAR start, i, comment, commentsCount: INTEGER;
 BEGIN

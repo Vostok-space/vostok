@@ -18,10 +18,10 @@ MODULE MessageEn;
 
 IMPORT Ast, Parser, Cli := CliParser, Scanner, Out, Utf8;
 
-PROCEDURE O(s: ARRAY OF CHAR);
+PROCEDURE C(s: ARRAY OF CHAR);
 BEGIN
 	Out.String(s)
-END O;
+END C;
 
 PROCEDURE S(s: ARRAY OF CHAR);
 BEGIN
@@ -33,208 +33,208 @@ PROCEDURE AstError*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  Ast.ErrImportNameDuplicate:
-		O("Module's name already declared in the import list")
+		C("Module's name already declared in the import list")
 	| Ast.ErrImportSelf:
-		O("Module imports itself")
+		C("Module imports itself")
 	| Ast.ErrImportLoop:
-		O("Cyclic import of modules is prohibited")
+		C("Cyclic import of modules is prohibited")
 	| Ast.ErrDeclarationNameDuplicate:
-		O("Redeclaration of name in the same scope")
+		C("Redeclaration of name in the same scope")
 	| Ast.ErrDeclarationNameHide:
-		O("Declaration's name shadows module's declaration")
+		C("Declaration's name shadows module's declaration")
 	| Ast.ErrPredefinedNameHide:
-		O("Declaration's name shadows predefined identifier")
+		C("Declaration's name shadows predefined identifier")
 	| Ast.ErrMultExprDifferentTypes:
-		O("Subexpressions types are incompatible")
+		C("Subexpressions types are incompatible")
 	| Ast.ErrDivExprDifferentTypes:
-		O("Subexpressions types in division are incompatible")
+		C("Subexpressions types in division are incompatible")
 	| Ast.ErrNotBoolInLogicExpr:
-		O("In a logic expression must be subexpressions of boolean type")
+		C("In a logic expression must be subexpressions of boolean type")
 	| Ast.ErrNotIntInDivOrMod:
-		O("In integer division available only integer subexpressions")
+		C("In integer division available only integer subexpressions")
 	| Ast.ErrNotRealTypeForRealDiv:
-		O("In a float point division available only float point subexpressions")
+		C("In a float point division available only float point subexpressions")
 	| Ast.ErrNotIntSetElem:
-		O("Set can contain only integers")
+		C("Set can contain only integers")
 	| Ast.ErrSetElemOutOfRange:
-		O("Item's value of set is out of range - [0 .. 31]")
+		C("Item's value of set is out of range - [0 .. 31]")
 	| Ast.ErrSetLeftElemBiggerRightElem:
-		O("Left item of range is bigger then right item")
+		C("Left item of range is bigger then right item")
 	| Ast.ErrSetElemMaxNotConvertToInt:
-		O("Set, which contain 31 can not be converted to integer")
+		C("Set, which contain 31 can not be converted to integer")
 	| Ast.ErrAddExprDifferenTypes:
-		O("Subexpressions types in sum are incompatible")
+		C("Subexpressions types in sum are incompatible")
 	| Ast.ErrNotNumberAndNotSetInMult:
 		S("In expressions *, / available only numbers and sets.");
-		O("DIV, MOD applicable only for integers")
+		C("DIV, MOD applicable only for integers")
 	| Ast.ErrNotNumberAndNotSetInAdd:
-		O("In expresions +, - available only numbers and sets")
+		C("In expresions +, - available only numbers and sets")
 	| Ast.ErrSignForBool:
-		O("Unary sign not applicable to logic type")
+		C("Unary sign not applicable to logic type")
 	| Ast.ErrRelationExprDifferenTypes:
-		O("Subexpressions types in comparison are not compatible")
+		C("Subexpressions types in comparison are not compatible")
 	| Ast.ErrExprInWrongTypes:
-		O("Left subexpression must be integer, right - Set")
+		C("Left subexpression must be integer, right - Set")
 	| Ast.ErrExprInRightNotSet:
-		O("Right subexpression after IN must be Set")
+		C("Right subexpression after IN must be Set")
 	| Ast.ErrExprInLeftNotInteger:
-		O("Left subexpression before IN must be integer")
+		C("Left subexpression before IN must be integer")
 	| Ast.ErrRelIncompatibleType:
-		O("Relation not applicable to such type")
+		C("Relation not applicable to such type")
 	| Ast.ErrIsExtTypeNotRecord:
-		O("IS applicable only to records and pointers")
+		C("IS applicable only to records and pointers")
 	| Ast.ErrIsExtVarNotRecord:
-		O("Left part of IS be record or pointer to record")
+		C("Left part of IS be record or pointer to record")
 	| Ast.ErrIsExtMeshupPtrAndRecord:
-		O("Type of left part of IS expression must be same kind that right type")
+		C("Type of left part of IS expression must be same kind that right type")
 	| Ast.ErrIsExtExpectRecordExt:
-		O("In right part of IS expected extended record")
+		C("In right part of IS expected extended record")
 	| Ast.ErrConstDeclExprNotConst:
-		O("Constant declaration matched to not constant expression")
+		C("Constant declaration matched to not constant expression")
 	| Ast.ErrAssignIncompatibleType:
-		O("Incompatible types in assignment")
+		C("Incompatible types in assignment")
 	| Ast.ErrAssignExpectVarParam:
-		O("Expected variable expression in assignment")
+		C("Expected variable expression in assignment")
 	| Ast.ErrCallNotProc:
-		O("Call applicable only to subroutines and subroutine's variables")
+		C("Call applicable only to subroutines and subroutine's variables")
 	| Ast.ErrCallIgnoredReturn:
-		O("Returned value can not be ignored")
+		C("Returned value can not be ignored")
 	| Ast.ErrCallExprWithoutReturn:
-		O("Called subroutine not return value")
+		C("Called subroutine not return value")
 	| Ast.ErrCallExcessParam:
-		O("Excess parameter in subroutine's call")
+		C("Excess parameter in subroutine's call")
 	| Ast.ErrCallIncompatibleParamType:
-		O("Incompatible parameter's type")
+		C("Incompatible parameter's type")
 	| Ast.ErrCallExpectVarParam:
-		O("Parameter must be variable")
+		C("Parameter must be variable")
 	| Ast.ErrCallVarPointerTypeNotSame:
-		O("For variable parameter - pointer must used argument of same type")
+		C("For variable parameter - pointer must used argument of same type")
 	| Ast.ErrCallParamsNotEnough:
-		O("Not enough parameters in subroutine's call")
+		C("Not enough parameters in subroutine's call")
 	| Ast.ErrCaseExprNotIntOrChar:
-		O("Expression in CASE must be integer or char")
+		C("Expression in CASE must be integer or char")
 	| Ast.ErrCaseLabelNotIntOrChar:
-		O("Case label must have integer or char type")
+		C("Case label must have integer or char type")
 	| Ast.ErrCaseElemExprTypeMismatch:
-		O("Label of CASE must be integer or char")
+		C("Label of CASE must be integer or char")
 	| Ast.ErrCaseElemDuplicate:
-		O("Values of labels of CASE are duplicated")
+		C("Values of labels of CASE are duplicated")
 	| Ast.ErrCaseRangeLabelsTypeMismatch:
-		O("Types of labels in CASE are not equal")
+		C("Types of labels in CASE are not equal")
 	| Ast.ErrCaseLabelLeftNotLessRight:
-		O("Left part of range in label of CASE must be less than right part")
+		C("Left part of range in label of CASE must be less than right part")
 	| Ast.ErrCaseLabelNotConst:
-		O("Labels in CASE must be constant")
+		C("Labels in CASE must be constant")
 	| Ast.ErrCaseElseAlreadyExist:
-		O("Else branch in CASE already exist")
+		C("Else branch in CASE already exist")
 	| Ast.ErrProcHasNoReturn:
-		O("Subroutine have not return")
+		C("Subroutine have not return")
 	| Ast.ErrReturnIncompatibleType:
-		O("Type of expression in return is not compatible with declared type in header")
+		C("Type of expression in return is not compatible with declared type in header")
 	| Ast.ErrExpectReturn:
-		O("Expected return")
+		C("Expected return")
 	| Ast.ErrDeclarationNotFound:
-		O("Declaration not found")
+		C("Declaration not found")
 	| Ast.ErrConstRecursive:
-		O("Recursive declaration of constant denied")
+		C("Recursive declaration of constant denied")
 	| Ast.ErrImportModuleNotFound:
-		O("Imported module not found")
+		C("Imported module not found")
 	| Ast.ErrImportModuleWithError:
-		O("Imported module contain mistakes")
+		C("Imported module contain mistakes")
 	| Ast.ErrDerefToNotPointer:
-		O("Dereference applicable only to pointers")
+		C("Dereference applicable only to pointers")
 	| Ast.ErrArrayLenLess1:
-		O("Array's length must be > 0")
+		C("Array's length must be > 0")
 	| Ast.ErrArrayLenTooBig:
-		O("Overall length of array too big")
+		C("Overall length of array too big")
 	| Ast.ErrArrayItemToNotArray:
-		O("[ index ] applicable only to array")
+		C("[ index ] applicable only to array")
 	| Ast.ErrArrayIndexNotInt:
-		O("Array index is not integer")
+		C("Array index is not integer")
 	| Ast.ErrArrayIndexNegative:
-		O("Negative array index")
+		C("Negative array index")
 	| Ast.ErrArrayIndexOutOfRange:
-		O("Array index out of range")
+		C("Array index out of range")
 	| Ast.ErrGuardExpectRecordExt:
-		O("In type's guard expected extended record")
+		C("In type's guard expected extended record")
 	| Ast.ErrGuardExpectPointerExt:
-		O("In type's guard expected pointer to extended record")
+		C("In type's guard expected pointer to extended record")
 	| Ast.ErrGuardedTypeNotExtensible:
-		O("In a type's guard must be designator of record or pointer to record")
+		C("In a type's guard must be designator of record or pointer to record")
 	| Ast.ErrDotSelectorToNotRecord:
-		O("Selector '.' applicable only to record and pointer to record")
+		C("Selector '.' applicable only to record and pointer to record")
 	| Ast.ErrDeclarationNotVar:
-		O("Expected variable")
+		C("Expected variable")
 	| Ast.ErrForIteratorNotInteger:
-		O("Iterator of 'FOR'-loop not integer")
+		C("Iterator of 'FOR'-loop not integer")
 	| Ast.ErrNotBoolInIfCondition:
-		O("Expression in IF must be of boolean type")
+		C("Expression in IF must be of boolean type")
 	| Ast.ErrNotBoolInWhileCondition:
-		O("Expression in WHILE must be of boolean type")
+		C("Expression in WHILE must be of boolean type")
 	| Ast.ErrWhileConditionAlwaysFalse:
-		O("Expression in WHILE always false")
+		C("Expression in WHILE always false")
 	| Ast.ErrWhileConditionAlwaysTrue:
-		O("WHILE loop is indefinite becase guard expression always true")
+		C("WHILE loop is indefinite becase guard expression always true")
 	| Ast.ErrNotBoolInUntil:
-		O("Expression in UNTIL must be of boolean type")
+		C("Expression in UNTIL must be of boolean type")
 	| Ast.ErrUntilAlwaysFalse:
-		O("Loop is indefinite because of end condion always false")
+		C("Loop is indefinite because of end condion always false")
 	| Ast.ErrUntilAlwaysTrue:
-		O("End conditin always true")
+		C("End conditin always true")
 	| Ast.ErrDeclarationIsPrivate:
-		O("Declaration is not exported")
+		C("Declaration is not exported")
 	| Ast.ErrNegateNotBool:
-		O("Logic negative ~ applicable only to boolean values")
+		C("Logic negative ~ applicable only to boolean values")
 	| Ast.ErrConstAddOverflow:
-		O("Overflow in constants sum")
+		C("Overflow in constants sum")
 	| Ast.ErrConstSubOverflow:
-		O("Overflow in constants difference")
+		C("Overflow in constants difference")
 	| Ast.ErrConstMultOverflow:
-		O("Overflow in constants multiplication")
+		C("Overflow in constants multiplication")
 	| Ast.ErrComDivByZero:
-		O("Division by zero")
+		C("Division by zero")
 	| Ast.ErrValueOutOfRangeOfByte:
-		O("Value out of byte's range")
+		C("Value out of byte's range")
 	| Ast.ErrValueOutOfRangeOfChar:
-		O("Value out of char's range")
+		C("Value out of char's range")
 	| Ast.ErrExpectIntExpr:
-		O("Expected integer expression")
+		C("Expected integer expression")
 	| Ast.ErrExpectConstIntExpr:
-		O("Expected constant integer expression")
+		C("Expected constant integer expression")
 	| Ast.ErrForByZero:
-		O("Iterator's step can not be 0")
+		C("Iterator's step can not be 0")
 	| Ast.ErrByShouldBePositive:
-		O("For enumeration from low to high iterator's step must be > 0")
+		C("For enumeration from low to high iterator's step must be > 0")
 	| Ast.ErrByShouldBeNegative:
-		O("For enumeration from low to high iterator's step must be < 0")
+		C("For enumeration from low to high iterator's step must be < 0")
 	| Ast.ErrForPossibleOverflow:
-		O("Iterator in FOR can overflow")
+		C("Iterator in FOR can overflow")
 	| Ast.ErrVarUninitialized:
-		O("Using uninitialized variable")
+		C("Using uninitialized variable")
 	| Ast.ErrVarMayUninitialized:
-		O("Using variable, which may be uninitialized")
+		C("Using variable, which may be uninitialized")
 	| Ast.ErrDeclarationNotProc:
-		O("Expected name of procedure")
+		C("Expected name of procedure")
 	| Ast.ErrProcNotCommandHaveReturn:
-		O("As command can be subroutine without return")
+		C("As command can be subroutine without return")
 	| Ast.ErrProcNotCommandHaveParams:
-		O("As command can be subroutine without parameters")
+		C("As command can be subroutine without parameters")
 	| Ast.ErrReturnTypeArrayOrRecord:
-		O("Returned type can not be array or record")
+		C("Returned type can not be array or record")
 	| Ast.ErrRecordForwardUndefined:
-		O("Exist undeclared record, previously referenced in pointer")
+		C("Exist undeclared record, previously referenced in pointer")
 	| Ast.ErrPointerToNotRecord:
-		O("Pointer can reference only to record")
+		C("Pointer can reference only to record")
 	| Ast.ErrAssertConstFalse:
-		O("Assertion always false")
+		C("Assertion always false")
 	| Ast.ErrVarOfRecordForward:
-		O("Declared variable which type is incompletely declared record")
+		C("Declared variable which type is incompletely declared record")
 	| Ast.ErrArrayTypeOfRecordForward:
-		O("Incompletely declared record is used as subtype of array")
+		C("Incompletely declared record is used as subtype of array")
 	| Ast.ErrDeclarationUnused:
-		O("Exist unused declaration in the scope")
+		C("Exist unused declaration in the scope")
 	| Ast.ErrProcNestedTooDeep:
-		O("Too deep nesting of subroutines")
+		C("Too deep nesting of subroutines")
 	END
 END AstError;
 
@@ -242,92 +242,92 @@ PROCEDURE ParseError*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  Scanner.ErrUnexpectChar:
-		O("Unexpected char in text")
+		C("Unexpected char in text")
 	| Scanner.ErrNumberTooBig:
-		O("Value of constant is too big")
+		C("Value of constant is too big")
 	| Scanner.ErrRealScaleTooBig:
-		O("Scale of real value is too big")
+		C("Scale of real value is too big")
 	| Scanner.ErrWordLenTooBig:
-		O("Length of word too big")
+		C("Length of word too big")
 	| Scanner.ErrExpectHOrX:
-		O("In end of hexadecimal number expected 'H' for number or 'X' for char")
+		C("In end of hexadecimal number expected 'H' for number or 'X' for char")
 	| Scanner.ErrExpectDQuote:
-		O("Expected "); O(Utf8.DQuote)
+		C("Expected "); C(Utf8.DQuote)
 	| Scanner.ErrExpectDigitInScale:
-		O("ErrExpectDigitInScale")
+		C("ErrExpectDigitInScale")
 	| Scanner.ErrUnclosedComment:
-		O("Unclosed comment")
+		C("Unclosed comment")
 
 	| Parser.ErrExpectModule:
-		O("Expected 'MODULE'")
+		C("Expected 'MODULE'")
 	| Parser.ErrExpectIdent:
-		O("Expected name")
+		C("Expected name")
 	| Parser.ErrExpectColon:
-		O("Expected ':'")
+		C("Expected ':'")
 	| Parser.ErrExpectSemicolon:
-		O("Expected ';'")
+		C("Expected ';'")
 	| Parser.ErrExpectEnd:
-		O("Expected 'END'")
+		C("Expected 'END'")
 	| Parser.ErrExpectDot:
-		O("Expected '.'")
+		C("Expected '.'")
 	| Parser.ErrExpectModuleName:
-		O("Expected имя модуля")
+		C("Expected имя модуля")
 	| Parser.ErrExpectEqual:
-		O("Expected '='")
+		C("Expected '='")
 	| Parser.ErrExpectBrace1Close:
-		O("Expected ')'")
+		C("Expected ')'")
 	| Parser.ErrExpectBrace2Close:
-		O("Expected ']'")
+		C("Expected ']'")
 	| Parser.ErrExpectBrace3Close:
-		O("Expected '}'")
+		C("Expected '}'")
 	| Parser.ErrExpectOf:
-		O("Expected OF")
+		C("Expected OF")
 	| Parser.ErrExpectTo:
-		O("Expected TO")
+		C("Expected TO")
 	| Parser.ErrExpectStructuredType:
-		O("Expected structured type: array, record, pointer, procedure")
+		C("Expected structured type: array, record, pointer, procedure")
 	| Parser.ErrExpectRecord:
-		O("Expected record")
+		C("Expected record")
 	| Parser.ErrExpectStatement:
-		O("Expected statement")
+		C("Expected statement")
 	| Parser.ErrExpectThen:
-		O("Expected THEN")
+		C("Expected THEN")
 	| Parser.ErrExpectAssign:
-		O("Expected :=")
+		C("Expected :=")
 	| Parser.ErrExpectVarRecordOrPointer:
-		O("Expected variable, which type is record or pointer")
+		C("Expected variable, which type is record or pointer")
 	| Parser.ErrExpectType:
-		O("Expected type")
+		C("Expected type")
 	| Parser.ErrExpectUntil:
-		O("Expected UNTIL")
+		C("Expected UNTIL")
 	| Parser.ErrExpectDo:
-		O("Expected DO")
+		C("Expected DO")
 	| Parser.ErrExpectDesignator:
-		O("Expected designator")
+		C("Expected designator")
 	| Parser.ErrExpectProcedure:
-		O("Expected procedure")
+		C("Expected procedure")
 	| Parser.ErrExpectConstName:
-		O("Expected name of constant")
+		C("Expected name of constant")
 	| Parser.ErrExpectProcedureName:
-		O("Expected procedure's name after end")
+		C("Expected procedure's name after end")
 	| Parser.ErrExpectExpression:
-		O("Expected expression")
+		C("Expected expression")
 	| Parser.ErrExcessSemicolon:
-		O("Excess ';'")
+		C("Excess ';'")
 	| Parser.ErrEndModuleNameNotMatch:
-		O("Name after end do not match with module's name")
+		C("Name after end do not match with module's name")
 	| Parser.ErrArrayDimensionsTooMany:
-		O("Too many dimensions in array")
+		C("Too many dimensions in array")
 	| Parser.ErrEndProcedureNameNotMatch:
-		O("Name after end do not match with procedure's name")
+		C("Name after end do not match with procedure's name")
 	| Parser.ErrFunctionWithoutBraces:
-		O("Declaration of procedure with return must have ()")
+		C("Declaration of procedure with return must have ()")
 	| Parser.ErrExpectIntOrStrOrQualident:
-		O("Expected number or string")
+		C("Expected number or string")
 	| Parser.ErrMaybeAssignInsteadEqual:
-		O("Unexpected '='. Maybe, you mean ':=' for assignment")
+		C("Unexpected '='. Maybe, you mean ':=' for assignment")
 	| Parser.ErrUnexpectStringInCaseLabel:
-		O("As label in CASE not accepted not 1 char strings")
+		C("As label in CASE not accepted not 1 char strings")
 	END
 END ParseError;
 
@@ -364,11 +364,11 @@ BEGIN
 	| Cli.ErrOpenC:
 		S("Can not open destination .c file")
 	| Cli.ErrUnknownCommand:
-		O("Unknown command: ");
+		C("Unknown command: ");
 		S(cmd);
 		Usage
 	| Cli.ErrNotEnoughArgs:
-		O("Not enough count of arguments for command: ");
+		C("Not enough count of arguments for command: ");
 		S(cmd)
 	| Cli.ErrTooLongModuleDirs:
 		S("Too long overall length of paths to modules")
@@ -397,7 +397,7 @@ END CliError;
 
 PROCEDURE Text*(str: ARRAY OF CHAR);
 BEGIN
-	O(str)
+	C(str)
 END Text;
 
 END MessageEn.

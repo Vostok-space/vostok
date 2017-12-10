@@ -77,8 +77,13 @@
 #endif
 
 #if O7_INIT == O7_INIT_UNDEF
-#	define O7_INT_UNDEF  (-1 - O7_INT_MAX)
-#	define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
+#	if INT_MIN < -INT_MAX
+#		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
+#		define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
+#	else
+#		define O7_INT_UNDEF  0
+#		define O7_LONG_UNDEF 0
+#	endif
 #	define O7_DBL_UNDEF  o7_dbl_undef()
 #	define O7_FLT_UNDEF  o7_flt_undef()
 #	define O7_BOOL_UNDEF 0xFF
@@ -264,9 +269,15 @@ void* o7_ref(void *ptr) {
 
 #if __STDC_VERSION__ >= 201112L
 #	define O7_STATIC_ASSERT(cond) static_assert(cond, "")
+#	define O7_NORETURN _Noreturn
 #else
 #	define O7_STATIC_ASSERT(cond) \
 		do { struct o7_static_assert { int a:(int)!!(cond); }; } while(0>1)
+#	if __GNUC__ >= 2
+#		define O7_NORETURN __attribute__((noreturn))
+#	else
+#		define O7_NORETURN
+#	endif
 #endif
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
@@ -941,6 +952,8 @@ void o7_memcpy(int dest_len, o7_char dest[O7_VLA(dest_len)],
 	assert(src_len <= dest_len);
 	memcpy(dest, dest, src_len);
 }
+
+extern O7_NORETURN void o7_case_fail(int i);
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]);
 

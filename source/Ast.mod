@@ -1824,7 +1824,7 @@ BEGIN
 		   & ~inLoop (* TODO *)
 		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
 		THEN
-			Log.Turn(TRUE); Log.Int(ORD(v.state.inited)); Log.Ln; Log.Turn(FALSE);
+			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
 			v.state.inited := { InitedValue }
 		ELSIF InitedNo IN v.state.inited THEN

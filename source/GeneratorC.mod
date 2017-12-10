@@ -2911,17 +2911,21 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
 	VAR elem, elemWithRange: Ast.CaseElement;
-		caseExpr: Ast.Expression;
+	    caseExpr: Ast.Expression;
 
 		PROCEDURE CaseElement(VAR gen: Generator; elem: Ast.CaseElement);
 		VAR r: Ast.CaseLabel;
 		BEGIN
-			IF ~IsCaseElementWithRange(elem) THEN
+			IF gen.opt.gnu OR ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
 				WHILE r # NIL DO
 					Text.Str(gen, "case ");
 					Text.Int(gen, r.value);
-					ASSERT(r.right = NIL);
+					IF r.right # NIL THEN
+						ASSERT(gen.opt.gnu);
+						Text.Str(gen, " ... ");
+						Text.Int(gen, r.right.value)
+					END;
 					Text.StrLn(gen, ":");
 
 					r := r.next
@@ -2981,12 +2985,18 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			Text.StrClose(gen, "}")
 		END CaseElementAsIf;
 	BEGIN
-		elemWithRange := st.elements;
-		WHILE (elemWithRange # NIL) & ~IsCaseElementWithRange(elemWithRange) DO
-			elemWithRange := elemWithRange.next
+		IF gen.opt.gnu THEN
+			elemWithRange := NIL
+		ELSE
+			elemWithRange := st.elements;
+			WHILE (elemWithRange # NIL) & ~IsCaseElementWithRange(elemWithRange)
+			DO
+				elemWithRange := elemWithRange.next
+			END
 		END;
-		IF (elemWithRange = NIL)
-		& ~((st.expr IS Ast.Factor) & ~(st.expr IS Ast.ExprBraces))
+		IF (elemWithRange # NIL)
+		 & (st.expr.value = NIL)
+		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
 			Text.Str(gen, "{ int o7_case_expr = ");
@@ -3016,11 +3026,23 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				END;
 				elem := elem.next
 			END;
-			IF gen.opt.caseAbort THEN
-				Text.StrLn(gen, " else abort();")
+			IF ~gen.opt.caseAbort THEN
+				;
+			ELSIF caseExpr = NIL THEN
+				Text.StrLn(gen, " else o7_case_fail(o7_case_expr);")
+			ELSE
+				Text.Str(gen, " else o7_case_fail(");
+				Expression(gen, caseExpr);
+				Text.StrLn(gen, ");")
 			END
-		ELSIF gen.opt.caseAbort THEN
-			Text.StrLn(gen, "abort();")
+		ELSIF ~gen.opt.caseAbort THEN
+			;
+		ELSIF caseExpr = NIL THEN
+			Text.StrLn(gen, "o7_case_fail(o7_case_expr);")
+		ELSE
+			Text.Str(gen, "o7_case_fail(");
+			Expression(gen, caseExpr);
+			Text.StrLn(gen, ");")
 		END;
 		Text.StrLn(gen, "break;");
 		Text.StrLnClose(gen, "}");
