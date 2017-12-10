@@ -132,6 +132,7 @@ typedef char unsigned o7_char;
 #if defined(O7_LONG_T)
 	typedef O7_LONG_T             o7_long_t;
 	typedef O7_ULONG_T            o7_ulong_t;
+#	define O7_LABS(val)           O7_LONG_ABS(val)
 #	if !defined(O7_LONG_MAX)
 #		error
 #	endif
@@ -140,9 +141,11 @@ typedef char unsigned o7_char;
 #	if LONG_MAX    >= O7_LONG_MAX
 		typedef long               o7_long_t;
 		typedef long unsigned      o7_ulong_t;
+#		define O7_LABS(val)        labs(val)
 #	elif LLONG_MAX >= O7_LONG_MAX
 		typedef long long          o7_long_t;
 		typedef long long unsigned o7_ulong_t;
+#		define O7_LABS(val)        llabs(val)
 #	else
 #		error
 #	endif
@@ -681,7 +684,7 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 		assert(!overflow && p >= -O7_LONG_MAX);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
-			assert(abs(m1) <= O7_LONG_MAX / abs(m2));
+			assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
 		}
 		p = o7_long(m1) * o7_long(m2);
 	}

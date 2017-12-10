@@ -1267,7 +1267,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				IF call.type.id = Ast.IdInteger THEN
 					Text.Str(gen, "abs(")
 				ELSIF call.type.id = Ast.IdLongInt THEN
-					Text.Str(gen, "o7_labs(")
+					Text.Str(gen, "O7_LABS(")
 				ELSE
 					Text.Str(gen, "fabs(")
 				END;
