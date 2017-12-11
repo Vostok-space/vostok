@@ -161,6 +161,7 @@ VAR p: PoToRe;
     aop: ArOfPoToAr;
 BEGIN
 	NEW(p);
+	i := ORD(str[0]);
 	Doo(p);
 	variable1 := 0;
 	proc1 := Irma;

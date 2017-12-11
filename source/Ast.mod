@@ -3452,7 +3452,8 @@ BEGIN
 	RETURN err
 END CaseElementAdd;
 
-PROCEDURE AssignNew*(VAR a: Assign; des: Designator; expr: Expression): INTEGER;
+PROCEDURE AssignNew*(VAR a: Assign; inLoops: BOOLEAN; des: Designator;
+                     expr: Expression): INTEGER;
 VAR err: INTEGER;
     var: Var;
 BEGIN
@@ -3467,7 +3468,7 @@ BEGIN
 				 & (~(InitedValue IN var.state.inited)
 				 OR ~var.state.inCondition
 				  & ({} # (var.state.inited * {InitedNo, InitedNil}))
-				   )
+				   ) & ~inLoops
 				THEN
 					err := ErrVarUninitialized (* TODO *)
 				END;

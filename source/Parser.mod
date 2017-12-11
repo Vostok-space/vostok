@@ -85,6 +85,7 @@ TYPE
 		err: BOOLEAN;
 		errorsCount: INTEGER;
 		varParam : BOOLEAN;
+		callId: INTEGER;
 		s: Scanner.Scanner;
 		l: INTEGER;(* lexem *)
 
@@ -367,10 +368,11 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access)
-		           OR (e.designator.decl.id = Scanner.Len);
+		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
+		p.callId := e.designator.decl.id;
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		p.varParam := FALSE;
+		p.callId := 0;
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
 			p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
@@ -398,7 +400,9 @@ VAR e: Ast.Expression;
 	VAR des: Ast.Designator;
 	BEGIN
 		des := Designator(p, ds);
-		CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inLoops > 0));
+		IF p.callId # Scanner.Len THEN
+			CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inLoops > 0))
+		END;
 		p.varParam := FALSE;
 		IF p.l # Scanner.Brace1Open THEN
 			e := des
@@ -1156,7 +1160,7 @@ VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
 	Scan(p);
-	CheckAst(p, Ast.AssignNew(st, des, Expression(p, ds)))
+	CheckAst(p, Ast.AssignNew(st, p.inLoops > 0, des, Expression(p, ds)))
 	RETURN st
 END Assign;
 
@@ -1442,6 +1446,7 @@ BEGIN
 	p.module        := NIL;
 	p.provider      := NIL;
 	p.varParam      := FALSE;
+	p.callId        := 0;
 	p.inLoops       := 0;
 	IF in # NIL THEN
 		Scanner.Init(p.s, in)

@@ -1074,6 +1074,61 @@ BEGIN
 	END
 END CheckExpr;
 
+PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
+	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger, Ast.IdLongInt, Ast.IdByte, Ast.IdReal, Ast.IdReal32,
+		  Ast.IdSet, Ast.IdLongSet:
+			Text.Str(gen, " = 0")
+		| Ast.IdBoolean:
+			Text.Str(gen, " = 0 > 1")
+		| Ast.IdChar:
+			Text.Str(gen, " = '\0'")
+		| Ast.IdPointer, Ast.IdProcType:
+			Text.Str(gen, " = NULL")
+		| Ast.IdArray, Ast.IdRecord:
+		END
+	END InitZero;
+
+	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		CASE var.type.id OF
+		  Ast.IdInteger:
+			Text.Str(gen, " = O7_INT_UNDEF")
+		| Ast.IdLongInt:
+			Text.Str(gen, " = O7_LONG_UNDEF")
+		| Ast.IdBoolean:
+			Text.Str(gen, " = O7_BOOL_UNDEF")
+		| Ast.IdByte:
+			Text.Str(gen, " = 0")
+		| Ast.IdChar:
+			Text.Str(gen, " = '\0'")
+		| Ast.IdReal:
+			Text.Str(gen, " = O7_DBL_UNDEF")
+		| Ast.IdReal32:
+			Text.Str(gen, " = O7_FLT_UNDEF")
+		| Ast.IdSet, Ast.IdLongSet:
+			Text.Str(gen, " = 0")
+		| Ast.IdPointer, Ast.IdProcType:
+			Text.Str(gen, " = NULL")
+		| Ast.IdArray, Ast.IdRecord:
+		END
+	END InitUndef;
+BEGIN
+	IF (gen.opt.varInit = VarInitNo) OR (~record & ~var(Ast.Var).checkInit) THEN
+		IF (var.type.id = Ast.IdPointer)
+		 & (gen.opt.memManager = MemManagerCounter)
+		THEN
+			Text.Str(gen, " = NULL")
+		END
+	ELSIF gen.opt.varInit = VarInitUndefined THEN
+		InitUndef(gen, var)
+	ELSE ASSERT(gen.opt.varInit = VarInitZero);
+		InitZero(gen, var)
+	END
+END VarInit;
+
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
@@ -2118,61 +2173,6 @@ BEGIN
 
 	PMemoryOutBack(gen.opt, mo)
 END Declarator;
-
-PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
-	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
-	BEGIN
-		CASE var.type.id OF
-		  Ast.IdInteger, Ast.IdLongInt, Ast.IdByte, Ast.IdReal, Ast.IdReal32,
-		  Ast.IdSet, Ast.IdLongSet:
-			Text.Str(gen, " = 0")
-		| Ast.IdBoolean:
-			Text.Str(gen, " = 0 > 1")
-		| Ast.IdChar:
-			Text.Str(gen, " = '\0'")
-		| Ast.IdPointer, Ast.IdProcType:
-			Text.Str(gen, " = NULL")
-		| Ast.IdArray, Ast.IdRecord:
-		END
-	END InitZero;
-
-	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
-	BEGIN
-		CASE var.type.id OF
-		  Ast.IdInteger:
-			Text.Str(gen, " = O7_INT_UNDEF")
-		| Ast.IdLongInt:
-			Text.Str(gen, " = O7_LONG_UNDEF")
-		| Ast.IdBoolean:
-			Text.Str(gen, " = O7_BOOL_UNDEF")
-		| Ast.IdByte:
-			Text.Str(gen, " = 0")
-		| Ast.IdChar:
-			Text.Str(gen, " = '\0'")
-		| Ast.IdReal:
-			Text.Str(gen, " = O7_DBL_UNDEF")
-		| Ast.IdReal32:
-			Text.Str(gen, " = O7_FLT_UNDEF")
-		| Ast.IdSet, Ast.IdLongSet:
-			Text.Str(gen, " = 0")
-		| Ast.IdPointer, Ast.IdProcType:
-			Text.Str(gen, " = NULL")
-		| Ast.IdArray, Ast.IdRecord:
-		END
-	END InitUndef;
-BEGIN
-	IF (gen.opt.varInit = VarInitNo) OR (~record & ~var(Ast.Var).checkInit) THEN
-		IF (var.type.id = Ast.IdPointer)
-		 & (gen.opt.memManager = MemManagerCounter)
-		THEN
-			Text.Str(gen, " = NULL")
-		END
-	ELSIF gen.opt.varInit = VarInitUndefined THEN
-		InitUndef(gen, var)
-	ELSE ASSERT(gen.opt.varInit = VarInitZero);
-		InitZero(gen, var)
-	END
-END VarInit;
 
 PROCEDURE RecordUndefHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
 BEGIN
