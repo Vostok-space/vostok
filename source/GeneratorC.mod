@@ -641,6 +641,15 @@ BEGIN
 	END
 END Name;
 
+PROCEDURE IsSpecModuleName*(n: Strings.String): BOOLEAN;
+BEGIN (* TODO *)
+	RETURN Eq(n, "O7")
+		OR Eq(n, "o7")
+		OR Eq(n, "math")
+		OR Eq(n, "Math")
+		OR Eq(n, "limits")
+END IsSpecModuleName;
+
 PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
 	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module) THEN
@@ -649,11 +658,7 @@ BEGIN
 
 		Text.Data(gen, "__", 0,
 		    ORD(
-		        Eq(decl.module.name, "O7")
-		     OR Eq(decl.module.name, "o7")
-		     OR Eq(decl.module.name, "math")
-		     OR Eq(decl.module.name, "Math")
-		     OR Eq(decl.module.name, "limits")
+		        IsSpecModuleName(decl.module.name)
 		     OR Eq(decl.name, "init")
 		     OR Eq(decl.name, "cnst")
 		     OR Eq(decl.name, "len")
@@ -669,14 +674,18 @@ BEGIN
 END GlobalName;
 
 PROCEDURE Import(VAR gen: Generator; decl: Ast.Declaration);
+VAR name: Strings.String;
+    i: INTEGER;
 BEGIN
 	Text.Str(gen, "#include "); Text.Str(gen, Utf8.DQuote);
 	IF decl IS Ast.Module THEN
-		Text.String(gen, decl.name)
+		name := decl.name
 	ELSE ASSERT(decl IS Ast.Import);
-		Text.String(gen, decl.module.name)
+		name := decl.module.name
 	END;
-	Text.Str(gen, ".h");
+	Text.String(gen, name);
+	i := ORD(~IsSpecModuleName(name));
+	Text.Data(gen, "_.h",  i, 3 - i);
 	Text.StrLn(gen, Utf8.DQuote)
 END Import;
 

@@ -337,6 +337,15 @@ BEGIN
 	AddModule(p(ModuleProvider), m)
 END RegModule;
 
+PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
+                                name: Strings.String): BOOLEAN;
+BEGIN
+	RETURN Strings.CopyToChars(str, len, name)
+	     & (~GeneratorC.IsSpecModuleName(name)
+	     OR Strings.CopyCharsNull(str, len, "_")
+	       )
+END CopyModuleNameForFile;
+
 PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
                       module: Ast.Module; isMain: BOOLEAN;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
@@ -348,7 +357,7 @@ BEGIN
 	implementation := NIL;
 	destLen := dirLen;
 	IF ~Strings.CopyCharsNull(dir, destLen, pathSep)
-	OR ~Strings.CopyToChars(dir, destLen, module.name)
+	OR ~CopyModuleNameForFile(dir, destLen, module.name)
 	OR (destLen > LEN(dir) - 3)
 	THEN
 		ret := Cli.ErrTooLongOutName
@@ -428,7 +437,7 @@ BEGIN
 			(* TODO *)
 			ASSERT(Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
 			     & Strings.CopyCharsNull(name, nameLen, pathSep)
-			     & Strings.CopyToChars(name, nameLen, module.name)
+			     & CopyModuleNameForFile(name, nameLen, module.name)
 			     & Strings.CopyCharsNull(name, nameLen, ".c")
 
 			     & (~Files.Exist(name, 0) OR Exec.Add(exec, name, 0))
