@@ -1074,10 +1074,10 @@ BEGIN
 	END
 END CheckExpr;
 
-PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
-	PROCEDURE InitZero(VAR gen: Generator; var: Ast.Declaration);
+PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
+	PROCEDURE Zero(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
-		CASE var.type.id OF
+		CASE typ.id OF
 		  Ast.IdInteger, Ast.IdLongInt, Ast.IdByte, Ast.IdReal, Ast.IdReal32,
 		  Ast.IdSet, Ast.IdLongSet:
 			Text.Str(gen, " = 0")
@@ -1087,13 +1087,12 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
 			Text.Str(gen, " = '\0'")
 		| Ast.IdPointer, Ast.IdProcType:
 			Text.Str(gen, " = NULL")
-		| Ast.IdArray, Ast.IdRecord:
 		END
-	END InitZero;
+	END Zero;
 
-	PROCEDURE InitUndef(VAR gen: Generator; var: Ast.Declaration);
+	PROCEDURE Undef(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
-		CASE var.type.id OF
+		CASE typ.id OF
 		  Ast.IdInteger:
 			Text.Str(gen, " = O7_INT_UNDEF")
 		| Ast.IdLongInt:
@@ -1109,23 +1108,33 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
 		| Ast.IdReal32:
 			Text.Str(gen, " = O7_FLT_UNDEF")
 		| Ast.IdSet, Ast.IdLongSet:
-			Text.Str(gen, " = 0")
+			Text.Str(gen, " = 0u")
 		| Ast.IdPointer, Ast.IdProcType:
 			Text.Str(gen, " = NULL")
-		| Ast.IdArray, Ast.IdRecord:
 		END
-	END InitUndef;
+	END Undef;
 BEGIN
-	IF (gen.opt.varInit = VarInitNo) OR (~record & ~var(Ast.Var).checkInit) THEN
+	CASE gen.opt.varInit OF
+	  VarInitUndefined:
+		Undef(gen, typ)
+	| VarInitZero:
+		Zero(gen, typ)
+	END
+END AssignInitValue;
+
+PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
+BEGIN
+	IF (gen.opt.varInit = VarInitNo)
+	OR (var.type.id IN {Ast.IdArray, Ast.IdRecord})
+	OR (~record & ~var(Ast.Var).checkInit)
+	THEN
 		IF (var.type.id = Ast.IdPointer)
 		 & (gen.opt.memManager = MemManagerCounter)
 		THEN
 			Text.Str(gen, " = NULL")
 		END
-	ELSIF gen.opt.varInit = VarInitUndefined THEN
-		InitUndef(gen, var)
-	ELSE ASSERT(gen.opt.varInit = VarInitZero);
-		InitZero(gen, var)
+	ELSE
+		AssignInitValue(gen, var.type)
 	END
 END VarInit;
 
