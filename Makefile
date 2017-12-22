@@ -1,12 +1,8 @@
-O7CI := result/bs-o7c
-
 O7C := result/o7c
 
-SING_O7 := singularity/definition
-SING_C := singularity/implementation
 SING_BS := singularity/bootstrap
 
-SELF := result/self
+SELF := result/v1
 
 SRC := $(wildcard source/*.mod)
 SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7_LSAN_LEAK_IGNORE
@@ -24,9 +20,9 @@ RM := trash
 
 TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.mod))))
 
-result/o7c : $(SRC) $(O7CI)
-	$(O7CI) to-c Translator.Start result -infr . -m source
-	$(CC) $(CC_OPT) $(SANITIZE) -Iresult -I$(SING_BS)/singularity result/*.c $(SING_BS)/singularity/*.c $(LD_OPT) -o $@
+result/o7c : result/bs-o7c $(SRC) Makefile
+	-rm -rf result/v0
+	$< to-bin Translator.Start $@ -i singularity/definition -c $(SING_BS)/singularity -m source -m library -t result/v0 -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
 
 result/bs-o7c:
 	@mkdir -p result
@@ -38,7 +34,7 @@ result/test/% : always
 	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $(LD_OPT) $(OPT)"
 	$@
 
-test : result/o7c $(TESTS)
+test : $(O7C) $(TESTS)
 
 $(SELF)/o7c : $(O7C) $(SRC) Makefile
 	-rm -rf $(SELF)
@@ -47,8 +43,8 @@ $(SELF)/o7c : $(O7C) $(SRC) Makefile
 self : $(SELF)/o7c
 	+make test O7C:=$(SELF)/o7c
 
-self-full : result/self/o7c
-	+make self O7C:=$< SELF:=result/self2
+self-full : result/v1/o7c
+	+make self O7C:=$< SELF:=result/v2
 
 help :
 	@echo "Help in English:\n\
