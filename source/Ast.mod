@@ -331,7 +331,8 @@ TYPE
 		handleImport: BOOLEAN;
 		import*: Import;
 
-		fixed: BOOLEAN;
+		fixed,
+		spec*: BOOLEAN;
 
 		errors*, errLast: Error
 	END;
@@ -641,6 +642,7 @@ BEGIN
 	NodeInit(m^, NoId);
 	DeclarationsInit(m, NIL);
 	m.fixed := FALSE;
+	m.spec := FALSE;
 	m.import := NIL;
 	m.errors := NIL; m.errLast := NIL;
 	Strings.StoreInit(m.store);

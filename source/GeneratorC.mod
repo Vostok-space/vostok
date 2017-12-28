@@ -658,7 +658,7 @@ BEGIN
 
 		Text.Data(gen, "__", 0,
 		    ORD(
-		        IsSpecModuleName(decl.module.name)
+		        IsSpecModuleName(decl.module.name) & ~decl.module.spec
 		     OR Eq(decl.name, "init")
 		     OR Eq(decl.name, "cnst")
 		     OR Eq(decl.name, "len")
