@@ -1,24 +1,24 @@
 MODULE ReadDir;
 
- IMPORT Out, PD := PosixDir;
+ IMPORT Out, D := Dir;
 
  PROCEDURE Dir*(name: ARRAY OF CHAR);
- VAR d: PD.Dir;
-     e: PD.Ent;
+ VAR d: D.Dir;
+     e: D.File;
      l: INTEGER;
      n: ARRAY 256 OF CHAR;
  BEGIN
-   IF ~PD.Open(d, name, 0) THEN
+   IF ~D.Open(d, name, 0) THEN
      Out.String("Can not open ");
      Out.String(name);
      Out.Ln
    ELSE
-     WHILE PD.Read(e, d) DO
+     WHILE D.Read(e, d) DO
        l := 0;
-       ASSERT(PD.CopyName(n, l, e));
-       Out.String(n); Out.Ln;
+       ASSERT(D.CopyName(n, l, e));
+       Out.String(n); Out.Ln
      END;
-     ASSERT(PD.Close(d))
+     ASSERT(D.Close(d))
    END
  END Dir;
 
