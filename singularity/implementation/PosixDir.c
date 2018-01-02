@@ -7,6 +7,13 @@
 
 #include "PosixDir.h"
 
+#if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__)
+#else
+	O7_INLINE PosixDir_Dir opendir(char const *name) { return NULL; }
+	O7_INLINE int closedir(PosixDir_Dir dir) { return -1; }
+	O7_INLINE PosixDir_Ent readdir(PosixDir_Dir dir) { return NULL; }
+#endif
+
 extern o7_bool PosixDir_Open(PosixDir_Dir *d,
                              int len, o7_char name[O7_VLA(len)], int ofs)
 {
