@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1043,6 +1043,7 @@ VAR case: Ast.Case;
 			RETURN first
 		END LabelList;
 	BEGIN
+		Ast.TurnIf(ds);
 		elem := Ast.CaseElementNew(LabelList(p, case, ds));
 		(*ASSERT(elem.labels # NIL); TODO *)
 		Expect(p, Scanner.Colon, ErrExpectColon);
@@ -1056,12 +1057,12 @@ BEGIN
 	CheckAst(p, Ast.CaseNew(case, Expression(p, ds)));
 	Expect(p, Scanner.Of, ErrExpectOf);
 	i := 1;
-	Ast.TurnIf(ds);
+	WHILE ScanIfEqual(p, Scanner.Alternative) DO ; END;
 	Element(p, ds, case);
 	WHILE ScanIfEqual(p, Scanner.Alternative) DO
+		WHILE ScanIfEqual(p, Scanner.Alternative) DO ; END;
 		INC(i);
 		Ast.TurnElse(ds);
-		Ast.TurnIf(ds);
 		Element(p, ds, case)
 	END;
 	Ast.TurnElse(ds);
@@ -1437,7 +1438,7 @@ BEGIN
 	opt.printError      := Blank
 END DefaultOptions;
 
-PROCEDURE ParserInit(VAR p: Parser; in: Stream.PIn; scr: ARRAY OF CHAR; opt: Options);
+PROCEDURE ParserInit(VAR p: Parser; in: Stream.PIn; src: ARRAY OF CHAR; opt: Options);
 BEGIN
 	V.Init(p);
 	p.opt           := opt;
@@ -1451,7 +1452,7 @@ BEGIN
 	IF in # NIL THEN
 		Scanner.Init(p.s, in)
 	ELSE
-		ASSERT(Scanner.InitByString(p.s, scr))
+		ASSERT(Scanner.InitByString(p.s, src))
 	END
 END ParserInit;
 

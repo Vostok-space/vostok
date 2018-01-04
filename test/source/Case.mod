@@ -34,7 +34,7 @@ PROCEDURE caseChar(c: CHAR);
 VAR n: INTEGER;
 BEGIN
 	CASE c OF
-	 "a" : n := 0
+	|"a" : n := 0
 	|"b" : n := 1
 	|"c" : n := 2
 	|"d" : n := 3
@@ -42,6 +42,7 @@ BEGIN
 	|"f" : n := 5
 	|"g" : n := 6
 	|"h" : n := 7
+	|
 	|"z" : ASSERT(FALSE)
 	END;
 	ASSERT(ORD(c) - ORD("a") = n)
