@@ -3,9 +3,7 @@
 #if !defined(HEADER_GUARD_PosixDir)
 #define HEADER_GUARD_PosixDir 1
 
-#include <dirent.h>
-
-typedef DIR *PosixDir_Dir;
+typedef struct PosixDir_Dir_s *PosixDir_Dir;
 #define PosixDir_Dir_s_tag o7_base_tag
 O7_INLINE void PosixDir_Dir_s_undef(PosixDir_Dir r) {}
 

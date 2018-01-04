@@ -7,8 +7,12 @@
 
 #include "PosixDir.h"
 
+
 #if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__)
+#	include <dirent.h>
 #else
+	typedef struct PosixDir_Dir_s DIR;
+	struct dirent { char d_name[1]; };
 	O7_INLINE PosixDir_Dir opendir(char const *name) { return NULL; }
 	O7_INLINE int closedir(PosixDir_Dir dir) { return -1; }
 	O7_INLINE PosixDir_Ent readdir(PosixDir_Dir dir) { return NULL; }
@@ -18,19 +22,19 @@ extern o7_bool PosixDir_Open(PosixDir_Dir *d,
                              int len, o7_char name[O7_VLA(len)], int ofs)
 {
 	assert((0 <= ofs) && (ofs < len));
-	*d = opendir(name + ofs);
+	*d = (PosixDir_Dir)opendir(name + ofs);
 	return NULL != *d;
 }
 
 extern o7_bool PosixDir_Close(PosixDir_Dir *d) {
-	if ((NULL != *d) && (0 == closedir(*d))) {
+	if ((NULL != *d) && (0 == closedir((DIR *)*d))) {
 		*d = NULL;
 	}
 	return NULL == *d;
 }
 
 extern o7_bool PosixDir_Read(PosixDir_Ent *e, PosixDir_Dir d) {
-	*e = readdir(d);
+	*e = readdir((DIR *)d);
 	return NULL != *e;
 }
 

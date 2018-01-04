@@ -44,8 +44,8 @@ extern o7_bool WindowsDir_FindFirst(WindowsDir_FindId *id, WindowsDir_FindData *
 		(*id)->h = findfirst(filespec + ofs, &(*d)->d);
 	}
 	if ((NULL == *id) || (NULL == *d) || (-1 == (*id)->h)) {
-		free(*id); *id = NULL;
-		free(*d); *d = NULL;
+		O7_NULL(id);
+		O7_NULL(d);
 	}
 	return (*id != NULL);
 }
@@ -67,7 +67,9 @@ extern o7_bool WindowsDir_Close(WindowsDir_FindId *id) {
 	ret = (*id == NULL);
 	if (!ret) {
 		ret = (0 == findclose((*id)->h));
-		O7_NULL(id);
+		if (ret) {
+			O7_NULL(id);
+		}
 	}
 	return ret;
 }
