@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2017 ComdivByZero
+ *  Copyright (C) 2017-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -34,6 +34,9 @@ TYPE
 		len: INTEGER
 	END;
 
+VAR
+	autoCorrectDirSeparator: BOOLEAN;
+
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
 BEGIN
 	WHILE Platform.Posix & (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
@@ -45,6 +48,17 @@ BEGIN
 		INC(j)
 	ELSIF (j < LEN(s)) & (s[j] # Utf8.Null) & (i < LEN(d) - 1) DO
 		d[i] := s[j];
+		IF ~autoCorrectDirSeparator THEN
+			;
+		ELSIF s[j] = "/" THEN
+			IF Platform.Windows THEN
+				d[i] := "\"
+			END
+		ELSIF s[j] = "\" THEN
+			IF Platform.Posix THEN
+				d[i] := "/"
+			END
+		END;
 		INC(i);
 		INC(j)
 	END;
@@ -147,4 +161,13 @@ BEGIN
 	Vlog.StrLn(c.buf)
 END Log;
 
+PROCEDURE AutoCorrectDirSeparator*(state: BOOLEAN);
+BEGIN
+	autoCorrectDirSeparator := state
+END AutoCorrectDirSeparator;
+
+BEGIN
+	autoCorrectDirSeparator := FALSE
 END PlatformExec.
+
+Init { Add | AddClean | ( FirstPart { AddPart } LastPart ) } [ Do ]
