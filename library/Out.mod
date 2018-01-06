@@ -1,4 +1,4 @@
-(* Copyright 2017 ComdivByZero
+(* Copyright 2017-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,12 @@
  *)
 MODULE Out;
 
- IMPORT File := CFiles;
+ IMPORT File := CFiles, Platform;
 
- VAR success: BOOLEAN;
+ VAR
+   success: BOOLEAN;
+   ln: ARRAY 2 OF CHAR;
+   lnOfs: INTEGER;
 
  PROCEDURE String*(s: ARRAY OF CHAR);
  VAR i: INTEGER;
@@ -75,12 +78,10 @@ MODULE Out;
  END Int;
 
  PROCEDURE Ln*;
- VAR s: ARRAY 2 OF CHAR;
  BEGIN
-   s[0] := 0DX;
-   s[1] := 0AX;
-   success := (LEN(s) = File.WriteChars(File.out, s, 0, LEN(s)))
-            & File.Flush(File.out)
+   success :=
+     (LEN(ln) - lnOfs = File.WriteChars(File.out, ln, lnOfs, LEN(ln) - lnOfs))
+   & File.Flush(File.out)
  END Ln;
 
  (* TODO *)
@@ -186,9 +187,18 @@ MODULE Out;
    success := l - i + 1 = File.WriteChars(File.out, s, i, l - i + 1)
  END Real;
 
+ PROCEDURE LongReal*(x: REAL; n: INTEGER);
+ BEGIN
+   Real(x, n)
+ END LongReal;
+
  PROCEDURE Open*;
  BEGIN
    success := TRUE
  END Open;
 
+BEGIN
+   ln[0] := 0DX;
+   ln[1] := 0AX;
+   lnOfs := ORD(Platform.Posix)
 END Out.
