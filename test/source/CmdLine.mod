@@ -1,4 +1,4 @@
-MODULE Cli;
+MODULE CmdLine;
 
 IMPORT CLI, Out;
 
@@ -25,4 +25,4 @@ BEGIN
 	END
 END Go;
 
-END Cli.
+END CmdLine.

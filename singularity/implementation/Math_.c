@@ -18,12 +18,19 @@
 
 #include "Math_.h"
 
-#if __STDC_VERSION__ >= 199901L
+#if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64)))
+	/* TODO */
 	enum { O7_C99 = 1 };
-	static double o7_log2(double x) { return log2(x); }
+	O7_INLINE double o7_log2 (double x) { return log2(x);  }
+	O7_INLINE double o7_asinh(double x) { return asinh(x); }
+	O7_INLINE double o7_acosh(double x) { return acosh(x); }
+	O7_INLINE double o7_atanh(double x) { return atanh(x); }
 #else
-	static double o7_log2(double x) { return O7_DBL_UNDEF; }
 	enum { O7_C99 = 0 };
+	O7_INLINE double o7_log2 (double x) { return O7_DBL_UNDEF; }
+	O7_INLINE double o7_asinh(double x) { return O7_DBL_UNDEF; }
+	O7_INLINE double o7_acosh(double x) { return O7_DBL_UNDEF; }
+	O7_INLINE double o7_atanh(double x) { return O7_DBL_UNDEF; }
 #endif
 
 extern double Math__sqrt(double x) {
@@ -104,13 +111,13 @@ extern double Math__tanh(double x) {
 }
 
 extern double Math__arcsinh(double x) {
-	return asinh(o7_dbl(x));
+	return o7_asinh(o7_dbl(x));
 }
 
 extern double Math__arccosh(double x) {
-	return acosh(o7_dbl(x));
+	return o7_acosh(o7_dbl(x));
 }
 
 extern double Math__arctanh(double x) {
-	return atanh(o7_dbl(x));
+	return o7_atanh(o7_dbl(x));
 }
