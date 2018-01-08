@@ -345,6 +345,29 @@ BEGIN
 	RETURN i - ofs
 END CalcLen;
 
+PROCEDURE TrimChars*(VAR str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
+VAR i, j: INTEGER;
+BEGIN
+	i := ofs;
+	WHILE (i < LEN(str)) & ((str[i] = " ") OR (str[i] = Utf8.Tab)) DO
+		INC(i)
+	END;
+	IF ofs < i THEN
+		j := ofs;
+		WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
+			str[j] := str[i];
+			INC(j); INC(i)
+		END
+	ELSE
+		j := ofs + CalcLen(str, ofs)
+	END;
+	WHILE (ofs < j) & ((str[j - 1] = " ") OR (str[j - 1] = Utf8.Tab)) DO
+		DEC(j)
+	END;
+	str[j] := Utf8.Null
+	RETURN  j - ofs
+END TrimChars;
+
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;

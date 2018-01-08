@@ -6,11 +6,13 @@ Short build help for POSIX systems:
 
 	make help-en
 
-Build translator:
+Build translator for POSIX:
 
 	make
+	# or
+	./make.sh & result/bs-o7c run make.Build -infr . -m source -m .
 
-Test:
+Test under POSIX:
 
 	make test self self-full
 
@@ -23,6 +25,10 @@ Demo server:
 Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
 
 	make.cmd
+
+Test under POSIX and Windows
+
+	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
 
 
 Проект "Восток"
@@ -41,14 +47,20 @@ Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc
 системах:
 
 	make help
+	# или
+	result/bs-o7c run make.Help -infr . -m source -m .
 
-Сборка транслятора:
+Сборка транслятора в POSIX:
 
 	make
+	# или
+	./make.sh & result/bs-o7c run make.Build -infr . -m source -m .
 
-Тестирование:
+Тестирование в POSIX:
 
 	make test self self-full
+	# или
+	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
 
 Запуск демонстрационного сервера с возможностью редактировать и запускать код:
 
@@ -59,3 +71,10 @@ Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc
 каталог с которым должен быть прописан в переменной окружения PATH
 
 	make.cmd
+	:: или
+	make.cmd
+	result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
+
+Тестирование в POSIX и Windows
+
+	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc

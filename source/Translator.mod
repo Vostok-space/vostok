@@ -120,25 +120,6 @@ BEGIN
 	RETURN str[ofs] = sample[i]
 END IsEqualStr;
 
-PROCEDURE GetParam(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN;
-    j: INTEGER;
-BEGIN
-	j := i;
-	ret := CLI.Get(str, i, arg);
-	IF ret & (str[j] = "'") & (arg < CLI.count) THEN
-		str[j] := " ";
-		REPEAT
-			str[i] := " ";
-			INC(i);
-			ret := CLI.Get(str, i, arg);
-			INC(arg)
-		UNTIL (arg >= CLI.count) OR ~ret OR (str[i - 1] = "'");
-		str[i - 1] := " "
-	END
-	RETURN ret
-END GetParam;
-
 PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
                    VAR cDirs: ARRAY OF CHAR; VAR cc: ARRAY OF CHAR;
                    VAR init: INTEGER;
@@ -205,7 +186,7 @@ BEGIN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := Cli.ErrNotEnoughArgs
-			ELSIF GetParam(cc, ccLen, arg) THEN
+			ELSIF Cli.GetParam(cc, ccLen, arg) THEN
 				DEC(ccLen)
 			ELSE
 				ret := Cli.ErrTooLongCc
@@ -635,7 +616,7 @@ VAR ret: INTEGER;
 	END Run;
 
 	PROCEDURE ParseCommand(src: ARRAY OF CHAR; VAR script: BOOLEAN): INTEGER;
-	VAR i, j: INTEGER;
+	VAR i, j, k: INTEGER;
 
 		PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
 		BEGIN
@@ -657,8 +638,9 @@ VAR ret: INTEGER;
 			DO
 				INC(j)
 			END;
-			Empty(src, j);
-			script := src[j] # Utf8.Null
+			k := j;
+			Empty(src, k);
+			script := src[k] # Utf8.Null
 		ELSE
 			script := FALSE
 		END
@@ -668,12 +650,14 @@ BEGIN
 	ASSERT(res IN {ResultC .. ResultRun});
 
 	srcLen := 0;
-	arg := 3 + ORD(res # ResultRun);
+	arg := 2;
 	IF CLI.count < arg THEN
 		ret := Cli.ErrNotEnoughArgs
-	ELSIF ~CLI.Get(src, srcLen, 2) THEN
+	ELSIF ~Cli.GetParam(src, srcLen, arg) THEN
+		(* TODO *)
 		ret := Cli.ErrTooLongSourceName
 	ELSE
+		arg := arg + ORD(res # ResultRun);
 		NewProvider(mp);
 		mp.fileExt := ".mod"; (* TODO *)
 		mp.extLen := Strings.CalcLen(mp.fileExt, 0);

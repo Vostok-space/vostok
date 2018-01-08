@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
 MODULE CliParser;
+
+IMPORT CLI, Utf8, Strings := StringStore;
 
 CONST
 	ResultC*   = 0;
@@ -42,5 +44,25 @@ CONST
 	ErrUnknownInit*          = -26;
 	ErrCantCreateOutDir*     = -27;
 	ErrCantRemoveOutDir*     = -28;
+
+PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
+VAR ret: BOOLEAN;
+    j: INTEGER;
+BEGIN
+	j := i;
+	ret := CLI.Get(str, i, arg);
+	INC(arg);
+	IF ret & (str[j] = "'") & (arg < CLI.count) THEN
+		str[j] := " ";
+		WHILE (arg < CLI.count) & ret & (str[i - 2] # "'") DO
+			str[i - 1] := " ";
+			ret := CLI.Get(str, i, arg);
+			INC(arg)
+		END;
+		str[i - 2] := Utf8.Null
+	END;
+	i := j + Strings.TrimChars(str, j) + 1
+	RETURN ret
+END GetParam;
 
 END CliParser.

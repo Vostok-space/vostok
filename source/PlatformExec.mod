@@ -97,8 +97,10 @@ VAR ret: BOOLEAN;
 BEGIN
 	ret := c.len < LEN(c.buf) - 1;
 	IF ret THEN
-		c.buf[c.len] := " ";
-		INC(c.len);
+		IF c.len > 0 THEN
+			c.buf[c.len] := " ";
+			INC(c.len)
+		END;
 		ret := FullCopy(c.buf, c.len, arg, ofs)
 	END
 	RETURN ret
@@ -117,8 +119,10 @@ VAR ret: BOOLEAN;
 BEGIN
 	ret := c.len < LEN(c.buf) - 2;
 	IF ret THEN
-		c.buf[c.len] := " ";
-		INC(c.len);
+		IF c.len > 0 THEN
+			c.buf[c.len] := " ";
+			INC(c.len)
+		END;
 		IF Platform.Posix THEN
 			c.buf[c.len] := "'";
 			INC(c.len, 1)

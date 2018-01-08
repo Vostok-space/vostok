@@ -113,13 +113,13 @@ MODULE make;
    Log.StrLn("  Build   - build o7c translator by bootstrap");
    Log.StrLn("  Test    - build and run tests from test/source");
    Log.StrLn("  Self    - build itself then run tests");
-   Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests");
+   Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests")
  END Help;
 
 BEGIN
-   Log.On;
-   Exec.AutoCorrectDirSeparator(TRUE);
+  Log.On;
+  Exec.AutoCorrectDirSeparator(TRUE);
 
-   windows := Platform.Windows;
-   posix := Platform.Posix;
+  windows := Platform.Windows;
+  posix   := Platform.Posix
 END make.
