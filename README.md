@@ -10,7 +10,7 @@ Build translator for POSIX:
 
 	make
 	# or
-	./make.sh & result/bs-o7c run make.Build -infr . -m source -m .
+	./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 Test under POSIX:
 
@@ -54,7 +54,7 @@ Test under POSIX and Windows
 
 	make
 	# или
-	./make.sh & result/bs-o7c run make.Build -infr . -m source -m .
+	./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 Тестирование в POSIX:
 
