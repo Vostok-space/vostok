@@ -1,34 +1,51 @@
 Project "Vostok"
-=======================
+==========================
 Oberon-07 translator to C.
 
 Short build help for POSIX systems:
 
-	make help-en
+	$ make help-en
 
 Build translator for POSIX:
 
-	make
-	# or
-	./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+	$ make
+	$ # or
+	$ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 Test under POSIX:
 
-	make test self self-full
+	$ make test self self-full
 
-Demo server:
+Help about translator usage:
 
-	cd demo-server
-	go run server.go
+	$ result/o7c help
 
+Oberon-modules running example:
+
+	$ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+
+Example of executable binary build:
+
+	$ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
+	$ result/Dir
+
+Demo web-server:
+
+	$ cd demo-server
+
+	$ go run server.go
+	$ # or
+	$ go build server.go && ./server
 
 Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
 
-	make.cmd
+	> make.cmd
 
 Test under POSIX and Windows
 
 	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+
+License is LGPL for translator's code and Apache for libraries
 
 
 Проект "Восток"
@@ -46,35 +63,56 @@ Test under POSIX and Windows
 Короткая справка по главным целям и переменным Makefile для сборки в POSIX
 системах:
 
-	make help
-	# или
-	result/bs-o7c run make.Help -infr . -m source -m .
+	$ make help
+	$ # или
+	$ result/bs-o7c run make.Help -infr . -m source -m .
 
 Сборка транслятора в POSIX:
 
-	make
-	# или
-	./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+	$ make
+	$ # или
+	$ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 Тестирование в POSIX:
 
-	make test self self-full
-	# или
-	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
+	$ make test self self-full
+	$ # или
+	$ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
 
-Запуск демонстрационного сервера с возможностью редактировать и запускать код:
+Справка о способе использовании транслятора доступна при запуске без параметров
+или командой help:
 
-	cd demo-server
-	go run server.go
+	$ result/o7c help
+
+Пример непосредственного запуска кода модуля:
+
+	$ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+
+Пример сборки исполняемого файла:
+
+	$ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
+	$ result/Dir
+
+Запуск демонстрационного веб-сервера с возможностью редактировать и запускать
+код в браузере:
+
+	$ cd demo-server
+
+	$ go run server.go
+	$ # или
+	$ go build server.go
+	$ ./server
 
 Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
 каталог с которым должен быть прописан в переменной окружения PATH
 
-	make.cmd
-	:: или
-	make.cmd
-	result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
+	> make.cmd
+	> :: или
+	> make.cmd
+	> result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
 
 Тестирование в POSIX и Windows
 
 	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+
+Код транслятора доступен под лицензией LGPL, а библиотеки - под Apache License

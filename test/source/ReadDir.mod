@@ -1,6 +1,6 @@
 MODULE ReadDir;
 
- IMPORT Out, D := Dir;
+ IMPORT Out, D := Dir, CLI;
 
  PROCEDURE Dir*(name: ARRAY OF CHAR);
  VAR d: D.Dir;
@@ -23,8 +23,18 @@ MODULE ReadDir;
  END Dir;
 
  PROCEDURE Go*;
+ VAR dir: ARRAY 1024 OF CHAR;
+     ofs: INTEGER;
  BEGIN
-   Dir(".")
+   ofs := 0;
+   IF CLI.count <= 1 THEN
+     Dir(".")
+   ELSIF CLI.Get(dir, ofs, 1) THEN
+     Dir(dir)
+   ELSE
+     Out.String("Too long name");
+     Out.Ln
+   END
  END Go;
 
 END ReadDir.
