@@ -36,6 +36,7 @@ TYPE
 
 VAR
 	autoCorrectDirSeparator: BOOLEAN;
+	dirSep*: ARRAY 1 OF CHAR;
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
 BEGIN
@@ -113,6 +114,18 @@ BEGIN
 	RETURN Copy(c.buf, c.len, arg, ofs)
 END AddClean;
 
+PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;
+VAR ok: BOOLEAN;
+BEGIN
+	ok := c.len < LEN(c.buf) - 1;
+	IF ok THEN
+		c.buf[c.len] := dirSep[0];
+		INC(c.len);
+		c.buf[c.len] := Utf8.Null
+	END
+	RETURN ok
+END AddDirSep;
+
 PROCEDURE FirstPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 VAR ret: BOOLEAN;
 	ofs: INTEGER;
@@ -171,7 +184,13 @@ BEGIN
 END AutoCorrectDirSeparator;
 
 BEGIN
-	autoCorrectDirSeparator := FALSE
+	autoCorrectDirSeparator := FALSE;
+
+	IF Platform.Posix THEN
+		dirSep := "/"
+	ELSE ASSERT(Platform.Windows);
+		dirSep := "\"
+	END
 END PlatformExec.
 
 Init { Add | AddClean | ( FirstPart { AddPart } LastPart ) } [ Do ]

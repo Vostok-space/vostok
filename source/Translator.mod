@@ -37,10 +37,6 @@ IMPORT
 	OsEnv;
 
 CONST
-	ResultC   = 0;
-	ResultBin = 1;
-	ResultRun = 2;
-
 	ErrNo    =  0;
 	ErrParse = -1;
 
@@ -60,9 +56,6 @@ TYPE
 			first, last: Container
 		END
 	END;
-
-VAR
-	pathSep: ARRAY 2 OF CHAR;
 
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
@@ -108,150 +101,6 @@ BEGIN
 	END
 END PrintErrors;
 
-PROCEDURE IsEqualStr(str: ARRAY OF CHAR; ofs: INTEGER; sample: ARRAY OF CHAR)
-                    : BOOLEAN;
-VAR i: INTEGER;
-BEGIN
-	i := 0;
-	WHILE (str[ofs] = sample[i]) & (sample[i] # Utf8.Null) DO
-		INC(ofs);
-		INC(i)
-	END
-	RETURN str[ofs] = sample[i]
-END IsEqualStr;
-
-PROCEDURE CopyPath(VAR str: ARRAY OF CHAR; VAR sing: SET;
-                   VAR cDirs: ARRAY OF CHAR; VAR cc: ARRAY OF CHAR;
-                   VAR init: INTEGER;
-                   VAR tmp: ARRAY OF CHAR;
-                   VAR arg: INTEGER): INTEGER;
-VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
-	ret: INTEGER;
-	opt: ARRAY 256 OF CHAR;
-
-	PROCEDURE CopyInfrPart(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER;
-	                       add: ARRAY OF CHAR): BOOLEAN;
-	VAR ret: BOOLEAN;
-	BEGIN
-		ret := CLI.Get(str, i, arg);
-		IF ret THEN
-			DEC(i);
-			ret := Strings.CopyCharsNull(str, i, add);
-			IF ret THEN
-				INC(i);
-				str[i] := Utf8.Null
-			END;
-		END
-		RETURN ret
-	END CopyInfrPart;
-BEGIN
-	i := 0;
-	dirsOfs := 0;
-	cDirs[0] := Utf8.Null;
-	tmp[0] := Utf8.Null;
-	ccLen := 0;
-	count := 0;
-	sing := {};
-	ret := ErrNo;
-	optLen := 0;
-	init := -1;
-	WHILE (ret = ErrNo) & (count < 32)
-	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
-	DO
-		optLen := 0;
-		IF (opt = "-i") OR (opt = "-m") THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF CLI.Get(str, i, arg) THEN
-				IF opt = "-i" THEN
-					INCL(sing, count)
-				END;
-				INC(count)
-			ELSE
-				ret := Cli.ErrTooLongModuleDirs
-			END
-		ELSIF opt = "-c" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF CLI.Get(cDirs, dirsOfs, arg) & (dirsOfs < LEN(cDirs)) THEN
-				cDirs[dirsOfs] := Utf8.Null;
-				Log.Str("cDirs = ");
-				Log.StrLn(cDirs)
-			ELSE
-				ret := Cli.ErrTooLongCDirs
-			END
-		ELSIF opt = "-cc" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF Cli.GetParam(cc, ccLen, arg) THEN
-				DEC(ccLen)
-			ELSE
-				ret := Cli.ErrTooLongCc
-			END
-		ELSIF opt = "-infr" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF Platform.Posix
-			    & CopyInfrPart(str, i, arg, "/singularity/definition")
-			    & CopyInfrPart(str, i, arg, "/library")
-			    & CopyInfrPart(cDirs, dirsOfs, arg, "/singularity/implementation")
-			   OR Platform.Windows
-			    & CopyInfrPart(str, i, arg, "\singularity\definition")
-			    & CopyInfrPart(str, i, arg, "\library")
-			    & CopyInfrPart(cDirs, dirsOfs, arg, "\singularity\implementation")
-			THEN
-				INCL(sing, count);
-				INC(count, 2)
-			ELSE
-				ret := Cli.ErrTooLongModuleDirs
-			END
-		ELSIF opt = "-init" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF ~CLI.Get(opt, optLen, arg) THEN
-				ret := Cli.ErrUnknownInit
-			ELSIF opt = "no" THEN
-				init := GeneratorC.VarInitNo
-			ELSIF opt = "undef" THEN
-				init := GeneratorC.VarInitUndefined
-			ELSIF opt = "zero" THEN
-				init := GeneratorC.VarInitZero
-			ELSE
-				ret := Cli.ErrUnknownInit
-			END;
-			optLen := 0
-		ELSIF opt = "-t" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := Cli.ErrNotEnoughArgs
-			ELSIF ~CLI.Get(tmp, optLen, arg) THEN
-				ret := Cli.ErrTooLongTemp
-			END;
-			optLen := 0
-		ELSE
-			ret := Cli.ErrUnexpectArg
-		END;
-		INC(arg)
-	END;
-	IF i + 1 < LEN(str) THEN
-		str[i + 1] := Utf8.Null;
-		IF count >= 32 THEN
-			ret := Cli.ErrTooManyModuleDirs
-		END;
-	ELSE
-		ret := Cli.ErrTooLongModuleDirs;
-		str[LEN(str) - 1] := Utf8.Null;
-		str[LEN(str) - 2] := Utf8.Null;
-		str[LEN(str) - 3] := "#"
-	END
-	RETURN ret
-END CopyPath;
-
 PROCEDURE SearchModule(mp: ModuleProvider;
                        name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
 VAR mc: Container;
@@ -294,7 +143,7 @@ VAR m: Ast.Module;
 		l := 0;
 		IF (len > 0)
 		 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
-		 & Strings.CopyCharsNull(n, l, pathSep)
+		 & Strings.CopyCharsNull(n, l, Exec.dirSep)
 		 & Strings.CopyChars(n, l, name, ofs, end)
 		 & Strings.CopyChars(n, l, p.fileExt, 0, p.extLen)
 		THEN
@@ -356,7 +205,7 @@ BEGIN
 	interface := NIL;
 	implementation := NIL;
 	destLen := dirLen;
-	IF ~Strings.CopyCharsNull(dir, destLen, pathSep)
+	IF ~Strings.CopyCharsNull(dir, destLen, Exec.dirSep)
 	OR ~CopyModuleNameForFile(dir, destLen, module.name)
 	OR (destLen > LEN(dir) - 3)
 	THEN
@@ -436,7 +285,7 @@ BEGIN
 			cDirsLen := Strings.CalcLen(cDirs, i);
 			(* TODO *)
 			ASSERT(Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
-			     & Strings.CopyCharsNull(name, nameLen, pathSep)
+			     & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
 			     & CopyModuleNameForFile(name, nameLen, module.name)
 			     & Strings.CopyCharsNull(name, nameLen, ".c")
 
@@ -516,7 +365,7 @@ BEGIN
 		IF ok & (bin[0] = Utf8.Null) THEN
 			binLen := 0;
 			ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
-			     & Strings.CopyCharsNull(bin, binLen, pathSep)
+			     & Strings.CopyCharsNull(bin, binLen, Exec.dirSep)
 			     & Strings.CopyToChars(bin, binLen, name)
 			     & (~Platform.Windows OR Strings.CopyCharsNull(bin, binLen, ".exe")))
 		END
@@ -524,19 +373,13 @@ BEGIN
 	RETURN ok
 END GetTempOutC;
 
-PROCEDURE ToC(res: INTEGER): INTEGER;
-VAR ret: INTEGER;
-	src: ARRAY 65536 OF CHAR;
-	srcLen, srcNameEnd: INTEGER;
-	outC, resPath, tmp: ARRAY 1024 OF CHAR;
-	resPathLen: INTEGER;
-	cDirs, cc: ARRAY 4096 OF CHAR;
+PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
+VAR ret, len: INTEGER;
+	outC: ARRAY 1024 OF CHAR;
 	mp: ModuleProvider;
 	module: Ast.Module;
 	opt: GeneratorC.Options;
-	init, arg: INTEGER;
 	call: Ast.Call;
-	script: BOOLEAN;
 	exec: Exec.Code;
 
 	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
@@ -572,7 +415,7 @@ VAR ret: INTEGER;
 					    & Exec.Add(cmd, cDirs, i)
 
 					    & Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
-					    & Strings.CopyCharsNull(name, nameLen, pathSep)
+					    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
 					    & Strings.CopyCharsNull(name, nameLen, "o7.c")
 
 					    & (~Files.Exist(name, 0) OR Exec.Add(cmd, name, 0));
@@ -614,102 +457,56 @@ VAR ret: INTEGER;
 		END
 		RETURN ret
 	END Run;
-
-	PROCEDURE ParseCommand(src: ARRAY OF CHAR; VAR script: BOOLEAN): INTEGER;
-	VAR i, j, k: INTEGER;
-
-		PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
-		BEGIN
-			WHILE (src[j] = " ") OR (src[j] = Utf8.Tab) DO
-				INC(j)
-			END
-		END Empty;
-	BEGIN
-		i := 0;
-		WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
-			INC(i)
-		END;
-		IF src[i] = "." THEN
-			j := i + 1;
-			Empty(src, j);
-			WHILE ("a" <= src[j]) & (src[j] <= "z")
-			   OR ("A" <= src[j]) & (src[j] <= "Z")
-			   OR ("0" <= src[j]) & (src[j] <= "9")
-			DO
-				INC(j)
-			END;
-			k := j;
-			Empty(src, k);
-			script := src[k] # Utf8.Null
-		ELSE
-			script := FALSE
-		END
-		RETURN i
-	END ParseCommand;
 BEGIN
-	ASSERT(res IN {ResultC .. ResultRun});
+	ASSERT(res IN {Cli.ResultC .. Cli.ResultRun});
 
-	srcLen := 0;
-	arg := 2;
-	IF CLI.count < arg THEN
-		ret := Cli.ErrNotEnoughArgs
-	ELSIF ~Cli.GetParam(src, srcLen, arg) THEN
-		(* TODO *)
-		ret := Cli.ErrTooLongSourceName
+	NewProvider(mp);
+	mp.fileExt := ".mod"; (* TODO *)
+	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
+	len := 0;
+	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
+	mp.sing := args.sing;
+	IF args.script THEN
+		module := Parser.Script(args.src, mp, mp.opt);
+		AddModule(mp, module)
 	ELSE
-		arg := arg + ORD(res # ResultRun);
-		NewProvider(mp);
-		mp.fileExt := ".mod"; (* TODO *)
-		mp.extLen := Strings.CalcLen(mp.fileExt, 0);
-		ret := CopyPath(mp.path, mp.sing, cDirs, cc, init, tmp, arg);
-		IF ret = ErrNo THEN
-			srcNameEnd := ParseCommand(src, script);
-			IF script THEN
-				module := Parser.Script(src, mp, mp.opt);
-				AddModule(mp, module)
-			ELSE
-				module := GetModule(mp, NIL, src, 0, srcNameEnd)
+		module := GetModule(mp, NIL, args.src, 0, args.srcNameEnd)
+	END;
+	IF module = NIL THEN
+		ret := ErrParse
+	ELSIF module.errors # NIL THEN
+		ret := ErrParse;
+		PrintErrors(mp.modules.first.next)
+	ELSE
+		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
+			ret := Ast.CommandGet(call, module,
+			                      args.src, args.srcNameEnd + 1, args.srcLen - 1)
+		ELSE
+			ret := ErrNo;
+			call := NIL
+		END;
+		IF ret # Ast.ErrNo THEN
+			ret := ErrParse;
+			Message.AstError(ret); Out.Ln
+		ELSE
+			opt := GeneratorC.DefaultOptions();
+			IF args.init >= 0 THEN
+				opt.varInit := args.init
 			END;
-			resPathLen := 0;
-			resPath[0] := Utf8.Null;
-			IF module = NIL THEN
-				ret := ErrParse
-			ELSIF module.errors # NIL THEN
-				PrintErrors(mp.modules.first.next);
-				ret := ErrParse
-			ELSIF (res # ResultRun) & ~CLI.Get(resPath, resPathLen, 3) THEN
-				ret := Cli.ErrTooLongOutName
-			ELSE
-				IF ~script & (srcNameEnd < srcLen - 1) THEN
-					ret := Ast.CommandGet(call, module,
-					                      src, srcNameEnd + 1, srcLen - 1)
-				ELSE
-					call := NIL
+			ASSERT(Exec.Init(exec, ""));
+			CASE res OF
+			  Cli.ResultC:
+				DEC(args.resPathLen);
+				ret := GenerateC(module, (call # NIL) OR args.script, call,
+				                 opt, args.resPath, args.resPathLen, args.cDirs, exec)
+			| Cli.ResultBin, Cli.ResultRun:
+				ret := Bin(module, call, opt, args.cDirs, args.cc, outC, args.resPath,
+				           exec, args.tmp);
+				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
+					ret := Run(args.resPath, args.arg)
 				END;
-				IF ret # Ast.ErrNo THEN
-					Message.AstError(ret); Out.Ln;
-					ret := ErrParse
-				ELSE
-					opt := GeneratorC.DefaultOptions();
-					IF init >= 0 THEN
-						opt.varInit := init
-					END;
-					ASSERT(Exec.Init(exec, ""));
-					CASE res OF
-					  ResultC:
-						DEC(resPathLen);
-						ret := GenerateC(module, (call # NIL) OR script, call,
-						                 opt, resPath, resPathLen, cDirs, exec)
-					| ResultBin, ResultRun:
-						ret := Bin(module, call, opt, cDirs, cc, outC, resPath,
-						           exec, tmp);
-						IF (res = ResultRun) & (ret = ErrNo) THEN
-							ret := Run(resPath, arg)
-						END;
-						IF (tmp = "") & ~RemoveDir(outC) & (ret = ErrNo) THEN
-							ret := Cli.ErrCantRemoveOutDir
-						END
-					END
+				IF (args.tmp = "") & ~RemoveDir(outC) & (ret = ErrNo) THEN
+					ret := Cli.ErrCantRemoveOutDir
 				END
 			END
 		END
@@ -717,44 +514,29 @@ BEGIN
 	RETURN ret
 END ToC;
 
+PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER): BOOLEAN;
+BEGIN
+	IF ret = Cli.CmdHelp THEN
+		Message.Usage
+	ELSE
+		ret := ToC(ret, args)
+	END
+	RETURN ret >= 0
+END Handle;
+
 PROCEDURE Start*;
-VAR cmd: ARRAY 1024 OF CHAR;
-	cmdLen: INTEGER;
-	ret: INTEGER;
+VAR ret: INTEGER;
+    args: Cli.Args;
 BEGIN
 	Out.Open;
 	Log.Turn(FALSE);
 
-	cmdLen := 0;
-	IF (CLI.count <= 1) OR ~CLI.Get(cmd, cmdLen, 1) THEN
-		ret := Cli.ErrWrongArgs
-	ELSE
-		IF cmd = "help" THEN
-			ret := ErrNo;
-			Message.Usage;
-			Out.Ln
-		ELSIF cmd = "to-c" THEN
-			ret := ToC(ResultC)
-		ELSIF cmd = "to-bin" THEN
-			ret := ToC(ResultBin)
-		ELSIF cmd = "run" THEN
-			ret := ToC(ResultRun)
-		ELSE
-			ret := Cli.ErrUnknownCommand
-		END
-	END;
-	IF ret # ErrNo THEN
+	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret) THEN
 		CLI.SetExitCode(1);
 		IF ret # ErrParse THEN
-			Message.CliError(ret, cmd)
+			Message.CliError(ret, args.cmd)
 		END
 	END
 END Start;
 
-BEGIN
-	IF Platform.Posix THEN
-		pathSep := "/"
-	ELSE ASSERT(Platform.Windows);
-		pathSep := "\"
-	END
 END Translator.
