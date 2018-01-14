@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -203,7 +203,6 @@ BEGIN
 	s.buf[len] := Utf8.TransmissionEnd
 	RETURN ret
 END InitByString;
-
 
 PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
 VAR size: INTEGER;
