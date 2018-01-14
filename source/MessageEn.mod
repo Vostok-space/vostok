@@ -1,5 +1,5 @@
 (*  English messages for interface
- *  Copyright (C) 2017 ComdivByZero
+ *  Copyright (C) 2017-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -333,19 +333,32 @@ END ParseError;
 
 PROCEDURE Usage*;
 BEGIN
-S("Translator from Oberon-07 to C. 2017");
+S("Translator from Oberon-07 to C. 2018");
 S("Usage: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Script OutDir {-m PTM|-i PTI|-infr Infr}");
-S("  3) o7c to-bin Script Result {-m PTM|-i PTI|-infr Infr|-c PTHC|-cc CComp}");
-S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} [-t temp] -- opts");
-S("Script = Call { ; Call } . Call = Module.Procedure[(Parameters)] .");
-S("PTM - Path To directories with Modules for search");
-S("PTI - Path To directories with Interface Modules without real implementation");
-S("PTHC - Path To directories with .h & .c -implementations of interface modules");
-S("Infr - path to infrastructure. '-infr p' is shortening to:");
+S("  3) o7c to-bin Script OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
+S("  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp|-t Temp} [-- Args]");
+S("2) to-c converts modules to h. & .c files");
+S("3) to-bin converts modules to binary executable through implicit .c files");
+S("4) run executes implicit executable file");
+S("Script is simple Oberon-code. Can be described in kind of EBNF:");
+S("  Script = Call { ; Call } . Call = Module.Procedure['('Parameters')'] .");
+S("OutDir - directory for saving translated .h & .c files");
+S("OutBin - name of output executable file");
+S("-m PTM - Path To directories with Modules for search. ");
+S("  For example: -m library -m source -m test/source");
+S("-i PTI - Path To directories with Interface modules without real implementation");
+S("  For example: -i singularity/definition");
+S("-c PTHC - Path To directories with .h & .c -implementations of interface modules");
+S("  For example: -c singularity/implementation");
+S("-infr Infr - path to Infr_astructure. '-infr p' is shortening to:");
 S("  -i p/singularity/definition -c p/singularity/implementation -m p/library");
-S("CComp - C Compiler for build generated .c-files")
+S("-t Temp - new directory, where translator store intermediate .h & .c files");
+S("  For example: -t result/test/ReadDir.src");
+S("-cc CComp - C Compiler for build .c-files, by default used 'cc -g -O1'");
+S("  For example: -cc 'clang -O3 -flto -s'");
+S("-- Args - command line arguments for runned code")
 END Usage;
 
 PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
