@@ -2,6 +2,8 @@ Project "Vostok"
 ==========================
 Oberon-07 translator to C.
 
+License is LGPL for translator's code and Apache for libraries
+
 Short build help for POSIX systems:
 
 	$ make help-en
@@ -45,7 +47,6 @@ Test under POSIX and Windows
 
 	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
 
-License is LGPL for translator's code and Apache for libraries
 
 
 Проект "Восток"
@@ -59,6 +60,8 @@ License is LGPL for translator's code and Apache for libraries
 
 Написан на собственном входном языке.
 Генерирует совместимый с gcc, clang и tcc код на С.
+
+Код транслятора доступен под лицензией LGPL, а библиотеки - под Apache License.
 
 Короткая справка по главным целям и переменным сборочных скриптов в POSIX
 системах:
@@ -126,8 +129,6 @@ make.sh собирает из предварительно сгенериров�
 	> make.cmd
 	> result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
 
-Тестирование в POSIX и Windows
+Тестирование в POSIX и Windows с использованием Tiny C Compiler
 
 	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
-
-Код транслятора доступен под лицензией LGPL, а библиотеки - под Apache License
