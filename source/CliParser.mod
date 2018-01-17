@@ -159,7 +159,8 @@ BEGIN
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF GetParam(args.cc, ccLen, arg) THEN
-				DEC(ccLen)
+				DEC(ccLen);
+				DEC(arg)
 			ELSE
 				ret := ErrTooLongCc
 			END
