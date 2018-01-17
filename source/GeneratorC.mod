@@ -258,6 +258,8 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		| "e": o := Eq(n, "errno")
 		         OR Eq(n, "exit")
 		| "f": o := Eq(n, "free")
+		         OR Eq(n, "fputc")
+		         OR Eq(n, "fputs")
 		| "g": o := Eq(n, "getenv")
 		| "l": o := Eq(n, "labs")
 		         OR Eq(n, "ldiv")
@@ -272,6 +274,9 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		         OR Eq(n, "mblen")
 		         OR Eq(n, "mbtowc")
 		         OR Eq(n, "mbstowcs")
+		| "p": o := Eq(n, "putc")
+		         OR Eq(n, "putchar")
+		         OR Eq(n, "puts")
 		| "q": o := Eq(n, "qsort")
 		| "r": o := Eq(n, "rand")
 		         OR Eq(n, "realloc")
@@ -302,7 +307,7 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 		         OR Eq(n, "system")
 		| "w": o := Eq(n, "wctomb")
 		         OR Eq(n, "wcstombs")
-		| "h", "i" .. "k", "n" .. "p", "t" .. "v", "x" .. "z": o := FALSE
+		| "h", "i" .. "k", "n" .. "o", "t" .. "v", "x" .. "z": o := FALSE
 		END
 		(*a b c d e f g h i j k l m n o p q r s t u v w x y z*)
 		RETURN o
