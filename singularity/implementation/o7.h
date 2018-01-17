@@ -41,24 +41,6 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if O7_GNUC_BUILTIN_OVERFLOW
-#	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
-#	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
-#	define O7_GNUC_SMUL(a, b, res)  __builtin_smul_overflow(a, b, res)
-
-#	define O7_GNUC_SADDL(a, b, res) __builtin_saddl_overflow(a, b, res)
-#	define O7_GNUC_SSUBL(a, b, res) __builtin_ssubl_overflow(a, b, res)
-#	define O7_GNUC_SMULL(a, b, res) __builtin_smull_overflow(a, b, res)
-#else
-#	define O7_GNUC_SADD(a, b, res)  (0 < sizeof(*(res) = (a)+(b)))
-#	define O7_GNUC_SSUB(a, b, res)  (0 < sizeof(*(res) = (a)-(b)))
-#	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
-
-#	define O7_GNUC_SADDL(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
-#	define O7_GNUC_SSUBL(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
-#	define O7_GNUC_SMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
-#endif
-
 #if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__)
 #	define O7_VLA(len) static len
 #else
@@ -149,6 +131,29 @@ typedef char unsigned o7_char;
 #	else
 #		error
 #	endif
+#endif
+
+#if O7_GNUC_BUILTIN_OVERFLOW
+#	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
+#	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
+#	define O7_GNUC_SMUL(a, b, res)  __builtin_smul_overflow(a, b, res)
+#	if LONG_MAX > O7_INT_MAX
+#		define O7_GNUC_SADDL(a, b, res) __builtin_saddl_overflow(a, b, res)
+#		define O7_GNUC_SSUBL(a, b, res) __builtin_ssubl_overflow(a, b, res)
+#		define O7_GNUC_SMULL(a, b, res) __builtin_smull_overflow(a, b, res)
+#	else
+#		define O7_GNUC_SADDL(a, b, res) __builtin_saddll_overflow(a, b, res)
+#		define O7_GNUC_SSUBL(a, b, res) __builtin_ssubll_overflow(a, b, res)
+#		define O7_GNUC_SMULL(a, b, res) __builtin_smulll_overflow(a, b, res)
+#	endif
+#else
+#	define O7_GNUC_SADD(a, b, res)  (0 < sizeof(*(res) = (a)+(b)))
+#	define O7_GNUC_SSUB(a, b, res)  (0 < sizeof(*(res) = (a)-(b)))
+#	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
+
+#	define O7_GNUC_SADDL(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
+#	define O7_GNUC_SSUBL(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
+#	define O7_GNUC_SMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
 typedef o7_ulong_t o7_set64_t;
