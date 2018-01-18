@@ -39,9 +39,8 @@ MODULE make;
      Exec.AutoCorrectDirSeparator(TRUE)
    END;
    ok := ok & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
-       & (0 = Execute(code, "Build"));
-   IF ok
-    & Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
+       & (0 = Execute(code, "Delete old temp directory"));
+   IF Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
     & Exec.AddClean(code, " to-bin Translator.Start result/") & Exec.AddClean(code, res)
     & (~windows OR Exec.AddClean(code, ".exe"))
 
