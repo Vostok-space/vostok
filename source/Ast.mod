@@ -3310,6 +3310,7 @@ PROCEDURE CaseLabelQualNew*(VAR label: CaseLabel; decl: Declaration): INTEGER;
 VAR err, i: INTEGER;
 BEGIN
 	label := NIL;
+	decl.used := TRUE;
 	IF decl.id = IdError THEN
 		err := ErrNo
 	ELSIF ~(decl IS Const) THEN
@@ -3324,7 +3325,7 @@ BEGIN
 	ELSIF decl(Const).expr.type.id = IdInteger THEN
 		err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)
 	ELSE
-		i := decl(Const).expr.value(ExprString).int;
+		i := decl(Const).expr.value(ExprInteger).int;
 		IF i < 0 THEN
 			(* TODO *) ASSERT(FALSE);
 			i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])

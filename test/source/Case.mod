@@ -31,10 +31,11 @@ BEGIN
 END case;
 
 PROCEDURE caseChar(c: CHAR);
+CONST a = CHR(ORD("a"));
 VAR n: INTEGER;
 BEGIN
 	CASE c OF
-	|"a" : n := 0
+	| a  : n := 0
 	|"b" : n := 1
 	|"c" : n := 2
 	|"d" : n := 3
