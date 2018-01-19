@@ -99,6 +99,8 @@ extern o7_bool StringStore_CopyCharsNull(int dest_len0, o7_char dest[/*len0*/], 
 
 extern int StringStore_CalcLen(int str_len0, o7_char str[/*len0*/], int ofs);
 
+extern int StringStore_TrimChars(int str_len0, o7_char str[/*len0*/], int ofs);
+
 extern int StringStore_Write(struct VDataStream_Out *out, o7_tag_t out_tag, struct StringStore_String *str);
 
 extern void StringStore_init(void);

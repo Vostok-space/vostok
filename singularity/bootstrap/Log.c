@@ -49,7 +49,7 @@ extern void Log_Real(double x) {
 
 extern void Log_Bool(o7_bool b) {
 	if (!o7_bl(Log_state)) {
-	} else if (o7_bl(b)) {
+	} else if (b) {
 		Out_String(4, (o7_char *)"TRUE");
 	} else {
 		Out_String(5, (o7_char *)"FALSE");
@@ -57,11 +57,19 @@ extern void Log_Bool(o7_bool b) {
 }
 
 extern void Log_Turn(o7_bool st) {
-	if (o7_bl(st) && !o7_bl(init)) {
+	if (st && !o7_bl(init)) {
 		init = true;
 		Out_Open();
 	}
-	Log_state = o7_bl(st);
+	Log_state = st;
+}
+
+extern void Log_On(void) {
+	Log_Turn(true);
+}
+
+extern void Log_Off(void) {
+	Log_Turn(false);
 }
 
 extern void Log_init(void) {

@@ -83,6 +83,32 @@ extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base) {
 	}
 }
 
+extern O7_NORETURN void o7_case_fail(int i) {
+	extern int puts(char const *s);
+	char buf[26];
+	o7_cbool neg;
+	int ofs;
+	neg = i < 0;
+	if (neg) {
+		i = -o7_int(i);
+	}
+	buf[15] = '\0';
+	ofs = 15;
+	while (i > 0) {
+		ofs -= 1;
+		buf[ofs] = '0' + i % 10;
+		i /= 10;
+	}
+	if (neg) {
+		ofs -= 1;
+		buf[ofs] = '-';
+	}
+	ofs -= sizeof("case fail: ") - 1;
+	memcpy(buf + ofs, "case fail: ", sizeof("case fail: ") - 1);
+	puts(buf + ofs);
+	abort();
+}
+
 extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {

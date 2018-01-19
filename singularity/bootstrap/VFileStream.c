@@ -27,8 +27,8 @@ static int ReadChars(struct V_Base *in_, o7_tag_t in__tag, int buf_len0, o7_char
 }
 
 extern struct VFileStream_RIn *VFileStream_OpenIn(int name_len0, o7_char name[/*len0*/]) {
-	struct VFileStream_RIn *in_ = NULL;
-	CFiles_File file = NULL;
+	struct VFileStream_RIn *in_;
+	CFiles_File file;
 
 	O7_NEW(&in_, VFileStream_RIn);
 	if (in_ != NULL) {
@@ -57,8 +57,8 @@ static int WriteChars(struct V_Base *out, o7_tag_t out_tag, int buf_len0, o7_cha
 }
 
 extern struct VFileStream_ROut *VFileStream_OpenOut(int name_len0, o7_char name[/*len0*/]) {
-	struct VFileStream_ROut *out = NULL;
-	CFiles_File file = NULL;
+	struct VFileStream_ROut *out;
+	CFiles_File file;
 
 	O7_NEW(&out, VFileStream_ROut);
 	if (out != NULL) {

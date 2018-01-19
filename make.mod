@@ -50,7 +50,7 @@ MODULE make;
     OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source")
       )
 
-    & (~windows OR Exec.Add(code, "-cc tcc", 0))
+    & (~windows OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
    THEN
      ok := 0 = Execute(code, "Build")
    END
@@ -81,7 +81,7 @@ MODULE make;
         & CopyFileName(c, n)
         & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
         & Exec.AddClean(code, " -infr . -m test/source ")
-        & (~windows OR Exec.AddClean(code, "-cc tcc"))
+        & (~windows OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
        THEN
          ok := (Execute(code, n) = 0) & ok
        END

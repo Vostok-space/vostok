@@ -7,7 +7,7 @@
 
 #include "MessageEn.h"
 
-static void O(int s_len0, o7_char s[/*len0*/]) {
+static void C(int s_len0, o7_char s[/*len0*/]) {
 	Out_String(s_len0, s);
 }
 
@@ -19,308 +19,311 @@ static void S(int s_len0, o7_char s[/*len0*/]) {
 extern void MessageEn_AstError(int code) {
 	switch (code) {
 	case -1:
-		O(49, (o7_char *)"Module's name already declared in the import list");
-		break;
-	case -89:
-		O(21, (o7_char *)"Module imports itself");
-		break;
-	case -90:
-		O(38, (o7_char *)"Cyclic import of modules is prohibited");
+		C(49, (o7_char *)"Module's name already declared in the import list");
 		break;
 	case -2:
-		O(39, (o7_char *)"Redeclaration of name in the same scope");
-		break;
-	case -8:
-		O(47, (o7_char *)"Declaration's name shadows module's declaration");
-		break;
-	case -101:
-		O(48, (o7_char *)"Declaration's name shadows predefined identifier");
+		C(21, (o7_char *)"Module imports itself");
 		break;
 	case -3:
-		O(37, (o7_char *)"Subexpressions types are incompatible");
+		C(38, (o7_char *)"Cyclic import of modules is prohibited");
 		break;
 	case -4:
-		O(49, (o7_char *)"Subexpressions types in division are incompatible");
+		C(39, (o7_char *)"Redeclaration of name in the same scope");
 		break;
 	case -5:
-		O(60, (o7_char *)"In a logic expression must be subexpressions of boolean type");
+		C(47, (o7_char *)"Declaration's name shadows module's declaration");
 		break;
 	case -6:
-		O(57, (o7_char *)"In integer division available only integer subexpressions");
+		C(48, (o7_char *)"Declaration's name shadows predefined identifier");
 		break;
 	case -7:
-		O(67, (o7_char *)"In a float point division available only float point subexpressions");
+		C(37, (o7_char *)"Subexpressions types are incompatible");
+		break;
+	case -8:
+		C(49, (o7_char *)"Subexpressions types in division are incompatible");
 		break;
 	case -9:
-		O(29, (o7_char *)"Set can contain only integers");
+		C(60, (o7_char *)"In a logic expression must be subexpressions of boolean type");
 		break;
 	case -10:
-		O(47, (o7_char *)"Item's value of set is out of range - [0 .. 31]");
+		C(57, (o7_char *)"In integer division available only integer subexpressions");
 		break;
 	case -11:
-		O(44, (o7_char *)"Left item of range is bigger then right item");
-		break;
-	case -35:
-		O(53, (o7_char *)"Set, which contain 31 can not be converted to integer");
+		C(67, (o7_char *)"In a float point division available only float point subexpressions");
 		break;
 	case -12:
-		O(44, (o7_char *)"Subexpressions types in sum are incompatible");
+		C(29, (o7_char *)"Set can contain only integers");
 		break;
 	case -13:
-		S(52, (o7_char *)"In expressions *, / available only numbers and sets.");
-		O(37, (o7_char *)"DIV, MOD applicable only for integers");
+		C(47, (o7_char *)"Item's value of set is out of range - [0 .. 31]");
 		break;
 	case -14:
-		O(50, (o7_char *)"In expresions +, - available only numbers and sets");
+		C(44, (o7_char *)"Left item of range is bigger then right item");
 		break;
 	case -15:
-		O(39, (o7_char *)"Unary sign not applicable to logic type");
+		C(53, (o7_char *)"Set, which contain 31 can not be converted to integer");
+		break;
+	case -16:
+		C(44, (o7_char *)"Subexpressions types in sum are incompatible");
 		break;
 	case -17:
-		O(53, (o7_char *)"Subexpressions types in comparison are not compatible");
+		S(52, (o7_char *)"In expressions *, / available only numbers and sets.");
+		C(37, (o7_char *)"DIV, MOD applicable only for integers");
 		break;
 	case -18:
-		O(47, (o7_char *)"Left subexpression must be integer, right - Set");
+		C(50, (o7_char *)"In expresions +, - available only numbers and sets");
 		break;
 	case -19:
-		O(40, (o7_char *)"Right subexpression after IN must be Set");
+		C(39, (o7_char *)"Unary sign not applicable to logic type");
 		break;
 	case -20:
-		O(44, (o7_char *)"Left subexpression before IN must be integer");
+		C(53, (o7_char *)"Subexpressions types in comparison are not compatible");
 		break;
 	case -21:
-		O(36, (o7_char *)"Relation not applicable to such type");
+		C(47, (o7_char *)"Left subexpression must be integer, right - Set");
 		break;
 	case -22:
-		O(42, (o7_char *)"IS applicable only to records and pointers");
+		C(40, (o7_char *)"Right subexpression after IN must be Set");
 		break;
 	case -23:
-		O(46, (o7_char *)"Left part of IS be record or pointer to record");
-		break;
-	case -93:
-		O(68, (o7_char *)"Type of left part of IS expression must be same kind that right type");
-		break;
-	case -94:
-		O(44, (o7_char *)"In right part of IS expected extended record");
+		C(44, (o7_char *)"Left subexpression before IN must be integer");
 		break;
 	case -24:
-		O(55, (o7_char *)"Constant declaration matched to not constant expression");
+		C(36, (o7_char *)"Relation not applicable to such type");
 		break;
 	case -25:
-		O(32, (o7_char *)"Incompatible types in assignment");
-		break;
-	case -84:
-		O(42, (o7_char *)"Expected variable expression in assignment");
+		C(42, (o7_char *)"IS applicable only to records and pointers");
 		break;
 	case -26:
-		O(62, (o7_char *)"Call applicable only to subroutines and subroutine's variables");
-		break;
-	case -28:
-		O(33, (o7_char *)"Returned value can not be ignored");
+		C(46, (o7_char *)"Left part of IS be record or pointer to record");
 		break;
 	case -27:
-		O(34, (o7_char *)"Called subroutine not return value");
+		C(68, (o7_char *)"Type of left part of IS expression must be same kind that right type");
+		break;
+	case -28:
+		C(44, (o7_char *)"In right part of IS expected extended record");
 		break;
 	case -29:
-		O(37, (o7_char *)"Excess parameter in subroutine's call");
+		C(55, (o7_char *)"Constant declaration matched to not constant expression");
 		break;
 	case -30:
-		O(29, (o7_char *)"Incompatible parameter's type");
+		C(32, (o7_char *)"Incompatible types in assignment");
 		break;
 	case -31:
-		O(26, (o7_char *)"Parameter must be variable");
-		break;
-	case -58:
-		O(64, (o7_char *)"For variable parameter - pointer must used argument of same type");
+		C(42, (o7_char *)"Expected variable expression in assignment");
 		break;
 	case -32:
-		O(42, (o7_char *)"Not enough parameters in subroutine's call");
-		break;
-	case -33:
-		O(42, (o7_char *)"Expression in CASE must be integer or char");
-		break;
-	case -68:
-		O(41, (o7_char *)"Case label must have integer or char type");
+		C(62, (o7_char *)"Call applicable only to subroutines and subroutine's variables");
 		break;
 	case -34:
-		O(37, (o7_char *)"Label of CASE must be integer or char");
+		C(33, (o7_char *)"Returned value can not be ignored");
+		break;
+	case -33:
+		C(34, (o7_char *)"Called subroutine not return value");
+		break;
+	case -35:
+		C(37, (o7_char *)"Excess parameter in subroutine's call");
 		break;
 	case -36:
-		O(39, (o7_char *)"Values of labels of CASE are duplicated");
+		C(29, (o7_char *)"Incompatible parameter's type");
 		break;
 	case -37:
-		O(37, (o7_char *)"Types of labels in CASE are not equal");
-		break;
-	case -38:
-		O(64, (o7_char *)"Left part of range in label of CASE must be less than right part");
+		C(26, (o7_char *)"Parameter must be variable");
 		break;
 	case -39:
-		O(31, (o7_char *)"Labels in CASE must be constant");
+		C(64, (o7_char *)"For variable parameter - pointer must used argument of same type");
 		break;
-	case -99:
-		O(33, (o7_char *)"Else branch in CASE already exist");
+	case -38:
+		C(42, (o7_char *)"Not enough parameters in subroutine's call");
 		break;
 	case -40:
-		O(26, (o7_char *)"Subroutine have not return");
+		C(42, (o7_char *)"Expression in CASE must be integer or char");
 		break;
 	case -41:
-		O(75, (o7_char *)"Type of expression in return is not compatible with declared type in header");
+		C(41, (o7_char *)"Case label must have integer or char type");
 		break;
 	case -42:
-		O(15, (o7_char *)"Expected return");
+		C(37, (o7_char *)"Label of CASE must be integer or char");
 		break;
 	case -43:
-		O(20, (o7_char *)"Declaration not found");
+		C(39, (o7_char *)"Values of labels of CASE are duplicated");
 		break;
 	case -44:
-		O(40, (o7_char *)"Recursive declaration of constant denied");
+		C(37, (o7_char *)"Types of labels in CASE are not equal");
 		break;
 	case -45:
-		O(25, (o7_char *)"Imported module not found");
+		C(64, (o7_char *)"Left part of range in label of CASE must be less than right part");
 		break;
 	case -46:
-		O(32, (o7_char *)"Imported module contain mistakes");
+		C(31, (o7_char *)"Labels in CASE must be constant");
 		break;
 	case -47:
-		O(39, (o7_char *)"Dereference applicable only to pointers");
-		break;
-	case -91:
-		O(26, (o7_char *)"Array's length must be > 0");
-		break;
-	case -92:
-		O(31, (o7_char *)"Overall length of array too big");
+		C(33, (o7_char *)"Else branch in CASE already exist");
 		break;
 	case -48:
-		O(34, (o7_char *)"[ index ] applicable only to array");
+		C(26, (o7_char *)"Subroutine have not return");
 		break;
 	case -49:
-		O(26, (o7_char *)"Array index is not integer");
+		C(75, (o7_char *)"Type of expression in return is not compatible with declared type in header");
 		break;
 	case -50:
-		O(20, (o7_char *)"Negative array index");
+		C(15, (o7_char *)"Expected return");
 		break;
 	case -51:
-		O(24, (o7_char *)"Array index out of range");
-		break;
-	case -52:
-		O(40, (o7_char *)"In type's guard expected extended record");
+		C(21, (o7_char *)"Declaration not found");
 		break;
 	case -53:
-		O(51, (o7_char *)"In type's guard expected pointer to extended record");
+		C(40, (o7_char *)"Recursive declaration of constant denied");
 		break;
 	case -54:
-		O(67, (o7_char *)"In a type's guard must be designator of record or pointer to record");
+		C(25, (o7_char *)"Imported module not found");
 		break;
 	case -55:
-		O(60, (o7_char *)"Selector '.' applicable only to record and pointer to record");
+		C(32, (o7_char *)"Imported module contain mistakes");
 		break;
 	case -56:
-		O(17, (o7_char *)"Expected variable");
+		C(39, (o7_char *)"Dereference applicable only to pointers");
 		break;
 	case -57:
-		O(34, (o7_char *)"Iterator of 'FOR'-loop not integer");
+		C(26, (o7_char *)"Array's length must be > 0");
+		break;
+	case -58:
+		C(31, (o7_char *)"Overall length of array too big");
 		break;
 	case -59:
-		O(40, (o7_char *)"Expression in IF must be of boolean type");
+		C(34, (o7_char *)"[ index ] applicable only to array");
 		break;
 	case -60:
-		O(43, (o7_char *)"Expression in WHILE must be of boolean type");
+		C(26, (o7_char *)"Array index is not integer");
 		break;
 	case -61:
-		O(32, (o7_char *)"Expression in WHILE always false");
+		C(20, (o7_char *)"Negative array index");
 		break;
 	case -62:
-		O(60, (o7_char *)"WHILE loop is indefinite becase guard expression always true");
+		C(24, (o7_char *)"Array index out of range");
 		break;
 	case -63:
-		O(43, (o7_char *)"Expression in UNTIL must be of boolean type");
+		C(40, (o7_char *)"In type's guard expected extended record");
 		break;
 	case -64:
-		O(54, (o7_char *)"Loop is indefinite because of end condion always false");
+		C(51, (o7_char *)"In type's guard expected pointer to extended record");
 		break;
 	case -65:
-		O(24, (o7_char *)"End conditin always true");
+		C(67, (o7_char *)"In a type's guard must be designator of record or pointer to record");
 		break;
 	case -66:
-		O(27, (o7_char *)"Declaration is not exported");
+		C(60, (o7_char *)"Selector '.' applicable only to record and pointer to record");
 		break;
 	case -67:
-		O(50, (o7_char *)"Logic negative ~ applicable only to boolean values");
+		C(17, (o7_char *)"Expected variable");
+		break;
+	case -68:
+		C(34, (o7_char *)"Iterator of 'FOR'-loop not integer");
 		break;
 	case -69:
-		O(25, (o7_char *)"Overflow in constants sum");
+		C(40, (o7_char *)"Expression in IF must be of boolean type");
 		break;
 	case -70:
-		O(32, (o7_char *)"Overflow in constants difference");
+		C(43, (o7_char *)"Expression in WHILE must be of boolean type");
 		break;
 	case -71:
-		O(36, (o7_char *)"Overflow in constants multiplication");
+		C(32, (o7_char *)"Expression in WHILE always false");
 		break;
 	case -72:
-		O(16, (o7_char *)"Division by zero");
+		C(60, (o7_char *)"WHILE loop is indefinite becase guard expression always true");
 		break;
 	case -73:
-		O(25, (o7_char *)"Value out of byte's range");
+		C(43, (o7_char *)"Expression in UNTIL must be of boolean type");
 		break;
 	case -74:
-		O(25, (o7_char *)"Value out of char's range");
+		C(54, (o7_char *)"Loop is indefinite because of end condion always false");
 		break;
 	case -75:
-		O(27, (o7_char *)"Expected integer expression");
+		C(24, (o7_char *)"End conditin always true");
+		break;
+	case -52:
+		C(27, (o7_char *)"Declaration is not exported");
 		break;
 	case -76:
-		O(36, (o7_char *)"Expected constant integer expression");
+		C(50, (o7_char *)"Logic negative ~ applicable only to boolean values");
 		break;
 	case -77:
-		O(28, (o7_char *)"Iterator's step can not be 0");
+		C(25, (o7_char *)"Overflow in constants sum");
 		break;
 	case -78:
-		O(60, (o7_char *)"For enumeration from low to high iterator's step must be > 0");
+		C(32, (o7_char *)"Overflow in constants difference");
 		break;
 	case -79:
-		O(60, (o7_char *)"For enumeration from low to high iterator's step must be < 0");
+		C(36, (o7_char *)"Overflow in constants multiplication");
 		break;
 	case -80:
-		O(28, (o7_char *)"Iterator in FOR can overflow");
+		C(16, (o7_char *)"Division by zero");
 		break;
 	case -81:
-		O(28, (o7_char *)"Using uninitialized variable");
+		C(25, (o7_char *)"Value out of byte's range");
 		break;
 	case -82:
-		O(26, (o7_char *)"Expected name of procedure");
+		C(25, (o7_char *)"Value out of char's range");
 		break;
 	case -83:
-		O(43, (o7_char *)"As command can be subroutine without return");
+		C(27, (o7_char *)"Expected integer expression");
+		break;
+	case -84:
+		C(36, (o7_char *)"Expected constant integer expression");
 		break;
 	case -85:
-		O(47, (o7_char *)"As command can be subroutine without parameters");
+		C(28, (o7_char *)"Iterator's step can not be 0");
 		break;
 	case -86:
-		O(40, (o7_char *)"Returned type can not be array or record");
+		C(60, (o7_char *)"For enumeration from low to high iterator's step must be > 0");
 		break;
 	case -87:
-		O(57, (o7_char *)"Exist undeclared record, previously referenced in pointer");
+		C(60, (o7_char *)"For enumeration from low to high iterator's step must be < 0");
 		break;
 	case -88:
-		O(36, (o7_char *)"Pointer can reference only to record");
+		C(28, (o7_char *)"Iterator in FOR can overflow");
+		break;
+	case -89:
+		C(28, (o7_char *)"Using uninitialized variable");
+		break;
+	case -90:
+		C(42, (o7_char *)"Using variable, which may be uninitialized");
+		break;
+	case -91:
+		C(26, (o7_char *)"Expected name of procedure");
+		break;
+	case -92:
+		C(43, (o7_char *)"As command can be subroutine without return");
+		break;
+	case -93:
+		C(47, (o7_char *)"As command can be subroutine without parameters");
+		break;
+	case -94:
+		C(40, (o7_char *)"Returned type can not be array or record");
 		break;
 	case -95:
-		O(22, (o7_char *)"Assertion always false");
+		C(57, (o7_char *)"Exist undeclared record, previously referenced in pointer");
 		break;
 	case -96:
-		O(60, (o7_char *)"Declared variable which type is incompletely declared record");
+		C(36, (o7_char *)"Pointer can reference only to record");
+		break;
+	case -99:
+		C(22, (o7_char *)"Assertion always false");
 		break;
 	case -97:
-		O(56, (o7_char *)"Incompletely declared record is used as subtype of array");
+		C(60, (o7_char *)"Declared variable which type is incompletely declared record");
 		break;
 	case -98:
-		O(37, (o7_char *)"Exist unused declaration in the scope");
+		C(56, (o7_char *)"Incompletely declared record is used as subtype of array");
 		break;
-	case 102:
-		O(31, (o7_char *)"Too deep nesting of subroutines");
+	case -100:
+		C(37, (o7_char *)"Exist unused declaration in the scope");
+		break;
+	case -101:
+		C(31, (o7_char *)"Too deep nesting of subroutines");
 		break;
 	default:
-		abort();
+		o7_case_fail(code);
 		break;
 	}
 }
@@ -328,155 +331,168 @@ extern void MessageEn_AstError(int code) {
 extern void MessageEn_ParseError(int code) {
 	switch (code) {
 	case -1:
-		O(23, (o7_char *)"Unexpected char in text");
+		C(23, (o7_char *)"Unexpected char in text");
 		break;
 	case -2:
-		O(28, (o7_char *)"Value of constant is too big");
+		C(28, (o7_char *)"Value of constant is too big");
 		break;
 	case -3:
-		O(30, (o7_char *)"Scale of real value is too big");
+		C(30, (o7_char *)"Scale of real value is too big");
 		break;
 	case -4:
-		O(22, (o7_char *)"Length of word too big");
+		C(22, (o7_char *)"Length of word too big");
 		break;
 	case -5:
-		O(68, (o7_char *)"In end of hexadecimal number expected 'H' for number or 'X' for char");
+		C(68, (o7_char *)"In end of hexadecimal number expected 'H' for number or 'X' for char");
 		break;
 	case -6:
-		O(9, (o7_char *)"Expected ");
-		O(1, (o7_char *)"\x22");
+		C(9, (o7_char *)"Expected ");
+		C(1, (o7_char *)"\x22");
 		break;
 	case -7:
-		O(21, (o7_char *)"ErrExpectDigitInScale");
+		C(21, (o7_char *)"ErrExpectDigitInScale");
 		break;
 	case -8:
-		O(16, (o7_char *)"Unclosed comment");
+		C(16, (o7_char *)"Unclosed comment");
 		break;
 	case -101:
-		O(17, (o7_char *)"Expected 'MODULE'");
+		C(17, (o7_char *)"Expected 'MODULE'");
 		break;
 	case -102:
-		O(13, (o7_char *)"Expected name");
+		C(13, (o7_char *)"Expected name");
 		break;
 	case -103:
-		O(12, (o7_char *)"Expected ':'");
+		C(12, (o7_char *)"Expected ':'");
 		break;
 	case -104:
-		O(12, (o7_char *)"Expected ';'");
+		C(12, (o7_char *)"Expected ';'");
 		break;
 	case -105:
-		O(14, (o7_char *)"Expected 'END'");
+		C(14, (o7_char *)"Expected 'END'");
 		break;
 	case -106:
-		O(12, (o7_char *)"Expected '.'");
+		C(12, (o7_char *)"Expected '.'");
 		break;
 	case -107:
-		O(28, (o7_char *)"Expected имя модуля");
+		C(28, (o7_char *)"Expected имя модуля");
 		break;
 	case -108:
-		O(12, (o7_char *)"Expected '='");
+		C(12, (o7_char *)"Expected '='");
 		break;
 	case -109:
-		O(12, (o7_char *)"Expected ')'");
+		C(12, (o7_char *)"Expected ')'");
 		break;
 	case -110:
-		O(12, (o7_char *)"Expected ']'");
+		C(12, (o7_char *)"Expected ']'");
 		break;
 	case -111:
-		O(12, (o7_char *)"Expected '}'");
+		C(12, (o7_char *)"Expected '}'");
 		break;
 	case -112:
-		O(11, (o7_char *)"Expected OF");
+		C(11, (o7_char *)"Expected OF");
 		break;
 	case -115:
-		O(11, (o7_char *)"Expected TO");
+		C(11, (o7_char *)"Expected TO");
 		break;
 	case -116:
-		O(59, (o7_char *)"Expected structured type: array, record, pointer, procedure");
+		C(59, (o7_char *)"Expected structured type: array, record, pointer, procedure");
 		break;
 	case -117:
-		O(15, (o7_char *)"Expected record");
+		C(15, (o7_char *)"Expected record");
 		break;
 	case -118:
-		O(18, (o7_char *)"Expected statement");
+		C(18, (o7_char *)"Expected statement");
 		break;
 	case -119:
-		O(13, (o7_char *)"Expected THEN");
+		C(13, (o7_char *)"Expected THEN");
 		break;
 	case -120:
-		O(11, (o7_char *)"Expected :=");
+		C(11, (o7_char *)"Expected :=");
 		break;
 	case -122:
-		O(50, (o7_char *)"Expected variable, which type is record or pointer");
+		C(50, (o7_char *)"Expected variable, which type is record or pointer");
 		break;
 	case -124:
-		O(13, (o7_char *)"Expected type");
+		C(13, (o7_char *)"Expected type");
 		break;
 	case -125:
-		O(14, (o7_char *)"Expected UNTIL");
+		C(14, (o7_char *)"Expected UNTIL");
 		break;
 	case -126:
-		O(11, (o7_char *)"Expected DO");
+		C(11, (o7_char *)"Expected DO");
 		break;
 	case -128:
-		O(19, (o7_char *)"Expected designator");
+		C(19, (o7_char *)"Expected designator");
 		break;
 	case -130:
-		O(18, (o7_char *)"Expected procedure");
+		C(18, (o7_char *)"Expected procedure");
 		break;
 	case -131:
-		O(25, (o7_char *)"Expected name of constant");
+		C(25, (o7_char *)"Expected name of constant");
 		break;
 	case -132:
-		O(35, (o7_char *)"Expected procedure's name after end");
+		C(35, (o7_char *)"Expected procedure's name after end");
 		break;
 	case -133:
-		O(19, (o7_char *)"Expected expression");
+		C(19, (o7_char *)"Expected expression");
 		break;
 	case -135:
-		O(10, (o7_char *)"Excess ';'");
+		C(10, (o7_char *)"Excess ';'");
 		break;
 	case -150:
-		O(46, (o7_char *)"Name after end do not match with module's name");
+		C(46, (o7_char *)"Name after end do not match with module's name");
 		break;
 	case -151:
-		O(28, (o7_char *)"Too many dimensions in array");
+		C(28, (o7_char *)"Too many dimensions in array");
 		break;
 	case -152:
-		O(49, (o7_char *)"Name after end do not match with procedure's name");
+		C(49, (o7_char *)"Name after end do not match with procedure's name");
 		break;
 	case -153:
-		O(49, (o7_char *)"Declaration of procedure with return must have ()");
+		C(49, (o7_char *)"Declaration of procedure with return must have ()");
 		break;
 	case -134:
-		O(25, (o7_char *)"Expected number or string");
+		C(25, (o7_char *)"Expected number or string");
 		break;
 	case -136:
-		O(51, (o7_char *)"Unexpected '='. Maybe, you mean ':=' for assignment");
+		C(51, (o7_char *)"Unexpected '='. Maybe, you mean ':=' for assignment");
 		break;
 	case -137:
-		O(48, (o7_char *)"As label in CASE not accepted not 1 char strings");
+		C(48, (o7_char *)"As label in CASE not accepted not 1 char strings");
 		break;
 	default:
-		abort();
+		o7_case_fail(code);
 		break;
 	}
 }
 
 extern void MessageEn_Usage(void) {
-	S(36, (o7_char *)"Translator from Oberon-07 to C. 2017");
+	S(36, (o7_char *)"Translator from Oberon-07 to C. 2018");
 	S(7, (o7_char *)"Usage: ");
 	S(13, (o7_char *)"  1) o7c help");
-	S(56, (o7_char *)"  2) o7c to-c   Script OutDir {-m PTM|-i PTI|-infr Infr}");
-	S(74, (o7_char *)"  3) o7c to-bin Script Result {-m PTM|-i PTI|-infr Infr|-c PTHC|-cc CComp}");
-	S(74, (o7_char *)"  4) o7c run    Script {-m PTM|-i PTI|-c PTHC|-cc CComp} [-t temp] -- opts");
-	S(66, (o7_char *)"Script = Call { ; Call } . Call = Module.Procedure[(Parameters)] .");
-	S(49, (o7_char *)"PTM - Path To directories with Modules for search");
-	S(76, (o7_char *)"PTI - Path To directories with Interface Modules without real implementation");
-	S(77, (o7_char *)"PTHC - Path To directories with .h & .c -implementations of interface modules");
-	S(58, (o7_char *)"Infr - path to infrastructure. '-infr p' is shortening to:");
+	S(60, (o7_char *)"  2) o7c to-c   Code OutDir { -m PTM | -i PTI | -infr Infr }");
+	S(74, (o7_char *)"  3) o7c to-bin Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
+	S(72, (o7_char *)"  4) o7c run    Code {-m PTM|-i PTI|-c PTHC|-cc CComp|-t Temp} [-- Args]");
+	S(41, (o7_char *)"2) to-c converts modules to .h & .c files");
+	S(73, (o7_char *)"3) to-bin converts modules to binary executable through implicit .c files");
+	S(40, (o7_char *)"4) run executes implicit executable file");
+	S(61, (o7_char *)"Code is simple Oberon-code. Can be described in kind of EBNF:");
+	S(73, (o7_char *)"  Code = Call { ; Call } . Call = Module.Procedure [ '('Parameters')' ] .");
+	S(54, (o7_char *)"OutDir - directory for saving translated .h & .c files");
+	S(39, (o7_char *)"OutBin - name of output executable file");
+	S(51, (o7_char *)"-m PTM - Path To directory with Modules for search.");
+	S(50, (o7_char *)"  For example: -m library -m source -m test/source");
+	S(77, (o7_char *)"-i PTI - Path To directory with Interface modules without real implementation");
+	S(40, (o7_char *)"  For example: -i singularity/definition");
+	S(78, (o7_char *)"-c PTHC - Path To directory with .h & .c -implementations of interface modules");
+	S(44, (o7_char *)"  For example: -c singularity/implementation");
+	S(65, (o7_char *)"-infr Infr - path to Infr_astructure. '-infr p' is shortening to:");
 	S(74, (o7_char *)"  -i p/singularity/definition -c p/singularity/implementation -m p/library");
-	S(47, (o7_char *)"CComp - C Compiler for build generated .c-files");
+	S(74, (o7_char *)"-t Temp - new directory, where translator store intermediate .h & .c files");
+	S(41, (o7_char *)"  For example: -t result/test/ReadDir.src");
+	S(70, (o7_char *)"-cc CComp - C Compiler for build .c-files, by default used 'cc -g -O1'");
+	S(39, (o7_char *)"  For example: -cc 'clang -O3 -flto -s'");
+	S(48, (o7_char *)"-- Args - command line arguments for runned code");
 }
 
 extern void MessageEn_CliError(int err, int cmd_len0, o7_char cmd[/*len0*/]) {
@@ -502,12 +518,12 @@ extern void MessageEn_CliError(int err, int cmd_len0, o7_char cmd[/*len0*/]) {
 		S(32, (o7_char *)"Can not open destination .c file");
 		break;
 	case -16:
-		O(17, (o7_char *)"Unknown command: ");
+		C(17, (o7_char *)"Unknown command: ");
 		S(cmd_len0, cmd);
 		MessageEn_Usage();
 		break;
 	case -17:
-		O(43, (o7_char *)"Not enough count of arguments for command: ");
+		C(43, (o7_char *)"Not enough count of arguments for command: ");
 		S(cmd_len0, cmd);
 		break;
 	case -18:
@@ -544,13 +560,13 @@ extern void MessageEn_CliError(int err, int cmd_len0, o7_char cmd[/*len0*/]) {
 		S(31, (o7_char *)"Can not remove output directory");
 		break;
 	default:
-		abort();
+		o7_case_fail(err);
 		break;
 	}
 }
 
 extern void MessageEn_Text(int str_len0, o7_char str[/*len0*/]) {
-	O(str_len0, str);
+	C(str_len0, str);
 }
 
 extern void MessageEn_init(void) {

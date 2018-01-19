@@ -39,5 +39,9 @@ extern void Log_Bool(o7_bool b);
 
 extern void Log_Turn(o7_bool st);
 
+extern void Log_On(void);
+
+extern void Log_Off(void);
+
 extern void Log_init(void);
 #endif

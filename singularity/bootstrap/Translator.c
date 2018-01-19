@@ -40,10 +40,6 @@
 #include "CFiles.h"
 #include "OsEnv.h"
 
-#define ResultC_cnst 0
-#define ResultBin_cnst 1
-#define ResultRun_cnst 2
-
 #define ErrNo_cnst 0
 #define ErrParse_cnst ( - 1)
 
@@ -78,16 +74,14 @@ static void ModuleProvider_s_undef(struct ModuleProvider_s *r) {
 	memset(&r->fileExt, 0, sizeof(r->fileExt));
 	r->extLen = O7_INT_UNDEF;
 	memset(&r->path, 0, sizeof(r->path));
-	r->sing = 0;
+	r->sing = 0u;
 	memset(&r->modules, 0, sizeof(r->modules));
 }
-
-static o7_char pathSep[2];
 
 static void ErrorMessage(int code) {
 	Out_Int(o7_sub(code, Parser_ErrAstBegin_cnst), 0);
 	Out_String(1, (o7_char *)"\x20");
-	if (o7_cmp(code, Parser_ErrAstBegin_cnst) <=  0) {
+	if (code <= Parser_ErrAstBegin_cnst) {
 		MessageEn_AstError(o7_sub(code, Parser_ErrAstBegin_cnst));
 	} else {
 		MessageEn_ParseError(code);
@@ -97,13 +91,13 @@ static void ErrorMessage(int code) {
 static void PrintErrors(struct Container_s *mc) {
 #	define SkipError_cnst (Ast_ErrImportModuleWithError_cnst + Parser_ErrAstBegin_cnst)
 
-	int i = O7_INT_UNDEF;
-	struct Ast_Error_s *err = NULL;
+	int i;
+	struct Ast_Error_s *err;
 
 	i = 0;
 	while (O7_REF(mc)->m != NULL) {
 		err = O7_REF(O7_REF(mc)->m)->errors;
-		while ((err != NULL) && (o7_cmp(O7_REF(err)->code, SkipError_cnst) ==  0)) {
+		while ((err != NULL) && (o7_cmp(O7_REF(err)->code, SkipError_cnst) == 0)) {
 			err = O7_REF(err)->next;
 		}
 		if (err != NULL) {
@@ -113,7 +107,7 @@ static void PrintErrors(struct Container_s *mc) {
 			Out_Ln();
 			err = O7_REF(O7_REF(mc)->m)->errors;
 			while (err != NULL) {
-				if (o7_cmp(O7_REF(err)->code, SkipError_cnst) !=  0) {
+				if (o7_cmp(O7_REF(err)->code, SkipError_cnst) != 0) {
 					i = o7_add(i, 1);
 
 					Out_String(2, (o7_char *)"  ");
@@ -135,137 +129,8 @@ static void PrintErrors(struct Container_s *mc) {
 #	undef SkipError_cnst
 }
 
-static o7_bool IsEqualStr(int str_len0, o7_char str[/*len0*/], int ofs, int sample_len0, o7_char sample[/*len0*/]) {
-	int i = O7_INT_UNDEF;
-
-	i = 0;
-	while ((str[o7_ind(str_len0, ofs)] == sample[o7_ind(sample_len0, i)]) && (sample[o7_ind(sample_len0, i)] != 0x00u)) {
-		ofs = o7_add(ofs, 1);
-		i = o7_add(i, 1);
-	}
-	return str[o7_ind(str_len0, ofs)] == sample[o7_ind(sample_len0, i)];
-}
-
-static int CopyPath(int str_len0, o7_char str[/*len0*/], unsigned *sing, int cDirs_len0, o7_char cDirs[/*len0*/], int cc_len0, o7_char cc[/*len0*/], int *init, int tmp_len0, o7_char tmp[/*len0*/], int *arg);
-static o7_bool CopyPath_CopyInfrPart(int str_len0, o7_char str[/*len0*/], int *i, int *arg, int add_len0, o7_char add[/*len0*/]) {
-	o7_bool ret = O7_BOOL_UNDEF;
-
-	ret = CLI_Get(str_len0, str, &(*i), (*arg));
-	if (o7_bl(ret)) {
-		(*i) = o7_sub((*i), 1);
-		ret = StringStore_CopyCharsNull(str_len0, str, &(*i), add_len0, add);
-		if (o7_bl(ret)) {
-			(*i) = o7_add((*i), 1);
-			str[o7_ind(str_len0, (*i))] = 0x00u;
-		}
-	}
-	return o7_bl(ret);
-}
-
-static int CopyPath(int str_len0, o7_char str[/*len0*/], unsigned *sing, int cDirs_len0, o7_char cDirs[/*len0*/], int cc_len0, o7_char cc[/*len0*/], int *init, int tmp_len0, o7_char tmp[/*len0*/], int *arg) {
-	int i = O7_INT_UNDEF, dirsOfs = O7_INT_UNDEF, ccLen = O7_INT_UNDEF, count = O7_INT_UNDEF, optLen = O7_INT_UNDEF, ret = O7_INT_UNDEF;
-	o7_char opt[256];
-	memset(&opt, 0, sizeof(opt));
-
-	i = 0;
-	dirsOfs = 0;
-	cDirs[0] = 0x00u;
-	tmp[0] = 0x00u;
-	ccLen = 0;
-	count = 0;
-	(*sing) = 0;
-	ret = ErrNo_cnst;
-	optLen = 0;
-	(*init) =  - 1;
-	while ((o7_cmp(ret, ErrNo_cnst) ==  0) && (o7_cmp(count, 32) <  0) && (o7_cmp((*arg), CLI_count) <  0) && CLI_Get(256, opt, &optLen, (*arg)) && !IsEqualStr(256, opt, 0, 2, (o7_char *)"--")) {
-		optLen = 0;
-		if ((o7_strcmp(256, opt, 2, (o7_char *)"-i") == 0) || (o7_strcmp(256, opt, 2, (o7_char *)"-m") == 0)) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (CLI_Get(str_len0, str, &i, (*arg))) {
-				if (o7_strcmp(256, opt, 2, (o7_char *)"-i") == 0) {
-					(*sing) |= 1u << count;
-				}
-				count = o7_add(count, 1);
-			} else {
-				ret = CliParser_ErrTooLongModuleDirs_cnst;
-			}
-		} else if (o7_strcmp(256, opt, 2, (o7_char *)"-c") == 0) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (CLI_Get(cDirs_len0, cDirs, &dirsOfs, (*arg)) && (o7_cmp(dirsOfs, cDirs_len0) <  0)) {
-				cDirs[o7_ind(cDirs_len0, dirsOfs)] = 0x00u;
-				Log_Str(8, (o7_char *)"cDirs = ");
-				Log_StrLn(cDirs_len0, cDirs);
-			} else {
-				ret = CliParser_ErrTooLongCDirs_cnst;
-			}
-		} else if (o7_strcmp(256, opt, 3, (o7_char *)"-cc") == 0) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (CLI_Get(cc_len0, cc, &ccLen, (*arg))) {
-				ccLen = o7_sub(ccLen, 1);
-			} else {
-				ret = CliParser_ErrTooLongCc_cnst;
-			}
-		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-infr") == 0) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (o7_bl(Platform_Posix) && CopyPath_CopyInfrPart(str_len0, str, &i, &(*arg), 23, (o7_char *)"/singularity/definition") && CopyPath_CopyInfrPart(str_len0, str, &i, &(*arg), 8, (o7_char *)"/library") && CopyPath_CopyInfrPart(cDirs_len0, cDirs, &dirsOfs, &(*arg), 27, (o7_char *)"/singularity/implementation") || o7_bl(Platform_Windows) && CopyPath_CopyInfrPart(str_len0, str, &i, &(*arg), 23, (o7_char *)"\\singularity\\definition") && CopyPath_CopyInfrPart(str_len0, str, &i, &(*arg), 8, (o7_char *)"\\library") && CopyPath_CopyInfrPart(cDirs_len0, cDirs, &dirsOfs, &(*arg), 27, (o7_char *)"\\singularity\\implementation")) {
-				(*sing) |= 1u << count;
-				count = o7_add(count, 2);
-			} else {
-				ret = CliParser_ErrTooLongModuleDirs_cnst;
-			}
-		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-init") == 0) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (!CLI_Get(256, opt, &optLen, (*arg))) {
-				ret = CliParser_ErrUnknownInit_cnst;
-			} else if (o7_strcmp(256, opt, 2, (o7_char *)"no") == 0) {
-				(*init) = GeneratorC_VarInitNo_cnst;
-			} else if (o7_strcmp(256, opt, 5, (o7_char *)"undef") == 0) {
-				(*init) = GeneratorC_VarInitUndefined_cnst;
-			} else if (o7_strcmp(256, opt, 4, (o7_char *)"zero") == 0) {
-				(*init) = GeneratorC_VarInitZero_cnst;
-			} else {
-				ret = CliParser_ErrUnknownInit_cnst;
-			}
-			optLen = 0;
-		} else if (o7_strcmp(256, opt, 2, (o7_char *)"-t") == 0) {
-			(*arg) = o7_add((*arg), 1);
-			if (o7_cmp((*arg), CLI_count) >=  0) {
-				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (!CLI_Get(tmp_len0, tmp, &optLen, (*arg))) {
-				ret = CliParser_ErrTooLongTemp_cnst;
-			}
-			optLen = 0;
-		} else {
-			ret = CliParser_ErrUnexpectArg_cnst;
-		}
-		(*arg) = o7_add((*arg), 1);
-	}
-	if (o7_cmp(o7_add(i, 1), str_len0) <  0) {
-		str[o7_ind(str_len0, o7_add(i, 1))] = 0x00u;
-		if (o7_cmp(count, 32) >=  0) {
-			ret = CliParser_ErrTooManyModuleDirs_cnst;
-		}
-	} else {
-		ret = CliParser_ErrTooLongModuleDirs_cnst;
-		str[o7_ind(str_len0, o7_sub(str_len0, 1))] = 0x00u;
-		str[o7_ind(str_len0, o7_sub(str_len0, 2))] = 0x00u;
-		str[o7_ind(str_len0, o7_sub(str_len0, 3))] = (o7_char)'#';
-	}
-	return o7_int(ret);
-}
-
 static struct Ast_RModule *SearchModule(struct ModuleProvider_s *mp, int name_len0, o7_char name[/*len0*/], int ofs, int end) {
-	struct Container_s *mc = NULL;
+	struct Container_s *mc;
 
 	mc = O7_REF(O7_REF(mp)->modules.first)->next;
 	while ((mc != O7_REF(mp)->modules.first) && !StringStore_IsEqualToChars(&O7_REF(O7_REF(mc)->m)->_._.name, name_len0, name, ofs, end)) {
@@ -275,7 +140,7 @@ static struct Ast_RModule *SearchModule(struct ModuleProvider_s *mp, int name_le
 }
 
 static void AddModule(struct ModuleProvider_s *mp, struct Ast_RModule *m) {
-	struct Container_s *mc = NULL;
+	struct Container_s *mc;
 
 	O7_ASSERT(O7_REF(m)->_._.module == m);
 	O7_NEW(&mc, Container_s);
@@ -289,13 +154,13 @@ static void AddModule(struct ModuleProvider_s *mp, struct Ast_RModule *m) {
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, int name_len0, o7_char name[/*len0*/], int ofs, int end);
 static struct VFileStream_RIn *GetModule_Open(struct ModuleProvider_s *p, int *pathOfs, int name_len0, o7_char name[/*len0*/], int ofs, int end) {
 	o7_char n[1024];
-	int len = O7_INT_UNDEF, l = O7_INT_UNDEF;
-	struct VFileStream_RIn *in_ = NULL;
+	int len, l;
+	struct VFileStream_RIn *in_;
 	memset(&n, 0, sizeof(n));
 
 	len = StringStore_CalcLen(4096, O7_REF(p)->path, (*pathOfs));
 	l = 0;
-	if ((o7_cmp(len, 0) >  0) && StringStore_CopyChars(1024, n, &l, 4096, O7_REF(p)->path, (*pathOfs), o7_add((*pathOfs), len)) && StringStore_CopyCharsNull(1024, n, &l, 2, pathSep) && StringStore_CopyChars(1024, n, &l, name_len0, name, ofs, end) && StringStore_CopyChars(1024, n, &l, 32, O7_REF(p)->fileExt, 0, O7_REF(p)->extLen)) {
+	if ((len > 0) && StringStore_CopyChars(1024, n, &l, 4096, O7_REF(p)->path, (*pathOfs), o7_add((*pathOfs), len)) && StringStore_CopyCharsNull(1024, n, &l, 1, PlatformExec_dirSep) && StringStore_CopyChars(1024, n, &l, name_len0, name, ofs, end) && StringStore_CopyChars(1024, n, &l, 32, O7_REF(p)->fileExt, 0, O7_REF(p)->extLen)) {
 		in_ = VFileStream_OpenIn(1024, n);
 	} else {
 		in_ = NULL;
@@ -305,10 +170,10 @@ static struct VFileStream_RIn *GetModule_Open(struct ModuleProvider_s *p, int *p
 }
 
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, int name_len0, o7_char name[/*len0*/], int ofs, int end) {
-	struct Ast_RModule *m = NULL;
-	struct VFileStream_RIn *source = NULL;
-	struct ModuleProvider_s *mp = NULL;
-	int pathOfs = O7_INT_UNDEF, pathInd = O7_INT_UNDEF;
+	struct Ast_RModule *m;
+	struct VFileStream_RIn *source;
+	struct ModuleProvider_s *mp;
+	int pathOfs, pathInd;
 
 	mp = O7_GUARD(ModuleProvider_s, &p);
 	m = SearchModule(mp, name_len0, name, ofs, end);
@@ -341,22 +206,26 @@ static void RegModule(struct Ast_RProvider *p, struct Ast_RModule *m) {
 	AddModule(O7_GUARD(ModuleProvider_s, &p), m);
 }
 
+static o7_bool CopyModuleNameForFile(int str_len0, o7_char str[/*len0*/], int *len, struct StringStore_String *name) {
+	return StringStore_CopyToChars(str_len0, str, &(*len), &(*name)) && (!GeneratorC_IsSpecModuleName(&(*name)) || StringStore_CopyCharsNull(str_len0, str, &(*len), 1, (o7_char *)"\x5F"));
+}
+
 static int OpenCOutput(struct VFileStream_ROut **interface_, struct VFileStream_ROut **implementation, struct Ast_RModule *module, o7_bool isMain, int dir_len0, o7_char dir[/*len0*/], int dirLen, struct PlatformExec_Code *exec) {
-	int destLen = O7_INT_UNDEF, ret = O7_INT_UNDEF;
+	int destLen, ret;
 
 	(*interface_) = NULL;
 	(*implementation) = NULL;
-	destLen = o7_int(dirLen);
-	if (!StringStore_CopyCharsNull(dir_len0, dir, &destLen, 2, pathSep) || !StringStore_CopyToChars(dir_len0, dir, &destLen, &O7_REF(module)->_._.name) || (o7_cmp(destLen, o7_sub(dir_len0, 3)) >  0)) {
+	destLen = dirLen;
+	if (!StringStore_CopyCharsNull(dir_len0, dir, &destLen, 1, PlatformExec_dirSep) || !CopyModuleNameForFile(dir_len0, dir, &destLen, &O7_REF(module)->_._.name) || (destLen > o7_sub(dir_len0, 3))) {
 		ret = CliParser_ErrTooLongOutName_cnst;
 	} else {
 		dir[o7_ind(dir_len0, destLen)] = (o7_char)'.';
 		dir[o7_ind(dir_len0, o7_add(destLen, 2))] = 0x00u;
-		if (!o7_bl(isMain)) {
+		if (!isMain) {
 			dir[o7_ind(dir_len0, o7_add(destLen, 1))] = (o7_char)'h';
 			(*interface_) = VFileStream_OpenOut(dir_len0, dir);
 		}
-		if (!o7_bl(isMain) && ((*interface_) == NULL)) {
+		if (!isMain && ((*interface_) == NULL)) {
 			ret = CliParser_ErrOpenH_cnst;
 		} else {
 			dir[o7_ind(dir_len0, o7_add(destLen, 1))] = (o7_char)'c';
@@ -372,7 +241,7 @@ static int OpenCOutput(struct VFileStream_ROut **interface_, struct VFileStream_
 			}
 		}
 	}
-	return o7_int(ret);
+	return ret;
 }
 
 static void NewProvider(struct ModuleProvider_s **mp) {
@@ -389,26 +258,26 @@ static void NewProvider(struct ModuleProvider_s **mp) {
 }
 
 static int GenerateC(struct Ast_RModule *module, o7_bool isMain, struct Ast_Call_s *cmd, struct GeneratorC_Options_s *opt, int dir_len0, o7_char dir[/*len0*/], int dirLen, int cDirs_len0, o7_char cDirs[/*len0*/], struct PlatformExec_Code *exec) {
-	struct Ast_RDeclaration *imp = NULL;
-	int ret = O7_INT_UNDEF, i = O7_INT_UNDEF, cDirsLen = O7_INT_UNDEF, nameLen = O7_INT_UNDEF;
+	struct Ast_RDeclaration *imp;
+	int ret, i, cDirsLen, nameLen;
 	o7_char name[512];
-	struct VFileStream_ROut *iface = NULL, *impl = NULL;
+	struct VFileStream_ROut *iface, *impl;
 	memset(&name, 0, sizeof(name));
 
 	O7_REF(module)->_._.used = true;
 
 	ret = ErrNo_cnst;
 	imp = (&(O7_REF(module)->import_)->_);
-	while ((o7_cmp(ret, ErrNo_cnst) ==  0) && (imp != NULL) && (o7_is(imp, Ast_Import_s_tag))) {
+	while ((ret == ErrNo_cnst) && (imp != NULL) && (o7_is(imp, Ast_Import_s_tag))) {
 		if (!o7_bl(O7_REF(O7_REF(imp)->module)->_._.used)) {
 			ret = GenerateC(O7_REF(imp)->module, false, NULL, opt, dir_len0, dir, dirLen, cDirs_len0, cDirs, &(*exec));
 		}
 		imp = O7_REF(imp)->next;
 	}
-	if (o7_cmp(ret, ErrNo_cnst) !=  0) {
+	if (ret != ErrNo_cnst) {
 	} else if (!o7_bl(O7_REF(module)->_._.mark)) {
 		ret = OpenCOutput(&iface, &impl, module, isMain, dir_len0, dir, dirLen, &(*exec));
-		if (o7_cmp(ret, ErrNo_cnst) ==  0) {
+		if (ret == ErrNo_cnst) {
 			GeneratorC_Generate(&iface->_, &impl->_, module, &cmd->_, opt);
 			VFileStream_CloseOut(&iface);
 			VFileStream_CloseOut(&impl);
@@ -419,58 +288,61 @@ static int GenerateC(struct Ast_RModule *module, o7_bool isMain, struct Ast_Call
 			nameLen = 0;
 			cDirsLen = StringStore_CalcLen(cDirs_len0, cDirs, i);
 			/* TODO */
-			O7_ASSERT(StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 2, pathSep) && StringStore_CopyToChars(512, name, &nameLen, &O7_REF(module)->_._.name) && StringStore_CopyCharsNull(512, name, &nameLen, 2, (o7_char *)".c") && (!CFiles_Exist(512, name, 0) || PlatformExec_Add(&(*exec), 512, name, 0)));
+			O7_ASSERT(StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 1, PlatformExec_dirSep) && CopyModuleNameForFile(512, name, &nameLen, &O7_REF(module)->_._.name) && StringStore_CopyCharsNull(512, name, &nameLen, 2, (o7_char *)".c") && (!CFiles_Exist(512, name, 0) || PlatformExec_Add(&(*exec), 512, name, 0)));
 			i = o7_add(o7_add(i, cDirsLen), 1);
 		}
 	}
-	return o7_int(ret);
+	return ret;
 }
 
 static o7_bool MakeDir(int name_len0, o7_char name[/*len0*/]) {
 	struct PlatformExec_Code cmd;
 	PlatformExec_Code_undef(&cmd);
 
-	if (o7_bl(Platform_Posix)) {
+	if (Platform_Posix) {
 		O7_ASSERT(PlatformExec_Init(&cmd, 5, (o7_char *)"mkdir") && PlatformExec_Add(&cmd, name_len0, name, 0) && PlatformExec_AddClean(&cmd, 12, (o7_char *)" 2>/dev/null"));
-	} else if (o7_bl(Platform_Windows)) {
+	} else {
+		O7_ASSERT(Platform_Windows);
 		O7_ASSERT(PlatformExec_Init(&cmd, 5, (o7_char *)"mkdir") && PlatformExec_Add(&cmd, name_len0, name, 0));
 	}
-	return o7_cmp(PlatformExec_Do(&cmd), PlatformExec_Ok_cnst) ==  0;
+	return PlatformExec_Do(&cmd) == PlatformExec_Ok_cnst;
 }
 
 static o7_bool RemoveDir(int name_len0, o7_char name[/*len0*/]) {
 	struct PlatformExec_Code cmd;
 	PlatformExec_Code_undef(&cmd);
 
-	if (o7_bl(Platform_Posix)) {
+	if (Platform_Posix) {
 		O7_ASSERT(PlatformExec_Init(&cmd, 2, (o7_char *)"rm") && PlatformExec_Add(&cmd, 2, (o7_char *)"-r", 0) && PlatformExec_Add(&cmd, name_len0, name, 0) && PlatformExec_AddClean(&cmd, 12, (o7_char *)" 2>/dev/null"));
-	} else if (o7_bl(Platform_Windows)) {
+	} else {
+		O7_ASSERT(Platform_Windows);
 		O7_ASSERT(PlatformExec_Init(&cmd, 5, (o7_char *)"rmdir") && PlatformExec_AddClean(&cmd, 5, (o7_char *)" /s/q") && PlatformExec_Add(&cmd, name_len0, name, 0));
 	}
-	return o7_cmp(PlatformExec_Do(&cmd), PlatformExec_Ok_cnst) ==  0;
+	return PlatformExec_Do(&cmd) == PlatformExec_Ok_cnst;
 }
 
 static o7_bool GetTempOutC(int dirCOut_len0, o7_char dirCOut[/*len0*/], int *len, int bin_len0, o7_char bin[/*len0*/], struct StringStore_String *name, int tmp_len0, o7_char tmp[/*len0*/]) {
-	int binLen = O7_INT_UNDEF, i = O7_INT_UNDEF;
-	o7_bool ok = O7_BOOL_UNDEF;
+	int binLen, i;
+	o7_bool ok;
 
 	(*len) = 0;
 	if (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") != 0) {
 		ok = true;
 		O7_ASSERT(StringStore_CopyCharsNull(dirCOut_len0, dirCOut, &(*len), tmp_len0, tmp));
-	} else if (o7_bl(Platform_Posix)) {
+	} else if (Platform_Posix) {
 		ok = true;
 		O7_ASSERT(StringStore_CopyCharsNull(dirCOut_len0, dirCOut, &(*len), 9, (o7_char *)"/tmp/o7c-") && StringStore_CopyToChars(dirCOut_len0, dirCOut, &(*len), &(*name)));
-	} else if (o7_bl(Platform_Windows)) {
+	} else {
+		O7_ASSERT(Platform_Windows);
 		ok = OsEnv_Get(dirCOut_len0, dirCOut, &(*len), 4, (o7_char *)"temp") && StringStore_CopyCharsNull(dirCOut_len0, dirCOut, &(*len), 5, (o7_char *)"\\o7c-") && StringStore_CopyToChars(dirCOut_len0, dirCOut, &(*len), &(*name));
 	}
 
-	if (o7_bl(ok)) {
+	if (ok) {
 		i = 0;
 		ok = MakeDir(dirCOut_len0, dirCOut);
-		if (!o7_bl(ok) && (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") == 0)) {
-			while (!o7_bl(ok) && (o7_cmp(i, 100) <  0)) {
-				if (o7_cmp(i, 0) ==  0) {
+		if (!ok && (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") == 0)) {
+			while (!ok && (i < 100)) {
+				if (i == 0) {
 					O7_ASSERT(StringStore_CopyCharsNull(dirCOut_len0, dirCOut, &(*len), 3, (o7_char *)"-00"));
 				} else {
 					dirCOut[o7_ind(dirCOut_len0, o7_sub((*len), 2))] = o7_chr(o7_add((int)(o7_char)'0', o7_div(i, 10)));
@@ -480,23 +352,23 @@ static o7_bool GetTempOutC(int dirCOut_len0, o7_char dirCOut[/*len0*/], int *len
 				i = o7_add(i, 1);
 			}
 		}
-		if (o7_bl(ok) && (bin[0] == 0x00u)) {
+		if (ok && (bin[0] == 0x00u)) {
 			binLen = 0;
-			O7_ASSERT(StringStore_CopyCharsNull(bin_len0, bin, &binLen, dirCOut_len0, dirCOut) && StringStore_CopyCharsNull(bin_len0, bin, &binLen, 2, pathSep) && StringStore_CopyToChars(bin_len0, bin, &binLen, &(*name)) && (!o7_bl(Platform_Windows) || StringStore_CopyCharsNull(bin_len0, bin, &binLen, 4, (o7_char *)".exe")));
+			O7_ASSERT(StringStore_CopyCharsNull(bin_len0, bin, &binLen, dirCOut_len0, dirCOut) && StringStore_CopyCharsNull(bin_len0, bin, &binLen, 1, PlatformExec_dirSep) && StringStore_CopyToChars(bin_len0, bin, &binLen, &(*name)) && (!Platform_Windows || StringStore_CopyCharsNull(bin_len0, bin, &binLen, 4, (o7_char *)".exe")));
 		}
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
-static int ToC(int res);
+static int ToC(int res, struct CliParser_Args *args);
 static int ToC_Bin(struct Ast_RModule *module, struct Ast_Call_s *call, struct GeneratorC_Options_s *opt, int cDirs_len0, o7_char cDirs[/*len0*/], int cc_len0, o7_char cc[/*len0*/], int outC_len0, o7_char outC[/*len0*/], int bin_len0, o7_char bin[/*len0*/], struct PlatformExec_Code *cmd, int tmp_len0, o7_char tmp[/*len0*/]) {
-	int outCLen = O7_INT_UNDEF, ret = O7_INT_UNDEF, i = O7_INT_UNDEF, nameLen = O7_INT_UNDEF, cDirsLen = O7_INT_UNDEF;
-	o7_bool ok = O7_BOOL_UNDEF;
+	int outCLen, ret, i, nameLen, cDirsLen;
+	o7_bool ok;
 	o7_char name[512];
 	memset(&name, 0, sizeof(name));
 
 	ok = GetTempOutC(outC_len0, outC, &outCLen, bin_len0, bin, &O7_REF(module)->_._.name, tmp_len0, tmp);
-	if (!o7_bl(ok)) {
+	if (!ok) {
 		ret = CliParser_ErrCantCreateOutDir_cnst;
 	} else {
 		if (cc[0] == 0x00u) {
@@ -506,31 +378,31 @@ static int ToC_Bin(struct Ast_RModule *module, struct Ast_Call_s *call, struct G
 		}
 		ret = GenerateC(module, true, call, opt, outC_len0, outC, outCLen, cDirs_len0, cDirs, &(*cmd));
 		outC[o7_ind(outC_len0, outCLen)] = 0x00u;
-		if (o7_cmp(ret, ErrNo_cnst) ==  0) {
-			ok = o7_bl(ok) && PlatformExec_Add(&(*cmd), 2, (o7_char *)"-o", 0) && PlatformExec_Add(&(*cmd), bin_len0, bin, 0) && PlatformExec_Add(&(*cmd), 2, (o7_char *)"-I", 0) && PlatformExec_Add(&(*cmd), outC_len0, outC, 0);
+		if (ret == ErrNo_cnst) {
+			ok = ok && PlatformExec_Add(&(*cmd), 2, (o7_char *)"-o", 0) && PlatformExec_Add(&(*cmd), bin_len0, bin, 0) && PlatformExec_Add(&(*cmd), 2, (o7_char *)"-I", 0) && PlatformExec_Add(&(*cmd), outC_len0, outC, 0);
 			i = 0;
-			while (o7_bl(ok) && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
+			while (ok && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
 				nameLen = 0;
 				cDirsLen = StringStore_CalcLen(cDirs_len0, cDirs, i);
-				ok = PlatformExec_Add(&(*cmd), 2, (o7_char *)"-I", 0) && PlatformExec_Add(&(*cmd), cDirs_len0, cDirs, i) && StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 2, pathSep) && StringStore_CopyCharsNull(512, name, &nameLen, 4, (o7_char *)"o7.c") && (!CFiles_Exist(512, name, 0) || PlatformExec_Add(&(*cmd), 512, name, 0));
+				ok = PlatformExec_Add(&(*cmd), 2, (o7_char *)"-I", 0) && PlatformExec_Add(&(*cmd), cDirs_len0, cDirs, i) && StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 1, PlatformExec_dirSep) && StringStore_CopyCharsNull(512, name, &nameLen, 4, (o7_char *)"o7.c") && (!CFiles_Exist(512, name, 0) || PlatformExec_Add(&(*cmd), 512, name, 0));
 				i = o7_add(o7_add(i, cDirsLen), 1);
 			}
-			ok = o7_bl(ok) && (!o7_bl(Platform_Posix) || PlatformExec_Add(&(*cmd), 3, (o7_char *)"-lm", 0));
+			ok = ok && (!Platform_Posix || PlatformExec_Add(&(*cmd), 3, (o7_char *)"-lm", 0));
 			PlatformExec_Log(&(*cmd));
 			/* TODO */
-			O7_ASSERT(o7_bl(ok));
-			if (o7_cmp(PlatformExec_Do(&(*cmd)), PlatformExec_Ok_cnst) !=  0) {
+			O7_ASSERT(ok);
+			if (PlatformExec_Do(&(*cmd)) != PlatformExec_Ok_cnst) {
 				ret = CliParser_ErrCCompiler_cnst;
 			}
 		}
 	}
-	return o7_int(ret);
+	return ret;
 }
 
 static int ToC_Run(int bin_len0, o7_char bin[/*len0*/], int arg) {
 	struct PlatformExec_Code cmd;
 	o7_char buf[65536];
-	int len = O7_INT_UNDEF, ret = O7_INT_UNDEF;
+	int len, ret;
 	PlatformExec_Code_undef(&cmd);
 	memset(&buf, 0, sizeof(buf));
 
@@ -538,171 +410,111 @@ static int ToC_Run(int bin_len0, o7_char bin[/*len0*/], int arg) {
 	if (PlatformExec_Init(&cmd, bin_len0, bin)) {
 		arg = o7_add(arg, 1);
 		len = 0;
-		while ((o7_cmp(arg, CLI_count) <  0) && CLI_Get(65536, buf, &len, arg) && PlatformExec_Add(&cmd, 65536, buf, 0)) {
+		while ((o7_cmp(arg, CLI_count) < 0) && CLI_Get(65536, buf, &len, arg) && PlatformExec_Add(&cmd, 65536, buf, 0)) {
 			len = 0;
 			arg = o7_add(arg, 1);
 		}
-		if (o7_cmp(arg, CLI_count) >=  0) {
+		if (o7_cmp(arg, CLI_count) >= 0) {
 			CLI_SetExitCode(PlatformExec_Do(&cmd));
 			ret = ErrNo_cnst;
 		}
 	}
-	return o7_int(ret);
+	return ret;
 }
 
-static int ToC_ParseCommand(int src_len0, o7_char src[/*len0*/], o7_bool *script);
-static void ToC_ParseCommand_Empty(int src_len0, o7_char src[/*len0*/], int *j) {
-	while ((src[o7_ind(src_len0, (*j))] == (o7_char)' ') || (src[o7_ind(src_len0, (*j))] == 0x09u)) {
-		(*j) = o7_add((*j), 1);
-	}
-}
-
-static int ToC_ParseCommand(int src_len0, o7_char src[/*len0*/], o7_bool *script) {
-	int i = O7_INT_UNDEF, j = O7_INT_UNDEF;
-
-	i = 0;
-	while ((src[o7_ind(src_len0, i)] != 0x00u) && (src[o7_ind(src_len0, i)] != (o7_char)'.')) {
-		i = o7_add(i, 1);
-	}
-	if (src[o7_ind(src_len0, i)] == (o7_char)'.') {
-		j = o7_add(i, 1);
-		ToC_ParseCommand_Empty(src_len0, src, &j);
-		while (((o7_char)'a' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'z') || ((o7_char)'A' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'Z') || ((o7_char)'0' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'9')) {
-			j = o7_add(j, 1);
-		}
-		ToC_ParseCommand_Empty(src_len0, src, &j);
-		(*script) = src[o7_ind(src_len0, j)] != 0x00u;
-	} else {
-		(*script) = false;
-	}
-	return o7_int(i);
-}
-
-static int ToC(int res) {
-	int ret = O7_INT_UNDEF;
-	o7_char src[65536];
-	int srcLen = O7_INT_UNDEF, srcNameEnd = O7_INT_UNDEF;
-	o7_char outC[1024], resPath[1024], tmp[1024];
-	int resPathLen = O7_INT_UNDEF;
-	o7_char cDirs[4096], cc[4096];
-	struct ModuleProvider_s *mp = NULL;
-	struct Ast_RModule *module = NULL;
-	struct GeneratorC_Options_s *opt = NULL;
-	int init = O7_INT_UNDEF, arg = O7_INT_UNDEF;
-	struct Ast_Call_s *call = NULL;
-	o7_bool script = O7_BOOL_UNDEF;
+static int ToC(int res, struct CliParser_Args *args) {
+	int ret, len;
+	o7_char outC[1024];
+	struct ModuleProvider_s *mp;
+	struct Ast_RModule *module;
+	struct GeneratorC_Options_s *opt;
+	struct Ast_Call_s *call;
 	struct PlatformExec_Code exec;
-	memset(&src, 0, sizeof(src));
 	memset(&outC, 0, sizeof(outC));
-	memset(&resPath, 0, sizeof(resPath));
-	memset(&tmp, 0, sizeof(tmp));
-	memset(&cDirs, 0, sizeof(cDirs));
-	memset(&cc, 0, sizeof(cc));
 	PlatformExec_Code_undef(&exec);
 
-	O7_ASSERT(o7_in(res, O7_SET(ResultC_cnst, ResultRun_cnst)));
+	O7_ASSERT(o7_in(res, O7_SET(CliParser_ResultC_cnst, CliParser_ResultRun_cnst)));
 
-	srcLen = 0;
-	arg = o7_add(3, (int)(o7_cmp(res, ResultRun_cnst) !=  0));
-	if (o7_cmp(CLI_count, arg) <  0) {
-		ret = CliParser_ErrNotEnoughArgs_cnst;
-	} else if (!CLI_Get(65536, src, &srcLen, 2)) {
-		ret = CliParser_ErrTooLongSourceName_cnst;
+	NewProvider(&mp);
+	memcpy(O7_REF(mp)->fileExt, (o7_char *)".mod", sizeof(".mod"));
+	/* TODO */
+	O7_REF(mp)->extLen = StringStore_CalcLen(32, O7_REF(mp)->fileExt, 0);
+	len = 0;
+	O7_ASSERT(StringStore_CopyChars(4096, O7_REF(mp)->path, &len, 4096, (*args).modPath, 0, (*args).modPathLen));
+	O7_REF(mp)->sing = (*args).sing;
+	if (o7_bl((*args).script)) {
+		module = Parser_Script(65536, (*args).src, &mp->_, &O7_REF(mp)->opt);
+		AddModule(mp, module);
 	} else {
-		NewProvider(&mp);
-		memcpy(O7_REF(mp)->fileExt, (o7_char *)".mod", sizeof(".mod"));
-		/* TODO */
-		O7_REF(mp)->extLen = StringStore_CalcLen(32, O7_REF(mp)->fileExt, 0);
-		ret = CopyPath(4096, O7_REF(mp)->path, &O7_REF(mp)->sing, 4096, cDirs, 4096, cc, &init, 1024, tmp, &arg);
-		if (o7_cmp(ret, ErrNo_cnst) ==  0) {
-			srcNameEnd = ToC_ParseCommand(65536, src, &script);
-			if (o7_bl(script)) {
-				module = Parser_Script(65536, src, &mp->_, &O7_REF(mp)->opt);
-				AddModule(mp, module);
-			} else {
-				module = GetModule(&mp->_, NULL, 65536, src, 0, srcNameEnd);
+		module = GetModule(&mp->_, NULL, 65536, (*args).src, 0, (*args).srcNameEnd);
+	}
+	if (module == NULL) {
+		ret = ErrParse_cnst;
+	} else if (O7_REF(module)->errors != NULL) {
+		ret = ErrParse_cnst;
+		PrintErrors(O7_REF(O7_REF(mp)->modules.first)->next);
+	} else {
+		if (!o7_bl((*args).script) && (o7_cmp((*args).srcNameEnd, o7_sub((*args).srcLen, 1)) < 0)) {
+			ret = Ast_CommandGet(&call, module, 65536, (*args).src, o7_add((*args).srcNameEnd, 1), o7_sub((*args).srcLen, 1));
+		} else {
+			ret = ErrNo_cnst;
+			call = NULL;
+		}
+		if (ret != Ast_ErrNo_cnst) {
+			ret = ErrParse_cnst;
+			MessageEn_AstError(ret);
+			Out_Ln();
+		} else {
+			opt = GeneratorC_DefaultOptions();
+			if (o7_cmp((*args).init, 0) >= 0) {
+				O7_REF(opt)->varInit = o7_int((*args).init);
 			}
-			resPathLen = 0;
-			resPath[0] = 0x00u;
-			if (module == NULL) {
-				ret = ErrParse_cnst;
-			} else if (O7_REF(module)->errors != NULL) {
-				PrintErrors(O7_REF(O7_REF(mp)->modules.first)->next);
-				ret = ErrParse_cnst;
-			} else if ((o7_cmp(res, ResultRun_cnst) !=  0) && !CLI_Get(1024, resPath, &resPathLen, 3)) {
-				ret = CliParser_ErrTooLongOutName_cnst;
-			} else {
-				if (!o7_bl(script) && (o7_cmp(srcNameEnd, o7_sub(srcLen, 1)) <  0)) {
-					ret = Ast_CommandGet(&call, module, 65536, src, o7_add(srcNameEnd, 1), o7_sub(srcLen, 1));
-				} else {
-					call = NULL;
+			O7_ASSERT(PlatformExec_Init(&exec, 0, (o7_char *)""));
+			switch (res) {
+			case 2:
+				(*args).resPathLen = o7_sub((*args).resPathLen, 1);
+				ret = GenerateC(module, (call != NULL) || o7_bl((*args).script), call, opt, 1024, (*args).resPath, (*args).resPathLen, 4096, (*args).cDirs, &exec);
+				break;
+			case 3:
+			case 4:
+				ret = ToC_Bin(module, call, opt, 4096, (*args).cDirs, 4096, (*args).cc, 1024, outC, 1024, (*args).resPath, &exec, 1024, (*args).tmp);
+				if ((res == CliParser_ResultRun_cnst) && (ret == ErrNo_cnst)) {
+					ret = ToC_Run(1024, (*args).resPath, (*args).arg);
 				}
-				if (o7_cmp(ret, Ast_ErrNo_cnst) !=  0) {
-					MessageEn_AstError(ret);
-					Out_Ln();
-					ret = ErrParse_cnst;
-				} else {
-					opt = GeneratorC_DefaultOptions();
-					if (o7_cmp(init, 0) >=  0) {
-						O7_REF(opt)->varInit = o7_int(init);
-					}
-					O7_ASSERT(PlatformExec_Init(&exec, 0, (o7_char *)""));
-					switch (res) {
-					case 0:
-						resPathLen = o7_sub(resPathLen, 1);
-						ret = GenerateC(module, (call != NULL) || o7_bl(script), call, opt, 1024, resPath, resPathLen, 4096, cDirs, &exec);
-						break;
-					case 1:
-					case 2:
-						ret = ToC_Bin(module, call, opt, 4096, cDirs, 4096, cc, 1024, outC, 1024, resPath, &exec, 1024, tmp);
-						if ((o7_cmp(res, ResultRun_cnst) ==  0) && (o7_cmp(ret, ErrNo_cnst) ==  0)) {
-							ret = ToC_Run(1024, resPath, arg);
-						}
-						if ((o7_strcmp(1024, tmp, 0, (o7_char *)"") == 0) && !RemoveDir(1024, outC) && (o7_cmp(ret, ErrNo_cnst) ==  0)) {
-							ret = CliParser_ErrCantRemoveOutDir_cnst;
-						}
-						break;
-					default:
-						abort();
-						break;
-					}
+				if ((o7_strcmp(1024, (*args).tmp, 0, (o7_char *)"") == 0) && !RemoveDir(1024, outC) && (ret == ErrNo_cnst)) {
+					ret = CliParser_ErrCantRemoveOutDir_cnst;
 				}
+				break;
+			default:
+				o7_case_fail(res);
+				break;
 			}
 		}
 	}
-	return o7_int(ret);
+	return ret;
+}
+
+static o7_bool Handle(struct CliParser_Args *args, int *ret) {
+	if ((*ret) == CliParser_CmdHelp_cnst) {
+		MessageEn_Usage();
+	} else {
+		(*ret) = ToC((*ret), &(*args));
+	}
+	return (*ret) >= 0;
 }
 
 static void Translator_Start(void) {
-	o7_char cmd[1024];
-	int cmdLen = O7_INT_UNDEF, ret = O7_INT_UNDEF;
-	memset(&cmd, 0, sizeof(cmd));
+	int ret;
+	struct CliParser_Args args;
+	CliParser_Args_undef(&args);
 
 	Out_Open();
 	Log_Turn(false);
 
-	cmdLen = 0;
-	if ((o7_cmp(CLI_count, 1) <=  0) || !CLI_Get(1024, cmd, &cmdLen, 1)) {
-		ret = CliParser_ErrWrongArgs_cnst;
-	} else {
-		if (o7_strcmp(1024, cmd, 4, (o7_char *)"help") == 0) {
-			ret = ErrNo_cnst;
-			MessageEn_Usage();
-			Out_Ln();
-		} else if (o7_strcmp(1024, cmd, 4, (o7_char *)"to-c") == 0) {
-			ret = ToC(ResultC_cnst);
-		} else if (o7_strcmp(1024, cmd, 6, (o7_char *)"to-bin") == 0) {
-			ret = ToC(ResultBin_cnst);
-		} else if (o7_strcmp(1024, cmd, 3, (o7_char *)"run") == 0) {
-			ret = ToC(ResultRun_cnst);
-		} else {
-			ret = CliParser_ErrUnknownCommand_cnst;
-		}
-	}
-	if (o7_cmp(ret, ErrNo_cnst) !=  0) {
+	if (!CliParser_Parse(&args, &ret) || !Handle(&args, &ret)) {
 		CLI_SetExitCode(1);
-		if (o7_cmp(ret, ErrParse_cnst) !=  0) {
-			MessageEn_CliError(ret, 1024, cmd);
+		if (ret != ErrParse_cnst) {
+			MessageEn_CliError(ret, 32, args.cmd);
 		}
 	}
 }
@@ -730,13 +542,6 @@ extern int main(int argc, char *argv[]) {
 
 	o7_tag_init(ModuleProvider_s_tag, Ast_RProvider_tag);
 
-	if (o7_bl(Platform_Posix)) {
-		memcpy(pathSep, (o7_char *)"\x2F", 1);
-	} else if (o7_bl(Platform_Windows)) {
-		memcpy(pathSep, (o7_char *)"\x5C", 1);
-	} else {
-		O7_ASSERT(false);
-	}
 	Translator_Start();
 	return o7_exit_code;
 }

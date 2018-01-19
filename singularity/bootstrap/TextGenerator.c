@@ -31,10 +31,10 @@ extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, struct TextGenera
 }
 
 extern int TextGenerator_CalcLen(int str_len0, o7_char str[/*len0*/], int ofs) {
-	int i = O7_INT_UNDEF;
+	int i;
 
-	i = o7_int(ofs);
-	while ((o7_cmp(i, str_len0) <  0) && (str[o7_ind(str_len0, i)] != 0x00u)) {
+	i = ofs;
+	while ((i < str_len0) && (str[o7_ind(str_len0, i)] != 0x00u)) {
 		i = o7_add(i, 1);
 	}
 	return o7_sub(i, ofs);
@@ -44,9 +44,9 @@ static void Chars(struct TextGenerator_Out *gen, o7_char ch, int count) {
 	o7_char c[1];
 	memset(&c, 0, sizeof(c));
 
-	O7_ASSERT(o7_cmp(0, count) <=  0);
+	O7_ASSERT(0 <= count);
 	c[0] = ch;
-	while (o7_cmp(count, 0) >  0) {
+	while (count > 0) {
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, c, 0, 1));
 		count = o7_sub(count, 1);
 	}
@@ -86,7 +86,7 @@ extern void TextGenerator_IndentOpen(struct TextGenerator_Out *gen) {
 }
 
 extern void TextGenerator_IndentClose(struct TextGenerator_Out *gen) {
-	O7_ASSERT(o7_cmp(0, (*gen).tabs) <  0);
+	O7_ASSERT(o7_cmp(0, (*gen).tabs) < 0);
 	(*gen).tabs = o7_sub((*gen).tabs, 1);
 }
 
@@ -115,13 +115,13 @@ extern void TextGenerator_Data(struct TextGenerator_Out *g, int data_len0, o7_ch
 }
 
 extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct StringStore_String *str) {
-	int i = O7_INT_UNDEF, last = O7_INT_UNDEF;
-	struct StringStore_Block_s *block = NULL;
+	int i, last;
+	struct StringStore_Block_s *block;
 
 	NewLine(&(*gen));
 	block = (*str).block;
 	i = o7_int((*str).ofs);
-	last = o7_int(i);
+	last = i;
 	O7_ASSERT(O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == (o7_char)'"');
 	i = o7_add(i, 1);
 	while (1) if (O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
@@ -133,7 +133,7 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct 
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, StringStore_BlockSize_cnst + 1, O7_REF(block)->s, last, o7_add(o7_sub(i, last), 1)));
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, (o7_char *)"\x5C", 0, 1));
 		i = o7_add(i, 1);
-		last = o7_int(i);
+		last = i;
 	} else if (O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
 		i = o7_add(i, 1);
 	} else break;
@@ -143,13 +143,13 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct 
 
 extern void TextGenerator_Int(struct TextGenerator_Out *gen, int int_) {
 	o7_char buf[14];
-	int i = O7_INT_UNDEF;
-	o7_bool sign = O7_BOOL_UNDEF;
+	int i;
+	o7_bool sign;
 	memset(&buf, 0, sizeof(buf));
 
 	NewLine(&(*gen));
-	sign = o7_cmp(int_, 0) <  0;
-	if (o7_bl(sign)) {
+	sign = int_ < 0;
+	if (sign) {
 		int_ = o7_sub(0, int_);
 	}
 	i = O7_LEN(buf);
@@ -157,8 +157,8 @@ extern void TextGenerator_Int(struct TextGenerator_Out *gen, int int_) {
 		i = o7_sub(i, 1);
 		buf[o7_ind(14, i)] = o7_chr(o7_add((int)(o7_char)'0', o7_mod(int_, 10)));
 		int_ = o7_div(int_, 10);
-	} while (!(o7_cmp(int_, 0) ==  0));
-	if (o7_bl(sign)) {
+	} while (!(int_ == 0));
+	if (sign) {
 		i = o7_sub(i, 1);
 		buf[o7_ind(14, i)] = (o7_char)'-';
 	}

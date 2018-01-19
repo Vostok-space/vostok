@@ -31,128 +31,111 @@
 
 #define Ast_ErrNo_cnst 0
 #define Ast_ErrImportNameDuplicate_cnst (-1)
-#define Ast_ErrImportSelf_cnst (-89)
-#define Ast_ErrImportLoop_cnst (-90)
-#define Ast_ErrDeclarationNameDuplicate_cnst (-2)
-#define Ast_ErrDeclarationNameHide_cnst (-8)
-/* TODO */
-#define Ast_ErrPredefinedNameHide_cnst (-101)
-/* TODO */
-#define Ast_ErrMultExprDifferentTypes_cnst (-3)
-#define Ast_ErrDivExprDifferentTypes_cnst (-4)
-#define Ast_ErrNotBoolInLogicExpr_cnst (-5)
-#define Ast_ErrNotIntInDivOrMod_cnst (-6)
-#define Ast_ErrNotRealTypeForRealDiv_cnst (-7)
-#define Ast_ErrNotIntSetElem_cnst (-9)
-/*TODO*/
-#define Ast_ErrSetElemOutOfRange_cnst (-10)
-#define Ast_ErrSetLeftElemBiggerRightElem_cnst (-11)
-#define Ast_ErrSetElemMaxNotConvertToInt_cnst (-35)
-/*TODO*/
-#define Ast_ErrAddExprDifferenTypes_cnst (-12)
-#define Ast_ErrNotNumberAndNotSetInMult_cnst (-13)
-#define Ast_ErrNotNumberAndNotSetInAdd_cnst (-14)
-#define Ast_ErrSignForBool_cnst (-15)
-#define Ast_ErrRelationExprDifferenTypes_cnst (-17)
-#define Ast_ErrExprInWrongTypes_cnst (-18)
-#define Ast_ErrExprInRightNotSet_cnst (-19)
-#define Ast_ErrExprInLeftNotInteger_cnst (-20)
-#define Ast_ErrRelIncompatibleType_cnst (-21)
-#define Ast_ErrIsExtTypeNotRecord_cnst (-22)
-#define Ast_ErrIsExtVarNotRecord_cnst (-23)
-#define Ast_ErrIsExtMeshupPtrAndRecord_cnst (-93)
-/*TODO*/
-#define Ast_ErrIsExtExpectRecordExt_cnst (-94)
-/*TODO*/
-#define Ast_ErrConstDeclExprNotConst_cnst (-24)
-#define Ast_ErrAssignIncompatibleType_cnst (-25)
-#define Ast_ErrAssignExpectVarParam_cnst (-84)
-/*TODO*/
-#define Ast_ErrCallNotProc_cnst (-26)
-#define Ast_ErrCallExprWithoutReturn_cnst (-27)
-#define Ast_ErrCallIgnoredReturn_cnst (-28)
-#define Ast_ErrCallExcessParam_cnst (-29)
-#define Ast_ErrCallIncompatibleParamType_cnst (-30)
-#define Ast_ErrCallExpectVarParam_cnst (-31)
-#define Ast_ErrCallParamsNotEnough_cnst (-32)
-#define Ast_ErrCallVarPointerTypeNotSame_cnst (-58)
-/*TODO*/
-#define Ast_ErrCaseExprNotIntOrChar_cnst (-33)
-#define Ast_ErrCaseLabelNotIntOrChar_cnst (-68)
-/*TODO*/
-#define Ast_ErrCaseElemExprTypeMismatch_cnst (-34)
-#define Ast_ErrCaseElemDuplicate_cnst (-36)
-#define Ast_ErrCaseRangeLabelsTypeMismatch_cnst (-37)
-#define Ast_ErrCaseLabelLeftNotLessRight_cnst (-38)
-#define Ast_ErrCaseLabelNotConst_cnst (-39)
-#define Ast_ErrCaseElseAlreadyExist_cnst (-99)
-#define Ast_ErrProcHasNoReturn_cnst (-40)
-#define Ast_ErrReturnIncompatibleType_cnst (-41)
-#define Ast_ErrExpectReturn_cnst (-42)
-#define Ast_ErrDeclarationNotFound_cnst (-43)
-#define Ast_ErrDeclarationIsPrivate_cnst (-66)
-/*TODO*/
-#define Ast_ErrConstRecursive_cnst (-44)
-#define Ast_ErrImportModuleNotFound_cnst (-45)
-#define Ast_ErrImportModuleWithError_cnst (-46)
-#define Ast_ErrDerefToNotPointer_cnst (-47)
-#define Ast_ErrArrayLenLess1_cnst (-91)
-/*TODO*/
-#define Ast_ErrArrayLenTooBig_cnst (-92)
-/*TODO*/
-#define Ast_ErrArrayItemToNotArray_cnst (-48)
-#define Ast_ErrArrayIndexNotInt_cnst (-49)
-#define Ast_ErrArrayIndexNegative_cnst (-50)
-#define Ast_ErrArrayIndexOutOfRange_cnst (-51)
-#define Ast_ErrGuardExpectRecordExt_cnst (-52)
-#define Ast_ErrGuardExpectPointerExt_cnst (-53)
-#define Ast_ErrGuardedTypeNotExtensible_cnst (-54)
-#define Ast_ErrDotSelectorToNotRecord_cnst (-55)
-#define Ast_ErrDeclarationNotVar_cnst (-56)
-#define Ast_ErrForIteratorNotInteger_cnst (-57)
-/*-58*/
-#define Ast_ErrNotBoolInIfCondition_cnst (-59)
-#define Ast_ErrNotBoolInWhileCondition_cnst (-60)
-#define Ast_ErrWhileConditionAlwaysFalse_cnst (-61)
-#define Ast_ErrWhileConditionAlwaysTrue_cnst (-62)
-#define Ast_ErrNotBoolInUntil_cnst (-63)
-#define Ast_ErrUntilAlwaysFalse_cnst (-64)
-#define Ast_ErrUntilAlwaysTrue_cnst (-65)
-/*-66*/
-#define Ast_ErrNegateNotBool_cnst (-67)
-/*-68*/
-#define Ast_ErrConstAddOverflow_cnst (-69)
-#define Ast_ErrConstSubOverflow_cnst (-70)
-#define Ast_ErrConstMultOverflow_cnst (-71)
-#define Ast_ErrComDivByZero_cnst (-72)
+#define Ast_ErrImportSelf_cnst (-2)
+#define Ast_ErrImportLoop_cnst (-3)
+#define Ast_ErrDeclarationNameDuplicate_cnst (-4)
+#define Ast_ErrDeclarationNameHide_cnst (-5)
+#define Ast_ErrPredefinedNameHide_cnst (-6)
+#define Ast_ErrMultExprDifferentTypes_cnst (-7)
+#define Ast_ErrDivExprDifferentTypes_cnst (-8)
+#define Ast_ErrNotBoolInLogicExpr_cnst (-9)
+#define Ast_ErrNotIntInDivOrMod_cnst (-10)
+#define Ast_ErrNotRealTypeForRealDiv_cnst (-11)
+#define Ast_ErrNotIntSetElem_cnst (-12)
+#define Ast_ErrSetElemOutOfRange_cnst (-13)
+#define Ast_ErrSetLeftElemBiggerRightElem_cnst (-14)
+#define Ast_ErrSetElemMaxNotConvertToInt_cnst (-15)
+#define Ast_ErrAddExprDifferenTypes_cnst (-16)
+#define Ast_ErrNotNumberAndNotSetInMult_cnst (-17)
+#define Ast_ErrNotNumberAndNotSetInAdd_cnst (-18)
+#define Ast_ErrSignForBool_cnst (-19)
+#define Ast_ErrRelationExprDifferenTypes_cnst (-20)
+#define Ast_ErrExprInWrongTypes_cnst (-21)
+#define Ast_ErrExprInRightNotSet_cnst (-22)
+#define Ast_ErrExprInLeftNotInteger_cnst (-23)
+#define Ast_ErrRelIncompatibleType_cnst (-24)
+#define Ast_ErrIsExtTypeNotRecord_cnst (-25)
+#define Ast_ErrIsExtVarNotRecord_cnst (-26)
+#define Ast_ErrIsExtMeshupPtrAndRecord_cnst (-27)
+#define Ast_ErrIsExtExpectRecordExt_cnst (-28)
+#define Ast_ErrConstDeclExprNotConst_cnst (-29)
+#define Ast_ErrAssignIncompatibleType_cnst (-30)
+#define Ast_ErrAssignExpectVarParam_cnst (-31)
+#define Ast_ErrCallNotProc_cnst (-32)
+#define Ast_ErrCallExprWithoutReturn_cnst (-33)
+#define Ast_ErrCallIgnoredReturn_cnst (-34)
+#define Ast_ErrCallExcessParam_cnst (-35)
+#define Ast_ErrCallIncompatibleParamType_cnst (-36)
+#define Ast_ErrCallExpectVarParam_cnst (-37)
+#define Ast_ErrCallParamsNotEnough_cnst (-38)
+#define Ast_ErrCallVarPointerTypeNotSame_cnst (-39)
+#define Ast_ErrCaseExprNotIntOrChar_cnst (-40)
+#define Ast_ErrCaseLabelNotIntOrChar_cnst (-41)
+#define Ast_ErrCaseElemExprTypeMismatch_cnst (-42)
+#define Ast_ErrCaseElemDuplicate_cnst (-43)
+#define Ast_ErrCaseRangeLabelsTypeMismatch_cnst (-44)
+#define Ast_ErrCaseLabelLeftNotLessRight_cnst (-45)
+#define Ast_ErrCaseLabelNotConst_cnst (-46)
+#define Ast_ErrCaseElseAlreadyExist_cnst (-47)
+#define Ast_ErrProcHasNoReturn_cnst (-48)
+#define Ast_ErrReturnIncompatibleType_cnst (-49)
+#define Ast_ErrExpectReturn_cnst (-50)
+#define Ast_ErrDeclarationNotFound_cnst (-51)
+#define Ast_ErrDeclarationIsPrivate_cnst (-52)
+#define Ast_ErrConstRecursive_cnst (-53)
+#define Ast_ErrImportModuleNotFound_cnst (-54)
+#define Ast_ErrImportModuleWithError_cnst (-55)
+#define Ast_ErrDerefToNotPointer_cnst (-56)
+#define Ast_ErrArrayLenLess1_cnst (-57)
+#define Ast_ErrArrayLenTooBig_cnst (-58)
+#define Ast_ErrArrayItemToNotArray_cnst (-59)
+#define Ast_ErrArrayIndexNotInt_cnst (-60)
+#define Ast_ErrArrayIndexNegative_cnst (-61)
+#define Ast_ErrArrayIndexOutOfRange_cnst (-62)
+#define Ast_ErrGuardExpectRecordExt_cnst (-63)
+#define Ast_ErrGuardExpectPointerExt_cnst (-64)
+#define Ast_ErrGuardedTypeNotExtensible_cnst (-65)
+#define Ast_ErrDotSelectorToNotRecord_cnst (-66)
+#define Ast_ErrDeclarationNotVar_cnst (-67)
+#define Ast_ErrForIteratorNotInteger_cnst (-68)
+#define Ast_ErrNotBoolInIfCondition_cnst (-69)
+#define Ast_ErrNotBoolInWhileCondition_cnst (-70)
+#define Ast_ErrWhileConditionAlwaysFalse_cnst (-71)
+#define Ast_ErrWhileConditionAlwaysTrue_cnst (-72)
+#define Ast_ErrNotBoolInUntil_cnst (-73)
+#define Ast_ErrUntilAlwaysFalse_cnst (-74)
+#define Ast_ErrUntilAlwaysTrue_cnst (-75)
+#define Ast_ErrNegateNotBool_cnst (-76)
+#define Ast_ErrConstAddOverflow_cnst (-77)
+#define Ast_ErrConstSubOverflow_cnst (-78)
+#define Ast_ErrConstMultOverflow_cnst (-79)
+#define Ast_ErrComDivByZero_cnst (-80)
 
-#define Ast_ErrValueOutOfRangeOfByte_cnst (-73)
-#define Ast_ErrValueOutOfRangeOfChar_cnst (-74)
+#define Ast_ErrValueOutOfRangeOfByte_cnst (-81)
+#define Ast_ErrValueOutOfRangeOfChar_cnst (-82)
 
-#define Ast_ErrExpectIntExpr_cnst (-75)
-#define Ast_ErrExpectConstIntExpr_cnst (-76)
-#define Ast_ErrForByZero_cnst (-77)
-#define Ast_ErrByShouldBePositive_cnst (-78)
-#define Ast_ErrByShouldBeNegative_cnst (-79)
-#define Ast_ErrForPossibleOverflow_cnst (-80)
+#define Ast_ErrExpectIntExpr_cnst (-83)
+#define Ast_ErrExpectConstIntExpr_cnst (-84)
+#define Ast_ErrForByZero_cnst (-85)
+#define Ast_ErrByShouldBePositive_cnst (-86)
+#define Ast_ErrByShouldBeNegative_cnst (-87)
+#define Ast_ErrForPossibleOverflow_cnst (-88)
 
-#define Ast_ErrVarUninitialized_cnst (-81)
+#define Ast_ErrVarUninitialized_cnst (-89)
+#define Ast_ErrVarMayUninitialized_cnst (-90)
 
-#define Ast_ErrDeclarationNotProc_cnst (-82)
-#define Ast_ErrProcNotCommandHaveReturn_cnst (-83)
-/*-84*/
-#define Ast_ErrProcNotCommandHaveParams_cnst (-85)
+#define Ast_ErrDeclarationNotProc_cnst (-91)
+#define Ast_ErrProcNotCommandHaveReturn_cnst (-92)
+#define Ast_ErrProcNotCommandHaveParams_cnst (-93)
 
-#define Ast_ErrReturnTypeArrayOrRecord_cnst (-86)
-#define Ast_ErrRecordForwardUndefined_cnst (-87)
-#define Ast_ErrPointerToNotRecord_cnst (-88)
-#define Ast_ErrVarOfRecordForward_cnst (-96)
-#define Ast_ErrArrayTypeOfRecordForward_cnst (-97)
-/*-89 .. -94*/
-#define Ast_ErrAssertConstFalse_cnst (-95)
-#define Ast_ErrDeclarationUnused_cnst (-98)
-/*-99 .. 101*/
-#define Ast_ErrProcNestedTooDeep_cnst 102
+#define Ast_ErrReturnTypeArrayOrRecord_cnst (-94)
+#define Ast_ErrRecordForwardUndefined_cnst (-95)
+#define Ast_ErrPointerToNotRecord_cnst (-96)
+#define Ast_ErrVarOfRecordForward_cnst (-97)
+#define Ast_ErrArrayTypeOfRecordForward_cnst (-98)
+#define Ast_ErrAssertConstFalse_cnst (-99)
+#define Ast_ErrDeclarationUnused_cnst (-100)
+#define Ast_ErrProcNestedTooDeep_cnst (-101)
 
 #define Ast_ErrMin_cnst (-200)
 
@@ -193,6 +176,11 @@
 #define Ast_IdImport_cnst 32
 #define Ast_IdConst_cnst 33
 #define Ast_IdVar_cnst 34
+
+#define Ast_InitedNo_cnst 0
+#define Ast_InitedNil_cnst 1
+#define Ast_InitedValue_cnst 2
+#define Ast_InitedFail_cnst 3
 
 typedef struct Ast_RModule *Ast_Module;
 
@@ -298,10 +286,24 @@ extern void Ast_RArray_undef(struct Ast_RArray *r);
 
 typedef struct Ast_RPointer *Ast_Pointer;
 
+typedef struct Ast_VarState_s {
+	unsigned inited;
+	o7_bool used;
+	o7_bool inCondition;
+
+	struct Ast_VarState_s *root;
+	struct Ast_VarState_s *if_;
+	struct Ast_VarState_s *else_;
+} *Ast_VarState;
+#define Ast_VarState_s_tag o7_base_tag
+
+extern void Ast_VarState_s_undef(struct Ast_VarState_s *r);
+
 typedef struct Ast_RVar *Ast_Var;
 typedef struct Ast_RVar {
 	Ast_RDeclaration _;
-	o7_bool inited;
+	struct Ast_VarState_s *state;
+	o7_bool checkInit;
 } Ast_RVar;
 extern o7_tag_t Ast_RVar_tag;
 
@@ -398,6 +400,7 @@ typedef struct Ast_RModule {
 	struct Ast_Import_s *import_;
 
 	o7_bool fixed;
+	o7_bool spec;
 
 	struct Ast_Error_s *errors;
 	struct Ast_Error_s *errLast;
@@ -493,6 +496,7 @@ extern void Ast_RFactor_undef(struct Ast_RFactor *r);
 typedef struct Ast_Designator_s {
 	Ast_RFactor _;
 	struct Ast_RDeclaration *decl;
+	unsigned inited;
 	struct Ast_RSelector *sel;
 } *Ast_Designator;
 extern o7_tag_t Ast_Designator_s_tag;
@@ -775,6 +779,14 @@ extern int Ast_TypeAdd(struct Ast_RDeclarations *ds, int buf_len0, o7_char buf[/
 
 extern int Ast_CheckUndefRecordForward(struct Ast_RDeclarations *ds);
 
+extern void Ast_TurnIf(struct Ast_RDeclarations *ds);
+
+extern void Ast_TurnElse(struct Ast_RDeclarations *ds);
+
+extern void Ast_TurnFail(struct Ast_RDeclarations *ds);
+
+extern void Ast_BackFromBranch(struct Ast_RDeclarations *ds);
+
 extern int Ast_VarAdd(struct Ast_RDeclarations *ds, int buf_len0, o7_char buf[/*len0*/], int begin, int end);
 
 extern struct Ast_RProcType *Ast_ProcTypeNew(o7_bool forType);
@@ -845,7 +857,7 @@ extern int Ast_ExprNegateNew(struct Ast_ExprNegate_s **neg, struct Ast_RExpressi
 
 extern int Ast_DesignatorNew(struct Ast_Designator_s **d, struct Ast_RDeclaration *decl);
 
-extern int Ast_DesignatorUsed(struct Ast_Designator_s *d, o7_bool varParam, o7_bool inCondition);
+extern int Ast_DesignatorUsed(struct Ast_Designator_s *d, o7_bool varParam, o7_bool inLoop);
 
 extern int Ast_CheckInited(struct Ast_RDeclarations *ds);
 
@@ -897,7 +909,7 @@ extern int Ast_ProcedureEnd(struct Ast_RProcedure *p);
 
 extern int Ast_CallParamNew(struct Ast_ExprCall_s *call, struct Ast_Parameter_s **lastParam, struct Ast_RExpression *e, struct Ast_FormalParam_s **currentFormalParam);
 
-extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam_s *currentFormalParam);
+extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam_s *currentFormalParam, struct Ast_RDeclarations *ds);
 
 extern int Ast_CallNew(struct Ast_Call_s **c, struct Ast_Designator_s *des);
 
@@ -937,7 +949,7 @@ extern struct Ast_CaseElement_s *Ast_CaseElementNew(struct Ast_CaseLabel_s *labe
 
 extern int Ast_CaseElementAdd(struct Ast_Case_s *case_, struct Ast_CaseElement_s *elem);
 
-extern int Ast_AssignNew(struct Ast_Assign_s **a, struct Ast_Designator_s *des, struct Ast_RExpression *expr);
+extern int Ast_AssignNew(struct Ast_Assign_s **a, o7_bool inLoops, struct Ast_Designator_s *des, struct Ast_RExpression *expr);
 
 extern struct Ast_StatementError_s *Ast_StatementErrorNew(void);
 

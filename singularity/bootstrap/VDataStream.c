@@ -27,21 +27,21 @@ extern void VDataStream_InitIn(struct VDataStream_In *in_, VDataStream_ReadProc 
 }
 
 extern int VDataStream_Read(struct VDataStream_In *in_, o7_tag_t in__tag, int buf_len0, char unsigned buf[/*len0*/], int ofs, int count) {
-	int r = O7_INT_UNDEF;
+	int r;
 
-	O7_ASSERT((o7_cmp(0, ofs) <=  0) && (o7_cmp(0, count) <=  0) && (o7_cmp(ofs, o7_sub(buf_len0, count)) <=  0));
+	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	r = (*in_).read(&(*in_)._, in__tag, buf_len0, buf, ofs, count);
-	O7_ASSERT((o7_cmp(0, r) <=  0) && (o7_cmp(r, count) <=  0));
-	return o7_int(r);
+	O7_ASSERT((0 <= r) && (r <= count));
+	return r;
 }
 
 extern int VDataStream_ReadChars(struct VDataStream_In *in_, o7_tag_t in__tag, int buf_len0, o7_char buf[/*len0*/], int ofs, int count) {
-	int r = O7_INT_UNDEF;
+	int r;
 
-	O7_ASSERT((o7_cmp(0, ofs) <=  0) && (o7_cmp(0, count) <=  0) && (o7_cmp(ofs, o7_sub(buf_len0, count)) <=  0));
+	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	r = (*in_).readChars(&(*in_)._, in__tag, buf_len0, buf, ofs, count);
-	O7_ASSERT((o7_cmp(0, r) <=  0) && (o7_cmp(r, count) <=  0));
-	return o7_int(r);
+	O7_ASSERT((0 <= r) && (r <= count));
+	return r;
 }
 
 extern void VDataStream_InitOut(struct VDataStream_Out *out, VDataStream_WriteProc write, VDataStream_WriteCharsProc writeChars) {
@@ -51,21 +51,21 @@ extern void VDataStream_InitOut(struct VDataStream_Out *out, VDataStream_WritePr
 }
 
 extern int VDataStream_Write(struct VDataStream_Out *out, o7_tag_t out_tag, int buf_len0, char unsigned buf[/*len0*/], int ofs, int count) {
-	int w = O7_INT_UNDEF;
+	int w;
 
-	O7_ASSERT((o7_cmp(0, ofs) <=  0) && (o7_cmp(0, count) <=  0) && (o7_cmp(ofs, o7_sub(buf_len0, count)) <=  0));
+	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	w = (*out).write(&(*out)._, out_tag, buf_len0, buf, ofs, count);
-	O7_ASSERT((o7_cmp(0, w) <=  0) && (o7_cmp(w, count) <=  0));
-	return o7_int(w);
+	O7_ASSERT((0 <= w) && (w <= count));
+	return w;
 }
 
 extern int VDataStream_WriteChars(struct VDataStream_Out *out, o7_tag_t out_tag, int buf_len0, o7_char buf[/*len0*/], int ofs, int count) {
-	int w = O7_INT_UNDEF;
+	int w;
 
-	O7_ASSERT((o7_cmp(0, ofs) <=  0) && (o7_cmp(0, count) <=  0) && (o7_cmp(ofs, o7_sub(buf_len0, count)) <=  0));
+	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	w = (*out).writeChars(&(*out)._, out_tag, buf_len0, buf, ofs, count);
-	O7_ASSERT((o7_cmp(0, w) <=  0) && (o7_cmp(w, count) <=  0));
-	return o7_int(w);
+	O7_ASSERT((0 <= w) && (w <= count));
+	return w;
 }
 
 extern void VDataStream_init(void) {

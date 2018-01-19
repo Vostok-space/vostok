@@ -112,6 +112,8 @@ typedef struct GeneratorC_Generator {
 
 extern void GeneratorC_Generator_undef(struct GeneratorC_Generator *r);
 
+extern o7_bool GeneratorC_IsSpecModuleName(struct StringStore_String *n);
+
 extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void);
 
 extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module, struct Ast_RStatement *cmd, struct GeneratorC_Options_s *opt);

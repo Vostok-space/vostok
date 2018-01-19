@@ -12,10 +12,10 @@ extern o7_bool TypeLimits_IsNan(double r) {
 }
 
 extern o7_bool TypeLimits_InByteRange(int v) {
-	return (o7_cmp(0, v) <=  0) && (o7_cmp(v, TypeLimits_ByteMax_cnst) <=  0);
+	return (0 <= v) && (v <= TypeLimits_ByteMax_cnst);
 }
 
 extern o7_bool TypeLimits_InCharRange(int v) {
-	return (o7_cmp(0, v) <=  0) && (o7_cmp(v, (int)0xFFu) <=  0);
+	return (0 <= v) && (v <= (int)0xFFu);
 }
 

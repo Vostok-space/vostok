@@ -11,56 +11,56 @@
 #define Max_cnst TypeLimits_IntegerMax_cnst
 
 extern o7_bool Arithmetic_Add(int *sum, int a1, int a2) {
-	o7_bool norm = O7_BOOL_UNDEF;
+	o7_bool norm;
 
-	if (o7_cmp(a2, 0) >  0) {
-		norm = o7_cmp(a1, o7_sub(Max_cnst, a2)) <=  0;
+	if (a2 > 0) {
+		norm = a1 <= o7_sub(Max_cnst, a2);
 	} else {
-		norm = o7_cmp(a1, o7_sub(Min_cnst, a2)) >=  0;
+		norm = a1 >= o7_sub(Min_cnst, a2);
 	}
-	if (o7_bl(norm)) {
+	if (norm) {
 		(*sum) = o7_add(a1, a2);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 extern o7_bool Arithmetic_Sub(int *diff, int m, int s) {
-	o7_bool norm = O7_BOOL_UNDEF;
+	o7_bool norm;
 
-	if (o7_cmp(s, 0) >  0) {
-		norm = o7_cmp(m, o7_add(Min_cnst, s)) >=  0;
+	if (s > 0) {
+		norm = m >= o7_add(Min_cnst, s);
 	} else {
-		norm = o7_cmp(m, o7_add(Max_cnst, s)) <=  0;
+		norm = m <= o7_add(Max_cnst, s);
 	}
-	if (o7_bl(norm)) {
+	if (norm) {
 		(*diff) = o7_sub(m, s);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 extern o7_bool Arithmetic_Mul(int *prod, int m1, int m2) {
-	o7_bool norm = O7_BOOL_UNDEF;
+	o7_bool norm;
 
-	norm = (o7_cmp(m2, 0) ==  0) || (o7_cmp(abs(m1), o7_div(Max_cnst, abs(m2))) <=  0);
-	if (o7_bl(norm)) {
+	norm = (m2 == 0) || (abs(m1) <= o7_div(Max_cnst, abs(m2)));
+	if (norm) {
 		(*prod) = o7_mul(m1, m2);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 /* Для полноты картины */
 extern o7_bool Arithmetic_Div(int *frac, int n, int d) {
-	if (o7_cmp(d, 0) !=  0) {
+	if (d != 0) {
 		(*frac) = o7_div(n, d);
 	}
-	return o7_cmp(d, 0) !=  0;
+	return d != 0;
 }
 
 extern o7_bool Arithmetic_Mod(int *mod, int n, int d) {
-	if (o7_cmp(d, 0) !=  0) {
+	if (d != 0) {
 		(*mod) = o7_mod(n, d);
 	}
-	return o7_cmp(d, 0) !=  0;
+	return d != 0;
 }
 
 extern void Arithmetic_init(void) {
