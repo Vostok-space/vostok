@@ -4,6 +4,8 @@ Oberon-07 translator to C.
 
 License is LGPL for translator's code and Apache for libraries
 
+## Build:
+
 Short build help for POSIX systems:
 
 	$ make help-en
@@ -17,6 +19,19 @@ Build translator for POSIX:
 Test under POSIX:
 
 	$ make test self self-full
+
+Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
+
+	> make.cmd
+	> :: or
+	> make.cmd
+	> result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
+
+Test under POSIX and Windows
+
+	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+
+## Usage:
 
 Help about translator usage:
 
@@ -39,15 +54,10 @@ Demo web-server:
 	$ # or
 	$ go build server.go && ./server
 
-Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
-
-	> make.cmd
-
-Test under POSIX and Windows
-
-	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
-
-
+## Questions:
+Russian-speaking forums, but possible to ask in english:
+[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217)
+[zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
 
 Проект "Восток"
 =======================
@@ -63,6 +73,7 @@ Test under POSIX and Windows
 
 Код транслятора доступен под лицензией LGPL, а библиотеки - под Apache License.
 
+## Сборка:
 Короткая справка по главным целям и переменным сборочных скриптов в POSIX
 системах:
 
@@ -77,9 +88,9 @@ Test under POSIX and Windows
 	$ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 make.sh собирает из предварительно сгенерированных Си-файлов 0-ю версию
-транслятора Оберона resut/bs-o7c, которая уже может служить для обслуживания
-остальных сборочных задач: генерация исполнимого кода транслятора result/o7c
-непосредственно из исходных кодов на Обероне, а также тестирования.
+транслятора Оберона resut/bs-o7c, которая уже может обслуживать
+остальные сборочные задачи: генерацию исполнимого кода транслятора result/o7c
+непосредственно из исходных кодов на Обероне и тестирование.
 
 Тестирование в POSIX:
 
@@ -87,6 +98,19 @@ make.sh собирает из предварительно сгенериров�
 	$ # или
 	$ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
 
+Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
+каталог с которым должен быть прописан в переменной окружения PATH
+
+	> make.cmd
+	> :: или
+	> make.cmd
+	> result\bs-o7c run make.Build -infr . -m source -m . -cc tcc
+
+Тестирование в Windows с использованием Tiny C Compiler
+
+	result\bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+
+## Использование:
 Справка о способе использовании транслятора доступна при его запуске без
 параметров или с командой help:
 
@@ -111,8 +135,8 @@ make.sh собирает из предварительно сгенериров�
 где и находится файл ReadDir.mod, в котором содержится модуль ReadDir, который
 содержит экспортированную процедуру без параметров - Go.
 
-Запуск демонстрационного веб-сервера с возможностью редактировать и исполнять
-код в браузере:
+Запуск демонстрационного веб-сервера по 8080-му порту с возможностью
+редактировать и исполнять код в браузере:
 
 	$ cd demo-server
 
@@ -120,15 +144,10 @@ make.sh собирает из предварительно сгенериров�
 	$ # или
 	$ go build server.go
 	$ ./server
+	$ # или
+	$ ./server -port 8080
 
-Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
-каталог с которым должен быть прописан в переменной окружения PATH
-
-	> make.cmd
-	> :: или
-	> make.cmd
-	> result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
-
-Тестирование в POSIX и Windows с использованием Tiny C Compiler
-
-	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+## Вопросы:
+Обсуждение ведётся на следующих площадках:
+[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217)
+[zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
