@@ -25,6 +25,7 @@ import (
   "strings"
   "io/ioutil"
   "errors"
+  "runtime"
 )
 
 const (
@@ -69,13 +70,21 @@ func run(source, script string) (output []byte, err error) {
   name = getModuleName(source);
   tmp, err = saveModule(name, source);
   if err == nil {
-    bin = fmt.Sprintf("%v/%v", tmp, name);
+    if runtime.GOOS == "windows" {
+      bin = fmt.Sprintf("%v\\%v.exe", tmp, name)
+    } else {
+      bin = fmt.Sprintf("%v/%v", tmp, name)
+    }
     cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
                        "-infr", "vostok", "-m", tmp, "-cc", "tcc");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {
-      cmd = exec.Command("timeout", "5", bin);
+      if runtime.GOOS == "windows" {
+        cmd = exec.Command(bin)
+      } else {
+        cmd = exec.Command("timeout", "5", bin)
+      }
       output, err = cmd.CombinedOutput();
       fmt.Print(string(output));
     }
@@ -110,7 +119,7 @@ func main() {
     port *int;
     err error
   )
-  port = flag.Int("port", 80, "");
+  port = flag.Int("port", 8080, "");
   flag.Parse();
 
   http.Handle("/", http.FileServer(http.Dir(".")));
