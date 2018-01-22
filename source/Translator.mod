@@ -373,6 +373,23 @@ BEGIN
 	RETURN ok
 END GetTempOutC;
 
+PROCEDURE SearchCCompiler(VAR cmd: Exec.Code): BOOLEAN;
+
+	PROCEDURE Test(c, ver: ARRAY OF CHAR): BOOLEAN;
+	VAR exec: Exec.Code;
+	RETURN Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
+	     & ((Platform.Posix & Exec.AddClean(exec, ">/dev/null"))
+	     OR (Platform.Windows & Exec.AddClean(exec, ">NUL"))
+	       )
+	     & (Exec.Ok = Exec.Do(exec))
+	END Test;
+
+	RETURN Test("cc", "--version") & Exec.AddClean(cmd, "cc -g -O1")
+	    OR Test("gcc", "--version") & Exec.AddClean(cmd, "gcc -g -O1")
+	    OR Test("clang", "--version") & Exec.AddClean(cmd, "clang -g -O1")
+	    OR Test("tcc", "-v") & Exec.Add(cmd, "tcc", 0)
+END SearchCCompiler;
+
 PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
 VAR ret, len: INTEGER;
 	outC: ARRAY 1024 OF CHAR;
@@ -395,11 +412,15 @@ VAR ret, len: INTEGER;
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			IF cc[0] = Utf8.Null THEN
-				ok := Exec.AddClean(cmd, "cc -g -O1")
+				ok := SearchCCompiler(cmd)
 			ELSE
 				ok := Exec.AddClean(cmd, cc)
 			END;
-			ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd);
+			IF ~ok THEN
+				ret := Cli.ErrCantFoundCCompiler
+			ELSE
+				ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd)
+			END;
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
 				ok := ok

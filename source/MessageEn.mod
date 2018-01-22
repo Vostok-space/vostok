@@ -405,6 +405,8 @@ BEGIN
 		S("Can not create output directory")
 	| Cli.ErrCantRemoveOutDir:
 		S("Can not remove output directory")
+	| Cli.ErrCantFoundCCompiler:
+		S("Can not found C Compiler")
 	END
 END CliError;
 

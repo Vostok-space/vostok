@@ -403,6 +403,8 @@ BEGIN
 		S("Не получается создать выходной каталог")
 	| Cli.ErrCantRemoveOutDir:
 		S("Не получается удалить выходной каталог")
+	| Cli.ErrCantFoundCCompiler:
+		S("Не найден компилятор C")
 	END
 END CliError;
 

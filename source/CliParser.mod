@@ -46,6 +46,7 @@ CONST
 	ErrUnknownInit*          = -26;
 	ErrCantCreateOutDir*     = -27;
 	ErrCantRemoveOutDir*     = -28;
+	ErrCantFoundCCompiler*   = -29;
 
 TYPE
 	Args* = RECORD(V.Base)
