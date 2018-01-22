@@ -62,7 +62,7 @@ func saveModule(name, source string) (tmp string, err error) {
   return tmp, err
 }
 
-func run(source, script string) (output []byte, err error) {
+func run(source, script, cc string) (output []byte, err error) {
   var (
     name, tmp, bin string;
     cmd *exec.Cmd
@@ -76,7 +76,7 @@ func run(source, script string) (output []byte, err error) {
       bin = fmt.Sprintf("%v/%v", tmp, name)
     }
     cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
-                       "-infr", "vostok", "-m", tmp, "-cc", "tcc");
+                       "-infr", "vostok", "-m", tmp, "-cc", cc);
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {
@@ -94,7 +94,7 @@ func run(source, script string) (output []byte, err error) {
   return output, err;
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request, cc string) {
   var (
     m, s string
     out []byte
@@ -105,7 +105,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
   } else {
     m = r.FormValue("module");
     s = r.FormValue("script");
-    out, err = run(m, s);
+    out, err = run(m, s, cc);
     if err == nil {
       w.Write(out)
     } else {
@@ -117,13 +117,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
   var (
     port *int;
+    cc *string;
     err error
   )
   port = flag.Int("port", 8080, "");
+  cc = flag.String("cc", "tcc", "");
   flag.Parse();
 
   http.Handle("/", http.FileServer(http.Dir(".")));
-  http.HandleFunc("/run", handler);
+  http.HandleFunc(
+    "/run",
+    func(w http.ResponseWriter, r *http.Request) {
+      handler(w, r, *cc)
+    });
   err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil);
   if err != nil {
     fmt.Println(err);
