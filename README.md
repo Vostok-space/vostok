@@ -56,8 +56,9 @@ Demo web-server:
 
 ## Questions:
 Russian-speaking forums, but possible to ask in english:
-[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217)
+[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217),
 [zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
+
 
 Проект "Восток"
 =======================
@@ -149,5 +150,5 @@ make.sh собирает из предварительно сгенериров�
 
 ## Вопросы:
 Обсуждение ведётся на следующих площадках:
-[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217)
+[forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217),
 [zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)

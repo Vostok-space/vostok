@@ -30,7 +30,7 @@ IMPORT
 	GeneratorC,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
-	Message := MessageEn,
+	Message,
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
@@ -521,7 +521,7 @@ BEGIN
 	ELSE
 		ret := ToC(ret, args)
 	END
-	RETURN ret >= 0
+	RETURN 0 <= ret
 END Handle;
 
 PROCEDURE Start*;

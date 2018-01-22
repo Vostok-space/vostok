@@ -1,5 +1,5 @@
 /*  HTTP server for translator demonstration
- *  Copyright (C) 2017 ComdivByZero
+ *  Copyright (C) 2017-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published

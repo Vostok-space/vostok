@@ -15,8 +15,6 @@
 #if !defined(HEADER_GUARD_Platform)
 #define HEADER_GUARD_Platform 1
 
-#include <o7.h>
-
 extern o7_bool const
   Platform_Posix,
   Platform_Linux,
