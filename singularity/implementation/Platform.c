@@ -1,4 +1,4 @@
-/* Copyright 2017 ComdivByZero
+/* Copyright 2017-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,12 @@
   o7_bool const Platform_Windows = 0 < 1;
 #else
   o7_bool const Platform_Windows = 0 > 1;
+#endif
+
+#if defined(__MINGW32__) || defined(__MINGW64__)
+  o7_bool const Platform_Mingw = 0 < 1;
+#else
+  o7_bool const Platform_Mingw = 0 > 1;
 #endif
 
 #if defined(BSD) || defined(__bsdi__)

@@ -14,7 +14,7 @@
  *)
 MODULE Dir;
 
- IMPORT Platform, Posix := PosixDir, Windows := WindowsDir;
+ IMPORT Posix := PosixDir, Windows := WindowsDir;
 
  CONST
    NameLenMax* = 260;
@@ -36,9 +36,9 @@ MODULE Dir;
      spec: ARRAY 262 OF CHAR;
      i: INTEGER;
  BEGIN
-   IF Platform.Posix THEN
+   IF Posix.supported THEN
      ok := Posix.Open(d.p, name, ofs)
-   ELSIF Platform.Windows THEN
+   ELSIF Windows.supported THEN
      i := 0;
      WHILE (ofs < LEN(name)) & (name[ofs] # 0X) DO
        spec[i] := name[ofs];
@@ -57,9 +57,9 @@ MODULE Dir;
  PROCEDURE Close*(VAR d: Dir): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Platform.Posix THEN
+   IF Posix.supported THEN
      ok := Posix.Close(d.p)
-   ELSIF Platform.Windows THEN
+   ELSIF Windows.supported THEN
      ok := Windows.Close(d.w)
    ELSE
      ok := FALSE
@@ -70,9 +70,9 @@ MODULE Dir;
  PROCEDURE Read*(VAR e: File; VAR d: Dir): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Platform.Posix THEN
+   IF Posix.supported THEN
      ok := Posix.Read(e.p, d.p)
-   ELSIF Platform.Windows THEN
+   ELSIF Windows.supported THEN
      IF d.f # NIL THEN
        e.w := d.f;
        d.f := NIL;
@@ -89,9 +89,9 @@ MODULE Dir;
  PROCEDURE CopyName*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER; f: File): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Platform.Posix THEN
+   IF Posix.supported THEN
      ok := Posix.CopyName(buf, ofs, f.p)
-   ELSIF Platform.Windows THEN
+   ELSIF Windows.supported THEN
      ok := Windows.CopyName(buf, ofs, f.w)
    ELSE
      ok := FALSE

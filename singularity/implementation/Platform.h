@@ -1,4 +1,4 @@
-/* Copyright 2017 ComdivByZero
+/* Copyright 2017-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ extern o7_bool const
   Platform_Posix,
   Platform_Linux,
   Platform_Bsd,
+  Platform_Mingw,
   Platform_Dos,
   Platform_Windows;
 

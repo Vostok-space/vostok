@@ -1,4 +1,4 @@
-(*  Parser of Oberon-07 modules
+(*  Wrapper over OS-specific execution
  *  Copyright (C) 2017-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
