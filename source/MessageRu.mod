@@ -327,6 +327,8 @@ BEGIN
 		C("Неуместный '='. Возможно, имелcя ввиду ':=' для присваивания")
 	| Parser.ErrUnexpectStringInCaseLabel:
 		C("В качестве метки CASE недопустимы не односимвольные строки")
+	| Parser.ErrExpectAnotherModuleName:
+		C("Ожидался модуль с другим именем")
 	END
 END ParseError;
 
@@ -412,8 +414,8 @@ PROCEDURE Text*(str: ARRAY OF CHAR);
 BEGIN
 	IF str = "Found errors in the module " THEN
 		C("Найдены ошибки в модуле ")
-	ELSIF str = "Can not found or open file of module" THEN
-		C("Не получается найти или открыть файл модуля")
+	ELSIF str = "Can not found or open file of module " THEN
+		C("Не получается найти или открыть файл модуля ")
 	ELSE
 		C(str)
 	END

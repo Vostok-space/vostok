@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -54,7 +54,12 @@ TYPE
 		sing: SET;
 		modules: RECORD
 			first, last: Container
-		END
+		END;
+
+		expectName: ARRAY TranLim.MaxLenName + 1 OF CHAR;
+		nameLen   : INTEGER;
+		nameOk,
+		firstNotOk: BOOLEAN
 	END;
 
 PROCEDURE ErrorMessage(code: INTEGER);
@@ -160,30 +165,49 @@ BEGIN
 	IF m # NIL THEN
 		Log.StrLn("Найден уже разобранный модуль")
 	ELSE
+		mp.nameLen := 0;
+		ASSERT(Strings.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
+
 		pathInd := -1;
 		pathOfs := 0;
 		REPEAT
 			source := Open(mp, pathOfs, name, ofs, end);
-			INC(pathInd)
-		UNTIL (source # NIL) OR (mp.path[pathOfs] = Utf8.Null);
-		IF source # NIL THEN
-			m := Parser.Parse(source, p, mp.opt);
-			IF pathInd IN mp.sing THEN
-				m.mark := TRUE
+			IF source # NIL THEN
+				m := Parser.Parse(source, p, mp.opt);
+				File.CloseIn(source);
+				IF ~mp.nameOk THEN
+					m := NIL
+				END
 			END;
-			File.CloseIn(source);
-		ELSE
-			Message.Text("Can not found or open file of module");
+			INC(pathInd)
+		UNTIL (m # NIL) OR (mp.path[pathOfs] = Utf8.Null);
+		IF m # NIL THEN
+			IF pathInd IN mp.sing THEN
+			m.mark := TRUE
+			END
+		ELSIF mp.firstNotOk THEN
+			mp.firstNotOk := FALSE;
+			Message.Text("Can not found or open file of module ");
+			Out.String(mp.expectName);
 			Out.Ln
 		END
 	END
 	RETURN m
 END GetModule;
 
-PROCEDURE RegModule(p: Ast.Provider; m: Ast.Module);
+PROCEDURE RegModule(p: Ast.Provider; m: Ast.Module): BOOLEAN;
+	PROCEDURE Reg(p: ModuleProvider; m: Ast.Module): BOOLEAN;
+	BEGIN
+		Log.Str(m.name.block.s); Log.Str(" : "); Log.StrLn(p.expectName);
+		p.nameOk := m.name.block.s = p.expectName;
+		IF p.nameOk THEN
+			AddModule(p, m)
+		END
+		RETURN p.nameOk
+	END Reg;
 BEGIN
-	Log.Str("RegModule "); Log.StrLn(m.name.block.s);
-	AddModule(p(ModuleProvider), m)
+	Log.Str("RegModule "); Log.StrLn(m.name.block.s)
+	RETURN Reg(p(ModuleProvider), m)
 END RegModule;
 
 PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
@@ -246,7 +270,9 @@ BEGIN
 	NEW(mp.modules.first);
 	mp.modules.first.m := NIL;
 	mp.modules.first.next := mp.modules.first;
-	mp.modules.last := mp.modules.first
+	mp.modules.last := mp.modules.first;
+
+	mp.firstNotOk := TRUE
 END NewProvider;
 
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
@@ -379,7 +405,7 @@ PROCEDURE SearchCCompiler(VAR cmd: Exec.Code): BOOLEAN;
 	VAR exec: Exec.Code;
 	RETURN Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
 	     & ((Platform.Posix & Exec.AddClean(exec, ">/dev/null"))
-	     OR (Platform.Windows & Exec.AddClean(exec, ">NUL"))
+	     OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
 	       )
 	     & (Exec.Ok = Exec.Do(exec))
 	END Test;

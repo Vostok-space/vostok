@@ -63,9 +63,10 @@ CONST
 	ErrUnexpectStringInCaseLabel*   = Err - 37;
 
 	ErrEndModuleNameNotMatch*       = Err - 50;
-	ErrArrayDimensionsTooMany*      = Err - 51;
-	ErrEndProcedureNameNotMatch*    = Err - 52;
-	ErrFunctionWithoutBraces*       = Err - 53;
+	ErrExpectAnotherModuleName*     = Err - 51;
+	ErrArrayDimensionsTooMany*      = Err - 52;
+	ErrEndProcedureNameNotMatch*    = Err - 53;
+	ErrFunctionWithoutBraces*       = Err - 54;
 
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
@@ -1377,9 +1378,8 @@ BEGIN
 END Imports;
 
 PROCEDURE Module(VAR p: Parser; prov: Ast.Provider);
+VAR expectedName: BOOLEAN;
 BEGIN
-	Log.StrLn("Module");
-
 	Scan(p);
 	IF p.l # Scanner.Module THEN
 		p.module := Ast.ModuleNew("  ", 0, 0, prov);
@@ -1388,40 +1388,46 @@ BEGIN
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
 			p.module := Ast.ModuleNew("  ", 0, 0, prov);
-			AddError(p, ErrExpectIdent)
+			AddError(p, ErrExpectIdent);
+			expectedName := TRUE
 		ELSE
 			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd, prov);
-			IF TakeComment(p) THEN
-				Ast.ModuleSetComment(p.module, p.s.buf,
-				                     p.comment.ofs, p.comment.end)
+			expectedName := Ast.RegModule(prov, p.module);
+			IF expectedName THEN
+				IF TakeComment(p) THEN
+					Ast.ModuleSetComment(p.module, p.s.buf,
+					                     p.comment.ofs, p.comment.end)
+				END;
+				Scan(p)
+			ELSE
+				AddError(p, ErrExpectAnotherModuleName)
+			END
+		END;
+		IF expectedName THEN
+			Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
+			IF p.l = Scanner.Import THEN
+				Imports(p)
 			END;
-			Ast.RegModule(prov, p.module);
-			Scan(p)
-		END;
-
-		Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
-		IF p.l = Scanner.Import THEN
-			Imports(p)
-		END;
-		Declarations(p, p.module);
-		IF ScanIfEqual(p, Scanner.Begin) THEN
-			p.module.stats := Statements(p, p.module)
-		END;
-		Expect(p, Scanner.End, ErrExpectEnd);
-		IF p.l = Scanner.Ident THEN
-			IF ~Strings.IsEqualToChars(p.module.name, p.s.buf,
-			                           p.s.lexStart, p.s.lexEnd)
-			THEN
-				AddError(p, ErrEndModuleNameNotMatch)
+			Declarations(p, p.module);
+			IF ScanIfEqual(p, Scanner.Begin) THEN
+				p.module.stats := Statements(p, p.module)
 			END;
-			Scan(p)
-		ELSE
-			AddError(p, ErrExpectModuleName)
-		END;
-		IF p.l # Scanner.Dot THEN
-			AddError(p, ErrExpectDot)
-		END;
-		CheckAst(p, Ast.ModuleEnd(p.module))
+			Expect(p, Scanner.End, ErrExpectEnd);
+			IF p.l = Scanner.Ident THEN
+				IF ~Strings.IsEqualToChars(p.module.name, p.s.buf,
+				                           p.s.lexStart, p.s.lexEnd)
+				THEN
+					AddError(p, ErrEndModuleNameNotMatch)
+				END;
+				Scan(p)
+			ELSE
+				AddError(p, ErrExpectModuleName)
+			END;
+			IF p.l # Scanner.Dot THEN
+				AddError(p, ErrExpectDot)
+			END;
+			CheckAst(p, Ast.ModuleEnd(p.module))
+		END
 	END
 END Module;
 
@@ -1431,6 +1437,7 @@ END Blank;
 PROCEDURE DefaultOptions*(VAR opt: Options);
 BEGIN
 	V.Init(opt);
+
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn    := TRUE;
 	opt.saveComments    := TRUE;

@@ -328,6 +328,8 @@ BEGIN
 		C("Unexpected '='. Maybe, you mean ':=' for assignment")
 	| Parser.ErrUnexpectStringInCaseLabel:
 		C("As label in CASE not accepted not 1 char strings")
+	| Parser.ErrExpectAnotherModuleName:
+		C("Expect module with another name")
 	END
 END ParseError;
 

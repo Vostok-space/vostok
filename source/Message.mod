@@ -16,7 +16,7 @@
  *)
 MODULE Message;
 
-IMPORT Env := OsEnv, Ru := MessageRu, En := MessageEn;
+IMPORT Env := OsEnv, Platform, Ru := MessageRu, En := MessageEn;
 
 VAR ru: BOOLEAN;
 
@@ -70,7 +70,7 @@ VAR lang: ARRAY 16 OF CHAR;
     ofs: INTEGER;
 BEGIN
 	ofs := 0;
-	ru := Env.Get(lang, ofs, "LANG") & (lang = "ru_RU.UTF-8")
+	ru := Platform.Posix & Env.Get(lang, ofs, "LANG") & (lang = "ru_RU.UTF-8")
 END InitLang;
 
 BEGIN

@@ -10,7 +10,7 @@ mkdir result\self
 result\bs-o7c to-c Translator.Start result -infr . -m source
 
 @cd result
-%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c MessageEn.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c %SING%\CFiles.c %SING%\CLI.c %SING%\o7.c %SING%\OsExec.c %SING%\OsEnv.c %SING%\Platform.c -I . -I %SING% -o o7c.exe
+%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c Message.c MessageEn.c MessageRu.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c %SING%\CFiles.c %SING%\CLI.c %SING%\o7.c %SING%\OsExec.c %SING%\OsEnv.c %SING%\Platform.c -I . -I %SING% -o o7c.exe
 @cd ..
 
 result\o7c.exe to-bin Translator.Start result\self\o7c.exe -infr . -m source -cc %CC%

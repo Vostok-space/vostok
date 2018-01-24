@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -189,7 +189,7 @@ TYPE
 	Provide* = PROCEDURE(p: Provider; host: Module;
 	                     name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
 
-	Register* = PROCEDURE(p: Provider; m: Module);
+	Register* = PROCEDURE(p: Provider; m: Module): BOOLEAN;
 
 	RProvider* = RECORD(V.Base)
 		get: Provide;
@@ -665,9 +665,9 @@ PROCEDURE GetModuleByName*(host: Module;
 	RETURN host.provider.get(host.provider, host, name, ofs, end)
 END GetModuleByName;
 
-PROCEDURE RegModule*(provider: Provider; m: Module);
-BEGIN
-	provider.reg(provider, m)
+(* Возвращает истину, если имя модуля совпадает с ожидаемым *)
+PROCEDURE RegModule*(provider: Provider; m: Module): BOOLEAN;
+RETURN provider.reg(provider, m)
 END RegModule;
 
 PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
