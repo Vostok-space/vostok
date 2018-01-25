@@ -725,7 +725,7 @@ VAR imp: Import;
 
 	PROCEDURE Load(VAR res: Module; host: Module;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
-	VAR n: ARRAY TranLim.MaxLenName OF CHAR;
+	VAR n: ARRAY TranLim.LenName OF CHAR;
 		l, err: INTEGER;
 	BEGIN
 		l := 0;
@@ -2818,7 +2818,7 @@ BEGIN
 		p.deep := 0
 	ELSE
 		p.deep := ds(Procedure).deep + 1;
-		IF (err = ErrNo) & (TranLim.MaxDeepProcedures <= p.deep) THEN
+		IF (err = ErrNo) & (TranLim.DeepProcedures <= p.deep) THEN
 			err := ErrProcNestedTooDeep
 		END
 	END;

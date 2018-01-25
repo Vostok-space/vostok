@@ -1,5 +1,5 @@
-(*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016 ComdivByZero
+(*  Limits for different parts of the translator
+ *  Copyright (C) 2016, 2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -24,64 +24,66 @@ MODULE TranslatorLimits;
 Ограничения выбраны волюнтаристски.
 *)
 CONST
+	(* TODO  - избыточная часть имени *)
+
 	(* Сканер *)
 	(* длина имени *)
-	MaxLenName*    =   63;
+	LenName*    =   63;
 	(* длина содержимого строки, не включая завершающего 0 *)
-	MaxLenString*  =  255;
+	LenString*  =  255;
 	(* длина строкового представления числа *)
-	MaxLenNumber*  =   63;
+	LenNumber*  =   63;
 	(* количество пустых символов между значащими *)
-	MaxBlankChars* = 1023;
+	BlankChars* = 1023;
 
 	(* Модуль *)
 	(* Кол-во ипортированных модулей *)
-	MaxImportedModules*     =  127;
+	ImportedModules*     =  127;
 	(* Кол-во именованных постоянных *)
-	MaxGlobalConsts*        = 2047;
+	GlobalConsts*        = 2047;
 	(* Кол-во типов *)
-	MaxGlobalTypes*         =  127;
+	GlobalTypes*         =  127;
 	(* Кол-во переменных *)
-	MaxGlobalVars*          =  255;
+	GlobalVars*          =  255;
 	(* Кол-во переменных, перечисленных через запятую *)
-	MaxVarsSeparatedByComa* =   31;
+	VarsSeparatedByComa* =   31;
 	(* Кол-во процедур *)
-	MaxGlobalProcedures*    = 1023;
+	GlobalProcedures*    = 1023;
 	(* Количество символов исходного кода модуля в Utf8 *)
-	MaxModuleTextSize*      = 256 * 1024 - 1;
+	ModuleTextSize*      = 256 * 1024 - 1;
 
 	(* Типы *)
 	(* Размерность массива *)
-	MaxArrayDimension* =   7;
+	ArrayDimension* =   7;
 	(* Количество переменных в структуре *)
-	MaxVarsInRecord*   = 255;
+	VarsInRecord*   = 255;
 	(* Глубина расширения структур *)
-	MaxRecordExt*      =  15;
+	RecordExt*      =  15;
 
 	(* Процедура *)
 	(* Количество параметров *)
-	MaxParams*         =  15;
+	Params*         =  15;
 	(* Количество именованных постоянных *)
-	MaxConsts*         = 255;
+	Consts*         = 255;
 	(* Количество переменных *)
-	MaxVars*           =  31;
+	Vars*           =  31;
 	(* Количество линейно вложенных подпрограмм *)
-	MaxProcedures*     =  31;
+	Procedures*     =  31;
 	(* Глубина вложенности подпрограмм *)
-	MaxDeepProcedures* =   7;
+	DeepProcedures* =   7;
 	(* Количество линейно вложенных операторов *)
-	MaxStatements*     = 255;
+	Statements*     = 255;
 	(* Вложенность операторов *)
-	MaxDeepStatements* =  15;
+	DeepStatements* =  15;
 	(* Веток IF {ELSIF} ELSE *)
-	MaxIfBranches*     = 255;
+	IfBranches*     = 255;
 
 	(* Выражения *)
 	(* Цепочка селекторов *)
-	MaxSelectors*     =  63;
+	Selectors*     =  63;
 	(* Количество подвыражений в одной сумме *)
-	MaxTermsInSum*    = 255;
+	TermsInSum*    = 255;
 	(* Количество подвыражений в умножении *)
-	MaxFactorsInTerm* = 255;
+	FactorsInTerm* = 255;
 
 END TranslatorLimits.

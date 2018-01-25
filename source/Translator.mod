@@ -56,7 +56,7 @@ TYPE
 			first, last: Container
 		END;
 
-		expectName: ARRAY TranLim.MaxLenName + 1 OF CHAR;
+		expectName: ARRAY TranLim.LenName + 1 OF CHAR;
 		nameLen   : INTEGER;
 		nameOk,
 		firstNotOk: BOOLEAN

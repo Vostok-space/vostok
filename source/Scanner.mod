@@ -611,7 +611,7 @@ BEGIN
 	ScanChars(s, IsLetterOrDigit);
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(0 < len);
-	IF len <= TranLim.MaxLenName THEN
+	IF len <= TranLim.LenName THEN
 		l := CheckWord(s.buf, s.lexStart, s.ind)
 	ELSE
 		l := ErrWordLenTooBig
@@ -808,5 +808,5 @@ BEGIN
 END ResetComment;
 
 BEGIN
-	ASSERT(TranLim.MaxLenName < BlockSize)
+	ASSERT(TranLim.LenName < BlockSize)
 END Scanner.

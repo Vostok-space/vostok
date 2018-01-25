@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2017 ComdivByZero
+ *  Copyright (C) 2016-2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -108,7 +108,7 @@ TYPE
 	Selectors = RECORD
 		des: Ast.Designator;
 		decl: Ast.Declaration;
-		list: ARRAY TranLim.MaxSelectors OF Ast.Selector;
+		list: ARRAY TranLim.Selectors OF Ast.Selector;
 		i: INTEGER
 	END;
 
@@ -619,7 +619,7 @@ END IsNameOccupied;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
-    prs: ARRAY TranLim.MaxDeepProcedures + 1 OF Ast.Declarations;
+    prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
     i: INTEGER;
 BEGIN
 	IF (decl IS Ast.Type) & (decl.up # decl.module) & (decl.up # NIL)
@@ -720,7 +720,7 @@ BEGIN
 END TypeForTag;
 
 PROCEDURE CheckStructName(VAR gen: Generator; rec: Ast.Record): BOOLEAN;
-VAR anon: ARRAY TranLim.MaxLenName * 2 + 3 OF CHAR;
+VAR anon: ARRAY TranLim.LenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
 BEGIN
 	IF Strings.IsDefined(rec.name) THEN
@@ -1701,7 +1701,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	END Sum;
 
 	PROCEDURE SumCheck(VAR gen: Generator; sum: Ast.ExprSum);
-	VAR arr: ARRAY TranLim.MaxTermsInSum OF Ast.ExprSum;
+	VAR arr: ARRAY TranLim.TermsInSum OF Ast.ExprSum;
 		i, last: INTEGER;
 
 		PROCEDURE GenArrOfAddOrSub(VAR gen: Generator;
@@ -1785,7 +1785,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	END Term;
 
 	PROCEDURE TermCheck(VAR gen: Generator; term: Ast.ExprTerm);
-	VAR arr: ARRAY TranLim.MaxFactorsInTerm OF Ast.ExprTerm;
+	VAR arr: ARRAY TranLim.FactorsInTerm OF Ast.ExprTerm;
 		i, last: INTEGER;
 	BEGIN
 		arr[0] := term;

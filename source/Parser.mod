@@ -24,7 +24,7 @@ IMPORT
 	Strings := StringStore,
 	Ast,
 	Stream := VDataStream,
-	Limits := TranslatorLimits;
+	TranLim := TranslatorLimits;
 
 CONST
 	ErrNo = 0;
@@ -602,7 +602,7 @@ PROCEDURE Array(VAR p: Parser; ds: Ast.Declarations;
 VAR a: Ast.Array;
 	t: Ast.Type;
 	exprLen: Ast.Expression;
-	lens: ARRAY Limits.MaxArrayDimension OF Ast.Expression;
+	lens: ARRAY TranLim.ArrayDimension OF Ast.Expression;
 	i, size: INTEGER;
 BEGIN
 	Log.StrLn("Array");
