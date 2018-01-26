@@ -73,7 +73,7 @@ static void MOut_undef(struct MOut *r) {
 typedef struct Selectors {
 	struct Ast_Designator_s *des;
 	struct Ast_RDeclaration *decl;
-	struct Ast_RSelector *list[TranslatorLimits_MaxSelectors_cnst];
+	struct Ast_RSelector *list[TranslatorLimits_Selectors_cnst];
 	int i;
 } Selectors;
 #define Selectors_tag o7_base_tag
@@ -465,7 +465,7 @@ static o7_bool IsNameOccupied(struct StringStore_String *n) {
 
 static void Name(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl) {
 	struct Ast_RDeclarations *up;
-	struct Ast_RDeclarations *prs[TranslatorLimits_MaxDeepProcedures_cnst + 1];
+	struct Ast_RDeclarations *prs[TranslatorLimits_DeepProcedures_cnst + 1];
 	int i;
 	memset(&prs, 0, sizeof(prs));
 
@@ -473,13 +473,13 @@ static void Name(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl
 		up = O7_REF(decl)->up;
 		i = 0;
 		while (O7_REF(up)->_.up != NULL) {
-			prs[o7_ind(TranslatorLimits_MaxDeepProcedures_cnst + 1, i)] = up;
+			prs[o7_ind(TranslatorLimits_DeepProcedures_cnst + 1, i)] = up;
 			i = o7_add(i, 1);
 			up = O7_REF(up)->_.up;
 		}
 		while (i > 0) {
 			i = o7_sub(i, 1);
-			TextGenerator_String(&(*gen)._, &O7_REF(prs[o7_ind(TranslatorLimits_MaxDeepProcedures_cnst + 1, i)])->_.name);
+			TextGenerator_String(&(*gen)._, &O7_REF(prs[o7_ind(TranslatorLimits_DeepProcedures_cnst + 1, i)])->_.name);
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x5F");
 		}
 	}
@@ -551,7 +551,7 @@ static struct Ast_RType *TypeForTag(struct Ast_Record_s *rec) {
 }
 
 static o7_bool CheckStructName(struct GeneratorC_Generator *gen, struct Ast_Record_s *rec) {
-	o7_char anon[TranslatorLimits_MaxLenName_cnst * 2 + 3];
+	o7_char anon[TranslatorLimits_LenName_cnst * 2 + 3];
 	int i, j, l;
 	memset(&anon, 0, sizeof(anon));
 
@@ -560,29 +560,29 @@ static o7_bool CheckStructName(struct GeneratorC_Generator *gen, struct Ast_Reco
 		l = 0;
 		O7_ASSERT(O7_REF(rec)->_._._.module != NULL);
 		O7_REF(rec)->_._._.mark = o7_bl(O7_REF(O7_REF(rec)->pointer)->_._._.mark);
-		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_MaxLenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(rec)->pointer)->_._._.name));
-		anon[o7_ind(TranslatorLimits_MaxLenName_cnst * 2 + 3, l)] = (o7_char)'_';
-		anon[o7_ind(TranslatorLimits_MaxLenName_cnst * 2 + 3, o7_add(l, 1))] = (o7_char)'s';
-		anon[o7_ind(TranslatorLimits_MaxLenName_cnst * 2 + 3, o7_add(l, 2))] = 0x00u;
-		Ast_PutChars(O7_REF(O7_REF(rec)->pointer)->_._._.module, &O7_REF(rec)->_._._.name, TranslatorLimits_MaxLenName_cnst * 2 + 3, anon, 0, o7_add(l, 2));
+		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(rec)->pointer)->_._._.name));
+		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, l)] = (o7_char)'_';
+		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, o7_add(l, 1))] = (o7_char)'s';
+		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, o7_add(l, 2))] = 0x00u;
+		Ast_PutChars(O7_REF(O7_REF(rec)->pointer)->_._._.module, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, o7_add(l, 2));
 	} else {
 		l = 0;
-		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_MaxLenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(rec)->_._._.module)->_._.name));
+		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(rec)->_._._.module)->_._.name));
 
 		Log_StrLn(6, (o7_char *)"Record");
 
-		O7_ASSERT(StringStore_CopyChars(TranslatorLimits_MaxLenName_cnst * 2 + 3, anon, &l, 10, (o7_char *)"_anon_0000", 0, 10));
+		O7_ASSERT(StringStore_CopyChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, 10, (o7_char *)"_anon_0000", 0, 10));
 		O7_ASSERT((o7_cmp(O7_REF((*gen).opt)->index, 0) >= 0) && (o7_cmp(O7_REF((*gen).opt)->index, 10000) < 0));
 		i = o7_int(O7_REF((*gen).opt)->index);
 		/*Log.Int(i); Log.Ln;*/
 		j = o7_sub(l, 1);
 		while (i > 0) {
-			anon[o7_ind(TranslatorLimits_MaxLenName_cnst * 2 + 3, j)] = o7_chr(o7_add((int)(o7_char)'0', o7_mod(i, 10)));
+			anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, j)] = o7_chr(o7_add((int)(o7_char)'0', o7_mod(i, 10)));
 			i = o7_div(i, 10);
 			j = o7_sub(j, 1);
 		}
 		O7_REF((*gen).opt)->index = o7_add(O7_REF((*gen).opt)->index, 1);
-		Ast_PutChars(O7_REF(rec)->_._._.module, &O7_REF(rec)->_._._.name, TranslatorLimits_MaxLenName_cnst * 2 + 3, anon, 0, l);
+		Ast_PutChars(O7_REF(rec)->_._._.module, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, l);
 	}
 	return StringStore_IsDefined(&O7_REF(rec)->_._._.name);
 }
@@ -756,7 +756,7 @@ static void Selector(struct GeneratorC_Generator *gen, struct Selectors *sels, i
 	o7_bool ref_;
 
 	if (i >= 0) {
-		sel = (*sels).list[o7_ind(TranslatorLimits_MaxSelectors_cnst, i)];
+		sel = (*sels).list[o7_ind(TranslatorLimits_Selectors_cnst, i)];
 	}
 	if (!o7_bl(O7_REF((*gen).opt)->checkNil)) {
 		ref_ = false;
@@ -823,7 +823,7 @@ static void Designator_Put(struct Selectors *sels, struct Ast_RSelector *sel) {
 	(*sels).i =  - 1;
 	while (sel != NULL) {
 		(*sels).i = o7_add((*sels).i, 1);
-		(*sels).list[o7_ind(TranslatorLimits_MaxSelectors_cnst, (*sels).i)] = sel;
+		(*sels).list[o7_ind(TranslatorLimits_Selectors_cnst, (*sels).i)] = sel;
 		if (o7_is(sel, Ast_SelArray_s_tag)) {
 			while ((sel != NULL) && (o7_is(sel, Ast_SelArray_s_tag))) {
 				sel = O7_REF(sel)->next;
@@ -844,7 +844,7 @@ static void Designator(struct GeneratorC_Generator *gen, struct Ast_Designator_s
 	sels.des = des;
 	sels.decl = O7_REF(des)->decl;
 	/* TODO */
-	O7_REF((*gen).opt)->lastSelectorDereference = (o7_cmp(sels.i, 0) > 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_MaxSelectors_cnst, sels.i)], Ast_SelPointer_s_tag));
+	O7_REF((*gen).opt)->lastSelectorDereference = (o7_cmp(sels.i, 0) > 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_Selectors_cnst, sels.i)], Ast_SelPointer_s_tag));
 	Selector(&(*gen), &sels, sels.i, &typ, O7_REF(des)->_._.type);
 }
 
@@ -1562,28 +1562,28 @@ static void Expression_SumCheck_GenArrOfAddOrSub(struct GeneratorC_Generator *ge
 }
 
 static void Expression_SumCheck(struct GeneratorC_Generator *gen, struct Ast_ExprSum_s *sum) {
-	struct Ast_ExprSum_s *arr[TranslatorLimits_MaxTermsInSum_cnst];
+	struct Ast_ExprSum_s *arr[TranslatorLimits_TermsInSum_cnst];
 	int i, last;
 	memset(&arr, 0, sizeof(arr));
 
 	last =  - 1;
 	do {
 		last = o7_add(last, 1);
-		arr[o7_ind(TranslatorLimits_MaxTermsInSum_cnst, last)] = sum;
+		arr[o7_ind(TranslatorLimits_TermsInSum_cnst, last)] = sum;
 		sum = O7_REF(sum)->next;
 	} while (!(sum == NULL));
 	switch (O7_REF(O7_REF(arr[0])->_.type)->_._.id) {
 	case 0:
-		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_MaxTermsInSum_cnst, arr, last, 7, (o7_char *)"o7_add(", 7, (o7_char *)"o7_sub(");
+		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_TermsInSum_cnst, arr, last, 7, (o7_char *)"o7_add(", 7, (o7_char *)"o7_sub(");
 		break;
 	case 1:
-		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_MaxTermsInSum_cnst, arr, last, 8, (o7_char *)"o7_ladd(", 8, (o7_char *)"o7_lsub(");
+		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_TermsInSum_cnst, arr, last, 8, (o7_char *)"o7_ladd(", 8, (o7_char *)"o7_lsub(");
 		break;
 	case 5:
-		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_MaxTermsInSum_cnst, arr, last, 8, (o7_char *)"o7_fadd(", 8, (o7_char *)"o7_fsub(");
+		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_TermsInSum_cnst, arr, last, 8, (o7_char *)"o7_fadd(", 8, (o7_char *)"o7_fsub(");
 		break;
 	case 6:
-		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_MaxTermsInSum_cnst, arr, last, 9, (o7_char *)"o7_faddf(", 9, (o7_char *)"o7_fsubf(");
+		Expression_SumCheck_GenArrOfAddOrSub(&(*gen), TranslatorLimits_TermsInSum_cnst, arr, last, 9, (o7_char *)"o7_faddf(", 9, (o7_char *)"o7_fsubf(");
 		break;
 	default:
 		o7_case_fail(O7_REF(O7_REF(arr[0])->_.type)->_._.id);
@@ -1593,7 +1593,7 @@ static void Expression_SumCheck(struct GeneratorC_Generator *gen, struct Ast_Exp
 	while (i < last) {
 		i = o7_add(i, 1);
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
-		Expression(&(*gen), O7_REF(arr[o7_ind(TranslatorLimits_MaxTermsInSum_cnst, i)])->term);
+		Expression(&(*gen), O7_REF(arr[o7_ind(TranslatorLimits_TermsInSum_cnst, i)])->term);
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 	}
 }
@@ -1638,7 +1638,7 @@ static void Expression_Term(struct GeneratorC_Generator *gen, struct Ast_ExprTer
 }
 
 static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_ExprTerm_s *term) {
-	struct Ast_ExprTerm_s *arr[TranslatorLimits_MaxFactorsInTerm_cnst];
+	struct Ast_ExprTerm_s *arr[TranslatorLimits_FactorsInTerm_cnst];
 	int i, last;
 	memset(&arr, 0, sizeof(arr));
 
@@ -1647,13 +1647,13 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 	while (o7_is(O7_REF(term)->expr, Ast_ExprTerm_s_tag)) {
 		i = o7_add(i, 1);
 		term = O7_GUARD(Ast_ExprTerm_s, &O7_REF(term)->expr);
-		arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)] = term;
+		arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)] = term;
 	}
 	last = i;
 	switch (O7_REF(O7_REF(term)->_.type)->_._.id) {
 	case 0:
 		while (i >= 0) {
-			switch (O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult) {
+			switch (O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult) {
 			case 150:
 				TextGenerator_Str(&(*gen)._, 7, (o7_char *)"o7_mul(");
 				break;
@@ -1664,7 +1664,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 				TextGenerator_Str(&(*gen)._, 7, (o7_char *)"o7_mod(");
 				break;
 			default:
-				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult);
+				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult);
 				break;
 			}
 			i = o7_sub(i, 1);
@@ -1672,7 +1672,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 		break;
 	case 1:
 		while (i >= 0) {
-			switch (O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult) {
+			switch (O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult) {
 			case 150:
 				TextGenerator_Str(&(*gen)._, 8, (o7_char *)"o7_lmul(");
 				break;
@@ -1683,7 +1683,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 				TextGenerator_Str(&(*gen)._, 8, (o7_char *)"o7_lmod(");
 				break;
 			default:
-				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult);
+				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult);
 				break;
 			}
 			i = o7_sub(i, 1);
@@ -1691,7 +1691,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 		break;
 	case 5:
 		while (i >= 0) {
-			switch (O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult) {
+			switch (O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult) {
 			case 150:
 				TextGenerator_Str(&(*gen)._, 8, (o7_char *)"o7_fmul(");
 				break;
@@ -1699,7 +1699,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 				TextGenerator_Str(&(*gen)._, 8, (o7_char *)"o7_fdiv(");
 				break;
 			default:
-				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult);
+				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult);
 				break;
 			}
 			i = o7_sub(i, 1);
@@ -1707,7 +1707,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 		break;
 	case 6:
 		while (i >= 0) {
-			switch (O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult) {
+			switch (O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult) {
 			case 150:
 				TextGenerator_Str(&(*gen)._, 9, (o7_char *)"o7_fmulf(");
 				break;
@@ -1715,7 +1715,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 				TextGenerator_Str(&(*gen)._, 9, (o7_char *)"o7_fdivf(");
 				break;
 			default:
-				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->mult);
+				o7_case_fail(O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->mult);
 				break;
 			}
 			i = o7_sub(i, 1);
@@ -1730,11 +1730,11 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 	while (i < last) {
 		i = o7_add(i, 1);
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
-		Expression(&(*gen), &O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, i)])->factor->_);
+		Expression(&(*gen), &O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->factor->_);
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 	}
 	TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
-	Expression(&(*gen), O7_REF(arr[o7_ind(TranslatorLimits_MaxFactorsInTerm_cnst, last)])->expr);
+	Expression(&(*gen), O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, last)])->expr);
 	TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 }
 

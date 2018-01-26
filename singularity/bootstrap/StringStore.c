@@ -289,11 +289,10 @@ extern o7_bool StringStore_CopyChars(int dest_len0, o7_char dest[/*len0*/], int 
 	return ret;
 }
 
-/* TODO Не использовать для константных строк, не заканчивающихся 0 */
 extern o7_bool StringStore_CopyCharsNull(int dest_len0, o7_char dest[/*len0*/], int *destOfs, int src_len0, o7_char src[/*len0*/]) {
 	int i;
 
-	O7_ASSERT(0 <= (*destOfs));
+	O7_ASSERT((0 <= (*destOfs)) && ((*destOfs) < dest_len0));
 
 	i = 0;
 	while (((*destOfs) < o7_sub(dest_len0, 1)) && (i < src_len0) && (src[o7_ind(src_len0, i)] != 0x00u)) {

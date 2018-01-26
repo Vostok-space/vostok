@@ -54,6 +54,7 @@
 #define CliParser_ErrUnknownInit_cnst (-26)
 #define CliParser_ErrCantCreateOutDir_cnst (-27)
 #define CliParser_ErrCantRemoveOutDir_cnst (-28)
+#define CliParser_ErrCantFoundCCompiler_cnst (-29)
 
 typedef struct CliParser_Args {
 	V_Base _;

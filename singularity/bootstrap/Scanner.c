@@ -533,7 +533,7 @@ static int SWord(struct Scanner_Scanner *s) {
 	ScanChars(&(*s), IsLetterOrDigit);
 	len = o7_add(o7_sub((*s).ind, (*s).lexStart), o7_mul((int)(o7_cmp((*s).ind, (*s).lexStart) < 0), (O7_LEN((*s).buf) - 1)));
 	O7_ASSERT(0 < len);
-	if (len <= TranslatorLimits_MaxLenName_cnst) {
+	if (len <= TranslatorLimits_LenName_cnst) {
 		l = CheckWord(Scanner_BlockSize_cnst * 2 + 1, (*s).buf, (*s).lexStart, (*s).ind);
 	} else {
 		l = Scanner_ErrWordLenTooBig_cnst;
@@ -787,7 +787,7 @@ extern void Scanner_init(void) {
 		Log_init();
 
 
-		O7_STATIC_ASSERT(TranslatorLimits_MaxLenName_cnst < Scanner_BlockSize_cnst);
+		O7_STATIC_ASSERT(TranslatorLimits_LenName_cnst < Scanner_BlockSize_cnst);
 	}
 	++initialized;
 }

@@ -442,13 +442,13 @@ extern void MessageEn_ParseError(int code) {
 	case -150:
 		C(46, (o7_char *)"Name after end do not match with module's name");
 		break;
-	case -151:
+	case -152:
 		C(28, (o7_char *)"Too many dimensions in array");
 		break;
-	case -152:
+	case -153:
 		C(49, (o7_char *)"Name after end do not match with procedure's name");
 		break;
-	case -153:
+	case -154:
 		C(49, (o7_char *)"Declaration of procedure with return must have ()");
 		break;
 	case -134:
@@ -459,6 +459,9 @@ extern void MessageEn_ParseError(int code) {
 		break;
 	case -137:
 		C(48, (o7_char *)"As label in CASE not accepted not 1 char strings");
+		break;
+	case -151:
+		C(31, (o7_char *)"Expect module with another name");
 		break;
 	default:
 		o7_case_fail(code);
@@ -558,6 +561,9 @@ extern void MessageEn_CliError(int err, int cmd_len0, o7_char cmd[/*len0*/]) {
 		break;
 	case -28:
 		S(31, (o7_char *)"Can not remove output directory");
+		break;
+	case -29:
+		S(24, (o7_char *)"Can not found C Compiler");
 		break;
 	default:
 		o7_case_fail(err);

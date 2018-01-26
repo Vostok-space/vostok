@@ -12,6 +12,8 @@ extern void PlatformExec_Code_undef(struct PlatformExec_Code *r) {
 	V_Base_undef(&r->_);
 	memset(&r->buf, 0, sizeof(r->buf));
 	r->len = O7_INT_UNDEF;
+	r->parts = O7_BOOL_UNDEF;
+	r->partsQuote = O7_BOOL_UNDEF;
 }
 
 static o7_bool autoCorrectDirSeparator = O7_BOOL_UNDEF;
@@ -44,49 +46,67 @@ static o7_bool Copy(int d_len0, o7_char d[/*len0*/], int *i, int s_len0, o7_char
 	return ((*j) == s_len0) || (s[o7_ind(s_len0, (*j))] == 0x00u);
 }
 
-static o7_bool FullCopy(int d_len0, o7_char d[/*len0*/], int *i, int s_len0, o7_char s[/*len0*/], int j) {
-	o7_bool ret;
+static o7_bool Quote(int d_len0, o7_char d[/*len0*/], int *i) {
+	o7_bool ok;
 
-	if (Platform_Posix) {
-		d[o7_ind(d_len0, (*i))] = (o7_char)'\'';
-		(*i) = o7_add((*i), 1);
-	}
-	ret = Copy(d_len0, d, &(*i), s_len0, s, &j) && ((*i) < o7_sub(d_len0, 1));
-	if (ret) {
+	ok = (*i) < o7_sub(d_len0, 1);
+	if (ok) {
 		if (Platform_Posix) {
 			d[o7_ind(d_len0, (*i))] = (o7_char)'\'';
-			(*i) = o7_add((*i), 1);
+		} else {
+			O7_ASSERT(Platform_Windows);
+			d[o7_ind(d_len0, (*i))] = (o7_char)'"';
 		}
+		(*i) = o7_add((*i), 1);
 		d[o7_ind(d_len0, (*i))] = 0x00u;
 	}
-	return ret;
+	return ok;
+}
+
+static o7_bool FullCopy(int d_len0, o7_char d[/*len0*/], int *i, int s_len0, o7_char s[/*len0*/], int j) {
+	return Quote(d_len0, d, &(*i)) && Copy(d_len0, d, &(*i), s_len0, s, &j) && Quote(d_len0, d, &(*i));
 }
 
 extern o7_bool PlatformExec_Init(struct PlatformExec_Code *c, int name_len0, o7_char name[/*len0*/]) {
+	int j;
+	o7_bool ok;
+
 	V_Init(&(*c)._);
+	(*c).parts = false;
 	(*c).len = 0;
-	return (name[0] == 0x00u) || FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, 0);
+	if (name[0] == 0x00u) {
+		(*c).buf[0] = 0x00u;
+		ok = true;
+	} else if (Platform_Posix) {
+		ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, 0);
+	} else {
+		j = 0;
+		ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, &j);
+	}
+	return ok;
 }
 
 extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, int arg_len0, o7_char arg[/*len0*/], int ofs) {
-	o7_bool ret;
+	o7_bool ok;
 
-	ret = o7_cmp((*c).len, O7_LEN((*c).buf) - 1) < 0;
-	if (ret) {
+	ok = o7_cmp((*c).len, O7_LEN((*c).buf) - 1) < 0;
+	if (ok) {
 		if (o7_cmp((*c).len, 0) > 0) {
 			(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)' ';
 			(*c).len = o7_add((*c).len, 1);
+			ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs);
+		} else if (Platform_Posix) {
+			ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs);
+		} else {
+			O7_ASSERT(Platform_Windows);
+			ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs);
 		}
-		ret = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs);
 	}
-	return ret;
+	return ok;
 }
 
 extern o7_bool PlatformExec_AddClean(struct PlatformExec_Code *c, int arg_len0, o7_char arg[/*len0*/]) {
-	int ofs;
-
-	ofs = 0;
-	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs);
+	return StringStore_CopyCharsNull(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg);
 }
 
 extern o7_bool PlatformExec_AddDirSep(struct PlatformExec_Code *c) {
@@ -102,44 +122,44 @@ extern o7_bool PlatformExec_AddDirSep(struct PlatformExec_Code *c) {
 }
 
 extern o7_bool PlatformExec_FirstPart(struct PlatformExec_Code *c, int arg_len0, o7_char arg[/*len0*/]) {
-	o7_bool ret;
+	o7_bool ok;
 	int ofs;
 
-	ret = o7_cmp((*c).len, O7_LEN((*c).buf) - 2) < 0;
-	if (ret) {
+	O7_ASSERT(!o7_bl((*c).parts));
+	(*c).parts = true;
+
+	ok = o7_cmp((*c).len, O7_LEN((*c).buf) - 3) < 0;
+	if (ok) {
 		if (o7_cmp((*c).len, 0) > 0) {
+			(*c).partsQuote = true;
 			(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)' ';
 			(*c).len = o7_add((*c).len, 1);
-		}
-		if (Platform_Posix) {
-			(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)'\'';
-			(*c).len = o7_add((*c).len, 1);
+		} else {
+			(*c).partsQuote = Platform_Posix;
 		}
 		ofs = 0;
-		ret = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs);
+		ok = ok && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len)) && Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs);
 	}
-	return ret;
+	return ok;
 }
 
 extern o7_bool PlatformExec_AddPart(struct PlatformExec_Code *c, int arg_len0, o7_char arg[/*len0*/]) {
 	int ofs;
+
+	O7_ASSERT(o7_bl((*c).parts));
 
 	ofs = 0;
 	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs);
 }
 
 extern o7_bool PlatformExec_LastPart(struct PlatformExec_Code *c, int arg_len0, o7_char arg[/*len0*/]) {
-	o7_bool ret;
 	int ofs;
 
+	O7_ASSERT(o7_bl((*c).parts));
+	(*c).parts = false;
+
 	ofs = 0;
-	ret = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs) && (o7_cmp((*c).len, O7_LEN((*c).buf) - 1) < 0);
-	if (ret && Platform_Posix) {
-		(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)'\'';
-		(*c).len = o7_add((*c).len, 1);
-		(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = 0x00u;
-	}
-	return ret;
+	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, &ofs) && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len));
 }
 
 extern int PlatformExec_Do(struct PlatformExec_Code *c) {
@@ -163,6 +183,7 @@ extern void PlatformExec_init(void) {
 		OsExec_init();
 		Log_init();
 		Platform_init();
+		StringStore_init();
 
 
 		autoCorrectDirSeparator = false;

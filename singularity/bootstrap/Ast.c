@@ -504,8 +504,9 @@ extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RModule *host, int nam
 	return O7_REF(O7_REF(host)->provider)->get(O7_REF(host)->provider, host, name_len0, name, ofs, end);
 }
 
-extern void Ast_RegModule(struct Ast_RProvider *provider, struct Ast_RModule *m) {
-	O7_REF(provider)->reg(provider, m);
+/* Возвращает истину, если имя модуля совпадает с ожидаемым */
+extern o7_bool Ast_RegModule(struct Ast_RProvider *provider, struct Ast_RModule *m) {
+	return O7_REF(provider)->reg(provider, m);
 }
 
 static int CheckUnusedDeclarations(struct Ast_RDeclarations *ds) {
@@ -551,15 +552,15 @@ extern void Ast_ImportEnd(struct Ast_RModule *m) {
 }
 
 static int ImportAdd_Load(struct Ast_RModule **res, struct Ast_RModule *host, int buf_len0, o7_char buf[/*len0*/], int realOfs, int realEnd) {
-	o7_char n[TranslatorLimits_MaxLenName_cnst];
+	o7_char n[TranslatorLimits_LenName_cnst];
 	int l, err;
 	memset(&n, 0, sizeof(n));
 
 	l = 0;
-	O7_ASSERT(StringStore_CopyChars(TranslatorLimits_MaxLenName_cnst, n, &l, buf_len0, buf, realOfs, realEnd));
+	O7_ASSERT(StringStore_CopyChars(TranslatorLimits_LenName_cnst, n, &l, buf_len0, buf, realOfs, realEnd));
 	/* TODO сделать загрузку модуля из символьного файла */
 	Log_Str(14, (o7_char *)"Модуль '");
-	Log_Str(TranslatorLimits_MaxLenName_cnst, n);
+	Log_Str(TranslatorLimits_LenName_cnst, n);
 	Log_StrLn(24, (o7_char *)"' загружается");
 	(*res) = Ast_GetModuleByName(host, buf_len0, buf, realOfs, realEnd);
 	if ((*res) == NULL) {
@@ -2684,7 +2685,7 @@ extern int Ast_ProcedureAdd(struct Ast_RDeclarations *ds, struct Ast_RProcedure 
 		O7_REF((*p))->deep = 0;
 	} else {
 		O7_REF((*p))->deep = o7_add(O7_GUARD(Ast_RProcedure, &ds)->deep, 1);
-		if ((err == Ast_ErrNo_cnst) && (o7_cmp(TranslatorLimits_MaxDeepProcedures_cnst, O7_REF((*p))->deep) <= 0)) {
+		if ((err == Ast_ErrNo_cnst) && (o7_cmp(TranslatorLimits_DeepProcedures_cnst, O7_REF((*p))->deep) <= 0)) {
 			err = Ast_ErrProcNestedTooDeep_cnst;
 		}
 	}

@@ -540,7 +540,7 @@ static struct Ast_RArray *Array(struct Parser *p, struct Ast_RDeclarations *ds, 
 	struct Ast_RArray *a;
 	struct Ast_RType *t;
 	struct Ast_RExpression *exprLen;
-	struct Ast_RExpression *lens[TranslatorLimits_MaxArrayDimension_cnst];
+	struct Ast_RExpression *lens[TranslatorLimits_ArrayDimension_cnst];
 	int i, size;
 	memset(&lens, 0, sizeof(lens));
 
@@ -559,7 +559,7 @@ static struct Ast_RArray *Array(struct Parser *p, struct Ast_RDeclarations *ds, 
 		exprLen = Expression(&(*p), ds);
 		CheckAst(&(*p), Ast_MultArrayLenByExpr(&size, exprLen));
 		if (i < O7_LEN(lens)) {
-			lens[o7_ind(TranslatorLimits_MaxArrayDimension_cnst, i)] = exprLen;
+			lens[o7_ind(TranslatorLimits_ArrayDimension_cnst, i)] = exprLen;
 		}
 		i = o7_add(i, 1);
 	}
@@ -571,7 +571,7 @@ static struct Ast_RArray *Array(struct Parser *p, struct Ast_RDeclarations *ds, 
 	while (i > 0) {
 		i = o7_sub(i, 1);
 		/* TODO сделать нормально */
-		O7_REF(a)->_._._.type = (&(Ast_ArrayGet(O7_REF(a)->_._._.type, lens[o7_ind(TranslatorLimits_MaxArrayDimension_cnst, i)]))->_._);
+		O7_REF(a)->_._._.type = (&(Ast_ArrayGet(O7_REF(a)->_._._.type, lens[o7_ind(TranslatorLimits_ArrayDimension_cnst, i)]))->_._);
 	}
 	return a;
 }
@@ -1290,7 +1290,7 @@ static void Imports(struct Parser *p) {
 }
 
 static void Module(struct Parser *p, struct Ast_RProvider *prov) {
-	Log_StrLn(6, (o7_char *)"Module");
+	o7_bool expectedName;
 
 	Scan(&(*p));
 	if (o7_cmp((*p).l, Scanner_Module_cnst) != 0) {
@@ -1301,36 +1301,42 @@ static void Module(struct Parser *p, struct Ast_RProvider *prov) {
 		if (o7_cmp((*p).l, Scanner_Ident_cnst) != 0) {
 			(*p).module = Ast_ModuleNew(2, (o7_char *)"  ", 0, 0, prov);
 			AddError(&(*p), Parser_ErrExpectIdent_cnst);
+			expectedName = true;
 		} else {
 			(*p).module = Ast_ModuleNew(Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).s.lexStart, (*p).s.lexEnd, prov);
-			if (TakeComment(&(*p))) {
-				Ast_ModuleSetComment((*p).module, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).comment.ofs, (*p).comment.end);
+			expectedName = Ast_RegModule(prov, (*p).module);
+			if (expectedName) {
+				if (TakeComment(&(*p))) {
+					Ast_ModuleSetComment((*p).module, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).comment.ofs, (*p).comment.end);
+				}
+				Scan(&(*p));
+			} else {
+				AddError(&(*p), Parser_ErrExpectAnotherModuleName_cnst);
 			}
-			Ast_RegModule(prov, (*p).module);
-			Scan(&(*p));
 		}
-
-		Expect(&(*p), Scanner_Semicolon_cnst, Parser_ErrExpectSemicolon_cnst);
-		if (o7_cmp((*p).l, Scanner_Import_cnst) == 0) {
-			Imports(&(*p));
-		}
-		Declarations(&(*p), &(*p).module->_);
-		if (ScanIfEqual(&(*p), Scanner_Begin_cnst)) {
-			O7_REF((*p).module)->_.stats = Statements(&(*p), &(*p).module->_);
-		}
-		Expect(&(*p), Scanner_End_cnst, Parser_ErrExpectEnd_cnst);
-		if (o7_cmp((*p).l, Scanner_Ident_cnst) == 0) {
-			if (!StringStore_IsEqualToChars(&O7_REF((*p).module)->_._.name, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).s.lexStart, (*p).s.lexEnd)) {
-				AddError(&(*p), Parser_ErrEndModuleNameNotMatch_cnst);
+		if (expectedName) {
+			Expect(&(*p), Scanner_Semicolon_cnst, Parser_ErrExpectSemicolon_cnst);
+			if (o7_cmp((*p).l, Scanner_Import_cnst) == 0) {
+				Imports(&(*p));
 			}
-			Scan(&(*p));
-		} else {
-			AddError(&(*p), Parser_ErrExpectModuleName_cnst);
+			Declarations(&(*p), &(*p).module->_);
+			if (ScanIfEqual(&(*p), Scanner_Begin_cnst)) {
+				O7_REF((*p).module)->_.stats = Statements(&(*p), &(*p).module->_);
+			}
+			Expect(&(*p), Scanner_End_cnst, Parser_ErrExpectEnd_cnst);
+			if (o7_cmp((*p).l, Scanner_Ident_cnst) == 0) {
+				if (!StringStore_IsEqualToChars(&O7_REF((*p).module)->_._.name, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).s.lexStart, (*p).s.lexEnd)) {
+					AddError(&(*p), Parser_ErrEndModuleNameNotMatch_cnst);
+				}
+				Scan(&(*p));
+			} else {
+				AddError(&(*p), Parser_ErrExpectModuleName_cnst);
+			}
+			if (o7_cmp((*p).l, Scanner_Dot_cnst) != 0) {
+				AddError(&(*p), Parser_ErrExpectDot_cnst);
+			}
+			CheckAst(&(*p), Ast_ModuleEnd((*p).module));
 		}
-		if (o7_cmp((*p).l, Scanner_Dot_cnst) != 0) {
-			AddError(&(*p), Parser_ErrExpectDot_cnst);
-		}
-		CheckAst(&(*p), Ast_ModuleEnd((*p).module));
 	}
 }
 
@@ -1339,6 +1345,7 @@ static void Blank(int code) {
 
 extern void Parser_DefaultOptions(struct Parser_Options *opt) {
 	V_Init(&(*opt)._);
+
 	(*opt).strictSemicolon = true;
 	(*opt).strictReturn = true;
 	(*opt).saveComments = true;

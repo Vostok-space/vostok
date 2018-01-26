@@ -64,9 +64,10 @@
 #define Parser_ErrUnexpectStringInCaseLabel_cnst (-137)
 
 #define Parser_ErrEndModuleNameNotMatch_cnst (-150)
-#define Parser_ErrArrayDimensionsTooMany_cnst (-151)
-#define Parser_ErrEndProcedureNameNotMatch_cnst (-152)
-#define Parser_ErrFunctionWithoutBraces_cnst (-153)
+#define Parser_ErrExpectAnotherModuleName_cnst (-151)
+#define Parser_ErrArrayDimensionsTooMany_cnst (-152)
+#define Parser_ErrEndProcedureNameNotMatch_cnst (-153)
+#define Parser_ErrFunctionWithoutBraces_cnst (-154)
 
 #define Parser_ErrAstBegin_cnst (-200)
 #define Parser_ErrAstEnd_cnst (-400)
