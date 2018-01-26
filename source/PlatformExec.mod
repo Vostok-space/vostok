@@ -21,7 +21,8 @@ IMPORT
 	Utf8,
 	OsExec,
 	Vlog := Log,
-	Platform;
+	Platform,
+	Strings := StringStore;
 
 CONST
 	CodeSize* = 65536;
@@ -31,15 +32,19 @@ CONST
 TYPE
 	Code* = RECORD(V.Base)
 		buf: ARRAY CodeSize OF CHAR;
-		len: INTEGER
+		len: INTEGER;
+
+		parts, partsQuote: BOOLEAN
 	END;
 
 VAR
 	autoCorrectDirSeparator: BOOLEAN;
 	dirSep*: ARRAY 1 OF CHAR;
 
-PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; VAR j: INTEGER): BOOLEAN;
+PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
+               s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
 BEGIN
+	(* TODO экранирование для windows *)
 	WHILE Platform.Posix & (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
 		d[i    ] := "'";
 		d[i + 1] := "\";
@@ -67,51 +72,63 @@ BEGIN
 	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
 END Copy;
 
-PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN;
+PROCEDURE Quote(VAR d: ARRAY OF CHAR; VAR i: INTEGER): BOOLEAN;
+VAR ok: BOOLEAN;
 BEGIN
-	IF Platform.Posix THEN
-		d[i] := "'";
-		INC(i)
-	END;
-	ret := Copy(d, i, s, j) & (i < LEN(d) - 1);
-	IF ret THEN
+	ok := i < LEN(d) - 1;
+	IF ok THEN
 		IF Platform.Posix THEN
-			d[i] := "'";
-			INC(i)
+			d[i] := "'"
+		ELSE ASSERT(Platform.Windows);
+			d[i] := Utf8.DQuote
 		END;
+		INC(i);
 		d[i] := Utf8.Null
 	END
-	RETURN ret
+	RETURN ok
+END Quote;
+
+PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
+	RETURN Quote(d, i) & Copy(d, i, s, j) & Quote(d, i)
 END FullCopy;
 
 PROCEDURE Init*(VAR c: Code; name: ARRAY OF CHAR): BOOLEAN;
+VAR ok: BOOLEAN;
 BEGIN
 	V.Init(c);
-	c.len := 0
-	RETURN (name[0] = Utf8.Null)
-	    OR FullCopy(c.buf, c.len, name, 0)
+	c.parts := FALSE;
+	c.len := 0;
+	IF name[0] = Utf8.Null THEN
+		c.buf[0] := Utf8.Null;
+		ok := TRUE
+	ELSIF Platform.Posix THEN
+		ok := FullCopy(c.buf, c.len, name, 0)
+	ELSE
+		ok := Copy(c.buf, c.len, name, 0)
+	END
+	RETURN ok
 END Init;
 
 PROCEDURE Add*(VAR c: Code; arg: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN;
+VAR ok: BOOLEAN;
 BEGIN
-	ret := c.len < LEN(c.buf) - 1;
-	IF ret THEN
+	ok := c.len < LEN(c.buf) - 1;
+	IF ok THEN
 		IF c.len > 0 THEN
 			c.buf[c.len] := " ";
-			INC(c.len)
-		END;
-		ret := FullCopy(c.buf, c.len, arg, ofs)
+			INC(c.len);
+			ok := FullCopy(c.buf, c.len, arg, ofs)
+		ELSIF Platform.Posix THEN
+			ok := FullCopy(c.buf, c.len, arg, ofs)
+		ELSE ASSERT(Platform.Windows);
+			ok := Copy(c.buf, c.len, arg, ofs)
+		END
 	END
-	RETURN ret
+	RETURN ok
 END Add;
 
 PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-VAR ofs: INTEGER;
-BEGIN
-	ofs := 0
-	RETURN Copy(c.buf, c.len, arg, ofs)
+	RETURN Strings.CopyCharsNull(c.buf, c.len, arg)
 END AddClean;
 
 PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;
@@ -127,44 +144,39 @@ BEGIN
 END AddDirSep;
 
 PROCEDURE FirstPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-VAR ret: BOOLEAN;
-	ofs: INTEGER;
+VAR ok: BOOLEAN;
 BEGIN
-	ret := c.len < LEN(c.buf) - 2;
-	IF ret THEN
+	ASSERT(~c.parts);
+	c.parts := TRUE;
+
+	ok := c.len < LEN(c.buf) - 3;
+	IF ok THEN
 		IF c.len > 0 THEN
+			c.partsQuote := TRUE;
 			c.buf[c.len] := " ";
 			INC(c.len)
+		ELSE
+			c.partsQuote := Platform.Posix
 		END;
-		IF Platform.Posix THEN
-			c.buf[c.len] := "'";
-			INC(c.len, 1)
-		END;
-		ofs := 0;
-		ret := Copy(c.buf, c.len, arg, ofs)
+		ok := ok & (~c.partsQuote OR Quote(c.buf, c.len))
+		         & Copy(c.buf, c.len, arg, 0)
 	END
-	RETURN ret
+	RETURN ok
 END FirstPart;
 
 PROCEDURE AddPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-VAR ofs: INTEGER;
 BEGIN
-	ofs := 0
-	RETURN Copy(c.buf, c.len, arg, ofs)
+	ASSERT(c.parts)
+
+	RETURN Copy(c.buf, c.len, arg, 0)
 END AddPart;
 
 PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-VAR ret: BOOLEAN;
-	ofs: INTEGER;
 BEGIN
-	ofs := 0;
-	ret := Copy(c.buf, c.len, arg, ofs) & (c.len < LEN(c.buf) - 1);
-	IF ret & Platform.Posix THEN
-		c.buf[c.len] := "'";
-		INC(c.len, 1);
-		c.buf[c.len] := Utf8.Null;
-	END
-	RETURN ret
+	ASSERT(c.parts);
+	c.parts := FALSE
+
+	RETURN Copy(c.buf, c.len, arg, 0) & (~c.partsQuote OR Quote(c.buf, c.len))
 END LastPart;
 
 PROCEDURE Do*(c: Code): INTEGER;

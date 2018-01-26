@@ -34,26 +34,26 @@ MODULE make;
    IF posix THEN
      ok := Exec.Init(code, "rm") & Exec.Add(code, "-rf", 0);
    ELSE ASSERT(windows);
-     Exec.AutoCorrectDirSeparator(FALSE);
-     ok := Exec.Init(code, "rmdir") & Exec.Add(code, "/s/q", 0);
-     Exec.AutoCorrectDirSeparator(TRUE)
+     ok := Exec.Init(code, "rmdir") & Exec.AddClean(code, " /s/q");
    END;
    ok := ok & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
        & (0 = Execute(code, "Delete old temp directory"));
-   IF Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-    & Exec.AddClean(code, " to-bin Translator.Start result/") & Exec.AddClean(code, res)
-    & (~windows OR Exec.AddClean(code, ".exe"))
-
-    & ((tmp[1] = "0")
-     & Exec.AddClean(code, " -i singularity/definition -c singularity/bootstrap/singularity")
-     & Exec.AddClean(code, " -m source -m library -t result/") & Exec.AddClean(code, tmp)
-    OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source")
+   ok :=
+      Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
+    & Exec.Add(code, "to-bin", 0) & Exec.Add(code, "Translator.Start", 0)
+    & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
+    & (windows & Exec.LastPart(code, ".exe")
+    OR posix & Exec.LastPart(code, "")
       )
+    & ((tmp[1] = "0")
+     & Exec.Add(code, "-i", 0) & Exec.Add(code, "singularity/definition", 0)
+     & Exec.Add(code, "-c", 0) & Exec.Add(code, "singularity/bootstrap/singularity", 0)
+     & Exec.AddClean(code, " -m source -m library -t")
+    OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source -t")
+      )
+    & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
 
-    & (~windows OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
-   THEN
-     ok := 0 = Execute(code, "Build")
-   END
+    & (0 = Execute(code, "Build"))
    RETURN ok
  END BuildBy;
 
@@ -80,8 +80,9 @@ MODULE make;
         & Exec.Add(code, "run", 0)
         & CopyFileName(c, n)
         & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
-        & Exec.AddClean(code, " -infr . -m test/source ")
-        & (~windows OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
+        & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
+        & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
+        & (TRUE OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
        THEN
          ok := (Execute(code, n) = 0) & ok
        END
