@@ -4,7 +4,7 @@
 mkdir result\self
 
 @cd singularity\bootstrap
-%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c MessageEn.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c -I . -I singularity -o ..\..\result\bs-o7c.exe
+%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c Message.c MessageEn.c MessageRu.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c -I . -I singularity -o ..\..\result\bs-o7c.exe
 @cd ..\..
 
 result\bs-o7c to-c Translator.Start result -infr . -m source
