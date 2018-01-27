@@ -42,31 +42,61 @@ VAR
 	dirSep*: ARRAY 1 OF CHAR;
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
-               s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
+               s: ARRAY OF CHAR; j: INTEGER;
+               parts: BOOLEAN): BOOLEAN;
+VAR k: INTEGER;
+	PROCEDURE IsBackSlash(c: CHAR): BOOLEAN;
+	RETURN (c = "\") OR (c = "/") & autoCorrectDirSeparator
+	END IsBackSlash;
 BEGIN
-	(* TODO экранирование для windows *)
-	WHILE Platform.Posix & (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
-		d[i    ] := "'";
-		d[i + 1] := "\";
-		d[i + 2] := "'";
-		d[i + 3] := "'";
-		INC(i, 4);
-		INC(j)
-	ELSIF (j < LEN(s)) & (s[j] # Utf8.Null) & (i < LEN(d) - 1) DO
-		d[i] := s[j];
-		IF ~autoCorrectDirSeparator THEN
-			;
-		ELSIF s[j] = "/" THEN
-			IF Platform.Windows THEN
-				d[i] := "\"
-			END
-		ELSIF s[j] = "\" THEN
-			IF Platform.Posix THEN
+	IF Platform.Posix THEN
+		WHILE (j < LEN(s)) & (s[j] = "'") & (i < LEN(d) - 4) DO
+			d[i    ] := "'";
+			d[i + 1] := "\";
+			d[i + 2] := "'";
+			d[i + 3] := "'";
+			INC(i, 4);
+			INC(j)
+		ELSIF (j < LEN(s)) & (s[j] # Utf8.Null) & (i < LEN(d) - 1) DO
+			IF (s[j] # "\") OR ~autoCorrectDirSeparator THEN
+				d[i] := s[j]
+			ELSE
 				d[i] := "/"
+			END;
+			INC(i);
+			INC(j)
+		END
+	ELSE ASSERT(Platform.Windows);
+		(* TODO побороть безумную интерпретацию в cmd *)
+		WHILE (j < LEN(s)) & (s[j] # Utf8.Null) DO
+			IF IsBackSlash(s[j]) THEN
+				k := 0;
+				REPEAT
+					INC(k);
+					INC(j)
+				UNTIL (j = LEN(s)) OR ~IsBackSlash(s[j]);
+				IF (j = LEN(s)) OR (s[j] = Utf8.Null) THEN
+					IF ~parts THEN
+						k := k * 2
+					END
+				ELSIF s[j] = Utf8.DQuote THEN
+					k := k * 2 + 1
+				END;
+				IF i > LEN(d) - 1 - k THEN
+					DEC(j);
+					k := LEN(d) - 1 - i
+				END;
+				WHILE k > 0 DO
+					d[i] := "\";
+					INC(i);
+					DEC(k)
+				END
+			ELSE
+				d[i] := s[j];
+				INC(i);
+				INC(j)
 			END
-		END;
-		INC(i);
-		INC(j)
+		END
 	END;
 	d[i] := Utf8.Null
 	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
@@ -88,8 +118,9 @@ BEGIN
 	RETURN ok
 END Quote;
 
-PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER; s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
-	RETURN Quote(d, i) & Copy(d, i, s, j) & Quote(d, i)
+PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
+                   s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
+	RETURN Quote(d, i) & Copy(d, i, s, j, FALSE) & Quote(d, i)
 END FullCopy;
 
 PROCEDURE Init*(VAR c: Code; name: ARRAY OF CHAR): BOOLEAN;
@@ -103,8 +134,8 @@ BEGIN
 		ok := TRUE
 	ELSIF Platform.Posix THEN
 		ok := FullCopy(c.buf, c.len, name, 0)
-	ELSE
-		ok := Copy(c.buf, c.len, name, 0)
+	ELSE ASSERT(Platform.Windows);
+		ok := Copy(c.buf, c.len, name, 0, c.parts)
 	END
 	RETURN ok
 END Init;
@@ -121,7 +152,7 @@ BEGIN
 		ELSIF Platform.Posix THEN
 			ok := FullCopy(c.buf, c.len, arg, ofs)
 		ELSE ASSERT(Platform.Windows);
-			ok := Copy(c.buf, c.len, arg, ofs)
+			ok := Copy(c.buf, c.len, arg, ofs, c.parts)
 		END
 	END
 	RETURN ok
@@ -159,7 +190,7 @@ BEGIN
 			c.partsQuote := Platform.Posix
 		END;
 		ok := ok & (~c.partsQuote OR Quote(c.buf, c.len))
-		         & Copy(c.buf, c.len, arg, 0)
+		         & Copy(c.buf, c.len, arg, 0, c.parts)
 	END
 	RETURN ok
 END FirstPart;
@@ -168,7 +199,7 @@ PROCEDURE AddPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 BEGIN
 	ASSERT(c.parts)
 
-	RETURN Copy(c.buf, c.len, arg, 0)
+	RETURN Copy(c.buf, c.len, arg, 0, c.parts)
 END AddPart;
 
 PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
@@ -176,7 +207,7 @@ BEGIN
 	ASSERT(c.parts);
 	c.parts := FALSE
 
-	RETURN Copy(c.buf, c.len, arg, 0) & (~c.partsQuote OR Quote(c.buf, c.len))
+	RETURN Copy(c.buf, c.len, arg, 0, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
 END LastPart;
 
 PROCEDURE Do*(c: Code): INTEGER;

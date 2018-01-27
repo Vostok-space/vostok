@@ -318,13 +318,12 @@ BEGIN
 	RETURN ret
 END CopyChars;
 
-PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
-                         src: ARRAY OF CHAR): BOOLEAN;
-VAR i: INTEGER;
+PROCEDURE CopyCharsNullStartFrom*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                                  src: ARRAY OF CHAR; i: INTEGER): BOOLEAN;
 BEGIN
 	ASSERT((0 <= destOfs) & (destOfs < LEN(dest)));
+	ASSERT((0 <= i) & (i < LEN(src)));
 
-	i := 0;
 	WHILE (destOfs < LEN(dest) - 1) & (i < LEN(src)) & (src[i] # Utf8.Null) DO
 		dest[destOfs] := src[i];
 		INC(destOfs);
@@ -332,6 +331,11 @@ BEGIN
 	END;
 	dest[destOfs] := Utf8.Null
 	RETURN (i >= LEN(src)) OR (src[i] = Utf8.Null)
+END CopyCharsNullStartFrom;
+
+PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                         src: ARRAY OF CHAR): BOOLEAN;
+	RETURN CopyCharsNullStartFrom(dest, destOfs, src, 0)
 END CopyCharsNull;
 
 PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
