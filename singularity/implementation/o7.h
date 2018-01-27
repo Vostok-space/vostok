@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_o7)
-#define HEADER_GUARD_o7 1
+#if !defined HEADER_GUARD_o7
+#    define  HEADER_GUARD_o7 1
 
 #include <stdlib.h>
 #include <stddef.h>

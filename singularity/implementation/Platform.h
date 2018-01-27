@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_Platform)
-#define HEADER_GUARD_Platform 1
+#if !defined HEADER_GUARD_Platform
+#    define  HEADER_GUARD_Platform 1
 
 extern o7_bool const
   Platform_Posix,

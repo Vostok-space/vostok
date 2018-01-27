@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_CLI)
-#define HEADER_GUARD_CLI 1
+#if !defined HEADER_GUARD_CLI
+#    define  HEADER_GUARD_CLI 1
 
 extern int CLI_count;
 

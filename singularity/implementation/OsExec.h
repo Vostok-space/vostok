@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#if !defined(HEADER_GUARD_OsExec)
-#define HEADER_GUARD_OsExec 1
+#if !defined HEADER_GUARD_OsExec
+#    define  HEADER_GUARD_OsExec 1
 
 #define OsExec_Ok_cnst 0
 

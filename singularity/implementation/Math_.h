@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#if !defined(HEADER_GUARD_Math)
-#define HEADER_GUARD_Math 1
+#if !defined HEADER_GUARD_Math
+#    define  HEADER_GUARD_Math 1
 
 #define Math__pi_cnst 3.14159265358979323846
 #define Math__e_cnst 2.71828182845904523536

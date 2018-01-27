@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_PosixDir)
-#define HEADER_GUARD_PosixDir 1
+#if !defined HEADER_GUARD_PosixDir
+#    define  HEADER_GUARD_PosixDir 1
 
 typedef struct PosixDir_Dir_s *PosixDir_Dir;
 #define PosixDir_Dir_s_tag o7_base_tag

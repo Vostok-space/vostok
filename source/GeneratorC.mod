@@ -1313,6 +1313,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				c11Assert := FALSE;
 				IF (e.value # NIL) & (e.value # Ast.ExprBooleanGet(FALSE))
+				 & ~(Ast.ExprPointerTouch IN e.properties)
 				THEN
 					IF gen.opt.std >= IsoC11 THEN
 						c11Assert := TRUE;
@@ -2782,12 +2783,17 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END WhileIf;
 
 	PROCEDURE Repeat(VAR gen: Generator; st: Ast.Repeat);
+	VAR e: Ast.Expression;
 	BEGIN
 		Text.StrOpen(gen, "do {");
 		statements(gen, st.stats);
 		IF st.expr.id = Ast.IdNegate THEN
 			Text.StrClose(gen, "} while (");
-			Expression(gen, st.expr(Ast.ExprNegate).expr);
+			e := st.expr(Ast.ExprNegate).expr;
+			WHILE e.id = Ast.IdBraces DO
+				e := e(Ast.ExprBraces).expr
+			END;
+			Expression(gen, e);
 			Text.StrLn(gen, ");")
 		ELSE
 			Text.StrClose(gen, "} while (!(");
@@ -3599,10 +3605,10 @@ VAR out: MOut;
 
 	PROCEDURE HeaderGuard(VAR gen: Generator);
 	BEGIN
-		Text.Str(gen, "#if !defined(HEADER_GUARD_");
+		Text.Str(gen, "#if !defined HEADER_GUARD_");
 		Text.String(gen, gen.module.name);
-		Text.StrLn(gen, ")");
-		Text.Str(gen, "#define HEADER_GUARD_");
+		Text.Ln(gen);
+		Text.Str(gen, "#    define  HEADER_GUARD_");
 		Text.String(gen, gen.module.name);
 		Text.StrLn(gen, " 1");
 		Text.Ln(gen)

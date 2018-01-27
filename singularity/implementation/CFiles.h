@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_CFiles)
-#define HEADER_GUARD_CFiles 1
+#if !defined HEADER_GUARD_CFiles
+#    define  HEADER_GUARD_CFiles 1
 
 #define CFiles_KiB_cnst 1024
 #define CFiles_MiB_cnst (CFiles_KiB_cnst * 1024)

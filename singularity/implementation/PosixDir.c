@@ -37,7 +37,7 @@ extern o7_bool PosixDir_Open(PosixDir_Dir *d,
                              int len, o7_char name[O7_VLA(len)], int ofs)
 {
 	assert((0 <= ofs) && (ofs < len));
-	*d = (PosixDir_Dir)opendir(name + ofs);
+	*d = (PosixDir_Dir)opendir((char *)(name + ofs));
 	return NULL != *d;
 }
 

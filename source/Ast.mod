@@ -181,6 +181,10 @@ CONST
 	InitedValue* = 2;
 	InitedFail*  = 3;
 
+	(* в RFactor.flags для учёта того, что сравнение с NIL не может быть
+	   константным в clang *)
+	ExprPointerTouch* = 0;
+
 TYPE
 	Module* = POINTER TO RModule;
 
@@ -349,6 +353,7 @@ TYPE
 	RExpression* = RECORD(Node)
 		type*: Type;
 
+		properties*: SET;
 		value*: Factor
 	END;
 
@@ -1571,6 +1576,7 @@ BEGIN
 		t.used := TRUE
 	END;
 	e.type := t;
+	e.properties := {};
 	e.value := NIL
 END ExprInit;
 
@@ -1650,6 +1656,7 @@ PROCEDURE ExprNilGet*(): ExprNil;
 BEGIN
 	IF nil = NIL THEN
 		NEW(nil); ExprInit(nil, IdPointer, TypeGet(IdPointer));
+		nil.properties := { ExprPointerTouch };
 		ASSERT(nil.type.type = NIL);
 		nil.value := nil
 	END
@@ -1663,12 +1670,29 @@ BEGIN
 	RETURN e
 END ExprErrNew;
 
+PROCEDURE Prop(e: Expression): SET;
+VAR p: SET;
+BEGIN
+	IF e = NIL THEN
+		p := {}
+	ELSE
+		p := e.properties
+	END
+	RETURN p
+END Prop;
+
+PROCEDURE PropTouch(e: Expression; prop: SET);
+BEGIN
+	e.properties := e.properties + prop * { ExprPointerTouch }
+END PropTouch;
+
 PROCEDURE ExprBracesNew*(expr: Expression): ExprBraces;
 VAR e: ExprBraces;
 BEGIN
 	NEW(e); ExprInit(e, IdBraces, expr.type);
 	e.expr := expr;
-	e.value := expr.value
+	e.value := expr.value;
+	PropTouch(e, Prop(expr))
 	RETURN e
 END ExprBracesNew;
 
@@ -1695,9 +1719,9 @@ BEGIN
 	e.exprs[0] := expr1;
 	e.exprs[1] := expr2;
 	e.next := NIL;
-	err := ErrNo;
 	e.set[0] := {};
 	e.set[1] := {};
+	err := ErrNo;
 	IF (expr1 = NIL) & (expr2 = NIL) THEN
 		;
 	ELSIF (expr1 # NIL) & (expr1.type # NIL)
@@ -1746,7 +1770,9 @@ BEGIN
 	ELSE
 		base.set[0] := base.set[0] + e.set[0];
 		base.set[1] := base.set[1] + e.set[1]
-	END
+	END;
+	PropTouch(base, Prop(expr1) + Prop(expr2))
+
 	RETURN err
 END ExprSetNew;
 
@@ -1755,6 +1781,7 @@ VAR err: INTEGER;
 BEGIN
 	NEW(neg); ExprInit(neg, IdNegate, TypeGet(IdBoolean));
 	neg.expr := expr;
+	PropTouch(neg, Prop(expr));
 	IF (expr.type # NIL) & (expr.type.id # IdBoolean) THEN
 		err := ErrNegateNotBool
 	ELSE
@@ -2290,6 +2317,7 @@ BEGIN
 	e.exprs[0] := expr1;
 	e.exprs[1] := expr2;
 	e.relation := relation;
+	PropTouch(e, Prop(expr1) + Prop(expr2));
 	err := ErrNo;
 	IF (expr1 # NIL) & (expr2 # NIL)
 	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
@@ -2395,7 +2423,8 @@ BEGIN
 	ExprInit(e, IdSum, t);
 	e.next := NIL;
 	e.add := add;
-	e.term := term
+	e.term := term;
+	PropTouch(e, Prop(sum) + Prop(term))
 END ExprSumCreate;
 
 PROCEDURE ExprSumNew*(VAR e: ExprSum; add: INTEGER; term: Expression): INTEGER;
@@ -2694,6 +2723,7 @@ BEGIN
 			e.value := val
 		END
 	END;
+	PropTouch(e, Prop(factor) + Prop(factorOrTerm));
 	e.factor := factor;
 	e.mult := mult;
 	e.expr := factorOrTerm;

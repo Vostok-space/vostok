@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_OsEnv)
-#define HEADER_GUARD_OsEnv 1
+#if !defined HEADER_GUARD_OsEnv
+#    define  HEADER_GUARD_OsEnv 1
 
 
 #define OsEnv_MaxLen_cnst 4096

@@ -56,7 +56,7 @@ extern o7_bool WindowsDir_FindFirst(WindowsDir_FindId *id, WindowsDir_FindData *
 	o7_cbool ret;
 	assert((0 <= ofs) && (ofs < len - 1));
 	if (O7_NEW(id, WindowsDir_FindId_s) && O7_NEW(d, WindowsDir_FindData_s)) {
-		(*id)->h = findfirst(filespec + ofs, &(*d)->d);
+		(*id)->h = findfirst((char *)(filespec + ofs), &(*d)->d);
 	}
 	if ((NULL == *id) || (NULL == *d) || (-1 == (*id)->h)) {
 		O7_NULL(id);

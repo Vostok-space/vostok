@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_WindowsDir)
-#define HEADER_GUARD_WindowsDir 1
+#if !defined HEADER_GUARD_WindowsDir
+#    define  HEADER_GUARD_WindowsDir 1
 
 typedef struct WindowsDir_FindData_s *WindowsDir_FindData;
 #define WindowsDir_FindData_s_tag o7_base_tag
