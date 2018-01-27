@@ -1,4 +1,4 @@
-(* Copyright 2016 ComdivByZero
+(* Copyright 2016, 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,5 +62,11 @@ PROCEDURE DivMod*(VAR div, mod: Type; n, d: Type);
 BEGIN
 	ASSERT(FALSE)
 END DivMod;
+
+PROCEDURE Cmp*(l, r: Type): INTEGER;
+BEGIN
+	ASSERT(FALSE)
+	RETURN 0
+END Cmp;
 
 END Int64.

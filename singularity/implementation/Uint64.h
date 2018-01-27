@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016, 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(HEADER_GUARD_Int64)
-#define HEADER_GUARD_Int64 1
+#if !defined HEADER_GUARD_Uint64
+#    define  HEADER_GUARD_Uint64 1
 
 #if !O7_GNUC_BUILTIN_OVERFLOW
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
@@ -25,16 +25,15 @@
 #	endif
 #endif
 
-#if __STDC_VERSION__ >= 199901L
-#	include <stdint.h>
-	typedef uint_least64_t Uint64_t;
-#	define Uint64_Max UINT_LEAST64_MAX
-#elif ULONG_MAX > 4294967295l
+#if UINT_MAX > 4294967295lu
+	typedef int Uint64_t;
+#	define Uint64_Max 18446744073709551615u
+#elif ULONG_MAX > 4294967295lu
 	typedef unsigned long Uint64_t;
-#	define Uint64_Max ULONG_MAX
+#	define Uint64_Max 18446744073709551615ul
 #else
 	typedef unsigned long long Uint64_t;
-#	define Uint64_Max ULLONG_MAX
+#	define Uint64_Max 18446744073709551615ull
 #endif
 
 #define Uint64_Size_cnst sizeof(Uint64_t)
@@ -115,16 +114,12 @@ O7_ALWAYS_INLINE void Uint64_CheckDiv(Uint64_Type n, Uint64_Type d) {
 	}
 }
 
-O7_ALWAYS_INLINE void
-	Uint64_Div(Uint64_Type div, Uint64_Type n, Uint64_Type d)
-{
+O7_ALWAYS_INLINE void Uint64_Div(Uint64_Type div, Uint64_Type n, Uint64_Type d) {
 	Uint64_CheckDiv(n, d);
 	*(Uint64_t *)div = *(Uint64_t *)n / *(Uint64_t *)d;
 }
 
-O7_ALWAYS_INLINE void
-	Uint64_Mod(Uint64_Type mod, Uint64_Type n, Uint64_Type d)
-{
+O7_ALWAYS_INLINE void Uint64_Mod(Uint64_Type mod, Uint64_Type n, Uint64_Type d) {
 	Uint64_CheckDiv(n, d);
 	*(Uint64_t *)mod = *(Uint64_t *)n % *(Uint64_t *)d;
 }
@@ -135,6 +130,18 @@ O7_ALWAYS_INLINE void
 	Uint64_CheckDiv(n, d);
 	*(Uint64_t *)div = *(Uint64_t *)n / *(Uint64_t *)d;
 	*(Uint64_t *)mod = *(Uint64_t *)n % *(Uint64_t *)d;
+}
+
+O7_ALWAYS_INLINE int Uint64_Cmp(Uint64_Type l, Uint64_Type r) {
+	int cmp;
+	if (*(Uint64_t *)l < *(Uint64_t *)r) {
+		cmp = -1;
+	} else if (*(Uint64_t *)l > *(Uint64_t *)r) {
+		cmp = +1;
+	} else {
+		cmp = 0;
+	}
+	return cmp;
 }
 
 O7_ALWAYS_INLINE void Uint64_init(void) {
