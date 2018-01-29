@@ -26,13 +26,13 @@ extern void WindowsDir_FindId_s_undef(WindowsDir_FindId r);
 extern o7_bool WindowsDir_supported;
 
 extern o7_bool WindowsDir_FindFirst(WindowsDir_FindId *id, WindowsDir_FindData *d,
-                                    int len, o7_char filespec[O7_VLA(len)], int ofs);
+                                    o7_int_t len, o7_char filespec[O7_VLA(len)], o7_int_t ofs);
 
 extern o7_bool WindowsDir_FindNext(WindowsDir_FindData *d, WindowsDir_FindId id);
 
 extern o7_bool WindowsDir_Close(WindowsDir_FindId *id);
 
-extern o7_bool WindowsDir_CopyName(int len, o7_char buf[O7_VLA(len)], int *ofs,
+extern o7_bool WindowsDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t *ofs,
                                    WindowsDir_FindData f);
 
 O7_INLINE void WindowsDir_init(void) {}

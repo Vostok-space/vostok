@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	undefinedf = o7_flt_undef();
 	assert(undefinedf != undefinedf);
 
-	assert((argc > 0) == (argv != NULL));
+	assert((0 < argc) == (argv != NULL));
 
 	o7_exit_code = 0;
 
@@ -60,7 +60,7 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 }
 
 extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base) {
-	static int id = 1;
+	static o7_id_t id = 1;
 	int i;
 	assert(NULL != base);
 	i = 1;
@@ -83,7 +83,7 @@ extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base) {
 	}
 }
 
-extern O7_NORETURN void o7_case_fail(int i) {
+extern O7_NORETURN void o7_case_fail(o7_int_t i) {
 	extern int puts(char const *s);
 	char buf[26];
 	o7_cbool neg;
@@ -109,49 +109,50 @@ extern O7_NORETURN void o7_case_fail(int i) {
 	abort();
 }
 
-extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]) {
-	int i;
+extern o7_char* o7_bools_undef(o7_int_t len, o7_char array[O7_VLA(len)]) {
+	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = 0xff;
 	}
 	return array;
 }
 
-extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]) {
-	int i;
+extern double* o7_doubles_undef(o7_int_t len, double array[O7_VLA(len)]) {
+	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_DBL_UNDEF;
 	}
 	return array;
 }
 
-extern float* o7_floats_undef(int len, float array[O7_VLA(len)]) {
-	int i;
+extern float* o7_floats_undef(o7_int_t len, float array[O7_VLA(len)]) {
+	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_FLT_UNDEF;
 	}
 	return array;
 }
 
-extern int* o7_ints_undef(int len, int array[O7_VLA(len)]) {
-	int i;
+extern o7_int_t* o7_ints_undef(o7_int_t len, int array[O7_VLA(len)]) {
+	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_INT_UNDEF;
 	}
 	return array;
 }
 
-extern o7_long_t* o7_longs_undef(int len, o7_long_t array[O7_VLA(len)]) {
-	int i;
+extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]) {
+	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_LONG_UNDEF;
 	}
 	return array;
 }
 
-extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
-                     int s2_len, o7_char const s2[O7_VLA(s2_len)]) {
-	int i, len, c1, c2;
+extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
+                     o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]) {
+	int c1, c2;
+	o7_int_t i, len;
 	if (s1_len < s2_len) {
 		len = s1_len;
 	} else {

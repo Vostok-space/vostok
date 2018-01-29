@@ -18,7 +18,7 @@
 
 #define OsExec_Ok_cnst 0
 
-extern int OsExec_Do(int len, o7_char const cmd[O7_VLA(len)]);
+extern o7_int_t OsExec_Do(o7_int_t len, o7_char const cmd[O7_VLA(len)]);
 
 O7_INLINE void OsExec_init(void) { ; }
 #endif

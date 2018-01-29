@@ -26,13 +26,13 @@ O7_INLINE void PosixDir_Ent_s_undef(PosixDir_Ent r) {}
 extern o7_bool PosixDir_supported;
 
 extern o7_bool PosixDir_Open(PosixDir_Dir *d,
-                             int len, o7_char name[O7_VLA(len)], int ofs);
+                             o7_int_t len, o7_char name[O7_VLA(len)], o7_int_t ofs);
 
 extern o7_bool PosixDir_Close(PosixDir_Dir *d);
 
 extern o7_bool PosixDir_Read(PosixDir_Ent *e, PosixDir_Dir d);
 
-extern o7_bool PosixDir_CopyName(int len, o7_char buf[O7_VLA(len)], int *ofs,
+extern o7_bool PosixDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t *ofs,
                                  PosixDir_Ent e);
 
 O7_INLINE void PosixDir_init(void) {}

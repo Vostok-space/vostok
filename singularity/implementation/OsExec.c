@@ -17,7 +17,7 @@
 
 #include "OsExec.h"
 
-extern int OsExec_Do(int len, o7_char const cmd[O7_VLA(len)]) {
+extern o7_int_t OsExec_Do(o7_int_t len, o7_char const cmd[O7_VLA(len)]) {
 	return system((char const *)cmd);
 }
 

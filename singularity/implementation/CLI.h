@@ -18,7 +18,7 @@
 extern int CLI_count;
 
 extern o7_cbool CLI_Get(
-	int str_len, char unsigned str[O7_VLA(str_len)], int *ofs, int arg);
+	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs, o7_int_t arg);
 
 extern void CLI_SetExitCode(int code);
 

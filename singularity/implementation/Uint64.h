@@ -15,48 +15,24 @@
 #if !defined HEADER_GUARD_Uint64
 #    define  HEADER_GUARD_Uint64 1
 
-#if !O7_GNUC_BUILTIN_OVERFLOW
-#	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
-#	if !defined(__builtin_add_overflow)
-#		define O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
-#		define __builtin_add_overflow(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
-#		define __builtin_sub_overflow(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
-#		define __builtin_mul_overflow(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
-#	endif
-#endif
+typedef o7_ulong_t Uint64_t;
+#define Uint64_Max O7_ULONG_MAX
 
-#if UINT_MAX > 4294967295lu
-	typedef int Uint64_t;
-#	define Uint64_Max 18446744073709551615u
-#elif ULONG_MAX > 4294967295lu
-	typedef unsigned long Uint64_t;
-#	define Uint64_Max 18446744073709551615ul
-#else
-	typedef unsigned long long Uint64_t;
-#	define Uint64_Max 18446744073709551615ull
-#endif
-
-#define Uint64_Size_cnst sizeof(Uint64_t)
+#define Uint64_Size_cnst ((int)sizeof(Uint64_t))
 
 typedef o7_char Uint64_Type[Uint64_Size_cnst];
 
-static Uint64_Type Uint64_max;
+static Uint64_Type Uint64_min, Uint64_max;
 
-O7_ALWAYS_INLINE void Uint64_FromInt(Uint64_Type v, int high, int low) {
+O7_ALWAYS_INLINE void Uint64_FromInt(Uint64_Type v, o7_int_t high, o7_int_t low) {
 	*(Uint64_t *)v = o7_int(high) * (Uint64_t)INT_MAX + o7_int(low);
 }
 
-O7_ALWAYS_INLINE void Uint64_ToInt(int *i, Uint64_Type v) {
-	o7_bool ov;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		ov = __builtin_add_overflow(*(Uint64_t *)v, 0, i);
-		assert(!ov);
-	} else {
-		if (O7_OVERFLOW) {
-			assert(*(Uint64_t *)v <= INT_MAX);
-		}
-		*i = *(Uint64_t *)v;
+O7_ALWAYS_INLINE void Uint64_ToInt(o7_int_t *i, Uint64_Type v) {
+	if (O7_OVERFLOW) {
+		assert(*(Uint64_t *)v <= O7_INT_MAX);
 	}
+	*i = *(Uint64_t *)v;
 }
 
 O7_ALWAYS_INLINE void
@@ -64,8 +40,7 @@ O7_ALWAYS_INLINE void
 {
 	o7_bool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_add_overflow(*(Uint64_t *)a1, *(Uint64_t *)a2,
-		                                  (Uint64_t *)sum);
+		overflow = O7_GNUC_UADDL(*(Uint64_t *)a1, *(Uint64_t *)a2, (Uint64_t *)sum);
 		assert(!overflow);
 	} else {
 		if (O7_OVERFLOW) {
@@ -80,12 +55,11 @@ O7_ALWAYS_INLINE void
 {
 	o7_bool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_sub_overflow(*(Uint64_t *)m, *(Uint64_t *)s,
-		                                  (Uint64_t *)diff);
+		overflow = O7_GNUC_USUBL(*(Uint64_t *)m, *(Uint64_t *)s, (Uint64_t *)diff);
 		assert(!overflow);
 	} else {
 		if (O7_OVERFLOW) {
-			assert(*(Uint64_t *)m >= *(Uint64_t *)s);
+			assert(*(Uint64_t *)s <= *(Uint64_t *)m);
 		}
 		*(Uint64_t *)diff = *(Uint64_t *)m - *(Uint64_t *)s;
 	}
@@ -96,8 +70,7 @@ O7_ALWAYS_INLINE void
 {
 	o7_bool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = __builtin_mul_overflow(*(Uint64_t *)m1, *(Uint64_t *)m2,
-		                                  (Uint64_t *)prod);
+		overflow = O7_GNUC_UMULL(*(Uint64_t *)m1, *(Uint64_t *)m2, (Uint64_t *)prod);
 		assert(!overflow);
 	} else {
 		if (O7_OVERFLOW) {
@@ -145,14 +118,8 @@ O7_ALWAYS_INLINE int Uint64_Cmp(Uint64_Type l, Uint64_Type r) {
 }
 
 O7_ALWAYS_INLINE void Uint64_init(void) {
+	*(Uint64_t *)Uint64_min = 0;
 	*(Uint64_t *)Uint64_max = Uint64_Max;
 }
-
-#if defined(O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF)
-#	undef O7_GNUC_BUILTIN_OVERFLOW_NEED_UNDEF
-#	undef __builtin_add_overflow
-#	undef __builtin_sub_overflow
-#	undef __builtin_mul_overflow
-#endif
 
 #endif

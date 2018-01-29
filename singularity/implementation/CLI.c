@@ -23,12 +23,12 @@ int CLI_count;
 static char **CLI_argv;
 
 extern o7_cbool CLI_Get(
-	int str_len, char unsigned str[O7_VLA(str_len)], int *ofs, int arg)
+	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs, o7_int_t arg)
 {
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));
 	i = 0;
-	while ((*ofs < str_len - 1) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
 		i += 1;
 		*ofs += 1;

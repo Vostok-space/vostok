@@ -34,7 +34,7 @@
 #endif
 
 extern o7_bool PosixDir_Open(PosixDir_Dir *d,
-                             int len, o7_char name[O7_VLA(len)], int ofs)
+                             o7_int_t len, o7_char name[O7_VLA(len)], o7_int_t ofs)
 {
 	assert((0 <= ofs) && (ofs < len));
 	*d = (PosixDir_Dir)opendir((char *)(name + ofs));
@@ -53,10 +53,10 @@ extern o7_bool PosixDir_Read(PosixDir_Ent *e, PosixDir_Dir d) {
 	return NULL != *e;
 }
 
-extern o7_bool PosixDir_CopyName(int len, o7_char buf[O7_VLA(len)], int *ofs,
+extern o7_bool PosixDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t *ofs,
                                  PosixDir_Ent e)
 {
-	int i, j;
+	o7_int_t i, j;
 	assert((0 <= *ofs) && (*ofs < len));
 	i = 0;
 	j = *ofs;

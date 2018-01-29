@@ -21,15 +21,15 @@
 
 #include "OsEnv.h"
 
-extern o7_bool OsEnv_Exist(int len, o7_char const name[O7_VLA(len)]) {
+extern o7_bool OsEnv_Exist(o7_int_t len, o7_char const name[O7_VLA(len)]) {
 	return NULL != getenv((char *)name);
 }
 
-extern o7_bool OsEnv_Get(int len, o7_char val[O7_VLA(len)], int *ofs,
-                         int name_len, o7_char const name[O7_VLA(name_len)])
+extern o7_bool OsEnv_Get(o7_int_t len, o7_char val[O7_VLA(len)], o7_int_t *ofs,
+                         o7_int_t name_len, o7_char const name[O7_VLA(name_len)])
 {
 	char *env;
-	int i, j;
+	o7_int_t i, j;
 	assert((0 <= *ofs) && (*ofs < len - 1));
 
 	env = getenv((char *)name);
