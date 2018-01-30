@@ -25,7 +25,8 @@ typedef o7_char Uint64_Type[Uint64_Size_cnst];
 static Uint64_Type Uint64_min, Uint64_max;
 
 O7_ALWAYS_INLINE void Uint64_FromInt(Uint64_Type v, o7_int_t high, o7_int_t low) {
-	*(Uint64_t *)v = o7_int(high) * (Uint64_t)INT_MAX + o7_int(low);
+	assert((0 <= high) && (0 <= low));
+	*(Uint64_t *)v = o7_int(high) * (Uint64_t)O7_INT_MAX + o7_int(low);
 }
 
 O7_ALWAYS_INLINE void Uint64_ToInt(o7_int_t *i, Uint64_Type v) {
@@ -38,7 +39,7 @@ O7_ALWAYS_INLINE void Uint64_ToInt(o7_int_t *i, Uint64_Type v) {
 O7_ALWAYS_INLINE void
 	Uint64_Add(Uint64_Type sum, Uint64_Type a1, Uint64_Type a2)
 {
-	o7_bool overflow;
+	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_UADDL(*(Uint64_t *)a1, *(Uint64_t *)a2, (Uint64_t *)sum);
 		assert(!overflow);
@@ -53,7 +54,7 @@ O7_ALWAYS_INLINE void
 O7_ALWAYS_INLINE void
 	Uint64_Sub(Uint64_Type diff, Uint64_Type m, Uint64_Type s)
 {
-	o7_bool overflow;
+	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_USUBL(*(Uint64_t *)m, *(Uint64_t *)s, (Uint64_t *)diff);
 		assert(!overflow);
@@ -68,7 +69,7 @@ O7_ALWAYS_INLINE void
 O7_ALWAYS_INLINE void
 	Uint64_Mul(Uint64_Type prod, Uint64_Type m1, Uint64_Type m2)
 {
-	o7_bool overflow;
+	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_UMULL(*(Uint64_t *)m1, *(Uint64_t *)m2, (Uint64_t *)prod);
 		assert(!overflow);

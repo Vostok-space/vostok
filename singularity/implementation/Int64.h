@@ -27,7 +27,7 @@ typedef o7_char Int64_Type[Int64_Size_cnst];
 static Int64_Type Int64_min, Int64_max;
 
 O7_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, o7_int_t high, o7_int_t low) {
-	*(Int64_t *)v = o7_int(high) * (Int64_t)INT_MAX + o7_int(low);
+	*(Int64_t *)v = o7_int(high) * (Int64_t)O7_INT_MAX + o7_int(low);
 }
 
 O7_ALWAYS_INLINE void Int64_ToInt(o7_int_t *i, Int64_Type v) {

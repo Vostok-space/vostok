@@ -21,7 +21,7 @@ TYPE
 	Type* = ARRAY Size OF BYTE;
 
 VAR
-	max*: Type;
+	min*, max*: Type;
 
 PROCEDURE FromInt*(VAR v: Type; high, low: INTEGER);
 BEGIN
