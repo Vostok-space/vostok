@@ -165,12 +165,15 @@ END Go;
 
 PROCEDURE Error*(s: INTEGER);
 VAR ai1, ai2: ARRAY 7 OF INTEGER;
+    ai3: ARRAY 8 OF INTEGER;
 BEGIN
 	ai2[0] := 0;
 	ai1 := ai2;
 	IF 0 = s THEN
 		Set(aaa, 0)
 	END;
+	ai3[0] := 0;
+	(*ai3 := ai1;*)
 	IF 1 = s THEN
 		Set(aaa, 3)
 	END

@@ -2130,7 +2130,7 @@ BEGIN
 	RETURN err
 END SelGuardNew;
 
-PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type): BOOLEAN;
+PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type; param: BOOLEAN): BOOLEAN;
 VAR comp: BOOLEAN;
 
 	PROCEDURE EqualProcTypes(t1, t2: ProcType): BOOLEAN;
@@ -2170,7 +2170,9 @@ BEGIN
 		    & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
 		THEN
 			CASE t1.id OF
-			  IdArray   : comp := CompatibleTypes(distance, t1.type, t2.type)
+			  IdArray   : comp := ((param & (t1(Array).count = NIL))
+			                    OR (~param & (t2(Array).count = NIL)))
+			                    & CompatibleTypes(distance, t1.type, t2.type, param)
 			| IdPointer : comp := (t1.type = t2.type)
 			                   OR (t1.type = NIL) OR (t2.type = NIL) (* TODO *)
 			                   OR IsRecordExtension(distance, t1.type(Record),
@@ -2254,6 +2256,16 @@ PROCEDURE CompatibleAsIntAndByte(t1, t2: Type): BOOLEAN;
 	RETURN (t1.id IN {IdInteger, IdByte}) & (t2.id IN {IdInteger, IdByte})
 END CompatibleAsIntAndByte;
 
+PROCEDURE CompatibleAsStrings(t: Type; e: Expression): BOOLEAN;
+BEGIN
+	RETURN (t.id = IdArray) & (t.type.id = IdChar) & (e IS ExprString)
+END CompatibleAsStrings;
+
+PROCEDURE IsChars(t: Type): BOOLEAN;
+BEGIN
+	RETURN (t.id = IdArray) & (t.type.id = IdChar)
+END IsChars;
+
 PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
                            relation: INTEGER; expr2: Expression): INTEGER;
 VAR err: INTEGER;
@@ -2275,8 +2287,11 @@ VAR err: INTEGER;
 				err := ErrExprInWrongTypes - 3 + ORD(t1.id # IdInteger)
 				                               + ORD(~(t2.id IN {IdSet, IdLongSet})) * 2
 			END
-		ELSIF ~CompatibleTypes(dist1, t1, t2)
-		    & ~CompatibleTypes(dist2, t2, t1)
+		ELSIF ~CompatibleTypes(dist1, t1, t2, FALSE)
+		    & ~CompatibleTypes(dist2, t2, t1, FALSE)
+		    & ~(IsChars(t1) & IsChars(t2))
+		    & ~CompatibleAsStrings(t1, e2)
+		    & ~CompatibleAsStrings(t2, e1)
 		    & ~CompatibleAsCharAndString(t1, e2)
 		    & ~CompatibleAsCharAndString(t2, e1)
 		    & ~CompatibleAsIntAndByte(t1, t2)
@@ -2645,7 +2660,7 @@ VAR err: INTEGER;
 	END Rl;
 
 	PROCEDURE St(res: Expression; mult: INTEGER; b: Expression);
-	VAR s, s1, s2: ARRAY 2 OF SET;
+	VAR s, s1, s2: LongSet;
 	BEGIN
 		s1 := res.value(ExprSet).set;
 		s2 := b.value(ExprSet).set;
@@ -2867,7 +2882,7 @@ BEGIN
 		err := ErrProcHasNoReturn
 	ELSIF e # NIL THEN
 		p.return := e;
-		IF ~CompatibleTypes(distance, p.header.type, e.type)
+		IF ~CompatibleTypes(distance, p.header.type, e.type, FALSE)
 		 & ~CompatibleAsCharAndString(p.header.type, p.return)
 		THEN
 			IF ~CompatibleAsIntAndByte(p.header.type, p.return.type) THEN
@@ -2949,7 +2964,7 @@ BEGIN
 	err := ErrNo;
 	fp := currentFormalParam;
 	IF fp # NIL THEN
-		IF ~CompatibleTypes(distance, fp.type, e.type)
+		IF ~CompatibleTypes(distance, fp.type, e.type, TRUE)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
 		 &     ((ParamOut IN fp.access)
 		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
@@ -3516,8 +3531,9 @@ BEGIN
 		END;
 
 		IF (expr # NIL)
-		 & ~CompatibleTypes(a.distance, des.type, expr.type)
-		 & ~CompatibleAsCharAndString(des.type, a.expr)
+		 & ~CompatibleTypes(a.distance, des.type, expr.type, FALSE)
+		 & ~CompatibleAsCharAndString(des.type, expr)
+		 & ~CompatibleAsStrings(des.type, expr)
 		THEN
 			IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
 				Out.Int(des.type.id, 0); Out.String(" "); Out.Int(expr.type.id, 0); Out.Ln;
