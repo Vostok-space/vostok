@@ -1165,7 +1165,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR;
 			                ps: Ast.Parameter);
 			BEGIN
-				Text.Str(gen, "(int)((unsigned)");
+				Text.Str(gen, "(o7_int_t)((o7_uint_t)");
 				Factor(gen, ps.expr);
 				Text.Str(gen, shift);
 				Factor(gen, ps.next.expr);
@@ -1243,17 +1243,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				CASE e.type.id OF
 				  Ast.IdChar, Ast.IdArray:
-					Text.Str(gen, "(int)");
+					Text.Str(gen, "(o7_int_t)");
 					Factor(gen, e)
 				| Ast.IdBoolean:
 					IF (e IS Ast.Designator)
 					 & (gen.opt.varInit = VarInitUndefined)
 					THEN
-						Text.Str(gen, "(int)o7_bl(");
+						Text.Str(gen, "(o7_int_t)o7_bl(");
 						Expression(gen, e);
 						Text.Str(gen, ")")
 					ELSE
-						Text.Str(gen, "(int)");
+						Text.Str(gen, "(o7_int_t)");
 						Factor(gen, e)
 					END
 				| Ast.IdSet:
@@ -2071,7 +2071,7 @@ PROCEDURE Qualifier(VAR gen: Generator; typ: Ast.Type);
 BEGIN
 	CASE typ.id OF
 	  Ast.IdInteger:
-		Text.Str(gen, "int")
+		Text.Str(gen, "o7_int_t")
 	| Ast.IdLongInt:
 		Text.Str(gen, "o7_long_t")
 	| Ast.IdSet:
@@ -2114,7 +2114,7 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			i := 0;
 			t := fp.type;
 			WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
-				Text.Str(gen, "int ");
+				Text.Str(gen, "o7_int_t ");
 				Name(gen, fp);
 				Text.Str(gen, "_len");
 				Text.Int(gen, i);
@@ -2440,7 +2440,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 		END;
 		v := rec.vars;
 		IF (v = NIL) & (rec.base = NIL) & ~gen.opt.gnu THEN
-			Text.Str(gen, " { int nothing; } ")
+			Text.Str(gen, " { char nothing; } ")
 		ELSE
 			Text.StrOpen(gen, " {");
 
@@ -2532,7 +2532,7 @@ BEGIN
 		THEN
 			CASE typ.id OF
 			  Ast.IdInteger:
-				Simple(gen, "int ")
+				Simple(gen, "o7_int_t ")
 			| Ast.IdLongInt:
 				Simple(gen, "o7_long_t ")
 			| Ast.IdSet:
@@ -3093,7 +3093,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
-			Text.Str(gen, "{ int o7_case_expr = ");
+			Text.Str(gen, "{ o7_int_t o7_case_expr = ");
 			Expression(gen, st.expr);
 			Text.StrOpen(gen, ";");
 			Text.StrLn(gen, "switch (o7_case_expr) {")
@@ -3700,7 +3700,7 @@ VAR out: MOut;
 			Text.Str(impl, "extern void ");
 			Name(impl, module);
 			Text.StrOpen(impl, "_init(void) {");
-			Text.StrLn(impl, "static int initialized = 0;");
+			Text.StrLn(impl, "static unsigned initialized = 0;");
 			Text.StrOpen(impl, "if (0 == initialized) {");
 			ImportInit(impl, module.import);
 			TagsInit(impl);
