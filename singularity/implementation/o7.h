@@ -1,4 +1,4 @@
-/* Copyright 2016-2017 ComdivByZero
+/* Copyright 2016-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,13 +225,11 @@ typedef o7_ulong_t o7_set64_t;
 
 #define O7_ALWAYS_INLINE O7_ATTR_ALWAYS_INLINE O7_INLINE
 
-O7_INLINE void o7_gc_init(void) O7_ATTR_ALWAYS_INLINE;
-
 #if O7_MEMNG == O7_MEMNG_GC
 #	include "gc.h"
-	O7_INLINE void o7_gc_init(void) { GC_INIT(); }
+	O7_ALWAYS_INLINE void o7_gc_init(void) { GC_INIT(); }
 #else
-	O7_INLINE void o7_gc_init(void) { assert(0 > 1); }
+	O7_ALWAYS_INLINE void o7_gc_init(void) { assert(0 > 1); }
 #endif
 
 #if defined(O7_MEMNG_COUNTER_TYPE)
@@ -312,8 +310,7 @@ void* o7_ref(void *ptr) {
 #	endif
 #endif
 
-O7_ATTR_MALLOC O7_ALWAYS_INLINE
-void* o7_raw_alloc(size_t size) {
+O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_raw_alloc(size_t size) {
 	extern char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 	extern size_t o7_allocated;
 	void *mem;
@@ -850,8 +847,6 @@ O7_ALWAYS_INLINE void* o7_unhold(void *mem) {
 }
 
 
-#define O7_RELEASE_PARAMS(array) o7_release_array(sizeof(array) / sizeof(array[0]), array)
-
 O7_ALWAYS_INLINE void o7_null(void **mem) {
 	o7_release(*mem);
 	*mem = NULL;
@@ -859,11 +854,25 @@ O7_ALWAYS_INLINE void o7_null(void **mem) {
 
 #define O7_NULL(mem) o7_null((void **)(mem))
 
-O7_ALWAYS_INLINE void o7_release_array(o7_int_t count, void *mem[O7_VLA(count)]) {
+O7_ALWAYS_INLINE
+void o7_release_array(o7_int_t count, void *mem[O7_VLA(count)]) {
 	o7_int_t i;
 	if (O7_MEMNG == O7_MEMNG_COUNTER) {
 		for (i = 0; i < count; i += 1) {
 			o7_null(mem + i);
+		}
+	}
+}
+
+#define O7_RELEASE_PARAMS(array) \
+	o7_release_array(sizeof(array) / sizeof(void *), (void **)array)
+
+O7_ALWAYS_INLINE
+void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void release(void *)) {
+	o7_int_t i;
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		for (i = 0; i < count; i += 1) {
+			o7_null(array + i);
 		}
 	}
 }

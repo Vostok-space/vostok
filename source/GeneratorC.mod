@@ -2352,6 +2352,68 @@ BEGIN
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
 
+PROCEDURE RecordRelease(VAR gen: Generator; rec: Ast.Record);
+VAR var: Ast.Declaration;
+
+	PROCEDURE IteratorIfNeed(VAR gen: Generator; var: Ast.Declaration);
+	BEGIN
+		WHILE (var # NIL)
+		    & ~((var.type.id = Ast.IdArray)
+		      & (var.type.type.id = Ast.IdRecord)
+		       )
+		DO
+			var := var.next
+		END;
+		IF var # NIL THEN
+			Text.StrLn(gen, "o7_int_t i;")
+		END
+	END IteratorIfNeed;
+BEGIN
+	Text.Str(gen, "static void ");
+	GlobalName(gen, rec);
+	Text.Str(gen, "_release(struct ");
+	GlobalName(gen, rec);
+	Text.StrOpen(gen, " *r) {");
+
+	IteratorIfNeed(gen, rec.vars);
+	IF rec.base # NIL THEN
+		GlobalName(gen, rec.base);
+		IF ~gen.opt.plan9 THEN
+			Text.StrLn(gen, "_release(&r->_);")
+		ELSE
+			Text.StrLn(gen, "_release(r);")
+		END
+	END;
+	var := rec.vars;
+	WHILE var # NIL DO
+		IF var.type.id = Ast.IdArray THEN
+			IF var.type.type.id = Ast.IdPointer THEN (* TODO *)
+				Text.Str(gen, "O7_RELEASE_PARAMS(r->");
+				Name(gen, var);
+				Text.StrLn(gen, ");")
+			ELSIF var.type.type.id = Ast.IdRecord THEN
+				Text.Str(gen, "for (i = 0; i < O7_LEN(r->");
+				Name(gen, var);
+				Text.StrOpen(gen, "); i += 1) {");
+				GlobalName(gen, var.type.type);
+				Text.Str(gen, "_release(r->");
+				Name(gen, var);
+				Text.StrLn(gen, " + i);");
+				Text.StrLnClose(gen, "}")
+			END
+		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
+			GlobalName(gen, var.type);
+			Text.Str(gen, "_release(&r->");
+			Name(gen, var);
+			Text.StrLn(gen, ");")
+		ELSE
+			;
+		END;
+		var := var.next
+	END;
+	Text.StrLnClose(gen, "}")
+END RecordRelease;
+
 PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
 BEGIN
 	IF d.emptyLines > 0 THEN
@@ -2593,6 +2655,9 @@ BEGIN
 		END;
 		IF out.opt.varInit = VarInitUndefined THEN
 			RecordUndef(out.g[Implementation], typ(Ast.Record))
+		END;
+		IF out.opt.memManager = MemManagerCounter THEN
+			RecordRelease(out.g[Implementation], typ(Ast.Record))
 		END
 	END
 END TypeDecl;
