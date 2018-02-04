@@ -21,7 +21,6 @@
 
 typedef struct CFiles_Implement* CFiles_File;
 
-
 extern CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(

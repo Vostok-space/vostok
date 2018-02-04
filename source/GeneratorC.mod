@@ -1220,7 +1220,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			VAR tagType: Ast.Type;
 			BEGIN
 				tagType := TypeForTag(e.type.type(Ast.Record));
-				IF (tagType # NIL) & (gen.opt.varInit = VarInitUndefined) THEN
+				IF tagType # NIL THEN
 					Text.Str(gen, "O7_NEW(&");
 					Designator(gen, e(Ast.Designator));
 					Text.Str(gen, ", ");
@@ -1229,13 +1229,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				ELSE
 					Text.Str(gen, "O7_NEW2(&");
 					Designator(gen, e(Ast.Designator));
-					IF tagType # NIL THEN
-						Text.Str(gen, ", ");
-						GlobalName(gen, tagType);
-						Text.Str(gen, "_tag, NULL)")
-					ELSE
-						Text.Str(gen, ", NULL, NULL)")
-					END
+					Text.Str(gen, ", o7_base_tag, NULL)")
 				END
 			END New;
 
@@ -1513,12 +1507,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					IF gen.opt.lastSelectorDereference THEN
 						Text.Str(gen, ", NULL")
 					ELSE
-						Text.Str(gen, ", ");
 						IF (p.expr(Ast.Designator).decl IS Ast.FormalParam)
 						 & (p.expr(Ast.Designator).sel = NIL)
 						THEN
+							Text.Str(gen, ", ");
 							Name(gen, p.expr(Ast.Designator).decl)
 						ELSE
+							Text.Str(gen, ", &");
 							GlobalName(gen, t)
 						END;
 						Text.Str(gen, "_tag")
@@ -1988,13 +1983,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			ASSERT(CheckStructName(gen, extType(Ast.Record)));
 			Text.Str(gen, "o7_is(");
 			Expression(gen, is.designator);
-			Text.Str(gen, ", ")
+			Text.Str(gen, ", &")
 		ELSE
 			Text.Str(gen, "o7_is_r(");
 			GlobalName(gen, decl);
 			Text.Str(gen, "_tag, ");
 			GlobalName(gen, decl);
-			Text.Str(gen, ", ")
+			Text.Str(gen, ", &")
 		END;
 		GlobalName(gen, extType);
 		Text.Str(gen, "_tag)")
@@ -2127,7 +2122,7 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 			IF (t.id = Ast.IdRecord)
 			 & (~gen.opt.skipUnusedTag OR Ast.IsNeedTag(fp))
 			THEN
-				Text.Str(gen, ", o7_tag_t ");
+				Text.Str(gen, ", o7_tag_t *");
 				Name(gen, fp);
 				Text.Str(gen, "_tag")
 			END
@@ -2406,8 +2401,10 @@ BEGIN
 			Text.Str(gen, "_release(&r->");
 			Name(gen, var);
 			Text.StrLn(gen, ");")
-		ELSE
-			;
+		ELSIF var.type.id = Ast.IdPointer THEN
+			Text.Str(gen, "O7_NULL(&r->");
+			Name(gen, var);
+			Text.StrLn(gen, ");")
 		END;
 		var := var.next
 	END;
@@ -2577,11 +2574,13 @@ END Type;
 
 PROCEDURE RecordTag(VAR gen: Generator; rec: Ast.Record);
 BEGIN
-	IF rec.base = NIL THEN
+	IF (gen.opt.memManager # MemManagerCounter) & (rec.base = NIL) THEN
 		Text.Str(gen, "#define ");
 		GlobalName(gen, rec);
 		Text.StrLn(gen, "_tag o7_base_tag");
-	ELSIF ~rec.needTag & gen.opt.skipUnusedTag THEN
+	ELSIF (gen.opt.memManager # MemManagerCounter)
+	    & ~rec.needTag & gen.opt.skipUnusedTag
+	THEN
 		Text.Str(gen, "#define ");
 		GlobalName(gen, rec);
 		Text.Str(gen, "_tag ");
@@ -3622,12 +3621,18 @@ BEGIN
 		gen.opt.records := r.ext(RecExt).next;
 		r.ext(RecExt).next := NIL;
 
-		IF (r.base # NIL) & (r.needTag OR ~gen.opt.skipUnusedTag) THEN
-			Text.Str(gen, "o7_tag_init(");
+		IF (gen.opt.memManager = MemManagerCounter)
+		OR (r.base # NIL) & (r.needTag OR ~gen.opt.skipUnusedTag)
+		THEN
+			Text.Str(gen, "O7_TAG_INIT(");
 			GlobalName(gen, r);
-			Text.Str(gen, "_tag, ");
-			GlobalName(gen, r.base);
-			Text.StrLn(gen, "_tag);")
+			IF r.base # NIL THEN
+				Text.Str(gen, ", ");
+				GlobalName(gen, r.base);
+				Text.StrLn(gen, ");")
+			ELSE
+				Text.StrLn(gen, ", o7_base);")
+			END
 		END
 	END;
 	IF r # NIL THEN

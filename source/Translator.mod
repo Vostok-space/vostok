@@ -537,8 +537,11 @@ BEGIN
 			Message.AstError(ret); Out.Ln
 		ELSE
 			opt := GeneratorC.DefaultOptions();
-			IF args.init >= 0 THEN
+			IF 0 <= args.init THEN
 				opt.varInit := args.init
+			END;
+			IF 0 <= args.memng THEN
+				opt.memManager := args.memng
 			END;
 			ASSERT(Exec.Init(exec, ""));
 			CASE res OF

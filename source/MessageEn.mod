@@ -403,6 +403,8 @@ BEGIN
 		S("Unexpected option")
 	| Cli.ErrUnknownInit:
 		S("Unknown initialization method")
+	| Cli.ErrUnknownMemMan:
+		S("Unknown kind of memory management")
 	| Cli.ErrCantCreateOutDir:
 		S("Can not create output directory")
 	| Cli.ErrCantRemoveOutDir:

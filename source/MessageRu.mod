@@ -401,6 +401,8 @@ BEGIN
 		S("Неожиданный аргумент")
 	| Cli.ErrUnknownInit:
 		S("Указанный способ инициализации переменных науке неизвестен")
+	| Cli.ErrUnknownMemMan:
+		S("Указан неизвестный тип управления динамической памятью")
 	| Cli.ErrCantCreateOutDir:
 		S("Не получается создать выходной каталог")
 	| Cli.ErrCantRemoveOutDir:

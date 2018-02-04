@@ -26,6 +26,10 @@ o7_tag_t o7_base_tag;
 
 char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 
+static void nothing(void *mem) {
+	(void)mem;
+}
+
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined;
 	float undefinedf;
@@ -54,32 +58,42 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	o7_cli_argc = argc;
 	o7_cli_argv = argv;
 
+	o7_base_tag.release = nothing;
+
 	if (O7_MEMNG == O7_MEMNG_GC) {
 		o7_gc_init();
 	}
 }
 
-extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base) {
+extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *)) {
 	static o7_id_t id = 1;
 	int i;
-	assert(NULL != base);
+	assert((NULL != base) || (NULL != release));
 	i = 1;
 
-	ext[0] = base[0] + 1;
-	assert(ext[0] <= O7_MAX_RECORD_EXT);
-	while (i < ext[0]) {
-		ext[i] = base[i];
+	ext->ids[0] = base->ids[0] + 1;
+	assert(ext->ids[0] <= O7_MAX_RECORD_EXT);
+	while (i < ext->ids[0]) {
+		ext->ids[i] = base->ids[i];
 		i += 1;
 	}
-	ext[i] = id;
-	i += 1;
+	ext->ids[i] = id;
+	i  += 1;
 	id += 1;
 
 	/* нужно на случай, если тэг по каким-либо причинам не глобальный или
 	 * глобальные переменные не зануляются (MISRA C Rule 9.1 Note) */
 	while (i <= O7_MAX_RECORD_EXT) {
-		ext[i] = 0;
+		ext->ids[i] = 0;
 		i += 1;
+	}
+
+	if (NULL != release) {
+		ext->release = release;
+	} else if (NULL != base) {
+		ext->release = base->release;
+	} else {
+		ext->release = nothing;
 	}
 }
 
@@ -111,8 +125,12 @@ extern O7_NORETURN void o7_case_fail(o7_int_t i) {
 
 extern o7_char* o7_bools_undef(o7_int_t len, o7_char array[O7_VLA(len)]) {
 	o7_int_t i;
-	for (i = 0; i < len; i += 1) {
-		array[i] = 0xff;
+	if (sizeof(o7_char) == 1) {
+		memset(array,  O7_BOOL_UNDEF, len);
+	} else {
+		for (i = 0; i < len; i += 1) {
+			array[i] = O7_BOOL_UNDEF;
+		}
 	}
 	return array;
 }

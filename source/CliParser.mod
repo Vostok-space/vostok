@@ -44,9 +44,10 @@ CONST
 	ErrTooLongRunArgs*       = -24;
 	ErrUnexpectArg*          = -25;
 	ErrUnknownInit*          = -26;
-	ErrCantCreateOutDir*     = -27;
-	ErrCantRemoveOutDir*     = -28;
-	ErrCantFoundCCompiler*   = -29;
+	ErrUnknownMemMan*        = -27;
+	ErrCantCreateOutDir*     = -28;
+	ErrCantRemoveOutDir*     = -29;
+	ErrCantFoundCCompiler*   = -30;
 
 TYPE
 	Args* = RECORD(V.Base)
@@ -59,7 +60,7 @@ TYPE
 		modPath*, cDirs*, cc*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
-		init*, arg*: INTEGER
+		init*, memng*, arg*: INTEGER
 	END;
 
 PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
@@ -127,6 +128,7 @@ BEGIN
 	ret := ErrNo;
 	optLen := 0;
 	args.init := -1;
+	args.memng := -1;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -197,6 +199,22 @@ BEGIN
 				args.init := GeneratorC.VarInitZero
 			ELSE
 				ret := ErrUnknownInit
+			END;
+			optLen := 0
+		ELSIF opt = "-memng" THEN
+			INC(arg);
+			IF arg >= CLI.count THEN
+				ret := ErrNotEnoughArgs
+			ELSIF ~CLI.Get(opt, optLen, arg) THEN
+				ret := ErrUnknownMemMan
+			ELSIF opt = "nofree" THEN
+				args.memng := GeneratorC.MemManagerNoFree
+			ELSIF opt = "counter" THEN
+				args.memng := GeneratorC.MemManagerCounter
+			ELSIF opt = "gc" THEN
+				args.memng := GeneratorC.MemManagerGC
+			ELSE
+				ret := ErrUnknownMemMan
 			END;
 			optLen := 0
 		ELSIF opt = "-t" THEN

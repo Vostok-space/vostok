@@ -20,6 +20,7 @@
 struct CFiles_Implement {
 	FILE *file;
 };
+static o7_tag_t CFiles_File_tag;
 
 CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
@@ -30,7 +31,7 @@ extern CFiles_File CFiles_Open(
 	CFiles_File file = NULL;
 	assert(name_len >= 0);
 	assert(ofs < name_len);
-	O7_NEW2(&file, NULL, NULL);
+	O7_NEW2(&file, CFiles_File_tag, NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), (char *)mode);
 		if (NULL == file->file) {
@@ -109,14 +110,22 @@ extern o7_bool CFiles_Exist(int len, o7_char const name[O7_VLA(len)], int ofs) {
 	return NULL != file;
 }
 
+static void release(CFiles_File f) {
+	if (NULL != f->file) {
+		fclose(f->file);
+		f->file = NULL;
+	}
+}
 
 extern void CFiles_init(void) {
-	O7_NEW2(&CFiles_in, NULL, NULL);
+	CFiles_File_tag.release = (void (*)(void *))release;
+
+	O7_NEW2(&CFiles_in, CFiles_File_tag, NULL);
 	CFiles_in->file = stdin;
 
-	O7_NEW2(&CFiles_out, NULL, NULL);
+	O7_NEW2(&CFiles_out, CFiles_File_tag, NULL);
 	CFiles_out->file = stdout;
 
-	O7_NEW2(&CFiles_err, NULL, NULL);
+	O7_NEW2(&CFiles_err, CFiles_File_tag, NULL);
 	CFiles_err->file = stderr;
 }

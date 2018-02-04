@@ -47,8 +47,10 @@ BEGIN
 END Unlink;
 
 PROCEDURE Go*;
+VAR l: List;
 BEGIN
-	Unlink(Create(N))
+	Unlink(Create(N));
+	l := Create(N)
 END Go;
 
 END LinkedList.
