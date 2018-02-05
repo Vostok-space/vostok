@@ -795,7 +795,7 @@ BEGIN
 		decl := Ast.DeclarationSearch(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
 		IF decl = NIL THEN (* опережающее объявление ссылка на запись *)
 			typeDecl := Ast.RecordForwardNew(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
-			ASSERT(tp.next = typeDecl);
+			ASSERT((tp.next = typeDecl) OR (nameBegin < 0));
 			Ast.PointerSetRecord(tp, typeDecl);
 
 			Scan(p)

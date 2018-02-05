@@ -883,19 +883,28 @@ PROCEDURE TypeAdd*(ds: Declarations;
 VAR d: Declaration;
 	err: INTEGER;
 
+	(* Нужен для правильной генерации в Си опережающих объявлений.
+	   Отказаться от переноса и изменить генерацию? *)
 	PROCEDURE MoveForwardDeclToLast(ds: Declarations; rec: Record);
+	VAR t: Declaration;
 	BEGIN
-		(* TODO это может быть и не так *)
-		ASSERT(rec.pointer.next = rec);
 		IF rec.next # NIL THEN
-			rec.pointer.next := rec.next;
+			IF rec.pointer.next = rec THEN
+				t := rec.pointer
+			ELSE
+				t := ds.types;
+				WHILE t.next # rec DO
+					t := t.next
+				END
+			END;
+			t.next := rec.next;
 			rec.next := NIL;
 
 			ds.end.next := rec;
 			ds.end := rec
 		END;
 		DEC(ds.recordForwardCount);
-		ASSERT(ds.recordForwardCount >= 0)
+		ASSERT(0 <= ds.recordForwardCount)
 	END MoveForwardDeclToLast;
 BEGIN
 	ASSERT(~ds.module.fixed);
