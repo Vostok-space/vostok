@@ -794,18 +794,20 @@ int o7_lcmp(o7_long_t a, o7_long_t b) {
 O7_ALWAYS_INLINE
 void o7_release(void *mem) {
 	o7_mmc_t *counter;
-	o7_tag_t **tag;
+	o7_mmc_t count;
+	o7_tag_t const **tag;
 	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
-		tag = (o7_tag_t **)mem - 1;
+		tag = (o7_tag_t const **)mem - 1;
 		counter = (o7_mmc_t *)tag - 1;
-		if (1 == *counter) {
+		count = *counter;
+		if (1 < count) {
+			*counter = count - 1;
+		} else {
+			assert(1 == count);/* TODO remove */
 			(*tag)->release(mem);
 			free(counter);
-		} else {
-			assert(*counter > 1);
-			*counter -= 1;
 		}
 	}
 }
@@ -863,20 +865,24 @@ void* o7_retain(void *mem) {
 O7_ALWAYS_INLINE
 void* o7_unhold(void *mem) {
 	o7_mmc_t *counter;
+	o7_mmc_t count;
 	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
 		counter = (o7_mmc_t *)((o7_tag_t **)mem - 1) - 1;
-		assert(0 < *counter);
-		*counter -= 1;
+		count = *counter;
+		assert(0 < count);/* TODO remove */
+		*counter = count - 1;
 	}
 	return mem;
 }
 
 O7_ALWAYS_INLINE
 void o7_null(void **mem) {
-	o7_release(*mem);
-	*mem = NULL;
+	if (NULL != *mem) {
+		o7_release(*mem);
+		*mem = NULL;
+	}
 }
 
 #define O7_NULL(mem) o7_null((void **)(mem))
@@ -908,9 +914,7 @@ O7_ALWAYS_INLINE
 void o7_assign(void **m1, void *m2) {
 	assert(NULL != m1);/* TODO remove */
 	o7_retain(m2);
-	if (NULL != *m1) {
-		o7_release(*m1);
-	}
+	o7_release(*m1);
 	*m1 = m2;
 }
 
