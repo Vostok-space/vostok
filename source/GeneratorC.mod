@@ -1014,9 +1014,9 @@ BEGIN
 END Selector;
 
 PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
-VAR
-	sels: Selectors;
-	typ: Ast.Type;
+VAR sels: Selectors;
+    typ: Ast.Type;
+    lastSelectorDereference: BOOLEAN;
 
 	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
 	BEGIN
@@ -1025,9 +1025,9 @@ VAR
 			INC(sels.i);
 			sels.list[sels.i] := sel;
 			IF sel IS Ast.SelArray THEN
-				WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
+				REPEAT
 					sel := sel.next
-				END
+				UNTIL (sel = NIL) OR ~(sel IS Ast.SelArray)
 			ELSE
 				sel := sel.next
 			END
@@ -1039,9 +1039,10 @@ BEGIN
 	Put(sels, des.sel);
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
-	gen.opt.lastSelectorDereference := (sels.i > 0)
-	                                 & (sels.list[sels.i] IS Ast.SelPointer);
-	Selector(gen, sels, sels.i, typ, des.type)
+	lastSelectorDereference := (0 <= sels.i)
+	                         & (sels.list[sels.i] IS Ast.SelPointer);
+	Selector(gen, sels, sels.i, typ, des.type);
+	gen.opt.lastSelectorDereference := lastSelectorDereference
 END Designator;
 
 PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
