@@ -811,21 +811,26 @@ void o7_release(void *mem) {
 }
 
 O7_ALWAYS_INLINE
+void* o7_mem_info_init(void *mem, o7_tag_t const *tag) {
+	o7_tag_t const **tg;
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		*(o7_mmc_t *)mem = 1;
+		tg = (o7_tag_t const **)((o7_mmc_t *)mem + 1);
+	} else {
+		tg = (o7_tag_t const **)mem;
+	}
+	*tg = tag;
+	return (void *)(tg + 1);
+}
+
+O7_ALWAYS_INLINE
 o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) {
 	void *mem;
-	o7_tag_t const **tg;
 	mem = o7_malloc(
 	    sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
 	  + sizeof(o7_tag_t *) + size);
 	if (NULL != mem) {
-		if (O7_MEMNG == O7_MEMNG_COUNTER) {
-			*(o7_mmc_t *)mem = 1;
-			tg = (o7_tag_t const **)((o7_mmc_t *)mem + 1);
-		} else {
-			tg = (o7_tag_t const **)mem;
-		}
-		*tg = tag;
-		mem = (void *)(tg + 1);
+		mem = o7_mem_info_init(mem, tag);
 		if ((O7_INIT == O7_INIT_UNDEF) && (NULL != undef)) {
 			undef(mem);
 		}

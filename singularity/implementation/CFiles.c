@@ -22,7 +22,18 @@ struct CFiles_Implement {
 };
 static o7_tag_t CFiles_File_tag;
 
-CFiles_File CFiles_in, CFiles_out, CFiles_err;
+enum {
+	ServiceSize = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
+                + sizeof(o7_tag_t *)
+};
+
+typedef char RawData[ServiceSize + sizeof(struct CFiles_Implement)];
+
+static RawData fin, fout, ferr;
+
+CFiles_File CFiles_in  = (CFiles_File)(fin  + ServiceSize),
+            CFiles_out = (CFiles_File)(fout + ServiceSize),
+            CFiles_err = (CFiles_File)(ferr + ServiceSize);
 
 extern CFiles_File CFiles_Open(
 	o7_int_t name_len, o7_char name[O7_VLA(name_len)], o7_int_t ofs,
@@ -91,14 +102,15 @@ extern o7_int_t CFiles_Tell(CFiles_File file, o7_int_t *gibs, o7_int_t *bytes) {
 	return pos >= 0;
 }
 
-extern o7_int_t CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], int ofs)
-{
+extern o7_int_t
+CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
 	assert(0 <= ofs);
 	assert(ofs < len - 1);
 	return remove((char const *)name + ofs) == 0;
 }
 
-extern o7_bool CFiles_Exist(int len, o7_char const name[O7_VLA(len)], int ofs) {
+extern o7_bool
+CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
 	FILE *file;
 	assert(0 <= ofs);
 	assert(ofs < len - 1);
@@ -120,12 +132,12 @@ static void release(CFiles_File f) {
 extern void CFiles_init(void) {
 	CFiles_File_tag.release = (void (*)(void *))release;
 
-	O7_NEW2(&CFiles_in, CFiles_File_tag, NULL);
+	o7_mem_info_init((void *)fin, &CFiles_File_tag);
 	CFiles_in->file = stdin;
 
-	O7_NEW2(&CFiles_out, CFiles_File_tag, NULL);
+	o7_mem_info_init((void *)fout, &CFiles_File_tag);
 	CFiles_out->file = stdout;
 
-	O7_NEW2(&CFiles_err, CFiles_File_tag, NULL);
+	o7_mem_info_init((void *)ferr, &CFiles_File_tag);
 	CFiles_err->file = stderr;
 }
