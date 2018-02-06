@@ -2364,7 +2364,11 @@ VAR var: Ast.Declaration;
 		END
 	END IteratorIfNeed;
 BEGIN
-	Text.Str(gen, "static void ");
+	IF rec.mark THEN
+		Text.Str(gen, "extern void ")
+	ELSE
+		Text.Str(gen, "static void ")
+	END;
 	GlobalName(gen, rec);
 	Text.Str(gen, "_release(struct ");
 	GlobalName(gen, rec);
