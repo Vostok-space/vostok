@@ -468,7 +468,11 @@ VAR ret, len: INTEGER;
 					    & (~Files.Exist(name, 0) OR Exec.Add(cmd, name, 0));
 					i := i + cDirsLen + 1
 				END;
-				ok := ok & (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
+				ok := ok
+				& (  (opt.memManager # GeneratorC.MemManagerCounter)
+				  OR Exec.Add(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER", 0)
+				  )
+				& (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
 				Exec.Log(cmd);
 				(* TODO *)
 				ASSERT(ok);

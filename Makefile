@@ -5,9 +5,10 @@ SING_BS := singularity/bootstrap
 SELF := result/v1
 
 SRC := $(wildcard source/*.mod)
-SANITIZE := -ftrapv -fsanitize=undefined -fsanitize=address -DO7_LSAN_LEAK_IGNORE
+SANITIZE := -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -DO7_LSAN_LEAK_IGNORE
 SANITIZE_TEST := $(SANITIZE)
 O7_OPT := -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE
+#O7_OPT := -DO7_MEMNG_MODEL=O7_MEMNG_COUNTER
 #LD_OPT := -lgc
 LD_OPT := -lm
 WARN := -Wall -Wno-parentheses
@@ -31,7 +32,7 @@ result/bs-o7c:
 result/test/% : always
 	@mkdir -p result/test
 	-rm -rf $@.src
-	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE $(LD_OPT) $(OPT)"
+	$(O7C) to-bin $(@F).Go $@ -infr . -m test/source -memng counter -t $@.src -cc "$(CC) -g $(SANITIZE_TEST) $(LD_OPT) $(OPT)"
 	$@
 
 test : $(O7C) $(TESTS)
