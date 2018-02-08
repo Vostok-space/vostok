@@ -2400,7 +2400,9 @@ BEGIN
 				Text.Str(gen, "O7_RELEASE_PARAMS(r->");
 				Name(gen, var);
 				Text.StrLn(gen, ");")
-			ELSIF var.type.type.id = Ast.IdRecord THEN
+			ELSIF (var.type.type.id = Ast.IdRecord)
+			   & (var.type.type.ext # NIL) & var.type.type.ext(RecExt).undef
+			THEN
 				Text.Str(gen, "for (i = 0; i < O7_LEN(r->");
 				Name(gen, var);
 				Text.StrOpen(gen, "); i += 1) {");
@@ -2660,7 +2662,9 @@ BEGIN
 			IF out.opt.varInit = VarInitUndefined THEN
 				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
 			END;
-			RecordReleaseHeader(out.g[Interface], typ(Ast.Record), TRUE)
+			IF out.opt.memManager = MemManagerCounter THEN
+				RecordReleaseHeader(out.g[Interface], typ(Ast.Record), TRUE)
+			END
 		END;
 		IF (~typ.mark OR out.opt.main)
 		OR (typ(Ast.Record).base # NIL) OR ~typ(Ast.Record).needTag
