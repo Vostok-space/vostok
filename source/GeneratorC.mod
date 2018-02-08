@@ -2348,6 +2348,23 @@ BEGIN
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
 
+PROCEDURE RecordReleaseHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
+BEGIN
+	IF rec.mark THEN
+		Text.Str(gen, "extern void ")
+	ELSE
+		Text.Str(gen, "static void ")
+	END;
+	GlobalName(gen, rec);
+	Text.Str(gen, "_release(struct ");
+	GlobalName(gen, rec);
+	IF interf THEN
+		Text.StrLn(gen, " *r);")
+	ELSE
+		Text.StrOpen(gen, " *r) {")
+	END
+END RecordReleaseHeader;
+
 PROCEDURE RecordRelease(VAR gen: Generator; rec: Ast.Record);
 VAR var: Ast.Declaration;
 
@@ -2365,15 +2382,7 @@ VAR var: Ast.Declaration;
 		END
 	END IteratorIfNeed;
 BEGIN
-	IF rec.mark THEN
-		Text.Str(gen, "extern void ")
-	ELSE
-		Text.Str(gen, "static void ")
-	END;
-	GlobalName(gen, rec);
-	Text.Str(gen, "_release(struct ");
-	GlobalName(gen, rec);
-	Text.StrOpen(gen, " *r) {");
+	RecordReleaseHeader(gen, rec, FALSE);
 
 	IteratorIfNeed(gen, rec.vars);
 	IF rec.base # NIL THEN
@@ -2650,7 +2659,8 @@ BEGIN
 			RecordTag(out.g[Interface], typ(Ast.Record));
 			IF out.opt.varInit = VarInitUndefined THEN
 				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
-			END
+			END;
+			RecordReleaseHeader(out.g[Interface], typ(Ast.Record), TRUE)
 		END;
 		IF (~typ.mark OR out.opt.main)
 		OR (typ(Ast.Record).base # NIL) OR ~typ(Ast.Record).needTag
@@ -3480,7 +3490,7 @@ BEGIN
 		o.plan9         := FALSE;
 		o.procLocal     := FALSE;
 		o.checkIndex    := TRUE;
-		o.vla           := FALSE & (o.std >= IsoC99);
+		o.vla           := FALSE & (IsoC99 <= o.std);
 		o.vlaMark       := TRUE;
 		o.checkArith    := TRUE;
 		o.caseAbort     := TRUE;
