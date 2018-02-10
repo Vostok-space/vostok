@@ -399,7 +399,7 @@ BEGIN
 	RETURN ok
 END GetTempOutC;
 
-PROCEDURE SearchCCompiler(VAR cmd: Exec.Code): BOOLEAN;
+PROCEDURE SearchCCompiler(VAR cmd: Exec.Code; res: INTEGER): BOOLEAN;
 
 	PROCEDURE Test(c, ver: ARRAY OF CHAR): BOOLEAN;
 	VAR exec: Exec.Code;
@@ -410,10 +410,17 @@ PROCEDURE SearchCCompiler(VAR cmd: Exec.Code): BOOLEAN;
 	     & (Exec.Ok = Exec.Do(exec))
 	END Test;
 
-	RETURN Test("cc", "--version") & Exec.AddClean(cmd, "cc -g -O1")
-	    OR Test("gcc", "--version") & Exec.AddClean(cmd, "gcc -g -O1")
-	    OR Test("clang", "--version") & Exec.AddClean(cmd, "clang -g -O1")
-	    OR Test("tcc", "-v") & Exec.Add(cmd, "tcc", 0)
+	RETURN (res = Cli.ResultRun)
+	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
+
+	    OR Test("cc",    "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
+	    OR Test("gcc",   "-dumpversion") & Exec.AddClean(cmd, "gcc -g -O1")
+	    OR Test("clang", "-dumpversion") & Exec.AddClean(cmd, "clang -g -O1")
+
+	    OR (res # Cli.ResultRun)
+	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
+
+	    OR Test("ccomp", "--version")    & Exec.AddClean(cmd, "ccomp -g -O")
 END SearchCCompiler;
 
 PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
@@ -425,7 +432,8 @@ VAR ret, len: INTEGER;
 	call: Ast.Call;
 	exec: Exec.Code;
 
-	PROCEDURE Bin(module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
+	PROCEDURE Bin(res: INTEGER;
+	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
 	              VAR cmd: Exec.Code; tmp: ARRAY OF CHAR): INTEGER;
 	VAR outCLen: INTEGER;
@@ -438,7 +446,7 @@ VAR ret, len: INTEGER;
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			IF cc[0] = Utf8.Null THEN
-				ok := SearchCCompiler(cmd)
+				ok := SearchCCompiler(cmd, res)
 			ELSE
 				ok := Exec.AddClean(cmd, cc)
 			END;
@@ -554,8 +562,8 @@ BEGIN
 				ret := GenerateC(module, (call # NIL) OR args.script, call,
 				                 opt, args.resPath, args.resPathLen, args.cDirs, exec)
 			| Cli.ResultBin, Cli.ResultRun:
-				ret := Bin(module, call, opt, args.cDirs, args.cc, outC, args.resPath,
-				           exec, args.tmp);
+				ret := Bin(res, module, call, opt, args.cDirs, args.cc, outC,
+				           args.resPath, exec, args.tmp);
 				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
 					ret := Run(args.resPath, args.arg)
 				END;

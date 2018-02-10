@@ -8,51 +8,51 @@ License is LGPL for translator's code and Apache for libraries
 
 Short build help for POSIX systems:
 
-	$ make help-en
+    $ make help-en
 
 Build translator for POSIX:
 
-	$ make
-	$ # or
-	$ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+    $ make
+    $ # or
+    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 Test under POSIX:
 
-	$ make test self self-full
+    $ make test self self-full
 
 Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
 
-	> make.cmd
-	> :: or
-	> make.cmd
-	> result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
+    > make.cmd
+    > :: or
+    > make.cmd
+    > result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
 
 Test under POSIX and Windows
 
-	result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+    result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
 
 ## Usage:
 
 Help about translator usage:
 
-	$ result/o7c help
+    $ result/o7c help
 
 Oberon-modules running example:
 
-	$ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+    $ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
 Example of executable binary build:
 
-	$ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
-	$ result/Dir
+    $ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
+    $ result/Dir
 
 Demo web-server:
 
-	$ cd demo-server
+    $ cd demo-server
 
-	$ go run server.go
-	$ # or
-	$ go build server.go && ./server
+    $ go run server.go
+    $ # or
+    $ go build server.go && ./server
 
 ## Questions:
 Russian-speaking forums, but possible to ask in english:
@@ -70,7 +70,7 @@ Russian-speaking forums, but possible to ask in english:
 посредников вроде LLVM.
 
 Написан на собственном входном языке.
-Генерирует совместимый с gcc, clang и tcc код на С.
+Генерирует  код на С, совместимый с gcc, clang, tcc и CompCert.
 
 Код транслятора доступен под лицензией LGPL, а библиотеки - под Apache License.
 
@@ -78,15 +78,15 @@ Russian-speaking forums, but possible to ask in english:
 Короткая справка по главным целям и переменным сборочных скриптов в POSIX
 системах:
 
-	$ make help
-	$ # или
-	$ result/bs-o7c run make.Help -infr . -m source -m .
+    $ make help
+    $ # или
+    $ result/bs-o7c run make.Help -infr . -m source -m .
 
 Сборка транслятора в POSIX:
 
-	$ make
-	$ # или
-	$ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+    $ make
+    $ # или
+    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
 
 make.sh собирает из предварительно сгенерированных Си-файлов 0-ю версию
 транслятора Оберона resut/bs-o7c, которая уже может обслуживать
@@ -95,31 +95,31 @@ make.sh собирает из предварительно сгенериров�
 
 Тестирование в POSIX:
 
-	$ make test self self-full
-	$ # или
-	$ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
+    $ make test self self-full
+    $ # или
+    $ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
 
 Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
 каталог с которым должен быть прописан в переменной окружения PATH
 
-	> make.cmd
-	> :: или
-	> make.cmd
-	> result\bs-o7c run make.Build -infr . -m source -m . -cc tcc
+    > make.cmd
+    > :: или
+    > make.cmd
+    > result\bs-o7c run make.Build -infr . -m source -m . -cc tcc
 
 Тестирование в Windows с использованием Tiny C Compiler
 
-	result\bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+    result\bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
 
 ## Использование:
 Справка о способе использовании транслятора доступна при его запуске без
 параметров или с командой help:
 
-	$ result/o7c help
+    $ result/o7c help
 
 Пример непосредственного запуска кода:
 
-	$ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+    $ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
 После команды run, указан код на Обероне, который нужно запустить. Параметр
 '-infr .' указывает путь к инфраструктуре, которая включает в себя путь, по
@@ -127,8 +127,8 @@ make.sh собирает из предварительно сгенериров�
 
 Пример сборки исполняемого файла:
 
-	$ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
-	$ result/Dir
+    $ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
+    $ result/Dir
 
 Помимо параметров командной строки, знакомых по предыдущему примеру, здесь
 указано название итогового исполнимого файла - result/Dir, что обязательно для
@@ -139,14 +139,14 @@ make.sh собирает из предварительно сгенериров�
 Запуск демонстрационного веб-сервера по 8080-му порту с возможностью
 редактировать и исполнять код в браузере:
 
-	$ cd demo-server
+    $ cd demo-server
 
-	$ go run server.go
-	$ # или
-	$ go build server.go
-	$ ./server
-	$ # или
-	$ ./server -port 8080
+    $ go run server.go
+    $ # или
+    $ go build server.go
+    $ ./server
+    $ # или
+    $ ./server -port 8080
 
 ## Вопросы:
 Обсуждение ведётся на следующих площадках:
