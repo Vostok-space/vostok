@@ -57,6 +57,7 @@ extern double Math__arccosh(double x);
 
 extern double Math__arctanh(double x);
 
-O7_INLINE void Math_init(void) { ; }
+O7_ALWAYS_INLINE void Math_init(void) { ; }
+O7_ALWAYS_INLINE void Math_done(void) { ; }
 
 #endif

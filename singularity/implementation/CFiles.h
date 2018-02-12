@@ -57,5 +57,6 @@ extern o7_int_t CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_
 extern o7_bool CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs);
 
 extern void CFiles_init(void);
+O7_ALWAYS_INLINE void CFiles_done(void) {}
 
 #endif

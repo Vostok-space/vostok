@@ -35,5 +35,6 @@ extern o7_bool WindowsDir_Close(WindowsDir_FindId *id);
 extern o7_bool WindowsDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t *ofs,
                                    WindowsDir_FindData f);
 
-O7_INLINE void WindowsDir_init(void) {}
+O7_ALWAYS_INLINE void WindowsDir_init(void) {}
+O7_ALWAYS_INLINE void WindowsDir_done(void) {}
 #endif

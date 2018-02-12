@@ -151,5 +151,6 @@ O7_ALWAYS_INLINE void Int32_init(void) {
 	*(Int32_t *)Int32_min = Int32_Min;
 	*(Int32_t *)Int32_max = Int32_Max;
 }
+O7_ALWAYS_INLINE void Int32_done(void) {}
 
 #endif

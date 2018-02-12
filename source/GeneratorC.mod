@@ -3249,6 +3249,43 @@ BEGIN
 	Text.StrLn(gen, ";")
 END ProcDecl;
 
+PROCEDURE ReleaseVars(VAR gen: Generator; var: Ast.Declaration);
+BEGIN
+	IF gen.opt.memManager = MemManagerCounter THEN
+		WHILE (var # NIL) & (var IS Ast.Var) DO
+			IF var.type.id = Ast.IdArray THEN
+				IF var.type.type.id = Ast.IdPointer THEN (* TODO *)
+					Text.Str(gen, "O7_RELEASE_ARRAY(");
+					GlobalName(gen, var);
+					Text.StrLn(gen, ");")
+				ELSIF (var.type.type.id = Ast.IdRecord)
+				    & (var.type.type.ext # NIL) & var.type.type.ext(RecExt).undef
+				THEN
+					Text.Str(gen, "{int o7_i; for (o7_i = 0; o7_i < O7_LEN(r->");
+					GlobalName(gen, var);
+					Text.StrOpen(gen, "); o7_i += 1) {");
+					GlobalName(gen, var.type.type);
+					Text.Str(gen, "_release(&");
+					GlobalName(gen, var);
+					Text.StrLn(gen, " + o7_i);");
+					Text.StrLnClose(gen, "}")
+				END
+			ELSIF var.type.id = Ast.IdPointer THEN
+				Text.Str(gen, "O7_NULL(&");
+				GlobalName(gen, var);
+				Text.StrLn(gen, ");");
+			ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
+				GlobalName(gen, var.type);
+				Text.Str(gen, "_release(&");
+				GlobalName(gen, var);
+				Text.StrLn(gen, ");")
+			END;
+
+			var := var.next
+		END
+	END
+END ReleaseVars;
+
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 	PROCEDURE Implement(VAR out: MOut; VAR gen: Generator; proc: Ast.Procedure);
@@ -3315,39 +3352,6 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			END
 		END ReleaseParams;
 
-		PROCEDURE ReleaseVars(VAR gen: Generator; var: Ast.Declaration);
-		VAR first: BOOLEAN;
-		BEGIN
-			IF gen.opt.memManager = MemManagerCounter THEN
-				first := TRUE;
-				WHILE (var # NIL) & (var IS Ast.Var) DO
-					IF var.type.id = Ast.IdPointer THEN
-						IF first THEN
-							first := FALSE;
-							Text.Ln(gen);
-							Text.Str(gen, "o7_release(")
-						ELSE
-							Text.Str(gen, "); o7_release(")
-						END;
-						Name(gen, var)
-					ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
-						IF first THEN
-							first := FALSE;
-							Text.Ln(gen)
-						ELSE
-							Text.Str(gen, "); ")
-						END;
-						GlobalName(gen, var.type);
-						Text.Str(gen, "_release(&");
-						Name(gen, var)
-					END;
-					var := var.next
-				END;
-				IF ~first THEN
-					Text.StrLn(gen, ");")
-				END
-			END
-		END ReleaseVars;
 	BEGIN
 		Comment(gen, proc.comment);
 		Mark(gen, proc.mark);
@@ -3669,20 +3673,31 @@ BEGIN
 	Procs(m.procedures)
 END MarkUsedInMarked;
 
-PROCEDURE ImportInit(VAR gen: Generator; imp: Ast.Declaration);
+PROCEDURE ImportInitDone(VAR gen: Generator; imp: Ast.Declaration;
+                         initDone: ARRAY OF CHAR);
 BEGIN
 	IF imp # NIL THEN
 		ASSERT(imp IS Ast.Import);
 
 		REPEAT
 			Name(gen, imp.module.m);
-			Text.StrLn(gen, "_init();");
+			Text.StrLn(gen, initDone);
 
 			imp := imp.next
 		UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
 		Text.Ln(gen)
 	END
+END ImportInitDone;
+
+PROCEDURE ImportInit(VAR gen: Generator; imp: Ast.Declaration);
+BEGIN
+	ImportInitDone(gen, imp, "_init();")
 END ImportInit;
+
+PROCEDURE ImportDone(VAR gen: Generator; imp: Ast.Declaration);
+BEGIN
+	ImportInitDone(gen, imp, "_done();")
+END ImportDone;
 
 PROCEDURE TagsInit(VAR gen: Generator);
 VAR r: Ast.Record;
@@ -3789,6 +3804,33 @@ VAR out: MOut;
 		END
 	END ModuleInit;
 
+	PROCEDURE ModuleDone(VAR interf, impl: Generator; module: Ast.Module);
+	BEGIN
+		IF (impl.opt.memManager # MemManagerCounter) THEN
+			;
+		ELSIF (module.import = NIL) & (impl.opt.records = NIL) THEN
+			IF impl.opt.std >= IsoC99 THEN
+				Text.Str(interf, "static inline void ")
+			ELSE
+				Text.Str(interf, "O7_INLINE void ")
+			END;
+			Name(interf, module);
+			Text.StrLn(interf, "_done(void) { ; }")
+		ELSE
+			Text.Str(interf, "extern void ");
+			Name(interf, module);
+			Text.StrLn(interf, "_done(void);");
+
+			Text.Str(impl, "extern void ");
+			Name(impl, module);
+			Text.StrOpen(impl, "_done(void) {");
+			ReleaseVars(impl, module.vars);
+			ImportDone(impl, module.import);
+			Text.StrLnClose(impl, "}");
+			Text.Ln(impl)
+		END
+	END ModuleDone;
+
 	PROCEDURE Main(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
 		Text.StrOpen(gen, "extern int main(int argc, char *argv[]) {");
@@ -3801,6 +3843,10 @@ VAR out: MOut;
 		WHILE cmd # NIL DO
 			Statement(gen, cmd);
 			cmd := cmd.next
+		END;
+		IF gen.opt.memManager = MemManagerCounter THEN
+			ReleaseVars(gen, module.vars);
+			ImportDone(gen, module.import)
 		END;
 		Text.StrLn(gen, "return o7_exit_code;");
 		Text.StrLnClose(gen, "}")
@@ -3854,6 +3900,7 @@ BEGIN
 		Main(out.g[Implementation], module, cmd)
 	ELSE
 		ModuleInit(out.g[Interface], out.g[Implementation], module);
+		ModuleDone(out.g[Interface], out.g[Implementation], module);
 		Text.StrLn(out.g[Interface], "#endif")
 	END
 END Generate;

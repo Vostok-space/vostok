@@ -123,4 +123,6 @@ O7_ALWAYS_INLINE void Uint64_init(void) {
 	*(Uint64_t *)Uint64_max = Uint64_Max;
 }
 
+O7_ALWAYS_INLINE void Uint64_done(void) {}
+
 #endif

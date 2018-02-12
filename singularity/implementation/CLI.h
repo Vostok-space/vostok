@@ -23,5 +23,6 @@ extern o7_cbool CLI_Get(
 extern void CLI_SetExitCode(int code);
 
 extern void CLI_init(void);
+O7_ALWAYS_INLINE void CLI_done(void) {}
 
 #endif

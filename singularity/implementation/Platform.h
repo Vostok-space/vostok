@@ -24,4 +24,5 @@ extern o7_bool const
   Platform_Windows;
 
 O7_ALWAYS_INLINE void Platform_init(void) {}
+O7_ALWAYS_INLINE void Platform_done(void) {}
 #endif

@@ -54,5 +54,6 @@ O7_ALWAYS_INLINE void
 }
 
 O7_ALWAYS_INLINE void Uint32Bits_init(void) {}
+O7_ALWAYS_INLINE void Uint32Bits_done(void) {}
 
 #endif

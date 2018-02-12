@@ -151,5 +151,6 @@ O7_ALWAYS_INLINE void Int64_init(void) {
 	*(Int64_t *)Int64_min = Int64_Min;
 	*(Int64_t *)Int64_max = Int64_Max;
 }
+O7_ALWAYS_INLINE void Int64_done(void) {}
 
 #endif
