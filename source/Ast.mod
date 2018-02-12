@@ -181,12 +181,19 @@ CONST
 	InitedValue* = 2;
 	InitedFail*  = 3;
 
-	(* в RFactor.flags для учёта того, что сравнение с NIL не может быть
-	   константным в clang *)
+	(* в RExpression.properties для учёта того, что сравнение с NIL не может
+	   быть константным в clang *)
 	ExprPointerTouch* = 0;
+
+	(* в RType для индикации того, что переменная этого типа была присвоена,
+	   что важно при подсчёте ссылок *)
+	TypeAssigned* = 0;
 
 TYPE
 	Module* = POINTER TO RModule;
+	ModuleBag* = POINTER TO RECORD
+		m*: Module
+	END;
 
 	Provider* = POINTER TO RProvider;
 
@@ -217,7 +224,7 @@ TYPE
 	Declaration* = POINTER TO RDeclaration;
 	Declarations* = POINTER TO RDeclarations;
 	RDeclaration* = RECORD(Node)
-		module*: Module;
+		module*: ModuleBag;
 		up*: Declarations;
 
 		name*: Strings.String;
@@ -229,7 +236,9 @@ TYPE
 
 	Array* = POINTER TO RArray;
 	RType* = RECORD(RDeclaration)
-		array*: Array
+		array*: Array;
+
+		properties*: SET
 	END;
 
 	Byte* = POINTER TO RECORD(RType)
@@ -321,8 +330,9 @@ TYPE
 	END;
 
 	RModule* = RECORD(RDeclarations)
+		bag*: ModuleBag;
 		store: Strings.Store;
-		provider: Provider;
+		provider*: Provider;
 
 		script*, errorHide*: BOOLEAN;
 
@@ -555,7 +565,7 @@ END NodeSetComment;
 
 PROCEDURE DeclSetComment*(d: Declaration; com: ARRAY OF CHAR; ofs, end: INTEGER);
 BEGIN
-	NodeSetComment(d^, d.module, com, ofs, end)
+	NodeSetComment(d^, d.module.m, com, ofs, end)
 END DeclSetComment;
 
 PROCEDURE ModuleSetComment*(m: Module; com: ARRAY OF CHAR; ofs, end: INTEGER);
@@ -568,7 +578,7 @@ BEGIN
 	IF ds = NIL THEN
 		d.module := NIL
 	ELSIF (ds.module = NIL) & (ds IS Module) THEN
-		d.module := ds(Module)
+		d.module := ds(Module).bag
 	ELSE
 		d.module := ds.module
 	END;
@@ -598,9 +608,9 @@ BEGIN
 	ASSERT(~(ds.start IS Module));
 	ds.end := d;
 	IF start >= 0 THEN
-		PutChars(d.module, d.name, name, start, end)
+		PutChars(d.module.m, d.name, name, start, end)
 	ELSE
-		PutChars(d.module, d.name, "#ERROR ", 0, 5)
+		PutChars(d.module.m, d.name, "#ERROR ", 0, 5)
 	END
 END DeclConnect;
 
@@ -640,6 +650,8 @@ BEGIN
 	NEW(m);
 	NodeInit(m^, NoId);
 	DeclarationsInit(m, NIL);
+	NEW(m.bag);
+	m.bag.m := m;
 	m.fixed := FALSE;
 	m.spec := FALSE;
 	m.import := NIL;
@@ -647,7 +659,7 @@ BEGIN
 	Strings.StoreInit(m.store);
 
 	PutChars(m, m.name, name, begin, end);
-	m.module := m;
+	m.module := m.bag;
 	m.provider := p;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
@@ -666,8 +678,11 @@ BEGIN
 END ScriptNew;
 
 PROCEDURE GetModuleByName*(host: Module;
-                           name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
-	RETURN host.provider.get(host.provider, host, name, ofs, end)
+                           name: ARRAY OF CHAR; ofs, end: INTEGER): ModuleBag;
+VAR m: Module;
+BEGIN
+	m := host.provider.get(host.provider, host, name, ofs, end)
+	RETURN m.bag
 END GetModuleByName;
 
 (* Возвращает истину, если имя модуля совпадает с ожидаемым *)
@@ -728,10 +743,11 @@ VAR imp: Import;
 	i: Declaration;
 	err: INTEGER;
 
-	PROCEDURE Load(VAR res: Module; host: Module;
+	PROCEDURE Load(VAR res: ModuleBag; host: Module;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
 	VAR n: ARRAY TranLim.LenName OF CHAR;
-		l, err: INTEGER;
+	    l, err: INTEGER;
+	    m: Module;
 	BEGIN
 		l := 0;
 		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
@@ -739,11 +755,12 @@ VAR imp: Import;
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
 		res := GetModuleByName(host, buf, realOfs, realEnd);
 		IF res = NIL THEN
-			res := ModuleNew(buf, realOfs, realEnd, host.provider);
+			m := ModuleNew(buf, realOfs, realEnd, host.provider);
+			res := m.bag;
 			err := ErrImportModuleNotFound
-		ELSIF res.errors # NIL THEN
+		ELSIF res.m.errors # NIL THEN
 			err := ErrImportModuleWithError
-		ELSIF res.handleImport THEN
+		ELSIF res.m.handleImport THEN
 			err := ErrImportLoop
 		ELSE
 			err := ErrNo
@@ -756,10 +773,10 @@ VAR imp: Import;
 	                nameOfs, nameEnd, realOfs, realEnd: INTEGER): BOOLEAN;
 		RETURN Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd)
 		    OR (realOfs # nameOfs) & (
-		          (i.name.ofs # i.module.name.ofs)
-		       OR (i.name.block # i.module.name.block)
+		          (i.name.ofs # i.module.m.name.ofs)
+		       OR (i.name.block # i.module.m.name.block)
 		       )
-		       & Strings.IsEqualToChars(i.module.name, buf, realOfs, realEnd)
+		       & Strings.IsEqualToChars(i.module.m.name, buf, realOfs, realEnd)
 	END IsDup;
 BEGIN
 	ASSERT(~m.fixed);
@@ -830,11 +847,11 @@ BEGIN
 		err := ErrNo
 	ELSIF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
 		err := ErrDeclarationNameDuplicate
-	ELSIF ds.module.errorHide & (ds.up # NIL)
-	    & (DeclarationLineSearch(ds.module, buf, begin, end) # NIL)
+	ELSIF ds.module.m.errorHide & (ds.up # NIL)
+	    & (DeclarationLineSearch(ds.module.m, buf, begin, end) # NIL)
 	THEN
 		err := ErrDeclarationNameHide
-	ELSIF ds.module.errorHide
+	ELSIF ds.module.m.errorHide
 	    & (Scanner.Ident # Scanner.CheckPredefined(buf, begin, end))
 	THEN
 		err := ErrPredefinedNameHide
@@ -849,7 +866,7 @@ PROCEDURE ConstAdd*(ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGE
 VAR c: Const;
 	err: INTEGER;
 BEGIN
-	ASSERT(~ds.module.fixed);
+	ASSERT(~ds.module.m.fixed);
 
 	NEW(c); NodeInit(c^, IdConst);
 	err := CheckNameDuplicate(ds, buf, begin, end);
@@ -907,12 +924,12 @@ VAR d: Declaration;
 		ASSERT(0 <= ds.recordForwardCount)
 	END MoveForwardDeclToLast;
 BEGIN
-	ASSERT(~ds.module.fixed);
+	ASSERT(~ds.module.m.fixed);
 
 	d := DeclarationLineSearch(ds, buf, begin, end);
 	IF ((d = NIL) OR (d.id = IdRecordForward))
 	OR (d = NIL) & ((ds.up = NIL)
-	             OR (DeclarationLineSearch(ds.module, buf, begin, end) = NIL))
+	             OR (DeclarationLineSearch(ds.module.m, buf, begin, end) = NIL))
 	THEN
 		IF Scanner.Ident = Scanner.CheckPredefined(buf, begin, end) THEN
 			err := ErrNo
@@ -1100,18 +1117,19 @@ PROCEDURE VarAdd*(ds: Declarations;
 VAR v: Var;
     err: INTEGER;
 BEGIN
-	ASSERT((ds.module = NIL) OR ~ds.module.fixed);
+	ASSERT((ds.module = NIL) OR ~ds.module.m.fixed);
 	err := CheckNameDuplicate(ds, buf, begin, end);
 	ChecklessVarAdd(v, ds, buf, begin, end)
 	RETURN err
 END VarAdd;
 
-PROCEDURE TInit(t: Type; id: INTEGER);
+PROCEDURE TypeInit(t: Type; id: INTEGER);
 BEGIN
 	NodeInit(t^, id);
 	DeclInit(t, NIL);
+	t.properties := { };
 	t.array := NIL
-END TInit;
+END TypeInit;
 
 PROCEDURE ProcTypeNew*(forType: BOOLEAN): ProcType;
 VAR p: ProcType;
@@ -1123,7 +1141,7 @@ BEGIN
 	ELSE
 		NEW(p)
 	END;
-	TInit(p, IdProcType);
+	TypeInit(p, IdProcType);
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -1325,7 +1343,7 @@ PROCEDURE ArrayGet*(t: Type; count: Expression): Array;
 VAR a: Array;
 BEGIN
 	IF (count # NIL) OR (t = NIL) OR (t.array = NIL) THEN
-		NEW(a); TInit(a, IdArray);
+		NEW(a); TypeInit(a, IdArray);
 		a.count := count;
 		IF (t # NIL) & (count = NIL) THEN
 			t.array := a
@@ -1366,7 +1384,7 @@ PROCEDURE PointerGet*(t: Record): Pointer;
 VAR p: Pointer;
 BEGIN
 	IF (t = NIL) OR (t.pointer = NIL) THEN
-		NEW(p); TInit(p, IdPointer);
+		NEW(p); TypeInit(p, IdPointer);
 		p.type := t;
 		IF t # NIL THEN
 			t.pointer := p
@@ -1406,7 +1424,7 @@ END RecordSetBase;
 
 PROCEDURE RecNew(VAR r: Record);
 BEGIN
-	NEW(r); TInit(r, IdRecordForward);
+	NEW(r); TypeInit(r, IdRecordForward);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
@@ -1516,8 +1534,8 @@ VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
-		IF (ds.module # NIL) & ds.module.script THEN
-			err := ImportAdd(ds.module, buf, begin, end, begin, end);
+		IF (ds.module # NIL) & ds.module.m.script THEN
+			err := ImportAdd(ds.module.m, buf, begin, end, begin, end);
 			d := ds.end
 		ELSE
 			err := ErrNo
@@ -1527,7 +1545,7 @@ BEGIN
 			d := DeclErrorNew(ds, buf, begin, end);
 			ASSERT(d.type # NIL)
 		END
-	ELSIF ~d.mark & (d.module # NIL) & d.module.fixed THEN
+	ELSIF ~d.mark & (d.module # NIL) & d.module.m.fixed THEN
 		err := ErrDeclarationIsPrivate
 	ELSIF (d IS Const) & ~d(Const).finished THEN
 		err := ErrConstRecursive;
@@ -1553,7 +1571,7 @@ BEGIN
 	END;
 	IF err = ErrNo THEN
 		v := d(Var);
-		IF ~d.mark & d.module.fixed THEN
+		IF ~d.mark & d.module.m.fixed THEN
 			err := ErrDeclarationIsPrivate
 		END
 	ELSE
@@ -1990,7 +2008,7 @@ VAR v: Var;
 BEGIN
 	NEW(v); NodeInit(v^, IdVar); DeclInit(v, NIL);
 	v.module := r.module;
-	PutChars(v.module, v.name, name, begin, end);
+	PutChars(v.module.m, v.name, name, begin, end);
 	IF r.vars = NIL THEN
 		r.vars := v
 	ELSE
@@ -2025,7 +2043,7 @@ BEGIN
 		err := ErrDeclarationNotFound; (* TODO *)
 		v := RecordChecklessVarAdd(r, name, begin, end);
 		v.type := TypeGet(IdInteger)
-	ELSIF ~v.mark & v.module.fixed THEN
+	ELSIF ~v.mark & v.module.m.fixed THEN
 		err := ErrDeclarationIsPrivate;
 		v.mark := TRUE
 	ELSE
@@ -2829,7 +2847,7 @@ VAR v: Var;
 BEGIN
 	v := des.decl(Var);
 	IF (v.up # NIL) & (v.up.up = NIL) THEN
-		able := ~v.module.fixed
+		able := ~v.module.m.fixed
 	ELSE
 		able := ~(v IS FormalParam)
 		     OR (ParamOut IN v(FormalParam).access)
@@ -3503,6 +3521,26 @@ BEGIN
 	RETURN err
 END CaseElementAdd;
 
+PROCEDURE TypeInclAssigned(t: Type);
+VAR v: Declaration;
+    rec: Record;
+BEGIN
+	INCL(t.properties, TypeAssigned);
+	IF t.id = IdRecord THEN
+		rec := t(Record);
+		IF rec.base # NIL THEN
+			TypeInclAssigned(rec.base)
+		END;
+		v := rec.vars;
+		WHILE v # NIL DO
+			IF v.type.id = IdRecord THEN
+				TypeInclAssigned(v.type)
+			END;
+			v := v.next
+		END
+	END
+END TypeInclAssigned;
+
 PROCEDURE AssignNew*(VAR a: Assign; inLoops: BOOLEAN; des: Designator;
                      expr: Expression): INTEGER;
 VAR err: INTEGER;
@@ -3514,6 +3552,7 @@ BEGIN
 	IF des # NIL THEN
 		IF (des.decl IS Var) & IsChangeable(des) THEN
 			var := des.decl(Var);
+			TypeInclAssigned(des.type);
 			IF var.type.id = IdPointer THEN
 				IF (des.sel # NIL)
 				 & (~(InitedValue IN var.state.inited)
@@ -3572,7 +3611,7 @@ VAR tp: ProcType;
 	PROCEDURE TypeNew(s, t: INTEGER);
 	VAR td: Type;
 	BEGIN
-		NEW(td); TInit(td, t);
+		NEW(td); TypeInit(td, t);
 
 		predefined[s - Scanner.PredefinedFirst] := td;
 		types[t] := td

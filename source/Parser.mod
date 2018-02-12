@@ -254,7 +254,7 @@ BEGIN
 	d := ExpectDecl(p, ds);
 	IF d IS Ast.Import THEN
 		Expect(p, Scanner.Dot, ErrExpectDot);
-		d := ExpectDecl(p, d(Ast.Import).module)
+		d := ExpectDecl(p, d(Ast.Import).module.m)
 	END
 	RETURN d
 END Qualident;
@@ -762,7 +762,7 @@ BEGIN
 		END
 	ELSE
 		Strings.Undef(rec.name);
-		rec.module := p.module
+		rec.module := p.module.bag
 	END;
 	RecVars(p, rec, ds);
 	Expect(p, Scanner.End, ErrExpectEnd);

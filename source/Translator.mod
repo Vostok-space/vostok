@@ -62,6 +62,20 @@ TYPE
 		firstNotOk: BOOLEAN
 	END;
 
+PROCEDURE Unlink(c: Container);
+VAR tc: Container;
+BEGIN
+	WHILE c # NIL DO
+		tc := c;
+		c := c.next;
+		tc.m.module.m := NIL;
+		tc.m.bag := NIL;
+		tc.m.module := NIL;
+		tc.m.provider := NIL;
+		tc.m := NIL
+	END
+END Unlink;
+
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
 	Out.Int(code - Parser.ErrAstBegin, 0); Out.String(" ");
@@ -122,7 +136,7 @@ END SearchModule;
 PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module);
 VAR mc: Container;
 BEGIN
-	ASSERT(m.module = m);
+	ASSERT(m.module.m = m);
 	NEW(mc);
 	mc.m := m;
 	mc.next := mp.modules.first;
@@ -290,8 +304,8 @@ BEGIN
 	ret := ErrNo;
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.used THEN
-			ret := GenerateC(imp.module, FALSE, NIL, opt, dir, dirLen, cDirs, exec)
+		IF ~imp.module.m.used THEN
+			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, exec)
 		END;
 		imp := imp.next
 	END;
@@ -404,16 +418,17 @@ PROCEDURE SearchCCompiler(VAR cmd: Exec.Code; res: INTEGER): BOOLEAN;
 	PROCEDURE Test(c, ver: ARRAY OF CHAR): BOOLEAN;
 	VAR exec: Exec.Code;
 	RETURN Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
-	     & ((Platform.Posix & Exec.AddClean(exec, ">/dev/null"))
+	     & ((Platform.Posix & Exec.AddClean(exec, " 1,2>/dev/null"))
 	     OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
 	       )
 	     & (Exec.Ok = Exec.Do(exec))
 	END Test;
 
 	RETURN (res = Cli.ResultRun)
-	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
+	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g -w")
 
-	    OR Test("cc",    "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
+	    OR (
+	       Test("cc",    "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
 	    OR Test("gcc",   "-dumpversion") & Exec.AddClean(cmd, "gcc -g -O1")
 	    OR Test("clang", "-dumpversion") & Exec.AddClean(cmd, "clang -g -O1")
 
@@ -421,6 +436,7 @@ PROCEDURE SearchCCompiler(VAR cmd: Exec.Code; res: INTEGER): BOOLEAN;
 	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
 
 	    OR Test("ccomp", "--version")    & Exec.AddClean(cmd, "ccomp -g -O")
+	       ) & ((res # Cli.ResultRun) OR Exec.AddClean(cmd, " -w"))
 END SearchCCompiler;
 
 PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
@@ -572,6 +588,10 @@ BEGIN
 				END
 			END
 		END
+	END;
+	IF mp.modules.last # NIL THEN
+		mp.modules.last.next := NIL;
+		Unlink(mp.modules.first.next)
 	END
 	RETURN ret
 END ToC;

@@ -900,12 +900,26 @@ void o7_release_array(o7_int_t count, void *mem[O7_VLA(count)]) {
 	}
 }
 
-#define O7_RELEASE_PARAMS(array) \
+#define O7_RELEASE_ARRAY(array) \
 	o7_release_array(sizeof(array) / sizeof(void *), (void **)array)
+
+O7_ALWAYS_INLINE
+void o7_retain_array(o7_int_t count, void *mem[O7_VLA(count)]) {
+	o7_int_t i;
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		for (i = 0; i < count; i += 1) {
+			o7_retain(mem + i);
+		}
+	}
+}
+
+#define O7_RETAIN_ARRAY(array) \
+	o7_retain_array(sizeof(array) / sizeof(void *), (void **)array)
 
 O7_ALWAYS_INLINE
 void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void release(void *)) {
 	o7_int_t i;
+	assert(0 > 1);/* TODO */
 	if (O7_MEMNG == O7_MEMNG_COUNTER) {
 		for (i = 0; i < count; i += 1) {
 			o7_null((void **)array + i);

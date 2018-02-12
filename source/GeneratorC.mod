@@ -622,7 +622,7 @@ VAR up: Ast.Declarations;
     prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
     i: INTEGER;
 BEGIN
-	IF (decl IS Ast.Type) & (decl.up # decl.module) & (decl.up # NIL)
+	IF (decl IS Ast.Type) & (decl.up # decl.module.m) & (decl.up # NIL)
 	OR ~gen.opt.procLocal & (decl IS Ast.Procedure)
 	THEN
 		up := decl.up;
@@ -657,13 +657,13 @@ END IsSpecModuleName;
 
 PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
-	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module) THEN
+	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module.m) THEN
 		ASSERT(decl.module # NIL);
-		Text.String(gen, decl.module.name);
+		Text.String(gen, decl.module.m.name);
 
 		Text.Data(gen, "__", 0,
 		    ORD(
-		        IsSpecModuleName(decl.module.name) & ~decl.module.spec
+		        IsSpecModuleName(decl.module.m.name) & ~decl.module.m.spec
 		     OR Eq(decl.name, "init")
 		     OR Eq(decl.name, "cnst")
 		     OR Eq(decl.name, "len")
@@ -686,7 +686,7 @@ BEGIN
 	IF decl IS Ast.Module THEN
 		name := decl.name
 	ELSE ASSERT(decl IS Ast.Import);
-		name := decl.module.name
+		name := decl.module.m.name
 	END;
 	Text.String(gen, name);
 	i := ORD(~IsSpecModuleName(name));
@@ -733,10 +733,10 @@ BEGIN
 		anon[l] := "_";
 		anon[l + 1] := "s";
 		anon[l + 2] := Utf8.Null;
-		Ast.PutChars(rec.pointer.module, rec.name, anon, 0, l + 2)
+		Ast.PutChars(rec.pointer.module.m, rec.name, anon, 0, l + 2)
 	ELSE
 		l := 0;
-		ASSERT(Strings.CopyToChars(anon, l, rec.module.name));
+		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
 		Log.StrLn("Record");
 
@@ -751,7 +751,7 @@ BEGIN
 			DEC(j)
 		END;
 		INC(gen.opt.index);
-		Ast.PutChars(rec.module, rec.name, anon, 0, l)
+		Ast.PutChars(rec.module.m, rec.name, anon, 0, l)
 	END
 	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
@@ -2211,6 +2211,35 @@ BEGIN
 	END
 END RecordUndefHeader;
 
+PROCEDURE RecordRetainReleaseHeader(VAR gen: Generator; rec: Ast.Record;
+                                    interf: BOOLEAN; retrel: ARRAY OF CHAR);
+BEGIN
+	IF rec.mark & ~gen.opt.main  THEN
+		Text.Str(gen, "extern void ")
+	ELSE
+		Text.Str(gen, "static void ")
+	END;
+	GlobalName(gen, rec);
+	Text.Str(gen, retrel);
+	Text.Str(gen, "(struct ");
+	GlobalName(gen, rec);
+	IF interf THEN
+		Text.StrLn(gen, " *r);")
+	ELSE
+		Text.StrOpen(gen, " *r) {")
+	END
+END RecordRetainReleaseHeader;
+
+PROCEDURE RecordReleaseHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
+BEGIN
+	RecordRetainReleaseHeader(gen, rec, interf, "_release")
+END RecordReleaseHeader;
+
+PROCEDURE RecordRetainHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
+BEGIN
+	RecordRetainReleaseHeader(gen, rec, interf, "_retain")
+END RecordRetainHeader;
+
 PROCEDURE IsArrayTypeSimpleUndef(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 BEGIN
 	deep := 0;
@@ -2348,24 +2377,8 @@ BEGIN
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
 
-PROCEDURE RecordReleaseHeader(VAR gen: Generator; rec: Ast.Record; interf: BOOLEAN);
-BEGIN
-	IF rec.mark THEN
-		Text.Str(gen, "extern void ")
-	ELSE
-		Text.Str(gen, "static void ")
-	END;
-	GlobalName(gen, rec);
-	Text.Str(gen, "_release(struct ");
-	GlobalName(gen, rec);
-	IF interf THEN
-		Text.StrLn(gen, " *r);")
-	ELSE
-		Text.StrOpen(gen, " *r) {")
-	END
-END RecordReleaseHeader;
-
-PROCEDURE RecordRelease(VAR gen: Generator; rec: Ast.Record);
+PROCEDURE RecordRetainRelease(VAR gen: Generator; rec: Ast.Record;
+                              retrel, retrelArray, retNull: ARRAY OF CHAR);
 VAR var: Ast.Declaration;
 
 	PROCEDURE IteratorIfNeed(VAR gen: Generator; var: Ast.Declaration);
@@ -2382,22 +2395,23 @@ VAR var: Ast.Declaration;
 		END
 	END IteratorIfNeed;
 BEGIN
-	RecordReleaseHeader(gen, rec, FALSE);
+	RecordRetainReleaseHeader(gen, rec, FALSE, retrel);
 
 	IteratorIfNeed(gen, rec.vars);
 	IF rec.base # NIL THEN
 		GlobalName(gen, rec.base);
+		Text.Str(gen, retrel);
 		IF ~gen.opt.plan9 THEN
-			Text.StrLn(gen, "_release(&r->_);")
+			Text.StrLn(gen, "(&r->_);")
 		ELSE
-			Text.StrLn(gen, "_release(r);")
+			Text.StrLn(gen, "(r);")
 		END
 	END;
 	var := rec.vars;
 	WHILE var # NIL DO
 		IF var.type.id = Ast.IdArray THEN
 			IF var.type.type.id = Ast.IdPointer THEN (* TODO *)
-				Text.Str(gen, "O7_RELEASE_PARAMS(r->");
+				Text.Str(gen, retrelArray);
 				Name(gen, var);
 				Text.StrLn(gen, ");")
 			ELSIF (var.type.type.id = Ast.IdRecord)
@@ -2407,25 +2421,38 @@ BEGIN
 				Name(gen, var);
 				Text.StrOpen(gen, "); i += 1) {");
 				GlobalName(gen, var.type.type);
-				Text.Str(gen, "_release(r->");
+				Text.Str(gen, retrel);
+				Text.Str(gen, "(r->");
 				Name(gen, var);
 				Text.StrLn(gen, " + i);");
 				Text.StrLnClose(gen, "}")
 			END
 		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
 			GlobalName(gen, var.type);
-			Text.Str(gen, "_release(&r->");
+			Text.Str(gen, retrel);
+			Text.Str(gen, "(&r->");
 			Name(gen, var);
 			Text.StrLn(gen, ");")
 		ELSIF var.type.id = Ast.IdPointer THEN
-			Text.Str(gen, "O7_NULL(&r->");
+			Text.Str(gen, retNull);
+			Text.Str(gen, "r->");
 			Name(gen, var);
 			Text.StrLn(gen, ");")
 		END;
 		var := var.next
 	END;
 	Text.StrLnClose(gen, "}")
+END RecordRetainRelease;
+
+PROCEDURE RecordRelease(VAR gen: Generator; rec: Ast.Record);
+BEGIN
+	RecordRetainRelease(gen, rec, "_release", "O7_RELEASE_ARRAY(r->", "O7_NULL(&")
 END RecordRelease;
+
+PROCEDURE RecordRetain(VAR gen: Generator; rec: Ast.Record);
+BEGIN
+	RecordRetainRelease(gen, rec, "_retain", "O7_RETAIN_ARRAY(r->", "o7_retain(")
+END RecordRetain;
 
 PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
 BEGIN
@@ -2446,7 +2473,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 	PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
 	VAR v: Ast.Declaration;
 	BEGIN
-		rec.module := gen.module;
+		rec.module := gen.module.bag;
 		Text.Str(gen, "struct ");
 		IF CheckStructName(gen, rec) THEN
 			GlobalName(gen, rec)
@@ -2663,7 +2690,10 @@ BEGIN
 				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
 			END;
 			IF out.opt.memManager = MemManagerCounter THEN
-				RecordReleaseHeader(out.g[Interface], typ(Ast.Record), TRUE)
+				RecordReleaseHeader(out.g[Interface], typ(Ast.Record), TRUE);
+				IF Ast.TypeAssigned IN typ.properties THEN
+					RecordRetainHeader(out.g[Interface], typ(Ast.Record), TRUE)
+				END
 			END
 		END;
 		IF (~typ.mark OR out.opt.main)
@@ -2675,7 +2705,10 @@ BEGIN
 			RecordUndef(out.g[Implementation], typ(Ast.Record))
 		END;
 		IF out.opt.memManager = MemManagerCounter THEN
-			RecordRelease(out.g[Implementation], typ(Ast.Record))
+			RecordRelease(out.g[Implementation], typ(Ast.Record));
+			IF Ast.TypeAssigned IN typ.properties THEN
+				RecordRetain(out.g[Implementation], typ(Ast.Record))
+			END
 		END
 	END
 END TypeDecl;
@@ -3018,6 +3051,15 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		  0: Text.StrLn(gen, ";")
 		| 1: Text.StrLn(gen, ");")
 		| 2: Text.StrLn(gen, "));")
+		END;
+		IF (gen.opt.memManager = MemManagerCounter)
+		 & (st.designator.type.id = Ast.IdRecord)
+		 & (~IsAnonStruct(st.designator.type(Ast.Record)))
+		THEN
+			GlobalName(gen, st.designator.type);
+			Text.Str(gen, "_retain(&");
+			Designator(gen, st.designator);
+			Text.StrLn(gen, ");")
 		END
 	END Assign;
 
@@ -3282,10 +3324,21 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 					IF var.type.id = Ast.IdPointer THEN
 						IF first THEN
 							first := FALSE;
+							Text.Ln(gen);
 							Text.Str(gen, "o7_release(")
 						ELSE
 							Text.Str(gen, "); o7_release(")
 						END;
+						Name(gen, var)
+					ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
+						IF first THEN
+							first := FALSE;
+							Text.Ln(gen)
+						ELSE
+							Text.Str(gen, "); ")
+						END;
+						GlobalName(gen, var.type);
+						Text.Str(gen, "_release(&");
 						Name(gen, var)
 					END;
 					var := var.next
@@ -3608,7 +3661,7 @@ VAR imp: Ast.Declaration;
 BEGIN
 	imp := m.import;
 	WHILE (imp # NIL) & (imp IS Ast.Import) DO
-		MarkUsedInMarked(imp.module);
+		MarkUsedInMarked(imp.module.m);
 		imp := imp.next
 	END;
 	Consts(m.consts);
@@ -3622,7 +3675,7 @@ BEGIN
 		ASSERT(imp IS Ast.Import);
 
 		REPEAT
-			Name(gen, imp.module);
+			Name(gen, imp.module.m);
 			Text.StrLn(gen, "_init();");
 
 			imp := imp.next
