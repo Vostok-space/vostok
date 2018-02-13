@@ -235,6 +235,10 @@ typedef o7_ulong_t o7_set64_t;
 #if defined(O7_MEMNG_COUNTER_TYPE)
 	typedef O7_MEMNG_COUNTER_TYPE
 	                  o7_mmc_t;
+#elif defined(__clang__) && (__SIZEOF_POINTER__ == __SIZEOF_INT__)
+	typedef int       o7_mmc_t;
+#elif defined(__clang__) && (__SIZEOF_POINTER__ == __SIZEOF_LONG__)
+	typedef long      o7_mmc_t;
 #elif ((size_t)-1) == O7_UINT_MAX
 	typedef o7_int_t  o7_mmc_t;
 #elif ((size_t)-1) == O7_ULONG_MAX
