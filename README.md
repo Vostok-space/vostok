@@ -1,8 +1,8 @@
-[Проект "Восток"](README-RU.md)
+[Проект "Восток"](README-RU.md) - более полная версия введения.
 
 Project "Vostok"
 ==========================
-Oberon-07 translator to C.
+[Oberon-07](documents/Language.md) translator to C.
 
 License is LGPL for translator's code and Apache for libraries
 
