@@ -2,7 +2,7 @@ RESULT=result/benchmark
 
 mkdir -p $RESULT/asrt $RESULT/san
 result/o7c to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/benchmark
-result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init no
+result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init noinit
 
 export ASAN_OPTIONS=detect_odr_violation=0
 MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation singularity/implementation/*.c"

@@ -333,7 +333,7 @@ BEGIN
 	END
 END ParseError;
 
-PROCEDURE Usage*;
+PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 S("Translator from Oberon-07 to C. 2018");
 S("Usage: ");
@@ -341,13 +341,17 @@ S("  1) o7c help");
 S("  2) o7c to-c   Code OutDir { -m PTM | -i PTI | -infr Infr }");
 S("  3) o7c to-bin Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
 S("  4) o7c run    Code {-m PTM|-i PTI|-c PTHC|-cc CComp|-t Temp} [-- Args]");
+IF full THEN
+S("");
 S("2) to-c converts modules to .h & .c files");
 S("3) to-bin converts modules to binary executable through implicit .c files");
 S("4) run executes implicit executable file");
+S("");
 S("Code is simple Oberon-code. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module.Procedure [ '('Parameters')' ] .");
 S("OutDir - directory for saving translated .h & .c files");
 S("OutBin - name of output executable file");
+S("");
 S("-m PTM - Path To directory with Modules for search.");
 S("  For example: -m library -m source -m test/source");
 S("-i PTI - Path To directory with Interface modules without real implementation");
@@ -360,14 +364,25 @@ S("-t Temp - new directory, where translator store intermediate .h & .c files");
 S("  For example: -t result/test/ReadDir.src");
 S("-cc CComp - C Compiler for build .c-files, by default used 'cc -g -O1'");
 S("  For example: -cc 'clang -O3 -flto -s'");
-S("-- Args - command line arguments for runned code")
+S("-- Args - command line arguments for runned code");
+S("");
+S("Generator's arguments:");
+S("-init ( noinit | undef | zero )  - kind of variables auto-initializing.");
+S("  noinit -  without initialization.");
+S("  undef* -  special values for error's diagnostic.");
+S("  zero   -  fill by zeroes.");
+S("-memng ( nofree | counter | gc ) - kind of dynamic memory management.");
+S("  nofree*  -  without release.");
+S("  counter  -  automatic reference counting without automatic loops destroying.");
+S("  gc       -  garbage collection by Boehm-Demers-Weiser library.")
+END
 END Usage;
 
 PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
 BEGIN
 	CASE err OF
 	  Cli.ErrWrongArgs:
-		Usage
+		Usage(FALSE)
 	| Cli.ErrTooLongSourceName:
 		S("Too long name of source file"); Out.Ln
 	| Cli.ErrTooLongOutName:
@@ -381,7 +396,7 @@ BEGIN
 	| Cli.ErrUnknownCommand:
 		C("Unknown command: ");
 		S(cmd);
-		Usage
+		Usage(FALSE)
 	| Cli.ErrNotEnoughArgs:
 		C("Not enough count of arguments for command: ");
 		S(cmd)

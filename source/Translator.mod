@@ -496,6 +496,10 @@ VAR ret, len: INTEGER;
 				& (  (opt.memManager # GeneratorC.MemManagerCounter)
 				  OR Exec.Add(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER", 0)
 				  )
+				& (  (opt.memManager # GeneratorC.MemManagerGC)
+				  OR Exec.Add(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_GC", 0)
+				   & Exec.Add(cmd, "-lgc", 0)
+				  )
 				& (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
 				Exec.Log(cmd);
 				(* TODO *)
@@ -599,7 +603,7 @@ END ToC;
 PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER): BOOLEAN;
 BEGIN
 	IF ret = Cli.CmdHelp THEN
-		Message.Usage
+		Message.Usage(TRUE)
 	ELSE
 		ret := ToC(ret, args)
 	END

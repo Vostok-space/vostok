@@ -38,12 +38,12 @@ BEGIN
 	END
 END ParseError;
 
-PROCEDURE Usage*;
+PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 	IF ru THEN
-		Ru.Usage
+		Ru.Usage(full)
 	ELSE
-		En.Usage
+		En.Usage(full)
 	END
 END Usage;
 

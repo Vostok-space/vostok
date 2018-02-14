@@ -191,7 +191,7 @@ BEGIN
 				ret := ErrNotEnoughArgs
 			ELSIF ~CLI.Get(opt, optLen, arg) THEN
 				ret := ErrUnknownInit
-			ELSIF opt = "no" THEN
+			ELSIF opt = "noinit" THEN
 				args.init := GeneratorC.VarInitNo
 			ELSIF opt = "undef" THEN
 				args.init := GeneratorC.VarInitUndefined
