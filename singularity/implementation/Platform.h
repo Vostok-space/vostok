@@ -15,7 +15,7 @@
 #if !defined HEADER_GUARD_Platform
 #    define  HEADER_GUARD_Platform 1
 
-extern o7_bool const
+extern o7_cbool const
   Platform_Posix,
   Platform_Linux,
   Platform_Bsd,
