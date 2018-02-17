@@ -622,15 +622,15 @@ VAR up: Ast.Declarations;
     prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
     i: INTEGER;
 BEGIN
-	IF (decl IS Ast.Type) & (decl.up # decl.module.m) & (decl.up # NIL)
+	IF (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
 	OR ~gen.opt.procLocal & (decl IS Ast.Procedure)
 	THEN
-		up := decl.up;
+		up := decl.up.d;
 		i := 0;
 		WHILE up.up # NIL DO
 			prs[i] := up;
 			INC(i);
-			up := up.up
+			up := up.up.d
 		END;
 		WHILE i > 0 DO
 			DEC(i);

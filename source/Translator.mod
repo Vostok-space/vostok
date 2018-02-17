@@ -68,9 +68,8 @@ BEGIN
 	WHILE c # NIL DO
 		tc := c;
 		c := c.next;
-		tc.m.module.m := NIL;
-		tc.m.bag := NIL;
-		tc.m.module := NIL;
+		Log.StrLn(tc.m.name.block.s);
+		Ast.Unlinks(tc.m);
 		tc.m.provider := NIL;
 		tc.m := NIL
 	END

@@ -223,9 +223,12 @@ TYPE
 	Type* = POINTER TO RType;
 	Declaration* = POINTER TO RDeclaration;
 	Declarations* = POINTER TO RDeclarations;
+	DeclarationsBag = POINTER TO RECORD
+		d*: Declarations
+	END;
 	RDeclaration* = RECORD(Node)
 		module*: ModuleBag;
-		up*: Declarations;
+		up*: DeclarationsBag;
 
 		name*: Strings.String;
 		mark*,
@@ -293,6 +296,7 @@ TYPE
 		link: FormalParam
 	END;
 	RNeedTagList = RECORD(V.Base)
+		next: NeedTagList;
 		value: BOOLEAN;
 
 		count: INTEGER;
@@ -313,6 +317,8 @@ TYPE
 	Statement* = POINTER TO RStatement;
 	Procedure* = POINTER TO RProcedure;
 	RDeclarations* = RECORD(RDeclaration)
+		dag*: DeclarationsBag;
+
 		start*, end*: Declaration;
 
 		consts*: Const;
@@ -386,7 +392,9 @@ TYPE
 		var*: Var
 	END;
 
-	RFactor = RECORD(RExpression) END;
+	RFactor = RECORD(RExpression)
+		nextValue: Factor
+	END;
 
 	Designator* = POINTER TO RECORD(RFactor)
 		decl*: Declaration;
@@ -535,6 +543,9 @@ VAR
 	booleans: ARRAY 2 OF ExprBoolean;
 	nil: ExprNil;
 
+	values: Factor;
+	needTags: NeedTagList;
+
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
@@ -576,13 +587,16 @@ END ModuleSetComment;
 PROCEDURE DeclInit(d: Declaration; ds: Declarations);
 BEGIN
 	IF ds = NIL THEN
-		d.module := NIL
-	ELSIF (ds.module = NIL) & (ds IS Module) THEN
-		d.module := ds(Module).bag
+		d.module := NIL;
+		d.up := NIL
 	ELSE
-		d.module := ds.module
+		IF (ds.module = NIL) & (ds IS Module) THEN
+			d.module := ds(Module).bag
+		ELSE
+			d.module := ds.module
+		END;
+		d.up := ds.dag
 	END;
-	d.up := ds;
 	d.mark := FALSE;
 	d.used := FALSE;
 	Strings.Undef(d.name);
@@ -617,7 +631,8 @@ END DeclConnect;
 PROCEDURE DeclarationsInit(d, up: Declarations);
 BEGIN
 	DeclInit(d, NIL);
-	d.up := NIL;
+	NEW(d.dag);
+	d.dag.d := d;
 	d.start := NIL;
 	d.end := NIL;
 
@@ -625,7 +640,11 @@ BEGIN
 	d.types := NIL;
 	d.vars := NIL;
 	d.procedures := NIL;
-	d.up := up;
+	IF up = NIL THEN
+		d.up := NIL
+	ELSE
+		d.up := up.dag
+	END;
 	d.stats := NIL;
 
 	d.recordForwardCount := 0
@@ -641,7 +660,7 @@ BEGIN
 		(* Record *)
 		DeclInit(d, up)
 	END;
-	d.up := up
+	d.up := up.dag
 END DeclarationsConnect;
 
 PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER; p: Provider): Module;
@@ -1228,7 +1247,10 @@ BEGIN
 	p.needTag.first := p;
 	p.needTag.last := p;
 
-	p.needTag.value := need
+	p.needTag.value := need;
+
+	p.needTag.next := needTags;
+	needTags := p.needTag
 END NewNeedTag;
 
 PROCEDURE SetNeedTag(p: FormalParam);
@@ -1486,7 +1508,7 @@ BEGIN
 		IF ds IS Procedure THEN
 			IF d = NIL THEN
 				REPEAT
-					ds := ds.up
+					ds := ds.up.d
 				UNTIL (ds = NIL) OR (ds IS Module);
 				IF ds # NIL THEN
 					d := SearchName(ds.start, buf, begin, end)
@@ -1494,7 +1516,7 @@ BEGIN
 			END
 		ELSE (* TODO Нужно ли это ?*)
 			WHILE (d = NIL) & (ds.up # NIL) DO
-				ds := ds.up;
+				ds := ds.up.d;
 				d := SearchName(ds.start, buf, begin, end)
 			END
 		END;
@@ -1607,12 +1629,19 @@ BEGIN
 	e.value := NIL
 END ExprInit;
 
+PROCEDURE ValueInit(f: Factor; id: INTEGER; t: Type);
+BEGIN
+	ExprInit(f, id, t);
+	f.value := f;
+	f.nextValue := values;
+	values := f
+END ValueInit;
+
 PROCEDURE ExprIntegerNew*(int: INTEGER): ExprInteger;
 VAR e: ExprInteger;
 BEGIN
-	NEW(e); ExprInit(e, IdInteger, TypeGet(IdInteger));
-	e.int := int;
-	e.value := e
+	NEW(e); ValueInit(e, IdInteger, TypeGet(IdInteger));
+	e.int := int
 	RETURN e
 END ExprIntegerNew;
 
@@ -1621,9 +1650,8 @@ PROCEDURE ExprRealNew*(real: REAL; m: Module;
 VAR e: ExprReal;
 BEGIN
 	ASSERT(m # NIL);
-	NEW(e); ExprInit(e, IdReal, TypeGet(IdReal));
+	NEW(e); ValueInit(e, IdReal, TypeGet(IdReal));
 	e.real := real;
-	e.value := e;
 	PutChars(m, e.str, buf, begin, end)
 	RETURN e
 END ExprRealNew;
@@ -1631,9 +1659,8 @@ END ExprRealNew;
 PROCEDURE ExprRealNewByValue*(real: REAL): ExprReal;
 VAR e: ExprReal;
 BEGIN
-	NEW(e); ExprInit(e, IdReal, TypeGet(IdReal));
+	NEW(e); ValueInit(e, IdReal, TypeGet(IdReal));
 	e.real := real;
-	e.value := e;
 	Strings.Undef(e.str)
 	RETURN e
 END ExprRealNewByValue;
@@ -1643,9 +1670,8 @@ VAR e: ExprBoolean;
 BEGIN
 	e := booleans[ORD(bool)];
 	IF e = NIL THEN
-		NEW(e); ExprInit(e, IdBoolean, TypeGet(IdBoolean));
+		NEW(e); ValueInit(e, IdBoolean, TypeGet(IdBoolean));
 		e.bool := bool;
-		e.value := e;
 		booleans[ORD(bool)] := e
 	END
 	RETURN e
@@ -1660,32 +1686,29 @@ BEGIN
 		len := len + LEN(buf) - 1
 	END;
 	DEC(len, 2);
-	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
+	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
 	e.int := -1;
 	e.asChar := FALSE;
-	PutChars(m, e.string, buf, begin, end);
-	e.value := e
+	PutChars(m, e.string, buf, begin, end)
 	RETURN e
 END ExprStringNew;
 
 PROCEDURE ExprCharNew*(int: INTEGER): ExprString;
 VAR e: ExprString;
 BEGIN
-	NEW(e); ExprInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(1)));
+	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(1)));
 	Strings.Undef(e.string);
 	e.int := int;
-	e.asChar := TRUE;
-	e.value := e
+	e.asChar := TRUE
 	RETURN e
 END ExprCharNew;
 
 PROCEDURE ExprNilGet*(): ExprNil;
 BEGIN
 	IF nil = NIL THEN
-		NEW(nil); ExprInit(nil, IdPointer, TypeGet(IdPointer));
+		NEW(nil); ValueInit(nil, IdPointer, TypeGet(IdPointer));
 		nil.properties := { ExprPointerTouch };
-		ASSERT(nil.type.type = NIL);
-		nil.value := nil
+		ASSERT(nil.type.type = NIL)
 	END
 	RETURN nil
 END ExprNilGet;
@@ -1726,7 +1749,7 @@ END ExprBracesNew;
 PROCEDURE ExprSetByValue*(set: LongSet): ExprSet;
 VAR e: ExprSet;
 BEGIN
-	NEW(e); ExprInit(e, IdSet, TypeGet(IdSet));
+	NEW(e); ValueInit(e, IdSet, TypeGet(IdSet));
 	e.exprs[0] := NIL;
 	e.exprs[1] := NIL;
 	e.set := set;
@@ -1788,7 +1811,10 @@ BEGIN
 				e.set[1] := {0, right MOD (Limits.SetMax + 1)}
 			END;
 			IF err = ErrNo THEN
-				e.value := e
+				e.value := e;
+
+				e.nextValue := values;
+				values := e
 			END
 		END
 	END;
@@ -1872,7 +1898,7 @@ BEGIN
 		    OR v.state.inCondition & ({} # v.state.inited - {InitedNo})
 		       )
 		   & ~inLoop (* TODO *)
-		   & ((v.up # NIL) & (v.up.up # NIL) OR (v IS FormalParam))
+		   & ((v.up # NIL) & (v.up.d.up # NIL) OR (v IS FormalParam))
 		THEN
 			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
@@ -2846,7 +2872,7 @@ VAR v: Var;
     able: BOOLEAN;
 BEGIN
 	v := des.decl(Var);
-	IF (v.up # NIL) & (v.up.up = NIL) THEN
+	IF (v.up # NIL) & (v.up.d.up = NIL) THEN
 		able := ~v.module.m.fixed
 	ELSE
 		able := ~(v IS FormalParam)
@@ -3566,7 +3592,7 @@ BEGIN
 			END;
 
 			IF (des.sel = NIL)
-			 & ((var.up # NIL) & (var.up.up # NIL) OR (var IS FormalParam))
+			 & ((var.up # NIL) & (var.up.d.up # NIL) OR (var IS FormalParam))
 			 & (expr # NIL) & (expr.value # NIL) & (expr.value = ExprNilGet())
 			THEN
 				var.state.inited := { InitedNil }
@@ -3720,9 +3746,62 @@ BEGIN
 	p.reg := reg
 END ProviderInit;
 
+PROCEDURE DeclarationsUnlink(ds: Declarations);
+VAR p: Declaration;
+BEGIN
+	ds.dag.d := NIL;
+	ds.dag := NIL;
+	ds.module := NIL;
+	ds.start := NIL;
+	ds.end := NIL;
+	ds.consts := NIL;
+	ds.types := NIL;
+	ds.vars := NIL;
+	ds.ext := NIL;
+	p := ds.procedures;
+	ds.procedures := NIL;
+	ds.stats := NIL;
+
+	WHILE p # NIL DO
+		p(Procedure).header := NIL;
+		DeclarationsUnlink(p(Procedure));
+		p := p.next
+	END
+END DeclarationsUnlink;
+
+PROCEDURE Unlinks*(m: Module);
+VAR fp: FormalParam;
+BEGIN
+	m.bag.m := NIL;
+	m.bag := NIL;
+
+	m.up := NIL;
+	m.provider := NIL;
+	DeclarationsUnlink(m);
+
+	WHILE values # NIL DO
+		values.value := NIL;
+		values := values.nextValue
+	END;
+
+	WHILE needTags # NIL DO
+		WHILE needTags.first # NIL DO
+			fp := needTags.first.link;
+			needTags.first.link := NIL;
+			needTags.first := fp
+		END;
+
+		needTags.last := NIL;
+
+		needTags := needTags.next
+	END
+END Unlinks;
+
 BEGIN
 	PredefinedDeclarationsInit;
 	booleans[0] := NIL;
 	booleans[1] := NIL;
-	nil := NIL
+	nil := NIL;
+	values := NIL;
+	needTags := NIL
 END Ast.

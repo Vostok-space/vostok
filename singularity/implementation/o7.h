@@ -319,7 +319,8 @@ void* o7_ref(void *ptr) {
 #	endif
 #endif
 
-O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_raw_alloc(size_t size) {
+O7_ATTR_MALLOC O7_ALWAYS_INLINE
+void* o7_raw_alloc(size_t size) {
 	extern char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 	extern size_t o7_allocated;
 	void *mem;

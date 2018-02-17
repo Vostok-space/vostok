@@ -40,7 +40,7 @@ extern CFiles_File CFiles_Open(
 	o7_int_t mode_len, o7_char mode[O7_VLA(mode_len)])
 {
 	CFiles_File file = NULL;
-	assert(name_len >= 0);
+	assert(0 <= name_len);
 	assert(ofs < name_len);
 	O7_NEW2(&file, CFiles_File_tag, NULL);
 	if (NULL != file) {
@@ -49,6 +49,7 @@ extern CFiles_File CFiles_Open(
 			O7_NULL(&file);
 		}
 	}
+	o7_unhold(file);
 	return file;
 }
 
