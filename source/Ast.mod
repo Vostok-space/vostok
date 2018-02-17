@@ -2351,7 +2351,7 @@ VAR err: INTEGER;
 		THEN
 			err := ErrRelationExprDifferenTypes;
 			continue := FALSE
-		ELSIF (t1.id IN {IdInteger, IdReal, IdChar})
+		ELSIF (t1.id IN {IdInteger, IdByte, IdReal, IdChar})
 		   OR (t1.id = IdArray) & (t1.type.id = IdChar)
 		THEN
 			continue := TRUE
