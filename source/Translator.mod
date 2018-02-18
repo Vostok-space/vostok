@@ -196,7 +196,7 @@ BEGIN
 		UNTIL (m # NIL) OR (mp.path[pathOfs] = Utf8.Null);
 		IF m # NIL THEN
 			IF pathInd IN mp.sing THEN
-			m.mark := TRUE
+				m.mark := TRUE
 			END
 		ELSIF mp.firstNotOk THEN
 			mp.firstNotOk := FALSE;

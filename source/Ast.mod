@@ -174,7 +174,8 @@ CONST
 	IdImport*           = 32;
 	IdConst*            = 33;
 	IdVar*              = 34;
-	LastId              = 34;
+	IdProc*             = 35;
+	LastId              = 35;
 
 	InitedNo*    = 0;
 	InitedNil*   = 1;
@@ -2908,7 +2909,7 @@ PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
 VAR err: INTEGER;
 BEGIN
 	err := CheckNameDuplicate(ds, buf, begin, end);
-	NEW(p); NodeInit(p^, IdProcType);
+	NEW(p); NodeInit(p^, IdProc);
 	DeclarationsConnect(p, ds, buf, begin, end);
 	p.header := ProcTypeNew(FALSE);
 	p.return := NIL;
@@ -3746,26 +3747,84 @@ BEGIN
 	p.reg := reg
 END ProviderInit;
 
+PROCEDURE UnlinkVar(v: Var);
+BEGIN
+	v.type := NIL;
+	IF v.state # NIL THEN
+		v.state.if := NIL;
+		v.state.else := NIL;
+		v.state.root := NIL;
+		v.state := NIL
+	END
+END UnlinkVar;
+
 PROCEDURE DeclarationsUnlink(ds: Declarations);
-VAR p: Declaration;
+VAR p, d: Declaration;
+    st, tst: Statement;
+
+	PROCEDURE UnlinkRecord(r: Record);
+	VAR d: Declaration; v: Var;
+	BEGIN
+		d := r.vars;
+		r.pointer := NIL;
+		r.base := NIL;
+		r.vars := NIL;
+		WHILE d # NIL DO
+			v := d(Var);
+			d := d.next;
+			v.next := NIL;
+			UnlinkVar(v)
+		END
+	END UnlinkRecord;
 BEGIN
 	ds.dag.d := NIL;
 	ds.dag := NIL;
 	ds.module := NIL;
-	ds.start := NIL;
-	ds.end := NIL;
 	ds.consts := NIL;
 	ds.types := NIL;
 	ds.vars := NIL;
 	ds.ext := NIL;
 	p := ds.procedures;
 	ds.procedures := NIL;
+	st := ds.stats;
 	ds.stats := NIL;
 
-	WHILE p # NIL DO
-		p(Procedure).header := NIL;
-		DeclarationsUnlink(p(Procedure));
-		p := p.next
+	d := ds.start;
+	ds.start := NIL;
+	ds.end := NIL;
+
+	WHILE d # NIL DO
+		p := d;
+		d := d.next;
+		CASE p.id OF
+		  IdPointer:
+			IF p.type # NIL THEN
+				UnlinkRecord(p.type(Record))
+			END
+		| IdRecord:
+			UnlinkRecord(p(Record));
+		| IdArray:
+			p(Array).count := NIL
+		| IdProcType, IdImport, IdError: ;
+		| IdConst: p(Const).expr := NIL
+		| IdProc:
+			p(Procedure).header := NIL;
+			p(Procedure).return := NIL;
+			DeclarationsUnlink(p(Procedure))
+		| IdVar:
+			UnlinkVar(p(Var))
+		END;
+		p.type := NIL;
+		p.next := NIL;
+		p.ext := NIL
+	END;
+
+	WHILE st # NIL DO
+		tst := st;
+		st := st.next;
+		tst.expr := NIL;
+		tst.next := NIL;
+		tst.ext := NIL
 	END
 END DeclarationsUnlink;
 
