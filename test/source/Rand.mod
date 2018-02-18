@@ -4,12 +4,12 @@ MODULE Rand;
 
  PROCEDURE Go*;
  VAR i, i1, i2: INTEGER;
-     ret: BOOLEAN;
+     r1, r2: REAL;
  BEGIN
    IF R.Open() THEN
      FOR i := 0 TO 255 DO
-       ret := R.Int(i1) & R.Int(i2) & (i1 # i2);
-       ASSERT(ret)
+       ASSERT(R.Int(i1) & R.Int(i2) & (i1 # i2));
+       ASSERT(R.Real(r1) & R.Real(r2) & (r1 # r2))
      END;
      R.Close
    END
@@ -23,5 +23,14 @@ MODULE Rand;
    END;
    R.Close
  END Int;
+
+ PROCEDURE Real*;
+ VAR r: REAL;
+ BEGIN
+   IF R.Open() & R.Real(r) THEN
+     Out.Real(r, 0); Out.Ln
+   END;
+   R.Close
+ END Real;
 
 END Rand.

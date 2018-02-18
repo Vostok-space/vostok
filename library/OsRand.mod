@@ -1,4 +1,4 @@
-(* Copyright 2017 ComdivByZero
+(* Copyright 2017-2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,30 @@ MODULE OsRand;
    RETURN ret
  END Int;
 
+ PROCEDURE Real*(VAR r: REAL): BOOLEAN;
+ VAR buf: ARRAY 7 OF BYTE;
+     ofs: INTEGER;
+     ret: BOOLEAN;
+ BEGIN
+   ofs := 0;
+   ret := Read(buf, ofs, LEN(buf));
+   IF ret THEN
+     r := (
+       FLT(buf[0]
+         + buf[1]       * 100H
+         + buf[2]       * 10000H
+         + buf[3] DIV 8 * 1000000H)
+     * 16777216.0
+     + FLT(buf[4]
+         + buf[5] * 100H
+         + buf[6] * 10000H)
+          ) / 9007199254740991.0;
+
+     ASSERT((0.0 <= r) & (r <= 1.0))
+   END
+   RETURN ret
+ END Real;
+
 BEGIN
- file := NIL
+  file := NIL
 END OsRand.
