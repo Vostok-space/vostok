@@ -358,6 +358,7 @@ VAR
 		t := 10.0;
 		d := ValDigit(s.buf[i]);
 		WHILE d >= 0 DO
+			INC(s.column);
 			val := val + FLT(d) / t;
 			t := t * 10.0;
 			INC(i);
@@ -368,12 +369,14 @@ VAR
 		END;
 		IF s.buf[i] = "E" THEN
 			INC(i);
+			INC(s.column);
 			IF s.buf[i] = NewPage THEN
 				FillBuf(s.buf, i, s.in^)
 			END;
 			scMinus := s.buf[i] = "-";
 			IF scMinus OR (s.buf[i] = "+") THEN
 				INC(i);
+				INC(s.column);
 				IF s.buf[i] = NewPage THEN
 					FillBuf(s.buf, i, s.in^)
 				END
@@ -382,6 +385,7 @@ VAR
 			IF d >= 0 THEN
 				scale := 0;
 				WHILE d >= 0 DO
+					INC(s.column);
 					IF scale < IntMax DIV 10 THEN
 						scale := scale * 10 + d
 					END;
@@ -418,6 +422,7 @@ BEGIN
 	s.isReal := (ch = ".") & (Lookup(s) # ".");
 	IF s.isReal THEN
 		INC(s.ind);
+		INC(s.column);
 		ValReal(s, lex)
 	ELSIF (ch >= "A") & (ch <= "F") OR (ch = "H") OR (ch = "X") THEN
 		ScanChars(s, IsHexDigit);
@@ -434,6 +439,7 @@ BEGIN
 			lex := ErrExpectHOrX
 		END;
 		IF (ch = "X") OR (ch = "H") THEN
+			INC(s.column);
 			INC(s.ind)
 		END
 	ELSE
@@ -701,16 +707,14 @@ BEGIN
 	END;
 	j := i;
 	count := 0;
-	WHILE 0C0X <= s.buf[i] DO
-		INC(column);
-		INC(i)
-	ELSIF 80X <= s.buf[i] DO
-		INC(i);
-	ELSIF (s.buf[i] # Utf8.DQuote)
+	WHILE (s.buf[i] # Utf8.DQuote)
 	    & ((" " <= s.buf[i]) OR (s.buf[i] = Utf8.Tab))
 	DO
-		INC(i);
-		INC(count)
+		IF (s.buf[i] < 80X) OR (s.buf[i] >= 0C0X) THEN
+			INC(column);
+			INC(count)
+		END;
+		INC(i)
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
 	END;
