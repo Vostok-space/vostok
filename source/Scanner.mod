@@ -158,7 +158,7 @@ TYPE
 		buf*: ARRAY BlockSize * 2 + 1 OF CHAR;
 		ind: INTEGER;
 
-		lexStart*, lexEnd*, lexLen*, emptyLines*: INTEGER;
+		lexStart*, lexEnd*, emptyLines*: INTEGER;
 
 		isReal*, isChar*: BOOLEAN;
 		integer*: INTEGER;
@@ -245,7 +245,8 @@ BEGIN
 	IF ch = NewPage THEN
 		FillBuf(s.buf, s.ind, s.in^);
 		ch := s.buf[s.ind]
-	END
+	END;
+	INC(s.column)
 	RETURN ch
 END ScanChar;
 
@@ -262,7 +263,8 @@ END Lookup;
 PROCEDURE ScanChars(VAR s: Scanner; suit: Suit);
 BEGIN
 	WHILE suit(s.buf[s.ind]) DO
-		INC(s.ind)
+		INC(s.ind);
+		INC(s.column)
 	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
 		FillBuf(s.buf, s.ind, s.in^)
 	END
@@ -605,8 +607,7 @@ PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
 END IsLetterOrDigit;
 
 PROCEDURE SWord(VAR s: Scanner): INTEGER;
-VAR
-	len, l: INTEGER;
+VAR len, l: INTEGER;
 BEGIN
 	ScanChars(s, IsLetterOrDigit);
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
@@ -620,34 +621,39 @@ BEGIN
 END SWord;
 
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
-VAR start, i, comment, commentsCount: INTEGER;
+VAR i, column, comment, commentsCount: INTEGER;
 BEGIN
 	i := s.ind;
 	(*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*)
 	ASSERT(0 <= i);
-	start := i;
+	column := s.column;
 	comment := 0;
 	commentsCount := 0;
 	s.emptyLines := -1;
 	WHILE (s.buf[i] = " ") OR (s.buf[i] = Utf8.CarRet) DO
-		INC(i)
+		INC(i);
+		INC(column)
 	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
 		INC(s.tabs)
 	ELSIF s.buf[i] = Utf8.NewLine DO
 		INC(s.line);
 		INC(s.emptyLines);
-		s.column := 0; s.tabs := 0;
+		column := 0; s.tabs := 0;
+		INC(i)
+	ELSIF 0C0X <= s.buf[i] DO
 		INC(i);
-		start := i
+		INC(column)
+	ELSIF 80X <= s.buf[i] DO
+		INC(i)
 	ELSIF s.buf[i] = NewPage DO
-		FillBuf(s.buf, i, s.in^);
-		start := start - ORD(i = 0) * (LEN(s.buf) - 1)
+		FillBuf(s.buf, i, s.in^)
 	ELSIF (s.buf[i] = "(") & (comment >= 0) DO
+		s.column := column;
 		s.ind := i;
 		IF ScanChar(s) = "*" THEN
-			start := start - ORD(s.ind < start) * (LEN(s.buf) - 1);
 			INC(s.ind);
+			INC(s.column);
 			INC(comment);
 			INC(commentsCount);
 			IF commentsCount = 1 THEN
@@ -661,12 +667,14 @@ BEGIN
 			s.ind := i;
 			comment := -1
 		END;
-		i := s.ind
-	ELSIF (comment > 0) & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
+		i := s.ind;
+		column := s.column
+	ELSIF (0 < comment) & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
+		INC(column);
 		IF s.buf[i] = "*" THEN
 			s.ind := i;
+			s.column := s.column;
 			IF ScanChar(s) = ")" THEN
-				start := start - ORD(s.ind < start) * (LEN(s.buf) - 1);
 				DEC(comment);
 				IF comment = 0 THEN
 					s.commentEnd := i;
@@ -677,23 +685,29 @@ BEGIN
 		END;
 		INC(i)
 	END;
-	s.column := s.column + (i - start);
+	s.column := column;
 	ASSERT(0 <= s.column);
 	s.ind := i
 	RETURN comment <= 0
 END ScanBlank;
 
 PROCEDURE ScanString(VAR s: Scanner): INTEGER;
-VAR l, i, j, count: INTEGER;
+VAR l, i, j, count, column: INTEGER;
 BEGIN
 	i := s.ind + 1;
+	column := s.column  + 1;
 	IF s.buf[i] = NewPage THEN
 		FillBuf(s.buf, i, s.in^)
 	END;
 	j := i;
 	count := 0;
-	WHILE (s.buf[i] # Utf8.DQuote) & ((s.buf[i] >= " ")
-	   OR (s.buf[i] = Utf8.Tab))
+	WHILE 0C0X <= s.buf[i] DO
+		INC(column);
+		INC(i)
+	ELSIF 80X <= s.buf[i] DO
+		INC(i);
+	ELSIF (s.buf[i] # Utf8.DQuote)
+	    & ((" " <= s.buf[i]) OR (s.buf[i] = Utf8.Tab))
 	DO
 		INC(i);
 		INC(count)
@@ -707,17 +721,16 @@ BEGIN
 			s.isChar := TRUE;
 			s.integer := ORD(s.buf[j])
 		END;
-		i := (i + 1) MOD (LEN(s.buf) - 1)
 	ELSE
 		l := ErrExpectDQuote
 	END;
-	s.ind := i
+	s.ind := i + 1;
+	s.column := column
 	RETURN l
 END ScanString;
 
 PROCEDURE Next*(VAR s: Scanner): INTEGER;
-VAR
-	lex: INTEGER;
+VAR lex: INTEGER;
 
 	PROCEDURE L(VAR lex: INTEGER; VAR s: Scanner; l: INTEGER);
 	BEGIN
@@ -780,12 +793,7 @@ BEGIN
 		(*
 		Log.Str("Scan "); Log.Int(lex); Log.Ln;
 		*)
-		s.lexEnd := s.ind;
-		s.lexLen := s.lexEnd + ORD(s.lexEnd < s.lexStart) * (LEN(s.buf) - 1)
-		          - s.lexStart;
-		ASSERT((0 < s.lexLen) OR (lex = EndOfFile));
-		s.column := s.column + s.lexLen;
-		ASSERT(0 <= s.column)
+		s.lexEnd := s.ind
 	END
 	RETURN lex
 END Next;

@@ -347,7 +347,7 @@ S("2) to-c converts modules to .h & .c files");
 S("3) to-bin converts modules to binary executable through implicit .c files");
 S("4) run executes implicit executable file");
 S("");
-S("Code is simple Oberon-code. Can be described in kind of EBNF:");
+S("Code is simple Oberon-source. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module.Procedure [ '('Parameters')' ] .");
 S("OutDir - directory for saving translated .h & .c files");
 S("OutBin - name of output executable file");

@@ -175,7 +175,7 @@ MODULE Out;
        END
      END
    END;
-   IF l + 1 > n THEN
+   IF n < l + 1 THEN
      n := l + 1 - n
    ELSE
      n := 0

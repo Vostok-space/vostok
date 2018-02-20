@@ -25,7 +25,7 @@ IMPORT
 	Strings := StringStore;
 
 CONST
-	CodeSize* = 65536;
+	CodeSize* = 8192;
 
 	Ok* = 0;
 
