@@ -1876,9 +1876,10 @@ BEGIN
 
 		IF (v.type.id = IdPointer)
 		 & (d.sel # NIL)
-		 & (~(InitedValue IN v.state.inited)
-		 OR ~v.state.inCondition
-		  & ({} # (v.state.inited * {InitedNo, InitedNil}))
+		 & ( ~(InitedValue IN v.state.inited)
+		   & ~(v.state.inCondition & inLoop)
+		 OR  ~v.state.inCondition
+		   & ({} # (v.state.inited * {InitedNo, InitedNil}))
 		   )
 
 		THEN
