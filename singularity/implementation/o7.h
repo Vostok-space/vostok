@@ -41,7 +41,9 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__) && !defined(__COMPCERT__)
+#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) \
+ && !defined(__STDC_NO_VLA__) && !defined(__COMPCERT__)
+
 #	define O7_VLA(len) static len
 #else
 #	define O7_VLA(len)
@@ -225,13 +227,6 @@ typedef o7_ulong_t o7_set64_t;
 
 #define O7_ALWAYS_INLINE O7_ATTR_ALWAYS_INLINE O7_INLINE
 
-#if O7_MEMNG == O7_MEMNG_GC
-#	include "gc.h"
-	O7_ALWAYS_INLINE void o7_gc_init(void) { GC_INIT(); }
-#else
-	O7_ALWAYS_INLINE void o7_gc_init(void) { assert(0 > 1); }
-#endif
-
 #if defined(O7_MEMNG_COUNTER_TYPE)
 	typedef O7_MEMNG_COUNTER_TYPE
 	                  o7_mmc_t;
@@ -245,6 +240,39 @@ typedef o7_ulong_t o7_set64_t;
 	typedef o7_long_t o7_mmc_t;
 #else
 #	error
+#endif
+
+#if !defined(O7_MAX_RECORD_EXT)
+#	define O7_MAX_RECORD_EXT 15
+#endif
+
+#if defined(O7_TAG_ID_TYPE)
+	typedef O7_TAG_ID_TYPE o7_id_t;
+#else
+	typedef int o7_id_t;
+#endif
+
+typedef struct {
+	o7_id_t ids[O7_MAX_RECORD_EXT + 1];
+	void (*release)(void *);
+} o7_tag_t;
+extern o7_tag_t o7_base_tag;
+
+enum {
+	O7_MEMINFO_SIZE = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
+	                + sizeof(o7_tag_t *)
+};
+
+#if O7_MEMNG == O7_MEMNG_GC
+#	include "gc.h"
+	O7_ALWAYS_INLINE void o7_gc_init(void) {
+		GC_INIT();
+		GC_REGISTER_DISPLACEMENT(O7_MEMINFO_SIZE);
+	}
+#else
+	O7_ALWAYS_INLINE void o7_gc_init(void) {
+		assert(0 > 1);
+	}
 #endif
 
 #if defined(O7_CHECK_OVERFLOW)
@@ -363,23 +391,7 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 	}
 #endif
 
-#if !defined(O7_MAX_RECORD_EXT)
-#	define O7_MAX_RECORD_EXT 15
-#endif
-
-#if defined(O7_TAG_ID_TYPE)
-	typedef O7_TAG_ID_TYPE o7_id_t;
-#else
-	typedef int o7_id_t;
-#endif
-
 #define O7_LEN(array) ((o7_int_t)(sizeof(array) / sizeof((array)[0])))
-
-typedef struct {
-	o7_id_t ids[O7_MAX_RECORD_EXT + 1];
-	void (*release)(void *);
-} o7_tag_t;
-extern o7_tag_t o7_base_tag;
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_cbool o7_bool_inited(o7_bool b) {
@@ -836,9 +848,7 @@ void* o7_mem_info_init(void *mem, o7_tag_t const *tag) {
 O7_ALWAYS_INLINE
 o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) {
 	void *mem;
-	mem = o7_malloc(
-	    sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
-	  + sizeof(o7_tag_t *) + size);
+	mem = o7_malloc(O7_MEMINFO_SIZE + size);
 	if (NULL != mem) {
 		mem = o7_mem_info_init(mem, tag);
 		if ((O7_INIT == O7_INIT_UNDEF) && (NULL != undef)) {

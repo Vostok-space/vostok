@@ -22,18 +22,13 @@ struct CFiles_Implement {
 };
 static o7_tag_t CFiles_File_tag;
 
-enum {
-	ServiceSize = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
-                + sizeof(o7_tag_t *)
-};
-
-typedef char RawData[ServiceSize + sizeof(struct CFiles_Implement)];
+typedef char RawData[O7_MEMINFO_SIZE + sizeof(struct CFiles_Implement)];
 
 static RawData fin, fout, ferr;
 
-CFiles_File CFiles_in  = (CFiles_File)(fin  + ServiceSize),
-            CFiles_out = (CFiles_File)(fout + ServiceSize),
-            CFiles_err = (CFiles_File)(ferr + ServiceSize);
+CFiles_File CFiles_in  = (CFiles_File)(fin  + O7_MEMINFO_SIZE),
+            CFiles_out = (CFiles_File)(fout + O7_MEMINFO_SIZE),
+            CFiles_err = (CFiles_File)(ferr + O7_MEMINFO_SIZE);
 
 extern CFiles_File CFiles_Open(
 	o7_int_t name_len, o7_char name[O7_VLA(name_len)], o7_int_t ofs,
