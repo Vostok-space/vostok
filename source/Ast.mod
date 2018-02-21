@@ -177,10 +177,12 @@ CONST
 	IdProc*             = 35;
 	LastId              = 35;
 
-	InitedNo*    = 0;
-	InitedNil*   = 1;
-	InitedValue* = 2;
-	InitedFail*  = 3;
+	InitedNo*     = 0;
+	InitedNil*    = 1;
+	InitedValue*  = 2;
+	InitedFail*   = 3;
+	Used*         = 4;
+	Dereferenced* = 5;
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)
@@ -266,7 +268,6 @@ TYPE
 
 	VarState = POINTER TO RECORD
 		inited*: SET;
-		used*  : BOOLEAN;
 		inCondition: BOOLEAN;
 
 		root, if, else: VarState
@@ -990,8 +991,7 @@ PROCEDURE VarStateInit(vs, root: VarState);
 BEGIN
 	ASSERT(root.else = NIL);
 
-	vs.used   := FALSE;
-	vs.inited := root.inited;
+	vs.inited := root.inited - {Used, Dereferenced};
 	vs.inCondition := root.inited # {InitedValue};
 	vs.root := root;
 	IF root.if = NIL THEN
@@ -1004,7 +1004,6 @@ END VarStateInit;
 PROCEDURE VarStateRootInit(vs: VarState);
 BEGIN
 	vs.inited      := {InitedNo};
-	vs.used        := FALSE;
 	vs.inCondition := FALSE;
 	vs.if   := NIL;
 	vs.else := NIL;
@@ -1528,7 +1527,7 @@ BEGIN
 	IF (d # NIL) & (d IS Type) THEN
 		d.used := TRUE;
 		IF d IS Var THEN
-			d(Var).state.used := TRUE
+			INCL(d(Var).state.inited, Used)
 		END
 	END
 	RETURN d
@@ -1881,7 +1880,6 @@ BEGIN
 		 OR  ~v.state.inCondition
 		   & ({} # (v.state.inited * {InitedNo, InitedNil}))
 		   )
-
 		THEN
 			Log.Turn(TRUE); Log.Int(ORD(v.state.inited)); Log.Ln; Log.Turn(FALSE);
 			err := ErrVarUninitialized (* TODO *)
@@ -1908,7 +1906,7 @@ BEGIN
 		ELSIF InitedNo IN v.state.inited THEN
 			v.checkInit := TRUE
 		END;
-		v.state.used := TRUE
+		INCL(v.state.inited, Used)
 	END;
 	d.decl.used := TRUE
 	RETURN err
@@ -1922,7 +1920,7 @@ VAR err: INTEGER;
 BEGIN
 	d := ds.vars;
 	WHILE (d # NIL) & (d IS Var)
-	    & (~d(Var).state.used OR (InitedValue IN d(Var).state.inited))
+	    & (~(Used IN d(Var).state.inited) OR (InitedValue IN d(Var).state.inited))
 	DO
 		d := d.next
 	END;
@@ -3342,8 +3340,7 @@ BEGIN
 	NEW(f); StatInit(f, init);
 	f.var := var;
 
-	var.state.inited := { InitedValue };
-	var.state.used := TRUE;
+	var.state.inited := { InitedValue, Used };
 
 	var.used := TRUE;
 	err := ForSetTo(f, to);
@@ -3593,13 +3590,14 @@ BEGIN
 				var.used := TRUE
 			END;
 
+			var.state.inited := var.state.inited - {InitedNo, InitedValue, InitedNil};
 			IF (des.sel = NIL)
 			 & ((var.up # NIL) & (var.up.d.up # NIL) OR (var IS FormalParam))
 			 & (expr # NIL) & (expr.value # NIL) & (expr.value = ExprNilGet())
 			THEN
-				var.state.inited := { InitedNil }
+				INCL(var.state.inited, InitedNil)
 			ELSE
-				var.state.inited := { InitedValue }
+				INCL(var.state.inited, InitedValue)
 			END;
 			des.inited := var.state.inited
 		ELSE
