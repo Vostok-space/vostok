@@ -12,40 +12,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdlib.h>
-#include <stddef.h>
-#include <assert.h>
-#include <math.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include <o7.h>
-
 #include "CFiles.h"
 
 struct CFiles_Implement {
 	FILE *file;
 };
+static o7_tag_t CFiles_File_tag;
 
-CFiles_File CFiles_in, CFiles_out, CFiles_err;
+typedef char RawData[O7_MEMINFO_SIZE + sizeof(struct CFiles_Implement)];
+
+static RawData fin, fout, ferr;
+
+CFiles_File CFiles_in  = (CFiles_File)(fin  + O7_MEMINFO_SIZE),
+            CFiles_out = (CFiles_File)(fout + O7_MEMINFO_SIZE),
+            CFiles_err = (CFiles_File)(ferr + O7_MEMINFO_SIZE);
 
 extern CFiles_File CFiles_Open(
-	int name_len, o7_char name[O7_VLA(name_len)], int ofs,
-	int mode_len, o7_char mode[O7_VLA(mode_len)])
+	o7_int_t name_len, o7_char name[O7_VLA(name_len)], o7_int_t ofs,
+	o7_int_t mode_len, o7_char mode[O7_VLA(mode_len)])
 {
 	CFiles_File file = NULL;
-	assert(name_len >= 0);
+	assert(0 <= name_len);
 	assert(ofs < name_len);
 	if ((0 == o7_strcmp(name_len, name, 13, "/dev/urandom"))
 	 || (0 == o7_strcmp(name_len, name, 12, "/dev/random")))
 	{
-		O7_NEW2(&file, NULL, NULL);
+		O7_NEW2(&file, CFiles_File_tag, NULL);
 		if (NULL != file) {
 			file->file = fopen((char *)(name + ofs), (char *)mode);
 			if (NULL == file->file) {
 				O7_NULL(&file);
 			}
 		}
+		o7_unhold(file);
 	}
 	return file;
 }
@@ -59,7 +61,7 @@ extern void CFiles_Close(CFiles_File *file) {
 }
 
 extern int CFiles_Read(CFiles_File file,
-	int len, o7_char buf[O7_VLA(len)], int ofs, int count)
+	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -68,7 +70,7 @@ extern int CFiles_Read(CFiles_File file,
 }
 
 extern int CFiles_Write(CFiles_File file,
-	int len, o7_char buf[O7_VLA(len)], int ofs, int count)
+	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
 {
 	assert(ofs >= 0);
 	assert(count >= 0);
@@ -80,14 +82,14 @@ extern o7_bool CFiles_Flush(CFiles_File file) {
 	return (o7_bool)(0 == fflush(file->file));
 }
 
-extern int CFiles_Seek(CFiles_File file, int gibs, int bytes) {
+extern o7_int_t CFiles_Seek(CFiles_File file, o7_int_t gibs, o7_int_t bytes) {
 	assert((gibs >= 0) && ((INT_MAX < LONG_MAX / CFiles_GiB_cnst)
 	                   || (gibs < LONG_MAX / CFiles_GiB_cnst)));
 	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
 	return fseek(file->file, (long)gibs * CFiles_GiB_cnst + bytes, SEEK_SET) == 0;
 }
 
-extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
+extern o7_int_t CFiles_Tell(CFiles_File file, o7_int_t *gibs, o7_int_t *bytes) {
 	long pos;
 	pos = ftell(file->file);
 	if (pos >= 0) {
@@ -100,21 +102,37 @@ extern int CFiles_Tell(CFiles_File file, int *gibs, int *bytes) {
 	return pos >= 0;
 }
 
-extern int CFiles_Remove(
-	int name_len, o7_char const name[O7_VLA(name_len)], int ofs)
-{
-	assert(ofs >= 0);
-	assert(name_len > 1);
+extern o7_int_t
+CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
+	assert(0 <= ofs);
+	assert(ofs < len - 1);
 	return 0 > 1;
 }
 
+extern o7_bool
+CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
+	assert(0 <= ofs);
+	assert(ofs < len - 1);
+	return (0 == o7_strcmp(len, name, 13, "/dev/urandom"))
+	    || (0 == o7_strcmp(len, name, 12, "/dev/random"));
+}
+
+static void release(CFiles_File f) {
+	if (NULL != f->file) {
+		fclose(f->file);
+		f->file = NULL;
+	}
+}
+
 extern void CFiles_init(void) {
-	O7_NEW2(&CFiles_in, NULL, NULL);
+	CFiles_File_tag.release = (void (*)(void *))release;
+
+	o7_mem_info_init((void *)fin, &CFiles_File_tag);
 	CFiles_in->file = stdin;
 
-	O7_NEW2(&CFiles_out, NULL, NULL);
+	o7_mem_info_init((void *)fout, &CFiles_File_tag);
 	CFiles_out->file = stdout;
 
-	O7_NEW2(&CFiles_err, NULL, NULL);
+	o7_mem_info_init((void *)ferr, &CFiles_File_tag);
 	CFiles_err->file = stderr;
 }
