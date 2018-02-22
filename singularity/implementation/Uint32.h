@@ -36,7 +36,7 @@ O7_ALWAYS_INLINE void Uint32_ToInt(o7_int_t *i, Uint32_Type v) {
 }
 
 O7_ALWAYS_INLINE void
-	Uint32_Add(Uint32_Type sum, Uint32_Type a1, Uint32_Type a2)
+Uint32_Add(Uint32_Type sum, Uint32_Type a1, Uint32_Type a2)
 {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
@@ -51,7 +51,7 @@ O7_ALWAYS_INLINE void
 }
 
 O7_ALWAYS_INLINE void
-	Uint32_Sub(Uint32_Type diff, Uint32_Type m, Uint32_Type s)
+Uint32_Sub(Uint32_Type diff, Uint32_Type m, Uint32_Type s)
 {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
@@ -66,7 +66,7 @@ O7_ALWAYS_INLINE void
 }
 
 O7_ALWAYS_INLINE void
-	Uint32_Mul(Uint32_Type prod, Uint32_Type m1, Uint32_Type m2)
+Uint32_Mul(Uint32_Type prod, Uint32_Type m1, Uint32_Type m2)
 {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
@@ -98,7 +98,7 @@ O7_ALWAYS_INLINE void Uint32_Mod(Uint32_Type mod, Uint32_Type n, Uint32_Type d) 
 }
 
 O7_ALWAYS_INLINE void
-	Uint32_DivMod(Uint32_Type div, Uint32_Type mod, Uint32_Type n, Uint32_Type d)
+Uint32_DivMod(Uint32_Type div, Uint32_Type mod, Uint32_Type n, Uint32_Type d)
 {
 	Uint32_CheckDiv(n, d);
 	*(Uint32_t *)div = *(Uint32_t *)n / *(Uint32_t *)d;

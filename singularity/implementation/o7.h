@@ -100,16 +100,15 @@ typedef char unsigned o7_char;
 #if defined(O7_INT_T)
 	typedef O7_INT_T  o7_int_t;
 	typedef O7_UINT_T o7_uint_t;
-#	if !defined(O7_INT_MAX) || !defined(O7_UINT_MAX)
-#		error
-#	endif
 #else
-#	define O7_INT_MAX 2147483647
-#	define O7_UINT_MAX 4294967295
-#	if INT_MAX    >= O7_INT_MAX
-		typedef int          o7_int_t;
-		typedef unsigned     o7_uint_t;
-#	elif LONG_MAX >= O7_INT_MAX
+#	if INT_MAX >= 2147483647
+#		define O7_INT_MAX 2147483647
+#		define O7_UINT_MAX 4294967295u
+		typedef int           o7_int_t;
+		typedef unsigned      o7_uint_t;
+#	elif LONG_MAX >= 2147483647l
+#		define O7_INT_MAX 2147483647l
+#		define O7_UINT_MAX 4294967295ul
 		typedef long          o7_int_t;
 		typedef unsigned long o7_uint_t;
 #	else
@@ -117,25 +116,28 @@ typedef char unsigned o7_char;
 #	endif
 #endif
 
+#if !defined(O7_INT_MAX) || !defined(O7_UINT_MAX)
+#	error
+#endif
+
 #if defined(O7_LONG_T)
 	typedef O7_LONG_T             o7_long_t;
 	typedef O7_ULONG_T            o7_ulong_t;
-#if !defined(O7_LONG_ABS)
+#if !defined(O7_LONG_ABS) || !defined(O7_LONG_MAX) || !defined(O7_ULONG_MAX)
 #		error
 #	else
 #		define O7_LABS(val) O7_LONG_ABS(val)
 #	endif
-#	if !defined(O7_LONG_MAX) || !defined(O7_ULONG_MAX)
-#		error
-#	endif
 #else
-#	define O7_LONG_MAX  9223372036854775807l
-#	define O7_ULONG_MAX 18446744073709551615ul
-#	if LONG_MAX    >= O7_LONG_MAX
+#	if LONG_MAX >= 9223372036854775807l
+#		define O7_LONG_MAX  9223372036854775807l
+#		define O7_ULONG_MAX 18446744073709551615ul
 		typedef long               o7_long_t;
 		typedef long unsigned      o7_ulong_t;
 #		define O7_LABS(val)        labs(val)
-#	elif LLONG_MAX >= O7_LONG_MAX
+#	elif LLONG_MAX >= 9223372036854775807ll
+#		define O7_LONG_MAX  9223372036854775807ll
+#		define O7_ULONG_MAX 18446744073709551615ull
 		typedef long long          o7_long_t;
 		typedef long long unsigned o7_ulong_t;
 #		define O7_LABS(val)        llabs(val)
