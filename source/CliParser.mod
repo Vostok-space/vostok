@@ -60,7 +60,8 @@ TYPE
 		modPath*, cDirs*, cc*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
-		init*, memng*, arg*: INTEGER
+		init*, memng*, arg*: INTEGER;
+		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN
 	END;
 
 PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
@@ -129,6 +130,9 @@ BEGIN
 	optLen := 0;
 	args.init := -1;
 	args.memng := -1;
+	args.noNilCheck := FALSE;
+	args.noOverflowCheck := FALSE;
+	args.noIndexCheck := FALSE;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -225,6 +229,12 @@ BEGIN
 				ret := ErrTooLongTemp
 			END;
 			optLen := 0
+		ELSIF opt = "-no-array-index-check" THEN
+			args.noIndexCheck := TRUE
+		ELSIF opt = "-no-nil-check" THEN
+			args.noNilCheck := TRUE
+		ELSIF opt = "-no-arithmetic-overflow-check" THEN
+			args.noOverflowCheck := TRUE
 		ELSE
 			ret := ErrUnexpectArg
 		END;

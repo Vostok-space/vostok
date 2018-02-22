@@ -374,7 +374,10 @@ S("  zero   -  fill by zeroes.");
 S("-memng ( nofree | counter | gc ) - kind of dynamic memory management.");
 S("  nofree*  -  without release.");
 S("  counter  -  automatic reference counting without automatic loops destroying.");
-S("  gc       -  garbage collection by Boehm-Demers-Weiser library.")
+S("  gc       -  garbage collection by Boehm-Demers-Weiser library.");
+S("-no-array-index-check         - turn off runtime check that index within range.");
+S("-no-nil-check                 - turn off runtime check pointer on nil.");
+S("-no-arithmetic-overflow-check - turn off runtime check arithmetic overflow.")
 END
 END Usage;
 

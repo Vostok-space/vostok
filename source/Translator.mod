@@ -574,6 +574,15 @@ BEGIN
 			IF 0 <= args.memng THEN
 				opt.memManager := args.memng
 			END;
+			IF args.noNilCheck THEN
+				opt.checkNil := FALSE
+			END;
+			IF args.noOverflowCheck THEN
+				opt.checkArith := FALSE
+			END;
+			IF args.noIndexCheck THEN
+				opt.checkIndex := FALSE
+			END;
 			ASSERT(Exec.Init(exec, ""));
 			CASE res OF
 			  Cli.ResultC:
