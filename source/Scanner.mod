@@ -236,24 +236,9 @@ BEGIN
 	END
 END FillBuf;
 
-(* TODO убрать*)
-PROCEDURE ScanChar(VAR s: Scanner): CHAR;
-VAR ch: CHAR;
+PROCEDURE Lookup(VAR s: Scanner; i: INTEGER): CHAR;
 BEGIN
-	INC(s.ind);
-	ch := s.buf[s.ind];
-	IF ch = NewPage THEN
-		FillBuf(s.buf, s.ind, s.in^);
-		ch := s.buf[s.ind]
-	END;
-	INC(s.column)
-	RETURN ch
-END ScanChar;
-
-PROCEDURE Lookup(VAR s: Scanner): CHAR;
-VAR i: INTEGER;
-BEGIN
-	i := s.ind + 1;
+	INC(i);
 	IF s.buf[i] = NewPage THEN
 		FillBuf(s.buf, i, s.in^)
 	END
@@ -419,7 +404,7 @@ BEGIN
 	lex := Number;
 	ScanChars(s, IsDigit);
 	ch := s.buf[s.ind];
-	s.isReal := (ch = ".") & (Lookup(s) # ".");
+	s.isReal := (ch = ".") & (Lookup(s, s.ind) # ".");
 	IF s.isReal THEN
 		INC(s.ind);
 		INC(s.column);
@@ -654,42 +639,27 @@ BEGIN
 		INC(i)
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
-	ELSIF (s.buf[i] = "(") & (comment >= 0) DO
-		s.column := column;
-		s.ind := i;
-		IF ScanChar(s) = "*" THEN
-			INC(s.ind);
-			INC(s.column);
-			INC(comment);
-			INC(commentsCount);
-			IF commentsCount = 1 THEN
-				IF s.ind = LEN(s.buf) - 1 THEN
-					s.commentOfs := 0
-				ELSE
-					s.commentOfs := s.ind
-				END
-			END
-		ELSIF comment = 0 THEN
-			s.ind := i;
-			comment := -1
-		END;
-		i := s.ind;
-		column := s.column
+	ELSIF (s.buf[i] = "(") & (Lookup(s, i) = "*") DO
+		i := (i + 2) MOD (LEN(s.buf) - 1);
+		INC(column, 2);
+		INC(comment);
+		INC(commentsCount);
+		IF commentsCount = 1 THEN
+			s.commentOfs := i
+		END
 	ELSIF (0 < comment) & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
-		INC(column);
-		IF s.buf[i] = "*" THEN
-			s.ind := i;
-			s.column := s.column;
-			IF ScanChar(s) = ")" THEN
-				DEC(comment);
-				IF comment = 0 THEN
-					s.commentEnd := i;
-					s.emptyLines := -1
-				END;
-				i := s.ind
-			END
+		IF (s.buf[i] = "*") & (Lookup(s, i) = ")") THEN
+			DEC(comment);
+			IF comment = 0 THEN
+				s.commentEnd := i;
+				s.emptyLines := -1
+			END;
+			i := (i + 2) MOD (LEN(s.buf) - 1);
+			INC(column, 2);
+		ELSE
+			INC(column);
+			INC(i)
 		END;
-		INC(i)
 	END;
 	s.column := column;
 	ASSERT(0 <= s.column);
