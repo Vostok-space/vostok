@@ -44,6 +44,10 @@ CONST
 	MemManagerCounter*  = 1;
 	MemManagerGC*       = 2;
 
+	IdentEncSame*       = 0;
+	IdentEncTranslit*   = 1;
+	IdentEncEscUnicode* = 2;
+
 TYPE
 	PMemoryOut = POINTER TO MemoryOut;
 	MemoryOut = RECORD(Stream.Out)
@@ -72,7 +76,8 @@ TYPE
 		generatorNote*: BOOLEAN;
 
 		varInit*,
-		memManager*: INTEGER;
+		memManager*,
+		identEnc*  : INTEGER;
 
 		main: BOOLEAN;
 
@@ -617,6 +622,150 @@ PROCEDURE IsNameOccupied(n: Strings.String): BOOLEAN;
 	       )
 END IsNameOccupied;
 
+PROCEDURE Puts(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; str: ARRAY OF CHAR);
+BEGIN
+	ASSERT(Strings.CopyCharsNull(buf, i, str))
+END Puts;
+
+PROCEDURE Ident(VAR gen: Generator; ident: Strings.String);
+VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
+    i: INTEGER;
+    it: Strings.Iterator;
+
+	PROCEDURE Esc(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; VAR it: Strings.Iterator);
+	VAR u: INTEGER;
+		PROCEDURE Hex(d: INTEGER): CHAR;
+		VAR c: INTEGER;
+		BEGIN
+			IF d < 10 THEN
+				ASSERT(0 <= d);
+				c := ORD("0") + d
+			ELSE ASSERT(d <= 0FH);
+				c := ORD("A") + d - 0AH
+			END
+			RETURN CHR(c)
+		END Hex;
+	BEGIN
+		REPEAT
+			CASE it.char OF
+			  "0" .. "9", "_":
+				buf[i] := it.char;
+				INC(i)
+			| 0D0X, 0D1X:
+				u := ORD(it.char) MOD 32;
+				ASSERT(Strings.IterNext(it));
+				u := u * 64 + ORD(it.char) MOD 64;
+				Puts(buf, i, "\u0");
+				buf[i    ] := Hex(u DIV 100H);
+				buf[i + 1] := Hex(u DIV 10H MOD 10H);
+				buf[i + 2] := Hex(u MOD 10H);
+				INC(i, 3)
+			END
+		UNTIL ~Strings.IterNext(it);
+	END Esc;
+
+	PROCEDURE Translit(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; VAR it: Strings.Iterator);
+	BEGIN
+		REPEAT
+			CASE it.char OF
+			  "0" .. "9", "_":
+				buf[i] := it.char;
+				INC(i)
+			| 0D0X:
+				ASSERT(Strings.IterNext(it));
+				CASE ORD(it.char) - 90H + 15 OF
+				   15: Puts(buf, i, "_A")
+				|  16: Puts(buf, i, "_B")
+				|  17: Puts(buf, i, "_V")
+				|  18: Puts(buf, i, "_G")
+				|  19: Puts(buf, i, "_D")
+				|  20: Puts(buf, i, "_Ye")
+				|   0: Puts(buf, i, "_Yo")
+				|  21: Puts(buf, i, "_Zh")
+				|  22: Puts(buf, i, "_Z")
+				|  23: Puts(buf, i, "_I")
+				|  24: Puts(buf, i, "_Y")
+				|  25: Puts(buf, i, "_K")
+				|  26: Puts(buf, i, "_L")
+				|  27: Puts(buf, i, "_M")
+				|  28: Puts(buf, i, "_N")
+				|  29: Puts(buf, i, "_O")
+				|  30: Puts(buf, i, "_P")
+				|  31: Puts(buf, i, "_R")
+				|  32: Puts(buf, i, "_S")
+				|  33: Puts(buf, i, "_T")
+				|  34: Puts(buf, i, "_U")
+				|  35: Puts(buf, i, "_F")
+				|  36: Puts(buf, i, "_Kh")
+				|  37: Puts(buf, i, "_Ts")
+				|  38: Puts(buf, i, "_Ch")
+				|  39: Puts(buf, i, "_Sh")
+				|  40: Puts(buf, i, "_Shch")
+				|  41: Puts(buf, i, "_Tz")
+				|  42: Puts(buf, i, "_Yy")
+				|  43: Puts(buf, i, "_Mz")
+				|  44: Puts(buf, i, "_E")
+				|  45: Puts(buf, i, "_Yu")
+				|  46: Puts(buf, i, "_Ya")
+				|  47: Puts(buf, i, "_a")
+				|  48: Puts(buf, i, "_b")
+				|  49: Puts(buf, i, "_v")
+				|  50: Puts(buf, i, "_g")
+				|  51: Puts(buf, i, "_d")
+				|  52: Puts(buf, i, "_ye")
+
+				|  53: Puts(buf, i, "_zh")
+				|  54: Puts(buf, i, "_z")
+				|  55: Puts(buf, i, "_i")
+				|  56: Puts(buf, i, "_y")
+				|  57: Puts(buf, i, "_k")
+				|  58: Puts(buf, i, "_l")
+				|  59: Puts(buf, i, "_m")
+				|  60: Puts(buf, i, "_n")
+				|  61: Puts(buf, i, "_o")
+				|  62: Puts(buf, i, "_p")
+				END
+			| 0D1X:
+				ASSERT(Strings.IterNext(it));
+				CASE ORD(it.char) - 80H OF
+				  17: Puts(buf, i, "_yo")
+
+				|  0: Puts(buf, i, "_r")
+				|  1: Puts(buf, i, "_s")
+				|  2: Puts(buf, i, "_t")
+				|  3: Puts(buf, i, "_u")
+				|  4: Puts(buf, i, "_f")
+				|  5: Puts(buf, i, "_kh")
+				|  6: Puts(buf, i, "_ts")
+				|  7: Puts(buf, i, "_ch")
+				|  8: Puts(buf, i, "_sh")
+				|  9: Puts(buf, i, "_shch")
+				| 10: Puts(buf, i, "_tz")
+				| 11: Puts(buf, i, "_yy")
+				| 12: Puts(buf, i, "_mz")
+				| 13: Puts(buf, i, "_e")
+				| 14: Puts(buf, i, "_yu")
+				| 15: Puts(buf, i, "_ya")
+				END
+			END
+		UNTIL ~Strings.IterNext(it);
+	END Translit;
+BEGIN
+	IF (gen.opt.identEnc = IdentEncSame) OR (Strings.GetChar(ident, 0) < 80X)
+	THEN
+		Text.String(gen, ident)
+	ELSE
+		ASSERT(Strings.GetIter(it, ident, 0));
+		i := 0;
+		IF gen.opt.identEnc = IdentEncEscUnicode THEN
+			Esc(buf, i, it)
+		ELSE ASSERT(gen.opt.identEnc = IdentEncTranslit);
+			Translit(buf, i, it)
+		END;
+		Text.Data(gen, buf, 0, i)
+	END
+END Ident;
+
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
     prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
@@ -634,11 +783,11 @@ BEGIN
 		END;
 		WHILE i > 0 DO
 			DEC(i);
-			Text.String(gen, prs[i].name);
+			Ident(gen, prs[i].name);
 			Text.Str(gen, "_")
 		END
 	END;
-	Text.String(gen, decl.name);
+	Ident(gen, decl.name);
 	IF decl IS Ast.Const THEN
 		Text.Str(gen, "_cnst")
 	ELSIF IsNameOccupied(decl.name) THEN
@@ -649,17 +798,18 @@ END Name;
 PROCEDURE IsSpecModuleName*(n: Strings.String): BOOLEAN;
 BEGIN (* TODO *)
 	RETURN Eq(n, "O7")
-		OR Eq(n, "o7")
-		OR Eq(n, "math")
-		OR Eq(n, "Math")
-		OR Eq(n, "limits")
+	    OR Eq(n, "o7")
+	    OR Eq(n, "math")
+	    OR Eq(n, "Math")
+	    OR Eq(n, "limits")
+	    OR Eq(n, "ru")
 END IsSpecModuleName;
 
 PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
 	IF decl.mark OR (decl.module # NIL) & (gen.module # decl.module.m) THEN
 		ASSERT(decl.module # NIL);
-		Text.String(gen, decl.module.m.name);
+		Ident(gen, decl.module.m.name);
 
 		Text.Data(gen, "__", 0,
 		    ORD(
@@ -669,7 +819,7 @@ BEGIN
 		     OR Eq(decl.name, "len")
 		    ) + 1
 		);
-		Text.String(gen, decl.name);
+		Ident(gen, decl.name);
 		IF decl IS Ast.Const THEN
 			Text.Str(gen, "_cnst")
 		END
@@ -3562,6 +3712,7 @@ BEGIN
 		o.generatorNote := TRUE;
 		o.varInit       := VarInitUndefined;
 		o.memManager    := MemManagerNoFree;
+		o.identEnc      := IdentEncEscUnicode;
 
 		o.expectArray := FALSE;
 

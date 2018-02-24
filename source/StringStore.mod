@@ -124,7 +124,7 @@ BEGIN
 		WHILE iter.b.s[iter.i] = Utf8.NewPage DO
 			iter.b := iter.b.next;
 			iter.i := 0
-		ELSIF (ofs > 0) & (iter.b.s[iter.i] # Utf8.Null) DO
+		ELSIF (0 < ofs) & (iter.b.s[iter.i] # Utf8.Null) DO
 			DEC(ofs);
 			INC(iter.i)
 		END;

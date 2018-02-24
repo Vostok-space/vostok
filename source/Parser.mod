@@ -78,7 +78,8 @@ TYPE
 		strictSemicolon*,
 		strictReturn*,
 		saveComments*,
-		multiErrors*    : BOOLEAN;
+		multiErrors*,
+		cyrillic*       : BOOLEAN;
 		printError*: PROCEDURE(code: INTEGER)
 	END;
 	Parser = RECORD(V.Base) (* короткие названия из-за частого использования *)
@@ -1442,6 +1443,7 @@ BEGIN
 	opt.strictReturn    := TRUE;
 	opt.saveComments    := TRUE;
 	opt.multiErrors     := FALSE;
+	opt.cyrillic        := FALSE;
 	opt.printError      := Blank
 END DefaultOptions;
 
@@ -1460,7 +1462,8 @@ BEGIN
 		Scanner.Init(p.s, in)
 	ELSE
 		ASSERT(Scanner.InitByString(p.s, src))
-	END
+	END;
+	p.s.opt.cyrillic := opt.cyrillic
 END ParserInit;
 
 PROCEDURE Parse*(in: Stream.PIn; prov: Ast.Provider; opt: Options): Ast.Module;

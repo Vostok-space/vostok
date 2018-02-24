@@ -147,19 +147,19 @@ END AddModule;
 PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
                     name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
 VAR m: Ast.Module;
-	source: File.In;
-	mp: ModuleProvider;
-	pathOfs, pathInd: INTEGER;
+    source: File.In;
+    mp: ModuleProvider;
+    pathOfs, pathInd: INTEGER;
 
 	PROCEDURE Open(p: ModuleProvider; VAR pathOfs: INTEGER;
 	               name: ARRAY OF CHAR; ofs, end: INTEGER): File.In;
 	VAR n: ARRAY 1024 OF CHAR;
-		len, l: INTEGER;
-		in: File.In;
+	    len, l: INTEGER;
+	    in: File.In;
 	BEGIN
 		len := Strings.CalcLen(p.path, pathOfs);
 		l := 0;
-		IF (len > 0)
+		IF (0 < len)
 		 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
 		 & Strings.CopyCharsNull(n, l, Exec.dirSep)
 		 & Strings.CopyChars(n, l, name, ofs, end)
@@ -541,6 +541,7 @@ BEGIN
 	NewProvider(mp);
 	mp.fileExt := ".mod"; (* TODO *)
 	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
+	mp.opt.cyrillic := args.cyrillic;
 	len := 0;
 	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
 	mp.sing := args.sing;

@@ -61,7 +61,8 @@ TYPE
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*: INTEGER;
-		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN
+		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
+		cyrillic*: BOOLEAN
 	END;
 
 PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
@@ -133,6 +134,7 @@ BEGIN
 	args.noNilCheck := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck := FALSE;
+	args.cyrillic := FALSE;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -235,6 +237,8 @@ BEGIN
 			args.noNilCheck := TRUE
 		ELSIF opt = "-no-arithmetic-overflow-check" THEN
 			args.noOverflowCheck := TRUE
+		ELSIF opt = "-cyrillic" THEN
+			args.cyrillic := TRUE
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -258,7 +262,8 @@ END CopyPath;
 PROCEDURE ToC(VAR args: Args; ret: INTEGER): INTEGER;
 VAR arg, argDest, cpRet: INTEGER;
 
-	PROCEDURE ParseCommand(src: ARRAY OF CHAR; VAR script: BOOLEAN): INTEGER;
+	PROCEDURE ParseCommand(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
+	                      : INTEGER;
 	VAR i, j, k: INTEGER;
 
 		PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
@@ -278,6 +283,7 @@ VAR arg, argDest, cpRet: INTEGER;
 			WHILE ("a" <= src[j]) & (src[j] <= "z")
 			   OR ("A" <= src[j]) & (src[j] <= "Z")
 			   OR ("0" <= src[j]) & (src[j] <= "9")
+			   OR cyr & (80X <= src[j])
 			DO
 				INC(j)
 			END;
@@ -306,7 +312,7 @@ BEGIN
 		IF cpRet # ErrNo THEN
 			ret := cpRet
 		ELSE
-			args.srcNameEnd := ParseCommand(args.src, args.script);
+			args.srcNameEnd := ParseCommand(args.cyrillic, args.src, args.script);
 
 			args.resPathLen := 0;
 			args.resPath[0] := Utf8.Null;
@@ -331,7 +337,7 @@ BEGIN
 	ELSIF args.cmd = "help" THEN
 		ret := CmdHelp
 	ELSIF args.cmd = "to-c" THEN
-		ret := ToC(args, ResultC);
+		ret := ToC(args, ResultC)
 	ELSIF args.cmd = "to-bin" THEN
 		ret := ToC(args, ResultBin)
 	ELSIF args.cmd = "run" THEN

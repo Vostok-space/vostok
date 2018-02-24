@@ -164,6 +164,10 @@ TYPE
 		integer*: INTEGER;
 		real*: REAL;
 
+		opt*: RECORD
+			cyrillic*: BOOLEAN
+		END;
+
 		commentOfs, commentEnd: INTEGER
 	END;
 
@@ -176,7 +180,8 @@ BEGIN
 	s.column := 0;
 	s.tabs := 0;
 	s.line := 0;
-	s.commentOfs := -1
+	s.commentOfs := -1;
+	s.opt.cyrillic := FALSE
 END PreInit;
 
 PROCEDURE Init*(VAR s: Scanner; in: Stream.PIn);
@@ -503,7 +508,7 @@ BEGIN
 	|"R": id := T("REAL", buf, begin, end, Real, "ROR", Ror)
 	|"S": id := O("SET", buf, begin, end, Set)
 	|"U": id := O("UNPK", buf, begin, end, Unpk)
-	|"G", "H", "J", "K", "M", "Q", "T", "V" .. "Z", "a" .. "z":
+	|"G", "H", "J", "K", "M", "Q", "T", "V" .. "Z", "a" .. "z", 0C0X..0FFX:
 		id := Ident
 	END;
 	buf[end] := save
@@ -611,6 +616,42 @@ BEGIN
 	RETURN l
 END SWord;
 
+PROCEDURE RuWord(VAR s: Scanner): INTEGER;
+VAR len, l, i, column: INTEGER;
+	PROCEDURE ForD0(c: CHAR): BOOLEAN;
+	RETURN (90X <= c) & (c <= 0BFX)
+	    OR (c = 81X)
+	END ForD0;
+
+	PROCEDURE ForD1(c: CHAR): BOOLEAN;
+	RETURN (80X <= c) & (c <= 8FX)
+	    OR (c = 91X)
+	END ForD1;
+BEGIN
+	i := s.ind;
+	column := s.column;
+	WHILE (s.buf[i] = 0D0X) & ForD0(Lookup(s, i))
+	   OR (s.buf[i] = 0D1X) & ForD1(Lookup(s, i))
+	DO
+		i := (i + 2) MOD (LEN(s.buf) - 1);
+		INC(s.column)
+	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
+		FillBuf(s.buf, s.ind, s.in^)
+	END;
+
+	s.ind := i;
+	s.column := column;
+
+	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
+	ASSERT(0 < len);
+	IF len <= TranLim.LenName THEN
+		l := Ident
+	ELSE
+		l := ErrWordLenTooBig
+	END
+	RETURN l
+END RuWord;
+
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
 VAR i, column, comment, commentsCount: INTEGER;
 BEGIN
@@ -632,11 +673,6 @@ BEGIN
 		INC(s.emptyLines);
 		column := 0; s.tabs := 0;
 		INC(i)
-	ELSIF 0C0X <= s.buf[i] DO
-		INC(i);
-		INC(column)
-	ELSIF 80X <= s.buf[i] DO
-		INC(i)
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
 	ELSIF (s.buf[i] = "(") & (Lookup(s, i) = "*") DO
@@ -657,12 +693,13 @@ BEGIN
 			i := (i + 2) MOD (LEN(s.buf) - 1);
 			INC(column, 2);
 		ELSE
-			INC(column);
+			IF (s.buf[i] < 80X) OR (0C0X <= s.buf[i]) THEN
+				INC(column)
+			END;
 			INC(i)
 		END;
 	END;
 	s.column := column;
-	ASSERT(0 <= s.column);
 	s.ind := i
 	RETURN comment <= 0
 END ScanBlank;
@@ -731,7 +768,7 @@ BEGIN
 	ELSE
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
-		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0FFX:
+		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D2X..0FFX:
 			lex := ErrUnexpectChar;
 			INC(s.ind)
 		| Utf8.TransmissionEnd:
@@ -740,6 +777,12 @@ BEGIN
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
 			lex := SWord(s)
+		| 0D0X, 0D1X:
+			IF s.opt.cyrillic THEN
+				lex := RuWord(s)
+			ELSE
+				lex := ErrUnexpectChar
+			END
 		| "+": L(lex, s, Plus)
 		| "-": L(lex, s, Minus)
 		| "*": L(lex, s, Asterisk)
