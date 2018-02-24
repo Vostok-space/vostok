@@ -700,10 +700,15 @@ END ScriptNew;
 
 PROCEDURE GetModuleByName*(host: Module;
                            name: ARRAY OF CHAR; ofs, end: INTEGER): ModuleBag;
-VAR m: Module;
+VAR m: Module; b: ModuleBag;
 BEGIN
-	m := host.provider.get(host.provider, host, name, ofs, end)
-	RETURN m.bag
+	m := host.provider.get(host.provider, host, name, ofs, end);
+	IF m # NIL THEN
+		b := m.bag
+	ELSE
+		b := NIL
+	END
+	RETURN b
 END GetModuleByName;
 
 (* Возвращает истину, если имя модуля совпадает с ожидаемым *)
