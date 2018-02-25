@@ -25,6 +25,12 @@ CONST
 	ResultBin* = 3;
 	ResultRun* = 4;
 
+	CyrillicNo*       = 0;
+	CyrillicDefault*  = 1;
+	CyrillicSame*     = 2;
+	CyrillicTranslit* = 3;
+	CyrillicEscape*   = 4;
+
 	ErrNo*                   =   0;
 
 	ErrWrongArgs*            = -10;
@@ -62,7 +68,7 @@ TYPE
 		sing*: SET;
 		init*, memng*, arg*: INTEGER;
 		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
-		cyrillic*: BOOLEAN
+		cyrillic*: INTEGER
 	END;
 
 PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
@@ -134,7 +140,7 @@ BEGIN
 	args.noNilCheck := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck := FALSE;
-	args.cyrillic := FALSE;
+	args.cyrillic := CyrillicNo;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -238,7 +244,13 @@ BEGIN
 		ELSIF opt = "-no-arithmetic-overflow-check" THEN
 			args.noOverflowCheck := TRUE
 		ELSIF opt = "-cyrillic" THEN
-			args.cyrillic := TRUE
+			args.cyrillic := CyrillicDefault
+		ELSIF opt = "-cyrillic-same" THEN
+			args.cyrillic := CyrillicSame
+		ELSIF opt = "-cyrillic-translit" THEN
+			args.cyrillic := CyrillicTranslit
+		ELSIF opt = "-cyrillic-escape" THEN
+			args.cyrillic := CyrillicEscape
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -312,7 +324,8 @@ BEGIN
 		IF cpRet # ErrNo THEN
 			ret := cpRet
 		ELSE
-			args.srcNameEnd := ParseCommand(args.cyrillic, args.src, args.script);
+			args.srcNameEnd :=
+				ParseCommand(args.cyrillic # CyrillicNo, args.src, args.script);
 
 			args.resPathLen := 0;
 			args.resPath[0] := Utf8.Null;

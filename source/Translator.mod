@@ -40,6 +40,12 @@ CONST
 	ErrNo    =  0;
 	ErrParse = -1;
 
+	UnknownCc = 0;
+	TinyCc    = 1;
+	GnuCc     = 2;
+	Clang     = 3;
+	CompCert  = 4;
+
 TYPE
 	Container = POINTER TO RECORD
 		next: Container;
@@ -412,56 +418,74 @@ BEGIN
 	RETURN ok
 END GetTempOutC;
 
-PROCEDURE SearchCCompiler(VAR cmd: Exec.Code; res: INTEGER): BOOLEAN;
+PROCEDURE SearchCCompiler(VAR cc: INTEGER; VAR cmd: Exec.Code;
+                          res: INTEGER): BOOLEAN;
 
-	PROCEDURE Test(c, ver: ARRAY OF CHAR): BOOLEAN;
-	VAR exec: Exec.Code;
-	RETURN Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
-	     & ((Platform.Posix & Exec.AddClean(exec, " 1,2>/dev/null"))
-	     OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
-	       )
-	     & (Exec.Ok = Exec.Do(exec))
+	PROCEDURE Test(VAR idCc: INTEGER; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
+	VAR exec: Exec.Code; ok: BOOLEAN;
+	BEGIN
+		ok := Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
+		    & ((Platform.Posix & Exec.AddClean(exec, " 1,2>/dev/null"))
+		    OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
+		      )
+		    & (Exec.Ok = Exec.Do(exec));
+		IF ok THEN
+			idCc := id
+		END
+		RETURN ok
 	END Test;
 
 	RETURN (res = Cli.ResultRun)
-	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g -w")
+	     & Test(cc, TinyCc, "tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g -w")
 
 	    OR (
-	       Test("cc",    "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
-	    OR Test("gcc",   "-dumpversion") & Exec.AddClean(cmd, "gcc -g -O1")
-	    OR Test("clang", "-dumpversion") & Exec.AddClean(cmd, "clang -g -O1")
+	       Test(cc, GnuCc, "gcc",    "-dumpversion") & Exec.AddClean(cmd, "gcc -g -O1")
+	    OR Test(cc, Clang, "clang",  "-dumpversion") & Exec.AddClean(cmd, "clang -g -O1")
 
 	    OR (res # Cli.ResultRun)
-	     & Test("tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
+	     & Test(cc, TinyCc, "tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
 
-	    OR Test("ccomp", "--version")    & Exec.AddClean(cmd, "ccomp -g -O")
+	    OR Test(cc, CompCert, "ccomp", "--version")  & Exec.AddClean(cmd, "ccomp -g -O")
+
+	    OR Test(cc, UnknownCc, "cc", "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
 	       ) & ((res # Cli.ResultRun) OR Exec.AddClean(cmd, " -w"))
 END SearchCCompiler;
 
 PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
 VAR ret, len: INTEGER;
-	outC: ARRAY 1024 OF CHAR;
-	mp: ModuleProvider;
-	module: Ast.Module;
-	opt: GeneratorC.Options;
-	call: Ast.Call;
-	exec: Exec.Code;
+    outC: ARRAY 1024 OF CHAR;
+    mp: ModuleProvider;
+    module: Ast.Module;
+    opt: GeneratorC.Options;
+    call: Ast.Call;
+    exec: Exec.Code;
 
-	PROCEDURE Bin(res: INTEGER;
+	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
 	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
 	              VAR cmd: Exec.Code; tmp: ARRAY OF CHAR): INTEGER;
 	VAR outCLen: INTEGER;
-		ret, i, nameLen, cDirsLen: INTEGER;
-		ok: BOOLEAN;
-		name: ARRAY 512 OF CHAR;
+	    ret, idCc: INTEGER;
+	    i, nameLen, cDirsLen: INTEGER;
+	    ok: BOOLEAN;
+	    name: ARRAY 512 OF CHAR;
 	BEGIN
 		ok := GetTempOutC(outC, outCLen, bin, module.name, tmp);
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			IF cc[0] = Utf8.Null THEN
-				ok := SearchCCompiler(cmd, res)
+				ok := SearchCCompiler(idCc, cmd, res);
+				IF ok & (args.cyrillic = Cli.CyrillicDefault) THEN
+					CASE idCc OF
+					  UnknownCc, CompCert:
+						opt.identEnc := GeneratorC.IdentEncTranslit
+					| Clang, TinyCc:
+						opt.identEnc := GeneratorC.IdentEncSame
+					| GnuCc:
+						opt.identEnc := GeneratorC.IdentEncEscUnicode
+					END
+				END
 			ELSE
 				ok := Exec.AddClean(cmd, cc)
 			END;
@@ -541,7 +565,7 @@ BEGIN
 	NewProvider(mp);
 	mp.fileExt := ".mod"; (* TODO *)
 	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
-	mp.opt.cyrillic := args.cyrillic;
+	mp.opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
 	len := 0;
 	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
 	mp.sing := args.sing;
@@ -584,6 +608,9 @@ BEGIN
 			IF args.noIndexCheck THEN
 				opt.checkIndex := FALSE
 			END;
+			IF Cli.CyrillicSame <= args.cyrillic THEN
+				opt.identEnc := args.cyrillic - Cli.CyrillicSame
+			END;
 			ASSERT(Exec.Init(exec, ""));
 			CASE res OF
 			  Cli.ResultC:
@@ -591,7 +618,7 @@ BEGIN
 				ret := GenerateC(module, (call # NIL) OR args.script, call,
 				                 opt, args.resPath, args.resPathLen, args.cDirs, exec)
 			| Cli.ResultBin, Cli.ResultRun:
-				ret := Bin(res, module, call, opt, args.cDirs, args.cc, outC,
+				ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
 				           args.resPath, exec, args.tmp);
 				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
 					ret := Run(args.resPath, args.arg)
