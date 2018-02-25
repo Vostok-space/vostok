@@ -76,7 +76,7 @@ func run(source, script, cc string) (output []byte, err error) {
       bin = fmt.Sprintf("%v/%v", tmp, name)
     }
     cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
-                       "-infr", "vostok", "-m", tmp, "-cc", cc);
+                       "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {
