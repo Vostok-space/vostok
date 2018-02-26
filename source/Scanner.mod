@@ -616,22 +616,27 @@ BEGIN
 	RETURN l
 END SWord;
 
-PROCEDURE RuWord(VAR s: Scanner): INTEGER;
+PROCEDURE CyrWord(VAR s: Scanner): INTEGER;
 VAR len, l, i, column: INTEGER;
 	PROCEDURE ForD0(c: CHAR): BOOLEAN;
 	RETURN (90X <= c) & (c <= 0BFX)
-	    OR (c = 81X)
+	    OR (c = 81X) OR (c = 84X) OR (c = 86X) OR (c = 87X) OR (c = 8EX)
 	END ForD0;
 
 	PROCEDURE ForD1(c: CHAR): BOOLEAN;
 	RETURN (80X <= c) & (c <= 8FX)
-	    OR (c = 91X)
+	    OR (c = 91X) OR (c = 94X) OR (c = 96X) OR (c = 97X) OR (c = 9EX)
 	END ForD1;
+
+	PROCEDURE ForD2(c: CHAR): BOOLEAN;
+	RETURN (c = 90X) OR (c = 91X)
+	END ForD2;
 BEGIN
 	i := s.ind;
 	column := s.column;
 	WHILE (s.buf[i] = 0D0X) & ForD0(Lookup(s, i))
 	   OR (s.buf[i] = 0D1X) & ForD1(Lookup(s, i))
+	   OR (s.buf[i] = 0D2X) & ForD2(Lookup(s, i))
 	DO
 		i := (i + 2) MOD (LEN(s.buf) - 1);
 		INC(s.column)
@@ -650,7 +655,7 @@ BEGIN
 		l := ErrWordLenTooBig
 	END
 	RETURN l
-END RuWord;
+END CyrWord;
 
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
 VAR i, column, comment, commentsCount: INTEGER;
@@ -768,7 +773,7 @@ BEGIN
 	ELSE
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
-		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D2X..0FFX:
+		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
 			lex := ErrUnexpectChar;
 			INC(s.ind)
 		| Utf8.TransmissionEnd:
@@ -777,9 +782,9 @@ BEGIN
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
 			lex := SWord(s)
-		| 0D0X, 0D1X:
+		| 0D0X .. 0D2X:
 			IF s.opt.cyrillic THEN
-				lex := RuWord(s)
+				lex := CyrWord(s)
 			ELSE
 				lex := ErrUnexpectChar
 			END
