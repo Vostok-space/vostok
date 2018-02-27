@@ -674,13 +674,18 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
 			| 0D0X:
 				ASSERT(Strings.IterNext(it));
 				CASE ORD(it.char) - 90H + 15 OF
-				   15: Puts(buf, i, "_A")
+				    0: Puts(buf, i, "_Yo")
+				|   3: Puts(buf, i, "_E1")
+				|   5: Puts(buf, i, "_I1")
+				|   6: Puts(buf, i, "_Yi")
+				|  13: Puts(buf, i, "_W")
+
+				|  15: Puts(buf, i, "_A")
 				|  16: Puts(buf, i, "_B")
 				|  17: Puts(buf, i, "_V")
 				|  18: Puts(buf, i, "_G")
 				|  19: Puts(buf, i, "_D")
 				|  20: Puts(buf, i, "_Ye")
-				|   0: Puts(buf, i, "_Yo")
 				|  21: Puts(buf, i, "_Zh")
 				|  22: Puts(buf, i, "_Z")
 				|  23: Puts(buf, i, "_I")
@@ -728,9 +733,7 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
 			| 0D1X:
 				ASSERT(Strings.IterNext(it));
 				CASE ORD(it.char) - 80H OF
-				  17: Puts(buf, i, "_yo")
-
-				|  0: Puts(buf, i, "_r")
+				   0: Puts(buf, i, "_r")
 				|  1: Puts(buf, i, "_s")
 				|  2: Puts(buf, i, "_t")
 				|  3: Puts(buf, i, "_u")
@@ -746,6 +749,17 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
 				| 13: Puts(buf, i, "_e")
 				| 14: Puts(buf, i, "_yu")
 				| 15: Puts(buf, i, "_ya")
+
+				| 17: Puts(buf, i, "_yo")
+				| 20: Puts(buf, i, "_e1")
+				| 22: Puts(buf, i, "_i1")
+				| 23: Puts(buf, i, "_yi")
+				| 30: Puts(buf, i, "_w")
+				END
+			| 0D2X:
+				CASE ORD(it.char) - 90H OF
+				  0: Puts(buf, i, "_G1")
+				| 1: Puts(buf, i, "_g1")
 				END
 			END
 		UNTIL ~Strings.IterNext(it);
