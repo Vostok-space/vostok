@@ -616,8 +616,8 @@ BEGIN
 	RETURN l
 END SWord;
 
-PROCEDURE CyrWord(VAR s: Scanner): INTEGER;
-VAR len, l, i, column: INTEGER;
+PROCEDURE IsCurrentCyrillic(VAR s: Scanner): BOOLEAN;
+VAR ret: BOOLEAN;
 	PROCEDURE ForD0(c: CHAR): BOOLEAN;
 	RETURN (90X <= c) & (c <= 0BFX)
 	    OR (c = 81X) OR (c = 84X) OR (c = 86X) OR (c = 87X) OR (c = 8EX)
@@ -632,21 +632,25 @@ VAR len, l, i, column: INTEGER;
 	RETURN (c = 90X) OR (c = 91X)
 	END ForD2;
 BEGIN
-	i := s.ind;
-	column := s.column;
-	WHILE (s.buf[i] = 0D0X) & ForD0(Lookup(s, i))
-	   OR (s.buf[i] = 0D1X) & ForD1(Lookup(s, i))
-	   OR (s.buf[i] = 0D2X) & ForD2(Lookup(s, i))
-	DO
-		i := (i + 2) MOD (LEN(s.buf) - 1);
+	CASE s.buf[s.ind] OF
+	  0X .. 0CFX, 0D3X .. 0FFX:
+	        ret := FALSE
+	| 0D0X: ret := ForD0(Lookup(s, s.ind))
+	| 0D1X: ret := ForD1(Lookup(s, s.ind))
+	| 0D2X: ret := ForD2(Lookup(s, s.ind))
+	END
+	RETURN ret
+END IsCurrentCyrillic;
+
+PROCEDURE CyrWord(VAR s: Scanner): INTEGER;
+VAR len, l: INTEGER;
+BEGIN
+	WHILE IsCurrentCyrillic(s) DO
+		s.ind := (s.ind + 2) MOD (LEN(s.buf) - 1);
 		INC(s.column)
 	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
 		FillBuf(s.buf, s.ind, s.in^)
 	END;
-
-	s.ind := i;
-	s.column := column;
-
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(0 < len);
 	IF len <= TranLim.LenName THEN
@@ -783,7 +787,7 @@ BEGIN
 		| "a" .. "z", "A" .. "Z":
 			lex := SWord(s)
 		| 0D0X .. 0D2X:
-			IF s.opt.cyrillic THEN
+			IF s.opt.cyrillic & IsCurrentCyrillic(s) THEN
 				lex := CyrWord(s)
 			ELSE
 				lex := ErrUnexpectChar
