@@ -13,9 +13,4 @@ MODULE HelloRu;
    Вывод("Ну, привет.")
  END Привет;
 
- PROCEDURE Go*;
- BEGIN
-   Привет
- END Go;
-
 END HelloRu.

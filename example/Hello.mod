@@ -2,16 +2,16 @@ MODULE Hello;
 
 IMPORT Out;
 
-PROCEDURE Go*;
+PROCEDURE Come*;
 BEGIN
 	Out.String("Hello");
 	Out.Ln
-END Go;
+END Come;
 
-PROCEDURE Stop*();
+PROCEDURE Gone*();
 BEGIN
 	Out.String("Bye");
 	Out.Ln
-END Stop;
+END Gone;
 
 END Hello.

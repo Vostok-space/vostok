@@ -62,14 +62,14 @@ MODULE make;
    ok := BuildBy("bs-o7c", "o7c", "v0")
  END Build;
 
- PROCEDURE TestBy(o7c: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
      file: Dir.File;
      n, c: ARRAY 64 OF CHAR;
      l, j: INTEGER;
  BEGIN
-   IF Dir.Open(dir, "test/source", 0) THEN
+   IF Dir.Open(dir, srcDir, 0) THEN
      ok := TRUE;
      WHILE Dir.Read(file, dir) DO
        l := 0;
@@ -79,10 +79,13 @@ MODULE make;
         & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
         & Exec.Add(code, "run", 0)
         & CopyFileName(c, n)
-        & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
+        & ( example & Exec.Add(code, c, 0)
+         OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
+          )
         & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
+        & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
         & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
-        & (TRUE OR Exec.Add(code, "-cc", 0) & Exec.Add(code, "tcc", 0))
+        & Exec.Add(code, "-cyrillic", 0)
        THEN
          ok := (Execute(code, n) = 0) & ok
        END
@@ -94,24 +97,30 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := TestBy("o7c")
+   ok := TestBy("test/source", FALSE, "o7c")
  END Test;
 
  PROCEDURE Self*;
  BEGIN
-   ok := BuildBy("o7c", "o7c-v1", "v1") & TestBy("o7c-v1")
+   ok := BuildBy("o7c", "o7c-v1", "v1") & TestBy("test/source", FALSE, "o7c-v1")
  END Self;
 
  PROCEDURE SelfFull*;
  BEGIN
-   ok := BuildBy("o7c-v1", "o7c-v2", "v2") & TestBy("o7c-v2")
+   ok := BuildBy("o7c-v1", "o7c-v2", "v2") & TestBy("test/source", FALSE, "o7c-v2")
  END SelfFull;
+
+ PROCEDURE Example*;
+ BEGIN
+   ok := TestBy("example", TRUE, "o7c")
+ END Example;
 
  PROCEDURE Help*;
  BEGIN
    Log.StrLn("Commands:");
    Log.StrLn("  Build   - build o7c translator by bootstrap");
    Log.StrLn("  Test    - build and run tests from test/source");
+   Log.StrLn("  Example - build examples");
    Log.StrLn("  Self    - build itself then run tests");
    Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests")
  END Help;

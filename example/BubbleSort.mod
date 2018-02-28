@@ -14,7 +14,4 @@ MODULE BubbleSort;
    END
  END Sort;
 
- PROCEDURE Go*;
- END Go;
-
 END BubbleSort.
