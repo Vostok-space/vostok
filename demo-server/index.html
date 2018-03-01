@@ -15,7 +15,7 @@
     height: 600px;
     overflow: auto;
     float:right;
-    background-color: #EEEEEE;
+    background-color: #EEE;
   }
   .log-script {
     background-color: #F9F9F9;
@@ -25,6 +25,9 @@
   }
   .log-out {
     margin: 0px;
+  }
+  .log-error {
+    color: #F00;
   }
   .command-line {
     width: 400px;
@@ -80,37 +83,49 @@ END Hello.
   session = editor.getSession();
   session.setOptions({ tabSize: 2, useSoftTabs: true, navigateWithinSoftTabs: true});
 
-  function requestRun(scr) {
-    var req, data, pre, div, table;
+  function errorLog(text) {
+    var div;
+    div = document.createElement('div');
+    div.innerText = text;
+    div.className = 'log-error';
+    mlog.appendChild(div);
+  }
 
+  function normalLog(text) {
+    var pre;
     pre = document.createElement('pre');
-    pre.innerText = scr;
+    pre.innerText = text;
+    pre.className = 'log-out';
+    mlog.appendChild(pre);
+    pre.scrollIntoView();
+  }
+
+  function scriptEcho(src) {
+    var pre, table;
+    pre = document.createElement('pre');
+    pre.innerText = src;
     pre.className = 'log-script';
     table = document.createElement('table');
     table.appendChild(pre);
     mlog.appendChild(table);
+  }
+
+  function requestRun(scr) {
+    var req, data;
+
+    scriptEcho(scr);
 
     req = new XMLHttpRequest();
-    req.onreadystatechange = function() {
-      if ((XMLHttpRequest.DONE == req.readyState) && (200 == req.status)) {
-        pre = document.createElement('pre');
-        pre.innerText = req.responseText;
-        pre.className = 'log-out';
-        mlog.appendChild(pre);
-        pre.scrollIntoView();
-      }
-      if (400 <= req.status) {
-        div = document.createElement('div');
-        if (500 > req.status) {
-          div.innerText = 'Client error code : ' + req.status;
-        } else {
-          div.innerText = 'Server error code : ' + req.status;
-        }
-        mlog.appendChild(div);
-      }
-    }
+
+    req.timeout = 6000;
     req.ontimeout = function (e) {
-      console.log('ontimeout ' + e);
+      errorLog('connection timeout')
+    };
+    req.onerror = function (e) {
+      errorLog('connection error');
+    };
+    req.onload = function (e) {
+      normalLog(req.responseText);
     };
     req.open('POST', '/run');
     data = new FormData();
