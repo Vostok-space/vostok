@@ -2,164 +2,47 @@
 <html lang="en">
 <head>
 <title>Vostok translator</title>
-<style type="text/css" media="screen">
-  #editor {
-    width: 600px;
-    height: 600px;
-    font-size: 14px;
-    white-space: pre;
-    float: left;
-  }
-  #log {
-    width: 600px;
-    height: 600px;
-    overflow: auto;
-    float:right;
-    background-color: #EEE;
-  }
-  .log-script {
-    background-color: #F9F9F9;
-    padding: 4px;
-    border-radius: 6px;
-    margin: 0px;
-  }
-  .log-out {
-    margin: 0px;
-  }
-  .log-error {
-    color: #F00;
-  }
-  .command-line {
-    width: 400px;
-  }
-</style>
+
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'
+        type='text/javascript' charset='utf-8'>
+</script>
+<script src='vostokbox.js'></script>
 </head>
 
 <body>
 
 <div style='width:1200px'>
-  <div id='editor'>MODULE Hello;
+  <div id='vostokbox-editor'>MODULE Hello;
 
- IMPORT Out;
+  IMPORT Out;
 
- PROCEDURE Come*;
- BEGIN
-   Out.String("Добро пожаловать."); Out.Ln
- END Come;
+  PROCEDURE Come*;
+  BEGIN
+    Out.String("Добро пожаловать."); Out.Ln
+  END Come;
 
- PROCEDURE Gone*;
- BEGIN
-   Out.String("До скорой встречи."); Out.Ln
- END Gone;
+  PROCEDURE Gone*;
+  BEGIN
+    Out.String("До скорой встречи."); Out.Ln
+  END Gone;
 
 END Hello.
 </div>
 
-  <div id='log'></div>
+  <div id='vostokbox-log'></div>
 
 </div>
 
-<div id='runners'></div>
-
-<div>
-  <input class='command-line' type='text' id='script' value='Hello.Come; Hello.Gone'/>
-  <button onclick='requestRun(script.value)'>Run</button>
-  <button onclick='addRunner(script.value)'>Add</button>
-</div>
-
-<script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"
-        type="text/javascript" charset="utf-8">
-</script>
+<div id='vostokbox-runners'></div>
 
 <script>
-  var editor, session, script, runners, mlog;
+  var box;
 
-  script  = document.getElementById('script');
-  runners = document.getElementById('runners');
-  mlog = document.getElementById('log');
-
-  editor = ace.edit('editor');
-  editor.setDisplayIndentGuides(true);
-  session = editor.getSession();
-  session.setOptions({ tabSize: 2, useSoftTabs: true, navigateWithinSoftTabs: true});
-
-  function errorLog(text) {
-    var div;
-    div = document.createElement('div');
-    div.innerText = text;
-    div.className = 'log-error';
-    mlog.appendChild(div);
-  }
-
-  function normalLog(text) {
-    var pre;
-    pre = document.createElement('pre');
-    pre.innerText = text;
-    pre.className = 'log-out';
-    mlog.appendChild(pre);
-    pre.scrollIntoView();
-  }
-
-  function scriptEcho(src) {
-    var pre, table;
-    pre = document.createElement('pre');
-    pre.innerText = src;
-    pre.className = 'log-script';
-    table = document.createElement('table');
-    table.appendChild(pre);
-    mlog.appendChild(table);
-  }
-
-  function requestRun(scr) {
-    var req, data;
-
-    scriptEcho(scr);
-
-    req = new XMLHttpRequest();
-
-    req.timeout = 6000;
-    req.ontimeout = function (e) {
-      errorLog('connection timeout')
-    };
-    req.onerror = function (e) {
-      errorLog('connection error');
-    };
-    req.onload = function (e) {
-      normalLog(req.responseText);
-    };
-    req.open('POST', '/run');
-    data = new FormData();
-    data.append('module', session.getValue());
-    data.append('script', scr);
-    req.send(data);
-  }
-
-  function addRunner(command) {
-    var div, inp, run, del;
-    div = document.createElement('div');
-    inp = document.createElement('input', 'type="text"');
-    inp.className = 'command-line';
-    inp.value = command;
-    run = document.createElement('button');
-    run.innerText = 'Run';
-    run.onclick = function() {
-      requestRun(inp.value);
-    }
-    del = document.createElement('button');
-    del.innerText = 'Del';
-    del.onclick = function() {
-      runners.removeChild(div);
-    }
-
-    div.appendChild(inp);
-    div.appendChild(run);
-    div.appendChild(del);
-
-    runners.appendChild(div);
-  }
-
-  addRunner('Hello.Come');
-  addRunner('Hello.Gone');
+  box = VostokBox.createByDefaultIdentifiers(document, ace);
+  VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
+  VostokBox.addRunner(box, 'Hello.Come');
+  VostokBox.addRunner(box, 'Hello.Gone');
 </script>
 
 </body>

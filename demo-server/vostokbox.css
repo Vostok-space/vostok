@@ -1,0 +1,34 @@
+#vostokbox-editor {
+  width: 600px;
+  height: 600px;
+  font-size: 14px;
+  white-space: pre;
+  float: left;
+}
+
+#vostokbox-log {
+  width: 600px;
+  height: 600px;
+  overflow: auto;
+  float:right;
+  background-color: #EEE;
+}
+
+.vostokbox-log-script {
+  background-color: #F9F9F9;
+  padding: 4px;
+  border-radius: 6px;
+  margin: 0px;
+}
+
+.vostokbox-log-out {
+  margin: 0px;
+}
+
+.vostokbox-log-error {
+  color: #F00;
+}
+
+.vostokbox-command-line {
+  width: 400px;
+}
