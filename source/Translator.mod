@@ -24,6 +24,7 @@ IMPORT
 	File := VFileStream,
 	Utf8,
 	Strings := StringStore,
+	SpecIdentChecker,
 	Parser,
 	Scanner,
 	Ast,
@@ -233,7 +234,7 @@ PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
                                 name: Strings.String): BOOLEAN;
 BEGIN
 	RETURN Strings.CopyToChars(str, len, name)
-	     & (~GeneratorC.IsSpecModuleName(name)
+	     & (~SpecIdentChecker.IsSpecModuleName(name)
 	     OR Strings.CopyCharsNull(str, len, "_")
 	       )
 END CopyModuleNameForFile;
