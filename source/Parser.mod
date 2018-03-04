@@ -18,7 +18,7 @@ MODULE Parser;
 
 IMPORT
 	V,
-	Log, Out,
+	Log,
 	Utf8,
 	Scanner,
 	Strings := StringStore,
@@ -122,11 +122,11 @@ BEGIN
 	END;
 	IF p.opt.multiErrors THEN
 		p.opt.printError(err);
-		Out.String(". ");
-		Out.Int(p.s.line + 1, 2);
-		Out.String(":");
-		Out.Int(p.s.column + p.s.tabs * 3, 2);
-		Out.Ln
+		Log.Str(". ");
+		Log.Int(p.s.line + 1);
+		Log.Str(":");
+		Log.Int(p.s.column + p.s.tabs * 3);
+		Log.Ln
 	END
 END AddError;
 
