@@ -31,6 +31,7 @@ IMPORT
 	GeneratorC,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
+	CComp := CCompilerInterface,
 	Message,
 	Cli := CliParser,
 	Platform,
@@ -40,12 +41,6 @@ IMPORT
 CONST
 	ErrNo    =  0;
 	ErrParse = -1;
-
-	UnknownCc = 0;
-	TinyCc    = 1;
-	GnuCc     = 2;
-	Clang     = 3;
-	CompCert  = 4;
 
 TYPE
 	Container = POINTER TO RECORD
@@ -242,7 +237,7 @@ END CopyModuleNameForFile;
 PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
                       module: Ast.Module; isMain: BOOLEAN;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
-                      VAR exec: Exec.Code): INTEGER;
+                      VAR ccomp: CComp.Compiler): INTEGER;
 VAR destLen: INTEGER;
     ret: INTEGER;
 BEGIN
@@ -266,7 +261,7 @@ BEGIN
 		ELSE
 			dir[destLen + 1] := "c";
 			(* TODO *)
-			ASSERT(Exec.Add(exec, dir, 0));
+			ASSERT(CComp.AddC(ccomp, dir, 0));
 			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
@@ -299,7 +294,7 @@ PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     opt: GeneratorC.Options;
                     VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                     cDirs: ARRAY OF CHAR;
-                    VAR exec: Exec.Code): INTEGER;
+                    VAR ccomp: CComp.Compiler): INTEGER;
 VAR imp: Ast.Declaration;
 	ret, i, cDirsLen, nameLen: INTEGER;
 	name: ARRAY 512 OF CHAR;
@@ -311,14 +306,14 @@ BEGIN
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
 		IF ~imp.module.m.used THEN
-			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, exec)
+			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp)
 		END;
 		imp := imp.next
 	END;
 	IF ret # ErrNo THEN
 		;
 	ELSIF ~module.mark THEN
-		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, exec);
+		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp);
 		IF ret = ErrNo THEN
 			GeneratorC.Generate(iface, impl, module, cmd, opt);
 			File.CloseOut(iface);
@@ -335,7 +330,7 @@ BEGIN
 			     & CopyModuleNameForFile(name, nameLen, module.name)
 			     & Strings.CopyCharsNull(name, nameLen, ".c")
 
-			     & (~Files.Exist(name, 0) OR Exec.Add(exec, name, 0))
+			     & (~Files.Exist(name, 0) OR CComp.AddC(ccomp, name, 0))
 			);
 			i := i + cDirsLen + 1
 		END
@@ -419,39 +414,6 @@ BEGIN
 	RETURN ok
 END GetTempOutC;
 
-PROCEDURE SearchCCompiler(VAR cc: INTEGER; VAR cmd: Exec.Code;
-                          res: INTEGER): BOOLEAN;
-
-	PROCEDURE Test(VAR idCc: INTEGER; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
-	VAR exec: Exec.Code; ok: BOOLEAN;
-	BEGIN
-		ok := Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
-		    & ((Platform.Posix & Exec.AddClean(exec, " 1,2>/dev/null"))
-		    OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
-		      )
-		    & (Exec.Ok = Exec.Do(exec));
-		IF ok THEN
-			idCc := id
-		END
-		RETURN ok
-	END Test;
-
-	RETURN (res = Cli.ResultRun)
-	     & Test(cc, TinyCc, "tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g -w")
-
-	    OR (
-	       Test(cc, GnuCc, "gcc",    "-dumpversion") & Exec.AddClean(cmd, "gcc -g -O1")
-	    OR Test(cc, Clang, "clang",  "-dumpversion") & Exec.AddClean(cmd, "clang -g -O1")
-
-	    OR (res # Cli.ResultRun)
-	     & Test(cc, TinyCc, "tcc",   "-dumpversion") & Exec.AddClean(cmd, "tcc -g")
-
-	    OR Test(cc, CompCert, "ccomp", "--version")  & Exec.AddClean(cmd, "ccomp -g -O")
-
-	    OR Test(cc, UnknownCc, "cc", "-dumpversion") & Exec.AddClean(cmd, "cc -g -O1")
-	       ) & ((res # Cli.ResultRun) OR Exec.AddClean(cmd, " -w"))
-END SearchCCompiler;
-
 PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
 VAR ret, len: INTEGER;
     outC: ARRAY 1024 OF CHAR;
@@ -459,14 +421,14 @@ VAR ret, len: INTEGER;
     module: Ast.Module;
     opt: GeneratorC.Options;
     call: Ast.Call;
-    exec: Exec.Code;
+    ccomp: CComp.Compiler;
 
 	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
 	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
-	              VAR cmd: Exec.Code; tmp: ARRAY OF CHAR): INTEGER;
+	              VAR cmd: CComp.Compiler; tmp: ARRAY OF CHAR): INTEGER;
 	VAR outCLen: INTEGER;
-	    ret, idCc: INTEGER;
+	    ret: INTEGER;
 	    i, nameLen, cDirsLen: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
@@ -476,19 +438,19 @@ VAR ret, len: INTEGER;
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			IF cc[0] = Utf8.Null THEN
-				ok := SearchCCompiler(idCc, cmd, res);
+				ok := CComp.Search(cmd, res = Cli.ResultRun);
 				IF ok & (args.cyrillic = Cli.CyrillicDefault) THEN
-					CASE idCc OF
-					  UnknownCc, CompCert:
+					CASE cmd.id OF
+					  CComp.Unknown, CComp.CompCert:
 						opt.identEnc := GeneratorC.IdentEncTranslit
-					| Clang, TinyCc:
+					| CComp.Clang, CComp.Tiny:
 						opt.identEnc := GeneratorC.IdentEncSame
-					| GnuCc:
+					| CComp.Gnu:
 						opt.identEnc := GeneratorC.IdentEncEscUnicode
 					END
 				END
 			ELSE
-				ok := Exec.AddClean(cmd, cc)
+				ok := CComp.Set(cmd, cc)
 			END;
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundCCompiler
@@ -498,37 +460,34 @@ VAR ret, len: INTEGER;
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
 				ok := ok
-				    & Exec.Add(cmd, "-o", 0)
-				    & Exec.Add(cmd, bin, 0)
-				    & Exec.Add(cmd, "-I", 0)
-				    & Exec.Add(cmd, outC, 0);
+				    & CComp.AddOutput(cmd, bin)
+				    & CComp.AddInclude(cmd, outC, 0);
 				i := 0;
 				WHILE ok & (cDirs[i] # Utf8.Null) DO
 					nameLen := 0;
 					cDirsLen := Strings.CalcLen(cDirs, i);
-					ok := Exec.Add(cmd, "-I", 0)
-					    & Exec.Add(cmd, cDirs, i)
+					ok := CComp.AddInclude(cmd, cDirs, i)
 
 					    & Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
 					    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
 					    & Strings.CopyCharsNull(name, nameLen, "o7.c")
 
-					    & (~Files.Exist(name, 0) OR Exec.Add(cmd, name, 0));
+					    & (~Files.Exist(name, 0) OR CComp.AddC(cmd, name, 0));
 					i := i + cDirsLen + 1
 				END;
 				ok := ok
 				& (  (opt.memManager # GeneratorC.MemManagerCounter)
-				  OR Exec.Add(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER", 0)
+				  OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")
 				  )
 				& (  (opt.memManager # GeneratorC.MemManagerGC)
-				  OR Exec.Add(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_GC", 0)
-				   & Exec.Add(cmd, "-lgc", 0)
+				  OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_GC")
+				   & CComp.AddOpt(cmd, "-lgc")
 				  )
-				& (~Platform.Posix OR Exec.Add(cmd, "-lm", 0));
-				Exec.Log(cmd);
+				& (~Platform.Posix OR CComp.AddOpt(cmd, "-lm"));
+
 				(* TODO *)
 				ASSERT(ok);
-				IF Exec.Do(cmd) # Exec.Ok THEN
+				IF CComp.Do(cmd) # Exec.Ok THEN
 					ret := Cli.ErrCCompiler
 				END
 			END
@@ -612,15 +571,14 @@ BEGIN
 			IF Cli.CyrillicSame <= args.cyrillic THEN
 				opt.identEnc := args.cyrillic - Cli.CyrillicSame
 			END;
-			ASSERT(Exec.Init(exec, ""));
 			CASE res OF
 			  Cli.ResultC:
 				DEC(args.resPathLen);
 				ret := GenerateC(module, (call # NIL) OR args.script, call,
-				                 opt, args.resPath, args.resPathLen, args.cDirs, exec)
+				                 opt, args.resPath, args.resPathLen, args.cDirs, ccomp)
 			| Cli.ResultBin, Cli.ResultRun:
 				ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
-				           args.resPath, exec, args.tmp);
+				           args.resPath, ccomp, args.tmp);
 				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
 					ret := Run(args.resPath, args.arg)
 				END;
