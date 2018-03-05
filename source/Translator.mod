@@ -36,7 +36,8 @@ IMPORT
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
-	OsEnv;
+	OsEnv,
+	FileSys := FileSystemUtil;
 
 CONST
 	ErrNo    =  0;
@@ -338,36 +339,6 @@ BEGIN
 	RETURN ret
 END GenerateC;
 
-PROCEDURE MakeDir(name: ARRAY OF CHAR): BOOLEAN;
-VAR cmd: Exec.Code;
-BEGIN
-	IF Platform.Posix THEN
-		ASSERT(Exec.Init(cmd, "mkdir")
-		     & Exec.Add(cmd, name, 0)
-		     & Exec.AddClean(cmd, " 2>/dev/null"))
-	ELSE ASSERT(Platform.Windows);
-		ASSERT(Exec.Init(cmd, "mkdir")
-		     & Exec.Add(cmd, name, 0))
-	END
-	RETURN Exec.Do(cmd) = Exec.Ok
-END MakeDir;
-
-PROCEDURE RemoveDir(name: ARRAY OF CHAR): BOOLEAN;
-VAR cmd: Exec.Code;
-BEGIN
-	IF Platform.Posix THEN
-		ASSERT(Exec.Init(cmd, "rm")
-		     & Exec.Add(cmd, "-r", 0)
-		     & Exec.Add(cmd, name, 0)
-		     & Exec.AddClean(cmd, " 2>/dev/null"))
-	ELSE ASSERT(Platform.Windows);
-		ASSERT(Exec.Init(cmd, "rmdir")
-		     & Exec.AddClean(cmd, " /s/q")
-		     & Exec.Add(cmd, name, 0))
-	END
-	RETURN Exec.Do(cmd) = Exec.Ok
-END RemoveDir;
-
 PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
                       VAR bin: ARRAY OF CHAR; name: Strings.String;
                       tmp: ARRAY OF CHAR): BOOLEAN;
@@ -390,7 +361,7 @@ BEGIN
 
 	IF ok THEN
 		i := 0;
-		ok := MakeDir(dirCOut);
+		ok := FileSys.MakeDir(dirCOut);
 		IF ~ok & (tmp = "") THEN
 			WHILE ~ok & (i < 100) DO
 				IF i = 0 THEN
@@ -399,7 +370,7 @@ BEGIN
 					dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
 					dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
 				END;
-				ok := MakeDir(dirCOut);
+				ok := FileSys.MakeDir(dirCOut);
 				INC(i)
 			END
 		END;
@@ -582,7 +553,8 @@ BEGIN
 				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
 					ret := Run(args.resPath, args.arg)
 				END;
-				IF (args.tmp = "") & ~RemoveDir(outC) & (ret = ErrNo) THEN
+				IF (args.tmp = "") & ~FileSys.RemoveDir(outC) & (ret = ErrNo)
+				THEN
 					ret := Cli.ErrCantRemoveOutDir
 				END
 			END
