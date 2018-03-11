@@ -27,112 +27,52 @@ IMPORT
 CONST
 	NewPage = Utf8.NewPage;
 
-	EndOfFile*      = 00;
+	EndOfFile*      = 0;
 
-	Plus*           = 10;
-	Minus*          = 11;
-	Or*             = 12;
-	Dot*            = 14;
-	Range*          = 15;
-	Comma*          = 16;
-	Colon*          = 17;
-	Assign*         = 18;
-	Semicolon*      = 19;
-	Dereference*    = 20;
+	Plus*           = 1;
+	Minus*          = 2;
+	Or*             = 3;
 
-	RelationFirst* = 21;
-		Equal*          = 21;
-		Inequal*        = 22;
-		Less*           = 23;
-		LessEqual*      = 24;
-		Greater*        = 25;
-		GreaterEqual*   = 26;
-		In*             = 27;
-		Is*             = 28;
-	RelationLast*  = 28;
+	Dot*            = 4;
+	Range*          = 5;
+	Comma*          = 6;
+	Colon*          = 7;
+	Assign*         = 8;
+	Semicolon*      = 9;
+	Dereference*    = 10;
 
-	Negate*         = 29;
-	Alternative*    = 31;
-	Brace1Open*     = 32;
-	Brace1Close*    = 33;
-	Brace2Open*     = 34;
-	Brace2Close*    = 35;
-	Brace3Open*     = 36;
-	Brace3Close*    = 37;
+	RelationFirst* = 11;
+		Equal*          = 11;
+		Inequal*        = 12;
+		Less*           = 13;
+		LessEqual*      = 14;
+		Greater*        = 15;
+		GreaterEqual*   = 16;
+		In*             = 17;
+		Is*             = 18;
+	RelationLast*  = 18;
 
-	Number*         = 40;
-	CharHex*        = 41;
-	String*         = 42;
-	Ident*          = 43;
+	MultFirst*      = 19;
+		Asterisk*       = 19;
+		Slash*          = 20;
+		And*            = 21;
+		Div*            = 22;
+		Mod*            = 23;
+	MultLast*       = 23;
 
-	Array*          = 50;
-	Begin*          = 51;
-	By*             = 52;
-	Case*           = 53;
-	Const*          = 54;
-	Do*             = 56;
-	Else*           = 57;
-	Elsif*          = 58;
-	End*            = 59;
-	False*          = 60;
-	For*            = 61;
-	If*             = 62;
-	Import*         = 63;
-	Module*         = 67;
-	Nil*            = 68;
-	Of*             = 69;
-	Pointer*        = 71;
-	Procedure*      = 72;
-	Record*         = 73;
-	Repeat*         = 74;
-	Return*         = 75;
-	Then*           = 76;
-	To*             = 77;
-	True*           = 78;
-	Type*           = 79;
-	Until*          = 80;
-	Var*            = 81;
-	While*          = 82;
+	Negate*         = 24;
+	Alternative*    = 25;
+	Brace1Open*     = 26;
+	Brace1Close*    = 27;
+	Brace2Open*     = 28;
+	Brace2Close*    = 29;
+	Brace3Open*     = 30;
+	Brace3Close*    = 31;
 
-	MultFirst*      = 150;
-		Asterisk*       = 150;
-		Slash*          = 151;
-		And*            = 152;
-		Div*            = 153;
-		Mod*            = 154;
-	MultLast*       = 154;
-
-	(* Предопределенные идентификаторы имеют стабильный порядок *)
-	(* TODO Их нужно вынести за рамки сканера *)
-	PredefinedFirst* = 90;
-	Abs*        = 90;
-	Asr*        = 91;
-	Assert*     = 92;
-	Boolean*    = 93;
-	Byte*       = 94;
-	Char*       = 95;
-	Chr*        = 96;
-	Dec*        = 97;
-	Excl*       = 98;
-	Floor*      = 99;
-	Flt*        = 100;
-	Inc*        = 101;
-	Incl*       = 102;
-	Integer*    = 103;
-	Len*        = 104;
-	LongInt*    = 105;
-	LongSet*    = 106;
-	Lsl*        = 107;
-	New*        = 108;
-	Odd*        = 109;
-	Ord*        = 110;
-	Pack*       = 111;
-	Real*       = 112;
-	Real32*     = 113;
-	Ror*        = 114;
-	Set*        = 115;
-	Unpk*       = 116;
-	PredefinedLast* = 116;
+	Number*         = 32;
+	CharHex*        = 33;
+	String*         = 34;
+	Ident*          = 35;
 
 	ErrUnexpectChar*        = -1;
 	ErrNumberTooBig*        = -2;
@@ -439,163 +379,6 @@ BEGIN
 	RETURN lex
 END SNumber;
 
-PROCEDURE IsWordEqual(str, buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
-VAR i, j: INTEGER;
-BEGIN
-	ASSERT(LEN(str) <= LEN(buf) DIV 2);
-	j := 1;
-	i := ind + 1;
-	WHILE (j < LEN(str)) & (buf[i] = str[j]) DO
-		INC(i); INC(j)
-	ELSIF buf[i] = NewPage DO
-		i := 0
-	END
-	RETURN (buf[i] = Utf8.BackSpace) & ((j = LEN(str)) OR (str[j] = Utf8.Null))
-END IsWordEqual;
-
-PROCEDURE CheckPredefined*(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
-VAR id: INTEGER;
-	save: CHAR;
-
-	PROCEDURE Eq(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end: INTEGER)
-	            : BOOLEAN;
-		RETURN IsWordEqual(str, buf, begin, end)
-	END Eq;
-
-	PROCEDURE O(str: ARRAY OF CHAR; buf: ARRAY OF CHAR; begin, end, id: INTEGER)
-	           : INTEGER;
-	BEGIN
-		IF ~IsWordEqual(str, buf, begin, end) THEN
-			id := Ident
-		END
-		RETURN id
-	END O;
-
-	PROCEDURE T(s1: ARRAY OF CHAR;
-	            buf: ARRAY OF CHAR; begin, end: INTEGER;
-	            id1: INTEGER; s2: ARRAY OF CHAR; id2: INTEGER): INTEGER;
-	BEGIN
-		IF     IsWordEqual(s1, buf, begin, end) THEN id2 := id1
-		ELSIF ~IsWordEqual(s2, buf, begin, end) THEN id2 := Ident
-		END
-		RETURN id2
-	END T;
-BEGIN
-	save := buf[end];
-	buf[end] := Utf8.BackSpace;
-	CASE buf[begin] OF
-	 "A":
-		IF Eq("ABS", buf, begin, end) THEN
-			id := Abs
-		ELSE
-			id := T("ASR", buf, begin, end, Asr, "ASSERT", Assert)
-		END
-	|"B": id := T("BOOLEAN", buf, begin, end, Boolean, "BYTE", Byte)
-	|"C": id := T("CHAR", buf, begin, end, Char, "CHR", Chr)
-	|"D": id := O("DEC", buf, begin, end, Dec)
-	|"E": id := O("EXCL", buf, begin, end, Excl)
-	|"F": id := T("FLOOR", buf, begin, end, Floor, "FLT", Flt)
-	|"I":
-		IF Eq("INC", buf, begin, end) THEN
-			id := Inc
-		ELSE
-			id := T("INCL", buf, begin, end, Incl, "INTEGER", Integer)
-		END
-	|"L": id := T("LEN", buf, begin, end, Len, "LSL", Lsl)
-	|"N": id := O("NEW", buf, begin, end, New)
-	|"O": id := T("ODD", buf, begin, end, Odd, "ORD", Ord)
-	|"P": id := O("PACK", buf, begin, end, Pack)
-	|"R": id := T("REAL", buf, begin, end, Real, "ROR", Ror)
-	|"S": id := O("SET", buf, begin, end, Set)
-	|"U": id := O("UNPK", buf, begin, end, Unpk)
-	|"G", "H", "J", "K", "M", "Q", "T", "V" .. "Z", "a" .. "z", 0C0X..0FFX:
-		id := Ident
-	END;
-	buf[end] := save
-	RETURN id
-END CheckPredefined;
-
-PROCEDURE CheckWord(VAR buf: ARRAY OF CHAR; ind, end: INTEGER): INTEGER;
-VAR lex: INTEGER;
-	save: CHAR;
-
-	PROCEDURE Eq(str, buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
-		RETURN IsWordEqual(str, buf, ind, end)
-	END Eq;
-
-	PROCEDURE O(VAR lex: INTEGER; str, buf: ARRAY OF CHAR; ind, end, l: INTEGER);
-	BEGIN
-		IF IsWordEqual(str, buf, ind, end) THEN lex := l ELSE lex := Ident END
-	END O;
-	PROCEDURE T(VAR lex: INTEGER;
-	            s1: ARRAY OF CHAR; l1: INTEGER;
-	            s2: ARRAY OF CHAR; l2: INTEGER;
-	            buf: ARRAY OF CHAR; ind, end: INTEGER);
-	BEGIN
-		IF IsWordEqual(s1, buf, ind, end) THEN
-			lex := l1
-		ELSIF IsWordEqual(s2, buf, ind, end) THEN
-			lex := l2
-		ELSE
-			lex := Ident
-		END
-	END T;
-
-BEGIN
-	save := buf[end];
-	buf[end] := Utf8.BackSpace;
-	(*
-	Log.Str("lexStart "); Log.Int(ind); Log.Str(" ");
-	Log.Int(ORD(buf[ind])); Log.Ln;
-	*)
-	CASE buf[ind] OF
-	 "A": O(lex, "ARRAY", buf, ind, end, Array)
-	|"B": T(lex, "BEGIN", Begin, "BY", By, buf, ind, end)
-	|"C": T(lex, "CASE", Case, "CONST", Const, buf, ind, end)
-	|"D": T(lex, "DIV", Div, "DO", Do, buf, ind, end)
-	|"E":
-		IF Eq("ELSE", buf, ind, end) THEN
-			lex := Else
-		ELSE
-			T(lex, "ELSIF", Elsif, "END", End, buf, ind, end)
-		END
-	|"F": T(lex, "FALSE", False, "FOR", For, buf, ind, end)
-	|"I":
-		IF Eq("IF", buf, ind, end) THEN
-			lex := If
-		ELSIF Eq("IMPORT", buf, ind, end) THEN
-			lex := Import
-		ELSE
-			T(lex, "IN", In, "IS", Is, buf, ind, end)
-		END
-	|"M": T(lex, "MOD", Mod, "MODULE", Module, buf, ind, end)
-	|"N": O(lex, "NIL", buf, ind, end, Nil)
-	|"O": T(lex, "OF", Of, "OR", Or, buf, ind, end)
-	|"P": T(lex, "POINTER", Pointer, "PROCEDURE", Procedure, buf, ind, end)
-	|"R":
-		IF Eq("RECORD", buf, ind, end) THEN
-			lex:= Record
-		ELSE
-			T(lex, "REPEAT", Repeat, "RETURN", Return, buf, ind, end)
-		END
-	|"T":
-		IF Eq("THEN", buf, ind, end) THEN
-			lex := Then
-		ELSIF Eq("TO", buf, ind, end) THEN
-			lex := To
-		ELSE
-			T(lex, "TRUE", True, "TYPE", Type, buf, ind, end)
-		END
-	|"U": O(lex, "UNTIL", buf, ind, end, Until)
-	|"V": O(lex, "VAR", buf, ind, end, Var)
-	|"W": O(lex, "WHILE", buf, ind, end, While)
-	|0X .. 40X, "G", "H", "J" .. "L", "Q", "S", "X" .. 0FFX:
-		lex := Ident
-	END;
-	buf[end] := save
-	RETURN lex
-END CheckWord;
-
 PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
 	RETURN (ch >= "A") & (ch <= "Z")
 	    OR (ch >= "a") & (ch <= "z")
@@ -609,7 +392,7 @@ BEGIN
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(0 < len);
 	IF len <= TranLim.LenName THEN
-		l := CheckWord(s.buf, s.lexStart, s.ind)
+		l := Ident
 	ELSE
 		l := ErrWordLenTooBig
 	END
@@ -700,13 +483,13 @@ BEGIN
 				s.emptyLines := -1
 			END;
 			i := (i + 2) MOD (LEN(s.buf) - 1);
-			INC(column, 2);
+			INC(column, 2)
 		ELSE
 			IF (s.buf[i] < 80X) OR (0C0X <= s.buf[i]) THEN
 				INC(column)
 			END;
 			INC(i)
-		END;
+		END
 	END;
 	s.column := column;
 	s.ind := i

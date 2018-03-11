@@ -22,6 +22,7 @@ IMPORT
 	Strings := StringStore,
 	SpecIdentChecker,
 	Scanner,
+	SpecIdent := OberonSpecIdent,
 	Stream := VDataStream,
 	Text := TextGenerator,
 	Utf8, Utf8Transform,
@@ -924,7 +925,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			e1 := call.params.expr;
 			p2 := call.params.next;
 			CASE call.designator.decl.id OF
-			  Scanner.Abs:
+			  SpecIdent.Abs:
 				IF call.type.id = Ast.IdInteger THEN
 					Text.Str(gen, "abs(")
 				ELSIF call.type.id = Ast.IdLongInt THEN
@@ -934,33 +935,33 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				Expression(gen, e1);
 				Text.Str(gen, ")")
-			| Scanner.Odd:
+			| SpecIdent.Odd:
 				Text.Str(gen, "(");
 				Factor(gen, e1);
 				Text.Str(gen, " % 2 == 1)")
-			| Scanner.Len:
+			| SpecIdent.Len:
 				Len(gen, e1)
-			| Scanner.Lsl:
+			| SpecIdent.Lsl:
 				Shift(gen, " << ", call.params)
-			| Scanner.Asr:
+			| SpecIdent.Asr:
 				Shift(gen, " >> ", call.params)
-			| Scanner.Ror:
+			| SpecIdent.Ror:
 				Text.Str(gen, "o7_ror(");
 				Expression(gen, e1);
 				Text.Str(gen, ", ");
 				Expression(gen, p2.expr);
 				Text.Str(gen, ")")
-			| Scanner.Floor:
+			| SpecIdent.Floor:
 				Text.Str(gen, "o7_floor(");
 				Expression(gen, e1);
 				Text.Str(gen, ")")
-			| Scanner.Flt:
+			| SpecIdent.Flt:
 				Text.Str(gen, "o7_flt(");
 				Expression(gen, e1);
 				Text.Str(gen, ")")
-			| Scanner.Ord:
+			| SpecIdent.Ord:
 				Ord(gen, e1)
-			| Scanner.Chr:
+			| SpecIdent.Chr:
 				IF gen.opt.checkArith & (e1.value = NIL) THEN
 					Text.Str(gen, "o7_chr(");
 					Expression(gen, e1);
@@ -969,30 +970,30 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Text.Str(gen, "(o7_char)");
 					Factor(gen, e1)
 				END
-			| Scanner.Inc:
+			| SpecIdent.Inc:
 				Inc(gen, e1, p2)
-			| Scanner.Dec:
+			| SpecIdent.Dec:
 				Dec(gen, e1, p2)
-			| Scanner.Incl:
+			| SpecIdent.Incl:
 				Expression(gen, e1);
 				Text.Str(gen, " |= 1u << ");
 				Factor(gen, p2.expr)
-			| Scanner.Excl:
+			| SpecIdent.Excl:
 				Expression(gen, e1);
 				Text.Str(gen, " &= ~(1u << ");
 				Factor(gen, p2.expr);
 				Text.Str(gen, ")")
-			| Scanner.New:
+			| SpecIdent.New:
 				New(gen, e1)
-			| Scanner.Assert:
+			| SpecIdent.Assert:
 				Assert(gen, e1)
-			| Scanner.Pack:
+			| SpecIdent.Pack:
 				Text.Str(gen, "o7_ldexp(&");
 				Expression(gen, e1);
 				Text.Str(gen, ", ");
 				Expression(gen, p2.expr);
 				Text.Str(gen, ")")
-			| Scanner.Unpk:
+			| SpecIdent.Unpk:
 				Text.Str(gen, "o7_frexp(&");
 				Expression(gen, e1);
 				Text.Str(gen, ", &");

@@ -447,11 +447,11 @@ MODULE SpecIdentChecker;
   PROCEDURE IsSpecModuleName*(n: Strings.String): BOOLEAN;
   (* TODO *)
   RETURN Eq(n, "O7")
-        OR Eq(n, "o7")
-        OR Eq(n, "math")
-        OR Eq(n, "Math")
-        OR Eq(n, "limits")
-        OR Eq(n, "ru")
+      OR Eq(n, "o7")
+      OR Eq(n, "math")
+      OR Eq(n, "Math")
+      OR Eq(n, "limits")
+      OR Eq(n, "ru")
   END IsSpecModuleName;
 
   PROCEDURE IsO7SpecName*(name: Strings.String): BOOLEAN;

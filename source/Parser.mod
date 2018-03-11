@@ -21,6 +21,7 @@ IMPORT
 	Log,
 	Utf8,
 	Scanner,
+	SpecIdent := OberonSpecIdent,
 	Strings := StringStore,
 	Ast,
 	Stream := VDataStream,
@@ -139,16 +140,33 @@ BEGIN
 END CheckAst;
 
 PROCEDURE Scan(VAR p: Parser);
+VAR si: INTEGER;
 BEGIN
 	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
 		p.l := Scanner.Next(p.s);
-		IF p.l < ErrNo THEN
+		IF p.l = Scanner.Ident THEN
+			IF SpecIdent.IsKeyWord(si, p.s.buf, p.s.lexStart, p.s.lexEnd) THEN
+				CASE si OF
+				  SpecIdent.Div: p.l := Scanner.Div
+				| SpecIdent.In:  p.l := Scanner.In
+				| SpecIdent.Is:  p.l := Scanner.Is
+				| SpecIdent.Mod: p.l := Scanner.Mod
+				| SpecIdent.Or:  p.l := Scanner.Or
+
+				| SpecIdent.Array   .. SpecIdent.Const
+				, SpecIdent.Do      .. SpecIdent.Import
+				, SpecIdent.Module  .. SpecIdent.Of
+				, SpecIdent.Pointer .. SpecIdent.While:
+					p.l := si
+				END
+			END
+		ELSIF p.l = Scanner.Semicolon THEN
+			Scanner.ResetComment(p.s)
+		ELSIF p.l < ErrNo THEN
 			AddError(p, p.l);
 			IF p.l = Scanner.ErrNumberTooBig THEN
 				p.l := Scanner.Number
 			END
-		ELSIF p.l = Scanner.Semicolon THEN
-			Scanner.ResetComment(p.s)
 		END
 	ELSE
 		p.l := Scanner.EndOfFile
@@ -402,8 +420,8 @@ VAR e: Ast.Expression;
 	VAR des: Ast.Designator;
 	BEGIN
 		des := Designator(p, ds);
-		IF p.callId # Scanner.Len THEN
-			CheckAst(p, Ast.DesignatorUsed(des, p.varParam, p.inLoops > 0))
+		IF p.callId # SpecIdent.Len THEN
+			CheckAst(p, Ast.DesignatorUsed(des, p.varParam, 0 < p.inLoops))
 		END;
 		p.varParam := FALSE;
 		IF p.l # Scanner.Brace1Open THEN
@@ -432,10 +450,10 @@ BEGIN
 			e := Ast.ExprIntegerNew(p.s.integer)
 		END;
 		Scan(p)
-	ELSIF (p.l = Scanner.True) OR (p.l = Scanner.False) THEN
-		e := Ast.ExprBooleanGet(p.l = Scanner.True);
+	ELSIF (p.l = SpecIdent.True) OR (p.l = SpecIdent.False) THEN
+		e := Ast.ExprBooleanGet(p.l = SpecIdent.True);
 		Scan(p)
-	ELSIF p.l = Scanner.Nil THEN
+	ELSIF p.l = SpecIdent.Nil THEN
 		e := Ast.ExprNilGet();
 		Scan(p)
 	ELSIF p.l = Scanner.String THEN
@@ -543,7 +561,7 @@ VAR expr: Ast.Expression;
 	rel: INTEGER;
 BEGIN
 	expr := Sum(p, ds);
-	IF (p.l >= Scanner.RelationFirst) & (p.l < Scanner.RelationLast) THEN
+	IF (Scanner.RelationFirst <= p.l) & (p.l < Scanner.RelationLast) THEN
 		rel := p.l;
 		Scan(p);
 		CheckAst(p, Ast.ExprRelationNew(e, expr, rel, Sum(p, ds)));
@@ -588,7 +606,7 @@ BEGIN
 		END;
 		IF p.err THEN
 			WHILE (Scanner.EndOfFile < p.l)
-			    & (p.l < Scanner.Import (* TODO *))
+			    & (p.l < SpecIdent.Import (* TODO *))
 			    & (p.l # Scanner.Semicolon)
 			DO
 				Scan(p)
@@ -607,7 +625,7 @@ VAR a: Ast.Array;
 	i, size: INTEGER;
 BEGIN
 	Log.StrLn("Array");
-	ASSERT(p.l = Scanner.Array);
+	ASSERT(p.l = SpecIdent.Array);
 	Scan(p);
 	a := Ast.ArrayGet(NIL, Expression(p, ds));
 	IF nameBegin >= 0 THEN
@@ -625,12 +643,12 @@ BEGIN
 		END;
 		INC(i)
 	END;
-	IF i > LEN(lens) THEN
+	IF LEN(lens) < i THEN
 		AddError(p, ErrArrayDimensionsTooMany)
 	END;
-	Expect(p, Scanner.Of, ErrExpectOf);
+	Expect(p, SpecIdent.Of, ErrExpectOf);
 	CheckAst(p, Ast.ArraySetType(a, type(p, ds, -1, -1)));
-	WHILE i > 0 DO
+	WHILE 0 < i DO
 		DEC(i);
 		(* TODO сделать нормально *)
 		a.type := Ast.ArrayGet(a.type, lens[i])
@@ -731,7 +749,7 @@ VAR rec, base: Ast.Record;
 		IF p.l = Scanner.Ident THEN
 			Declaration(p, dsAdd, dsTypes);
 			WHILE ScanIfEqual(p, Scanner.Semicolon) DO
-				IF p.l # Scanner.End THEN
+				IF p.l # SpecIdent.End THEN
 					Declaration(p, dsAdd, dsTypes)
 				ELSIF p.opt.strictSemicolon THEN
 					AddError(p, ErrExcessSemicolon);
@@ -741,7 +759,7 @@ VAR rec, base: Ast.Record;
 		END
 	END RecVars;
 BEGIN
-	ASSERT(p.l = Scanner.Record);
+	ASSERT(p.l = SpecIdent.Record);
 	Scan(p);
 	base := NIL;
 	IF ScanIfEqual(p, Scanner.Brace1Open) THEN
@@ -766,7 +784,7 @@ BEGIN
 		rec.module := p.module.bag
 	END;
 	RecVars(p, rec, ds);
-	Expect(p, Scanner.End, ErrExpectEnd);
+	Expect(p, SpecIdent.End, ErrExpectEnd);
 	CheckAst(p, Ast.RecordEnd(rec))
 	RETURN rec
 END Record;
@@ -778,7 +796,7 @@ VAR tp: Ast.Pointer;
 	decl: Ast.Declaration;
 	typeDecl: Ast.Record;
 BEGIN
-	ASSERT(p.l = Scanner.Pointer);
+	ASSERT(p.l = SpecIdent.Pointer);
 	Scan(p);
 	tp := Ast.PointerGet(NIL);
 	IF nameBegin >= 0 THEN
@@ -786,8 +804,8 @@ BEGIN
 		ASSERT(t # NIL);
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
 	END;
-	Expect(p, Scanner.To, ErrExpectTo);
-	IF p.l = Scanner.Record THEN
+	Expect(p, SpecIdent.To, ErrExpectTo);
+	IF p.l = SpecIdent.Record THEN
 		tp.type := Record(p, ds, -1, -1);
 		IF tp.type # NIL THEN
 			tp.type(Ast.Record).pointer := tp
@@ -838,8 +856,8 @@ VAR braces: BOOLEAN;
 			arrs: INTEGER;
 		BEGIN
 			arrs := 0;
-			WHILE ScanIfEqual(p, Scanner.Array) DO
-				Expect(p, Scanner.Of, ErrExpectOf);
+			WHILE ScanIfEqual(p, SpecIdent.Array) DO
+				Expect(p, SpecIdent.Of, ErrExpectOf);
 				INC(arrs)
 			END;
 			t := TypeNamed(p, ds);
@@ -850,7 +868,7 @@ VAR braces: BOOLEAN;
 			RETURN t
 		END Type;
 	BEGIN
-		IF ScanIfEqual(p, Scanner.Var) THEN
+		IF ScanIfEqual(p, SpecIdent.Var) THEN
 			access := {Ast.ParamIn, Ast.ParamOut}
 		ELSE
 			access := {}
@@ -886,10 +904,10 @@ PROCEDURE TypeProcedure(VAR p: Parser; ds: Ast.Declarations;
 VAR proc: Ast.ProcType;
 	t: Ast.Type;
 BEGIN
-	ASSERT(p.l = Scanner.Procedure);
+	ASSERT(p.l = SpecIdent.Procedure);
 	Scan(p);
 	proc := Ast.ProcTypeNew(TRUE);
-	IF nameBegin >= 0 THEN
+	IF 0 <= nameBegin THEN
 		t := proc;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
 	END;
@@ -901,13 +919,13 @@ PROCEDURE Type(VAR p: Parser; ds: Ast.Declarations;
                nameBegin, nameEnd: INTEGER): Ast.Type;
 VAR t: Ast.Type;
 BEGIN
-	IF p.l = Scanner.Array THEN
+	IF p.l = SpecIdent.Array THEN
 		t := Array(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Pointer THEN
+	ELSIF p.l = SpecIdent.Pointer THEN
 		t := Pointer(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Procedure THEN
+	ELSIF p.l = SpecIdent.Procedure THEN
 		t := TypeProcedure(p, ds, nameBegin, nameEnd)
-	ELSIF p.l = Scanner.Record THEN
+	ELSIF p.l = SpecIdent.Record THEN
 		t := Record(p, ds, nameBegin, nameEnd)
 	ELSIF p.l = Scanner.Ident THEN
 		t := TypeNamed(p, ds)
@@ -959,22 +977,22 @@ VAR if, else: Ast.If;
 		Scan(p);
 		CheckAst(p, Ast.IfNew(if, Expression(p, ds), NIL));
 		Ast.TurnIf(ds);
-		Expect(p, Scanner.Then, ErrExpectThen);
+		Expect(p, SpecIdent.Then, ErrExpectThen);
 		if.stats := statements(p, ds)
 		RETURN if
 	END Branch;
 BEGIN
-	ASSERT(p.l = Scanner.If);
+	ASSERT(p.l = SpecIdent.If);
 	if := Branch(p, ds);
 	elsif := if;
 	i := 1;
-	WHILE p.l = Scanner.Elsif DO
+	WHILE p.l = SpecIdent.Elsif DO
 		INC(i);
 		Ast.TurnElse(ds);
 		elsif.elsif := Branch(p, ds);
 		elsif := elsif.elsif
 	END;
-	IF ScanIfEqual(p, Scanner.Else) THEN
+	IF ScanIfEqual(p, SpecIdent.Else) THEN
 		Ast.TurnElse(ds);
 		CheckAst(p, Ast.IfNew(else, NIL, statements(p, ds)));
 		elsif.elsif := else
@@ -983,7 +1001,7 @@ BEGIN
 		DEC(i);
 		Ast.BackFromBranch(ds)
 	UNTIL i = 0;
-	Expect(p, Scanner.End, ErrExpectEnd)
+	Expect(p, SpecIdent.End, ErrExpectEnd)
 	RETURN if
 END If;
 
@@ -1054,10 +1072,10 @@ VAR case: Ast.Case;
 		CheckAst(p, Ast.CaseElementAdd(case, elem))
 	END Element;
 BEGIN
-	ASSERT(p.l = Scanner.Case);
+	ASSERT(p.l = SpecIdent.Case);
 	Scan(p);
 	CheckAst(p, Ast.CaseNew(case, Expression(p, ds)));
-	Expect(p, Scanner.Of, ErrExpectOf);
+	Expect(p, SpecIdent.Of, ErrExpectOf);
 	i := 1;
 	WHILE ScanIfEqual(p, Scanner.Alternative) DO ; END;
 	Element(p, ds, case);
@@ -1073,7 +1091,7 @@ BEGIN
 		DEC(i);
 		Ast.BackFromBranch(ds)
 	UNTIL i = 0;
-	Expect(p, Scanner.End, ErrExpectEnd)
+	Expect(p, SpecIdent.End, ErrExpectEnd)
 	RETURN case
 END Case;
 
@@ -1089,11 +1107,11 @@ END DecInLoops;
 PROCEDURE Repeat(VAR p: Parser; ds: Ast.Declarations): Ast.Repeat;
 VAR r: Ast.Repeat;
 BEGIN
-	ASSERT(p.l = Scanner.Repeat);
+	ASSERT(p.l = SpecIdent.Repeat);
 	INC(p.inLoops);
 		Scan(p);
 		CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
-		Expect(p, Scanner.Until, ErrExpectUntil);
+		Expect(p, SpecIdent.Until, ErrExpectUntil);
 	DecInLoops(p, ds);
 	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds)))
 	RETURN r
@@ -1104,7 +1122,7 @@ VAR f: Ast.For;
 	v: Ast.Var;
 	errName: ARRAY 12 OF CHAR;
 BEGIN
-	ASSERT(p.l = Scanner.For);
+	ASSERT(p.l = SpecIdent.For);
 	Scan(p);
 	IF p.l # Scanner.Ident THEN
 		errName := "FORITERATOR";
@@ -1117,42 +1135,42 @@ BEGIN
 	Scan(p);
 	Expect(p, Scanner.Assign, ErrExpectAssign);
 	CheckAst(p, Ast.ForNew(f, v, Expression(p, ds), NIL, 1, NIL));
-	Expect(p, Scanner.To, ErrExpectTo);
+	Expect(p, SpecIdent.To, ErrExpectTo);
 	CheckAst(p, Ast.ForSetTo(f, Expression(p, ds)));
-	IF p.l # Scanner.By THEN
+	IF p.l # SpecIdent.By THEN
 		CheckAst(p, Ast.ForSetBy(f, NIL))
 	ELSE
 		Scan(p);
 		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds)))
 	END;
 	INC(p.inLoops);
-		Expect(p, Scanner.Do, ErrExpectDo);
+		Expect(p, SpecIdent.Do, ErrExpectDo);
 		f.stats := statements(p, ds);
-		Expect(p, Scanner.End, ErrExpectEnd);
+		Expect(p, SpecIdent.End, ErrExpectEnd);
 	DecInLoops(p, ds)
 	RETURN f
 END For;
 
 PROCEDURE While(VAR p: Parser; ds: Ast.Declarations): Ast.While;
 VAR w, br: Ast.While;
-	elsif: Ast.WhileIf;
+    elsif: Ast.WhileIf;
 BEGIN
-	ASSERT(p.l = Scanner.While);
+	ASSERT(p.l = SpecIdent.While);
 	INC(p.inLoops);
 		Scan(p);
 		CheckAst(p, Ast.WhileNew(w, Expression(p, ds), NIL));
 		elsif := w;
-		Expect(p, Scanner.Do, ErrExpectDo);
+		Expect(p, SpecIdent.Do, ErrExpectDo);
 		w.stats := statements(p, ds);
 
-		WHILE ScanIfEqual(p, Scanner.Elsif) DO
+		WHILE ScanIfEqual(p, SpecIdent.Elsif) DO
 			CheckAst(p, Ast.WhileNew(br, Expression(p, ds), NIL));
 			elsif.elsif := br;
 			elsif := br;
-			Expect(p, Scanner.Do, ErrExpectDo);
+			Expect(p, SpecIdent.Do, ErrExpectDo);
 			elsif.stats := statements(p, ds)
 		END;
-		Expect(p, Scanner.End, ErrExpectEnd);
+		Expect(p, SpecIdent.End, ErrExpectEnd);
 	DecInLoops(p, ds)
 	RETURN w
 END While;
@@ -1183,11 +1201,11 @@ BEGIN
 END Call;
 
 PROCEDURE NotEnd(l: INTEGER): BOOLEAN;
-RETURN (l # Scanner.End)
-     & (l # Scanner.Return)
-     & (l # Scanner.Else)
-     & (l # Scanner.Elsif)
-     & (l # Scanner.Until)
+RETURN (l # SpecIdent.End)
+     & (l # SpecIdent.Return)
+     & (l # SpecIdent.Else)
+     & (l # SpecIdent.Elsif)
+     & (l # SpecIdent.Until)
      & (l # Scanner.Alternative)
      & (l # Scanner.EndOfFile)
 END NotEnd;
@@ -1217,15 +1235,15 @@ VAR stats, last: Ast.Statement;
 			ELSE
 				st := Call(p, ds, des)
 			END
-		ELSIF p.l = Scanner.If      THEN
+		ELSIF p.l = SpecIdent.If      THEN
 			st := If(p, ds)
-		ELSIF p.l = Scanner.Case    THEN
+		ELSIF p.l = SpecIdent.Case    THEN
 			st := Case(p, ds)
-		ELSIF p.l = Scanner.Repeat  THEN
+		ELSIF p.l = SpecIdent.Repeat  THEN
 			st := Repeat(p, ds)
-		ELSIF p.l = Scanner.For     THEN
+		ELSIF p.l = SpecIdent.For     THEN
 			st := For(p, ds)
-		ELSIF p.l = Scanner.While   THEN
+		ELSIF p.l = SpecIdent.While   THEN
 			st := While(p, ds)
 		ELSE
 			st := NIL
@@ -1273,7 +1291,7 @@ END Statements;
 
 PROCEDURE Return(VAR p: Parser; proc: Ast.Procedure);
 BEGIN
-	IF p.l = Scanner.Return THEN
+	IF p.l = SpecIdent.Return THEN
 		Log.StrLn("Return");
 
 		Scan(p);
@@ -1293,11 +1311,11 @@ END Return;
 PROCEDURE ProcBody(VAR p: Parser; proc: Ast.Procedure);
 BEGIN
 	declarations(p, proc);
-	IF ScanIfEqual(p, Scanner.Begin) THEN
+	IF ScanIfEqual(p, SpecIdent.Begin) THEN
 		proc.stats := Statements(p, proc)
 	END;
 	Return(p, proc);
-	Expect(p, Scanner.End, ErrExpectEnd);
+	Expect(p, SpecIdent.End, ErrExpectEnd);
 	IF p.l = Scanner.Ident THEN
 		IF ~Strings.IsEqualToChars(proc.name, p.s.buf, p.s.lexStart, p.s.lexEnd)
 		THEN
@@ -1318,7 +1336,7 @@ PROCEDURE Procedure(VAR p: Parser; ds: Ast.Declarations);
 VAR proc: Ast.Procedure;
 	nameStart, nameEnd: INTEGER;
 BEGIN
-	ASSERT(p.l = Scanner.Procedure);
+	ASSERT(p.l = SpecIdent.Procedure);
 	Scan(p);
 	ExpectIdent(p, nameStart, nameEnd, ErrExpectIdent);
 	CheckAst(p, Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd));
@@ -1330,17 +1348,17 @@ END Procedure;
 
 PROCEDURE Declarations(VAR p: Parser; ds: Ast.Declarations);
 BEGIN
-	IF p.l = Scanner.Const THEN
+	IF p.l = SpecIdent.Const THEN
 		Consts(p, ds)
 	END;
-	IF p.l = Scanner.Type THEN
+	IF p.l = SpecIdent.Type THEN
 		Types(p, ds)
 	END;
-	IF p.l = Scanner.Var THEN
+	IF p.l = SpecIdent.Var THEN
 		Scan(p);
 		Vars(p, ds)
 	END;
-	WHILE p.l = Scanner.Procedure DO
+	WHILE p.l = SpecIdent.Procedure DO
 		Procedure(p, ds);
 		Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
 	END
@@ -1365,7 +1383,7 @@ BEGIN
 			)
 		ELSE
 			p.err := FALSE;
-			WHILE (p.l < Scanner.Import)
+			WHILE (p.l < SpecIdent.Import)
 			    & (p.l # Scanner.Comma)
 			    & (p.l # Scanner.Semicolon)
 			    & (p.l # Scanner.EndOfFile)
@@ -1382,7 +1400,7 @@ PROCEDURE Module(VAR p: Parser; prov: Ast.Provider);
 VAR expectedName: BOOLEAN;
 BEGIN
 	Scan(p);
-	IF p.l # Scanner.Module THEN
+	IF p.l # SpecIdent.Module THEN
 		p.module := Ast.ModuleNew("  ", 0, 0, prov);
 		AddError(p, ErrExpectModule)
 	ELSE
@@ -1406,14 +1424,14 @@ BEGIN
 		END;
 		IF expectedName THEN
 			Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
-			IF p.l = Scanner.Import THEN
+			IF p.l = SpecIdent.Import THEN
 				Imports(p)
 			END;
 			Declarations(p, p.module);
-			IF ScanIfEqual(p, Scanner.Begin) THEN
+			IF ScanIfEqual(p, SpecIdent.Begin) THEN
 				p.module.stats := Statements(p, p.module)
 			END;
-			Expect(p, Scanner.End, ErrExpectEnd);
+			Expect(p, SpecIdent.End, ErrExpectEnd);
 			IF p.l = Scanner.Ident THEN
 				IF ~Strings.IsEqualToChars(p.module.name, p.s.buf,
 				                           p.s.lexStart, p.s.lexEnd)

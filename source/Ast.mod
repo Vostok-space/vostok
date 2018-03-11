@@ -22,6 +22,7 @@ IMPORT
 	Limits := TypeLimits,
 	V,
 	Scanner,
+	SpecIdent := OberonSpecIdent,
 	Strings := StringStore,
 	TranLim := TranslatorLimits,
 	Arithmetic;
@@ -540,7 +541,7 @@ TYPE
 
 VAR
 	types: ARRAY PredefinedTypesCount OF Type;
-	predefined: ARRAY Scanner.PredefinedLast - Scanner.PredefinedFirst + 1
+	predefined: ARRAY SpecIdent.PredefinedLast - SpecIdent.PredefinedFirst + 1
 	            OF Declaration;
 	booleans: ARRAY 2 OF ExprBoolean;
 	nil: ExprNil;
@@ -561,7 +562,7 @@ END PutChars;
 PROCEDURE NodeInit(VAR n: Node; id: INTEGER);
 BEGIN
 	ASSERT((NoId <= id) & (id <= LastId)
-	    OR (Scanner.PredefinedFirst <= id) & (id <= Scanner.PredefinedLast));
+	    OR (SpecIdent.PredefinedFirst <= id) & (id <= SpecIdent.PredefinedLast));
 	V.Init(n);
 	n.id := id;
 	n.emptyLines := 0;
@@ -878,7 +879,7 @@ BEGIN
 	THEN
 		err := ErrDeclarationNameHide
 	ELSIF ds.module.m.errorHide
-	    & (Scanner.Ident # Scanner.CheckPredefined(buf, begin, end))
+	    & SpecIdent.IsPredefined(err, buf, begin, end)
 	THEN
 		err := ErrPredefinedNameHide
 	ELSE
@@ -957,10 +958,10 @@ BEGIN
 	OR (d = NIL) & ((ds.up = NIL)
 	             OR (DeclarationLineSearch(ds.module.m, buf, begin, end) = NIL))
 	THEN
-		IF Scanner.Ident = Scanner.CheckPredefined(buf, begin, end) THEN
-			err := ErrNo
-		ELSE
+		IF SpecIdent.IsPredefined(err, buf, begin, end) THEN
 			err := ErrPredefinedNameHide
+		ELSE
+			err := ErrNo
 		END
 	ELSIF d = NIL THEN
 		err := ErrDeclarationNameHide
@@ -1218,7 +1219,7 @@ BEGIN
 	THEN
 		err := ErrDeclarationNameHide
 	ELSIF module.errorHide
-	    & (Scanner.Ident # Scanner.CheckPredefined(buf, begin, end))
+	    & SpecIdent.IsPredefined(err, buf, begin, end)
 	THEN
 		err := ErrPredefinedNameHide
 	ELSE
@@ -1488,10 +1489,9 @@ PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declara
 VAR d: Declaration;
 	l: INTEGER;
 BEGIN
-	l := Scanner.CheckPredefined(buf, begin, end);
-	Log.Str("SearchPredefined "); Log.Int(l); Log.Ln;
-	IF (Scanner.PredefinedFirst <= l) & (l <= Scanner.PredefinedLast) THEN
-		d := predefined[l - Scanner.PredefinedFirst];
+	IF SpecIdent.IsPredefined(l, buf, begin, end) THEN
+		Log.Str("SearchPredefined "); Log.Int(l); Log.Ln;
+		d := predefined[l - SpecIdent.PredefinedFirst];
 		ASSERT(d # NIL)
 	ELSE
 		d := NIL
@@ -2384,7 +2384,7 @@ VAR err: INTEGER;
 		     & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
 	END InSet;
 BEGIN
-	ASSERT((Scanner.RelationFirst <= relation) & (relation < Scanner.RelationLast));
+	ASSERT((Scanner.RelationFirst <= relation) & (relation <= Scanner.RelationLast));
 
 	NEW(e); ExprInit(e, IdRelation, TypeGet(IdBoolean));
 	e.exprs[0] := expr1;
@@ -2982,15 +2982,15 @@ VAR err, distance: INTEGER;
 		comp := call.designator.decl IS PredefinedProcedure;
 		IF comp THEN
 			id := call.designator.decl.id;
-			IF id = Scanner.New THEN
+			IF id = SpecIdent.New THEN
 				comp := tp.id = IdPointer
-			ELSIF id = Scanner.Abs THEN
+			ELSIF id = SpecIdent.Abs THEN
 				comp := tp.id IN {IdInteger, IdReal};
 				call.type := tp
-			ELSIF id = Scanner.Len THEN
+			ELSIF id = SpecIdent.Len THEN
 				comp := tp.id = IdArray
 			ELSE
-				comp := (id = Scanner.Ord)
+				comp := (id = SpecIdent.Ord)
 				      & (tp.id IN {IdChar, IdSet, IdLongSet, IdBoolean})
 			END
 		END
@@ -3002,7 +3002,7 @@ VAR err, distance: INTEGER;
 	BEGIN
 		id := call.designator.decl.id;
 		IF id # IdError THEN
-			IF (id # Scanner.Inc) & (id # Scanner.Dec)
+			IF (id # SpecIdent.Inc) & (id # SpecIdent.Dec)
 			OR (call.params.next # NIL)
 			THEN
 				err := ErrCallExcessParam
@@ -3083,7 +3083,7 @@ VAR err: INTEGER;
 	PROCEDURE CalcPredefined(call: ExprCall; v: Factor; VAR err: INTEGER);
 	BEGIN
 		CASE call.designator.decl.id OF
-		  Scanner.Abs:
+		  SpecIdent.Abs:
 			IF v.type.id = IdReal THEN
 				call.value := NIL
 				(* Из-за -0.0 NaN
@@ -3096,36 +3096,36 @@ VAR err: INTEGER;
 			ELSE ASSERT(v.type.id = IdInteger);
 				call.value := ExprIntegerNew(ABS(v(ExprInteger).int))
 			END
-		| Scanner.Odd:
+		| SpecIdent.Odd:
 			call.value := ExprBooleanGet(ODD(v(ExprInteger).int))
-		| Scanner.Lsl:
+		| SpecIdent.Lsl:
 			IF call.params.next.expr.value # NIL THEN
 				call.value := ExprIntegerNew(LSL(
 					v(ExprInteger).int,
 					call.params.next.expr.value(ExprInteger).int
 				))
 			END
-		| Scanner.Asr:
+		| SpecIdent.Asr:
 			IF call.params.next.expr.value # NIL THEN
 				call.value := ExprIntegerNew(ASR(
 					v(ExprInteger).int,
 					call.params.next.expr.value(ExprInteger).int
 				))
 			END
-		| Scanner.Ror:
+		| SpecIdent.Ror:
 			IF call.params.next.expr.value # NIL THEN
 				call.value := ExprIntegerNew(ASR(
 					v(ExprInteger).int,
 					call.params.next.expr.value(ExprInteger).int
 				))
 			END
-		| Scanner.Floor:
+		| SpecIdent.Floor:
 			IF FALSE THEN
 				call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
 			END
-		| Scanner.Flt:
+		| SpecIdent.Flt:
 			call.value := ExprRealNewByValue(FLT(v(ExprInteger).int))
-		| Scanner.Ord:
+		| SpecIdent.Ord:
 			IF v.type.id = IdChar THEN
 				call.value := v
 			ELSIF v IS ExprString THEN
@@ -3147,7 +3147,7 @@ VAR err: INTEGER;
 				Log.Int(v.type.id); Log.Ln;
 				Log.Int(v.id); Log.Ln
 			END
-		| Scanner.Chr:
+		| SpecIdent.Chr:
 			IF ~Limits.InCharRange(v(ExprInteger).int) THEN
 				err := ErrValueOutOfRangeOfChar
 			END;
@@ -3158,14 +3158,14 @@ BEGIN
 	err := ErrNo;
 	IF currentFormalParam # NIL THEN
 		err := ErrCallParamsNotEnough
-	ELSIF call.designator.decl.id = Scanner.Len THEN
+	ELSIF call.designator.decl.id = SpecIdent.Len THEN
 		(* TODO заменить на общую проверку корректности выбора параметра *)
 		IF (call.params.expr.type IS Array)
 		 & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value
 		END
-	ELSIF call.designator.decl.id = Scanner.Assert THEN
+	ELSIF call.designator.decl.id = SpecIdent.Assert THEN
 		IF (call.params.expr.value # NIL)
 		 & (call.params.expr.value IS ExprBoolean)
 		 & ~call.params.expr.value(ExprBoolean).bool
@@ -3644,7 +3644,7 @@ VAR tp: ProcType;
 	BEGIN
 		NEW(td); TypeInit(td, t);
 
-		predefined[s - Scanner.PredefinedFirst] := td;
+		predefined[s - SpecIdent.PredefinedFirst] := td;
 		types[t] := td
 	END TypeNew;
 
@@ -3652,87 +3652,87 @@ VAR tp: ProcType;
 	VAR td: PredefinedProcedure;
 	BEGIN
 		NEW(td); NodeInit(td^, s); DeclInit(td, NIL);
-		predefined[s - Scanner.PredefinedFirst] := td;
+		predefined[s - SpecIdent.PredefinedFirst] := td;
 		td.header := ProcTypeNew(FALSE);
 		td.type := td.header;
-		IF t > NoId THEN
+		IF NoId < t THEN
 			td.header.type := TypeGet(t)
 		END
 		RETURN td.header
 	END ProcNew;
 BEGIN
-	TypeNew(Scanner.Byte, IdByte);
-	TypeNew(Scanner.Integer, IdInteger);
-	TypeNew(Scanner.LongInt, IdLongInt);
-	TypeNew(Scanner.Char, IdChar);
-	TypeNew(Scanner.Set, IdSet);
-	TypeNew(Scanner.LongSet, IdLongSet);
-	TypeNew(Scanner.Boolean, IdBoolean);
-	TypeNew(Scanner.Real, IdReal);
-	TypeNew(Scanner.Real32, IdReal32);
+	TypeNew(SpecIdent.Byte, IdByte);
+	TypeNew(SpecIdent.Integer, IdInteger);
+	TypeNew(SpecIdent.LongInt, IdLongInt);
+	TypeNew(SpecIdent.Char, IdChar);
+	TypeNew(SpecIdent.Set, IdSet);
+	TypeNew(SpecIdent.LongSet, IdLongSet);
+	TypeNew(SpecIdent.Boolean, IdBoolean);
+	TypeNew(SpecIdent.Real, IdReal);
+	TypeNew(SpecIdent.Real32, IdReal32);
 	NEW(types[IdPointer]); NodeInit(types[IdPointer]^, IdPointer);
 	DeclInit(types[IdPointer], NIL);
 
 	typeInt := TypeGet(IdInteger);
-	tp := ProcNew(Scanner.Abs, IdInteger);
+	tp := ProcNew(SpecIdent.Abs, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Asr, IdInteger);
+	tp := ProcNew(SpecIdent.Asr, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Assert, NoId);
+	tp := ProcNew(SpecIdent.Assert, NoId);
 	ParamAddPredefined(tp, TypeGet(IdBoolean), {ParamIn});
 
-	tp := ProcNew(Scanner.Chr, IdChar);
+	tp := ProcNew(SpecIdent.Chr, IdChar);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Dec, NoId);
+	tp := ProcNew(SpecIdent.Dec, NoId);
 	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut});
 
-	tp := ProcNew(Scanner.Excl, NoId);
+	tp := ProcNew(SpecIdent.Excl, NoId);
 	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	typeReal := TypeGet(IdReal);
-	tp := ProcNew(Scanner.Floor, IdInteger);
+	tp := ProcNew(SpecIdent.Floor, IdInteger);
 	ParamAddPredefined(tp, typeReal, {ParamIn});
 
-	tp := ProcNew(Scanner.Flt, IdReal);
+	tp := ProcNew(SpecIdent.Flt, IdReal);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Inc, NoId);
+	tp := ProcNew(SpecIdent.Inc, NoId);
 	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut});
 
-	tp := ProcNew(Scanner.Incl, NoId);
+	tp := ProcNew(SpecIdent.Incl, NoId);
 	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Len, IdInteger);
+	tp := ProcNew(SpecIdent.Len, IdInteger);
 	ParamAddPredefined(tp, ArrayGet(typeInt, NIL), {ParamIn});
 
-	tp := ProcNew(Scanner.Lsl, IdInteger);
+	tp := ProcNew(SpecIdent.Lsl, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.New, NoId);
+	tp := ProcNew(SpecIdent.New, NoId);
 	ParamAddPredefined(tp, TypeGet(IdPointer), {ParamIn, ParamOut});
 
-	tp := ProcNew(Scanner.Odd, IdBoolean);
+	tp := ProcNew(SpecIdent.Odd, IdBoolean);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Ord, IdInteger);
+	tp := ProcNew(SpecIdent.Ord, IdInteger);
 	ParamAddPredefined(tp, TypeGet(IdChar), {ParamIn});
 
-	tp := ProcNew(Scanner.Pack, NoId);
+	tp := ProcNew(SpecIdent.Pack, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Ror, IdInteger);
+	tp := ProcNew(SpecIdent.Ror, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(Scanner.Unpk, NoId);
+	tp := ProcNew(SpecIdent.Unpk, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut})
 END PredefinedDeclarationsInit;
