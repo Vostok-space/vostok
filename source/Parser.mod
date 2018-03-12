@@ -115,10 +115,10 @@ BEGIN
 		INC(p.errorsCount);
 		Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
 		Log.Int(p.s.line); Log.Str(":");
-		Log.Int(p.s.column + p.s.tabs * 3); Log.Ln;
+		Log.Int(p.s.column); Log.Ln;
 		p.err := err > ErrAstBegin;
 		IF p.module # NIL THEN
-			Ast.AddError(p.module, err, p.s.line, p.s.column, p.s.tabs)
+			Ast.AddError(p.module, err, p.s.line, p.s.column)
 		END
 	END;
 	IF p.opt.multiErrors THEN
@@ -126,7 +126,7 @@ BEGIN
 		Log.Str(". ");
 		Log.Int(p.s.line + 1);
 		Log.Str(":");
-		Log.Int(p.s.column + p.s.tabs * 3);
+		Log.Int(p.s.column);
 		Log.Ln
 	END
 END AddError;

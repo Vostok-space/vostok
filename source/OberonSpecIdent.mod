@@ -16,7 +16,7 @@
  *)
 MODULE OberonSpecIdent;
 
-  IMPORT Log, Utf8;
+  IMPORT Utf8;
 
   CONST
     Array*          = 100;

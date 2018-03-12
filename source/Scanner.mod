@@ -94,7 +94,7 @@ CONST
 TYPE
 	Scanner* = RECORD(V.Base)
 		in: Stream.PIn;
-		line*, column*, tabs*: INTEGER;
+		line*, column*: INTEGER;
 		buf*: ARRAY BlockSize * 2 + 1 OF CHAR;
 		ind: INTEGER;
 
@@ -105,7 +105,8 @@ TYPE
 		real*: REAL;
 
 		opt*: RECORD
-			cyrillic*: BOOLEAN
+			cyrillic*: BOOLEAN;
+			tabSize*: INTEGER
 		END;
 
 		commentOfs, commentEnd: INTEGER
@@ -118,10 +119,10 @@ PROCEDURE PreInit(VAR s: Scanner);
 BEGIN
 	V.Init(s);
 	s.column := 0;
-	s.tabs := 0;
 	s.line := 0;
 	s.commentOfs := -1;
-	s.opt.cyrillic := FALSE
+	s.opt.cyrillic := FALSE;
+	s.opt.tabSize := 8
 END PreInit;
 
 PROCEDURE Init*(VAR s: Scanner; in: Stream.PIn);
@@ -459,11 +460,11 @@ BEGIN
 		INC(column)
 	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
-		INC(s.tabs)
+		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
 	ELSIF s.buf[i] = Utf8.NewLine DO
 		INC(s.line);
 		INC(s.emptyLines);
-		column := 0; s.tabs := 0;
+		column := 0;
 		INC(i)
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)

@@ -220,7 +220,7 @@ TYPE
 
 	Error* = POINTER TO RECORD(Node)
 		code*: INTEGER;
-		line*, column*, tabs*, bytes*: INTEGER;
+		line*, column*, bytes*: INTEGER;
 		next*: Error
 	END;
 
@@ -1343,7 +1343,7 @@ BEGIN
 	RETURN err
 END ProcTypeSetReturn;
 
-PROCEDURE AddError*(m: Module; error, line, column, tabs: INTEGER);
+PROCEDURE AddError*(m: Module; error, line, column: INTEGER);
 VAR e: Error;
 BEGIN
 	NEW(e); NodeInit(e^, NoId);
@@ -1351,7 +1351,6 @@ BEGIN
 	e.code := error;
 	e.line := line;
 	e.column := column;
-	e.tabs := tabs;
 	IF m.errLast = NIL THEN
 		m.errors := e
 	ELSE

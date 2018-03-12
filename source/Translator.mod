@@ -111,7 +111,7 @@ BEGIN
 					Out.Int(i, 2); Out.String(") ");
 					ErrorMessage(err.code);
 					Out.String(" "); Out.Int(err.line + 1, 0);
-					Out.String(" : "); Out.Int(err.column + err.tabs * 3, 0);
+					Out.String(" : "); Out.Int(err.column, 0);
 					Out.Ln
 				END;
 
