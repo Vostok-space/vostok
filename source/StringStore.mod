@@ -26,7 +26,8 @@ CONST
 	BlockSize = 256;
 
 TYPE
-	Block* = POINTER TO RECORD(V.Base)
+	Block* = POINTER TO RBlock;
+	RBlock = RECORD(V.Base)
 		s*: ARRAY BlockSize + 1 OF CHAR;
 		next*: Block;
 		num: INTEGER
@@ -85,7 +86,7 @@ VAR
 BEGIN
 	ASSERT(ODD(LEN(s)) OR (j <= end));
 	ASSERT((0 <= j) & (j < LEN(s) - 1));
-	ASSERT((0 <= end) & (end < LEN(s) - 1));
+	ASSERT((0 <= end) & (end < LEN(s)));
 	b := store.last;
 	i := store.ofs;
 	V.Init(w);
@@ -95,14 +96,18 @@ BEGIN
 	(*Log.Str("Put "); Log.Int(b.num); Log.Str(":"); Log.Int(i); Log.Ln;*)
 	WHILE j # end DO
 		IF i = LEN(b.s) - 1 THEN
-			ASSERT(i # w.ofs);
+			(*ASSERT(i # w.ofs);*)
 			b.s[i] := Utf8.NewPage;
 			AddBlock(b, i)
 		END;
 		b.s[i] := s[j];
 		ASSERT(s[j] # Utf8.NewPage);
 		INC(i);
-		j := (j + 1) MOD (LEN(s) - 1)
+
+		INC(j);
+		IF (j = LEN(s) - 1) & (end < LEN(s) - 1) THEN
+			j := 0
+		END
 	END;
 	b.s[i] := Utf8.Null;
 	IF i < LEN(b.s) - 2 THEN

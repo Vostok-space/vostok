@@ -4,7 +4,8 @@ CONST
 	UnLoop = TRUE;
 
 TYPE
-	Ptr = POINTER TO RECORD
+	Ptr = POINTER TO RPtr;
+	RPtr = RECORD
 		i: INTEGER;
 		next: Ptr
 	END;

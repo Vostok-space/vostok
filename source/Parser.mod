@@ -712,7 +712,7 @@ BEGIN
 	END
 END Vars;
 
-PROCEDURE Record(VAR p: Parser; ds: Ast.Declarations;
+PROCEDURE Record(VAR p: Parser; ds: Ast.Declarations; ptr: Ast.Pointer;
                  nameBegin, nameEnd: INTEGER): Ast.Record;
 VAR rec, base: Ast.Record;
 	t: Ast.Type;
@@ -772,6 +772,9 @@ BEGIN
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;
 	rec := Ast.RecordNew(ds, base);
+	IF ptr # NIL THEN
+		Ast.PointerSetRecord(ptr, rec)
+	END;
 	IF nameBegin >= 0 THEN
 		t := rec;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t));
@@ -806,10 +809,8 @@ BEGIN
 	END;
 	Expect(p, SpecIdent.To, ErrExpectTo);
 	IF p.l = SpecIdent.Record THEN
-		tp.type := Record(p, ds, -1, -1);
-		IF tp.type # NIL THEN
-			tp.type(Ast.Record).pointer := tp
-		END
+		typeDecl := Record(p, ds, tp, -1, -1);
+		ASSERT(typeDecl.pointer = tp)
 	ELSIF p.l = Scanner.Ident THEN
 		decl := Ast.DeclarationSearch(ds, p.s.buf, p.s.lexStart, p.s.lexEnd);
 		IF decl = NIL THEN (* опережающее объявление ссылка на запись *)
@@ -926,7 +927,7 @@ BEGIN
 	ELSIF p.l = SpecIdent.Procedure THEN
 		t := TypeProcedure(p, ds, nameBegin, nameEnd)
 	ELSIF p.l = SpecIdent.Record THEN
-		t := Record(p, ds, nameBegin, nameEnd)
+		t := Record(p, ds, NIL, nameBegin, nameEnd)
 	ELSIF p.l = Scanner.Ident THEN
 		t := TypeNamed(p, ds)
 	ELSE

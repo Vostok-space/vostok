@@ -44,7 +44,8 @@ CONST
 	ErrParse = -1;
 
 TYPE
-	Container = POINTER TO RECORD
+	Container = POINTER TO RContainer;
+	RContainer = RECORD
 		next: Container;
 		m: Ast.Module
 	END;

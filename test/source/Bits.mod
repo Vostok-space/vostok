@@ -20,8 +20,8 @@ MODULE Bits;
 
  PROCEDURE Go*;
  BEGIN
-    Uint64;
-    Uint32
+   Uint64;
+   Uint32
  END Go;
 
 END Bits.

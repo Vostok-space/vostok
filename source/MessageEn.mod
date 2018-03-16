@@ -229,8 +229,12 @@ BEGIN
 		C("Assertion always false")
 	| Ast.ErrVarOfRecordForward:
 		C("Declared variable which type is incompletely declared record")
+	| Ast.ErrVarOfPointerToRecordForward:
+		C("Declared variable which type is pointer to incompletely declared record")
 	| Ast.ErrArrayTypeOfRecordForward:
 		C("Incompletely declared record is used as subtype of array")
+	| Ast.ErrArrayTypeOfPointerToRecordForward:
+		C("Pointer to incompletely declared record is used as subtype of array")
 	| Ast.ErrDeclarationUnused:
 		C("Exist unused declaration in the scope")
 	| Ast.ErrProcNestedTooDeep:

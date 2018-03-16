@@ -131,10 +131,13 @@ CONST
 	ErrRecordForwardUndefined*      = -95;
 	ErrPointerToNotRecord*          = -96;
 	ErrVarOfRecordForward*          = -97;
-	ErrArrayTypeOfRecordForward*    = -98;
-	ErrAssertConstFalse*            = -99;
-	ErrDeclarationUnused*           = -100;
-	ErrProcNestedTooDeep*           = -101;
+	ErrVarOfPointerToRecordForward* = -98;
+	ErrArrayTypeOfRecordForward*    = -99;
+	ErrArrayTypeOfPointerToRecordForward*
+	                                = -100;
+	ErrAssertConstFalse*            = -101;
+	ErrDeclarationUnused*           = -102;
+	ErrProcNestedTooDeep*           = -103;
 
 	ErrMin*                         = -200;
 
@@ -218,7 +221,8 @@ TYPE
 		ext*: V.PBase
 	END;
 
-	Error* = POINTER TO RECORD(Node)
+	Error* = POINTER TO RError;
+	RError = RECORD(Node)
 		code*: INTEGER;
 		line*, column*, bytes*: INTEGER;
 		next*: Error
@@ -267,7 +271,8 @@ TYPE
 
 	Pointer* = POINTER TO RPointer;
 
-	VarState = POINTER TO RECORD
+	VarState = POINTER TO RVarState;
+	RVarState = RECORD
 		inited*: SET;
 		inCondition: BOOLEAN;
 
@@ -280,11 +285,13 @@ TYPE
 		checkInit*: BOOLEAN
 	END;
 
-	Record* = POINTER TO RECORD(RConstruct)
+	Record* = POINTER TO RRecord;
+	RRecord = RECORD(RConstruct)
 		base*   : Record;
 		vars*   : Var;
 		pointer*: Pointer;
-		needTag*: BOOLEAN
+		needTag*,
+		complete: BOOLEAN
 	END;
 
 	RPointer* = RECORD(RConstruct)
@@ -292,7 +299,8 @@ TYPE
 	END;
 
 	NeedTagList = POINTER TO RNeedTagList;
-	FormalParam* = POINTER TO RECORD(RVar)
+	FormalParam* = POINTER TO RFormalParam;
+	RFormalParam = RECORD(RVar)
 		access*: SET;
 
 		needTag*: NeedTagList;
@@ -431,7 +439,8 @@ TYPE
 
 	ExprNil* = POINTER TO RECORD(RFactor) END;
 
-	ExprSet* = POINTER TO RECORD(RFactor)
+	ExprSet* = POINTER TO RExprSet;
+	RExprSet = RECORD(RFactor)
 		set*: LongSet;
 		exprs*: ARRAY 2 OF Expression;
 
@@ -456,7 +465,8 @@ TYPE
 		extType*: Type
 	END;
 
-	ExprSum* = POINTER TO RECORD(RExpression)
+	ExprSum* = POINTER TO RExprSum;
+	RExprSum = RECORD(RExpression)
 		add*: INTEGER;
 		term*: Expression;
 
@@ -469,7 +479,8 @@ TYPE
 		expr*: Expression (* Factor or ExprTerm *)
 	END;
 
-	Parameter* = POINTER TO RECORD(Node)
+	Parameter* = POINTER TO RParameter;
+	RParameter = RECORD(Node)
 		expr*: Expression;
 		next*: Parameter;
 		distance*: INTEGER
@@ -496,14 +507,16 @@ TYPE
 	If* = POINTER TO RECORD(RWhileIf)
 	END;
 
-	CaseLabel* = POINTER TO RECORD(Node)
+	CaseLabel* = POINTER TO RCaseLabel;
+	RCaseLabel = RECORD(Node)
 		value*: INTEGER;
 		qual*: Declaration;
 
 		right*, (* правая часть диапазона *)
 		next*: CaseLabel (* следующий элемент списка меток *)
 	END;
-	CaseElement* = POINTER TO RECORD(Node)
+	CaseElement* = POINTER TO RCaseElement;
+	RCaseElement = RECORD(Node)
 		labels*: CaseLabel;
 		stats*: Statement;
 		next*: CaseElement
@@ -552,7 +565,7 @@ VAR
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
-	IF begin >= 0 THEN
+	IF 0 <= begin THEN
 		Strings.Put(m.store, w, s, begin, end)
 	ELSE
 		Strings.Put(m.store, w, "#error", 0, 5)
@@ -1449,19 +1462,22 @@ BEGIN
 	r.base := base
 END RecordSetBase;
 
-PROCEDURE RecNew(VAR r: Record);
+PROCEDURE RecNew(VAR r: Record; id: INTEGER);
 BEGIN
-	NEW(r); TypeInit(r, IdRecordForward);
+	ASSERT(id IN {IdRecord, IdRecordForward});
+
+	NEW(r); TypeInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
-	r.needTag := FALSE
+	r.needTag := FALSE;
+	r.complete := FALSE
 END RecNew;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
 VAR r: Record;
 BEGIN
-	RecNew(r);
+	RecNew(r, IdRecord);
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
@@ -1470,7 +1486,7 @@ PROCEDURE RecordForwardNew*(ds: Declarations;
                             name: ARRAY OF CHAR; begin, end: INTEGER): Record;
 VAR r: Record;
 BEGIN
-	RecNew(r);
+	RecNew(r, IdRecordForward);
 	DeclConnect(r, ds, name, begin, end);
 	INC(ds.recordForwardCount)
 	RETURN r
@@ -1478,9 +1494,10 @@ END RecordForwardNew;
 
 PROCEDURE RecordEnd*(r: Record): INTEGER;
 BEGIN
-	ASSERT(r.id = IdRecordForward);
+	ASSERT(r.id IN {IdRecord, IdRecordForward});
 	r.id := IdRecord;
-	r.used := TRUE
+	r.used := TRUE;
+	r.complete := TRUE
 	RETURN ErrNo
 END RecordEnd;
 
@@ -2092,9 +2109,15 @@ BEGIN
 		d.type := t;
 		d := d.next
 	END;
-	IF t.id # IdRecordForward THEN
-		err := ErrNo
-	ELSE
+
+	err := ErrNo;
+	IF t.id = IdPointer THEN
+		IF (t.type.id = IdRecord) & ~t.type(Record).complete THEN
+			err := ErrVarOfPointerToRecordForward
+		END
+	ELSIF (t.id = IdRecordForward)
+	   OR (t.id = IdRecord) & ~t(Record).complete
+	THEN
 		err := ErrVarOfRecordForward
 	END
 	RETURN err
@@ -2105,9 +2128,15 @@ VAR err: INTEGER;
 BEGIN
 	ASSERT(a.type = NIL);
 	a.type := t;
-	IF t.id # IdRecordForward THEN
-		err := ErrNo
-	ELSE
+
+	err := ErrNo;
+	IF t.id = IdPointer THEN
+		IF (t.type.id = IdRecord) & ~t.type(Record).complete THEN
+			err := ErrArrayTypeOfPointerToRecordForward
+		END
+	ELSIF (t.id = IdRecordForward)
+	   OR (t.id = IdRecord) & ~t(Record).complete
+	THEN
 		err := ErrArrayTypeOfRecordForward
 	END
 	RETURN err
@@ -3805,6 +3834,7 @@ BEGIN
 				UnlinkRecord(p.type(Record))
 			END
 		| IdRecord:
+		| IdRecordForward:
 			UnlinkRecord(p(Record));
 		| IdArray:
 			p(Array).count := NIL

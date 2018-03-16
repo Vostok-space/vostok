@@ -7,7 +7,8 @@ CONST
 	Print = FALSE;
 
 TYPE
-	List = POINTER TO RECORD
+	List = POINTER TO RList;
+	RList = RECORD
 		val: INTEGER;
 		next : List
 	END;

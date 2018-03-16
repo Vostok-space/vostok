@@ -228,8 +228,12 @@ BEGIN
 		C("Выражение в Assert всегда ложно")
 	| Ast.ErrVarOfRecordForward:
 		C("Объявлена переменная, чей тип - это недообъявленная запись")
+	| Ast.ErrVarOfPointerToRecordForward:
+		C("Объявлена переменная, чей тип - это указатель на недообъявленную запись")
 	| Ast.ErrArrayTypeOfRecordForward:
 		C("Недообъявленная запись в качестве подтипа массива")
+	| Ast.ErrArrayTypeOfPointerToRecordForward:
+		C("Указатель на недообъявленную запись в качестве подтипа массива")
 	| Ast.ErrDeclarationUnused:
 		C("Существует незадействованное объявление в этой области видимости")
 	| Ast.ErrProcNestedTooDeep:
