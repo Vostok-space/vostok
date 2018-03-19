@@ -282,7 +282,9 @@ TYPE
 	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
 		state: VarState;
-		checkInit*: BOOLEAN
+
+		checkInit*,
+		inVarParam*: BOOLEAN
 	END;
 
 	Record* = POINTER TO RRecord;
@@ -369,7 +371,9 @@ TYPE
 	END;
 
 	RProcedure* = RECORD(RGeneralProcedure)
-		deep*: INTEGER
+		deep*: INTEGER;
+
+		usedAsValue*: BOOLEAN
 	END;
 
 	PredefinedProcedure* = POINTER TO RECORD(RGeneralProcedure)
@@ -1143,7 +1147,8 @@ BEGIN
 	v.type := NIL;
 
 	NEW(v.state); VarStateRootInit(v.state);
-	v.checkInit := FALSE;
+	v.checkInit  := FALSE;
+	v.inVarParam := FALSE;
 
 	IF ds.vars = NIL THEN
 		ds.vars := v
@@ -1212,7 +1217,8 @@ BEGIN
 	v.needTag := NIL;
 
 	NEW(v.state); VarStateRootInit(v.state);
-	v.checkInit := FALSE;
+	v.checkInit  := FALSE;
+	v.inVarParam := FALSE;
 	IF ParamIn IN v.access THEN
 		v.state.inited := {InitedValue}
 	ELSE
@@ -1889,10 +1895,29 @@ END DesignatorNew;
 PROCEDURE DesignatorUsed*(d: Designator; varParam, inLoop: BOOLEAN): INTEGER;
 VAR err: INTEGER;
     v: Var;
+
+	PROCEDURE InVarParam(v: Var; sel: Selector);
+	BEGIN
+		IF sel # NIL THEN
+			WHILE sel.next # NIL DO
+				sel := sel.next
+			END;
+			IF sel IS SelRecord THEN
+				sel(SelRecord).var.inVarParam := TRUE
+			END
+		ELSE
+			v.inVarParam := TRUE
+		END;
+
+	END InVarParam;
 BEGIN
 	err := ErrNo;
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
+
+		IF varParam THEN
+			InVarParam(v, d.sel)
+		END;
 
 		IF (v.type.id = IdPointer)
 		 & (d.sel # NIL)
@@ -1902,7 +1927,7 @@ BEGIN
 		   & ({} # (v.state.inited * {InitedNo, InitedNil}))
 		   )
 		THEN
-			Log.Turn(TRUE); Log.Int(ORD(v.state.inited)); Log.Ln; Log.Turn(FALSE);
+			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized (* TODO *)
 		ELSIF varParam THEN
 			(*
@@ -1928,6 +1953,8 @@ BEGIN
 			v.checkInit := TRUE
 		END;
 		INCL(v.state.inited, Used)
+	ELSIF varParam & (d.decl.id = IdProc) THEN
+		d.decl(Procedure).usedAsValue := TRUE
 	END;
 	d.decl.used := TRUE
 	RETURN err
@@ -1948,7 +1975,7 @@ BEGIN
 	IF (d # NIL) & (d IS Var) THEN
 		len := 0;
 		IF Strings.CopyToChars(name, len, d.name) THEN
-			Out.String(name); Out.Ln
+			Log.StrLn(name)
 		END;
 		err := ErrVarMayUninitialized
 	ELSE
@@ -2945,6 +2972,7 @@ BEGIN
 	DeclarationsConnect(p, ds, buf, begin, end);
 	p.header := ProcTypeNew(FALSE);
 	p.return := NIL;
+	p.usedAsValue := FALSE;
 	IF ds.up = NIL THEN
 		p.deep := 0
 	ELSE
@@ -3643,7 +3671,9 @@ BEGIN
 		 & ~CompatibleAsStrings(des.type, expr)
 		THEN
 			IF ~CompatibleAsIntAndByte(des.type, expr.type) THEN
-				Out.Int(des.type.id, 0); Out.String(" "); Out.Int(expr.type.id, 0); Out.Ln;
+				Log.Str("ErrAssignIncompatibleType because of " );
+				Log.Int(des.type.id); Log.Str(" "); Log.Int(expr.type.id);
+				Log.Ln;
 				err := ErrAssignIncompatibleType
 			ELSIF (des.type.id = IdByte)
 			    & (expr.value # NIL)
@@ -3651,6 +3681,12 @@ BEGIN
 			THEN
 				err := ErrValueOutOfRangeOfByte
 			END
+		END;
+
+		IF (des.type.id = IdProcType) & (err = ErrNo)
+		 & (expr(Designator).decl.id = IdProc)
+		THEN
+			expr(Designator).decl(Procedure).usedAsValue := TRUE
 		END
 	END
 	RETURN err

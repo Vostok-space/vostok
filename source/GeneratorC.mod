@@ -3426,13 +3426,8 @@ VAR out: MOut;
 		Text.StrLn(gen, "o7_init(argc, argv);");
 		ImportInit(gen, module.import);
 		TagsInit(gen);
-		IF module.stats # NIL THEN
-			Statements(gen, module.stats)
-		END;
-		WHILE cmd # NIL DO
-			Statement(gen, cmd);
-			cmd := cmd.next
-		END;
+		Statements(gen, module.stats);
+		Statements(gen, cmd);
 		IF gen.opt.memManager = MemManagerCounter THEN
 			ReleaseVars(gen, module.vars);
 			ImportDone(gen, module.import)

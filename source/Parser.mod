@@ -1182,7 +1182,7 @@ VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
 	Scan(p);
-	CheckAst(p, Ast.AssignNew(st, p.inLoops > 0, des, Expression(p, ds)))
+	CheckAst(p, Ast.AssignNew(st, 0 < p.inLoops, des, Expression(p, ds)))
 	RETURN st
 END Assign;
 
