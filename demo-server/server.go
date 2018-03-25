@@ -26,6 +26,7 @@ import (
   "io/ioutil"
   "errors"
   "runtime"
+  "time"
 )
 
 const (
@@ -36,10 +37,10 @@ func getModuleName(source string) (name string) {
   var (module, semicolon int)
   name = "";
   module = strings.Index(source, kwModule);
-  if module >= 0 {
+  if 0 <= module {
     module += len(kwModule);
     semicolon = strings.Index(source[module:], ";");
-    if semicolon >= 0 {
+    if 0 <= semicolon {
       name = strings.TrimSpace(source[module: semicolon + module])
     }
   }
@@ -48,7 +49,7 @@ func getModuleName(source string) (name string) {
 
 func saveModule(name, source string) (tmp string, err error) {
   var (filename string)
-  if len(name) > 0 {
+  if 0 < len(name) {
     tmp = fmt.Sprintf("%s/o7c", os.TempDir());
     err = os.Mkdir(tmp, 0777);
     tmp, err = ioutil.TempDir(tmp, name);
@@ -62,9 +63,9 @@ func saveModule(name, source string) (tmp string, err error) {
   return tmp, err
 }
 
-func run(source, script, cc string) (output []byte, err error) {
+func run(source, script, cc string, timeout int) (output []byte, err error) {
   var (
-    name, tmp, bin string;
+    name, tmp, bin, timeOut string;
     cmd *exec.Cmd
   )
   name = getModuleName(source);
@@ -75,26 +76,33 @@ func run(source, script, cc string) (output []byte, err error) {
     } else {
       bin = fmt.Sprintf("%v/%v", tmp, name)
     }
+
     cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
                        "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {
-      if runtime.GOOS == "windows" {
-        cmd = exec.Command(bin)
-      } else {
-        cmd = exec.Command("timeout", "5", bin)
-      }
+      cmd = exec.Command(bin);
+      timeOut = "";
+      output = nil;
+      go func() {
+        time.Sleep(time.Second * time.Duration(timeout));
+        if output == nil {
+          cmd.Process.Kill();
+          timeOut = "<time is out>\n"
+        }
+      }();
       output, err = cmd.CombinedOutput();
-      fmt.Print(string(output));
+      output = append(output, timeOut...);
+      fmt.Print(string(output))
     }
   } else {
     output = nil
   }
-  return output, err;
+  return output, err
 }
 
-func handler(w http.ResponseWriter, r *http.Request, cc string) {
+func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
   var (
     m, s string
     out []byte
@@ -105,7 +113,7 @@ func handler(w http.ResponseWriter, r *http.Request, cc string) {
   } else {
     m = r.FormValue("module");
     s = r.FormValue("script");
-    out, err = run(m, s, cc);
+    out, err = run(m, s, cc, timeout);
     if err == nil {
       w.Write(out)
     } else {
@@ -116,19 +124,20 @@ func handler(w http.ResponseWriter, r *http.Request, cc string) {
 
 func main() {
   var (
-    port *int;
+    port, timeout *int;
     cc *string;
     err error
   )
-  port = flag.Int("port", 8080, "");
-  cc = flag.String("cc", "tcc", "");
+  port    = flag.Int("port", 8080, "tcp/ip");
+  timeout = flag.Int("timeout", 5, "in seconds");
+  cc      = flag.String("cc", "tcc", "c compiler");
   flag.Parse();
 
   http.Handle("/", http.FileServer(http.Dir(".")));
   http.HandleFunc(
     "/run",
     func(w http.ResponseWriter, r *http.Request) {
-      handler(w, r, *cc)
+      handler(w, r, *cc, *timeout)
     });
   err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil);
   if err != nil {
