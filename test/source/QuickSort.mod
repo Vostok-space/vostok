@@ -32,7 +32,7 @@ END Lr;
 
 PROCEDURE SortLR*(VAR a: ARRAY OF INTEGER; l, r: INTEGER);
 BEGIN
-	ASSERT(l >= 0);
+	ASSERT(0 <= l);
 	ASSERT(r < LEN(a));
 	ASSERT(l <= r);
 	Lr(a, l, r)

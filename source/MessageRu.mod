@@ -141,7 +141,7 @@ BEGIN
 	| Ast.ErrImportModuleWithError:
 		C("Импортированный модуль содержит ошибки")
 	| Ast.ErrDerefToNotPointer:
-		C("Разыменовывание применено не к указателю")
+		C("Разыменование применено не к указателю")
 	| Ast.ErrArrayLenLess1:
 		C("Длина массива должна быть > 0")
 	| Ast.ErrArrayLenTooBig:
@@ -417,7 +417,7 @@ BEGIN
 	| Cli.ErrTooManyModuleDirs:
 		S("Cлишком много путей с модулями")
 	| Cli.ErrTooLongCDirs:
-		S("Суммарная длина путей с .c-файлами слишком велика")
+		S("Общая длина путей с .c-файлами слишком велика")
 	| Cli.ErrTooLongCc:
 		S("Длина опций компилятора C слишком велика")
 	| Cli.ErrTooLongTemp:

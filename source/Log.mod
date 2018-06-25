@@ -95,6 +95,6 @@ BEGIN
 END Off;
 
 BEGIN
-	init := FALSE;
+	init  := FALSE;
 	state := FALSE
 END Log.

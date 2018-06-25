@@ -1,4 +1,4 @@
-(*  English messages for interface
+(*  Wrapper for modules with localized messages for interface
  *  Copyright (C) 2018 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,61 +16,79 @@
  *)
 MODULE Message;
 
-IMPORT Env := OsEnv, Platform, Ru := MessageRu, En := MessageEn;
+IMPORT Env := OsEnv, Platform, LocaleParser,
+       MessageUa, MessageRu, MessageEn;
 
-VAR ru: BOOLEAN;
+CONST
+	En = 0;
+	Ru = 1;
+	Ua = 2;
+
+VAR lang: INTEGER;
 
 PROCEDURE AstError*(code: INTEGER);
 BEGIN
-	IF ru THEN
-		Ru.AstError(code)
-	ELSE
-		En.AstError(code)
+	CASE lang OF
+	  En: MessageEn.AstError(code)
+	| Ru: MessageRu.AstError(code)
+	| Ua: MessageUa.AstError(code)
 	END
 END AstError;
 
 PROCEDURE ParseError*(code: INTEGER);
 BEGIN
-	IF ru THEN
-		Ru.ParseError(code)
-	ELSE
-		En.ParseError(code)
+	CASE lang OF
+	  En: MessageEn.ParseError(code)
+	| Ru: MessageRu.ParseError(code)
+	| Ua: MessageUa.ParseError(code)
 	END
 END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-	IF ru THEN
-		Ru.Usage(full)
-	ELSE
-		En.Usage(full)
+	CASE lang OF
+	  En: MessageEn.Usage(full)
+	| Ru: MessageRu.Usage(full)
+	| Ua: MessageUa.Usage(full)
 	END
 END Usage;
 
 PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
 BEGIN
-	IF ru THEN
-		Ru.CliError(err, cmd)
-	ELSE
-		En.CliError(err, cmd)
+	CASE lang OF
+	  En: MessageEn.CliError(err, cmd)
+	| Ru: MessageRu.CliError(err, cmd)
+	| Ua: MessageUa.CliError(err, cmd)
 	END
 END CliError;
 
 PROCEDURE Text*(str: ARRAY OF CHAR);
 BEGIN
-	IF ru THEN
-		Ru.Text(str)
-	ELSE
-		En.Text(str)
+	CASE lang OF
+	  En: MessageEn.Text(str)
+	| Ru: MessageRu.Text(str)
+	| Ua: MessageUa.Text(str)
 	END
 END Text;
 
 PROCEDURE InitLang;
-VAR lang: ARRAY 16 OF CHAR;
+VAR env: ARRAY 16 OF CHAR;
     ofs: INTEGER;
+    lng, state: ARRAY 2 OF CHAR;
+    enc: ARRAY 5 OF CHAR;
 BEGIN
 	ofs := 0;
-	ru := Platform.Posix & Env.Get(lang, ofs, "LANG") & (lang = "ru_RU.UTF-8")
+	IF ~(  Platform.Posix & Env.Get(env, ofs, "LANG") 
+	     & LocaleParser.Parse(env, lng, state, enc) & (enc = "UTF-8")  )
+	THEN
+		lang := En
+	ELSIF lng = "ru" THEN
+		lang := Ru
+	ELSIF lng = "uk" THEN
+		lang := Ua
+	ELSE
+		lang := En
+	END
 END InitLang;
 
 BEGIN

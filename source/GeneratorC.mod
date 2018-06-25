@@ -1062,7 +1062,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				IF ((Ast.ParamOut IN fp(Ast.FormalParam).access)
 				 & ~(t IS Ast.Array))
 				OR (t IS Ast.Record)
-				OR (t.id = Ast.IdPointer) & (dist > 0) & ~gen.opt.plan9
+				OR (t.id = Ast.IdPointer) & (0 < dist) & ~gen.opt.plan9
 				THEN
 					Text.Str(gen, "&")
 				END;
@@ -2044,7 +2044,7 @@ END RecordRetain;
 
 PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
 BEGIN
-	IF d.emptyLines > 0 THEN
+	IF 0 < d.emptyLines THEN
 		Text.Ln(gen)
 	END
 END EmptyLines;
@@ -2794,7 +2794,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END Case;
 BEGIN
 	Comment(gen, st.comment);
-	IF st.emptyLines > 0 THEN
+	IF 0 < st.emptyLines THEN
 		Text.Ln(gen)
 	END;
 	IF st IS Ast.Assign THEN
@@ -2828,11 +2828,7 @@ END Statements;
 
 PROCEDURE ProcDecl(VAR gen: Generator; proc: Ast.Procedure);
 BEGIN
-	IF proc.mark & ~gen.opt.main THEN
-		Text.Str(gen, "extern ")
-	ELSE
-		Text.Str(gen, "static ")
-	END;
+	Mark(gen, proc.mark);
 	Declarator(gen, proc, FALSE, FALSE, TRUE);
 	Text.StrLn(gen, ";")
 END ProcDecl;

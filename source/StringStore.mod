@@ -373,7 +373,7 @@ BEGIN
 		DEC(j)
 	END;
 	str[j] := Utf8.Null
-	RETURN  j - ofs
+	RETURN j - ofs
 END TrimChars;
 
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
