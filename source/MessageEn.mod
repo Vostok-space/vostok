@@ -193,6 +193,8 @@ BEGIN
 		C("Overflow in constants multiplication")
 	| Ast.ErrComDivByZero:
 		C("Division by zero")
+	| Ast.ErrNegativeDivisor:
+		C("Division by negative number is undefined")
 	| Ast.ErrValueOutOfRangeOfByte:
 		C("Value out of byte's range")
 	| Ast.ErrValueOutOfRangeOfChar:

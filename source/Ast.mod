@@ -109,35 +109,36 @@ CONST
 	ErrConstSubOverflow*            = -78;
 	ErrConstMultOverflow*           = -79;
 	ErrComDivByZero*                = -80;
+	ErrNegativeDivisor*             = -81;
 
-	ErrValueOutOfRangeOfByte*       = -81;
-	ErrValueOutOfRangeOfChar*       = -82;
+	ErrValueOutOfRangeOfByte*       = -82;
+	ErrValueOutOfRangeOfChar*       = -83;
 
-	ErrExpectIntExpr*               = -83;
-	ErrExpectConstIntExpr*          = -84;
-	ErrForByZero*                   = -85;
-	ErrByShouldBePositive*          = -86;
-	ErrByShouldBeNegative*          = -87;
-	ErrForPossibleOverflow*         = -88;
+	ErrExpectIntExpr*               = -84;
+	ErrExpectConstIntExpr*          = -85;
+	ErrForByZero*                   = -86;
+	ErrByShouldBePositive*          = -87;
+	ErrByShouldBeNegative*          = -88;
+	ErrForPossibleOverflow*         = -89;
 
-	ErrVarUninitialized*            = -89;
+	ErrVarUninitialized*            = -90;
 	ErrVarMayUninitialized*         = ErrVarUninitialized - 1;
 
-	ErrDeclarationNotProc*          = -91;
-	ErrProcNotCommandHaveReturn*    = -92;
-	ErrProcNotCommandHaveParams*    = -93;
+	ErrDeclarationNotProc*          = -92;
+	ErrProcNotCommandHaveReturn*    = -93;
+	ErrProcNotCommandHaveParams*    = -94;
 
-	ErrReturnTypeArrayOrRecord*     = -94;
-	ErrRecordForwardUndefined*      = -95;
-	ErrPointerToNotRecord*          = -96;
-	ErrVarOfRecordForward*          = -97;
-	ErrVarOfPointerToRecordForward* = -98;
-	ErrArrayTypeOfRecordForward*    = -99;
+	ErrReturnTypeArrayOrRecord*     = -95;
+	ErrRecordForwardUndefined*      = -96;
+	ErrPointerToNotRecord*          = -97;
+	ErrVarOfRecordForward*          = -98;
+	ErrVarOfPointerToRecordForward* = -99;
+	ErrArrayTypeOfRecordForward*    = -100;
 	ErrArrayTypeOfPointerToRecordForward*
-	                                = -100;
-	ErrAssertConstFalse*            = -101;
-	ErrDeclarationUnused*           = -102;
-	ErrProcNestedTooDeep*           = -103;
+	                                = -101;
+	ErrAssertConstFalse*            = -102;
+	ErrDeclarationUnused*           = -103;
+	ErrProcNestedTooDeep*           = -104;
 
 	ErrMin*                         = -200;
 
@@ -191,6 +192,9 @@ CONST
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)
 	ExprPointerTouch* = 0;
+	(* в RExpression.properties для учёта того, что в вычислении константного
+	   выражения присутствовало отрицательное делимое *)
+	ExprIntNegativeDividentTouch* = 1;
 
 	(* в RType для индикации того, что переменная этого типа была присвоена,
 	   что важно при подсчёте ссылок *)
@@ -1193,6 +1197,8 @@ END ProcTypeNew;
 PROCEDURE ParamAddPredefined(proc: ProcType; type: Type; access: SET);
 VAR v: FormalParam;
 BEGIN
+	ASSERT({} = access - {ParamIn, ParamOut});
+
 	NEW(v); NodeInit(v^, NoId);
 	IF proc.end = NIL THEN
 		proc.params := v
@@ -1760,7 +1766,8 @@ END Prop;
 
 PROCEDURE PropTouch(e: Expression; prop: SET);
 BEGIN
-	e.properties := e.properties + prop * { ExprPointerTouch }
+	e.properties := e.properties
+	              + prop * { ExprPointerTouch, ExprIntNegativeDividentTouch }
 END PropTouch;
 
 PROCEDURE ExprBracesNew*(expr: Expression): ExprBraces;
@@ -1898,17 +1905,16 @@ VAR err: INTEGER;
 
 	PROCEDURE InVarParam(v: Var; sel: Selector);
 	BEGIN
-		IF sel # NIL THEN
+		IF sel = NIL THEN
+			v.inVarParam := TRUE
+		ELSE
 			WHILE sel.next # NIL DO
 				sel := sel.next
 			END;
 			IF sel IS SelRecord THEN
 				sel(SelRecord).var.inVarParam := TRUE
 			END
-		ELSE
-			v.inVarParam := TRUE
-		END;
-
+		END
 	END InVarParam;
 BEGIN
 	err := ErrNo;
@@ -2734,6 +2740,7 @@ VAR err: INTEGER;
 
 	PROCEDURE Int(res: Expression; mult: INTEGER; b: Expression; VAR err: INTEGER);
 	VAR i, i1, i2: INTEGER;
+	    val: ExprInteger;
 	BEGIN
 		i1 := res.value(ExprInteger).int;
 		i2 := b.value(ExprInteger).int;
@@ -2743,13 +2750,25 @@ VAR err: INTEGER;
 			END
 		ELSIF i2 = 0 THEN
 			err := ErrComDivByZero
-		ELSIF mult = Scanner.Div THEN
-			i := i1 DIV i2
+		ELSIF i2 < 0 THEN
+			err := ErrNegativeDivisor
 		ELSE
-			i := i1 MOD i2
+			IF mult = Scanner.Div THEN
+				i := i1 DIV i2
+			ELSE
+				i := i1 MOD i2
+			END
 		END;
 		IF err = ErrNo THEN
-			res.value := ExprIntegerNew(i)
+			val := ExprIntegerNew(i);
+			IF (mult IN {Scanner.Div, Scanner.Mod}) & (i1 < 0) THEN
+				val.properties := {ExprIntNegativeDividentTouch}
+			ELSE
+				val.properties := {ExprIntNegativeDividentTouch}
+				                * (res.value.properties + b.value.properties)
+			END;
+			res.value := val;
+			res.properties := res.properties + val.properties
 		ELSE
 			res.value := NIL
 		END
@@ -2790,6 +2809,15 @@ VAR err: INTEGER;
 			res.value(ExprSet).set := s
 		END
 	END St;
+
+	PROCEDURE CheckDivisor(VAR err: INTEGER; d: INTEGER);
+	BEGIN
+		IF d = 0 THEN
+			err := ErrComDivByZero
+		ELSIF d < 0 THEN
+			err := ErrNegativeDivisor
+		END
+	END CheckDivisor;
 BEGIN
 	err := ErrNo;
 	IF CheckType(res, b, mult, err) & (res.value # NIL) & (b.value # NIL) THEN
@@ -2813,9 +2841,8 @@ BEGIN
 		res.value := NIL;
 		IF ((mult - Scanner.Div) IN {0, 1})
 		 & (b.value # NIL) & (b.value.type.id = IdInteger)
-		 & (b.value(ExprInteger).int = 0)
 		THEN
-			err := ErrComDivByZero
+			CheckDivisor(err, b.value(ExprInteger).int)
 		END
 	END
 	RETURN err

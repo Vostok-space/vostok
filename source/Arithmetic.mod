@@ -55,14 +55,14 @@ END Mul;
 (* Для полноты картины *)
 PROCEDURE Div*(VAR frac: INTEGER; n, d: INTEGER): BOOLEAN;
 BEGIN
-	IF     d # 0 THEN frac := n DIV d END
-	RETURN d # 0
+	IF     0 < d THEN frac := n DIV d END
+	RETURN 0 < d
 END Div;
 
 PROCEDURE Mod*(VAR mod: INTEGER; n, d: INTEGER): BOOLEAN;
 BEGIN
-	IF     d # 0 THEN mod := n MOD d END
-	RETURN d # 0
+	IF     0 < d THEN mod := n MOD d END
+	RETURN 0 < d
 END Mod;
 
 END Arithmetic.

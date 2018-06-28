@@ -123,7 +123,7 @@ typedef char unsigned o7_char;
 #if defined(O7_LONG_T)
 	typedef O7_LONG_T             o7_long_t;
 	typedef O7_ULONG_T            o7_ulong_t;
-#if !defined(O7_LONG_ABS) || !defined(O7_LONG_MAX) || !defined(O7_ULONG_MAX)
+#	if !defined(O7_LONG_ABS) || !defined(O7_LONG_MAX) || !defined(O7_ULONG_MAX)
 #		error
 #	else
 #		define O7_LABS(val) O7_LONG_ABS(val)
@@ -208,15 +208,11 @@ typedef o7_ulong_t o7_set64_t;
 #endif
 
 #if __GNUC__ >= 2
-#	define O7_ATTR_CONST __attribute__((const))
-#else
-#	define O7_ATTR_CONST
-#endif
-
-#if __GNUC__ > 2
-#	define O7_ATTR_PURE __attribute__((pure))
+#	define O7_ATTR_CONST  __attribute__((const))
+#	define O7_ATTR_PURE   __attribute__((pure))
 #	define O7_ATTR_MALLOC __attribute__((malloc))
 #else
+#	define O7_ATTR_CONST
 #	define O7_ATTR_PURE
 #	define O7_ATTR_MALLOC
 #endif
@@ -281,6 +277,12 @@ enum {
 	enum { O7_OVERFLOW = O7_CHECK_OVERFLOW };
 #else
 	enum { O7_OVERFLOW = 1 };
+#endif
+
+#if defined(O7_CHECK_NATURAL_DIVISOR)
+	enum { O7_NATURAL_DIVISOR = O7_CHECK_NATURAL_DIVISOR };
+#else
+	enum { O7_NATURAL_DIVISOR = 1 };
 #endif
 
 #if defined(O7_CHECK_DIV_BY_ZERO)
@@ -670,19 +672,38 @@ o7_int_t o7_mul(o7_int_t m1, o7_int_t m2) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_int_t o7_div(o7_int_t n, o7_int_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+o7_int_t o7_divisor(o7_int_t d) {
+	if (O7_NATURAL_DIVISOR) {
+		assert(0 < d);
+	} else {
+		if (O7_OVERFLOW && O7_DIV_ZERO) {
+			assert(d != 0);
+		}
+		d = o7_int(d);
 	}
-	return o7_int(n) / o7_int(d);
+	return d;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+	o7_int_t r;
+	if (0 <= n) {
+		r = n / o7_divisor(d);
+	} else {
+		r = -1 - (-1 - o7_int(n)) / o7_divisor(d);
+	}
+	return  r;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+	o7_int_t r;
+	if (0 <= n) {
+		r = n % o7_divisor(d);
+	} else {
+		r = d + (-1 - (-1 - o7_int(n)) % o7_divisor(d));
 	}
-	return o7_int(n) % o7_int(d);
+	return r;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
@@ -712,17 +733,14 @@ O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
 	o7_long_t d;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (!O7_OVERFLOW) {
+		d = o7_long(m) - o7_long(s);
+	} else if (O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUBL(o7_long(m), o7_long(s), &d);
 		assert(!overflow && d >= -O7_LONG_MAX);
 	} else {
-		if (!O7_OVERFLOW) {
-			if (O7_UNDEF) {
-				assert(o7_long_inited(m));
-				assert(o7_long_inited(s));
-			}
-		} else if (s >= 0) {
-			assert(m >= -O7_LONG_MAX + s);
+		if (s >= 0) {
+			assert(m >= s - O7_LONG_MAX);
 		} else {
 			assert(o7_long(m) <= O7_LONG_MAX + o7_long(s));
 		}
@@ -748,19 +766,38 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+o7_long_t o7_ldivisor(o7_long_t d) {
+	if (O7_NATURAL_DIVISOR) {
+		assert(0 < d);
+	} else {
+		if (O7_OVERFLOW && O7_DIV_ZERO) {
+			assert(d != 0);
+		}
+		d = o7_long(d);
 	}
-	return o7_long(n) / o7_long(d);
+	return d;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
+	o7_long_t r;
+	if (0 <= n) {
+		r = n / o7_ldivisor(d);
+	} else {
+		r = -1 - (-1 - o7_long(n)) / o7_ldivisor(d);
+	}
+	return r;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+	o7_long_t r;
+	if (0 <= n) {
+		r = n % o7_ldivisor(d);
+	} else {
+		r = d + (-1 - (-1 - o7_long(n)) % o7_ldivisor(d));
 	}
-	return o7_long(n) % o7_long(d);
+	return r;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE

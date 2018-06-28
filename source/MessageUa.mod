@@ -192,6 +192,8 @@ BEGIN
 		C("Переповнення у множені сталих")
 	| Ast.ErrComDivByZero:
 		C("Ділення на 0")
+	| Ast.ErrNegativeDivisor:
+		C("Ділення на від'ємне число не визначене")
 	| Ast.ErrValueOutOfRangeOfByte:
 		C("Значення виходить за межі BYTE")
 	| Ast.ErrValueOutOfRangeOfChar:

@@ -192,6 +192,8 @@ BEGIN
 		C("Переполнение при умножении постоянных")
 	| Ast.ErrComDivByZero:
 		C("Деление на 0")
+	| Ast.ErrNegativeDivisor:
+		C("Деление на отрицательное число не определено")
 	| Ast.ErrValueOutOfRangeOfByte:
 		C("Значение выходит за границы BYTE")
 	| Ast.ErrValueOutOfRangeOfChar:
