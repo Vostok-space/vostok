@@ -239,7 +239,7 @@ END CopyModuleNameForFile;
 PROCEDURE OpenCOutput(VAR interface, implementation: File.Out;
                       module: Ast.Module; isMain: BOOLEAN;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
-                      VAR ccomp: CComp.Compiler): INTEGER;
+                      VAR ccomp: CComp.Compiler; usecc: BOOLEAN): INTEGER;
 VAR destLen: INTEGER;
     ret: INTEGER;
 BEGIN
@@ -263,7 +263,7 @@ BEGIN
 		ELSE
 			dir[destLen + 1] := "c";
 			(* TODO *)
-			ASSERT(CComp.AddC(ccomp, dir, 0));
+			ASSERT(~usecc OR CComp.AddC(ccomp, dir, 0));
 			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
@@ -292,11 +292,12 @@ BEGIN
 	mp.firstNotOk := TRUE
 END NewProvider;
 
+(* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     opt: GeneratorC.Options;
                     VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                     cDirs: ARRAY OF CHAR;
-                    VAR ccomp: CComp.Compiler): INTEGER;
+                    VAR ccomp: CComp.Compiler; usecc: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
 	ret, i, cDirsLen, nameLen: INTEGER;
 	name: ARRAY 512 OF CHAR;
@@ -308,14 +309,14 @@ BEGIN
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
 		IF ~imp.module.m.used THEN
-			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp)
+			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp, usecc)
 		END;
 		imp := imp.next
 	END;
 	IF ret # ErrNo THEN
 		;
 	ELSIF ~module.mark THEN
-		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp);
+		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp, usecc);
 		IF ret = ErrNo THEN
 			GeneratorC.Generate(iface, impl, module, cmd, opt);
 			File.CloseOut(iface);
@@ -427,7 +428,7 @@ VAR ret, len: INTEGER;
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundCCompiler
 			ELSE
-				ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd)
+				ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd, TRUE)
 			END;
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
@@ -547,7 +548,7 @@ BEGIN
 			  Cli.ResultC:
 				DEC(args.resPathLen);
 				ret := GenerateC(module, (call # NIL) OR args.script, call,
-				                 opt, args.resPath, args.resPathLen, args.cDirs, ccomp)
+				                 opt, args.resPath, args.resPathLen, args.cDirs, ccomp, FALSE)
 			| Cli.ResultBin, Cli.ResultRun:
 				ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
 				           args.resPath, ccomp, args.tmp);
