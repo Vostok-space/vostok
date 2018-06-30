@@ -207,7 +207,7 @@ typedef o7_ulong_t o7_set64_t;
 #	define O7_MEMNG_NOFREE_BUFFER_SIZE 1lu
 #endif
 
-#if __GNUC__ >= 2
+#if __GNUC__ > 2
 #	define O7_ATTR_CONST  __attribute__((const))
 #	define O7_ATTR_PURE   __attribute__((pure))
 #	define O7_ATTR_MALLOC __attribute__((malloc))
@@ -1097,7 +1097,7 @@ o7_cbool o7_frexp(double *f, o7_int_t *n) {
 
 extern O7_ATTR_PURE
 int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
-                     o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]);
+              o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]);
 
 O7_ALWAYS_INLINE
 void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],

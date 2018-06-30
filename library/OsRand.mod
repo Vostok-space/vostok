@@ -14,29 +14,50 @@
  *)
 MODULE OsRand;
 
- IMPORT File := CFiles;
+ IMPORT File := CFiles, WindowsRand;
 
  CONST
-   FileName = "/dev/urandom";
+   FileName* = "/dev/urandom";
 
  VAR
    file: File.File;
+   init: BOOLEAN;
 
  PROCEDURE Open*(): BOOLEAN;
  BEGIN
-   IF file = NIL THEN
-     file := File.Open(FileName, 0, "rb")
+   IF ~init THEN
+     ASSERT(file = NIL);
+     file := NIL; (*File.Open(FileName, 0, "rb");*)
+     init := (file # NIL) OR WindowsRand.Open()
    END
-   RETURN file # NIL
+   RETURN init
  END Open;
 
  PROCEDURE Close*;
  BEGIN
-   File.Close(file)
+   IF ~init THEN
+     ASSERT(file = NIL)
+   ELSIF file # NIL THEN
+     File.Close(file)
+   ELSE
+     WindowsRand.Close
+   END;
+   init := FALSE
  END Close;
 
  PROCEDURE Read*(VAR buf: ARRAY OF BYTE; VAR ofs: INTEGER; count: INTEGER): BOOLEAN;
- RETURN (file # NIL) & (count = File.Read(file, buf, ofs, count))
+ VAR ok: BOOLEAN;
+ BEGIN
+   IF file # NIL THEN
+     ok := count = File.Read(file, buf, ofs, count)
+   ELSE
+     ok := init & WindowsRand.Read(buf, ofs, count);
+     IF ok THEN
+       ofs := ofs + count
+     END
+   END
+ RETURN
+   ok
  END Read;
 
  PROCEDURE Int*(VAR i: INTEGER): BOOLEAN;
@@ -82,5 +103,6 @@ MODULE OsRand;
  END Real;
 
 BEGIN
-  file := NIL
+  file := NIL;
+  init := FALSE
 END OsRand.
