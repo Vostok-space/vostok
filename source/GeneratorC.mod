@@ -27,7 +27,7 @@ IMPORT
 	Text := TextGenerator,
 	Utf8, Utf8Transform,
 	Log,
-	Limits := TypeLimits,
+	Limits := TypesLimits,
 	TranLim := TranslatorLimits;
 
 CONST
@@ -2458,6 +2458,106 @@ BEGIN
 	gen.insideSizeOf := FALSE
 END ExprForSize;
 
+PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
+
+	PROCEDURE Equal(VAR gen: Generator; st: Ast.Assign);
+	VAR retain, toByte: BOOLEAN;
+
+		PROCEDURE AssertArraySize(VAR gen: Generator;
+		                          des: Ast.Designator; e: Ast.Expression);
+		BEGIN
+			IF gen.opt.checkIndex
+			 & (  (des.type(Ast.Array).count = NIL)
+			   OR (e.type(Ast.Array).count   = NIL)
+			   )
+			THEN
+				Text.Str(gen, "assert(");
+				ArrayLen(gen, des);
+				Text.Str(gen, " >= ");
+				ArrayLen(gen, e);
+				Text.StrLn(gen, ");")
+			END
+		END AssertArraySize;
+	BEGIN
+		toByte := (st.designator.type.id = Ast.IdByte)
+		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
+		        & gen.opt.checkArith & (st.expr.value = NIL);
+		retain := (st.designator.type.id = Ast.IdPointer)
+		        & (gen.opt.memManager = MemManagerCounter);
+		IF retain & (st.expr.id = Ast.IdPointer) THEN
+			Text.Str(gen, "O7_NULL(&");
+			Designator(gen, st.designator);
+		ELSE
+			IF retain THEN
+				Text.Str(gen, "O7_ASSIGN(&");
+				Designator(gen, st.designator);
+				Text.Str(gen, ", ")
+			ELSIF (st.designator.type.id = Ast.IdArray)
+			(*    & (st.designator.type.type.id # Ast.IdString) *)
+			THEN
+				AssertArraySize(gen, st.designator, st.expr);
+				Text.Str(gen, "memcpy(");
+				Designator(gen, st.designator);
+				Text.Str(gen, ", ");
+				gen.opt.expectArray := TRUE
+			ELSIF toByte THEN
+				Designator(gen, st.designator);
+				IF st.expr.type.id = Ast.IdInteger THEN
+					Text.Str(gen, " = o7_byte(")
+				ELSE
+					Text.Str(gen, " = o7_lbyte(")
+				END
+			ELSE
+				Designator(gen, st.designator);
+				Text.Str(gen, " = ")
+			END;
+			ExprSameType(gen, st.expr, st.designator.type);
+			gen.opt.expectArray := FALSE;
+			IF st.designator.type.id # Ast.IdArray THEN
+				;
+			ELSIF (st.expr.type(Ast.Array).count # NIL)
+			    & ~Ast.IsFormalParam(st.expr)
+			THEN
+				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar
+				THEN
+					Text.Str(gen, ", ");
+					ArrayLen(gen, st.expr)
+				ELSE
+					Text.Str(gen, ", sizeof(");
+					ExprForSize(gen, st.expr);
+					Text.Str(gen, ")")
+				END
+			ELSE
+				Text.Str(gen, ", (");
+				ArrayLen(gen, st.expr);
+				Text.Str(gen, ") * sizeof(");
+				ExprForSize(gen, st.expr);
+				Text.Str(gen, "[0])")
+			END
+		END;
+		CASE ORD(retain) + ORD(toByte)
+		   + ORD((st.designator.type.id = Ast.IdArray)
+		       & (st.designator.type.type.id # Ast.IdString)
+		        )
+		OF
+		  0: Text.StrLn(gen, ";")
+		| 1: Text.StrLn(gen, ");")
+		| 2: Text.StrLn(gen, "));")
+		END;
+		IF (gen.opt.memManager = MemManagerCounter)
+		 & (st.designator.type.id = Ast.IdRecord)
+		 & (~IsAnonStruct(st.designator.type(Ast.Record)))
+		THEN
+			GlobalName(gen, st.designator.type);
+			Text.Str(gen, "_retain(&");
+			Designator(gen, st.designator);
+			Text.StrLn(gen, ");")
+		END
+	END Equal;
+BEGIN
+	Equal(gen, st)
+END Assign;
+
 PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR gen: Generator; wi: Ast.WhileIf);
@@ -2561,101 +2661,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		statements(gen, st.stats);
 		Text.StrLnClose(gen, "}")
 	END For;
-
-	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
-	VAR retain, toByte: BOOLEAN;
-
-		PROCEDURE AssertArraySize(VAR gen: Generator;
-		                          des: Ast.Designator; e: Ast.Expression);
-		BEGIN
-			IF gen.opt.checkIndex
-			 & (  (des.type(Ast.Array).count = NIL)
-			   OR (e.type(Ast.Array).count   = NIL)
-			   )
-			THEN
-				Text.Str(gen, "assert(");
-				ArrayLen(gen, des);
-				Text.Str(gen, " >= ");
-				ArrayLen(gen, e);
-				Text.StrLn(gen, ");")
-			END
-		END AssertArraySize;
-	BEGIN
-		toByte := (st.designator.type.id = Ast.IdByte)
-		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
-		        & gen.opt.checkArith & (st.expr.value = NIL);
-		retain := (st.designator.type.id = Ast.IdPointer)
-		        & (gen.opt.memManager = MemManagerCounter);
-		IF retain & (st.expr.id = Ast.IdPointer) THEN
-			Text.Str(gen, "O7_NULL(&");
-			Designator(gen, st.designator);
-		ELSE
-			IF retain THEN
-				Text.Str(gen, "O7_ASSIGN(&");
-				Designator(gen, st.designator);
-				Text.Str(gen, ", ")
-			ELSIF (st.designator.type.id = Ast.IdArray)
-			(*    & (st.designator.type.type.id # Ast.IdString) *)
-			THEN
-				AssertArraySize(gen, st.designator, st.expr);
-				Text.Str(gen, "memcpy(");
-				Designator(gen, st.designator);
-				Text.Str(gen, ", ");
-				gen.opt.expectArray := TRUE
-			ELSIF toByte THEN
-				Designator(gen, st.designator);
-				IF st.expr.type.id = Ast.IdInteger THEN
-					Text.Str(gen, " = o7_byte(")
-				ELSE
-					Text.Str(gen, " = o7_lbyte(")
-				END
-			ELSE
-				Designator(gen, st.designator);
-				Text.Str(gen, " = ")
-			END;
-			ExprSameType(gen, st.expr, st.designator.type);
-			gen.opt.expectArray := FALSE;
-			IF st.designator.type.id # Ast.IdArray THEN
-				;
-			ELSIF (st.expr.type(Ast.Array).count # NIL)
-			    & ~Ast.IsFormalParam(st.expr)
-			THEN
-				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar
-				THEN
-					Text.Str(gen, ", ");
-					ArrayLen(gen, st.expr)
-				ELSE
-					Text.Str(gen, ", sizeof(");
-					ExprForSize(gen, st.expr);
-					Text.Str(gen, ")")
-				END
-			ELSE
-				Text.Str(gen, ", (");
-				ArrayLen(gen, st.expr);
-				Text.Str(gen, ") * sizeof(");
-				ExprForSize(gen, st.expr);
-				Text.Str(gen, "[0])")
-			END
-		END;
-		CASE ORD(retain) + ORD(toByte)
-		   + ORD((st.designator.type.id = Ast.IdArray)
-		       & (st.designator.type.type.id # Ast.IdString)
-		        )
-		OF
-		  0: Text.StrLn(gen, ";")
-		| 1: Text.StrLn(gen, ");")
-		| 2: Text.StrLn(gen, "));")
-		END;
-		IF (gen.opt.memManager = MemManagerCounter)
-		 & (st.designator.type.id = Ast.IdRecord)
-		 & (~IsAnonStruct(st.designator.type(Ast.Record)))
-		THEN
-			GlobalName(gen, st.designator.type);
-			Text.Str(gen, "_retain(&");
-			Designator(gen, st.designator);
-			Text.StrLn(gen, ");")
-		END
-	END Assign;
 
 	PROCEDURE Case(VAR gen: Generator; st: Ast.Case);
 	VAR elem, elemWithRange: Ast.CaseElement;

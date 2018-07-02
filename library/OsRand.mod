@@ -27,7 +27,7 @@ MODULE OsRand;
  BEGIN
    IF ~init THEN
      ASSERT(file = NIL);
-     file := NIL; (*File.Open(FileName, 0, "rb");*)
+     file := File.Open(FileName, 0, "rb");
      init := (file # NIL) OR WindowsRand.Open()
    END
    RETURN init

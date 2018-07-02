@@ -19,13 +19,13 @@ MODULE Ast;
 IMPORT
 	Log, Out,
 	Utf8,
-	Limits := TypeLimits,
+	Limits := TypesLimits,
 	V,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
 	Strings := StringStore,
 	TranLim := TranslatorLimits,
-	Arithmetic;
+	Arithmetic := CheckIntArithmetic;
 
 CONST
 	ErrNo*                          =  0;
@@ -1792,7 +1792,7 @@ BEGIN
 END ExprSetByValue;
 
 PROCEDURE CheckSetRange(int: INTEGER): BOOLEAN;
-	RETURN (0 <= int) & (int <= Limits.LongSetMax)
+	RETURN (0 <= int) & (int <= Limits.SetMax * 2 + 1)
 END CheckSetRange;
 
 (* TODO сделать дизайн получше *)
