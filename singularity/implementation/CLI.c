@@ -26,7 +26,7 @@ extern o7_cbool CLI_Get(
 	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs, o7_int_t arg)
 {
 	int i;
-	assert((arg >= 0) && (arg < CLI_count));
+	assert((0 <= arg) && (arg < CLI_count));
 	i = 0;
 	while ((*ofs < len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];

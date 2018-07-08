@@ -27,6 +27,5 @@ BEGIN
   Linux   := FALSE;
   Bsd     := FALSE;
   Dos     := FALSE;
-  Windows := FALSE;
-  ASSERT(FALSE)
+  Windows := FALSE
 END Platform.

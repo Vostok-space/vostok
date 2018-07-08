@@ -17,7 +17,7 @@ MODULE OsRand;
  IMPORT File := CFiles, WindowsRand;
 
  CONST
-   FileName* = "/dev/urandom";
+   FileName = "/dev/urandom";
 
  VAR
    file: File.File;

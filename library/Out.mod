@@ -125,7 +125,7 @@ MODULE Out;
      ELSIF 10.0 <= x THEN
        e := 1;
        tens := 10.0;
-       WHILE (x / tens >= 10.0) & (e <= 307) DO
+       WHILE (x / tens >= 10.0) & (e <= 308) DO
          INC(e);
          tens := tens * 10.0
        END;
@@ -133,7 +133,7 @@ MODULE Out;
      ELSE ASSERT((1.0 <= x) & (x < 10.0));
        e := 0
      END;
-     IF e > 307 THEN
+     IF e > 308 THEN
        s[l    ] := "i";
        s[l + 1] := "n";
        s[l + 2] := "f";

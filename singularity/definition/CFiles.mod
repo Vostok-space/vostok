@@ -75,6 +75,5 @@ END Exist;
 BEGIN
 	in  := NIL;
 	out := NIL;
-	err := NIL;
-	ASSERT(FALSE)
+	err := NIL
 END CFiles.

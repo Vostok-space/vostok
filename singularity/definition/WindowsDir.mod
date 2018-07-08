@@ -26,9 +26,8 @@ MODULE WindowsDir;
 
  PROCEDURE FindFirst*(VAR id: FindId; VAR d: FindData;
                       filespec: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
- BEGIN
-   ASSERT(FALSE)
-   RETURN FALSE
+ RETURN
+   FALSE
  END FindFirst;
 
  PROCEDURE FindNext*(VAR d: FindData; id: FindId): BOOLEAN;
@@ -38,8 +37,6 @@ MODULE WindowsDir;
  END FindNext;
 
  PROCEDURE Close*(VAR id: FindId): BOOLEAN;
- BEGIN
-   ASSERT(FALSE)
    RETURN FALSE
  END Close;
 

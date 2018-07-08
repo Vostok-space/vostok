@@ -23,4 +23,6 @@ END Get;
 PROCEDURE SetExitCode*(code: INTEGER);
 END SetExitCode;
 
+BEGIN
+	count := 0
 END CLI.
