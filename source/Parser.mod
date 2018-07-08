@@ -388,7 +388,10 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
+		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access)
+		            & (   ~(e.designator.decl IS Ast.PredefinedProcedure)
+		               OR (e.designator.decl.id = SpecIdent.New)
+		              );
 		p.callId := e.designator.decl.id;
 		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
 		p.varParam := FALSE;
