@@ -262,14 +262,15 @@ BEGIN
 			ret := Cli.ErrOpenH
 		ELSE
 			dir[destLen + 1] := "c";
-			(* TODO *)
-			ASSERT(~usecc OR CComp.AddC(ccomp, dir, 0));
-			Log.StrLn(dir);
 			implementation := File.OpenOut(dir);
 			IF implementation = NIL THEN
 				File.CloseOut(interface);
 				ret := Cli.ErrOpenC
 			ELSE
+				(* TODO *)
+				ASSERT(~usecc OR CComp.AddC(ccomp, dir, 0));
+				Log.StrLn(dir);
+
 				ret := ErrNo
 			END
 		END
@@ -470,7 +471,7 @@ VAR ret, len: INTEGER;
 
 	PROCEDURE Run(bin: ARRAY OF CHAR; arg: INTEGER): INTEGER;
 	VAR cmd: Exec.Code;
-		buf: ARRAY 65536 OF CHAR;
+		buf: ARRAY Exec.CodeSize OF CHAR;
 		len: INTEGER;
 		ret: INTEGER;
 	BEGIN
@@ -569,10 +570,15 @@ BEGIN
 	RETURN ret
 END ToC;
 
+PROCEDURE Help*;
+BEGIN
+	Message.Usage(TRUE)
+END Help;
+
 PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER): BOOLEAN;
 BEGIN
 	IF ret = Cli.CmdHelp THEN
-		Message.Usage(TRUE)
+		Help
 	ELSE
 		ret := ToC(ret, args)
 	END
