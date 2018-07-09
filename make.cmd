@@ -29,7 +29,10 @@ result\bs-o7c to-c Translator.Start result\v0 -infr . -m source
 
 @CD result\v0
 
-%CC% Arithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypeLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c Message.c MessageEn.c MessageRu.c MessageUa.c LocaleParser.c Chars0X.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c Utf8Transform.c SpecIdentChecker.c CCompilerInterface.c FileSystemUtil.c %SING%\CFiles.c %SING%\CLI.c %SING%\o7.c %SING%\OsExec.c %SING%\OsEnv.c %SING%\Platform.c -I . -I %SING% -o ..\o7c.exe
+%CC% CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c TranslatorLimits.c Log.c Utf8.c Message.c MessageEn.c MessageRu.c MessageUa.c LocaleParser.c Chars0X.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c Utf8Transform.c SpecIdentChecker.c CCompilerInterface.c FileSystemUtil.c %SING%\CFiles.c %SING%\CLI.c %SING%\o7.c %SING%\OsExec.c %SING%\OsEnv.c %SING%\Platform.c -I . -I %SING% -o ..\o7c.exe
 @CD ..\..
 
 result\o7c to-bin Translator.Start result\v1\o7c.exe -infr . -m source -cc %CC%
+
+@ECHO Info about next steps:
+@ECHO   result\bs-o7c run make.Help -infr . -m source
