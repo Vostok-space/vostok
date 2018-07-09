@@ -16,7 +16,7 @@ Build translator for POSIX:
 
     $ make
     $ # or
-    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source
 
 Test under POSIX:
 
@@ -27,11 +27,11 @@ Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc
     > make.cmd
     > :: or
     > make.cmd
-    > result/bs-o7c run make.Build -infr . -m source -m . -cc tcc
+    > result/bs-o7c run make.Build -infr . -m source -cc tcc
 
 Test under POSIX and Windows
 
-    result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+    result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -cc tcc
 
 ## Usage:
 

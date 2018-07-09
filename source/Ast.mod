@@ -2752,12 +2752,10 @@ VAR err: INTEGER;
 			err := ErrComDivByZero
 		ELSIF i2 < 0 THEN
 			err := ErrNegativeDivisor
-		ELSE
-			IF mult = Scanner.Div THEN
-				i := i1 DIV i2
-			ELSE
-				i := i1 MOD i2
-			END
+		ELSIF mult = Scanner.Div THEN
+			i := i1 DIV i2
+		ELSE ASSERT(mult = Scanner.Mod);
+			i := i1 MOD i2
 		END;
 		IF err = ErrNo THEN
 			val := ExprIntegerNew(i);

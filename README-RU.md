@@ -18,13 +18,13 @@
 
     $ make help
     $ # или
-    $ result/bs-o7c run make.Help -infr . -m source -m .
+    $ result/bs-o7c run make.Help -infr . -m source
 
 Сборка транслятора в POSIX:
 
     $ make
     $ # или
-    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source -m .
+    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source
 
 make.sh собирает из предварительно сгенерированных Си-файлов 0-ю версию
 транслятора Оберона resut/bs-o7c, которая уже может обслуживать
@@ -35,7 +35,7 @@ make.sh собирает из предварительно сгенериров�
 
     $ make test self self-full
     $ # или
-    $ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m .
+    $ result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source
 
 Сборка под Windows, используя [tcc](http://download.savannah.gnu.org/releases/tinycc/),
 каталог с которым должен быть прописан в переменной окружения PATH
@@ -43,11 +43,11 @@ make.sh собирает из предварительно сгенериров�
     > make.cmd
     > :: или
     > make.cmd
-    > result\bs-o7c run make.Build -infr . -m source -m . -cc tcc
+    > result\bs-o7c run make.Build -infr . -m source -cc tcc
 
 Тестирование в Windows с использованием Tiny C Compiler
 
-    result\bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -m . -cc tcc
+    result\bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -cc tcc
 
 ## Использование:
 Справка о способе использовании транслятора доступна при его запуске без
