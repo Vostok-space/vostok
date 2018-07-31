@@ -87,7 +87,6 @@ TYPE
 		opt: Options;
 		err: BOOLEAN;
 		errorsCount: INTEGER;
-		varParam : BOOLEAN;
 		callId: INTEGER;
 		s: Scanner.Scanner;
 		l: INTEGER;(* lexem *)
@@ -107,7 +106,7 @@ VAR
 	type: PROCEDURE(VAR p: Parser; ds: Ast.Declarations;
 	                nameBegin, nameEnd: INTEGER): Ast.Type;
 	statements: PROCEDURE(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
-	expression: PROCEDURE(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
+	expression: PROCEDURE(VAR p: Parser; ds: Ast.Declarations; varParm: BOOLEAN): Ast.Expression;
 
 PROCEDURE AddError(VAR p: Parser; err: INTEGER);
 BEGIN
@@ -213,10 +212,10 @@ VAR e, next: Ast.ExprSet;
 	VAR left: Ast.Expression;
 		err: INTEGER;
 	BEGIN
-		left := expression(p, ds);
+		left := expression(p, ds, FALSE);
 		IF p.l = Scanner.Range THEN
 			Scan(p);
-			err := Ast.ExprSetNew(base, e, left, expression(p, ds))
+			err := Ast.ExprSetNew(base, e, left, expression(p, ds, FALSE))
 		ELSE
 			err := Ast.ExprSetNew(base, e, left, NIL)
 		END
@@ -335,7 +334,7 @@ BEGIN
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
 					Scan(p);
-					CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)));
+					CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds, FALSE)));
 					IF des.value = NIL THEN
 						;
 					ELSIF (des.value IS Ast.ExprString)
@@ -355,7 +354,7 @@ BEGIN
 					END;
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
 						SetSel(prev, sel, des);
-						CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds)))
+						CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds, FALSE)))
 					END;
 					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
 				ELSIF p.l = Scanner.Dereference THEN
@@ -377,7 +376,8 @@ END Designator;
 
 PROCEDURE CallParams(VAR p: Parser; ds: Ast.Declarations; e: Ast.ExprCall);
 VAR par: Ast.Parameter;
-	fp: Ast.FormalParam;
+    fp: Ast.FormalParam;
+    varParam: BOOLEAN;
 BEGIN
 	ASSERT(p.l = Scanner.Brace1Open);
 	Scan(p);
@@ -388,19 +388,18 @@ BEGIN
 	END;
 	IF ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		par := NIL;
-		p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access)
+		(* TODO несовершенная логика *)
+		varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access)
 		            & (   ~(e.designator.decl IS Ast.PredefinedProcedure)
 		               OR (e.designator.decl.id = SpecIdent.New)
 		              );
 		p.callId := e.designator.decl.id;
-		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
-		p.varParam := FALSE;
+		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds, varParam), fp));
 		p.callId := 0;
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
-			p.varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
-			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds), fp));
-			p.varParam := FALSE
+			varParam := (fp = NIL) OR (Ast.ParamOut IN fp.access);
+			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds, varParam), fp));
 		END;
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;
@@ -416,17 +415,16 @@ BEGIN
 	RETURN e
 END ExprCall;
 
-PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
+PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN): Ast.Expression;
 VAR e: Ast.Expression;
 
-	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; VAR e: Ast.Expression);
+	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN; VAR e: Ast.Expression);
 	VAR des: Ast.Designator;
 	BEGIN
 		des := Designator(p, ds);
 		IF p.callId # SpecIdent.Len THEN
-			CheckAst(p, Ast.DesignatorUsed(des, p.varParam, 0 < p.inLoops))
+			CheckAst(p, Ast.DesignatorUsed(des, varParam, 0 < p.inLoops))
 		END;
-		p.varParam := FALSE;
 		IF p.l # Scanner.Brace1Open THEN
 			e := des
 		ELSE
@@ -439,7 +437,7 @@ VAR e: Ast.Expression;
 	BEGIN
 		ASSERT(p.l = Scanner.Negate);
 		Scan(p);
-		CheckAst(p, Ast.ExprNegateNew(neg, Factor(p, ds)))
+		CheckAst(p, Ast.ExprNegateNew(neg, Factor(p, ds, FALSE)))
 		RETURN neg
 	END Negate;
 BEGIN
@@ -468,10 +466,10 @@ BEGIN
 		Scan(p)
 	ELSIF p.l = Scanner.Brace1Open THEN
 		Scan(p);
-		e := Ast.ExprBracesNew(expression(p, ds));
+		e := Ast.ExprBracesNew(expression(p, ds, FALSE));
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	ELSIF p.l = Scanner.Ident THEN
-		Ident(p, ds, e)
+		Ident(p, ds, varParam, e)
 	ELSIF p.l = Scanner.Brace3Open THEN
 		e := Set(p, ds)
 	ELSIF p.l = Scanner.Negate THEN
@@ -483,14 +481,14 @@ BEGIN
 	RETURN e
 END Factor;
 
-PROCEDURE Term(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
+PROCEDURE Term(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN): Ast.Expression;
 VAR e: Ast.Expression;
 	term: Ast.ExprTerm;
 	l: INTEGER;
 	turnIf: BOOLEAN;
 BEGIN
 	Log.StrLn("Term");
-	e := Factor(p, ds);
+	e := Factor(p, ds, varParam);
 	IF (Scanner.MultFirst <= p.l) & (p.l <= Scanner.MultLast) THEN
 		l := p.l;
 
@@ -501,13 +499,13 @@ BEGIN
 
 		Scan(p);
 		term := NIL;
-		CheckAst(p, Ast.ExprTermNew(term, e(Ast.Factor), l, Factor(p, ds)));
+		CheckAst(p, Ast.ExprTermNew(term, e(Ast.Factor), l, Factor(p, ds, FALSE)));
 		ASSERT((term.expr # NIL) & (term.factor # NIL));
 		e := term;
 		WHILE (Scanner.MultFirst <= p.l) & (p.l <= Scanner.MultLast) DO
 			l := p.l;
 			Scan(p);
-			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds)))
+			CheckAst(p, Ast.ExprTermAdd(e, term, l, Factor(p, ds, FALSE)))
 		END;
 
 		IF turnIf THEN
@@ -517,7 +515,7 @@ BEGIN
 	RETURN e
 END Term;
 
-PROCEDURE Sum(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
+PROCEDURE Sum(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN): Ast.Expression;
 VAR e: Ast.Expression;
 	sum: Ast.ExprSum;
 	l: INTEGER;
@@ -527,10 +525,10 @@ BEGIN
 
 	IF l IN {Scanner.Plus, Scanner.Minus} THEN
 		Scan(p);
-		CheckAst(p, Ast.ExprSumNew(sum, l, Term(p, ds)));
+		CheckAst(p, Ast.ExprSumNew(sum, l, Term(p, ds, FALSE)));
 		e := sum
 	ELSE
-		e := Term(p, ds);
+		e := Term(p, ds, varParam);
 		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
 			IF p.l # Scanner.Or THEN
 				CheckAst(p, Ast.ExprSumNew(sum, -1, e))
@@ -547,27 +545,27 @@ BEGIN
 		l := p.l;
 		Scan(p);
 		IF p.l # Scanner.Or THEN
-			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)))
+			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, FALSE)))
 		ELSE
 			Ast.TurnIf(ds);
-			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds)));
+			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, FALSE)));
 			Ast.BackFromBranch(ds)
 		END
 	END
 	RETURN e
 END Sum;
 
-PROCEDURE Expression(VAR p: Parser; ds: Ast.Declarations): Ast.Expression;
+PROCEDURE Expression(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN): Ast.Expression;
 VAR expr: Ast.Expression;
 	e: Ast.ExprRelation;
 	isExt: Ast.ExprIsExtension;
 	rel: INTEGER;
 BEGIN
-	expr := Sum(p, ds);
+	expr := Sum(p, ds, varParam);
 	IF (Scanner.RelationFirst <= p.l) & (p.l < Scanner.RelationLast) THEN
 		rel := p.l;
 		Scan(p);
-		CheckAst(p, Ast.ExprRelationNew(e, expr, rel, Sum(p, ds)));
+		CheckAst(p, Ast.ExprRelationNew(e, expr, rel, Sum(p, ds, FALSE)));
 		expr := e
 	ELSIF ScanIfEqual(p, Scanner.Is) THEN
 		CheckAst(p, Ast.ExprIsExtensionNew(isExt, expr, type(p, ds, -1, -1)));
@@ -604,7 +602,7 @@ BEGIN
 			const.emptyLines := emptyLines;
 			Mark(p, const);
 			Expect(p, Scanner.Equal, ErrExpectEqual);
-			CheckAst(p, Ast.ConstSetExpression(const, Expression(p, ds)));
+			CheckAst(p, Ast.ConstSetExpression(const, Expression(p, ds, FALSE)));
 			Expect(p, Scanner.Semicolon, ErrExpectSemicolon)
 		END;
 		IF p.err THEN
@@ -630,7 +628,7 @@ BEGIN
 	Log.StrLn("Array");
 	ASSERT(p.l = SpecIdent.Array);
 	Scan(p);
-	a := Ast.ArrayGet(NIL, Expression(p, ds));
+	a := Ast.ArrayGet(NIL, Expression(p, ds, FALSE));
 	IF nameBegin >= 0 THEN
 		t := a;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
@@ -639,7 +637,7 @@ BEGIN
 	CheckAst(p, Ast.MultArrayLenByExpr(size, a.count));
 	i := 0;
 	WHILE ScanIfEqual(p, Scanner.Comma) DO
-		exprLen := Expression(p, ds);
+		exprLen := Expression(p, ds, FALSE);
 		CheckAst(p, Ast.MultArrayLenByExpr(size, exprLen));
 		IF i < LEN(lens) THEN
 			lens[i] := exprLen
@@ -979,7 +977,7 @@ VAR if, else: Ast.If;
 	VAR if: Ast.If;
 	BEGIN
 		Scan(p);
-		CheckAst(p, Ast.IfNew(if, Expression(p, ds), NIL));
+		CheckAst(p, Ast.IfNew(if, Expression(p, ds, FALSE), NIL));
 		Ast.TurnIf(ds);
 		Expect(p, SpecIdent.Then, ErrExpectThen);
 		if.stats := statements(p, ds)
@@ -1078,7 +1076,7 @@ VAR case: Ast.Case;
 BEGIN
 	ASSERT(p.l = SpecIdent.Case);
 	Scan(p);
-	CheckAst(p, Ast.CaseNew(case, Expression(p, ds)));
+	CheckAst(p, Ast.CaseNew(case, Expression(p, ds, FALSE)));
 	Expect(p, SpecIdent.Of, ErrExpectOf);
 	i := 1;
 	WHILE ScanIfEqual(p, Scanner.Alternative) DO ; END;
@@ -1117,7 +1115,7 @@ BEGIN
 		CheckAst(p, Ast.RepeatNew(r, statements(p, ds)));
 		Expect(p, SpecIdent.Until, ErrExpectUntil);
 	DecInLoops(p, ds);
-	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds)))
+	CheckAst(p, Ast.RepeatSetUntil(r, Expression(p, ds, FALSE)))
 	RETURN r
 END Repeat;
 
@@ -1138,14 +1136,14 @@ BEGIN
 	END;
 	Scan(p);
 	Expect(p, Scanner.Assign, ErrExpectAssign);
-	CheckAst(p, Ast.ForNew(f, v, Expression(p, ds), NIL, 1, NIL));
+	CheckAst(p, Ast.ForNew(f, v, Expression(p, ds, FALSE), NIL, 1, NIL));
 	Expect(p, SpecIdent.To, ErrExpectTo);
-	CheckAst(p, Ast.ForSetTo(f, Expression(p, ds)));
+	CheckAst(p, Ast.ForSetTo(f, Expression(p, ds, FALSE)));
 	IF p.l # SpecIdent.By THEN
 		CheckAst(p, Ast.ForSetBy(f, NIL))
 	ELSE
 		Scan(p);
-		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds)))
+		CheckAst(p, Ast.ForSetBy(f, Expression(p, ds, FALSE)))
 	END;
 	INC(p.inLoops);
 		Expect(p, SpecIdent.Do, ErrExpectDo);
@@ -1162,13 +1160,13 @@ BEGIN
 	ASSERT(p.l = SpecIdent.While);
 	INC(p.inLoops);
 		Scan(p);
-		CheckAst(p, Ast.WhileNew(w, Expression(p, ds), NIL));
+		CheckAst(p, Ast.WhileNew(w, Expression(p, ds, FALSE), NIL));
 		elsif := w;
 		Expect(p, SpecIdent.Do, ErrExpectDo);
 		w.stats := statements(p, ds);
 
 		WHILE ScanIfEqual(p, SpecIdent.Elsif) DO
-			CheckAst(p, Ast.WhileNew(br, Expression(p, ds), NIL));
+			CheckAst(p, Ast.WhileNew(br, Expression(p, ds, FALSE), NIL));
 			elsif.elsif := br;
 			elsif := br;
 			Expect(p, SpecIdent.Do, ErrExpectDo);
@@ -1185,7 +1183,7 @@ VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
 	Scan(p);
-	CheckAst(p, Ast.AssignNew(st, 0 < p.inLoops, des, Expression(p, ds)))
+	CheckAst(p, Ast.AssignNew(st, 0 < p.inLoops, des, Expression(p, ds, FALSE)))
 	RETURN st
 END Assign;
 
@@ -1299,7 +1297,7 @@ BEGIN
 		Log.StrLn("Return");
 
 		Scan(p);
-		CheckAst(p, Ast.ProcedureSetReturn(proc, Expression(p, proc)));
+		CheckAst(p, Ast.ProcedureSetReturn(proc, Expression(p, proc, FALSE)));
 		IF p.l = Scanner.Semicolon THEN
 			IF p.opt.strictSemicolon THEN
 				AddError(p, ErrExcessSemicolon);
@@ -1477,7 +1475,6 @@ BEGIN
 	p.errorsCount   := 0;
 	p.module        := NIL;
 	p.provider      := NIL;
-	p.varParam      := FALSE;
 	p.callId        := 0;
 	p.inLoops       := 0;
 	IF in # NIL THEN

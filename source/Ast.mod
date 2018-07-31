@@ -2084,10 +2084,11 @@ END RecordVarSearch;
 PROCEDURE RecordChecklessVarAdd(r: Record; name: ARRAY OF CHAR;
                                 begin, end: INTEGER): Var;
 VAR v: Var;
-	last: Declaration;
+    last: Declaration;
 BEGIN
 	NEW(v); NodeInit(v^, IdVar); DeclInit(v, NIL);
-	v.module := r.module;
+	v.module     := r.module;
+	v.inVarParam := FALSE;
 	PutChars(v.module.m, v.name, name, begin, end);
 	IF r.vars = NIL THEN
 		r.vars := v
