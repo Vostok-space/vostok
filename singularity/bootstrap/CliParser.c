@@ -37,14 +37,15 @@ extern o7_bool CliParser_GetParam(int str_len0, o7_char str[/*len0*/], int *i, i
 	(*arg) = o7_add((*arg), 1);
 	if (ret && Platform_Windows && (str[o7_ind(str_len0, j)] == (o7_char)'\'') && (o7_cmp((*arg), CLI_count) < 0)) {
 		str[o7_ind(str_len0, j)] = (o7_char)' ';
-		while ((o7_cmp((*arg), CLI_count) < 0) && ret && (str[o7_ind(str_len0, o7_sub((*i), 2))] != (o7_char)'\'')) {
-			str[o7_ind(str_len0, o7_sub((*i), 1))] = (o7_char)' ';
+		while ((o7_cmp((*arg), CLI_count) < 0) && ret && (str[o7_ind(str_len0, o7_sub((*i), 1))] != (o7_char)'\'')) {
+			str[o7_ind(str_len0, (*i))] = (o7_char)' ';
+			(*i) = o7_add((*i), 1);
 			ret = CLI_Get(str_len0, str, &(*i), (*arg));
 			(*arg) = o7_add((*arg), 1);
 		}
-		str[o7_ind(str_len0, o7_sub((*i), 2))] = 0x00u;
+		str[o7_ind(str_len0, o7_sub((*i), 1))] = 0x00u;
 	}
-	(*i) = o7_add(o7_add(j, StringStore_TrimChars(str_len0, str, j)), 1);
+	(*i) = o7_add(j, StringStore_TrimChars(str_len0, str, j));
 	return ret;
 }
 
@@ -63,14 +64,10 @@ static int CopyPath(struct CliParser_Args *args, int *arg);
 static o7_bool CopyPath_CopyInfrPart(int str_len0, o7_char str[/*len0*/], int *i, int *arg, int add_len0, o7_char add[/*len0*/]) {
 	o7_bool ret;
 
-	ret = CLI_Get(str_len0, str, &(*i), (*arg));
+	ret = CLI_Get(str_len0, str, &(*i), (*arg)) && StringStore_CopyCharsNull(str_len0, str, &(*i), add_len0, add);
 	if (ret) {
-		(*i) = o7_sub((*i), 1);
-		ret = StringStore_CopyCharsNull(str_len0, str, &(*i), add_len0, add);
-		if (ret) {
-			(*i) = o7_add((*i), 1);
-			str[o7_ind(str_len0, (*i))] = 0x00u;
-		}
+		(*i) = o7_add((*i), 1);
+		str[o7_ind(str_len0, (*i))] = 0x00u;
 	}
 	return ret;
 }
@@ -100,6 +97,8 @@ static int CopyPath(struct CliParser_Args *args, int *arg) {
 				if (o7_strcmp(256, opt, 2, (o7_char *)"-i") == 0) {
 					(*args).sing |= 1u << count;
 				}
+				i = o7_add(i, 1);
+				(*args).modPath[o7_ind(4096, i)] = 0x00u;
 				count = o7_add(count, 1);
 			} else {
 				ret = CliParser_ErrTooLongModuleDirs_cnst;
@@ -108,7 +107,8 @@ static int CopyPath(struct CliParser_Args *args, int *arg) {
 			(*arg) = o7_add((*arg), 1);
 			if (o7_cmp((*arg), CLI_count) >= 0) {
 				ret = CliParser_ErrNotEnoughArgs_cnst;
-			} else if (CLI_Get(4096, (*args).cDirs, &dirsOfs, (*arg)) && (dirsOfs < O7_LEN((*args).cDirs))) {
+			} else if (CLI_Get(4096, (*args).cDirs, &dirsOfs, (*arg)) && (dirsOfs < O7_LEN((*args).cDirs) - 1)) {
+				dirsOfs = o7_add(dirsOfs, 1);
 				(*args).cDirs[o7_ind(4096, dirsOfs)] = 0x00u;
 				Log_Str(8, (o7_char *)"cDirs = ");
 				Log_StrLn(4096, (*args).cDirs);
@@ -120,7 +120,6 @@ static int CopyPath(struct CliParser_Args *args, int *arg) {
 			if (o7_cmp((*arg), CLI_count) >= 0) {
 				ret = CliParser_ErrNotEnoughArgs_cnst;
 			} else if (CliParser_GetParam(4096, (*args).cc, &ccLen, &(*arg))) {
-				ccLen = o7_sub(ccLen, 1);
 				(*arg) = o7_sub((*arg), 1);
 			} else {
 				ret = CliParser_ErrTooLongCc_cnst;
@@ -215,7 +214,7 @@ static int ToC(struct CliParser_Args *args, int ret) {
 	O7_ASSERT(o7_in(ret, O7_SET(CliParser_ResultC_cnst, CliParser_ResultRun_cnst)));
 
 	(*args).srcLen = 0;
-	arg = 2;
+	arg = 1;
 	if (o7_cmp(CLI_count, arg) <= 0) {
 		ret = CliParser_ErrNotEnoughArgs_cnst;
 	} else if (!CliParser_GetParam(65536, (*args).src, &(*args).srcLen, &arg)) {
@@ -223,6 +222,8 @@ static int ToC(struct CliParser_Args *args, int ret) {
 		ret = CliParser_ErrTooLongSourceName_cnst;
 	} else {
 		argDest = arg;
+		(*args).srcLen = o7_add((*args).srcLen, 1);
+
 		arg = o7_add(arg, (int)(ret != CliParser_ResultRun_cnst));
 		cpRet = CopyPath(&(*args), &arg);
 		if (cpRet != CliParser_ErrNo_cnst) {
@@ -246,7 +247,7 @@ extern o7_bool CliParser_Parse(struct CliParser_Args *args, int *ret) {
 
 	cmdLen = 0;
 	V_Init(&(*args)._);
-	if ((o7_cmp(CLI_count, 1) <= 0) || !CLI_Get(32, (*args).cmd, &cmdLen, 1)) {
+	if ((o7_cmp(CLI_count, 0) <= 0) || !CLI_Get(32, (*args).cmd, &cmdLen, 0)) {
 		(*ret) = CliParser_ErrWrongArgs_cnst;
 	} else if (o7_strcmp(32, (*args).cmd, 4, (o7_char *)"help") == 0) {
 		(*ret) = CliParser_CmdHelp_cnst;

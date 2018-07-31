@@ -28,13 +28,14 @@ extern o7_cbool CLI_Get(
 	int i;
 	assert((arg >= 0) && (arg < CLI_count));
 	i = 0;
-	while ((*ofs < str_len - 1) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < str_len) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
-		i += 1;
+		i    += 1;
 		*ofs += 1;
 	}
-	str[*ofs] = '\0';
-	*ofs += 1;
+	if (*ofs < str_len) {
+		str[*ofs] = '\0';
+	}
 	return '\0' == CLI_argv[arg][i];
 }
 
@@ -47,6 +48,6 @@ extern void CLI_init(void) {
 	extern int o7_cli_argc;
 	extern char **o7_cli_argv;
 
-	CLI_count = o7_cli_argc;
-	CLI_argv = o7_cli_argv;
+	CLI_count = o7_cli_argc - 1;
+	CLI_argv  = o7_cli_argv + 1;
 }

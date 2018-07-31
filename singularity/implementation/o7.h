@@ -1058,7 +1058,7 @@ o7_ulong_t o7_lset(o7_int_t low, o7_int_t high) {
 #define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_bool o7_in(o7_int_t n, unsigned set) {
+o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
 	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
 }
 

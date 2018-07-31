@@ -27,9 +27,9 @@ MODULE ReadDir;
      ofs: INTEGER;
  BEGIN
    ofs := 0;
-   IF CLI.count <= 1 THEN
+   IF CLI.count <= 0 THEN
      Dir(".")
-   ELSIF CLI.Get(dir, ofs, 1) THEN
+   ELSIF CLI.Get(dir, ofs, 0) THEN
      Dir(dir)
    ELSE
      Out.String("Too long name");

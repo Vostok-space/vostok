@@ -210,16 +210,16 @@ BEGIN
 	RETURN Copy(c.buf, c.len, arg, 0, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
 END LastPart;
 
+PROCEDURE Log*(c: Code);
+BEGIN
+	Vlog.StrLn(c.buf)
+END Log;
+
 PROCEDURE Do*(c: Code): INTEGER;
 BEGIN
 	ASSERT(0 < c.len)
 	RETURN OsExec.Do(c.buf)
 END Do;
-
-PROCEDURE Log*(c: Code);
-BEGIN
-	Vlog.StrLn(c.buf)
-END Log;
 
 PROCEDURE AutoCorrectDirSeparator*(state: BOOLEAN);
 BEGIN

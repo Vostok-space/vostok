@@ -128,7 +128,7 @@ VAR cnt: INTEGER;
 BEGIN
 	baseX := 0; baseY := 0;
 	cmpInit(cmp, baseX, baseY);
-	IF CLI.count > 1 THEN
+	IF CLI.count > 0 THEN
 		cnt := 20
 	ELSE
 		cnt := 200

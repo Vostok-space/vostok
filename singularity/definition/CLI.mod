@@ -1,4 +1,4 @@
-(* Copyright 2016 ComdivByZero
+(* Copyright 2016, 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,20 @@
  *)
 MODULE CLI;
 
+CONST MaxLen* = 4096;
+
 VAR count*: INTEGER;
 
+PROCEDURE GetName*(VAR str: ARRAY OF CHAR; VAR ofs: INTEGER): BOOLEAN;
+BEGIN
+	ASSERT((0 <= ofs) & (ofs < LEN(str)));
+	RETURN FALSE
+END GetName;
+
 PROCEDURE Get*(VAR str: ARRAY OF CHAR; VAR ofs: INTEGER; arg: INTEGER): BOOLEAN;
+BEGIN
+	ASSERT((0 <= ofs) & (ofs < LEN(str)));
+	ASSERT((0 <= arg) & (arg < count));
 	RETURN FALSE
 END Get;
 

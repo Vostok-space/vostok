@@ -80,14 +80,15 @@ BEGIN
 	INC(arg);
 	IF ret & Platform.Windows & (str[j] = "'") & (arg < CLI.count) THEN
 		str[j] := " ";
-		WHILE (arg < CLI.count) & ret & (str[i - 2] # "'") DO
-			str[i - 1] := " ";
+		WHILE (arg < CLI.count) & ret & (str[i - 1] # "'") DO
+			str[i] := " ";
+			INC(i);
 			ret := CLI.Get(str, i, arg);
 			INC(arg)
 		END;
-		str[i - 2] := Utf8.Null
+		str[i - 1] := Utf8.Null
 	END;
-	i := j + Strings.TrimChars(str, j) + 1
+	i := j + Strings.TrimChars(str, j)
 	RETURN ret
 END GetParam;
 
@@ -114,14 +115,10 @@ VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 	                       add: ARRAY OF CHAR): BOOLEAN;
 	VAR ret: BOOLEAN;
 	BEGIN
-		ret := CLI.Get(str, i, arg);
+		ret := CLI.Get(str, i, arg) & Strings.CopyCharsNull(str, i, add);
 		IF ret THEN
-			DEC(i);
-			ret := Strings.CopyCharsNull(str, i, add);
-			IF ret THEN
-				INC(i);
-				str[i] := Utf8.Null
-			END;
+			INC(i);
+			str[i] := Utf8.Null
 		END
 		RETURN ret
 	END CopyInfrPart;
@@ -153,6 +150,8 @@ BEGIN
 				IF opt = "-i" THEN
 					INCL(args.sing, count)
 				END;
+				INC(i);
+				args.modPath[i] := Utf8.Null;
 				INC(count)
 			ELSE
 				ret := ErrTooLongModuleDirs
@@ -161,8 +160,9 @@ BEGIN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
-			ELSIF CLI.Get(args.cDirs, dirsOfs, arg) & (dirsOfs < LEN(args.cDirs))
+			ELSIF CLI.Get(args.cDirs, dirsOfs, arg) & (dirsOfs < LEN(args.cDirs) - 1)
 			THEN
+				INC(dirsOfs);
 				args.cDirs[dirsOfs] := Utf8.Null;
 				Log.Str("cDirs = ");
 				Log.StrLn(args.cDirs)
@@ -174,7 +174,6 @@ BEGIN
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF GetParam(args.cc, ccLen, arg) THEN
-				DEC(ccLen);
 				DEC(arg)
 			ELSE
 				ret := ErrTooLongCc
@@ -311,7 +310,7 @@ BEGIN
 	ASSERT(ret IN {ResultC .. ResultRun});
 
 	args.srcLen := 0;
-	arg := 2;
+	arg := 1;
 	IF CLI.count <= arg THEN
 		ret := ErrNotEnoughArgs
 	ELSIF ~GetParam(args.src, args.srcLen, arg) THEN
@@ -319,6 +318,8 @@ BEGIN
 		ret := ErrTooLongSourceName
 	ELSE
 		argDest := arg;
+		INC(args.srcLen);
+
 		arg := arg + ORD(ret # ResultRun);
 		cpRet := CopyPath(args, arg);
 		IF cpRet # ErrNo THEN
@@ -345,7 +346,7 @@ VAR cmdLen: INTEGER;
 BEGIN
 	cmdLen := 0;
 	V.Init(args);
-	IF (CLI.count <= 1) OR ~CLI.Get(args.cmd, cmdLen, 1) THEN
+	IF (CLI.count <= 0) OR ~CLI.Get(args.cmd, cmdLen, 0) THEN
 		ret := ErrWrongArgs
 	ELSIF args.cmd = "help" THEN
 		ret := CmdHelp
