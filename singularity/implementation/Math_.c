@@ -65,9 +65,8 @@ extern double Math__log(double x, double base) {
 }
 
 extern double Math__round(double x) {
-	/* TODO */
-	assert(0 > 1);
-	return 0.0;
+	/* TODO check */
+	return round(o7_dbl(x));
 }
 
 extern double Math__sin(double x) {

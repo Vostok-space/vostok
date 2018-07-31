@@ -56,14 +56,14 @@ MODULE Math;
 
  PROCEDURE sin*(x: REAL): REAL;
  BEGIN
-   ASSERT(FALSE)
+   ASSERT(x = 0.0)
    RETURN 0.0
  END sin;
 
  PROCEDURE cos*(x: REAL): REAL;
  BEGIN
-   ASSERT(FALSE)
-   RETURN 0.0
+   ASSERT(x = 0.0)
+   RETURN 1.0
  END cos;
 
  PROCEDURE tan*(x: REAL): REAL;
