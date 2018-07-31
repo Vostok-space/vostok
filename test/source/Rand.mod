@@ -18,9 +18,14 @@ MODULE Rand;
  PROCEDURE Int*;
  VAR i: INTEGER;
  BEGIN
-   IF R.Open() & R.Int(i) THEN
-     Out.Int(i, 0); Out.Ln
+   IF ~R.Open() THEN
+     Out.String("Can not open source of random")
+   ELSIF ~R.Int(i) THEN
+     Out.String("Can not read random data for integer")
+   ELSE
+     Out.Int(i, 0)
    END;
+   Out.Ln;
    R.Close
  END Int;
 
