@@ -84,9 +84,11 @@ MODULE make;
      file: Dir.File;
      n, c: ARRAY 64 OF CHAR;
      l, j: INTEGER;
+     pass, fail: INTEGER;
  BEGIN
    IF Dir.Open(dir, srcDir, 0) THEN
-     ok := TRUE;
+     pass := 0;
+     fail := 0;
      WHILE Dir.Read(file, dir) DO
        l := 0;
        j := 0;
@@ -103,9 +105,17 @@ MODULE make;
         & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
         & Exec.Add(code, "-cyrillic", 0)
        THEN
-         ok := (Execute(code, n) = 0) & ok
+         IF Execute(code, n) = 0 THEN
+           INC(pass)
+         ELSE
+           INC(fail)
+         END
        END
      END;
+     ok := fail = 0;
+     Log.Ln;
+     Log.Str("Passed: "); Log.Int(pass); Log.Ln;
+     Log.Str("Failed: "); Log.Int(fail); Log.Ln;
      ASSERT(Dir.Close(dir))
    END
    RETURN ok
