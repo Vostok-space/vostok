@@ -487,7 +487,7 @@ VAR ret, len: INTEGER;
 				INC(arg)
 			END;
 			IF arg >= CLI.count THEN
-				CLI.SetExitCode(Exec.Do(cmd));
+				CLI.SetExitCode(Exec.Ok + ORD(Exec.Do(cmd) # Exec.Ok));
 				ret := ErrNo
 			END
 		END
