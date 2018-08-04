@@ -130,7 +130,7 @@ BEGIN
 	c.parts := FALSE;
 	c.len := 0;
 	IF name[0] = Utf8.Null THEN
-		c.buf[0] := Utf8.Null;
+		c.buf[c.len] := Utf8.Null;
 		ok := TRUE
 	ELSIF Platform.Posix THEN
 		ok := FullCopy(c.buf, c.len, name, 0)

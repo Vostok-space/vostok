@@ -18,7 +18,7 @@ MODULE make;
 
  IMPORT Log, Exec := PlatformExec, Dir, Platform;
 
- VAR ok*, windows, posix: BOOLEAN;
+ VAR ok*, windows, posix, java: BOOLEAN;
 
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
@@ -78,6 +78,17 @@ MODULE make;
    ok := BuildBy("bs-o7c", "o7c", "v0")
  END Build;
 
+ PROCEDURE AddRun(VAR code: Exec.Code): BOOLEAN;
+ VAR ret: BOOLEAN;
+ BEGIN
+   IF java THEN
+     ret := Exec.Add(code, "run-java", 0)
+   ELSE
+     ret := Exec.Add(code, "run", 0)
+   END
+   RETURN ret
+ END AddRun;
+
  PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
@@ -95,7 +106,7 @@ MODULE make;
        IF Dir.CopyName(n, l, file) & (n[0] # ".")
         & Exec.Init(code, "")
         & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-        & Exec.Add(code, "run", 0)
+        & AddRun(code)
         & CopyFileName(c, n)
         & ( example & Exec.Add(code, c, 0)
          OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
@@ -148,13 +159,27 @@ MODULE make;
    Log.StrLn("  Test    - build and run tests from test/source");
    Log.StrLn("  Example - build examples");
    Log.StrLn("  Self    - build itself then run tests");
-   Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests")
+   Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests");
+   Log.StrLn("  UseJava - turn translation throgh Java");
+   Log.StrLn("  UseC    - turn translation throgh C")
  END Help;
+
+ PROCEDURE UseJava*;
+ BEGIN
+   java := TRUE
+ END UseJava;
+
+ PROCEDURE UseC*;
+ BEGIN
+   java := FALSE
+ END UseC;
 
 BEGIN
   Log.On;
   Exec.AutoCorrectDirSeparator(TRUE);
 
   windows := Platform.Windows;
-  posix   := Platform.Posix
+  posix   := Platform.Posix;
+
+  java := FALSE
 END make.

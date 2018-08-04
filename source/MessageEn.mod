@@ -341,7 +341,7 @@ END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Translator from Oberon-07 to C. 2018");
+S("Translator from Oberon-07 to C and java. 2018");
 S("Usage: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Code OutDir { -m PTM | -i PTI | -infr Infr }");
@@ -441,6 +441,15 @@ BEGIN
 		S("Can not remove output directory")
 	| Cli.ErrCantFoundCCompiler:
 		S("Can not found C Compiler")
+
+	| Cli.ErrOpenJava:
+		S("Can not open output java file")
+	| Cli.ErrJavaCompiler:
+		S("Error during Java compiler calling")
+	| Cli.ErrCantFoundJavaCompiler:
+		S("Can not found Java compiler")
+	| Cli.ErrTooLongJavaDirs:
+		S("Too long overall length of paths to .java files")
 	END
 END CliError;
 

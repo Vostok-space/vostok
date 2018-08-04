@@ -24,7 +24,7 @@ IMPORT
 
 TYPE
 	Out* = RECORD(V.Base)
-		out*: Stream.POut;
+		out: Stream.POut;
 		len*: INTEGER;
 		tabs: INTEGER;
 		isNewLine: BOOLEAN
@@ -66,6 +66,13 @@ BEGIN
 		DEC(count)
 	END
 END Chars;
+
+PROCEDURE Char*(VAR gen: Out; ch: CHAR);
+VAR c: ARRAY 1 OF CHAR;
+BEGIN
+	c[0] := ch;
+	gen.len := gen.len + Stream.WriteChars(gen.out^, c, 0, 1);
+END Char;
 
 PROCEDURE NewLine(VAR gen: Out);
 BEGIN

@@ -2,7 +2,7 @@
 
 Project "Vostok"
 ==========================
-[Oberon-07](documents/Language.md) translator to C.
+[Oberon-07](documents/Language.md) translator to C and Java.
 
 License is LGPL for translator's code and Apache for libraries
 
@@ -52,8 +52,6 @@ Demo web-server:
 
     $ cd demo-server
 
-    $ go run server.go
-    $ # or
     $ go build server.go && ./server
 
 ## Questions:

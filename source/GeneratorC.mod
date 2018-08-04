@@ -104,7 +104,9 @@ TYPE
 		opt: Options;
 
 		expressionSemicolon,
-		insideSizeOf       : BOOLEAN
+		insideSizeOf       : BOOLEAN;
+
+		memout: PMemoryOut
 	END;
 
 	MOut = RECORD
@@ -239,7 +241,7 @@ BEGIN
 	Ident(gen, decl.name);
 	IF decl IS Ast.Const THEN
 		Text.Str(gen, "_cnst")
-	ELSIF SpecIdentChecker.IsSpecName(decl.name) THEN
+	ELSIF SpecIdentChecker.IsSpecName(decl.name, {}) THEN
 		Text.Str(gen, "_")
 	END
 END Name;
@@ -1689,7 +1691,7 @@ END Qualifier;
 
 PROCEDURE Invert(VAR gen: Generator);
 BEGIN
-	gen.out(PMemoryOut).invert := ~gen.out(PMemoryOut).invert
+	gen.memout.invert := ~gen.memout.invert
 END Invert;
 
 PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
@@ -1741,7 +1743,7 @@ BEGIN
 	Parameters(gen, proc);
 	Invert(gen);
 	type(gen, NIL, proc.type, FALSE, FALSE(* TODO *));
-	MemWriteInvert(gen.out(PMemoryOut)^)
+	MemWriteInvert(gen.memout^)
 END ProcHead;
 
 PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
@@ -1752,6 +1754,7 @@ BEGIN
 	mo := PMemoryOutGet(gen.opt);
 
 	Text.Init(g, mo);
+	g.memout := mo;
 	Text.SetTabs(g, gen);
 	g.module := gen.module;
 	g.interface := gen.interface;
@@ -2061,7 +2064,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 	PROCEDURE Simple(VAR gen: Generator; str: ARRAY OF CHAR);
 	BEGIN
 		Text.Str(gen, str);
-		MemWriteInvert(gen.out(PMemoryOut)^)
+		MemWriteInvert(gen.memout^)
 	END Simple;
 
 	PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
@@ -2095,7 +2098,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			END;
 			Text.StrClose(gen, "} ")
 		END;
-		MemWriteInvert(gen.out(PMemoryOut)^)
+		MemWriteInvert(gen.memout^)
 	END Record;
 
 	PROCEDURE Array(VAR gen: Generator; decl: Ast.Declaration; arr: Ast.Array;
@@ -2104,7 +2107,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 		i: INTEGER;
 	BEGIN
 		t := arr.type;
-		MemWriteInvert(gen.out(PMemoryOut)^);
+		MemWriteInvert(gen.memout^);
 		IF arr.count # NIL THEN
 			Text.Str(gen, "[");
 			Expression(gen, arr.count);
@@ -2138,7 +2141,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 BEGIN
 	IF typ = NIL THEN
 		Text.Str(gen, "void ");
-		MemWriteInvert(gen.out(PMemoryOut)^)
+		MemWriteInvert(gen.memout^)
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(typ.name) THEN
 			IF sameType THEN
@@ -2158,8 +2161,8 @@ BEGIN
 				ELSE
 					GlobalName(gen, typ); Text.Str(gen, " ")
 				END;
-				IF gen.out IS PMemoryOut THEN
-					MemWriteInvert(gen.out(PMemoryOut)^)
+				IF gen.memout # NIL THEN
+					MemWriteInvert(gen.memout^)
 				END
 			END
 		ELSIF ~sameType OR (typ.id IN {Ast.IdPointer, Ast.IdArray, Ast.IdProcType})
@@ -2189,7 +2192,7 @@ BEGIN
 				Simple(gen, "float ")
 			| Ast.IdPointer:
 				Text.Str(gen, "*");
-				MemWriteInvert(gen.out(PMemoryOut)^);
+				MemWriteInvert(gen.memout^);
 				Invert(gen);
 				Type(gen, decl, typ.type, FALSE, sameType)
 			| Ast.IdArray:
@@ -2198,13 +2201,13 @@ BEGIN
 				Record(gen, typ(Ast.Record))
 			| Ast.IdProcType:
 				Text.Str(gen, "(*");
-				MemWriteInvert(gen.out(PMemoryOut)^);
+				MemWriteInvert(gen.memout^);
 				Text.Str(gen, ")");
 				ProcHead(gen, typ(Ast.ProcType))
 			END
 		END;
-		IF gen.out IS PMemoryOut THEN
-			MemWriteInvert(gen.out(PMemoryOut)^)
+		IF gen.memout # NIL THEN
+			MemWriteInvert(gen.memout^)
 		END
 	END
 END Type;
@@ -3082,9 +3085,10 @@ BEGIN
 END VarsInit;
 
 PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
-VAR d, prev: Ast.Declaration;
+VAR d, prev: Ast.Declaration; inModule: BOOLEAN;
 BEGIN
 	d := ds.start;
+	inModule := ds IS Ast.Module;
 	ASSERT((d = NIL) OR ~(d IS Ast.Module));
 	WHILE (d # NIL) & (d IS Ast.Import) DO
 		Import(out.g[ORD(~out.opt.main)], d);
@@ -3098,7 +3102,7 @@ BEGIN
 	END;
 	LnIfWrote(out);
 
-	IF ds IS Ast.Module THEN
+	IF inModule THEN
 		WHILE (d # NIL) & (d IS Ast.Type) DO
 			TypeDecl(out, d(Ast.Type));
 			d := d.next
@@ -3126,7 +3130,7 @@ BEGIN
 	END;
 	LnIfWrote(out);
 
-	IF out.opt.procLocal OR (ds IS Ast.Module) THEN
+	IF inModule OR out.opt.procLocal THEN
 		WHILE d # NIL DO
 			Procedure(out, d(Ast.Procedure));
 			d := d.next
@@ -3340,7 +3344,9 @@ VAR out: MOut;
 
 		gen.interface := interface;
 
-		gen.insideSizeOf := FALSE
+		gen.insideSizeOf := FALSE;
+
+		gen.memout := NIL
 	END Init;
 
 	PROCEDURE Includes(VAR gen: Generator);

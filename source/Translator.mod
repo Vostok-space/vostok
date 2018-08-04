@@ -28,16 +28,21 @@ IMPORT
 	Parser,
 	Scanner,
 	Ast,
+	AstTransform,
 	GeneratorC,
+	GeneratorJava,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
 	CComp := CCompilerInterface,
+	JavaComp := JavaCompilerInterface,
+	JavaExec := JavaExecInterface,
 	Message,
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
 	OsEnv,
-	FileSys := FileSystemUtil;
+	FileSys := FileSystemUtil,
+	Text := TextGenerator;
 
 CONST
 	ErrNo    =  0;
@@ -64,6 +69,14 @@ TYPE
 		nameLen   : INTEGER;
 		nameOk,
 		firstNotOk: BOOLEAN
+	END;
+
+	ProcNameProvider = POINTER TO RECORD(GeneratorJava.RProviderProcTypeName)
+		javac   : JavaComp.Compiler;
+		usejavac: BOOLEAN;
+
+		dir   : ARRAY 1024 OF CHAR;
+		dirLen: INTEGER
 	END;
 
 PROCEDURE Unlink(c: Container);
@@ -278,19 +291,53 @@ BEGIN
 	RETURN ret
 END OpenCOutput;
 
-PROCEDURE NewProvider(VAR mp: ModuleProvider);
+PROCEDURE OpenJavaOutput(VAR out: File.Out;
+                         module: Ast.Module; orName: ARRAY OF CHAR;
+                         VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+VAR destLen: INTEGER;
+    ret: INTEGER;
+BEGIN
+	out := NIL;
+	destLen := dirLen;
+	IF ~Strings.CopyCharsNull(dir, destLen, Exec.dirSep)
+	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name)
+	  OR (module = NIL) & Strings.CopyCharsNull(dir, destLen, orName)
+	    )
+	OR ~Strings.CopyCharsNull(dir, destLen, ".java")
+	THEN
+		ret := Cli.ErrTooLongOutName
+	ELSE
+		out := File.OpenOut(dir);
+		IF out = NIL THEN
+			ret := Cli.ErrOpenJava
+		ELSE
+			Log.StrLn(dir);
+			ret := ErrNo
+		END
+	END
+	RETURN ret
+END OpenJavaOutput;
+
+PROCEDURE NewProvider(VAR mp: ModuleProvider; args: Cli.Args);
+VAR len: INTEGER;
 BEGIN
 	NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
 	Parser.DefaultOptions(mp.opt);
 	mp.opt.printError := ErrorMessage;
-	mp.extLen := 0;
 
 	NEW(mp.modules.first);
 	mp.modules.first.m := NIL;
 	mp.modules.first.next := mp.modules.first;
 	mp.modules.last := mp.modules.first;
 
-	mp.firstNotOk := TRUE
+	mp.firstNotOk := TRUE;
+
+	mp.fileExt := ".mod"; (* TODO *)
+	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
+	mp.opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
+	len := 0;
+	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
+	mp.sing := args.sing
 END NewProvider;
 
 (* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
@@ -300,9 +347,10 @@ PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
                     cDirs: ARRAY OF CHAR;
                     VAR ccomp: CComp.Compiler; usecc: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
-	ret, i, cDirsLen, nameLen: INTEGER;
-	name: ARRAY 512 OF CHAR;
-	iface, impl: File.Out;
+    ret, i, cDirsLen, nameLen: INTEGER;
+    name: ARRAY 512 OF CHAR;
+    iface, impl: File.Out;
+    sing: BOOLEAN;
 BEGIN
 	module.used := TRUE;
 
@@ -314,88 +362,152 @@ BEGIN
 		END;
 		imp := imp.next
 	END;
-	IF ret # ErrNo THEN
-		;
-	ELSIF ~module.mark THEN
-		ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp, usecc);
-		IF ret = ErrNo THEN
-			GeneratorC.Generate(iface, impl, module, cmd, opt);
-			File.CloseOut(iface);
-			File.CloseOut(impl)
-		END
-	ELSE
-		i := 0;
-		WHILE cDirs[i] # Utf8.Null DO
-			nameLen := 0;
-			cDirsLen := Strings.CalcLen(cDirs, i);
-			(* TODO *)
-			ASSERT(Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
-			     & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
-			     & CopyModuleNameForFile(name, nameLen, module.name)
-			     & Strings.CopyCharsNull(name, nameLen, ".c")
-
-			     & (~Files.Exist(name, 0) OR CComp.AddC(ccomp, name, 0))
-			);
-			i := i + cDirsLen + 1
+	IF ret = ErrNo THEN
+		sing := FALSE;
+		IF module.mark THEN
+			i := 0;
+			WHILE cDirs[i] # Utf8.Null DO
+				nameLen := 0;
+				cDirsLen := Strings.CalcLen(cDirs, i);
+				(* TODO *)
+				ASSERT(Strings.CopyChars(name, nameLen, cDirs, i, i + cDirsLen)
+				     & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & Strings.CopyCharsNull(name, nameLen, ".c")
+				);
+				IF Files.Exist(name, 0) THEN
+					sing := TRUE;
+					ASSERT(~usecc OR CComp.AddC(ccomp, name, 0))
+				ELSE
+					name[nameLen - 1] := "h";
+					sing := Files.Exist(name, 0) OR sing
+				END;
+				i := i + cDirsLen + 1
+			END
+		END;
+		IF ~sing THEN
+			ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp, usecc);
+			IF ret = ErrNo THEN
+				GeneratorC.Generate(iface, impl, module, cmd, opt);
+				File.CloseOut(iface);
+				File.CloseOut(impl)
+			END
 		END
 	END
 	RETURN ret
 END GenerateC;
 
-PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
-                      VAR bin: ARRAY OF CHAR; name: Strings.String;
-                      tmp: ARRAY OF CHAR): BOOLEAN;
-VAR binLen, i: INTEGER;
+PROCEDURE GetTempOut(VAR dirOut: ARRAY OF CHAR; VAR len: INTEGER;
+                     name: Strings.String; tmp: ARRAY OF CHAR): BOOLEAN;
+VAR i: INTEGER;
     ok: BOOLEAN;
 BEGIN
 	len := 0;
 	IF tmp # "" THEN
 		ok := TRUE;
-		ASSERT(Strings.CopyCharsNull(dirCOut, len, tmp))
+		ASSERT(Strings.CopyCharsNull(dirOut, len, tmp))
 	ELSIF Platform.Posix THEN
 		ok := TRUE;
-		ASSERT(Strings.CopyCharsNull(dirCOut, len, "/tmp/o7c-")
-		     & Strings.CopyToChars(dirCOut, len, name))
+		ASSERT(Strings.CopyCharsNull(dirOut, len, "/tmp/o7c-")
+		     & Strings.CopyToChars(dirOut, len, name))
 	ELSE ASSERT(Platform.Windows);
-		ok := OsEnv.Get(dirCOut, len, "temp")
-		    & Strings.CopyCharsNull(dirCOut, len, "\o7c-")
-		    & Strings.CopyToChars(dirCOut, len, name)
+		ok := OsEnv.Get(dirOut, len, "temp")
+		    & Strings.CopyCharsNull(dirOut, len, "\o7c-")
+		    & Strings.CopyToChars(dirOut, len, name)
 	END;
 
 	IF ok THEN
 		i := 0;
-		ok := FileSys.MakeDir(dirCOut);
+		ok := FileSys.MakeDir(dirOut);
 		IF ~ok & (tmp = "") THEN
 			WHILE ~ok & (i < 100) DO
 				IF i = 0 THEN
-					ASSERT(Strings.CopyCharsNull(dirCOut, len, "-00"))
+					ASSERT(Strings.CopyCharsNull(dirOut, len, "-00"))
 				ELSE
-					dirCOut[len - 2] := CHR(ORD("0") + i DIV 10);
-					dirCOut[len - 1] := CHR(ORD("0") + i MOD 10)
+					dirOut[len - 2] := CHR(ORD("0") + i DIV 10);
+					dirOut[len - 1] := CHR(ORD("0") + i MOD 10)
 				END;
-				ok := FileSys.MakeDir(dirCOut);
+				ok := FileSys.MakeDir(dirOut);
 				INC(i)
 			END
-		END;
-		IF ok & (bin[0] = Utf8.Null) THEN
-			binLen := 0;
-			ASSERT(Strings.CopyCharsNull(bin, binLen, dirCOut)
-			     & Strings.CopyCharsNull(bin, binLen, Exec.dirSep)
-			     & Strings.CopyToChars(bin, binLen, name)
-			     & (~Platform.Windows OR Strings.CopyCharsNull(bin, binLen, ".exe")))
 		END
+	END
+	RETURN ok
+END GetTempOut;
+
+PROCEDURE GetCBin(VAR bin: ARRAY OF CHAR; dir: ARRAY OF CHAR;
+                  name: Strings.String): BOOLEAN;
+VAR len: INTEGER;
+BEGIN
+	len := 0
+	RETURN Strings.CopyCharsNull(bin, len, dir)
+	     & Strings.CopyCharsNull(bin, len, Exec.dirSep)
+	     & Strings.CopyToChars(bin, len, name)
+	     & (~Platform.Windows OR Strings.CopyCharsNull(bin, len, ".exe"))
+END GetCBin;
+
+PROCEDURE GetMainClass(VAR bin: ARRAY OF CHAR; name: Strings.String): BOOLEAN;
+VAR len: INTEGER;
+BEGIN
+	len := 0;
+	RETURN Strings.CopyCharsNull(bin, len, "o7.")
+	     & Strings.CopyToChars(bin, len, name)
+END GetMainClass;
+
+PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
+                      VAR bin: ARRAY OF CHAR; name: Strings.String;
+                      tmp: ARRAY OF CHAR): BOOLEAN;
+VAR ok: BOOLEAN;
+BEGIN
+	ok := GetTempOut(dirCOut, len, name, tmp);
+	IF ok & (bin[0] = Utf8.Null) THEN
+		ok := GetCBin(bin, dirCOut, name)
 	END
 	RETURN ok
 END GetTempOutC;
 
-PROCEDURE ToC(res: INTEGER; VAR args: Cli.Args): INTEGER;
-VAR ret, len: INTEGER;
-    outC: ARRAY 1024 OF CHAR;
-    mp: ModuleProvider;
-    module: Ast.Module;
+PROCEDURE IdentEncoderForCompiler(id: INTEGER): INTEGER;
+VAR enc: INTEGER;
+BEGIN
+	CASE id OF
+	  CComp.Unknown, CComp.CompCert:
+		enc := GeneratorC.IdentEncTranslit
+	| CComp.Clang, CComp.Tiny:
+		enc := GeneratorC.IdentEncSame
+	| CComp.Gnu:
+		enc := GeneratorC.IdentEncEscUnicode
+	END
+	RETURN enc
+END IdentEncoderForCompiler;
+
+PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
+                           module: Ast.Module; call: Ast.Call): INTEGER;
+VAR ret: INTEGER;
     opt: GeneratorC.Options;
-    call: Ast.Call;
     ccomp: CComp.Compiler;
+    outC: ARRAY 1024 OF CHAR;
+
+	PROCEDURE SetOptions(opt: GeneratorC.Options; args: Cli.Args);
+	BEGIN
+		IF 0 <= args.init THEN
+			opt.varInit := args.init
+		END;
+		IF 0 <= args.memng THEN
+			opt.memManager := args.memng
+		END;
+		IF args.noNilCheck THEN
+			opt.checkNil := FALSE
+		END;
+		IF args.noOverflowCheck THEN
+			opt.checkArith := FALSE
+		END;
+		IF args.noIndexCheck THEN
+			opt.checkIndex := FALSE
+		END;
+		IF Cli.CyrillicSame <= args.cyrillic THEN
+			opt.identEnc := args.cyrillic - Cli.CyrillicSame
+		END
+	END SetOptions;
 
 	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
 	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
@@ -414,14 +526,7 @@ VAR ret, len: INTEGER;
 			IF cc[0] = Utf8.Null THEN
 				ok := CComp.Search(cmd, res = Cli.ResultRun);
 				IF ok & (args.cyrillic = Cli.CyrillicDefault) THEN
-					CASE cmd.id OF
-					  CComp.Unknown, CComp.CompCert:
-						opt.identEnc := GeneratorC.IdentEncTranslit
-					| CComp.Clang, CComp.Tiny:
-						opt.identEnc := GeneratorC.IdentEncSame
-					| CComp.Gnu:
-						opt.identEnc := GeneratorC.IdentEncEscUnicode
-					END
+					opt.identEnc := IdentEncoderForCompiler(cmd.id)
 				END
 			ELSE
 				ok := CComp.Set(cmd, cc)
@@ -494,15 +599,333 @@ VAR ret, len: INTEGER;
 		RETURN ret
 	END Run;
 BEGIN
-	ASSERT(res IN {Cli.ResultC .. Cli.ResultRun});
+	ASSERT(res IN Cli.ThroughC);
 
-	NewProvider(mp);
-	mp.fileExt := ".mod"; (* TODO *)
-	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
-	mp.opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
-	len := 0;
-	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
-	mp.sing := args.sing;
+	opt := GeneratorC.DefaultOptions();
+	SetOptions(opt, args);
+	CASE res OF
+	  Cli.ResultC:
+		DEC(args.resPathLen);
+		ASSERT(CComp.Set(ccomp, "cc"));
+		ret := GenerateC(module, (call # NIL) OR args.script, call,
+		                 opt, args.resPath, args.resPathLen, args.cDirs,
+		                 ccomp, FALSE)
+	| Cli.ResultBin, Cli.ResultRun:
+		ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
+		           args.resPath, ccomp, args.tmp);
+		IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
+			ret := Run(args.resPath, args.arg)
+		END;
+		IF (args.tmp = "") & ~FileSys.RemoveDir(outC) & (ret = ErrNo)
+		THEN
+			ret := Cli.ErrCantRemoveOutDir
+		END
+	END
+	RETURN ret
+END GenerateThroughC;
+
+(* TODO *)
+PROCEDURE GenerateProcType(name: ARRAY OF CHAR; t: Ast.ProcType;
+                           VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                           VAR javac: JavaComp.Compiler; usejavac: BOOLEAN): File.Out;
+VAR file: File.Out;
+    ret: INTEGER;
+BEGIN
+	ret := OpenJavaOutput(file, NIL, name, dir, dirLen);
+	(* TODO *)
+	IF ret # ErrNo THEN
+		file := NIL
+	ELSIF usejavac THEN
+		(* TODO *)
+		ASSERT(JavaComp.AddJava(javac, dir, 0))
+	END
+	RETURN file
+END GenerateProcType;
+
+(* TODO *)
+PROCEDURE ProvideProcTypeName(prov: GeneratorJava.ProviderProcTypeName;
+                              proc: Ast.ProcType;
+                              VAR name: ARRAY OF CHAR): File.Out;
+VAR p: Ast.Declaration;
+    i: INTEGER;
+    ok: BOOLEAN;
+
+	PROCEDURE Type(VAR name: ARRAY OF CHAR; VAR i: INTEGER; t: Ast.Type): BOOLEAN;
+	VAR ok: BOOLEAN;
+	BEGIN
+		CASE t.id OF
+		  Ast.IdInteger  ,
+		  Ast.IdSet      : ok := Strings.CopyCharsNull(name, i, "I")
+		| Ast.IdLongInt  ,
+		  Ast.IdLongSet  : ok := Strings.CopyCharsNull(name, i, "J")
+		| Ast.IdBoolean  : ok := Strings.CopyCharsNull(name, i, "Z")
+		| Ast.IdByte     : ok := Strings.CopyCharsNull(name, i, "B")
+		| Ast.IdChar     : ok := Strings.CopyCharsNull(name, i, "C")
+		| Ast.IdReal     : ok := Strings.CopyCharsNull(name, i, "D")
+		| Ast.IdReal32   : ok := Strings.CopyCharsNull(name, i, "F")
+		| Ast.IdPointer  : ok := Strings.CopyCharsNull(name, i, "R")
+
+		| Ast.IdArray    : ok := Strings.CopyCharsNull(name, i, "A")
+		| Ast.IdRecord   : ok := Strings.CopyCharsNull(name, i, "L")
+		| Ast.IdProcType : ok := Strings.CopyCharsNull(name, i, "P")
+		END
+		RETURN ok
+	END Type;
+
+	PROCEDURE Generate(name: ARRAY OF CHAR;
+	                   proc: Ast.ProcType; prov: ProcNameProvider): File.Out;
+	RETURN
+		GenerateProcType(name, proc,
+		                 prov.dir, prov.dirLen,
+		                 prov.javac, prov.usejavac)
+	END Generate;
+BEGIN
+	i := 0;
+	IF proc.type = NIL THEN
+		ok := Strings.CopyCharsNull(name, i, "V")
+	ELSE
+		ok := Type(name, i, proc.type)
+	END;
+	p := proc.params;
+	WHILE (p # NIL) & ok DO
+		ok := Type(name, i, p.type);
+		p := p.next
+	END;
+	ok := ok & Strings.CopyCharsNull(name, i, "_proc")
+
+	RETURN Generate(name, proc, prov(ProcNameProvider))
+END ProvideProcTypeName;
+
+PROCEDURE ProviderProcTypeNameNew(): ProcNameProvider;
+VAR prov: ProcNameProvider;
+BEGIN
+	NEW(prov);
+	GeneratorJava.ProviderProcTypeNameInit(prov, ProvideProcTypeName)
+	RETURN prov
+END ProviderProcTypeNameNew;
+
+PROCEDURE GenerateJava(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
+                       prov: GeneratorJava.ProviderProcTypeName;
+                       opt: GeneratorJava.Options;
+                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                       javaDirs: ARRAY OF CHAR;
+                       VAR javac: JavaComp.Compiler; usejavac: BOOLEAN): INTEGER;
+VAR imp: Ast.Declaration;
+    ret, i, javaDirsLen, nameLen: INTEGER;
+    name: ARRAY 512 OF CHAR;
+    fileName: ARRAY 1024 OF CHAR;
+    out: File.Out;
+    sing: BOOLEAN;
+BEGIN
+	module.used := TRUE;
+
+	ret := ErrNo;
+	imp := module.import;
+	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+		IF ~imp.module.m.used THEN
+			ret := GenerateJava(imp.module.m, FALSE, NIL, prov, opt,
+			                    dir, dirLen, javaDirs, javac, usejavac)
+		END;
+		imp := imp.next
+	END;
+	IF ret = ErrNo THEN
+		sing := FALSE;
+		IF module.mark THEN
+			i := 0;
+			WHILE javaDirs[i] # Utf8.Null DO
+				nameLen := 0;
+				javaDirsLen := Strings.CalcLen(javaDirs, i);
+				(* TODO *)
+				ASSERT(Strings.CopyChars(name, nameLen, javaDirs, i, i + javaDirsLen)
+				     & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & Strings.CopyCharsNull(name, nameLen, ".java")
+				);
+				IF Files.Exist(name, 0) THEN
+					sing := TRUE;
+					ASSERT(~usejavac OR JavaComp.AddJava(javac, name, 0))
+				END;
+				i := i + javaDirsLen + 1
+			END
+			(* TODO проверка ошибки ненайденного файла *)
+		END;
+		IF ~sing & (ret = ErrNo) THEN
+			ret := OpenJavaOutput(out, module, "", dir, dirLen);
+			fileName := dir;
+			IF ret = ErrNo THEN
+				GeneratorJava.Generate(out, module, cmd, prov, opt);
+				File.CloseOut(out);
+				(* TODO *)
+				ASSERT(JavaComp.AddJava(javac, fileName, 0))
+			END
+		END
+	END
+	RETURN ret
+END GenerateJava;
+
+PROCEDURE GenerateThroughJava(res: INTEGER; VAR args: Cli.Args;
+                              module: Ast.Module; call: Ast.Call): INTEGER;
+VAR opt: GeneratorJava.Options;
+    javac: JavaComp.Compiler;
+    ret: INTEGER;
+    out, mainClass: ARRAY 1024 OF CHAR;
+    prov: ProcNameProvider;
+
+	PROCEDURE SetOptions(opt: GeneratorJava.Options; args: Cli.Args);
+	BEGIN
+		IF 0 <= args.init THEN
+			(* TODO проверять соответствие *)
+			opt.varInit := args.init
+		END;
+		IF args.noOverflowCheck THEN
+			opt.checkArith := FALSE
+		END;
+		IF Cli.CyrillicSame <= args.cyrillic THEN
+			opt.identEnc := args.cyrillic - Cli.CyrillicSame
+		END
+	END SetOptions;
+
+	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Call;
+	                prov: ProcNameProvider;
+	                opt: GeneratorJava.Options;
+	                VAR outJava, mainClass: ARRAY OF CHAR): INTEGER;
+	VAR ret: INTEGER;
+	    i, nameLen, dirsLen, outJavaLen: INTEGER;
+	    ok: BOOLEAN;
+	    name: ARRAY 512 OF CHAR;
+(*
+		PROCEDURE MakeO7(VAR dir: ARRAY OF CHAR; VAR dirLen: INTEGER): BOOLEAN;
+		RETURN Strings.CopyCharsNull(dir, dirLen, Exec.dirSep)
+		     & Strings.CopyCharsNull(dir, dirLen, "o7")
+		     & FileSys.MakeDir(dir)
+		END MakeO7;
+*)
+	BEGIN
+		ok := GetTempOut(outJava, outJavaLen, m.name, args.tmp);
+		IF ~ok THEN
+			ret := Cli.ErrCantCreateOutDir
+		ELSE
+			IF args.resPath[0] = Utf8.Null THEN
+				args.resPathLen := 0;
+				ASSERT(Strings.CopyChars(args.resPath, args.resPathLen,
+				                         outJava, 0, outJavaLen))
+			END;
+			prov.dirLen := 0;
+			ASSERT(Strings.CopyChars(prov.dir, prov.dirLen,
+			                         outJava, 0, outJavaLen));
+
+			ASSERT(GetMainClass(mainClass, m.name));
+			IF args.javac[0] # Utf8.Null THEN
+				ok := JavaComp.Set(prov.javac, args.javac)
+			ELSE
+				ok := JavaComp.Search(prov.javac);
+				opt.identEnc := GeneratorJava.IdentEncSame
+			END;
+			ok := ok & JavaComp.AddClassPath(prov.javac, args.resPath, 0);
+			prov.usejavac := TRUE;
+			IF ~ok THEN
+				ret := Cli.ErrCantFoundJavaCompiler
+			ELSE
+				ret := GenerateJava(m, TRUE, call, prov, opt,
+				                    outJava, outJavaLen,
+				                    args.javaDirs, prov.javac, TRUE)
+			END;
+			outJava[outJavaLen] := Utf8.Null;
+			IF ret = ErrNo THEN
+				ok := JavaComp.AddDestinationDir(prov.javac, args.resPath);
+
+				i := 0;
+				WHILE ok & (args.javaDirs[i] # Utf8.Null) DO
+					nameLen := 0;
+					dirsLen := Strings.CalcLen(args.javaDirs, i);
+					ok := Strings.CopyChars(name, nameLen, args.javaDirs, i, i + dirsLen)
+					    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+					    & Strings.CopyCharsNull(name, nameLen, "O7.java")
+
+					    & ( ~Files.Exist(name, 0)
+					     OR JavaComp.AddJava(prov.javac, name, 0)
+					      );
+					i := i + dirsLen + 1
+				END;
+				(* TODO *)
+				ASSERT(ok);
+				IF JavaComp.Do(prov.javac) # Exec.Ok THEN
+					ret := Cli.ErrJavaCompiler
+				END
+			END
+		END
+		RETURN ret
+	END Class;
+
+	PROCEDURE Run(outClass, mainClass: ARRAY OF CHAR; arg: INTEGER): INTEGER;
+	VAR cmd: Exec.Code;
+	    buf: ARRAY Exec.CodeSize OF CHAR;
+	    len: INTEGER;
+	    ret: INTEGER;
+	BEGIN
+		JavaExec.Init(cmd);
+		ret := Cli.ErrTooLongRunArgs;
+		IF JavaExec.AddClassPath(cmd, outClass, 0)
+		 & Exec.Add(cmd, mainClass, 0)
+		THEN
+			INC(arg);
+			len := 0;
+			WHILE (arg < CLI.count)
+			    & CLI.Get(buf, len, arg)
+			    & Exec.Add(cmd, buf, 0)
+			DO
+				len := 0;
+				INC(arg)
+			END;
+			IF CLI.count <= arg THEN
+				CLI.SetExitCode(Exec.Ok + ORD(Exec.Do(cmd) # Exec.Ok));
+				ret := ErrNo
+			END
+		END
+		RETURN ret
+	END Run;
+BEGIN
+	ASSERT(res IN Cli.ThroughJava);
+
+	prov := ProviderProcTypeNameNew();
+	opt := GeneratorJava.DefaultOptions();
+	SetOptions(opt, args);
+	ASSERT(JavaComp.Set(javac, "javac"));
+	DEC(args.resPathLen);
+
+	CASE res OF
+	  Cli.ResultJava:
+		prov.dirLen := 0;
+		ASSERT(Strings.CopyChars(prov.dir, prov.dirLen,
+		                         args.resPath, 0, args.resPathLen));
+		prov.usejavac := FALSE;
+		ret := GenerateJava(module, (call # NIL) OR args.script, call,
+		                    prov, opt,
+		                    args.resPath, args.resPathLen, args.javaDirs,
+		                    javac, FALSE)
+	| Cli.ResultClass, Cli.ResultRunJava:
+		ret := Class(module, args, call, prov, opt, out, mainClass);
+		IF (res = Cli.ResultRunJava) & (ret = ErrNo) THEN
+			ret := Run(out, mainClass, args.arg)
+		END;
+		IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo)
+		THEN
+			ret := Cli.ErrCantRemoveOutDir
+		END
+	END
+
+	RETURN ret
+END GenerateThroughJava;
+
+PROCEDURE Translate(res: INTEGER; VAR args: Cli.Args): INTEGER;
+VAR ret: INTEGER;
+    mp: ModuleProvider;
+    module: Ast.Module;
+    call: Ast.Call;
+    tranOpt: AstTransform.Options;
+BEGIN
+	NewProvider(mp, args);
+
 	IF args.script THEN
 		module := Parser.Script(args.src, mp, mp.opt);
 		AddModule(mp, module)
@@ -525,42 +948,12 @@ BEGIN
 		IF ret # Ast.ErrNo THEN
 			ret := ErrParse;
 			Message.AstError(ret); Out.Ln
+		ELSIF res IN Cli.ThroughJava THEN
+			AstTransform.DefaultOptions(tranOpt);
+			AstTransform.Do(module, tranOpt);
+			ret := GenerateThroughJava(res, args, module, call)
 		ELSE
-			opt := GeneratorC.DefaultOptions();
-			IF 0 <= args.init THEN
-				opt.varInit := args.init
-			END;
-			IF 0 <= args.memng THEN
-				opt.memManager := args.memng
-			END;
-			IF args.noNilCheck THEN
-				opt.checkNil := FALSE
-			END;
-			IF args.noOverflowCheck THEN
-				opt.checkArith := FALSE
-			END;
-			IF args.noIndexCheck THEN
-				opt.checkIndex := FALSE
-			END;
-			IF Cli.CyrillicSame <= args.cyrillic THEN
-				opt.identEnc := args.cyrillic - Cli.CyrillicSame
-			END;
-			CASE res OF
-			  Cli.ResultC:
-				DEC(args.resPathLen);
-				ret := GenerateC(module, (call # NIL) OR args.script, call,
-				                 opt, args.resPath, args.resPathLen, args.cDirs, ccomp, FALSE)
-			| Cli.ResultBin, Cli.ResultRun:
-				ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
-				           args.resPath, ccomp, args.tmp);
-				IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
-					ret := Run(args.resPath, args.arg)
-				END;
-				IF (args.tmp = "") & ~FileSys.RemoveDir(outC) & (ret = ErrNo)
-				THEN
-					ret := Cli.ErrCantRemoveOutDir
-				END
-			END
+			ret := GenerateThroughC(res, args, module, call)
 		END
 	END;
 	IF mp.modules.last # NIL THEN
@@ -568,7 +961,7 @@ BEGIN
 		Unlink(mp.modules.first.next)
 	END
 	RETURN ret
-END ToC;
+END Translate;
 
 PROCEDURE Help*;
 BEGIN
@@ -580,7 +973,7 @@ BEGIN
 	IF ret = Cli.CmdHelp THEN
 		Help
 	ELSE
-		ret := ToC(ret, args)
+		ret := Translate(ret, args)
 	END
 	RETURN 0 <= ret
 END Handle;
@@ -593,7 +986,7 @@ BEGIN
 	Log.Turn(FALSE);
 
 	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret) THEN
-		CLI.SetExitCode(1);
+		CLI.SetExitCode(Exec.Ok + 1);
 		IF ret # ErrParse THEN
 			Message.CliError(ret, args.cmd)
 		END

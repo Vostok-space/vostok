@@ -340,7 +340,7 @@ END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Транслятор Oberon-07 в C. 2018");
+S("Транслятор Oberon-07 в C та Java. 2018");
 S("Використання: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Код ВихКат {-m ТзМ | -i ТзІ | -infr Інфр}");
@@ -440,6 +440,15 @@ BEGIN
 		S("Не вдається видалити вихідну теку")
 	| Cli.ErrCantFoundCCompiler:
 		S("Не вдалося знайти компілятор C")
+
+	| Cli.ErrOpenJava:
+		S("Не вдається відкрити вихідний java файл")
+	| Cli.ErrJavaCompiler:
+		S("Помилка при виклику компілятору Java")
+	| Cli.ErrCantFoundJavaCompiler:
+		S("Не вдалося знайти компілятор Java")
+	| Cli.ErrTooLongJavaDirs:
+		S("Общая длина путей с .java-файлами слишком велика")
 	END
 END CliError;
 

@@ -296,7 +296,6 @@ BEGIN
 	s.last := NIL
 END StoreDone;
 
-
 PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                      src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
 VAR ret: BOOLEAN;

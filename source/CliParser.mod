@@ -19,11 +19,18 @@ MODULE CliParser;
 IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC;
 
 CONST
-	CmdHelp*   = 1;
+	CmdHelp*       = 1;
 	(* TODO переименовать *)
-	ResultC*   = 2;
-	ResultBin* = 3;
-	ResultRun* = 4;
+	ResultC*       = 2;
+	ResultBin*     = 3;
+	ResultRun*     = 4;
+
+	ResultJava*    = 5;
+	ResultClass*   = 6;
+	ResultRunJava* = 7;
+
+	ThroughC*    = {ResultC, ResultBin, ResultRun};
+	ThroughJava* = {ResultJava, ResultClass, ResultRunJava};
 
 	CyrillicNo*       = 0;
 	CyrillicDefault*  = 1;
@@ -54,16 +61,21 @@ CONST
 	ErrCantCreateOutDir*     = -28;
 	ErrCantRemoveOutDir*     = -29;
 	ErrCantFoundCCompiler*   = -30;
+	ErrJavaCompiler*         = -31;
+	ErrCantFoundJavaCompiler*= -32;
+	ErrTooLongJavaDirs*      = -33;
+
+	ErrOpenJava*         = -40;
 
 TYPE
 	Args* = RECORD(V.Base)
-		src*: ARRAY 65536 OF CHAR;
+		src*   : ARRAY 65536 OF CHAR;
 		srcLen*: INTEGER;
 		cmd*: ARRAY 32 OF CHAR;
 		script*: BOOLEAN;
 		outC*, resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
-		modPath*, cDirs*, cc*: ARRAY 4096 OF CHAR;
+		modPath*, cDirs*, cc*, javaDirs*, javac*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*: INTEGER;
@@ -107,7 +119,7 @@ BEGIN
 END IsEqualStr;
 
 PROCEDURE CopyPath(VAR args: Args; VAR arg: INTEGER): INTEGER;
-VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
+VAR i, dirsOfs, javaDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
     ret: INTEGER;
     opt: ARRAY 256 OF CHAR;
 
@@ -125,19 +137,12 @@ VAR i, dirsOfs, ccLen, count, optLen: INTEGER;
 BEGIN
 	i := 0;
 	dirsOfs := 0;
-	args.cDirs[0] := Utf8.Null;
-	args.tmp[0] := Utf8.Null;
+	javaDirsOfs := 0;
 	ccLen := 0;
+	javacLen := 0;
 	count := 0;
-	args.sing := {};
 	ret := ErrNo;
 	optLen := 0;
-	args.init := -1;
-	args.memng := -1;
-	args.noNilCheck := FALSE;
-	args.noOverflowCheck := FALSE;
-	args.noIndexCheck := FALSE;
-	args.cyrillic := CyrillicNo;
 	WHILE (ret = ErrNo) & (count < 32)
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
@@ -169,11 +174,33 @@ BEGIN
 			ELSE
 				ret := ErrTooLongCDirs
 			END
+		ELSIF opt = "-j" THEN
+			INC(arg);
+			IF arg >= CLI.count THEN
+				ret := ErrNotEnoughArgs
+			ELSIF CLI.Get(args.javaDirs, javaDirsOfs, arg) & (javaDirsOfs < LEN(args.cDirs) - 1)
+			THEN
+				INC(javaDirsOfs);
+				args.cDirs[javaDirsOfs] := Utf8.Null;
+				Log.Str("javaDirs = ");
+				Log.StrLn(args.javaDirs)
+			ELSE
+				ret := ErrTooLongJavaDirs
+			END
 		ELSIF opt = "-cc" THEN
 			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF GetParam(args.cc, ccLen, arg) THEN
+				DEC(arg)
+			ELSE
+				ret := ErrTooLongCc
+			END
+		ELSIF opt = "-javac" THEN
+			INC(arg);
+			IF arg >= CLI.count THEN
+				ret := ErrNotEnoughArgs
+			ELSIF GetParam(args.javac, javacLen, arg) THEN
 				DEC(arg)
 			ELSE
 				ret := ErrTooLongCc
@@ -186,10 +213,12 @@ BEGIN
 			    & CopyInfrPart(args.modPath, i, arg, "/singularity/definition")
 			    & CopyInfrPart(args.modPath, i, arg, "/library")
 			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "/singularity/implementation")
+			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "/singularity/implementation.java")
 			   OR Platform.Windows
 			    & CopyInfrPart(args.modPath, i, arg, "\singularity\definition")
 			    & CopyInfrPart(args.modPath, i, arg, "\library")
 			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "\singularity\implementation")
+			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "\singularity\implementation.java")
 			THEN
 				INCL(args.sing, count);
 				INC(count, 2)
@@ -270,8 +299,25 @@ BEGIN
 	RETURN ret
 END CopyPath;
 
-PROCEDURE ToC(VAR args: Args; ret: INTEGER): INTEGER;
+PROCEDURE ArgsInit(VAR args: Args);
+BEGIN
+	args.srcLen   := 0;
+	args.cDirs[0] := Utf8.Null;
+	args.tmp[0]   := Utf8.Null;
+	args.cc[0]    := Utf8.Null;
+	args.javac[0] := Utf8.Null;
+	args.sing     := {};
+	args.init     := -1;
+	args.memng    := -1;
+	args.noNilCheck      := FALSE;
+	args.noOverflowCheck := FALSE;
+	args.noIndexCheck    := FALSE;
+	args.cyrillic        := CyrillicNo;
+END ArgsInit;
+
+PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
 VAR arg, argDest, cpRet: INTEGER;
+    forRun: BOOLEAN;
 
 	PROCEDURE ParseCommand(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
 	                      : INTEGER;
@@ -307,9 +353,10 @@ VAR arg, argDest, cpRet: INTEGER;
 		RETURN i
 	END ParseCommand;
 BEGIN
-	ASSERT(ret IN {ResultC .. ResultRun});
+	ASSERT(ret IN {ResultC .. ResultRunJava});
 
-	args.srcLen := 0;
+	ArgsInit(args);
+
 	arg := 1;
 	IF CLI.count <= arg THEN
 		ret := ErrNotEnoughArgs
@@ -320,7 +367,8 @@ BEGIN
 		argDest := arg;
 		INC(args.srcLen);
 
-		arg := arg + ORD(ret # ResultRun);
+		forRun := ret IN {ResultRun, ResultRunJava};
+		arg := arg + ORD(~forRun);
 		cpRet := CopyPath(args, arg);
 		IF cpRet # ErrNo THEN
 			ret := cpRet
@@ -330,16 +378,14 @@ BEGIN
 
 			args.resPathLen := 0;
 			args.resPath[0] := Utf8.Null;
-			IF (ret # ResultRun)
-			 & ~CLI.Get(args.resPath, args.resPathLen, argDest)
-			THEN
+			IF ~forRun & ~CLI.Get(args.resPath, args.resPathLen, argDest) THEN
 				ret := ErrTooLongOutName
 			END
 		END
 	END;
 	args.arg := arg
 	RETURN ret
-END ToC;
+END Command;
 
 PROCEDURE Parse*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
 VAR cmdLen: INTEGER;
@@ -351,11 +397,17 @@ BEGIN
 	ELSIF args.cmd = "help" THEN
 		ret := CmdHelp
 	ELSIF args.cmd = "to-c" THEN
-		ret := ToC(args, ResultC)
+		ret := Command(args, ResultC)
 	ELSIF args.cmd = "to-bin" THEN
-		ret := ToC(args, ResultBin)
+		ret := Command(args, ResultBin)
 	ELSIF args.cmd = "run" THEN
-		ret := ToC(args, ResultRun)
+		ret := Command(args, ResultRun)
+	ELSIF args.cmd = "to-java" THEN
+		ret := Command(args, ResultJava)
+	ELSIF args.cmd = "to-class" THEN
+		ret := Command(args, ResultClass)
+	ELSIF args.cmd = "run-java" THEN
+		ret := Command(args, ResultRunJava)
 	ELSE
 		ret := ErrUnknownCommand
 	END

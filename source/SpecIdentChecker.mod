@@ -18,6 +18,9 @@ MODULE SpecIdentChecker;
 
   IMPORT Strings := StringStore;
 
+  CONST
+    MathC* = 0;
+
   PROCEDURE Eq(name: Strings.String; str: ARRAY OF CHAR): BOOLEAN;
   RETURN Strings.IsEqualToString(name, str)
   END Eq;
@@ -427,17 +430,29 @@ MODULE SpecIdentChecker;
     RETURN o
   END IsJsKeyWord;
 
+  PROCEDURE IsJavaLib*(n: Strings.String): BOOLEAN;
+  VAR o: BOOLEAN;
+  BEGIN
+    CASE n.block.s[n.ofs] OF
+      "C": o := Eq(n, "Class")
+    | "M": o := Eq(n, "Math")
+    | "S": o := Eq(n, "String")
+    | "A" .. "B", "D" .. "L", "N" .. "R", "T" .. "Z": o := FALSE
+    END
+    RETURN o
+  END IsJavaLib;
+
   PROCEDURE O7(n: Strings.String): BOOLEAN;
   RETURN Eq(n, "initialized")
       OR Eq(n, "NULL")
   END O7;
 
-  PROCEDURE IsSpecName*(n: Strings.String): BOOLEAN;
+  PROCEDURE IsSpecName*(n: Strings.String; filter: SET): BOOLEAN;
   RETURN O7(n)
       OR ("a" <= n.block.s[n.ofs]) & (n.block.s[n.ofs] <= "z")
       &  (IsCKeyWord(n)
        OR IsCLib(n)
-       OR IsCMath(n)
+       OR ~(MathC IN filter) & IsCMath(n)
        OR IsCMacros(n)
        OR IsCppKeyWord(n)
        OR IsJsKeyWord(n)
@@ -449,7 +464,6 @@ MODULE SpecIdentChecker;
   RETURN Eq(n, "O7")
       OR Eq(n, "o7")
       OR Eq(n, "math")
-      OR Eq(n, "Math")
       OR Eq(n, "limits")
       OR Eq(n, "ru")
   END IsSpecModuleName;
@@ -458,6 +472,7 @@ MODULE SpecIdentChecker;
   RETURN Eq(name, "init")
       OR Eq(name, "cnst")
       OR Eq(name, "len")
+      OR Eq(name, "proc")
   END IsO7SpecName;
 
 END SpecIdentChecker.

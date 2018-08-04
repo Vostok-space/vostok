@@ -1255,6 +1255,28 @@ BEGIN
 	RETURN err
 END ParamAdd;
 
+PROCEDURE ParamInsert*(VAR new: FormalParam;
+                       prev: FormalParam;
+                       module: Module; proc: ProcType;
+                       VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
+                       type: Type; access: SET): INTEGER;
+VAR err: INTEGER;
+    fpEnd: FormalParam;
+BEGIN
+	ASSERT(proc.end # NIL);
+	fpEnd := proc.end;
+	err := ParamAdd(module, proc, buf, begin, end, access);
+	new := proc.end;
+	new.type := type;
+	IF prev.next # new THEN
+		new.next := prev.next;
+		prev.next := new;
+		proc.end := fpEnd;
+		fpEnd.next := NIL
+	END
+	RETURN err
+END ParamInsert;
+
 PROCEDURE IsNeedTag*(p: FormalParam): BOOLEAN;
 	RETURN (p.needTag # NIL) & (p.needTag.value)
 END IsNeedTag;
@@ -1391,6 +1413,7 @@ BEGIN
 	RETURN types[id]
 END TypeGet;
 
+(* if count is NIL then return open array *)
 PROCEDURE ArrayGet*(t: Type; count: Expression): Array;
 VAR a: Array;
 BEGIN
@@ -2089,6 +2112,7 @@ BEGIN
 	NEW(v); NodeInit(v^, IdVar); DeclInit(v, NIL);
 	v.module     := r.module;
 	v.inVarParam := FALSE;
+	v.checkInit  := FALSE;
 	PutChars(v.module.m, v.name, name, begin, end);
 	IF r.vars = NIL THEN
 		r.vars := v
@@ -3157,6 +3181,16 @@ BEGIN
 	lastParam.next := NIL
 	RETURN err
 END CallParamNew;
+
+PROCEDURE CallParamInsert*(par: Parameter; VAR fp: FormalParam; expr: Expression;
+                           VAR np: Parameter);
+BEGIN
+	NEW(np); NodeInit(np^, NoId);
+	np.distance := 0;
+	np.expr := expr;
+	np.next := par.next;
+	par.next := np
+END CallParamInsert;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
                          ds: Declarations): INTEGER;
