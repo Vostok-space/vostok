@@ -684,7 +684,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| SpecIdent.Pack:
 				(* TODO *)
 				Expression(gen, e1);
-				ExpressionBraced(gen, " = O7.ldexp(", e1, ", ");
+				ExpressionBraced(gen, " = O7.scalb(", e1, ", ");
 				Expression(gen, p2.expr);
 				Text.Str(gen, ")")
 			| SpecIdent.Unpk:
