@@ -217,18 +217,43 @@ public static int floor(final double d) {
     return (int)v;
 }
 
-public static double ldexp(final double d, final int n) {
-    /* TODO */
-    asrt(n == 1);
-
-    return d;
+public static double scalb(final double d, final int n) {
+    asrt(java.lang.Double.isFinite(d));
+    return java.lang.Math.scalb(d, n);
 }
 
 public static double frexp(final double d, final int[] n, final int n_i) {
-    /* TODO */
-    asrt((0.0 <= d) && (d <= 1.0));
-    n[n_i] = 1;
-    return d;
+    final long bits, mantissa;
+    long       divider;
+    int        exponent;
+
+    asrt(java.lang.Double.isFinite(d));
+
+    bits = Double.doubleToLongBits(d);
+
+    exponent = (int)((bits >> 52) & 0x07FFL);
+
+    if (exponent == 0) {
+        exponent =  1;
+        mantissa =  bits & 0x000F_FFFF_FFFF_FFFFL;
+    } else {
+        mantissa = (bits & 0x000F_FFFF_FFFF_FFFFL) | (1L << 52);
+    }
+
+    exponent -= 1075;
+
+    divider = 1;
+    while (divider < mantissa) {
+        divider  *= 2;
+        exponent += 1;
+    }
+
+    if (bits < 0) {
+       divider = -divider;
+    }
+
+    n[n_i] = exponent;
+    return ((double)mantissa) / divider;
 }
 
 public static double flt(final int i) {
