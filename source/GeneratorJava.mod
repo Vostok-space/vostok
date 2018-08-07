@@ -506,12 +506,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			p2: Ast.Parameter;
 
 			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR;
-			                ps: Ast.Parameter);
+			                e1, e2: Ast.Expression);
 			BEGIN
 				Text.Str(gen, "(");
-				Factor(gen, ps.expr);
+				Factor(gen, e1);
 				Text.Str(gen, shift);
-				Factor(gen, ps.next.expr);
+				Factor(gen, e2);
 				Text.Str(gen, ")")
 			END Shift;
 
@@ -644,9 +644,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| SpecIdent.Len:
 				Len(gen, e1)
 			| SpecIdent.Lsl:
-				Shift(gen, " << ", call.params)
+				Shift(gen, " << ", e1, p2.expr)
 			| SpecIdent.Asr:
-				Shift(gen, " >> ", call.params)
+				Shift(gen, " >> ", e1, p2.expr)
 			| SpecIdent.Ror:
 				ExpressionBraced(gen, "O7.ror(", e1, ", ");
 				Expression(gen, p2.expr);
@@ -682,7 +682,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| SpecIdent.Assert:
 				Assert(gen, e1)
 			| SpecIdent.Pack:
-				(* TODO *)
 				Expression(gen, e1);
 				ExpressionBraced(gen, " = O7.scalb(", e1, ", ");
 				Expression(gen, p2.expr);
@@ -700,14 +699,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF (t.id = Ast.IdByte) & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 			THEN
 				ExpressionBraced(gen, "O7.toByte(", p.expr, ")")
-			ELSIF (t.id = Ast.IdInteger) & (p.expr.type.id = Ast.IdByte) THEN
+			ELSIF (t.id IN {Ast.IdInteger, Ast.IdLongInt}) & (p.expr.type.id = Ast.IdByte) THEN
 				ExpressionBraced(gen, "O7.toInt(", p.expr, ")")
 			ELSE
 				IF fp.type.id # Ast.IdChar THEN
 					t := fp.type
 				END;
 				gen.opt.expectArray := fp.type.id = Ast.IdArray;
-				Expression(gen, p.expr);
+				IF ~gen.opt.expectArray & (p.expr IS Ast.Designator) THEN
+					Designator(gen, p.expr(Ast.Designator), TRUE)
+				ELSE
+					Expression(gen, p.expr)
+				END;
 				gen.opt.expectArray := FALSE;
 
 				t := p.expr.type
@@ -1777,34 +1780,34 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	BEGIN
 		toByte := (st.designator.type.id = Ast.IdByte)
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-			IF (st.designator.type.id = Ast.IdArray)
-			(*    & (st.designator.type.type.id # Ast.IdString) *)
-			THEN
-				IF st.designator.type.type.id = Ast.IdString THEN
-					Text.Str(gen, "O7.strcpy(")
-				ELSE
-					Text.Str(gen, "O7.copy(")
-				END;
-				Designator(gen, st.designator, TRUE);
-				Text.Str(gen, ", ");
-				gen.opt.expectArray := TRUE
-			ELSIF toByte THEN
-				Designator(gen, st.designator, TRUE);
-				Text.Str(gen, " = O7.toByte(")
+		IF (st.designator.type.id = Ast.IdArray)
+		(*    & (st.designator.type.type.id # Ast.IdString) *)
+		THEN
+			IF st.designator.type.type.id = Ast.IdString THEN
+				Text.Str(gen, "O7.strcpy(")
 			ELSE
-				Designator(gen, st.designator, TRUE);
-				Text.Str(gen, " = ")
+				Text.Str(gen, "O7.copy(")
 			END;
-			CheckExpr(gen, st.expr);
-			gen.opt.expectArray := FALSE;
-			IF (st.designator.type.id # Ast.IdArray)
-			OR (st.designator.type.type.id = Ast.IdString)
-			THEN
-				;
-			ELSE
-				Text.Str(gen, ", ");
-				ArrayLen(gen, st.expr)
-			END;
+			Designator(gen, st.designator, TRUE);
+			Text.Str(gen, ", ");
+			gen.opt.expectArray := TRUE
+		ELSIF toByte THEN
+			Designator(gen, st.designator, TRUE);
+			Text.Str(gen, " = O7.toByte(")
+		ELSE
+			Designator(gen, st.designator, TRUE);
+			Text.Str(gen, " = ")
+		END;
+		CheckExpr(gen, st.expr);
+		gen.opt.expectArray := FALSE;
+		IF (st.designator.type.id # Ast.IdArray)
+		OR (st.designator.type.type.id = Ast.IdString)
+		THEN
+			;
+		ELSE
+			Text.Str(gen, ", ");
+			ArrayLen(gen, st.expr)
+		END;
 		CASE ORD(toByte)
 		   + ORD((st.designator.type.id = Ast.IdArray)
 		       & (st.designator.type.type.id # Ast.IdString)
