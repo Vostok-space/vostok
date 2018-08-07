@@ -296,13 +296,18 @@ MODULE AstTransform;
 
     PROCEDURE Set(set: Ast.ExprSet; o: Options);
     BEGIN
-      REPEAT
-        Expression(set.exprs[0], o);
-        IF set.exprs[1] # NIL THEN
-          Expression(set.exprs[1], o)
-        END;
-        set := set.next
-      UNTIL set = NIL
+      IF set.exprs[0] = NIL THEN
+        ASSERT(set.exprs[1] = NIL);
+        ASSERT(set.next = NIL)
+      ELSE
+        REPEAT
+          Expression(set.exprs[0], o);
+          IF set.exprs[1] # NIL THEN
+            Expression(set.exprs[1], o)
+          END;
+          set := set.next
+        UNTIL set = NIL
+      END
     END Set;
 
     PROCEDURE Call(c: Ast.ExprCall; o: Options);
