@@ -18,6 +18,8 @@
 
 #include "Math.h"
 
+#include <math.h>
+
 #if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64)))
 	/* TODO */
 	enum { O7_C99 = 1 };

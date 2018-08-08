@@ -15,6 +15,12 @@
 
 #include "o7.h"
 
+#include <math.h>
+#if defined(_WIN32) || defined(_WIN64)
+	extern double ldexp(double, int);
+	extern double frexp(double, int*);
+#endif
+
 int     o7_cli_argc;
 char**  o7_cli_argv;
 
@@ -193,3 +199,23 @@ extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
 	return c1 - c2;
 }
 
+#if (__STDC_VERSION__ >= 199901L) \
+ && !(defined(_WIN32) || defined(_WIN64)) \
+ && !defined(__COMPCERT__)
+
+	extern o7_cbool o7_isfinite(double v) {
+		return isfinite(v);
+	}
+#else
+	extern o7_cbool o7_isfinite(double v) {
+		return 0 > 1;
+	}
+#endif
+
+extern double o7_raw_ldexp(double f, int n) {
+	return ldexp(f, n);
+}
+
+extern double o7_raw_frexp(double x, int *exp) {
+	return frexp(x, exp);
+}

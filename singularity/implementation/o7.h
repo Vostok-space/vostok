@@ -20,7 +20,6 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
-#include <math.h>
 #include <float.h>
 
 #if !defined(O7_INLINE)
@@ -41,8 +40,8 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) \
- && !defined(__STDC_NO_VLA__) && !defined(__COMPCERT__)
+#if (__STDC_VERSION__ >= 199901L) && !defined(__STDC_NO_VLA__) \
+ && !defined(__TINYC__) && !defined(__COMPCERT__)
 
 #	define O7_VLA(len) static len
 #else
@@ -499,19 +498,21 @@ char unsigned o7_chr(int v) {
 }
 
 #if (__STDC_VERSION__ >= 199901L) \
- && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64))) \
+ && !(defined(_WIN32) || defined(_WIN64)) \
  && !defined(__COMPCERT__)
+
+	extern o7_cbool o7_isfinite(double);
 
 /* TODO в вычислительных функциях можно будет убрать o7_dbl после проверки*/
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	double o7_dbl_finite(double v) {
-		assert(isfinite(v));
+		assert(o7_isfinite(v));
 		return v;
 	}
 
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	float o7_flt_finite(float v) {
-		assert(isfinite(v));
+		assert(o7_isfinite(v));
 		return v;
 	}
 #else
@@ -1082,17 +1083,24 @@ double o7_flt(o7_int_t v) {
 }
 
 O7_ALWAYS_INLINE
-o7_cbool o7_ldexp(double *f, o7_int_t n) {
-	*f = ldexp(o7_dbl(*f), o7_int(n));
-	return 0 < 1;/* TODO */
+void o7_ldexp(double *f, o7_int_t n) {
+	extern double o7_raw_ldexp(double f, int n);
+
+	*f = o7_dbl_finite(o7_raw_ldexp(o7_dbl_finite(*f), o7_int(n)));
 }
 
 O7_ALWAYS_INLINE
-o7_cbool o7_frexp(double *f, o7_int_t *n) {
-	o7_int_t p;
-	*f = frexp(o7_dbl(*f), &p) * 2.0;
-	*n = p - 1;
-	return 0 < 1;/* TODO */
+void o7_frexp(double *f, o7_int_t *n) {
+	extern double o7_raw_frexp(double x, int *exp);
+
+	int p;
+
+	*f = o7_raw_frexp(o7_dbl_finite(*f), &p) * 2.0;
+	if (*f == 0.0) {
+		*n = p;
+	} else {
+		*n = p - 1;
+	}
 }
 
 extern O7_ATTR_PURE
