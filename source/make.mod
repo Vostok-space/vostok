@@ -19,6 +19,7 @@ MODULE make;
  IMPORT Log, Exec := PlatformExec, Dir, Platform;
 
  VAR ok*, windows, posix, java: BOOLEAN;
+     cc: ARRAY 256 OF CHAR;
 
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
@@ -115,6 +116,7 @@ MODULE make;
         & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
         & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
         & Exec.Add(code, "-cyrillic", 0)
+        & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
        THEN
          IF Execute(code, n) = 0 THEN
            INC(pass)
@@ -155,13 +157,14 @@ MODULE make;
  PROCEDURE Help*;
  BEGIN
    Log.StrLn("Commands:");
-   Log.StrLn("  Build   - build o7c translator by bootstrap");
-   Log.StrLn("  Test    - build and run tests from test/source");
-   Log.StrLn("  Example - build examples");
-   Log.StrLn("  Self    - build itself then run tests");
-   Log.StrLn("  SelfFull- build translator by 2nd generation translator then tests");
-   Log.StrLn("  UseJava - turn translation throgh Java");
-   Log.StrLn("  UseC    - turn translation throgh C")
+   Log.StrLn("  Build     - build o7c translator by bootstrap");
+   Log.StrLn("  Test      - build and run tests from test/source");
+   Log.StrLn("  Example   - build examples");
+   Log.StrLn("  Self      - build itself then run tests");
+   Log.StrLn("  SelfFull  - build translator by 2nd generation translator then tests");
+   Log.StrLn("  UseJava   - turn translation through Java");
+   Log.StrLn("  UseC      - turn translation through C with default compiler");
+   Log.StrLn("  UseCC(cc) - set C compiler and turn translation through C")
  END Help;
 
  PROCEDURE UseJava*;
@@ -174,6 +177,12 @@ MODULE make;
    java := FALSE
  END UseC;
 
+ PROCEDURE UseCC*(cli: ARRAY OF CHAR);
+ BEGIN
+   cc   := cli;
+   java := FALSE
+ END UseCC;
+
 BEGIN
   Log.On;
   Exec.AutoCorrectDirSeparator(TRUE);
@@ -181,5 +190,7 @@ BEGIN
   windows := Platform.Windows;
   posix   := Platform.Posix;
 
-  java := FALSE
+  java := FALSE;
+
+  cc[0] := 0X
 END make.
