@@ -57,9 +57,7 @@ MODULE JavaCompilerInterface;
           OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
             )
           & (Exec.Ok = Exec.Do(exec));
-      Log.On;
       Exec.Log(exec);
-      Log.Off;
       IF ok THEN
         ASSERT(Exec.Init(cc.cmd, c));
         cc.id := id;
