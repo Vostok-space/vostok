@@ -332,7 +332,7 @@ BEGIN
 	END
 END Selector;
 
-PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator; forAssign: BOOLEAN);
+PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator; destination : BOOLEAN);
 VAR sels: Selectors;
     typ: Ast.Type;
 
@@ -358,7 +358,7 @@ BEGIN
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
 
-	IF ~forAssign & (des.type.id = Ast.IdByte) THEN
+	IF ~destination & (des.type.id = Ast.IdByte) THEN
 		Text.Str(gen, "O7.toInt(");
 		Selector(gen, sels, sels.i, typ, des.type);
 		Text.Str(gen, ")")
@@ -699,15 +699,15 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF (t.id = Ast.IdByte) & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 			THEN
 				ExpressionBraced(gen, "O7.toByte(", p.expr, ")")
-			ELSIF (t.id IN {Ast.IdInteger, Ast.IdLongInt}) & (p.expr.type.id = Ast.IdByte) THEN
-				ExpressionBraced(gen, "O7.toInt(", p.expr, ")")
+			ELSIF (p.expr.type.id = Ast.IdByte) & (t.id = Ast.IdByte) THEN
+				Designator(gen, p.expr(Ast.Designator), TRUE)
 			ELSE
 				IF fp.type.id # Ast.IdChar THEN
 					t := fp.type
 				END;
 				gen.opt.expectArray := fp.type.id = Ast.IdArray;
 				IF ~gen.opt.expectArray & (p.expr IS Ast.Designator) THEN
-					Designator(gen, p.expr(Ast.Designator), TRUE)
+					Designator(gen, p.expr(Ast.Designator), FALSE)
 				ELSE
 					Expression(gen, p.expr)
 				END;

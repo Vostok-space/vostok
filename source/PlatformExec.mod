@@ -20,7 +20,7 @@ IMPORT
 	V,
 	Utf8,
 	OsExec,
-	Vlog := Log,
+	log := Log,
 	Platform,
 	Strings := StringStore;
 
@@ -212,7 +212,7 @@ END LastPart;
 
 PROCEDURE Log*(c: Code);
 BEGIN
-	Vlog.StrLn(c.buf)
+	log.StrLn(c.buf)
 END Log;
 
 PROCEDURE Do*(c: Code): INTEGER;

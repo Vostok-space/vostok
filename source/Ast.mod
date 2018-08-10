@@ -2412,6 +2412,9 @@ END IsChars;
 
 PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
                            relation: INTEGER; expr2: Expression): INTEGER;
+CONST
+	AcceptableRelationLexems = {Scanner.RelationFirst .. Scanner.RelationLast}
+	                         - {Scanner.Is};
 VAR err: INTEGER;
 	res: BOOLEAN;
 	v1, v2: Expression;
@@ -2470,7 +2473,7 @@ VAR err: INTEGER;
 		     & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
 	END InSet;
 BEGIN
-	ASSERT((Scanner.RelationFirst <= relation) & (relation <= Scanner.RelationLast));
+	ASSERT(relation IN AcceptableRelationLexems);
 
 	NEW(e); ExprInit(e, IdRelation, TypeGet(IdBoolean));
 	e.exprs[0] := expr1;
