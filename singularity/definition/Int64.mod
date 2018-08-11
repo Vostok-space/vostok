@@ -28,9 +28,10 @@ BEGIN
 	ASSERT(FALSE)
 END FromInt;
 
-PROCEDURE ToInt*(VAR i: INTEGER; v: Type);
+PROCEDURE ToInt*(v: Type): INTEGER;
 BEGIN
 	ASSERT(FALSE)
+	RETURN 0
 END ToInt;
 
 PROCEDURE Add*(VAR sum: Type; a1, a2: Type);

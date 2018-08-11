@@ -6,7 +6,6 @@ MODULE Integers;
 
  PROCEDURE Int64;
  VAR i1, i2, i3: I64.Type;
-     i: INTEGER;
  BEGIN
    I64.FromInt(i1, 127, 0);
    I64.FromInt(i2, 63, 0);
@@ -16,16 +15,17 @@ MODULE Integers;
    ASSERT(I64.Cmp(i2, i2) =  0);
 
    I64.Div(i3, i1, i2);
-   I64.ToInt(i, i3);
-   ASSERT(i = 2);
+   ASSERT(I64.ToInt(i3) = 2);
 
    I64.Div(i3, i2, i1);
-   I64.ToInt(i, i3);
-   ASSERT(i = 0);
+   ASSERT(I64.ToInt(i3) = 0);
 
    I64.FromInt(i1, 0, Max);
    i2 := i1;
    ASSERT(I64.Cmp(i2, i1) = 0);
+   I64.FromInt(i1, 0, 1);
+   I64.Add(i1, i2, i1);
+   ASSERT(I64.Cmp(i2, i1) < 0);
    I64.Mul(i3, i1, i2);
    I64.Add(i3, i3, i2);
    I64.FromInt(i1, Max, Max);
@@ -34,7 +34,6 @@ MODULE Integers;
 
  PROCEDURE Int32;
  VAR i1, i2, i3: I32.Type;
-     i: INTEGER;
  BEGIN
    I32.FromInt(i1, 127);
    I32.FromInt(i2, 63);
@@ -44,12 +43,10 @@ MODULE Integers;
    ASSERT(I32.Cmp(i2, i2) =  0);
 
    I32.Div(i3, i1, i2);
-   I32.ToInt(i, i3);
-   ASSERT(i = 2);
+   ASSERT(I32.ToInt(i3) = 2);
 
    I32.Div(i3, i2, i1);
-   I32.ToInt(i, i3);
-   ASSERT(i = 0);
+   ASSERT(I32.ToInt(i3) = 0);
 
    I32.FromInt(i1, Max DIV 3);
    i2 := i1;
@@ -64,7 +61,7 @@ MODULE Integers;
 
  PROCEDURE Uint64;
  VAR i1, i2, i3: U64.Type;
-     i: INTEGER;
+     one: U64.Type;
  BEGIN
    U64.FromInt(i1, 127, 0);
    U64.FromInt(i2, 63, 0);
@@ -74,16 +71,16 @@ MODULE Integers;
    ASSERT(U64.Cmp(i2, i2) =  0);
 
    U64.Div(i3, i1, i2);
-   U64.ToInt(i, i3);
-   ASSERT(i = 2);
+   ASSERT(U64.ToInt(i3) = 2);
 
    U64.Div(i3, i2, i1);
-   U64.ToInt(i, i3);
-   ASSERT(i = 0);
+   ASSERT(U64.ToInt(i3) = 0);
 
    U64.FromInt(i1, 0, Max);
    i2 := i1;
    ASSERT(U64.Cmp(i2, i1) = 0);
+   U64.FromInt(one, 0, 1);
+   U64.Add(i1, i1, one);
    U64.Mul(i3, i1, i2);
    U64.Add(i3, i3, i2);
    U64.FromInt(i1, Max, Max);
@@ -92,7 +89,6 @@ MODULE Integers;
 
  PROCEDURE Uint32;
  VAR i1, i2, i3: U32.Type;
-     i: INTEGER;
  BEGIN
    U32.FromInt(i1, 127);
    U32.FromInt(i2, 63);
@@ -101,13 +97,14 @@ MODULE Integers;
    ASSERT(U32.Cmp(i2, i1) = -1);
    ASSERT(U32.Cmp(i2, i2) =  0);
 
+   U32.Add(i3, i1, i2);
+   ASSERT(U32.ToInt(i3) = 127 + 63);
+
    U32.Div(i3, i1, i2);
-   U32.ToInt(i, i3);
-   ASSERT(i = 2);
+   ASSERT(U32.ToInt(i3) = 2);
 
    U32.Div(i3, i2, i1);
-   U32.ToInt(i, i3);
-   ASSERT(i = 0);
+   ASSERT(U32.ToInt(i3) = 0);
 
    U32.FromInt(i1, Max DIV 2);
    i2 := i1;
@@ -122,10 +119,10 @@ MODULE Integers;
 
  PROCEDURE Go*;
  BEGIN
-   Int64;
-   Uint64;
    Uint32;
+   Uint64;
    Int32;
+   Int64;
  END Go;
 
 END Integers.

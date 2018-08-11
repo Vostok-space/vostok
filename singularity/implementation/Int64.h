@@ -27,14 +27,14 @@ typedef o7_char Int64_Type[Int64_Size_cnst];
 static Int64_Type Int64_min, Int64_max;
 
 O7_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, o7_int_t high, o7_int_t low) {
-	*(Int64_t *)v = o7_int(high) * (Int64_t)O7_INT_MAX + o7_int(low);
+	*(Int64_t *)v = o7_int(high) * ((Int64_t)O7_INT_MAX + 1) + o7_int(low);
 }
 
-O7_ALWAYS_INLINE void Int64_ToInt(o7_int_t *i, Int64_Type v) {
+O7_ALWAYS_INLINE o7_int_t Int64_ToInt(Int64_Type v) {
 	if (O7_OVERFLOW) {
 		assert((-O7_INT_MAX <= *(Int64_t *)v) && (*(Int64_t *)v <= O7_INT_MAX));
 	}
-	*i = *(Int64_t *)v;
+	return *(Int64_t *)v;
 }
 
 O7_ALWAYS_INLINE void Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2) {

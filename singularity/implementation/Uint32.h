@@ -28,11 +28,11 @@ O7_ALWAYS_INLINE void Uint32_FromInt(Uint32_Type v, o7_int_t i) {
 	*(Uint32_t *)v = o7_int(i);
 }
 
-O7_ALWAYS_INLINE void Uint32_ToInt(o7_int_t *i, Uint32_Type v) {
+O7_ALWAYS_INLINE o7_int_t Uint32_ToInt(Uint32_Type v) {
 	if (O7_OVERFLOW) {
 		assert(*(Uint32_t *)v <= O7_INT_MAX);
 	}
-	*i = *(Uint32_t *)v;
+	return *(Uint32_t *)v;
 }
 
 O7_ALWAYS_INLINE void

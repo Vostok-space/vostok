@@ -26,14 +26,14 @@ static Uint64_Type Uint64_min, Uint64_max;
 
 O7_ALWAYS_INLINE void Uint64_FromInt(Uint64_Type v, o7_int_t high, o7_int_t low) {
 	assert((0 <= high) && (0 <= low));
-	*(Uint64_t *)v = o7_int(high) * (Uint64_t)O7_INT_MAX + o7_int(low);
+	*(Uint64_t *)v = o7_int(high) * ((Uint64_t)O7_INT_MAX + 1) + o7_int(low);
 }
 
-O7_ALWAYS_INLINE void Uint64_ToInt(o7_int_t *i, Uint64_Type v) {
+O7_ALWAYS_INLINE o7_int_t Uint64_ToInt(Uint64_Type v) {
 	if (O7_OVERFLOW) {
 		assert(*(Uint64_t *)v <= O7_INT_MAX);
 	}
-	*i = *(Uint64_t *)v;
+	return *(Uint64_t *)v;
 }
 
 O7_ALWAYS_INLINE void

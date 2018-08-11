@@ -16,24 +16,94 @@ MODULE Uint64Bits;
 
  IMPORT U := Uint64;
 
- PROCEDURE And*(VAR and: U.Type; a1, a2: U.Type);
+ PROCEDURE BitsLow*(v: U.Type): SET;
+ VAR i, j, b: INTEGER; set: SET;
  BEGIN
-   ASSERT(FALSE)
+   set := {};
+   FOR i := 0 TO (LEN(v) DIV 2 - 1) DO
+     b := v[i];
+     FOR j := i * 8 TO i * 8 + 7 DO
+       IF ODD(b) THEN
+         INCL(set, j)
+       END;
+       b := b DIV 2
+     END
+   END
+ RETURN
+   set
+ END BitsLow;
+
+ PROCEDURE BitsHigh*(v: U.Type): SET;
+ VAR i, j, b: INTEGER; set: SET;
+ BEGIN
+   set := {};
+   FOR i := 0 TO (LEN(v) DIV 2 - 1) DO
+     b := v[LEN(v) DIV 2 + i];
+     FOR j := i * 8 TO i * 8 + 7 DO
+       IF ODD(b) THEN
+         INCL(set, j)
+       END;
+       b := b DIV 2
+     END
+   END
+ RETURN
+   set
+ END BitsHigh;
+
+ PROCEDURE Bits*(v: U.Type): SET;
+ VAR i: INTEGER;
+ BEGIN
+   FOR i := (LEN(v) DIV 2) TO (LEN(v) - 1) DO
+     ASSERT(v[i] = 0)
+   END
+ RETURN
+   BitsLow(v)
+ END Bits;
+
+ PROCEDURE ByteBits(b: BYTE): SET;
+ VAR i: INTEGER; set: SET;
+ BEGIN
+   set := {};
+   FOR i := 0 TO 7 DO
+     IF ODD(b) THEN
+       INCL(set, i)
+     END;
+     b := b DIV 2
+   END
+ RETURN
+   set
+ END ByteBits;
+
+ PROCEDURE And*(VAR and: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
+ BEGIN
+   FOR i := 0 TO LEN(a1) - 1 DO
+     and[i] := ORD(ByteBits(a1[i]) * ByteBits(a2[i]))
+   END
  END And;
 
  PROCEDURE Or*(VAR or: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a1) - 1 DO
+     or[i] := ORD(ByteBits(a1[i]) + ByteBits(a2[i]))
+   END
  END Or;
 
  PROCEDURE Xor*(VAR xor: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a1) - 1 DO
+     xor[i] := ORD(ByteBits(a1[i]) / ByteBits(a2[i]))
+   END
  END Xor;
 
  PROCEDURE Not*(VAR not: U.Type; a: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a) - 1 DO
+     not[i] := 0FFH - a[i]
+   END
  END Not;
 
  PROCEDURE Shl*(VAR shl: U.Type; a: U.Type; shift: INTEGER);

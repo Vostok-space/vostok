@@ -30,11 +30,11 @@ O7_ALWAYS_INLINE void Int32_FromInt(Int32_Type v, o7_int_t i) {
 	*(Int32_t *)v = o7_int(i);
 }
 
-O7_ALWAYS_INLINE void Int32_ToInt(o7_int_t *i, Int32_Type v) {
+O7_ALWAYS_INLINE o7_int_t Int32_ToInt(Int32_Type v) {
 	if (O7_OVERFLOW) {
 		assert(-O7_INT_MAX <= *(Int32_t *)v);
 	}
-	*i = *(Int32_t *)v;
+	return *(Int32_t *)v;
 }
 
 O7_ALWAYS_INLINE void Int32_Add(Int32_Type sum, Int32_Type a1, Int32_Type a2) {

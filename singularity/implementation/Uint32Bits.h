@@ -17,6 +17,10 @@
 
 #include "Uint32.h"
 
+O7_ALWAYS_INLINE o7_uint_t Uint32Bits_Bits(Uint32_Type v) {
+  return *(Uint32_t *)v;
+}
+
 O7_ALWAYS_INLINE void
   Uint32Bits_And(Uint32_Type res, Uint32_Type a1, Uint32_Type a2)
 {

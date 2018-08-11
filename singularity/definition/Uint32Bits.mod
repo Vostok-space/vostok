@@ -16,24 +16,67 @@ MODULE Uint32Bits;
 
  IMPORT U := Uint32;
 
- PROCEDURE And*(VAR and: U.Type; a1, a2: U.Type);
+ PROCEDURE Bits*(v: U.Type): SET;
+ VAR i, j, b: INTEGER; s: SET;
  BEGIN
-   ASSERT(FALSE)
+   s := {};
+   FOR i := 0 TO LEN(v) - 1 DO
+     b := v[i];
+     FOR j := i * 8 TO i * 8 + 7 DO
+       IF ODD(b) THEN
+         INCL(s, j)
+       END;
+       b := b DIV 2
+     END
+   END
+ RETURN
+   s
+ END Bits;
+
+ PROCEDURE ByteBits(b: BYTE): SET;
+ VAR i: INTEGER; s: SET;
+ BEGIN
+   s := {};
+   FOR i := 0 TO 7 DO
+     IF ODD(b) THEN
+       INCL(s, i)
+     END;
+     b := b DIV 2
+   END
+ RETURN
+   s
+ END ByteBits;
+
+ PROCEDURE And*(VAR and: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
+ BEGIN
+   FOR i := 0 TO LEN(a1) - 1 DO
+     and[i] := ORD(ByteBits(a1[i]) * ByteBits(a2[i]))
+   END
  END And;
 
  PROCEDURE Or*(VAR or: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a1) - 1 DO
+     or[i] := ORD(ByteBits(a1[i]) + ByteBits(a2[i]))
+   END
  END Or;
 
  PROCEDURE Xor*(VAR xor: U.Type; a1, a2: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a1) - 1 DO
+     xor[i] := ORD(ByteBits(a1[i]) / ByteBits(a2[i]))
+   END
  END Xor;
 
  PROCEDURE Not*(VAR not: U.Type; a: U.Type);
+ VAR i: INTEGER;
  BEGIN
-   ASSERT(FALSE)
+   FOR i := 0 TO LEN(a) - 1 DO
+     not[i] := 0FFH - a[i]
+   END
  END Not;
 
  PROCEDURE Shl*(VAR shl: U.Type; a: U.Type; shift: INTEGER);

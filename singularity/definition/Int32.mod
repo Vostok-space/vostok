@@ -25,12 +25,24 @@ MODULE Int32;
 
  PROCEDURE FromInt*(VAR v: Type; i: INTEGER);
  BEGIN
-   ASSERT(FALSE)
+   IF 0 <= i THEN
+     v[0] := i MOD 100H;
+     v[1] := i DIV 100H MOD 100H;
+     v[2] := i DIV 10000H MOD 100H;
+     v[3] := i DIV 1000000H
+   ELSE
+     i := -i;
+     v[0] := 100H - i MOD 100H;
+     v[1] := 100H - i DIV 100H MOD 100H;
+     v[2] := 100H - i DIV 10000H MOD 100H;
+     v[3] := 100H - i DIV 1000000H
+   END
  END FromInt;
 
- PROCEDURE ToInt*(VAR i: INTEGER; v: Type);
+ PROCEDURE ToInt*(v: Type): INTEGER;
  BEGIN
    ASSERT(FALSE)
+   RETURN 0
  END ToInt;
 
  PROCEDURE Add*(VAR sum: Type; a1, a2: Type);
@@ -69,4 +81,14 @@ MODULE Int32;
    RETURN 0
  END Cmp;
 
+BEGIN
+  min[0] := 0;
+  min[1] := 0;
+  min[2] := 0;
+  min[3] := 80H;
+
+  max[0] := 0FFH;
+  max[1] := 0FFH;
+  max[2] := 0FFH;
+  max[3] := 7FH
 END Int32.
