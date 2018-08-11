@@ -1536,13 +1536,17 @@ BEGIN
 	RETURN ErrNo
 END RecordEnd;
 
+PROCEDURE PredefinedGet*(id: INTEGER): Declaration;
+	RETURN predefined[id - SpecIdent.PredefinedFirst]
+END PredefinedGet;
+
 PROCEDURE SearchPredefined(VAR buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 	l: INTEGER;
 BEGIN
 	IF SpecIdent.IsPredefined(l, buf, begin, end) THEN
 		Log.Str("SearchPredefined "); Log.Int(l); Log.Ln;
-		d := predefined[l - SpecIdent.PredefinedFirst];
+		d := PredefinedGet(l);
 		ASSERT(d # NIL)
 	ELSE
 		d := NIL

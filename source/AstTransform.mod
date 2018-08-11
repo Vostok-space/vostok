@@ -16,7 +16,10 @@
  *)
 MODULE AstTransform;
 
-  IMPORT Out, V, Ast, TranLim := TranslatorLimits, Strings := StringStore;
+  IMPORT Out, V, Ast,
+         TranLim   := TranslatorLimits,
+         Strings   := StringStore,
+         SpecIdent := OberonSpecIdent;
 
   CONST
     AnonUnchanged*          = 0;
@@ -47,6 +50,7 @@ MODULE AstTransform;
   VAR
     type      : PROCEDURE(t: Ast.Type;   VAR o: Options);
     expression: PROCEDURE(e: Ast.Expression; o: Options);
+    incParam  : Ast.FormalParam;
 
   PROCEDURE Import(imp: Ast.Import; o: Options);
   END Import;
@@ -324,7 +328,13 @@ MODULE AstTransform;
         END;
         p  := p.next;
         IF fp # NIL THEN
-          fp := fp.next
+          fp := fp.next;
+          IF (fp = NIL)
+           & ((c.designator.decl.id = SpecIdent.Inc)
+           OR (c.designator.decl.id = SpecIdent.Dec))
+          THEN
+            fp := incParam
+          END
         END
       END
     END Call;
@@ -641,7 +651,17 @@ MODULE AstTransform;
     Declarations(m, o)
   END Do;
 
+  PROCEDURE Init;
+  VAR abs: Ast.Declaration;
+  BEGIN
+    type       := Type;
+    expression := Expression;
+
+    abs := Ast.PredefinedGet(SpecIdent.Abs);
+    incParam := abs.type(Ast.ProcType).params;
+    ASSERT((incParam.next = NIL) & (incParam.type.id = Ast.IdInteger))
+  END Init;
+
 BEGIN
-  type       := Type;
-  expression := Expression
+  Init
 END AstTransform.
