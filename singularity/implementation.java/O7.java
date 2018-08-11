@@ -16,9 +16,8 @@ package o7;
 
 import java.lang.AssertionError;
 import java.lang.ArithmeticException;
-import java.lang.Math;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
 
 public final class O7 {
@@ -32,12 +31,10 @@ public static ArgsReceiver argsReceiver = null;
 public static final byte BOOL_UNDEF   = (byte)0xFF;
 public static final int  INT_UNDEF    = Integer.MIN_VALUE;
 public static final long LONG_UNDEF   = Long.MIN_VALUE;
-public static final long DOUBLE_UNDEF = 0x7FFFFFFF00000000l;
+public static final long DOUBLE_UNDEF = 0x7FFF_FFFF_0000_0000L;
 
 static int      exitCode  = 0;
 static byte[][] args      = null;
-
-public static final Charset utf8Charset = Charset.forName("UTF-8");
 
 public static void exit() {
     if (0 != exitCode) {
@@ -264,7 +261,7 @@ public static byte[] bytes(final java.lang.String s) {
     final ByteBuffer bb;
     final byte ba[];
     /* TODO map */
-    bb = utf8Charset.encode(s);
+    bb = StandardCharsets.UTF_8.encode(s);
     ba = new byte[bb.limit()];
     bb.get(ba);
 /*
@@ -274,7 +271,7 @@ public static byte[] bytes(final java.lang.String s) {
 }
 
 public static java.lang.String string(final byte[] bytes) {
-    return utf8Charset.decode(ByteBuffer.wrap(bytes)).toString();
+    return StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes)).toString();
 }
 
 public static int strcmp(final byte[] s1, final byte[] s2) {
