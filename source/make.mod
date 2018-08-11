@@ -104,20 +104,22 @@ MODULE make;
      WHILE Dir.Read(file, dir) DO
        l := 0;
        j := 0;
-       IF Dir.CopyName(n, l, file) & (n[0] # ".")
-        & Exec.Init(code, "")
-        & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-        & AddRun(code)
-        & CopyFileName(c, n)
-        & ( example & Exec.Add(code, c, 0)
-         OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
-          )
-        & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
-        & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
-        & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
-        & Exec.Add(code, "-cyrillic", 0)
-        & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
-       THEN
+       ASSERT(Dir.CopyName(n, l, file));
+       IF n[0] # "." THEN
+         ASSERT(
+             Exec.Init(code, "")
+           & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
+           & AddRun(code)
+           & CopyFileName(c, n)
+           & ( example & Exec.Add(code, c, 0)
+            OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
+             )
+           & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
+           & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
+           & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
+           & Exec.Add(code, "-cyrillic", 0)
+           & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
+         );
          IF Execute(code, n) = 0 THEN
            INC(pass)
          ELSE
@@ -157,14 +159,18 @@ MODULE make;
  PROCEDURE Help*;
  BEGIN
    Log.StrLn("Commands:");
-   Log.StrLn("  Build     - build o7c translator by bootstrap");
+   Log.StrLn("  Build     - build from source o7c translator by bootstrap");
    Log.StrLn("  Test      - build and run tests from test/source");
    Log.StrLn("  Example   - build examples");
    Log.StrLn("  Self      - build itself then run tests");
    Log.StrLn("  SelfFull  - build translator by 2nd generation translator then tests");
    Log.StrLn("  UseJava   - turn translation through Java");
-   Log.StrLn("  UseC      - turn translation through C with default compiler");
-   Log.StrLn("  UseCC(cc) - set C compiler and turn translation through C")
+   Log.StrLn("  UseC      - turn translation through C");
+   Log.StrLn("  UseCC(cc) - set C compiler from string and turn translation through C");
+
+   Log.Ln; Log.StrLn("Examples:");
+   Log.StrLn("  result/bs-o7c run 'make.Build; make.Test; make.Self' -infr . -m source");
+   Log.StrLn("  result/o7c run 'make.UseJava; make.Test' -infr . -m source")
  END Help;
 
  PROCEDURE UseJava*;
