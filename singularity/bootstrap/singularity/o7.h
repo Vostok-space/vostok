@@ -398,47 +398,8 @@ double o7_dbl(double d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-double o7_flt_undef(void) {
-	float undef;
-	if (sizeof(unsigned) == sizeof(float)) {
-		unsigned const u = 0x7FFFFFFFul;
-		memcpy(&undef, &u, sizeof(u));
-	} else {
-		unsigned long const u = 0x7FFFFFFFul;
-		memcpy(&undef, &u, sizeof(u));
-	}
-	return undef;
-}
-
-extern float* o7_floats_undef(int len, float array[O7_VLA(len)]);
-#define O7_FLOATS_UNDEF(array) \
-	o7_floats_undef(sizeof(array) / sizeof(float), (float *)(array))
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_fl(float d) {
-	if (!O7_UNDEF) {
-		;
-	} else if (sizeof(unsigned) == sizeof(double) / 2) {
-		unsigned u;
-		memcpy(&u, &d, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
-	} else {
-		unsigned long u;
-		memcpy(&u, &d, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
-	}
-	return d;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
 char unsigned o7_byte(int v) {
 	assert((unsigned)v <= 255);
-	return (char unsigned)v;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-char unsigned o7_lbyte(o7_long_t v) {
-	assert((o7_ulong_t)v <= 255);
 	return (char unsigned)v;
 }
 
@@ -455,23 +416,11 @@ char unsigned o7_chr(int v) {
 		assert(isfinite(v));
 		return v;
 	}
-
-	O7_ATTR_CONST O7_ALWAYS_INLINE
-	float o7_flt_finite(float v) {
-		assert(isfinite(v));
-		return v;
-	}
 #else
 	/* TODO */
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	double o7_dbl_finite(double v) {
 		assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
-		return v;
-	}
-
-	O7_ATTR_CONST O7_ALWAYS_INLINE
-	float o7_flt_finite(float v) {
-		assert((v == v) && (-FLT_MAX <= v) && (v <= FLT_MAX));
 		return v;
 	}
 #endif
@@ -500,29 +449,6 @@ double o7_fdiv(double n, double d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_faddf(float a1, float a2) {
-	return o7_flt_finite(a1 + a2);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_fsubf(float m, float s) {
-	return o7_flt_finite(m - s);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_fmulf(float m1, float m2) {
-	return o7_flt_finite(m1 * m2);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-float o7_fdivf(float n, float d) {
-	if (O7_FLOAT_DIV_ZERO) {
-		assert(d != 0.0f);
-	}
-	return o7_flt_finite(n / d);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_bool o7_int_inited(int i) {
 	return i >= -INT_MAX;
 }
@@ -538,23 +464,6 @@ int o7_int(int i) {
 extern int* o7_ints_undef(int len, int array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
 	o7_ints_undef((int)(sizeof(array) / (sizeof(int))), (int *)(array))
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_bool o7_long_inited(o7_long_t i) {
-	return i >= -O7_LONG_MAX;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_long(o7_long_t i) {
-	if (O7_UNDEF) {
-		assert(o7_long_inited(i));
-	}
-	return i;
-}
-
-extern o7_long_t* o7_longs_undef(int len, o7_long_t array[O7_VLA(len)]);
-#define O7_LONGS_UNDEF(array) \
-	o7_longs_undef((int)(sizeof(array) / (sizeof(int))), (o7_long_t *)(array))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 int o7_add(int a1, int a2) {
@@ -635,84 +544,6 @@ int o7_mod(int n, int d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
-	o7_long_t s;
-	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s);
-		assert(!overflow && s >= -O7_LONG_MAX);
-	} else {
-		if (!O7_OVERFLOW) {
-			if (O7_UNDEF) {
-				assert(o7_long_inited(a1));
-				assert(o7_long_inited(a2));
-			}
-		} else if (a2 >= 0) {
-			assert(o7_long(a1) <=  O7_LONG_MAX - a2);
-		} else {
-			assert(a1 >= -O7_LONG_MAX - o7_long(a2));
-		}
-		s = a1 + a2;
-	}
-	return s;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
-	o7_long_t d;
-	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SSUBL(o7_long(m), o7_long(s), &d);
-		assert(!overflow && d >= -O7_LONG_MAX);
-	} else {
-		if (!O7_OVERFLOW) {
-			if (O7_UNDEF) {
-				assert(o7_long_inited(m));
-				assert(o7_long_inited(s));
-			}
-		} else if (s >= 0) {
-			assert(m >= -O7_LONG_MAX + s);
-		} else {
-			assert(o7_long(m) <= O7_LONG_MAX + o7_long(s));
-		}
-		d = m - s;
-	}
-	return d;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
-	o7_long_t p;
-	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SMULL(o7_long(m1), o7_long(m2), &p);
-		assert(!overflow && p >= -O7_LONG_MAX);
-	} else {
-		if (O7_OVERFLOW && (0 != m2)) {
-			assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
-		}
-		p = o7_long(m1) * o7_long(m2);
-	}
-	return p;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
-	}
-	return o7_long(n) / o7_long(d);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
-	}
-	return o7_long(n) % o7_long(d);
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
 int o7_ind(int len, int ind) {
 	if (O7_ARRAY_INDEX) {
 		assert((unsigned)ind < (unsigned)len);
@@ -731,27 +562,6 @@ int o7_cmp(int a, int b) {
 	} else {
 		if (O7_UNDEF) {
 			assert(o7_int_inited(b));
-		}
-		if (a == b) {
-			cmp = 0;
-		} else {
-			cmp = 1;
-		}
-	}
-	return cmp;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_lcmp(o7_long_t a, o7_long_t b) {
-	int cmp;
-	if (a < b) {
-		if (O7_UNDEF) {
-			assert(o7_long_inited(a));
-		}
-		cmp = -1;
-	} else {
-		if (O7_UNDEF) {
-			assert(o7_long_inited(b));
 		}
 		if (a == b) {
 			cmp = 0;
@@ -902,13 +712,6 @@ unsigned o7_set(int low, int high) {
 	assert(high <= 31);
 	assert(0 <= low && low <= high);
 	return (~0u << low) & (~0u >> (31 - high));
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_ulong_t o7_lset(int low, int high) {
-	assert(high <= 63);
-	assert(0 <= low && low <= high);
-	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
 }
 
 #define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))

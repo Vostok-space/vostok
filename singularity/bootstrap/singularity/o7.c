@@ -28,7 +28,6 @@ char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined;
-	float undefinedf;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
  * Для платформ с симметричными целыми нужно что-то другое. */
 	O7_STATIC_ASSERT(INT_MIN < -INT_MAX);
@@ -44,8 +43,6 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 
 	undefined = o7_dbl_undef();
 	assert(undefined != undefined);
-	undefinedf = o7_flt_undef();
-	assert(undefinedf != undefinedf);
 
 	assert((argc > 0) == (argv != NULL));
 
@@ -121,14 +118,6 @@ extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]) {
 	int i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_DBL_UNDEF;
-	}
-	return array;
-}
-
-extern float* o7_floats_undef(int len, float array[O7_VLA(len)]) {
-	int i;
-	for (i = 0; i < len; i += 1) {
-		array[i] = O7_FLT_UNDEF;
 	}
 	return array;
 }
