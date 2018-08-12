@@ -141,14 +141,6 @@ extern int* o7_ints_undef(int len, int array[O7_VLA(len)]) {
 	return array;
 }
 
-extern o7_long_t* o7_longs_undef(int len, o7_long_t array[O7_VLA(len)]) {
-	int i;
-	for (i = 0; i < len; i += 1) {
-		array[i] = O7_LONG_UNDEF;
-	}
-	return array;
-}
-
 extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
                      int s2_len, o7_char const s2[O7_VLA(s2_len)]) {
 	int i, len, c1, c2;

@@ -30,8 +30,6 @@ extern void Out_Ln(void);
 
 extern void Out_Real(double x, int n);
 
-extern void Out_LongReal(double x, int n);
-
 extern void Out_Open(void);
 
 extern void Out_init(void);
