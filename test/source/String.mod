@@ -7,7 +7,7 @@ CONST S  = "0123";
       S2 = CHR(ORD("0"));
 
 PROCEDURE Err*;
-VAR s1, s2: ARRAY 11 OF CHAR;
+VAR s1, s2: ARRAY 12 OF CHAR;
 	i: INTEGER;
 BEGIN
 	s1 := "0123456789 ";
@@ -26,6 +26,14 @@ END Eq;
 PROCEDURE Eq1(s1, s2: ARRAY OF ARRAY OF CHAR): BOOLEAN;
 	RETURN s1[1] = s2[0]
 END Eq1;
+
+PROCEDURE Fail*;
+(*
+VAR s: ARRAY 2 OF CHAR;
+BEGIN
+  s := "ab"
+*)
+END Fail;
 
 PROCEDURE Go*;
 VAR s1, s2: ARRAY 11 OF CHAR;
@@ -86,7 +94,10 @@ BEGIN
 
 	ASSERT(S1 = S1[0]);
 
-	ASSERT(Eq(S1, "0"))
+	ASSERT(Eq(S1, "0"));
+
+	s1 := "\";
+	ASSERT(Eq(s1, "\"))
 END Go;
 
 END String.

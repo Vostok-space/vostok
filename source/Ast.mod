@@ -60,6 +60,7 @@ CONST
 	ErrConstDeclExprNotConst*       = -29;
 	ErrAssignIncompatibleType*      = -30;
 	ErrAssignExpectVarParam*        = -31;
+	ErrAssignStringToNotEnoughArray*= -111;(* TODO *)
 	ErrCallNotProc*                 = -32;
 	ErrCallExprWithoutReturn*       = -33;
 	ErrCallIgnoredReturn*           = ErrCallExprWithoutReturn - 1;
@@ -3732,7 +3733,7 @@ BEGIN
 			err := ErrAssignExpectVarParam
 		END;
 
-		IF (expr # NIL)
+		IF (err = ErrNo) & (expr # NIL)
 		 & ~CompatibleTypes(a.distance, des.type, expr.type, FALSE)
 		 & ~CompatibleAsCharAndString(des.type, expr)
 		 & ~CompatibleAsStrings(des.type, expr)
@@ -3748,6 +3749,15 @@ BEGIN
 			THEN
 				err := ErrValueOutOfRangeOfByte
 			END
+		END;
+
+		IF (err = ErrNo)
+		 & (expr.value # NIL) & (expr.value IS ExprString)
+		 & (des.type.id = IdArray) & (des.type(Array).count # NIL)
+		 & (   des.type(Array).count(ExprInteger).int
+		    <= expr.value.type(Array).count(ExprInteger).int)
+		THEN
+			err := ErrAssignStringToNotEnoughArray
 		END;
 
 		IF (des.type.id = IdProcType) & (err = ErrNo)

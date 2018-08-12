@@ -95,6 +95,8 @@ BEGIN
 		C("Incompatible types in assignment")
 	| Ast.ErrAssignExpectVarParam:
 		C("Expected variable expression in assignment")
+	| Ast.ErrAssignStringToNotEnoughArray:
+		C("Assign string to array with not enough size")
 	| Ast.ErrCallNotProc:
 		C("Call applicable only to subroutines and subroutine's variables")
 	| Ast.ErrCallIgnoredReturn:

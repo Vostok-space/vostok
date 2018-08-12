@@ -94,6 +94,8 @@ BEGIN
 		C("Несовместимые типы в присваивании")
 	| Ast.ErrAssignExpectVarParam:
 		C("Ожидалось изменяемое выражение в присваивании")
+	| Ast.ErrAssignStringToNotEnoughArray:
+		C("Присваивание строки массиву недостаточного размера")
 	| Ast.ErrCallNotProc:
 		C("Вызов допустим только для процедур и переменных процедурного типа")
 	| Ast.ErrCallIgnoredReturn:

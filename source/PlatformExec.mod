@@ -230,9 +230,9 @@ BEGIN
 	autoCorrectDirSeparator := FALSE;
 
 	IF Platform.Posix THEN
-		dirSep := "/"
+		dirSep[0] := "/"
 	ELSE ASSERT(Platform.Windows);
-		dirSep := "\"
+		dirSep[0] := "\"
 	END
 END PlatformExec.
 

@@ -94,6 +94,8 @@ BEGIN
 		C("Несумісні типи у присвоєнні")
 	| Ast.ErrAssignExpectVarParam:
 		C("Очікувалась змінна у присвоєнні")
+	| Ast.ErrAssignStringToNotEnoughArray:
+		C("Присвоєння літерного рядку масиву недостатнього розміру")
 	| Ast.ErrCallNotProc:
 		C("Виклик дозволений тільки для підпрограм та змінних підпрограмного типу")
 	| Ast.ErrCallIgnoredReturn:
@@ -448,7 +450,7 @@ BEGIN
 	| Cli.ErrCantFoundJavaCompiler:
 		S("Не вдалося знайти компілятор Java")
 	| Cli.ErrTooLongJavaDirs:
-		S("Общая длина путей с .java-файлами слишком велика")
+		S("Загальна довжина тек з .java-файлами завелика")
 	END
 END CliError;
 

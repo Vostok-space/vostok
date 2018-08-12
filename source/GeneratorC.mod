@@ -2496,7 +2496,6 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 				Designator(gen, st.designator);
 				Text.Str(gen, ", ")
 			ELSIF (st.designator.type.id = Ast.IdArray)
-			(*    & (st.designator.type.type.id # Ast.IdString) *)
 			THEN
 				AssertArraySize(gen, st.designator, st.expr);
 				Text.Str(gen, "memcpy(");
@@ -2523,8 +2522,7 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 			THEN
 				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar
 				THEN
-					Text.Str(gen, ", ");
-					ArrayLen(gen, st.expr)
+					Text.Str(gen, ", 2")
 				ELSE
 					Text.Str(gen, ", sizeof(");
 					ExprForSize(gen, st.expr);
@@ -2539,9 +2537,7 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 			END
 		END;
 		CASE ORD(retain) + ORD(toByte)
-		   + ORD((st.designator.type.id = Ast.IdArray)
-		       & (st.designator.type.type.id # Ast.IdString)
-		        )
+		   + ORD(st.designator.type.id = Ast.IdArray)
 		OF
 		  0: Text.StrLn(gen, ";")
 		| 1: Text.StrLn(gen, ");")
