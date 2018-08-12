@@ -243,12 +243,6 @@ BEGIN
 	RETURN Strings.IsDefined(rec.name)
 END CheckStructName;
 
-PROCEDURE ArrayLen(VAR gen: Generator; e: Ast.Expression);
-BEGIN
-	expression(gen, e);
-	Text.Str(gen, ".length");
-END ArrayLen;
-
 PROCEDURE GlobalNamePointer(VAR gen: Generator; t: Ast.Type);
 BEGIN
 	ASSERT(t.id IN {Ast.IdPointer, Ast.IdRecord});
@@ -1017,12 +1011,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			ELSE
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
-				s[2] := "u";
-				s[3] := "0";
-				s[4] := "0";
-				s[5] := ToHex(e.int DIV 16);
-				s[6] := ToHex(e.int MOD 16);
-				s[7] := Utf8.DQuote;
+				IF e.int = ORD("\") THEN
+					s[2] := "\";
+					s[3] := Utf8.DQuote;
+					s[4] := Utf8.Null
+				ELSE
+					s[2] := "u";
+					s[3] := "0";
+					s[4] := "0";
+					s[5] := ToHex(e.int DIV 16);
+					s[6] := ToHex(e.int MOD 16);
+					s[7] := Utf8.DQuote
+				END;
 				Text.Str(gen, s)
 			END;
 			Text.Str(gen, ")")
@@ -1781,9 +1781,8 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		toByte := (st.designator.type.id = Ast.IdByte)
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
 		IF (st.designator.type.id = Ast.IdArray)
-		(*    & (st.designator.type.type.id # Ast.IdString) *)
 		THEN
-			IF st.designator.type.type.id = Ast.IdString THEN
+			IF st.expr.id = Ast.IdString THEN
 				Text.Str(gen, "O7.strcpy(")
 			ELSE
 				Text.Str(gen, "O7.copy(")
@@ -1800,14 +1799,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		END;
 		CheckExpr(gen, st.expr);
 		gen.opt.expectArray := FALSE;
-		IF (st.designator.type.id # Ast.IdArray)
-		OR (st.designator.type.type.id = Ast.IdString)
-		THEN
-			;
-		ELSE
-			Text.Str(gen, ", ");
-			ArrayLen(gen, st.expr)
-		END;
 		CASE ORD(toByte)
 		   + ORD((st.designator.type.id = Ast.IdArray)
 		       & (st.designator.type.type.id # Ast.IdString)

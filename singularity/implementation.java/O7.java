@@ -38,7 +38,7 @@ static byte[][] args      = null;
 
 public static void exit() {
     if (0 != exitCode) {
-        System.exit(exitCode);
+        java.lang.System.exit(exitCode);
     }
 }
 
@@ -305,7 +305,7 @@ public static int strcmp(final byte[] s1, final byte[] s2) {
 
 /* Copy chars */
 public static void strcpy(final byte[] d, final byte[] s) {
-    System.arraycopy(s, 0, d, 0, s.length);
+    java.lang.System.arraycopy(s, 0, d, 0, s.length);
     d[s.length] = 0;
 }
 
@@ -319,8 +319,8 @@ public static void strcpy(final byte[] d, final java.lang.String s) {
     d[len] = 0;
 }
 
-public static void copy(final Object d, final Object s, final int len) {
-    System.arraycopy(s, 0, d, 0, len);
+public static void copy(final Object d, final Object s) {
+    java.lang.System.arraycopy(s, 0, d, 0, java.lang.reflect.Array.getLength(s));
 }
 
 public static int set(final int low, final int high) {
