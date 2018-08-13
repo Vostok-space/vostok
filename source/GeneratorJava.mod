@@ -1236,18 +1236,16 @@ BEGIN
 	END
 END Declarator;
 
-PROCEDURE RecordUndefHeader(VAR gen: Generator; rec: Ast.Record);
+PROCEDURE RecordAssignHeader(VAR gen: Generator; rec: Ast.Record);
 BEGIN
 	IF rec.mark & ~gen.opt.main THEN
-		Text.Str(gen, "public void ")
+		Text.Str(gen, "public void assign(")
 	ELSE
-		Text.Str(gen, "private void ")
+		Text.Str(gen, "private void assign(")
 	END;
 	GlobalName(gen, rec);
-	Text.Str(gen, "_undef(");
-	GlobalName(gen, rec);
 	Text.StrOpen(gen, " r) {")
-END RecordUndefHeader;
+END RecordAssignHeader;
 
 PROCEDURE IsArrayTypeSimpleUndef(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 BEGIN
@@ -1321,7 +1319,7 @@ VAR var: Ast.Declaration;
 		END
 	END IteratorIfNeed;
 BEGIN
-	RecordUndefHeader(gen, rec);
+	Text.StrOpen(gen, "void undef() {");
 	IteratorIfNeed(gen, rec.vars);
 	IF rec.base # NIL THEN
 		GlobalName(gen, rec.base);
@@ -1360,6 +1358,58 @@ BEGIN
 	END;
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
+
+PROCEDURE RecordAssign(VAR gen: Generator; rec: Ast.Record);
+VAR var: Ast.Declaration;
+
+	PROCEDURE IsNeedBase(rec: Ast.Record): BOOLEAN;
+	BEGIN
+		REPEAT
+			rec := rec.base
+		UNTIL (rec = NIL) OR (rec.vars # NIL)
+		RETURN rec # NIL
+	END IsNeedBase;
+BEGIN
+	RecordAssignHeader(gen, rec);
+	IF IsNeedBase(rec) THEN
+		Text.StrLn(gen, "super.assign(r);")
+	END;
+	var := rec.vars;
+	WHILE var # NIL DO
+		IF var.type.id = Ast.IdArray THEN
+			(* TODO вложенные циклы *)
+			Text.Str(gen, "for (int i = 0; i < r.");
+			Name(gen, var);
+			Text.StrOpen(gen, ".length; i += 1) {");
+			Text.Str(gen, "this.");
+			Name(gen, var);
+			IF var.type.type.id # Ast.IdRecord THEN
+				Text.Str(gen, "[i] = r.");
+				Name(gen, var);
+				Text.StrLn(gen, "[i];");
+			ELSE
+				Text.Str(gen, ".assign(r.");
+				Name(gen, var);
+				Text.StrLn(gen, "[i]);")
+			END;
+			Text.StrLnClose(gen, "}")
+		ELSE
+			Text.Str(gen, "this.");
+			Name(gen, var);
+			IF var.type.id = Ast.IdRecord THEN
+				Text.Str(gen, ".assign(r.");
+				Name(gen, var);
+				Text.StrLn(gen, ");")
+			ELSE
+				Text.Str(gen, " = r.");
+				Name(gen, var);
+				Text.StrLn(gen, ";")
+			END
+		END;
+		var := var.next
+	END;
+	Text.StrLnClose(gen, "}")
+END RecordAssign;
 
 PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
 BEGIN
@@ -1473,6 +1523,9 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			END;
 			IF needConstructor THEN
 				Constructor(gen, rec)
+			END;
+			IF rec.inAssign THEN
+				RecordAssign(gen, rec)
 			END;
 			Text.StrLnClose(gen, "}")
 		END
@@ -1780,8 +1833,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	BEGIN
 		toByte := (st.designator.type.id = Ast.IdByte)
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-		IF (st.designator.type.id = Ast.IdArray)
-		THEN
+		IF st.designator.type.id = Ast.IdArray THEN
 			IF st.expr.id = Ast.IdString THEN
 				Text.Str(gen, "O7.strcpy(")
 			ELSE
@@ -1790,6 +1842,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 			Designator(gen, st.designator, TRUE);
 			Text.Str(gen, ", ");
 			gen.opt.expectArray := TRUE
+		ELSIF st.designator.type.id = Ast.IdRecord THEN
+			Designator(gen, st.designator, TRUE);
+			Text.Str(gen, ".assign(")
 		ELSIF toByte THEN
 			Designator(gen, st.designator, TRUE);
 			Text.Str(gen, " = O7.toByte(")
@@ -1800,9 +1855,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		CheckExpr(gen, st.expr);
 		gen.opt.expectArray := FALSE;
 		CASE ORD(toByte)
-		   + ORD((st.designator.type.id = Ast.IdArray)
-		       & (st.designator.type.type.id # Ast.IdString)
-		        )
+		   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
 		OF
 		  0: Text.StrLn(gen, ";")
 		| 1: Text.StrLn(gen, ");")

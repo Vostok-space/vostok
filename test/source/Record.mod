@@ -66,6 +66,24 @@ BEGIN
 	l := LEN(p2.b)
 END Pr;
 
+PROCEDURE Assign;
+VAR lr1, lr2: R2;
+BEGIN
+	lr1.a := 501;
+	lr1.b := 0.5;
+	lr2 := lr1;
+	ASSERT(lr2.a = 501);
+	ASSERT(lr2.b = 0.5);
+
+	lr2.a := -78;
+	lr2.b := 40.4;
+	ASSERT(lr2.a = -78);
+	ASSERT(lr2.b = 40.4);
+
+	ASSERT(lr1.a = 501);
+	ASSERT(lr1.b = 0.5)
+END Assign;
+
 PROCEDURE Fail*;
 VAR lr3: R3;
 	b: REAL;
@@ -113,7 +131,9 @@ BEGIN
 	r3.r2.b := 5.0;
 	r3.b := 6.0;
 	r2.a := 7;
-	ASSERT(r3.r2.a = 4)
+	ASSERT(r3.r2.a = 4);
+
+	Assign
 END Go;
 
 BEGIN

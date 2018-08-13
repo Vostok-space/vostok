@@ -297,7 +297,9 @@ TYPE
 		base*   : Record;
 		vars*   : Var;
 		pointer*: Pointer;
+
 		needTag*,
+		inAssign*,
 		complete: BOOLEAN
 	END;
 
@@ -1506,7 +1508,9 @@ BEGIN
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
-	r.needTag := FALSE;
+	r.needTag  := FALSE;
+	(* TODO *)
+	r.inAssign := TRUE;
 	r.complete := FALSE
 END RecNew;
 
