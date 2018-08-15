@@ -80,9 +80,31 @@ MODULE Uint32Bits;
  END Not;
 
  PROCEDURE Shl*(VAR shl: U.Type; a: U.Type; shift: INTEGER);
+ VAR bytes, bits, i, d, m: INTEGER;
  BEGIN
    ASSERT(0 <= shift);
-   ASSERT(FALSE)
+
+   bytes := shift DIV 8;
+   IF bytes >= LEN(shl) THEN
+     shl := U.min
+   ELSE
+     bits := shift MOD 8;
+     IF bits = 0 THEN
+       FOR i := LEN(shl) - 1 TO bytes BY -1 DO
+         shl[i] := a[i - bytes]
+       END
+     ELSE
+       m := ORD({bits});
+       d := ORD({8 - bits});
+       FOR i := LEN(shl) - 1 TO bytes + 1 BY -1 DO
+         shl[i] := a[i - bytes] * m MOD 100H + a[i - bytes - 1] DIV d
+       END;
+       shl[bytes] := a[0] * m MOD 100H
+     END;
+     FOR i := 0 TO bytes - 1 DO
+       shl[i] := 0
+     END
+   END
  END Shl;
 
  PROCEDURE Shr*(VAR shr: U.Type; a: U.Type; shift: INTEGER);
