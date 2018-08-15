@@ -12,7 +12,10 @@ MODULE Bits;
    U64.FromInt(u, 0, 8204);
    B64.Shl(u1, u, 12);
    ASSERT(U64.ToInt(u) = 8204);
-   ASSERT(U64.ToInt(u1) = 33603584)
+   ASSERT(U64.ToInt(u1) = 33603584);
+
+   B64.Shr(u1, u1, 12);
+   ASSERT(U64.ToInt(u1) = 8204)
  END Uint64;
 
  PROCEDURE Uint32;
@@ -25,7 +28,10 @@ MODULE Bits;
    U32.FromInt(u, 8204);
    B32.Shl(u1, u, 12);
    ASSERT(U32.ToInt(u) = 8204);
-   ASSERT(U32.ToInt(u1) = 33603584)
+   ASSERT(U32.ToInt(u1) = 33603584);
+
+   B32.Shr(u1, u1, 12);
+   ASSERT(U32.ToInt(u1) = 8204)
  END Uint32;
 
  PROCEDURE Go*;
