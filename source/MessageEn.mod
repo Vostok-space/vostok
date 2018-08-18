@@ -395,7 +395,7 @@ S("  -translit use transliteration in output names in C.")
 END
 END Usage;
 
-PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
+PROCEDURE CliError*(err: INTEGER);
 BEGIN
 	CASE err OF
 	  Cli.ErrWrongArgs:
@@ -411,12 +411,10 @@ BEGIN
 	| Cli.ErrOpenC:
 		S("Can not open destination .c file")
 	| Cli.ErrUnknownCommand:
-		C("Unknown command: ");
-		S(cmd);
+		S("Unknown command");
 		Usage(FALSE)
 	| Cli.ErrNotEnoughArgs:
-		C("Not enough count of arguments for command: ");
-		S(cmd)
+		S("Not enough count of arguments for command")
 	| Cli.ErrTooLongModuleDirs:
 		S("Too long overall length of paths to modules")
 	| Cli.ErrTooManyModuleDirs:

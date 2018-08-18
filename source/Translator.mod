@@ -45,8 +45,8 @@ IMPORT
 	Text := TextGenerator;
 
 CONST
-	ErrNo    =  0;
-	ErrParse = -1;
+	ErrNo*    =  0;
+	ErrParse* = -1;
 
 TYPE
 	Container = POINTER TO RContainer;
@@ -94,13 +94,24 @@ END Unlink;
 
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
-	Out.Int(code - Parser.ErrAstBegin, 0); Out.String(" ");
 	IF code <= Parser.ErrAstBegin THEN
 		Message.AstError(code - Parser.ErrAstBegin)
 	ELSE
 		Message.ParseError(code)
 	END
 END ErrorMessage;
+
+PROCEDURE IndexedErrorMessage(index, code, line, column: INTEGER);
+BEGIN
+	Out.String("  ");
+	Out.Int(index, 2); Out.String(") ");
+
+	ErrorMessage(code);
+
+	Out.String(" "); Out.Int(line + 1, 0);
+	Out.String(" : "); Out.Int(column, 0);
+	Out.Ln
+END IndexedErrorMessage;
 
 PROCEDURE PrintErrors(mc: Container);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
@@ -120,15 +131,8 @@ BEGIN
 			WHILE err # NIL DO
 				IF err.code # SkipError THEN
 					INC(i);
-
-					Out.String("  ");
-					Out.Int(i, 2); Out.String(") ");
-					ErrorMessage(err.code);
-					Out.String(" "); Out.Int(err.line + 1, 0);
-					Out.String(" : "); Out.Int(err.column, 0);
-					Out.Ln
+					IndexedErrorMessage(i, err.code, err.line, err.column);
 				END;
-
 				err := err.next
 			END
 		END;
@@ -793,13 +797,6 @@ VAR opt: GeneratorJava.Options;
 	    i, nameLen, dirsLen, outJavaLen: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
-(*
-		PROCEDURE MakeO7(VAR dir: ARRAY OF CHAR; VAR dirLen: INTEGER): BOOLEAN;
-		RETURN Strings.CopyCharsNull(dir, dirLen, Exec.dirSep)
-		     & Strings.CopyCharsNull(dir, dirLen, "o7")
-		     & FileSys.MakeDir(dir)
-		END MakeO7;
-*)
 	BEGIN
 		ok := GetTempOut(outJava, outJavaLen, m.name, args.tmp);
 		IF ~ok THEN
@@ -917,7 +914,7 @@ BEGIN
 	RETURN ret
 END GenerateThroughJava;
 
-PROCEDURE Translate(res: INTEGER; VAR args: Cli.Args): INTEGER;
+PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args): INTEGER;
 VAR ret: INTEGER;
     mp: ModuleProvider;
     module: Ast.Module;
@@ -947,7 +944,7 @@ BEGIN
 		END;
 		IF ret # Ast.ErrNo THEN
 			ret := ErrParse;
-			Message.AstError(ret); Out.Ln
+			Message.AstError(ret); Message.Ln
 		ELSIF res IN Cli.ThroughJava THEN
 			AstTransform.DefaultOptions(tranOpt);
 			AstTransform.Do(module, tranOpt);
@@ -988,7 +985,7 @@ BEGIN
 	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret) THEN
 		CLI.SetExitCode(Exec.Ok + 1);
 		IF ret # ErrParse THEN
-			Message.CliError(ret, args.cmd)
+			Message.CliError(ret)
 		END
 	END
 END Start;

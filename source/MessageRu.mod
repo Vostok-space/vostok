@@ -404,7 +404,7 @@ S("  -translit использует транслитерацию в получа
 END
 END Usage;
 
-PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
+PROCEDURE CliError*(err: INTEGER);
 BEGIN
 	CASE err OF
 	  Cli.ErrWrongArgs:
@@ -420,12 +420,10 @@ BEGIN
 	| Cli.ErrOpenC:
 		S("Не получается открыть выходной .c файл")
 	| Cli.ErrUnknownCommand:
-		C("Неизвестная команда: ");
-		S(cmd);
+		S("Неизвестная команда");
 		Usage(FALSE)
 	| Cli.ErrNotEnoughArgs:
-		C("Недостаточно аргументов для команды: ");
-		S(cmd)
+		S("Недостаточно аргументов для команды");
 	| Cli.ErrTooLongModuleDirs:
 		S("Суммарная длина путей с модулями слишком велика")
 	| Cli.ErrTooManyModuleDirs:

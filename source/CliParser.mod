@@ -71,7 +71,6 @@ TYPE
 	Args* = RECORD(V.Base)
 		src*   : ARRAY 65536 OF CHAR;
 		srcLen*: INTEGER;
-		cmd*: ARRAY 32 OF CHAR;
 		script*: BOOLEAN;
 		outC*, resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
@@ -118,7 +117,7 @@ BEGIN
 	RETURN str[ofs] = sample[i]
 END IsEqualStr;
 
-PROCEDURE CopyPath(VAR args: Args; VAR arg: INTEGER): INTEGER;
+PROCEDURE Options*(VAR args: Args; VAR arg: INTEGER): INTEGER;
 VAR i, dirsOfs, javaDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
     ret: INTEGER;
     opt: ARRAY 256 OF CHAR;
@@ -297,10 +296,13 @@ BEGIN
 		args.modPath[LEN(args.modPath) - 3] := "#"
 	END
 	RETURN ret
-END CopyPath;
+END Options;
 
-PROCEDURE ArgsInit(VAR args: Args);
+(* TODO убрать экспорт *)
+PROCEDURE ArgsInit*(VAR args: Args);
 BEGIN
+	V.Init(args);
+
 	args.srcLen   := 0;
 	args.cDirs[0] := Utf8.Null;
 	args.tmp[0]   := Utf8.Null;
@@ -315,43 +317,67 @@ BEGIN
 	args.cyrillic        := CyrillicNo;
 END ArgsInit;
 
-PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
-VAR arg, argDest, cpRet: INTEGER;
-    forRun: BOOLEAN;
+PROCEDURE ParseCommand*(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
+                       : INTEGER;
+VAR i, j, k: INTEGER;
 
-	PROCEDURE ParseCommand(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
-	                      : INTEGER;
-	VAR i, j, k: INTEGER;
-
-		PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
-		BEGIN
-			WHILE (src[j] = " ") OR (src[j] = Utf8.Tab) DO
-				INC(j)
-			END
-		END Empty;
+	PROCEDURE Empty(src: ARRAY OF CHAR; VAR j: INTEGER);
 	BEGIN
-		i := 0;
-		WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
-			INC(i)
-		END;
-		IF src[i] = "." THEN
-			j := i + 1;
-			Empty(src, j);
-			WHILE ("a" <= src[j]) & (src[j] <= "z")
-			   OR ("A" <= src[j]) & (src[j] <= "Z")
-			   OR ("0" <= src[j]) & (src[j] <= "9")
-			   OR cyr & (80X <= src[j])
-			DO
-				INC(j)
-			END;
-			k := j;
-			Empty(src, k);
-			script := src[k] # Utf8.Null
-		ELSE
-			script := FALSE
+		WHILE (src[j] = " ") OR (src[j] = Utf8.Tab) DO
+			INC(j)
 		END
-		RETURN i
-	END ParseCommand;
+	END Empty;
+BEGIN
+	i := 0;
+	WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
+		INC(i)
+	END;
+	IF src[i] = "." THEN
+		j := i + 1;
+		Empty(src, j);
+		WHILE ("a" <= src[j]) & (src[j] <= "z")
+		   OR ("A" <= src[j]) & (src[j] <= "Z")
+		   OR ("0" <= src[j]) & (src[j] <= "9")
+		   OR cyr & (80X <= src[j])
+		DO
+			INC(j)
+		END;
+		k := j;
+		Empty(src, k);
+		script := src[k] # Utf8.Null
+	ELSE
+		script := FALSE
+	END
+	RETURN i
+END ParseCommand;
+
+PROCEDURE ParseOptions(VAR args: Args; ret: INTEGER; VAR arg: INTEGER): INTEGER;
+VAR argDest, cpRet: INTEGER;
+    forRun: BOOLEAN;
+BEGIN
+	argDest := arg;
+	INC(args.srcLen);
+
+	forRun := ret IN {ResultRun, ResultRunJava};
+	arg := arg + ORD(~forRun);
+	cpRet := Options(args, arg);
+	IF cpRet # ErrNo THEN
+		ret := cpRet
+	ELSE
+		args.srcNameEnd :=
+			ParseCommand(args.cyrillic # CyrillicNo, args.src, args.script);
+
+		args.resPathLen := 0;
+		args.resPath[0] := Utf8.Null;
+		IF ~forRun & ~CLI.Get(args.resPath, args.resPathLen, argDest) THEN
+			ret := ErrTooLongOutName
+		END
+	END
+	RETURN ret
+END ParseOptions;
+
+PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
+VAR arg: INTEGER;
 BEGIN
 	ASSERT(ret IN {ResultC .. ResultRunJava});
 
@@ -364,49 +390,31 @@ BEGIN
 		(* TODO *)
 		ret := ErrTooLongSourceName
 	ELSE
-		argDest := arg;
-		INC(args.srcLen);
-
-		forRun := ret IN {ResultRun, ResultRunJava};
-		arg := arg + ORD(~forRun);
-		cpRet := CopyPath(args, arg);
-		IF cpRet # ErrNo THEN
-			ret := cpRet
-		ELSE
-			args.srcNameEnd :=
-				ParseCommand(args.cyrillic # CyrillicNo, args.src, args.script);
-
-			args.resPathLen := 0;
-			args.resPath[0] := Utf8.Null;
-			IF ~forRun & ~CLI.Get(args.resPath, args.resPathLen, argDest) THEN
-				ret := ErrTooLongOutName
-			END
-		END
+		ret := ParseOptions(args, ret, arg)
 	END;
 	args.arg := arg
 	RETURN ret
 END Command;
 
 PROCEDURE Parse*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
-VAR cmdLen: INTEGER;
+VAR cmdLen: INTEGER; cmd: ARRAY 16 OF CHAR;
 BEGIN
 	cmdLen := 0;
-	V.Init(args);
-	IF (CLI.count <= 0) OR ~CLI.Get(args.cmd, cmdLen, 0) THEN
+	IF (CLI.count <= 0) OR ~CLI.Get(cmd, cmdLen, 0) THEN
 		ret := ErrWrongArgs
-	ELSIF args.cmd = "help" THEN
+	ELSIF cmd = "help" THEN
 		ret := CmdHelp
-	ELSIF args.cmd = "to-c" THEN
+	ELSIF cmd = "to-c" THEN
 		ret := Command(args, ResultC)
-	ELSIF args.cmd = "to-bin" THEN
+	ELSIF cmd = "to-bin" THEN
 		ret := Command(args, ResultBin)
-	ELSIF args.cmd = "run" THEN
+	ELSIF cmd = "run" THEN
 		ret := Command(args, ResultRun)
-	ELSIF args.cmd = "to-java" THEN
+	ELSIF cmd = "to-java" THEN
 		ret := Command(args, ResultJava)
-	ELSIF args.cmd = "to-class" THEN
+	ELSIF cmd = "to-class" THEN
 		ret := Command(args, ResultClass)
-	ELSIF args.cmd = "run-java" THEN
+	ELSIF cmd = "run-java" THEN
 		ret := Command(args, ResultRunJava)
 	ELSE
 		ret := ErrUnknownCommand

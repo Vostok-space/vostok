@@ -394,7 +394,7 @@ S("  -translit використовує транслітерацію для ім
 END
 END Usage;
 
-PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
+PROCEDURE CliError*(err: INTEGER);
 BEGIN
 	CASE err OF
 	  Cli.ErrWrongArgs:
@@ -410,12 +410,10 @@ BEGIN
 	| Cli.ErrOpenC:
 		S("Не вдається відкрити вихідний .c файл")
 	| Cli.ErrUnknownCommand:
-		C("Невідома команда: ");
-		S(cmd);
+		S("Невідома команда");
 		Usage(FALSE)
 	| Cli.ErrNotEnoughArgs:
-		C("Недостатньо аргументів для команди: ");
-		S(cmd)
+		S("Недостатньо аргументів для команди")
 	| Cli.ErrTooLongModuleDirs:
 		S("Загальна довжина імен тек з модулями занадто велика")
 	| Cli.ErrTooManyModuleDirs:

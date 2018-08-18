@@ -17,7 +17,7 @@
 MODULE Message;
 
 IMPORT Env := OsEnv, Platform, LocaleParser,
-       MessageUa, MessageRu, MessageEn;
+       MessageUa, MessageRu, MessageEn, Out;
 
 CONST
 	En = 0;
@@ -53,12 +53,12 @@ BEGIN
 	END
 END Usage;
 
-PROCEDURE CliError*(err: INTEGER; cmd: ARRAY OF CHAR);
+PROCEDURE CliError*(err: INTEGER);
 BEGIN
 	CASE lang OF
-	  En: MessageEn.CliError(err, cmd)
-	| Ru: MessageRu.CliError(err, cmd)
-	| Ua: MessageUa.CliError(err, cmd)
+	  En: MessageEn.CliError(err)
+	| Ru: MessageRu.CliError(err)
+	| Ua: MessageUa.CliError(err)
 	END
 END CliError;
 
@@ -78,7 +78,7 @@ VAR env: ARRAY 16 OF CHAR;
     enc: ARRAY 5 OF CHAR;
 BEGIN
 	ofs := 0;
-	IF ~(  Platform.Posix & Env.Get(env, ofs, "LANG") 
+	IF ~(  Platform.Posix & Env.Get(env, ofs, "LANG")
 	     & LocaleParser.Parse(env, lng, state, enc) & (enc = "UTF-8")  )
 	THEN
 		lang := En
@@ -90,6 +90,11 @@ BEGIN
 		lang := En
 	END
 END InitLang;
+
+PROCEDURE Ln*;
+BEGIN
+  Out.Ln
+END Ln;
 
 BEGIN
 	InitLang
