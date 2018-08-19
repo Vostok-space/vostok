@@ -246,7 +246,6 @@ END RegModule;
 
 PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
                                 name: Strings.String): BOOLEAN;
-BEGIN
 	RETURN Strings.CopyToChars(str, len, name)
 	     & (~SpecIdentChecker.IsSpecModuleName(name)
 	     OR Strings.CopyCharsNull(str, len, "_")
@@ -609,7 +608,6 @@ BEGIN
 	SetOptions(opt, args);
 	CASE res OF
 	  Cli.ResultC:
-		DEC(args.resPathLen);
 		ASSERT(CComp.Set(ccomp, "cc"));
 		ret := GenerateC(module, (call # NIL) OR args.script, call,
 		                 opt, args.resPath, args.resPathLen, args.cDirs,
