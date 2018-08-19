@@ -508,6 +508,8 @@ TYPE
 		next*: Statement
 	END;
 
+	Nop* = POINTER TO RECORD(RStatement)END;
+
 	WhileIf* = POINTER TO RWhileIf;
 	RWhileIf* = RECORD(RStatement)
 		stats*: Statement;
@@ -515,8 +517,7 @@ TYPE
 		elsif*: WhileIf (* elsif with NIL expr mean else branch *)
 	END;
 
-	If* = POINTER TO RECORD(RWhileIf)
-	END;
+	If* = POINTER TO RECORD(RWhileIf)END;
 
 	CaseLabel* = POINTER TO RCaseLabel;
 	RCaseLabel = RECORD(Node)
@@ -3779,6 +3780,13 @@ BEGIN
 	NEW(s); StatInit(s, NIL)
 	RETURN s
 END StatementErrorNew;
+
+PROCEDURE NopNew*(): Nop;
+VAR nop: Nop;
+BEGIN
+	NEW(nop); StatInit(nop, NIL)
+	RETURN nop
+END NopNew;
 
 PROCEDURE PredefinedDeclarationsInit;
 VAR tp: ProcType;

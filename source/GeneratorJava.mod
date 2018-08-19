@@ -2279,7 +2279,9 @@ VAR gen: Generator;
 		Text.StrOpen(gen, "public static void main(java.lang.String[] argv) {");
 		Text.StrLn(gen, "O7.init(argv);");
 		Statements(gen, module.stats);
-		Statements(gen, cmd);
+		IF ~(cmd IS Ast.Nop) THEN
+			Statements(gen, cmd)
+		END;
 		Text.StrLnClose(gen, "}")
 	END Main;
 BEGIN

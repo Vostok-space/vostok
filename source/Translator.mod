@@ -706,7 +706,7 @@ BEGIN
 	RETURN prov
 END ProviderProcTypeNameNew;
 
-PROCEDURE GenerateJava(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
+PROCEDURE GenerateJava(module: Ast.Module; cmd: Ast.Statement;
                        prov: GeneratorJava.ProviderProcTypeName;
                        opt: GeneratorJava.Options;
                        VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
@@ -725,7 +725,7 @@ BEGIN
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
 		IF ~imp.module.m.used THEN
-			ret := GenerateJava(imp.module.m, FALSE, NIL, prov, opt,
+			ret := GenerateJava(imp.module.m, NIL, prov, opt,
 			                    dir, dirLen, javaDirs, javac, usejavac)
 		END;
 		imp := imp.next
@@ -766,7 +766,7 @@ BEGIN
 END GenerateJava;
 
 PROCEDURE GenerateThroughJava(res: INTEGER; VAR args: Cli.Args;
-                              module: Ast.Module; call: Ast.Call): INTEGER;
+                              module: Ast.Module; call: Ast.Statement): INTEGER;
 VAR opt: GeneratorJava.Options;
     javac: JavaComp.Compiler;
     ret: INTEGER;
@@ -787,7 +787,7 @@ VAR opt: GeneratorJava.Options;
 		END
 	END SetOptions;
 
-	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Call;
+	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
 	                prov: ProcNameProvider;
 	                opt: GeneratorJava.Options;
 	                VAR outJava, mainClass: ARRAY OF CHAR): INTEGER;
@@ -821,7 +821,7 @@ VAR opt: GeneratorJava.Options;
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundJavaCompiler
 			ELSE
-				ret := GenerateJava(m, TRUE, call, prov, opt,
+				ret := GenerateJava(m, call, prov, opt,
 				                    outJava, outJavaLen,
 				                    args.javaDirs, prov.javac, TRUE)
 			END;
@@ -894,11 +894,17 @@ BEGIN
 		ASSERT(Strings.CopyChars(prov.dir, prov.dirLen,
 		                         args.resPath, 0, args.resPathLen));
 		prov.usejavac := FALSE;
-		ret := GenerateJava(module, (call # NIL) OR args.script, call,
+		IF (call = NIL) & args.script THEN
+			call := Ast.NopNew()
+		END;
+		ret := GenerateJava(module, call,
 		                    prov, opt,
 		                    args.resPath, args.resPathLen, args.javaDirs,
 		                    javac, FALSE)
 	| Cli.ResultClass, Cli.ResultRunJava:
+		IF call = NIL THEN
+			call := Ast.NopNew()
+		END;
 		ret := Class(module, args, call, prov, opt, out, mainClass);
 		IF (res = Cli.ResultRunJava) & (ret = ErrNo) THEN
 			ret := Run(out, mainClass, args.arg)
