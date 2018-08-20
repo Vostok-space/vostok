@@ -48,7 +48,7 @@
   o7_cbool const Platform_Dos = 0 > 1;
 #endif
 
-#if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__)
+#if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__) || defined(__APPLE__)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;
