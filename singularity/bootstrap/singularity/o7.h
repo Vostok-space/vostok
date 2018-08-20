@@ -366,15 +366,7 @@ extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]);
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl_undef(void) {
-	double undef = 0.0;
-	if (sizeof(unsigned) == sizeof(double) / 2) {
-		unsigned const u = 0x7FFFFFFFul;
-		memcpy((unsigned *)&undef + 1, &u, sizeof(u));
-	} else {
-		unsigned long const u = 0x7FFFFFFFul;
-		memcpy((unsigned long *)&undef + 1, &u, sizeof(u));
-	}
-	return undef;
+	return nan(NULL);
 }
 
 extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]);
