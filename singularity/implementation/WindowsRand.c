@@ -39,7 +39,7 @@
 	O7_INLINE enum NBK GetLastError(void) {return NBK_UNKNOWN;}
 
 	O7_INLINE o7_cbool CryptGenRandom(HCRYPTPROV p, int c, char unsigned buf[])
-	{(void)p; (void)c; (void)buf;}
+	{(void)p; (void)c; (void)buf; return 0<1;}
 #endif
 
 static HCRYPTPROV provider = 0;
