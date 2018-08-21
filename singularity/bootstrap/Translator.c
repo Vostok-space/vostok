@@ -486,7 +486,6 @@ static int ToC(int res, struct CliParser_Args *args) {
 
 	NewProvider(&mp);
 	memcpy(O7_REF(mp)->fileExt, (o7_char *)".mod", sizeof(".mod"));
-	/* TODO */
 	O7_REF(mp)->extLen = StringStore_CalcLen(32, O7_REF(mp)->fileExt, 0);
 	len = 0;
 	O7_ASSERT(StringStore_CopyChars(4096, O7_REF(mp)->path, &len, 4096, (*args).modPath, 0, (*args).modPathLen));
@@ -573,15 +572,12 @@ extern int main(int argc, char *argv[]) {
 	Log_init();
 	Out_init();
 	CLI_init();
-	VDataStream_init();
 	VFileStream_init();
-	Utf8_init();
 	StringStore_init();
 	Parser_init();
 	Scanner_init();
 	Ast_init();
 	GeneratorC_init();
-	TranslatorLimits_init();
 	PlatformExec_init();
 	Message_init();
 	CliParser_init();

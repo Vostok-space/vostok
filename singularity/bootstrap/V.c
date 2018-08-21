@@ -65,12 +65,3 @@ extern void V_SetDo(struct V_Base *base, V_Handle do_) {
 extern o7_bool V_Do(struct V_Base *handler, struct V_Message *message) {
 	return (*handler).do_(&(*handler)._, &(*message));
 }
-
-extern void V_init(void) {
-	static int initialized = 0;
-	if (0 == initialized) {
-
-	}
-	++initialized;
-}
-

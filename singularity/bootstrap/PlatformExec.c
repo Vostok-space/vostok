@@ -178,13 +178,9 @@ extern void PlatformExec_AutoCorrectDirSeparator(o7_bool state) {
 extern void PlatformExec_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
-		Utf8_init();
 		OsExec_init();
 		Log_init();
-		Platform_init();
 		StringStore_init();
-
 
 		autoCorrectDirSeparator = false;
 

@@ -74,7 +74,6 @@ extern void StringStore_Put(struct StringStore_Store *store, struct StringStore_
 	V_Init(&(*w)._);
 	(*w).block = b;
 	(*w).ofs = i;
-	/*Log.Str("Put "); Log.Int(b.num); Log.Str(":"); Log.Int(i); Log.Ln;*/
 	while (j != end) {
 		if (i == O7_LEN(O7_REF(b)->s) - 1) {
 			O7_ASSERT(o7_cmp(i, (*w).ofs) != 0);
@@ -144,7 +143,6 @@ extern o7_bool StringStore_IsEqualToChars(struct StringStore_String *w, int s_le
 	int i;
 	struct StringStore_Block_s *b;
 
-	/*ASSERT(ODD(LEN(s)));*/
 	O7_ASSERT((j >= 0) && (j < o7_sub(s_len0, 1)));
 	O7_ASSERT((0 <= end) && (end < o7_sub(s_len0, 1)));
 	i = o7_int((*w).ofs);
@@ -167,7 +165,6 @@ extern o7_bool StringStore_IsEqualToString(struct StringStore_String *w, int s_l
 	i = o7_int((*w).ofs);
 	b = (*w).block;
 	while (1) if ((j < s_len0) && (O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == s[o7_ind(s_len0, j)]) && (s[o7_ind(s_len0, j)] != 0x00u)) {
-		/*Log.Char(b.s[i]); Log.Char(s[j]);*/
 		i = o7_add(i, 1);
 		j = o7_add(j, 1);
 	} else if (O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == 0x0Cu) {
@@ -269,12 +266,6 @@ extern void StringStore_StoreDone(struct StringStore_Store *s) {
 extern o7_bool StringStore_CopyChars(int dest_len0, o7_char dest[/*len0*/], int *destOfs, int src_len0, o7_char src[/*len0*/], int srcOfs, int srcEnd) {
 	o7_bool ret;
 
-	/*
-	Log.Str("CopyChars: "); Log.Int(destOfs);
-	Log.Str(", "); Log.Int(srcOfs);
-	Log.Str(", "); Log.Int(srcEnd);
-	Log.Str(" "); Log.StrLn(src);
-	*/
 	O7_ASSERT((0 <= (*destOfs)) && (0 <= srcOfs) && (srcOfs <= srcEnd) && (srcEnd <= src_len0));
 
 	ret = o7_sub(o7_add((*destOfs), srcEnd), srcOfs) < o7_sub(dest_len0, 1);
@@ -338,8 +329,6 @@ extern int StringStore_TrimChars(int str_len0, o7_char str[/*len0*/], int ofs) {
 	return o7_sub(j, ofs);
 }
 
-/*	копирование содержимого строки, не включая завершающего 0 в поток вывода
-	TODO учесть возможность ошибки при записи */
 extern int StringStore_Write(struct VDataStream_Out *out, o7_tag_t out_tag, struct StringStore_String *str) {
 	int i, len, ofs;
 	struct StringStore_Block_s *block;
@@ -365,11 +354,6 @@ extern void StringStore_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
 		Log_init();
-		Utf8_init();
-		V_init();
-		VDataStream_init();
-
-
 	}
 	++initialized;
 }

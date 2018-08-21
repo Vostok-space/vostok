@@ -130,7 +130,6 @@ static void ExpectIdent(struct Parser *p, int *begin, int *end, int error) {
 		(*end) = o7_int((*p).s.lexEnd);
 		Scan(&(*p));
 	} else {
-		/* p.l > ErrNo THEN */
 		AddError(&(*p), error);
 		(*begin) =  - 1;
 		(*end) =  - 1;
@@ -171,7 +170,6 @@ static struct Ast_ExprSet_s *Set(struct Parser *p, struct Ast_RDeclarations *ds)
 		}
 		Expect(&(*p), Scanner_Brace3Close_cnst, Parser_ErrExpectBrace3Close_cnst);
 	} else {
-		/* Пустое множество */
 		CheckAst(&(*p), Ast_ExprSetNew(&e, &e, NULL, NULL));
 		Scan(&(*p));
 	}
@@ -215,7 +213,6 @@ static struct Ast_RDeclaration *Qualident(struct Parser *p, struct Ast_RDeclarat
 static struct Ast_RDeclaration *ExpectRecordExtend(struct Parser *p, struct Ast_RDeclarations *ds, struct Ast_RConstruct *base) {
 	struct Ast_RDeclaration *d;
 
-	/*TODO*/
 	d = Qualident(&(*p), ds);
 	return d;
 }
@@ -457,7 +454,6 @@ static struct Ast_RExpression *Sum(struct Parser *p, struct Ast_RDeclarations *d
 			} else {
 				Ast_TurnIf(ds);
 				CheckAst(&(*p), Ast_ExprSumNew(&sum,  - 1, e));
-				/* TODO Выход в другом месте, но пока будет здесь */
 				Ast_BackFromBranch(ds);
 			}
 			e = (&(sum)->_);
@@ -528,7 +524,6 @@ static void Consts(struct Parser *p, struct Ast_RDeclarations *ds) {
 		}
 		if (o7_bl((*p).err)) {
 			while ((o7_cmp(Scanner_EndOfFile_cnst, (*p).l) < 0) && (o7_cmp((*p).l, Scanner_Import_cnst) < 0) && (o7_cmp((*p).l, Scanner_Semicolon_cnst) != 0)) {
-				/* TODO */
 				Scan(&(*p));
 			}
 			(*p).err = false;
@@ -570,7 +565,6 @@ static struct Ast_RArray *Array(struct Parser *p, struct Ast_RDeclarations *ds, 
 	CheckAst(&(*p), Ast_ArraySetType(a, type(&(*p), ds,  - 1,  - 1)));
 	while (i > 0) {
 		i = o7_sub(i, 1);
-		/* TODO сделать нормально */
 		O7_REF(a)->_._._.type = (&(Ast_ArrayGet(O7_REF(a)->_._._.type, lens[o7_ind(TranslatorLimits_ArrayDimension_cnst, i)]))->_._);
 	}
 	return a;
@@ -732,7 +726,6 @@ static struct Ast_RPointer *Pointer(struct Parser *p, struct Ast_RDeclarations *
 	} else if (o7_cmp((*p).l, Scanner_Ident_cnst) == 0) {
 		decl = Ast_DeclarationSearch(ds, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).s.lexStart, (*p).s.lexEnd);
 		if (decl == NULL) {
-			/* опережающее объявление ссылка на запись */
 			typeDecl = Ast_RecordForwardNew(ds, Scanner_BlockSize_cnst * 2 + 1, (*p).s.buf, (*p).s.lexStart, (*p).s.lexEnd);
 			O7_ASSERT(O7_REF(tp)->_._._.next == &typeDecl->_._._);
 			Ast_PointerSetRecord(tp, typeDecl);
@@ -961,7 +954,6 @@ static struct Ast_CaseLabel_s *Case_Element_LabelList(struct Parser *p, struct A
 	struct Ast_CaseLabel_s *first, *last;
 
 	first = Case_Element_LabelList_LabelRange(&(*p), ds);
-	/* проверка 1-го диапазона */
 	CheckAst(&(*p), Ast_CaseRangeListAdd(case_, NULL, first));
 	while (o7_cmp((*p).l, Scanner_Comma_cnst) == 0) {
 		Scan(&(*p));
@@ -976,7 +968,6 @@ static void Case_Element(struct Parser *p, struct Ast_RDeclarations *ds, struct 
 
 	Ast_TurnIf(ds);
 	elem = Ast_CaseElementNew(Case_Element_LabelList(&(*p), case_, ds));
-	/*ASSERT(elem.labels # NIL); TODO */
 	Expect(&(*p), Scanner_Colon_cnst, Parser_ErrExpectColon_cnst);
 	O7_REF(elem)->stats = statements(&(*p), ds);
 
@@ -1121,7 +1112,6 @@ static struct Ast_RStatement *Statements_Statement(struct Parser *p, struct Ast_
 	struct Ast_RStatement *st;
 	int commentOfs, commentEnd, emptyLines;
 
-	/* Log.StrLn("Statement"); */
 	if (!o7_bl((*p).opt.saveComments) || !Scanner_TakeCommentPos(&(*p).s, &commentOfs, &commentEnd)) {
 		commentOfs =  - 1;
 	}
@@ -1395,16 +1385,11 @@ extern struct Ast_RModule *Parser_Script(int in__len0, o7_char in_[/*len0*/], st
 extern void Parser_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
 		Log_init();
 		Out_init();
-		Utf8_init();
 		Scanner_init();
 		StringStore_init();
 		Ast_init();
-		VDataStream_init();
-		TranslatorLimits_init();
-
 
 		declarations = Declarations;
 		type = Type;

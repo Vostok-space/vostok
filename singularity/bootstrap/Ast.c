@@ -461,7 +461,6 @@ static void DeclarationsConnect(struct Ast_RDeclarations *d, struct Ast_RDeclara
 	if (name[0] != 0x00u) {
 		DeclConnect(&d->_, up, name_len0, name, start, end);
 	} else {
-		/* Record */
 		DeclInit(&d->_, up);
 	}
 	O7_REF(d)->_.up = up;
@@ -504,7 +503,6 @@ extern struct Ast_RModule *Ast_GetModuleByName(struct Ast_RModule *host, int nam
 	return O7_REF(O7_REF(host)->provider)->get(O7_REF(host)->provider, host, name_len0, name, ofs, end);
 }
 
-/* Возвращает истину, если имя модуля совпадает с ожидаемым */
 extern o7_bool Ast_RegModule(struct Ast_RProvider *provider, struct Ast_RModule *m) {
 	return O7_REF(provider)->reg(provider, m);
 }
@@ -558,7 +556,6 @@ static int ImportAdd_Load(struct Ast_RModule **res, struct Ast_RModule *host, in
 
 	l = 0;
 	O7_ASSERT(StringStore_CopyChars(TranslatorLimits_LenName_cnst, n, &l, buf_len0, buf, realOfs, realEnd));
-	/* TODO сделать загрузку модуля из символьного файла */
 	Log_Str(14, (o7_char *)"Модуль '");
 	Log_Str(TranslatorLimits_LenName_cnst, n);
 	Log_StrLn(24, (o7_char *)"' загружается");
@@ -697,7 +694,6 @@ extern int Ast_ConstSetExpression(struct Ast_Const_s *const_, struct Ast_RExpres
 }
 
 static void TypeAdd_MoveForwardDeclToLast(struct Ast_RDeclarations *ds, struct Ast_Record_s *rec) {
-	/* TODO это может быть и не так */
 	O7_ASSERT(O7_REF(O7_REF(rec)->pointer)->_._._.next == &rec->_._._);
 	if (O7_REF(rec)->_._._.next != NULL) {
 		O7_REF(O7_REF(rec)->pointer)->_._._.next = O7_REF(rec)->_._._.next;
@@ -1111,7 +1107,6 @@ extern void Ast_AddError(struct Ast_RModule *m, int error, int line, int column,
 }
 
 extern struct Ast_RType *Ast_TypeGet(int id) {
-	/*Log.Str("TypeGet "); Log.Int(id); Log.Ln;*/
 	O7_ASSERT(types[o7_ind(Ast_PredefinedTypesCount_cnst, id)] != NULL);
 	return types[o7_ind(Ast_PredefinedTypesCount_cnst, id)];
 }
@@ -1188,7 +1183,6 @@ extern int Ast_PointerSetType(struct Ast_RPointer *tp, struct Ast_RType *subtype
 		Ast_PointerSetRecord(tp, O7_GUARD(Ast_Record_s, &subtype));
 		err = Ast_ErrNo_cnst;
 	} else {
-		/* TODO Установить ошибочную запись */
 		O7_REF(tp)->_._._.type = subtype;
 		err = Ast_ErrPointerToNotRecord_cnst;
 	}
@@ -1271,7 +1265,6 @@ extern struct Ast_RDeclaration *Ast_DeclarationSearch(struct Ast_RDeclarations *
 				}
 			}
 		} else {
-			/* TODO Нужно ли это ?*/
 			while ((d == NULL) && (O7_REF(ds)->_.up != NULL)) {
 				ds = O7_REF(ds)->_.up;
 				d = SearchName(O7_REF(ds)->start, buf_len0, buf, begin, end);
@@ -1359,7 +1352,6 @@ extern int Ast_VarGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, int buf
 	return err;
 }
 
-/* TODO итератор должен быть только локальным? */
 extern int Ast_ForIteratorGet(struct Ast_RVar **v, struct Ast_RDeclarations *ds, int buf_len0, o7_char buf[/*len0*/], int begin, int end) {
 	int err;
 
@@ -1504,7 +1496,6 @@ static o7_bool CheckSetRange(int int_) {
 	return (0 <= int_) && (int_ <= TypeLimits_LongSetMax_cnst);
 }
 
-/* TODO сделать дизайн получше */
 extern int Ast_ExprSetNew(struct Ast_ExprSet_s **base, struct Ast_ExprSet_s **e, struct Ast_RExpression *expr1, struct Ast_RExpression *expr2) {
 	int err, left, right = O7_INT_UNDEF;
 
@@ -1612,17 +1603,8 @@ extern int Ast_DesignatorUsed(struct Ast_Designator_s *d, o7_bool varParam, o7_b
 			Log_Turn(false);
 			err = Ast_ErrVarUninitialized_cnst;
 		} else if (varParam) {
-			/*
-			IF v.state.inited # Inited THEN
-				(* TODO Зависит от типа varParam, доработать *)
-				v.state.inited := InitedPartly;
-				v.checkInit := TRUE
-			END;
-			*)
-			(* TODO временный код */
 			O7_REF(O7_REF(v)->state)->inited = (1u << Ast_InitedValue_cnst);
 		} else if (!(!(!!( (1u << Ast_InitedNo_cnst) & O7_REF(O7_REF(v)->state)->inited)) || o7_bl(O7_REF(O7_REF(v)->state)->inCondition) && (0 != (O7_REF(O7_REF(v)->state)->inited & ~(1u << Ast_InitedNo_cnst)))) && !inLoop && ((O7_REF(v)->_.up != NULL) && (O7_REF(O7_REF(v)->_.up)->_.up != NULL) || (o7_is(v, Ast_FormalParam_s_tag)))) {
-			/* TODO */
 			Log_Int(o7_sti(O7_REF(O7_REF(v)->state)->inited));
 			Log_Ln();
 			err = o7_sub(Ast_ErrVarUninitialized_cnst, (int)(!!( (1u << Ast_InitedValue_cnst) & O7_REF(O7_REF(v)->state)->inited)));
@@ -1793,7 +1775,6 @@ extern int Ast_RecordVarGet(struct Ast_RVar **v, struct Ast_Record_s *r, int nam
 	(*v) = RecordVarSearch(r, name_len0, name, begin, end);
 	if ((*v) == NULL) {
 		err = Ast_ErrDeclarationNotFound_cnst;
-		/* TODO */
 		(*v) = RecordChecklessVarAdd(r, name_len0, name, begin, end);
 		O7_REF((*v))->_.type = Ast_TypeGet(Ast_IdInteger_cnst);
 	} else if (!o7_bl(O7_REF((*v))->_.mark) && o7_bl(O7_REF(O7_REF((*v))->_.module)->fixed)) {
@@ -1927,7 +1908,6 @@ extern o7_bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct A
 	o7_bool comp;
 
 	(*distance) = 0;
-	/* совместимы, если ошибка в разборе */
 	comp = (t1 == NULL) || (t2 == NULL);
 	if (!comp) {
 		comp = t1 == t2;
@@ -1946,7 +1926,6 @@ extern o7_bool Ast_CompatibleTypes(int *distance, struct Ast_RType *t1, struct A
 				comp = (O7_REF(t1)->_.type == O7_REF(t2)->_.type) || (O7_REF(t1)->_.type == NULL) || (O7_REF(t2)->_.type == NULL) || Ast_IsRecordExtension(&(*distance), O7_GUARD(Ast_Record_s, &O7_REF(t1)->_.type), O7_GUARD(Ast_Record_s, &O7_REF(t2)->_.type));
 				break;
 			case 11:
-				/* TODO */
 				comp = Ast_IsRecordExtension(&(*distance), O7_GUARD(Ast_Record_s, &t1), O7_GUARD(Ast_Record_s, &t2));
 				break;
 			case 13:
@@ -2092,7 +2071,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = O7_GUARD(Ast_ExprBoolean_s, &v1)->bool_ == O7_GUARD(Ast_ExprBoolean_s, &v2)->bool_;
 				break;
 			case 5:
-				/* TODO правильная обработка */
 				res = (O7_GUARD(Ast_ExprReal_s, &v1)->real == O7_GUARD(Ast_ExprReal_s, &v2)->real) || true;
 				break;
 			case 7:
@@ -2104,7 +2082,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = true;
 				break;
 			case 10:
-				/* TODO обработка смешанных сравнений */
 				if (o7_is(v1, Ast_RExprInteger_tag)) {
 					res = o7_cmp(O7_GUARD(Ast_RExprInteger, &v1)->int_, O7_GUARD(Ast_RExprInteger, &v2)->int_) == 0;
 				} else {
@@ -2112,7 +2089,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				}
 				break;
 			case 13:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2141,11 +2117,9 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = false;
 				break;
 			case 10:
-				/* TODO */
 				res = false;
 				break;
 			case 13:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2163,7 +2137,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = O7_GUARD(Ast_ExprReal_s, &v1)->real < O7_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 10:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2181,7 +2154,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = O7_GUARD(Ast_ExprReal_s, &v1)->real <= O7_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 10:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2199,7 +2171,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = O7_GUARD(Ast_ExprReal_s, &v1)->real > O7_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 10:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2217,7 +2188,6 @@ extern int Ast_ExprRelationNew(struct Ast_ExprRelation_s **e, struct Ast_RExpres
 				res = O7_GUARD(Ast_ExprReal_s, &v1)->real >= O7_GUARD(Ast_ExprReal_s, &v2)->real;
 				break;
 			case 10:
-				/* TODO */
 				res = false;
 				break;
 			default:
@@ -2295,11 +2265,6 @@ extern int Ast_ExprSumNew(struct Ast_ExprSum_s **e, int add, struct Ast_RExpress
 				O7_REF((*e))->_.value_ = (&(Ast_ExprIntegerNew(o7_mul(O7_GUARD(Ast_RExprInteger, &O7_REF(term)->value_)->int_, LexToSign(add))))->_._);
 				break;
 			case 5:
-				/* из-за отсутствия точности в вычислениях
-				e.value := ExprRealNewByValue(
-					term.value(ExprReal).real * FLT(LexToSign(add))
-				)
-				*/
 				O7_REF((*e))->_.value_ = NULL;
 				break;
 			case 7:
@@ -2461,23 +2426,6 @@ static void MultCalc_Int(struct Ast_RExpression *res, int mult, struct Ast_RExpr
 	}
 }
 
-static void MultCalc_Rl(struct Ast_RExpression *res, int mult, struct Ast_RExpression *b) {
-	double r, r1, r2;
-
-	r1 = o7_dbl(O7_GUARD(Ast_ExprReal_s, &O7_REF(res)->value_)->real);
-	r2 = o7_dbl(O7_GUARD(Ast_ExprReal_s, &O7_REF(b)->value_)->real);
-	if (mult == Scanner_Asterisk_cnst) {
-		r = o7_fmul(r1, r2);
-	} else {
-		r = o7_fdiv(r1, r2);
-	}
-	if (O7_REF(res)->value_ == NULL) {
-		O7_REF(res)->value_ = (&(Ast_ExprRealNewByValue(r))->_._);
-	} else {
-		O7_GUARD(Ast_ExprReal_s, &O7_REF(res)->value_)->real = r;
-	}
-}
-
 static void MultCalc_St(struct Ast_RExpression *res, int mult, struct Ast_RExpression *b) {
 	unsigned s[2], s1[2], s2[2];
 	memset(&s, 0, sizeof(s));
@@ -2510,10 +2458,6 @@ static int MultCalc(struct Ast_RExpression *res, int mult, struct Ast_RExpressio
 			MultCalc_Int(res, mult, b, &err);
 			break;
 		case 5:
-			/* из-за отсутствия точности в вычислениях */
-			if (false) {
-				MultCalc_Rl(res, mult, b);
-			}
 			O7_REF(res)->value_ = NULL;
 			break;
 		case 2:
@@ -2820,13 +2764,6 @@ static void CallParamsEnd_CalcPredefined(struct Ast_ExprCall_s *call, struct Ast
 		if (o7_cmp(O7_REF(O7_REF(v)->_.type)->_._.id, Ast_IdReal_cnst) == 0) {
 			O7_REF(call)->_._.value_ = NULL;
 		} else {
-			/* Из-за -0.0 NaN
-				IF v(ExprReal).real < 0.0 THEN
-					call.value := ExprRealNewByValue(-v(ExprReal).real)
-				ELSE
-					call.value := v
-				END
-				*/
 			O7_ASSERT(o7_cmp(O7_REF(O7_REF(v)->_.type)->_._.id, Ast_IdInteger_cnst) == 0);
 			O7_REF(call)->_._.value_ = (&(Ast_ExprIntegerNew(abs(O7_GUARD(Ast_RExprInteger, &v)->int_)))->_._);
 		}
@@ -2899,7 +2836,6 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 	if (currentFormalParam != NULL) {
 		err = Ast_ErrCallParamsNotEnough_cnst;
 	} else if (o7_cmp(O7_REF(O7_REF(O7_REF(call)->designator)->decl)->_.id, Scanner_Len_cnst) == 0) {
-		/* TODO заменить на общую проверку корректности выбора параметра */
 		if ((o7_is(O7_REF(O7_REF(O7_REF(call)->params)->expr)->type, Ast_RArray_tag)) && (O7_GUARD(Ast_RArray, &O7_REF(O7_REF(O7_REF(call)->params)->expr)->type)->count != NULL)) {
 			O7_REF(call)->_._.value_ = O7_REF(O7_GUARD(Ast_RArray, &O7_REF(O7_REF(O7_REF(call)->params)->expr)->type)->count)->value_;
 		}
@@ -2912,7 +2848,6 @@ extern int Ast_CallParamsEnd(struct Ast_ExprCall_s *call, struct Ast_FormalParam
 			}
 		}
 	} else if ((o7_is(O7_REF(O7_REF(call)->designator)->decl, Ast_PredefinedProcedure_s_tag)) && (O7_REF(O7_REF(O7_REF(O7_REF(call)->designator)->decl)->type)->_.type != NULL) && (O7_REF(O7_REF(O7_REF(call)->params)->expr)->value_ != NULL)) {
-		/* TODO заменить на общую проверку корректности выбора параметра */
 		CallParamsEnd_CalcPredefined(call, O7_REF(O7_REF(O7_REF(call)->params)->expr)->value_, &err);
 	}
 	return err;
@@ -3042,7 +2977,6 @@ extern int Ast_ForSetBy(struct Ast_For_s *for_, struct Ast_RExpression *by) {
 		} else if ((init > to) && (o7_cmp(O7_REF(for_)->by, 0) > 0)) {
 			err = Ast_ErrByShouldBeNegative_cnst;
 		} else if ((o7_cmp(O7_REF(for_)->by, 0) > 0) && (o7_sub(TypeLimits_IntegerMax_cnst, O7_REF(for_)->by) < to) || (o7_cmp(O7_REF(for_)->by, 0) < 0) && (o7_sub(TypeLimits_IntegerMin_cnst, O7_REF(for_)->by) > to)) {
-			/* TODO уточнить условие */
 			err = Ast_ErrForPossibleOverflow_cnst;
 		}
 	}
@@ -3105,23 +3039,6 @@ extern int Ast_CaseElseSet(struct Ast_Case_s *case_, struct Ast_RStatement *else
 	return err;
 }
 
-extern int Ast_CaseRangeSearch(struct Ast_Case_s *case_, int int_) {
-	struct Ast_CaseElement_s *e;
-
-	O7_ASSERT(false);
-	/* TODO */
-	e = O7_REF(case_)->elements;
-	if (e != NULL) {
-		while (O7_REF(e)->next != NULL) {
-			e = O7_REF(e)->next;
-		}
-		if (O7_REF(e)->stats != NULL) {
-			e = NULL;
-		}
-	}
-	return 0;
-}
-
 extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_) {
 	O7_ASSERT(o7_in(id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdChar_cnst))));
 
@@ -3144,16 +3061,13 @@ extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDecl
 	} else if (!(o7_is(decl, Ast_Const_s_tag))) {
 		err = Ast_ErrCaseLabelNotConst_cnst;
 	} else if (!(o7_in(O7_REF(O7_REF(O7_GUARD(Ast_Const_s, &decl)->expr)->type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdChar_cnst)))) && !((o7_is(O7_GUARD(Ast_Const_s, &decl)->expr, Ast_ExprString_s_tag)) && (o7_cmp(O7_GUARD(Ast_ExprString_s, &O7_GUARD(Ast_Const_s, &decl)->expr)->_.int_,  - 1) > 0))) {
-		/*Log.Str("Label type id "); Log.Int(decl(Const).expr.type.id); Log.Ln;*/
 		err = Ast_ErrCaseLabelNotIntOrChar_cnst;
 	} else if (o7_cmp(O7_REF(O7_REF(O7_GUARD(Ast_Const_s, &decl)->expr)->type)->_._.id, Ast_IdInteger_cnst) == 0) {
 		err = Ast_CaseLabelNew(&(*label), Ast_IdInteger_cnst, O7_GUARD(Ast_RExprInteger, &O7_REF(O7_GUARD(Ast_Const_s, &decl)->expr)->value_)->int_);
 	} else {
 		i = o7_int(O7_GUARD(Ast_RExprInteger, &O7_REF(O7_GUARD(Ast_Const_s, &decl)->expr)->value_)->int_);
 		if (i < 0) {
-			/* TODO */
 			O7_ASSERT(false);
-			i = (int)O7_REF(O7_GUARD(Ast_ExprString_s, &O7_REF(O7_GUARD(Ast_Const_s, &decl)->expr)->value_)->string.block)->s[0];
 		}
 		err = Ast_CaseLabelNew(&(*label), Ast_IdChar_cnst, i);
 	}
@@ -3450,13 +3364,8 @@ extern void Ast_init(void) {
 	if (0 == initialized) {
 		Log_init();
 		Out_init();
-		Utf8_init();
-		TypeLimits_init();
-		V_init();
 		Scanner_init();
 		StringStore_init();
-		TranslatorLimits_init();
-		Arithmetic_init();
 
 		o7_tag_init(Ast_RType_tag, Ast_RDeclaration_tag);
 		o7_tag_init(Ast_Const_s_tag, Ast_RDeclaration_tag);

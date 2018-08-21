@@ -58,5 +58,4 @@ extern int VDataStream_Write(struct VDataStream_Out *out, o7_tag_t out_tag, int 
 
 extern int VDataStream_WriteChars(struct VDataStream_Out *out, o7_tag_t out_tag, int buf_len0, o7_char buf[/*len0*/], int ofs, int count);
 
-extern void VDataStream_init(void);
 #endif
