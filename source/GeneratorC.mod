@@ -3141,7 +3141,7 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 
-		o.std           := IsoC99;
+		o.std           := IsoC90;
 		o.gnu           := FALSE;
 		o.plan9         := FALSE;
 		o.procLocal     := FALSE;

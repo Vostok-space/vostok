@@ -77,7 +77,7 @@ TYPE
 		modPath*, cDirs*, cc*, javaDirs*, javac*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
-		init*, memng*, arg*: INTEGER;
+		init*, memng*, arg*, cStd*: INTEGER;
 		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
 		cyrillic*: INTEGER
 	END;
@@ -278,6 +278,12 @@ BEGIN
 			args.cyrillic := CyrillicTranslit
 		ELSIF opt = "-cyrillic-escape" THEN
 			args.cyrillic := CyrillicEscape
+		ELSIF opt = "-C90" THEN
+			args.cStd := GeneratorC.IsoC90
+		ELSIF opt = "-C99" THEN
+			args.cStd := GeneratorC.IsoC99
+		ELSIF opt = "-C11" THEN
+			args.cStd := GeneratorC.IsoC11
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -311,6 +317,7 @@ BEGIN
 	args.sing     := {};
 	args.init     := -1;
 	args.memng    := -1;
+	args.cStd     := -1;
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;

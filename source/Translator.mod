@@ -507,6 +507,9 @@ VAR ret: INTEGER;
 		IF args.noIndexCheck THEN
 			opt.checkIndex := FALSE
 		END;
+		IF 0 <= args.cStd THEN
+			opt.std := args.cStd
+		END;
 		IF Cli.CyrillicSame <= args.cyrillic THEN
 			opt.identEnc := args.cyrillic - Cli.CyrillicSame
 		END
