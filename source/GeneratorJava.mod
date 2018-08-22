@@ -1092,7 +1092,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			extType := extType.type;
 			ASSERT(CheckStructName(gen, extType(Ast.Record)));
 			Expression(gen, is.designator, {});
-			Text.Str(gen, " instanceof ")
 		ELSE
 			GlobalName(gen, decl);
 		END;
