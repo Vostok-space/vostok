@@ -3171,6 +3171,11 @@ BEGIN
 			currentFormalParam := fp.next(FormalParam)
 		ELSE
 			currentFormalParam := NIL
+		END;
+		IF (err = ErrNo) & (fp.type.id = IdProcType)
+		 & (e # NIL) & (e IS Designator) & (e(Designator).decl.id = IdProc)
+		THEN
+			e(Designator).decl(Procedure).usedAsValue := TRUE
 		END
 	ELSE
 		distance := 0;
