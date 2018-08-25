@@ -462,7 +462,7 @@ static struct Ast_RExpression *Sum(struct Parser *p, struct Ast_RDeclarations *d
 	while (o7_in((*p).l, ((1u << Scanner_Plus_cnst) | (1u << Scanner_Minus_cnst) | (1u << Scanner_Or_cnst)))) {
 		l = o7_int((*p).l);
 		Scan(&(*p));
-		if (o7_cmp((*p).l, Scanner_Or_cnst) != 0) {
+		if (l != Scanner_Or_cnst) {
 			CheckAst(&(*p), Ast_ExprSumAdd(e, &sum, l, Term(&(*p), ds)));
 		} else {
 			Ast_TurnIf(ds);

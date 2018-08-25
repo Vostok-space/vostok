@@ -544,7 +544,7 @@ BEGIN
 	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
 		l := p.l;
 		Scan(p);
-		IF p.l # Scanner.Or THEN
+		IF l # Scanner.Or THEN
 			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, FALSE)))
 		ELSE
 			Ast.TurnIf(ds);
