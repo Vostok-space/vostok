@@ -1163,10 +1163,9 @@ BEGIN
 	END
 END ChecklessVarAdd;
 
-PROCEDURE VarAdd*(ds: Declarations;
+PROCEDURE VarAdd*(VAR v: Var; ds: Declarations;
                   VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
-VAR v: Var;
-    err: INTEGER;
+VAR err: INTEGER;
 BEGIN
 	ASSERT((ds.module = NIL) OR ~ds.module.m.fixed);
 	err := CheckNameDuplicate(ds, buf, begin, end);
@@ -1203,7 +1202,7 @@ VAR v: FormalParam;
 BEGIN
 	ASSERT({} = access - {ParamIn, ParamOut});
 
-	NEW(v); NodeInit(v^, NoId);
+	NEW(v); NodeInit(v^, IdVar);
 	IF proc.end = NIL THEN
 		proc.params := v
 	ELSE

@@ -681,14 +681,14 @@ VAR var: Ast.Declaration;
 	typ: Ast.Type;
 
 	PROCEDURE Name(VAR p: Parser; ds: Ast.Declarations);
-	VAR begin, end, emptyLines: INTEGER;
+	VAR begin, end, emptyLines: INTEGER; v: Ast.Var;
 	BEGIN
 		emptyLines := p.s.emptyLines;
 		ExpectIdent(p, begin, end, ErrExpectIdent);
-		CheckAst(p, Ast.VarAdd(ds, p.s.buf, begin, end));
-		ds.end.emptyLines := emptyLines;
-		DeclComment(p, ds.end);
-		Mark(p, ds.end)
+		CheckAst(p, Ast.VarAdd(v, ds, p.s.buf, begin, end));
+		v.emptyLines := emptyLines;
+		DeclComment(p, v);
+		Mark(p, v)
 	END Name;
 BEGIN
 	Name(p, dsAdd);
