@@ -1014,6 +1014,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					s[2] := "\";
 					s[3] := Utf8.DQuote;
 					s[4] := Utf8.Null
+				ELSIF e.int = 0AH THEN
+					s[2] := "n";
+					s[3] := Utf8.DQuote;
+					s[4] := Utf8.Null
+				ELSIF e.int = ORD(Utf8.DQuote) THEN
+					s[2] := Utf8.DQuote;
+					s[3] := Utf8.DQuote;
+					s[4] := Utf8.Null
 				ELSE
 					s[2] := "u";
 					s[3] := "0";
