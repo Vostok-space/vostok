@@ -343,7 +343,7 @@ TYPE
 
 		consts*: Const;
 		types*: Type;
-		vars*: Var;
+		vars*, varsEnd*: Var;
 		procedures*: Procedure;
 
 		recordForwardCount: INTEGER;
@@ -634,21 +634,41 @@ END DeclInit;
 
 PROCEDURE DeclConnect(d: Declaration; ds: Declarations;
                       name: ARRAY OF CHAR; start, end: INTEGER);
+VAR p: Declaration;
 BEGIN
 	ASSERT(d # NIL);
 	ASSERT(name[0] # 0X);
 	ASSERT(~(d IS Module));
 	ASSERT((ds.start = NIL) OR ~(ds.start IS Module));
 	DeclInit(d, ds);
-	IF ds.end # NIL THEN
-		ASSERT(ds.end.next = NIL);
-		ds.end.next := d
+	IF (ds.end # NIL) & (ds.procedures # NIL) & (d IS Var) THEN
+		IF ds.vars = NIL THEN
+			IF ds.start = ds.procedures THEN
+				ds.start := d
+			ELSE
+				p := ds.start;
+				WHILE ~(p.next IS Procedure) DO
+					p := p.next
+				END;
+				p.next := d
+			END;
+			d.next := ds.procedures
+		ELSE
+			d.next := ds.varsEnd.next;
+			ds.varsEnd.next := d;
+			ds.varsEnd := d(Var)
+		END
 	ELSE
-		ASSERT(ds.start = NIL);
-		ds.start := d
+		IF ds.end # NIL THEN
+			ASSERT(ds.end.next = NIL);
+			ds.end.next := d
+		ELSE
+			ASSERT(ds.start = NIL);
+			ds.start := d
+		END;
+		ASSERT(~(ds.start IS Module));
+		ds.end := d;
 	END;
-	ASSERT(~(ds.start IS Module));
-	ds.end := d;
 	IF start >= 0 THEN
 		PutChars(d.module.m, d.name, name, start, end)
 	ELSE
@@ -664,9 +684,10 @@ BEGIN
 	d.start := NIL;
 	d.end := NIL;
 
-	d.consts := NIL;
-	d.types := NIL;
-	d.vars := NIL;
+	d.consts     := NIL;
+	d.types      := NIL;
+	d.vars       := NIL;
+	d.varsEnd    := NIL;
 	d.procedures := NIL;
 	IF up = NIL THEN
 		d.up := NIL
@@ -1166,7 +1187,8 @@ BEGIN
 
 	IF ds.vars = NIL THEN
 		ds.vars := v
-	END
+	END;
+	ds.varsEnd := v
 END ChecklessVarAdd;
 
 PROCEDURE VarAdd*(VAR v: Var; ds: Declarations;
@@ -2289,31 +2311,31 @@ BEGIN
 	RETURN err
 END SelGuardNew;
 
+PROCEDURE EqualProcTypes*(t1, t2: ProcType): BOOLEAN;
+VAR comp: BOOLEAN;
+    fp1, fp2: Declaration;
+BEGIN
+	comp := t1.type = t2.type;
+	IF comp THEN
+		fp1 := t1.params;
+		fp2 := t2.params;
+		WHILE (fp1 # NIL) & (fp2 # NIL)
+		    & (fp1 IS FormalParam) & (fp2 IS FormalParam)
+		    & (fp1.type = fp2.type)
+		    & (fp1(FormalParam).access = fp2(FormalParam).access)
+		DO
+			ExchangeParamsNeedTag(fp1(FormalParam), fp2(FormalParam));
+			fp1 := fp1.next;
+			fp2 := fp2.next
+		END;
+		comp := ((fp1 = NIL) OR ~(fp1 IS FormalParam))
+		      & ((fp2 = NIL) OR ~(fp2 IS FormalParam))
+	END
+	RETURN comp
+END EqualProcTypes;
+
 PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type; param: BOOLEAN): BOOLEAN;
 VAR comp: BOOLEAN;
-
-	PROCEDURE EqualProcTypes(t1, t2: ProcType): BOOLEAN;
-	VAR comp: BOOLEAN;
-	    fp1, fp2: Declaration;
-	BEGIN
-		comp := t1.type = t2.type;
-		IF comp THEN
-			fp1 := t1.params;
-			fp2 := t2.params;
-			WHILE (fp1 # NIL) & (fp2 # NIL)
-			    & (fp1 IS FormalParam) & (fp2 IS FormalParam)
-			    & (fp1.type = fp2.type)
-			    & (fp1(FormalParam).access = fp2(FormalParam).access)
-			DO
-				ExchangeParamsNeedTag(fp1(FormalParam), fp2(FormalParam));
-				fp1 := fp1.next;
-				fp2 := fp2.next
-			END;
-			comp := ((fp1 = NIL) OR ~(fp1 IS FormalParam))
-			      & ((fp2 = NIL) OR ~(fp2 IS FormalParam))
-		END
-		RETURN comp
-	END EqualProcTypes;
 BEGIN
 	distance := 0;
 	(* совместимы, если ошибка в разборе *)

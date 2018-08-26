@@ -46,7 +46,7 @@ TYPE
 	ProviderProcTypeName* = POINTER TO RProviderProcTypeName;
 	ProvideProcTypeName* =
 		PROCEDURE(prov: ProviderProcTypeName; typ: Ast.ProcType;
-		          VAR name: ARRAY OF CHAR): FileStream.Out;
+		          VAR name: Strings.String): FileStream.Out;
 	RProviderProcTypeName* = RECORD(V.Base)
 		gen: ProvideProcTypeName
 	END;
@@ -1447,13 +1447,13 @@ BEGIN
 END GeneratorNotify;
 
 PROCEDURE ClassForProcType(VAR gen: Generator;
-                           name: ARRAY OF CHAR; typ: Ast.ProcType);
+                           name: Strings.String; typ: Ast.ProcType);
 BEGIN
 	GeneratorNotify(gen);
 	Text.StrLn(gen, "package o7;");
 	Text.Ln(gen);
 	Text.Str(gen, "public abstract class ");
-	Text.Str(gen, name);
+	Text.String(gen, name);
 	Text.StrLn(gen, " {");
 	Text.Ln(gen);
 	IF typ.type = NIL THEN
@@ -1469,22 +1469,24 @@ BEGIN
 	Text.StrLn(gen, "}")
 END ClassForProcType;
 
-PROCEDURE ProcTypeNameGenAndArray(VAR gen: Generator; VAR name: ARRAY OF CHAR;
+PROCEDURE ProcTypeNameGenAndArray(VAR gen: Generator; VAR name: Strings.String;
                                   proc: Ast.ProcType);
 VAR out: FileStream.Out;
     ng: Generator;
 BEGIN
 	out := gen.procTypeNamer.gen(gen.procTypeNamer, proc, name);
 	Text.Str(gen, "o7.");
-	Text.Str(gen, name);
+	Text.String(gen, name);
 	Text.Str(gen, " ");
-	GenInit(ng, out, gen.module, NIL, gen.opt);
-	ClassForProcType(ng, name, proc);
-	FileStream.CloseOut(out)
+	IF out # NIL THEN
+		GenInit(ng, out, gen.module, NIL, gen.opt);
+		ClassForProcType(ng, name, proc);
+		FileStream.CloseOut(out)
+	END
 END ProcTypeNameGenAndArray;
 
 PROCEDURE ProcTypeName(VAR gen: Generator; proc: Ast.ProcType);
-VAR name: ARRAY 1024 OF CHAR;
+VAR name: Strings.String;
 BEGIN
 	ProcTypeNameGenAndArray(gen, name, proc)
 END ProcTypeName;
@@ -2102,7 +2104,7 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 	END LocalProcs;
 
 	PROCEDURE Reference(VAR gen: Generator; proc: Ast.Procedure);
-	VAR name: ARRAY 1024 OF CHAR;
+	VAR name: Strings.String;
 
 		PROCEDURE Body(VAR gen: Generator; proc: Ast.Procedure);
 		VAR fp: Ast.Declaration;
@@ -2132,7 +2134,7 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 		Text.Str(gen, " ");
 		Name(gen, proc);
 		Text.Str(gen, "_proc = new ");
-		Text.Str(gen, name);
+		Text.String(gen, name);
 		Text.StrOpen(gen, "() {");
 		IF proc.header.type = NIL THEN
 			Text.Str(gen, "public void ")
