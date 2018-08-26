@@ -82,9 +82,7 @@ MODULE JavaStoreProcTypes;
         END;
         ok := Strings.CopyCharsNull(name, end, "_proc");
 
-        Log.On;
-        Log.Str("Corr name: "); Log.StrLn(name);
-        Log.Off
+        Log.Str("Corr name: "); Log.StrLn(name)
       END;
     RETURN
       ~equal OR ok
@@ -104,9 +102,7 @@ MODULE JavaStoreProcTypes;
       it := it.next
     END;
     new := it = NIL;
-    Log.On;
     Log.Str(" new item = "); Log.Bool(new); Log.Str(" for "); Log.StrLn(name);
-    Log.Off;
     IF new THEN
       NEW(it);
       IF it # NIL THEN
