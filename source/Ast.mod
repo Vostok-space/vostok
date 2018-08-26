@@ -777,6 +777,12 @@ BEGIN
 	RETURN CheckUnusedDeclarations(m)
 END ModuleEnd;
 
+PROCEDURE ModuleReopen*(m: Module);
+BEGIN
+	ASSERT(m.fixed);
+	m.fixed := FALSE
+END ModuleReopen;
+
 PROCEDURE ImportHandle*(m: Module);
 BEGIN
 	ASSERT(~m.handleImport);

@@ -82,35 +82,63 @@ MODULE AstTransform;
     END
   END Var;
 
-  PROCEDURE FormalParam(proc: Ast.ProcType; VAR sfp: Ast.Declaration; o: Options);
-  VAR np, fp: Ast.FormalParam;
+  PROCEDURE NameAppend(VAR new: ARRAY OF CHAR; VAR len: INTEGER;
+                       name: Strings.String; append: ARRAY OF CHAR);
+  BEGIN
+      len := 0;
+      ASSERT(Strings.CopyToChars(new, len, name)
+           & Strings.CopyCharsNull(new, len, append)
+      )
+  END NameAppend;
+
+  PROCEDURE FormalParam(proc: Ast.ProcType; ds: Ast.Procedure;
+                        VAR sfp: Ast.Declaration; o: Options);
+  VAR np, fp: Ast.FormalParam; var: Ast.Var;
       name: ARRAY TranLim.LenName + 3 OF CHAR;
       ofs: INTEGER;
+
+      PROCEDURE AssignFormalParamToLocalArray(ds: Ast.Procedure; var, fp: Ast.Var; o: Options);
+      VAR dst, src: Ast.Designator; a: Ast.Assign;
+      BEGIN
+        ASSERT(Ast.ErrNo = Ast.DesignatorNew(dst, var));
+        ASSERT(Ast.ErrNo = Ast.SelArrayNew(dst.sel, dst.type, Ast.ExprIntegerNew(0)));
+        ASSERT(Ast.ErrNo = Ast.DesignatorNew(src, fp));
+        ASSERT(Ast.ErrNo = Ast.AssignNew(a, FALSE, dst, src));
+        a.next := ds.stats;
+        ds.stats := a;
+        a.ext := o.mark
+      END AssignFormalParamToLocalArray;
   BEGIN
     fp := sfp(Ast.FormalParam);
-    IF o.outParamToArray & (Ast.ParamOut IN fp.access)
-     & ~(fp.type.id IN {Ast.IdArray, Ast.IdRecord})
+    IF ~o.outParamToArray
+    OR (fp.type.id IN {Ast.IdArray, Ast.IdRecord})
     THEN
+      ;
+    ELSIF Ast.ParamOut IN fp.access THEN
       fp.type := Ast.ArrayGet(fp.type, NIL);
       fp.ext := o.mark;
-      ofs := 0;
-      ASSERT(Strings.CopyToChars(name, ofs, fp.name)
-           & Strings.CopyCharsNull(name, ofs, "_i")
-      );
+      NameAppend(name, ofs, fp.name, "_ai");
       ASSERT(Ast.ErrNo
            = Ast.ParamInsert(np, fp, o.module, proc, name, 0, ofs,
                              Ast.TypeGet(Ast.IdInteger), {Ast.ParamIn})
       );
       sfp := np
+    ELSIF (ds # NIL) & fp.inVarParam THEN
+      ASSERT(fp.ext = NIL);
+      NameAppend(name, ofs, fp.name, "_prm");
+      ASSERT(Ast.ErrNo = Ast.VarAdd(var, ds, name, 0, ofs));
+      var.type := Ast.ArrayGet(fp.type, o.mark (* 1 *));
+      fp.ext := var;
+      AssignFormalParamToLocalArray(ds, var, fp, o)
     END
   END FormalParam;
 
-  PROCEDURE ProcType(p: Ast.ProcType; o: Options);
+  PROCEDURE ProcType(p: Ast.ProcType; ds: Ast.Procedure; o: Options);
   VAR fp: Ast.Declaration;
   BEGIN
     fp := p.params;
     WHILE fp # NIL DO
-      FormalParam(p, fp, o);
+      FormalParam(p, ds, fp, o);
       fp := fp.next
     END
   END ProcType;
@@ -178,7 +206,7 @@ MODULE AstTransform;
       CASE t.id OF
         Ast.IdRecord  : Record(t(Ast.Record), o)
       | Ast.IdPointer : Record(t.type(Ast.Record), o)
-      | Ast.IdProcType: ProcType(t(Ast.ProcType), o)
+      | Ast.IdProcType: ProcType(t(Ast.ProcType), NIL, o)
       | Ast.IdArray   : Array(t, o)
 
       | Ast.IdInteger .. Ast.IdLongSet
@@ -253,6 +281,9 @@ MODULE AstTransform;
 
   BEGIN
     sel := d.sel;
+    IF (d.decl.ext # NIL) & (d.decl.ext IS Ast.Var) THEN
+      d.decl := d.decl.ext(Ast.Var)
+    END;
     IF (sel # NIL) & o.outParamToArray & (d.decl IS Ast.Var) THEN
       Item(NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;
@@ -439,7 +470,9 @@ MODULE AstTransform;
   BEGIN
     WHILE st # NIL DO
       IF st IS Ast.Assign THEN
-        Assign(st(Ast.Assign), o)
+        IF st.ext # o.mark THEN
+          Assign(st(Ast.Assign), o)
+        END
       ELSIF st IS Ast.Call THEN
         Expression(st.expr, o)
       ELSIF st IS Ast.WhileIf THEN
@@ -535,7 +568,7 @@ MODULE AstTransform;
 
     PROCEDURE Proc(p: Ast.Procedure; VAR o: Options);
     BEGIN
-      ProcType(p.header, o);
+      ProcType(p.header, p, o);
       Declarations(p, o);
       IF p.return # NIL THEN
         Expression(p.return, o)
@@ -546,9 +579,9 @@ MODULE AstTransform;
     d := ds.start;
     last := NIL;
     WHILE (d # NIL) & (d IS Ast.Import) DO
-     Import(d(Ast.Import), o);
-     last := d;
-     d := d.next
+      Import(d(Ast.Import), o);
+      last := d;
+      d := d.next
     END;
 
     WHILE (d # NIL) & (d IS Ast.Const) DO
@@ -638,6 +671,7 @@ MODULE AstTransform;
     WHILE (imp # NIL) & (imp IS Ast.Import) DO
       IF imp.module.m.ext # o.mark THEN
         imp.module.m.ext := o.mark;
+        Ast.ModuleReopen(imp.module.m);
         Do(imp.module.m, o)
       END;
       imp := imp.next

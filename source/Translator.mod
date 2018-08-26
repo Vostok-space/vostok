@@ -953,6 +953,7 @@ BEGIN
 			ret := ErrParse;
 			Message.AstError(ret); Message.Ln
 		ELSIF res IN Cli.ThroughJava THEN
+			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			AstTransform.Do(module, tranOpt);
 			ret := GenerateThroughJava(res, args, module, call)
