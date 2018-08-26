@@ -1491,17 +1491,68 @@ BEGIN
 	ProcTypeNameGenAndArray(gen, name, proc)
 END ProcTypeName;
 
+PROCEDURE AllocArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+VAR
+BEGIN
+	(* TODO многомерные массивы *)
+	ASSERT(v.type.type.id = Ast.IdRecord);
+
+	Text.Str(gen, "for (int i_ = 0; i_ < ");
+	Name(gen, v);
+	Text.StrOpen(gen, ".length; i_++) {");
+	Name(gen, v);
+	Text.Str(gen, "[i_] = new ");
+	type(gen, NIL, v.type.type, FALSE, FALSE);
+	Text.StrLn(gen, "();");
+	Text.StrLnClose(gen, "}")
+END AllocArrayOfRecord;
+
+PROCEDURE SearchArrayOfRecord(v: Ast.Declaration): Ast.Declaration;
+VAR subt: Ast.Type;
+BEGIN
+	WHILE (v # NIL) & (v.id = Ast.IdVar)
+	    & (   (v.type.id # Ast.IdArray)
+	       OR (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
+	        & (subt.id = Ast.IdRecord)
+	      )
+	DO
+		v := v.next
+	END;
+	IF (v # NIL) & (v.id # Ast.IdVar) THEN
+		v := NIL
+	END
+	RETURN v
+END SearchArrayOfRecord;
+
+PROCEDURE InitAllVarsWichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+VAR subt: Ast.Type;
+BEGIN
+	WHILE (v # NIL) & (v.id = Ast.IdVar) DO
+		IF (v.type.id = Ast.IdArray)
+		 & (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
+		 & (subt.id = Ast.IdRecord)
+		THEN
+			AllocArrayOfRecord(gen, v)
+		END;
+		v := v.next
+	END
+END InitAllVarsWichArrayOfRecord;
+
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
 
 	PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
 	VAR v: Ast.Declaration; needConstructor: BOOLEAN;
+
 		PROCEDURE Constructor(VAR gen: Generator; rec: Ast.Record);
 		BEGIN
 			Text.Ln(gen);
 			Text.Str(gen, "public ");
 			GlobalName(gen, rec);
 			Text.StrOpen(gen, "() {");
+
+			InitAllVarsWichArrayOfRecord(gen, rec.vars);
+
 			Text.StrLnClose(gen, "}")
 		END Constructor;
 	BEGIN
@@ -1526,7 +1577,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				pvar(gen, NIL, v, TRUE);
 
 				needConstructor := needConstructor
-				                OR (v.type.id IN {Ast.IdRecord, Ast.IdArray});
+				                OR (v.type.id IN {Ast.IdArray});
 				v := v.next
 			END;
 			IF needConstructor THEN
@@ -2072,6 +2123,8 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 
 		declarations(gen, proc);
 
+		InitAllVarsWichArrayOfRecord(gen, proc.vars);
+
 		Statements(gen, proc.stats);
 
 		IF proc.return # NIL THEN
@@ -2274,10 +2327,17 @@ PROCEDURE Generate*(out: Stream.POut;
 VAR gen: Generator;
 
 	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module);
+	VAR v: Ast.Declaration;
 	BEGIN
-		IF module.stats # NIL THEN
+		v := SearchArrayOfRecord(module.vars);
+		IF (module.stats # NIL) OR (v # NIL) THEN
 			Text.StrOpen(gen, "static {");
-			Statements(gen, module.stats);
+			IF v # NIL THEN
+				InitAllVarsWichArrayOfRecord(gen, v)
+			END;
+			IF module.stats # NIL THEN
+				Statements(gen, module.stats)
+			END;
 			Text.StrLnClose(gen, "}");
 			Text.Ln(gen)
 		END
@@ -2287,6 +2347,7 @@ VAR gen: Generator;
 	BEGIN
 		Text.StrOpen(gen, "public static void main(java.lang.String[] argv) {");
 		Text.StrLn(gen, "O7.init(argv);");
+		InitAllVarsWichArrayOfRecord(gen, module.vars);
 		Statements(gen, module.stats);
 		IF ~(cmd IS Ast.Nop) THEN
 			Statements(gen, cmd)

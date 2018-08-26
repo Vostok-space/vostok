@@ -122,6 +122,21 @@ BEGIN
 	END
 END CopyInts;
 
+PROCEDURE OfRecord;
+TYPE Rec = RECORD i,j: INTEGER END;
+VAR r: ARRAY 3 OF Rec; i: INTEGER;
+BEGIN
+	r[0].i := 1;
+	r[1].i := 3;
+	r[2].i := 5;
+	FOR i := 0 TO LEN(r) - 1 DO
+		r[i].j := -r[i].i
+	END;
+	ASSERT(r[0].j = -1);
+	ASSERT(r[1].j = -3);
+	ASSERT(r[2].j = -5)
+END OfRecord;
+
 PROCEDURE Go*;
 VAR i: INTEGER;
 BEGIN
@@ -160,7 +175,9 @@ BEGIN
 	CopyInts(bb[1, 0], bb[2][1]);
 	FOR i := 0 TO LEN(bb[2][1]) - 1 DO
 		ASSERT(bb[1][0,i] = 3 * i + 2)
-	END
+	END;
+
+	OfRecord
 END Go;
 
 PROCEDURE Error*(s: INTEGER);

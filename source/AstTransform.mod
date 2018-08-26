@@ -279,11 +279,16 @@ MODULE AstTransform;
       END
     END Item;
 
+    PROCEDURE ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d: Ast.Designator);
+    BEGIN
+      IF (d.decl.ext # NIL) & (d.decl.ext IS Ast.Var) THEN
+        d.decl := d.decl.ext(Ast.Var)
+      END
+    END ReplaceFormalParamByLocalArrayIfUsedAsVarParam;
+
   BEGIN
     sel := d.sel;
-    IF (d.decl.ext # NIL) & (d.decl.ext IS Ast.Var) THEN
-      d.decl := d.decl.ext(Ast.Var)
-    END;
+    ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d);
     IF (sel # NIL) & o.outParamToArray & (d.decl IS Ast.Var) THEN
       Item(NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;

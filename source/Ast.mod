@@ -2237,6 +2237,19 @@ BEGIN
 	RETURN err
 END ArraySetType;
 
+PROCEDURE ArrayGetSubtype*(a: Array; VAR subtype: Type): INTEGER;
+VAR t: Type; i: INTEGER;
+BEGIN
+	t := a.type;
+	i := 1;
+	WHILE t.id = IdArray DO
+		INC(i);
+		t := t.type
+	END;
+	subtype := t
+	RETURN i
+END ArrayGetSubtype;
+
 PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
                         name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR sr: SelRecord;
