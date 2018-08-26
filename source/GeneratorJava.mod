@@ -1394,7 +1394,7 @@ BEGIN
 				Name(gen, var);
 				Text.StrLn(gen, "[i];");
 			ELSE
-				Text.Str(gen, ".assign(r.");
+				Text.Str(gen, "[i].assign(r.");
 				Name(gen, var);
 				Text.StrLn(gen, "[i]);")
 			END;
