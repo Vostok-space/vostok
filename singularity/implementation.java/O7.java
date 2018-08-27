@@ -14,12 +14,6 @@
  */
 package o7;
 
-import java.lang.AssertionError;
-import java.lang.ArithmeticException;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.ByteBuffer;
-
 public final class O7 {
 
 public static abstract class ArgsReceiver {
@@ -44,38 +38,38 @@ public static void exit() {
 
 public static void asrt(final boolean c) {
     if (!c) {
-        throw new AssertionError();
+        throw new java.lang.AssertionError();
     }
 }
 
 public static void caseFail(final int c) {
-    throw new AssertionError("case fail: " + c);
+    throw new java.lang.AssertionError("case fail: " + c);
 }
 
 public static boolean inited(final byte b) {
     if (b == BOOL_UNDEF) {
-        throw new AssertionError("boolean variable is not initialized");
+        throw new java.lang.AssertionError("boolean variable is not initialized");
     }
     return b != 0;
 }
 
 public static int inited(final int i) {
     if (i == INT_UNDEF) {
-        throw new AssertionError("int variable is not initialized");
+        throw new java.lang.AssertionError("int variable is not initialized");
     }
     return i;
 }
 
 public static long inited(final long i) {
     if (i == LONG_UNDEF) {
-        throw new AssertionError("long variable is not initialized");
+        throw new java.lang.AssertionError("long variable is not initialized");
     }
     return i;
 }
 
 public static double inited(final double d) {
     if (Double.doubleToRawLongBits(d) == DOUBLE_UNDEF) {
-        throw new AssertionError("double variable is not initialized");
+        throw new java.lang.AssertionError("double variable is not initialized");
     }
     return d;
 }
@@ -99,21 +93,21 @@ public static int ord(final byte b) {
 /* SET to integer */
 public static int ord(final int i) {
     if (i < 0) {
-        throw new ArithmeticException("31 is not accepted in SET, when it converted to int");
+        throw new java.lang.ArithmeticException("31 is not accepted in SET, when it converted to int");
     }
     return i;
 }
 
 public static byte toByte(final int i) {
     if (i < 0 || 0x100 <= i) {
-        throw new ArithmeticException("int value " + i + " out of byte range");
+        throw new java.lang.ArithmeticException("int value " + i + " out of byte range");
     }
     return (byte)i;
 }
 
 public static byte toByte(final long i) {
     if (i < 0 || 0x100 <= i) {
-        throw new ArithmeticException("long value " + i + " out of byte range");
+        throw new java.lang.ArithmeticException("long value " + i + " out of byte range");
     }
     return (byte)i;
 }
@@ -131,7 +125,7 @@ public static int add(final int a, final int b) {
     final int sum;
     sum = java.lang.Math.addExact(inited(a), inited(b));
     if (sum == INT_UNDEF) {
-        throw new ArithmeticException("addition overflow");
+        throw new java.lang.ArithmeticException("addition overflow");
     }
     return sum;
 }
@@ -140,7 +134,7 @@ public static long add(final long a, final long b) {
     final long sum;
     sum = java.lang.Math.addExact(inited(a), inited(b));
     if (sum == LONG_UNDEF) {
-        throw new ArithmeticException("addition overflow");
+        throw new java.lang.ArithmeticException("addition overflow");
     }
     return sum;
 }
@@ -149,7 +143,7 @@ public static int sub(final int a, final int b) {
     final int diff;
     diff = java.lang.Math.subtractExact(a, b);
     if (diff == INT_UNDEF) {
-        throw new ArithmeticException("subtraction overflow");
+        throw new java.lang.ArithmeticException("subtraction overflow");
     }
     return diff;
 }
@@ -158,7 +152,7 @@ public static long sub(final long a, final int b) {
     final long diff;
     diff = java.lang.Math.subtractExact(a, b);
     if (diff == LONG_UNDEF) {
-        throw new ArithmeticException("subtraction overflow");
+        throw new java.lang.ArithmeticException("subtraction overflow");
     }
     return diff;
 }
@@ -167,7 +161,7 @@ public static int mul(final int a, final int b) {
     final int prod;
     prod = java.lang.Math.multiplyExact(a, b);
     if (prod == INT_UNDEF) {
-        throw new ArithmeticException("multiply overflow");
+        throw new java.lang.ArithmeticException("multiply overflow");
     }
     return prod;
 }
@@ -176,7 +170,7 @@ public static long mul(final long a, final long b) {
     final long prod;
     prod = java.lang.Math.multiplyExact(a, b);
     if (prod == LONG_UNDEF) {
-        throw new ArithmeticException("multiply overflow");
+        throw new java.lang.ArithmeticException("multiply overflow");
     }
     return prod;
 }
@@ -209,7 +203,7 @@ public static int floor(final double d) {
     final double v;
     v = java.lang.Math.floor(inited(d));
     if ((v <= Integer.MIN_VALUE) || (Integer.MAX_VALUE < v)) {
-        throw new ArithmeticException("floor overflow");
+        throw new java.lang.ArithmeticException("floor overflow");
     }
     return (int)v;
 }
@@ -258,10 +252,10 @@ public static double flt(final int i) {
 }
 
 public static byte[] bytes(final java.lang.String s) {
-    final ByteBuffer bb;
+    final java.nio.ByteBuffer bb;
     final byte ba[];
     /* TODO map */
-    bb = StandardCharsets.UTF_8.encode(s);
+    bb = java.nio.charset.StandardCharsets.UTF_8.encode(s);
     ba = new byte[bb.limit()];
     bb.get(ba);
 /*
@@ -271,7 +265,15 @@ public static byte[] bytes(final java.lang.String s) {
 }
 
 public static java.lang.String string(final byte[] bytes) {
-    return StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes)).toString();
+    int i;
+    final java.nio.ByteBuffer buf;
+
+    i = 0;
+    while (i < bytes.length && bytes[i] != 0) {
+         i += 1;
+    }
+    buf = java.nio.ByteBuffer.wrap(bytes, 0, i);
+    return java.nio.charset.StandardCharsets.UTF_8.decode(buf).toString();
 }
 
 public static int strcmp(final byte[] s1, final byte[] s2) {
