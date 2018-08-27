@@ -870,7 +870,6 @@ BEGIN
 	opt := GeneratorJava.DefaultOptions();
 	SetOptions(opt, args);
 	ASSERT(JavaComp.Set(javac, "javac"));
-	DEC(args.resPathLen);
 
 	CASE res OF
 	  Cli.ResultJava:
