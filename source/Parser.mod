@@ -1501,7 +1501,8 @@ BEGIN
 	p.module := Ast.ScriptNew(prov);
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
-	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL))
+	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL));
+	CheckAst(p, Ast.ModuleEnd(p.module))
 	RETURN p.module
 END Script;
 

@@ -640,6 +640,7 @@ BEGIN
 	ASSERT(name[0] # 0X);
 	ASSERT(~(d IS Module));
 	ASSERT((ds.start = NIL) OR ~(ds.start IS Module));
+
 	DeclInit(d, ds);
 	IF (ds.end # NIL) & (ds.procedures # NIL) & (d IS Var) THEN
 		IF ds.vars = NIL THEN
@@ -792,10 +793,16 @@ BEGIN
 END CheckUnusedDeclarations;
 
 PROCEDURE ModuleEnd*(m: Module): INTEGER;
+VAR err: INTEGER;
 BEGIN
 	ASSERT(~m.fixed);
-	m.fixed := TRUE
-	RETURN CheckUnusedDeclarations(m)
+	m.fixed := TRUE;
+	IF m.script THEN
+		err := ErrNo
+	ELSE
+		err := CheckUnusedDeclarations(m)
+	END
+	RETURN err
 END ModuleEnd;
 
 PROCEDURE ModuleReopen*(m: Module);
