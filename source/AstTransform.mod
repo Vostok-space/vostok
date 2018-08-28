@@ -234,12 +234,10 @@ MODULE AstTransform;
   END IsChangedParam;
 
   PROCEDURE CutIndex*(e: Ast.Designator): Ast.Expression;
-  VAR i: Ast.Expression; prev, sel: Ast.Selector;
+  VAR i: Ast.Expression; prev, sel: Ast.Selector; di: Ast.Designator;
   BEGIN
     sel  := e.sel;
-    IF sel = NIL THEN
-      i := Ast.ExprIntegerNew(0)
-    ELSE
+    IF sel # NIL THEN
       prev := NIL;
       WHILE sel.next # NIL DO
         prev := sel;
@@ -255,6 +253,11 @@ MODULE AstTransform;
           prev.next := NIL
         END
       END
+    ELSIF e.decl IS Ast.FormalParam THEN
+      ASSERT(Ast.ErrNo = Ast.DesignatorNew(di, e.decl(Ast.FormalParam).next));
+      i := di
+    ELSE
+      i := Ast.ExprIntegerNew(0)
     END
     RETURN i
   END CutIndex;
@@ -314,12 +317,8 @@ MODULE AstTransform;
           Item(d, last.next, last(Ast.SelRecord).var, o.mark)
         END
       ELSIF (fp.type.id = Ast.IdArray) & (fp.ext = o.mark) THEN
-        (*IF actualParam.expr.type.id = Ast.IdArray THEN
-          Ast.CallParamInsert(actualParam, fp, Ast.ExprIntegerNew(0), actualParam)
-        ELSE*)
           index := CutIndex(actualParam.expr(Ast.Designator));
           Ast.CallParamInsert(actualParam, fp, index, actualParam)
-        (*END*)
       ELSE
         IF last = NIL THEN
           IF d.decl IS Ast.Var THEN
