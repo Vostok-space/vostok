@@ -18,13 +18,31 @@ public final class OsExec {
 
 public static final int Ok = 0;
 
+private static void
+print(final java.io.InputStream is, byte[] buf, java.io.PrintStream ps)
+throws java.io.IOException
+{
+    int len;
+    len = is.read(buf, 0, buf.length - 1);
+    while (len > 0) {
+        buf[len] = 0;
+        ps.print(O7.string(buf));
+        len = is.read(buf, 0, buf.length - 1);
+    }
+}
+
 public static int Do(final byte[] cmd) {
     int ret;
+    java.lang.Process p;
+    byte[] buf = new byte[256];
     try {
-        ret = Runtime.getRuntime().exec(O7.string(cmd)).waitFor();
+        System.out.println(O7.string(cmd));
+        p = Runtime.getRuntime().exec(O7.string(cmd));
+        ret = p.waitFor();
+        print(p.getInputStream(), buf, java.lang.System.out);
+        print(p.getErrorStream(), buf, java.lang.System.err);
     } catch (InterruptedException | java.io.IOException e) {
         ret = -1;
-        System.err.println(e);
     }
     return ret;
 }
