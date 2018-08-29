@@ -264,16 +264,20 @@ public static byte[] bytes(final java.lang.String s) {
     return ba;
 }
 
-public static java.lang.String string(final byte[] bytes) {
+public static java.lang.String string(final byte[] bytes, int ofs) {
     int i;
     final java.nio.ByteBuffer buf;
 
-    i = 0;
+    i = ofs;
     while (i < bytes.length && bytes[i] != 0) {
          i += 1;
     }
-    buf = java.nio.ByteBuffer.wrap(bytes, 0, i);
+    buf = java.nio.ByteBuffer.wrap(bytes, ofs, i);
     return java.nio.charset.StandardCharsets.UTF_8.decode(buf).toString();
+}
+
+public static java.lang.String string(final byte[] bytes) {
+    return string(bytes, 0);
 }
 
 public static int strcmp(final byte[] s1, final byte[] s2) {
