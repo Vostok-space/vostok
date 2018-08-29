@@ -106,7 +106,7 @@ PROCEDURE Quote(VAR d: ARRAY OF CHAR; VAR i: INTEGER): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
 	ok := i < LEN(d) - 1;
-	IF ok THEN
+	IF ok & ~Platform.Java THEN
 		IF Platform.Posix THEN
 			d[i] := "'"
 		ELSE ASSERT(Platform.Windows);
