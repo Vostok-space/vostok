@@ -20,12 +20,14 @@ MODULE Platform;
    Bsd*,
    Mingw*,
    Dos*,
-   Windows*: BOOLEAN;
+   Windows*,
+   Java*: BOOLEAN;
 
 BEGIN
   Posix   := FALSE;
   Linux   := FALSE;
   Bsd     := FALSE;
   Dos     := FALSE;
-  Windows := FALSE
+  Windows := FALSE;
+  Java    := FALSE
 END Platform.

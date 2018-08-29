@@ -54,4 +54,4 @@
   o7_bool const Platform_Posix = 0 > 1;
 #endif
 
-
+o7_bool const Platform_Java = 0 > 1;

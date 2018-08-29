@@ -17,7 +17,6 @@
 
 #include "Platform.h"
 
-
 #if defined(__linux__) || defined(__linux)
   o7_cbool const Platform_Linux = 0 < 1;
 #else
@@ -54,4 +53,4 @@
   o7_cbool const Platform_Posix = 0 > 1;
 #endif
 
-
+o7_cbool const Platform_Java = 0 > 1;

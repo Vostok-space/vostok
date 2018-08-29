@@ -23,7 +23,8 @@ public static final boolean Posix,
                             Bsd,
                             Mingw,
                             Dos,
-                            Windows;
+                            Windows,
+                            Java;
 
 static {
     Posix   = true;
@@ -32,6 +33,7 @@ static {
     Mingw   = false;
     Dos     = false;
     Windows = false;
+    Java    = true;
 }
 
 }

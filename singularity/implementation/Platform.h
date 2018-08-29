@@ -21,7 +21,8 @@ extern o7_cbool const
   Platform_Bsd,
   Platform_Mingw,
   Platform_Dos,
-  Platform_Windows;
+  Platform_Windows,
+  Platform_Java;
 
 O7_ALWAYS_INLINE void Platform_init(void) {}
 O7_ALWAYS_INLINE void Platform_done(void) {}
