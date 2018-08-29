@@ -788,6 +788,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Text.Str(gen, ")");
 				Text.Str(gen, str);
 				Text.Str(gen, "0")
+			ELSIF (   (rel.exprs[0].type.id = Ast.IdChar)
+			       OR (rel.exprs[1].type.id = Ast.IdChar))
+			    & (rel.relation # Scanner.Equal)
+			THEN
+				Text.Str(gen, "(0xFF & ");
+				Expr(gen, rel.exprs[0]);
+				Text.Str(gen, ")");
+				Text.Str(gen, str);
+				Text.Str(gen, "(0xFF & ");
+				Expr(gen, rel.exprs[1]);
+				Text.Str(gen, ")")
 			ELSE
 				Expr(gen, rel.exprs[0]);
 				Text.Str(gen, str);
