@@ -141,14 +141,17 @@ public static final boolean Flush(final File file) {
 
 /* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
 public static final boolean Seek(File file, int gibs, int bytes) {
+    O7.asrt(false);
     return false;
 }
 
 public static final boolean Tell(File file, int gibs, int bytes) {
+    O7.asrt(false);
     return false;
 }
 
 public static final boolean Remove(byte[] name, int ofs) {
+    O7.asrt(false);
     return false;
 }
 

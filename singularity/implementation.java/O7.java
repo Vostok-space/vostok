@@ -254,9 +254,11 @@ public static double flt(final int i) {
 public static byte[] bytes(final java.lang.String s) {
     final java.nio.ByteBuffer bb;
     final byte ba[];
+    final int len;
     /* TODO map */
     bb = java.nio.charset.StandardCharsets.UTF_8.encode(s);
-    ba = new byte[bb.limit()];
+    len = bb.limit();
+    ba = new byte[len];
     bb.get(ba);
 /*
     System.out.println("bytes(\"" + s + "\") = " + java.util.Arrays.toString(ba));
@@ -264,12 +266,14 @@ public static byte[] bytes(final java.lang.String s) {
     return ba;
 }
 
-public static java.lang.String string(final byte[] bytes, int ofs) {
+public static java.lang.String string(final byte[] bytes, final int ofs) {
     int i;
+    final int len;
     final java.nio.ByteBuffer buf;
 
     i = ofs;
-    while (i < bytes.length && bytes[i] != 0) {
+    len = bytes.length;
+    while (i < len && bytes[i] != 0) {
          i += 1;
     }
     buf = java.nio.ByteBuffer.wrap(bytes, ofs, i);
@@ -311,16 +315,26 @@ public static int strcmp(final byte[] s1, final byte[] s2) {
 
 /* Copy chars */
 public static void strcpy(final byte[] d, final byte[] s) {
-    java.lang.System.arraycopy(s, 0, d, 0, s.length);
-    d[s.length] = 0;
+    final int len;
+    int i;
+
+    len = s.length;
+    i = 0;
+    while (i < len && s[i] != 0) {
+        d[i] = s[i];
+        i += 1;
+    }
+    d[i] = 0;
 }
 
 public static void strcpy(final byte[] d, final java.lang.String s) {
     final int len;
+    final byte[] b;
 
-    len = s.length();
+    b = bytes(s);
+    len = b.length;
     for (int i = 0; i < len; i += 1) {
-        d[i] = (byte)s.charAt(i);
+        d[i] = b[i];
     }
     d[len] = 0;
 }
