@@ -2363,6 +2363,7 @@ VAR gen: Generator;
 		IF ~(cmd IS Ast.Nop) THEN
 			Statements(gen, cmd)
 		END;
+		Text.StrLn(gen, "O7.exit();");
 		Text.StrLnClose(gen, "}")
 	END Main;
 BEGIN
