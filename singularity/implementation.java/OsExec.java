@@ -36,12 +36,11 @@ public static int Do(final byte[] cmd) {
     java.lang.Process p;
     byte[] buf = new byte[256];
     try {
-        System.out.println(O7.string(cmd));
-        p = Runtime.getRuntime().exec(O7.string(cmd));
+        p = java.lang.Runtime.getRuntime().exec(O7.string(cmd));
         ret = p.waitFor();
         print(p.getInputStream(), buf, java.lang.System.out);
         print(p.getErrorStream(), buf, java.lang.System.err);
-    } catch (InterruptedException | java.io.IOException e) {
+    } catch (java.lang.InterruptedException | java.io.IOException e) {
         ret = -1;
     }
     return ret;
