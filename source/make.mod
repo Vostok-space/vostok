@@ -45,7 +45,7 @@ MODULE make;
    RETURN ret
  END Execute;
 
- PROCEDURE BuildBy(o7c, res, tmp: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE BuildBy(o7c, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
  BEGIN
    IF posix THEN
@@ -57,7 +57,7 @@ MODULE make;
        & (0 = Execute(code, "Delete old temp directory"));
    ok :=
       Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-    & Exec.Add(code, "to-bin", 0) & Exec.Add(code, "Translator.Start", 0)
+    & Exec.Add(code, cmd, 0) & Exec.Add(code, "Translator.Start", 0)
     & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
     & (windows & Exec.LastPart(code, ".exe")
     OR posix & Exec.LastPart(code, "")
@@ -76,13 +76,20 @@ MODULE make;
 
  PROCEDURE Build*;
  BEGIN
-   ok := BuildBy("bs-o7c", "o7c", "v0")
+   ok := BuildBy("bs-o7c", "o7c", "v0", "to-bin")
  END Build;
 
- PROCEDURE AddRun(VAR code: Exec.Code): BOOLEAN;
+ PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
  VAR ret: BOOLEAN;
  BEGIN
-   IF java THEN
+   IF class THEN
+     ret := Exec.Add(code, "o7.Translator", 0)
+   ELSE
+     ret := TRUE
+   END;
+   IF ~ret THEN
+      ;
+   ELSIF java THEN
      ret := Exec.Add(code, "run-java", 0)
    ELSE
      ret := Exec.Add(code, "run", 0)
@@ -90,7 +97,8 @@ MODULE make;
    RETURN ret
  END AddRun;
 
- PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR;
+                  class: BOOLEAN): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
      file: Dir.File;
@@ -107,9 +115,11 @@ MODULE make;
        ASSERT(Dir.CopyName(n, l, file));
        IF n[0] # "." THEN
          ASSERT(
-             Exec.Init(code, "")
+            (    class & Exec.Init(code, "java") & Exec.Add(code, "-cp", 0)
+             OR ~class & Exec.Init(code, "")
+            )
            & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-           & AddRun(code)
+           & AddRun(code, class)
            & CopyFileName(c, n)
            & ( example & Exec.Add(code, c, 0)
             OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
@@ -138,22 +148,29 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := TestBy("test/source", FALSE, "o7c")
+   ok := TestBy("test/source", FALSE, "o7c", FALSE)
  END Test;
 
  PROCEDURE Self*;
  BEGIN
-   ok := BuildBy("o7c", "o7c-v1", "v1") & TestBy("test/source", FALSE, "o7c-v1")
+   IF java THEN
+     ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
+         & TestBy("test/source", FALSE, "o7c-v1-java", TRUE)
+   ELSE
+     ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
+         & TestBy("test/source", FALSE, "o7c-v1", FALSE)
+   END
  END Self;
 
  PROCEDURE SelfFull*;
  BEGIN
-   ok := BuildBy("o7c-v1", "o7c-v2", "v2") & TestBy("test/source", FALSE, "o7c-v2")
+   ok := BuildBy("o7c-v1", "o7c-v2", "v2", "to-bin")
+       & TestBy("test/source", FALSE, "o7c-v2", FALSE)
  END SelfFull;
 
  PROCEDURE Example*;
  BEGIN
-   ok := TestBy("example", TRUE, "o7c")
+   ok := TestBy("example", TRUE, "o7c", FALSE)
  END Example;
 
  PROCEDURE Help*;

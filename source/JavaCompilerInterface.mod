@@ -52,8 +52,8 @@ MODULE JavaCompilerInterface;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
       ok := Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
-          & (
-             (Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
+          & (Platform.Java
+          OR (Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
           OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
             )
           & (Exec.Ok = Exec.Do(exec));
