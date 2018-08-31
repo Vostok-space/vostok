@@ -998,21 +998,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		IF e.asChar & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
-				Text.Str(gen, "'\''")
+				Text.Str(gen, "((byte)'\'')")
 			ELSIF ch = "\" THEN
-				Text.Str(gen, "'\\'")
+				Text.Str(gen, "((byte)'\\')")
+			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
+				Text.Str(gen, "((byte)'");
+				Text.Char(gen, ch);
+				Text.Str(gen, "')")
 			ELSE
-				IF (ch >= " ") & (ch <= CHR(127)) THEN
-					Text.Str(gen, "((byte)'");
-					Text.Char(gen, ch);
-					Text.Str(gen, "')")
-				ELSE
-					Text.Str(gen, "((byte)0x");
-					Text.Char(gen, ToHex(e.int DIV 16));
-					Text.Char(gen, ToHex(e.int MOD 16));
-					Text.Str(gen, ")")
-				END;
-
+				Text.Str(gen, "((byte)0x");
+				Text.Char(gen, ToHex(e.int DIV 16));
+				Text.Char(gen, ToHex(e.int MOD 16));
+				Text.Str(gen, ")")
 			END
 		ELSE
 			Text.Str(gen, "O7.bytes(");
