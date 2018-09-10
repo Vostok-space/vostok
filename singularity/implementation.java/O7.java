@@ -123,7 +123,8 @@ public static int toInt(final char c) {
 
 public static int add(final int a, final int b) {
     final int sum;
-    sum = java.lang.Math.addExact(inited(a), inited(b));
+    //sum = java.lang.Math.addExact(inited(a), inited(b));
+    sum = inited(a) + inited(b);
     if (sum == INT_UNDEF) {
         throw new java.lang.ArithmeticException("addition overflow");
     }
@@ -132,7 +133,8 @@ public static int add(final int a, final int b) {
 
 public static long add(final long a, final long b) {
     final long sum;
-    sum = java.lang.Math.addExact(inited(a), inited(b));
+    //sum = java.lang.Math.addExact(inited(a), inited(b));
+    sum = inited(a) + inited(b);
     if (sum == LONG_UNDEF) {
         throw new java.lang.ArithmeticException("addition overflow");
     }
@@ -141,7 +143,8 @@ public static long add(final long a, final long b) {
 
 public static int sub(final int a, final int b) {
     final int diff;
-    diff = java.lang.Math.subtractExact(a, b);
+    //diff = java.lang.Math.subtractExact(inited(a), inited(b));
+    diff = inited(a) - inited(b);
     if (diff == INT_UNDEF) {
         throw new java.lang.ArithmeticException("subtraction overflow");
     }
@@ -150,7 +153,8 @@ public static int sub(final int a, final int b) {
 
 public static long sub(final long a, final int b) {
     final long diff;
-    diff = java.lang.Math.subtractExact(a, b);
+    //diff = java.lang.Math.subtractExact(inited(a), inited(b));
+    diff = inited(a) - inited(b);
     if (diff == LONG_UNDEF) {
         throw new java.lang.ArithmeticException("subtraction overflow");
     }
@@ -159,7 +163,8 @@ public static long sub(final long a, final int b) {
 
 public static int mul(final int a, final int b) {
     final int prod;
-    prod = java.lang.Math.multiplyExact(a, b);
+    //prod = java.lang.Math.multiplyExact(inited(a), inited(b));
+    prod = inited(a) * inited(b);
     if (prod == INT_UNDEF) {
         throw new java.lang.ArithmeticException("multiply overflow");
     }
@@ -168,7 +173,8 @@ public static int mul(final int a, final int b) {
 
 public static long mul(final long a, final long b) {
     final long prod;
-    prod = java.lang.Math.multiplyExact(a, b);
+    //prod = java.lang.Math.multiplyExact(inited(a), inited(b));
+    prod = inited(a) * inited(b);
     if (prod == LONG_UNDEF) {
         throw new java.lang.ArithmeticException("multiply overflow");
     }
@@ -209,7 +215,7 @@ public static int floor(final double d) {
 }
 
 public static double scalb(final double d, final int n) {
-    asrt(java.lang.Double.isFinite(d));
+    asrt(!java.lang.Double.isNaN(d));
     return java.lang.Math.scalb(d, n);
 }
 
@@ -218,7 +224,7 @@ public static double frexp(final double d, final int[] n, final int n_i) {
     long       divider;
     int        exponent;
 
-    asrt(java.lang.Double.isFinite(d));
+    asrt(!java.lang.Double.isNaN(d));
 
     bits = Double.doubleToLongBits(d);
 

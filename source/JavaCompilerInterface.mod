@@ -103,6 +103,17 @@ MODULE JavaCompilerInterface;
     Exec.Add(c.cmd, opt, 0)
   END AddOpt;
 
+  PROCEDURE AddTargetVersion*(VAR c: Compiler; ver: INTEGER): BOOLEAN;
+  VAR s: ARRAY 4 OF CHAR;
+  BEGIN
+    ASSERT((ver > 1) & (ver < 10));
+    s := "1.0";
+    s[2] := CHR(ORD("0") + ver)
+  RETURN
+    Exec.Add(c.cmd, "-source", 0) & Exec.Add(c.cmd, s, 0)
+  & Exec.Add(c.cmd, "-target", 0) & Exec.Add(c.cmd, s, 0)
+  END AddTargetVersion;
+
   PROCEDURE Do*(VAR c: Compiler): INTEGER;
   BEGIN
   (*

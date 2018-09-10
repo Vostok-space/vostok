@@ -623,11 +623,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			CASE call.designator.decl.id OF
 			  SpecIdent.Abs:
 				IF call.type.id = Ast.IdInteger THEN
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				ELSIF call.type.id = Ast.IdLongInt THEN
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				ELSE
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				END;
 				Expression(gen, e1, {});
 				Text.Str(gen, ")")
