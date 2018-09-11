@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <float.h>
+#include <math.h>
 
 #if !defined(O7_INLINE)
 #	if __STDC_VERSION__ >= 199901L
@@ -415,15 +416,7 @@ extern o7_char* o7_bools_undef(o7_int_t len, o7_char array[O7_VLA(len)]);
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl_undef(void) {
-	double undef = 0.0;
-	if (sizeof(unsigned) == sizeof(double) / 2) {
-		unsigned const u = 0x7FFFFFFFul;
-		memcpy((unsigned *)&undef + 1, &u, sizeof(u));
-	} else {
-		unsigned long const u = 0x7FFFFFFFul;
-		memcpy((unsigned long *)&undef + 1, &u, sizeof(u));
-	}
-	return undef;
+	return nan(NULL);
 }
 
 extern double* o7_doubles_undef(o7_int_t len, double array[O7_VLA(len)]);
@@ -448,15 +441,7 @@ double o7_dbl(double d) {
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_flt_undef(void) {
-	float undef;
-	if (sizeof(unsigned) == sizeof(float)) {
-		unsigned const u = 0x7FFFFFFFul;
-		memcpy(&undef, &u, sizeof(u));
-	} else {
-		unsigned long const u = 0x7FFFFFFFul;
-		memcpy(&undef, &u, sizeof(u));
-	}
-	return undef;
+	return nanf(NULL);
 }
 
 extern float* o7_floats_undef(o7_int_t len, float array[O7_VLA(len)]);

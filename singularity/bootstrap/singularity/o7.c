@@ -154,4 +154,3 @@ extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
 	}
 	return c1 - c2;
 }
-

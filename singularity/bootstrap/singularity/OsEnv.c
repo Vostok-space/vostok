@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdbool.h>
 
 #define O7_BOOL_UNDEFINED
 #include <o7.h>
@@ -46,4 +45,3 @@ extern o7_bool OsEnv_Get(int len, o7_char val[O7_VLA(len)], int *ofs,
 	}
 	return (NULL != env) && ('\0' == env[j]);
 }
-
