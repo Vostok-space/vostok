@@ -91,6 +91,10 @@ typedef char unsigned o7_char;
 	typedef O7_BOOL o7_bool;
 #elif defined(O7_BOOL_UNDEFINED)
 	typedef o7_char o7_bool;
+	#ifdef _MSC_VER
+	  #define true 1
+	  #define false 0
+	#endif
 #else
 	typedef o7_cbool o7_bool;
 #endif
