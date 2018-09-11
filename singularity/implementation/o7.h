@@ -21,7 +21,6 @@
 #include <assert.h>
 #include <limits.h>
 #include <float.h>
-#include <math.h>
 
 #if !defined(O7_INLINE)
 #	if __STDC_VERSION__ >= 199901L
@@ -416,7 +415,13 @@ extern o7_char* o7_bools_undef(o7_int_t len, o7_char array[O7_VLA(len)]);
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl_undef(void) {
-	return nan(NULL);
+	o7_uint_t const u = 0x7FFFFFFFul;
+	double signaling_nan;
+
+	signaling_nan = 0.0;
+	/* TODO check correctness for big endian */
+	memcpy((o7_uint_t *)&signaling_nan + 1, &u, sizeof(u));
+	return signaling_nan;
 }
 
 extern double* o7_doubles_undef(o7_int_t len, double array[O7_VLA(len)]);
@@ -441,7 +446,12 @@ double o7_dbl(double d) {
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_flt_undef(void) {
-	return nanf(NULL);
+	o7_uint_t const u = 0x7FFFFFFFul;
+	float signaling_nan;
+
+	signaling_nan = 0.0;
+	memcpy((o7_uint_t *)&signaling_nan, &u, sizeof(u));
+	return signaling_nan;
 }
 
 extern float* o7_floats_undef(o7_int_t len, float array[O7_VLA(len)]);

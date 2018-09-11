@@ -87,14 +87,17 @@ typedef char unsigned o7_char;
 	typedef o7_char o7_cbool;
 #endif
 
+#if (__STDC_VERSION__ >= 199901L) && !defined(_MSC_VER)
+#	include <stdbool.h>
+#elif !defined(__cplusplus)
+#	define true  (0 < 1)
+#	define false (0 > 1)
+#endif
+
 #if defined(O7_BOOL)
 	typedef O7_BOOL o7_bool;
 #elif defined(O7_BOOL_UNDEFINED)
 	typedef o7_char o7_bool;
-	#ifdef _MSC_VER
-	  #define true 1
-	  #define false 0
-	#endif
 #else
 	typedef o7_cbool o7_bool;
 #endif
@@ -370,7 +373,15 @@ extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]);
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl_undef(void) {
-	return nan(NULL);
+	double undef = 0.0;
+	if (sizeof(unsigned) == sizeof(double) / 2) {
+		unsigned const u = 0x7FFFFFFFul;
+		memcpy((unsigned *)&undef + 1, &u, sizeof(u));
+	} else {
+		unsigned long const u = 0x7FFFFFFFul;
+		memcpy((unsigned long *)&undef + 1, &u, sizeof(u));
+	}
+	return undef;
 }
 
 extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]);
