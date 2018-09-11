@@ -387,6 +387,8 @@ S("-no-array-index-check         - turn off runtime check that index within rang
 S("-no-nil-check                 - turn off runtime check pointer on nil.");
 S("-no-arithmetic-overflow-check - turn off runtime check arithmetic overflow.");
 S("");
+S("-C90 | -C99 | -C11            - ISO standard of generated C-code");
+S("");
 S("-cyrillic[-same|-escape|-translit] - allow russian identifiers in a source.");
 S("   by default used suitable method of name generation, specific for compiler.");
 S("  -same     translate to identical C names.");

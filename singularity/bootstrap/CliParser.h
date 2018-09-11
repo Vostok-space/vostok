@@ -28,7 +28,6 @@
 #include "GeneratorC.h"
 
 #define CliParser_CmdHelp_cnst 1
-/* TODO переименовать */
 #define CliParser_ResultC_cnst 2
 #define CliParser_ResultBin_cnst 3
 #define CliParser_ResultRun_cnst 4

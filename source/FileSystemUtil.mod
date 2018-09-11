@@ -24,7 +24,7 @@ MODULE FileSystemUtil;
     IF Platform.Posix THEN
       ASSERT(Exec.Init(cmd, "mkdir")
            & Exec.Add(cmd, name, 0)
-           & Exec.AddClean(cmd, " 2>/dev/null"))
+           & (Platform.Java OR Exec.AddClean(cmd, " 2>/dev/null")))
     ELSE ASSERT(Platform.Windows);
       ASSERT(Exec.Init(cmd, "mkdir")
            & Exec.Add(cmd, name, 0))
@@ -39,7 +39,7 @@ MODULE FileSystemUtil;
       ASSERT(Exec.Init(cmd, "rm")
            & Exec.Add(cmd, "-r", 0)
            & Exec.Add(cmd, name, 0)
-           & Exec.AddClean(cmd, " 2>/dev/null"))
+           & (Platform.Java OR Exec.AddClean(cmd, " 2>/dev/null")))
     ELSE ASSERT(Platform.Windows);
       ASSERT(Exec.Init(cmd, "rmdir")
            & Exec.AddClean(cmd, " /s/q")

@@ -83,13 +83,10 @@ extern void VFileStream_CloseOut(struct VFileStream_ROut **out) {
 extern void VFileStream_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
-		VDataStream_init();
 		CFiles_init();
 
 		o7_tag_init(VFileStream_RIn_tag, VDataStream_In_tag);
 		o7_tag_init(VFileStream_ROut_tag, VDataStream_Out_tag);
-
 	}
 	++initialized;
 }

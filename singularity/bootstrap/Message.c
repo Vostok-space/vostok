@@ -583,8 +583,6 @@ extern void Message_init(void) {
 		CliParser_init();
 		Scanner_init();
 		Out_init();
-		Utf8_init();
-
 	}
 	++initialized;
 }

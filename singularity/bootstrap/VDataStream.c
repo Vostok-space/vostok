@@ -67,14 +67,3 @@ extern int VDataStream_WriteChars(struct VDataStream_Out *out, o7_tag_t out_tag,
 	O7_ASSERT((0 <= w) && (w <= count));
 	return w;
 }
-
-extern void VDataStream_init(void) {
-	static int initialized = 0;
-	if (0 == initialized) {
-		V_init();
-
-
-	}
-	++initialized;
-}
-

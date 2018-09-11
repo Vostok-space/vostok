@@ -12,28 +12,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package o7;
+#define O7_BOOL_UNDEFINED
+#include <o7.h>
 
-import o7.O7;
+#include "CDir.h"
 
-public final class Platform {
+#include <string.h>
+#include <unistd.h>
 
-public static final boolean Posix,
-                            Linux,
-                            Bsd,
-                            Mingw,
-                            Dos,
-                            Windows,
-                            Java;
-
-static {
-    Posix   = true;
-    Linux   = true;
-    Bsd     = false;
-    Mingw   = false;
-    Dos     = false;
-    Windows = false;
-    Java    = true;
+extern o7_cbool
+CDir_SetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t ofs) {
+	O7_ASSERT((0 <= ofs) && (ofs < len));
+	return 0 == chdir(path + ofs);
 }
 
+extern o7_cbool
+CDir_GetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t *pofs) {
+	o7_int_t ofs;
+	o7_cbool ok;
+	ofs = *pofs;
+	O7_ASSERT((0 <= ofs) && (ofs < len));
+	ok = NULL != getcwd(path + ofs, len - ofs);
+	if (ok) {
+		*pofs = ofs + strlen(path + ofs);
+	}
+	return ok;
 }
+

@@ -46,11 +46,19 @@ public static final File Open(final byte[] name, final int ofs, final byte[] mod
     File f;
     FileChannel fc;
     Path p;
+    java.util.HashSet<java.nio.file.OpenOption> opts = new java.util.HashSet<>();
 
     p = FileSystems.getDefault().getPath(O7.string(name));
     try {
-        /* TODO mode */
-        fc = FileChannel.open(p, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        for (int i = 0; i < mode.length; i += 1) {
+            if (mode[i] == 'r') {
+                opts.add(StandardOpenOption.READ);
+            } else if (mode[i] == 'w') {
+                opts.add(StandardOpenOption.WRITE);
+                opts.add(StandardOpenOption.CREATE);
+            }
+        }
+        fc = FileChannel.open(p, opts);
         f = new File();
         f.fc = fc;
     } catch (Exception e) {
@@ -133,19 +141,22 @@ public static final boolean Flush(final File file) {
 
 /* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
 public static final boolean Seek(File file, int gibs, int bytes) {
+    O7.asrt(false);
     return false;
 }
 
 public static final boolean Tell(File file, int gibs, int bytes) {
+    O7.asrt(false);
     return false;
 }
 
 public static final boolean Remove(byte[] name, int ofs) {
+    O7.asrt(false);
     return false;
 }
 
 public static final boolean Exist(byte[] name, int ofs) {
-    return false;
+    return java.nio.file.Files.exists(java.nio.file.Paths.get(O7.string(name, ofs)));
 }
 
 static {

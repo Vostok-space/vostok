@@ -19,7 +19,6 @@
 #if !defined(HEADER_GUARD_TypeLimits)
 #define HEADER_GUARD_TypeLimits 1
 
-
 #define TypeLimits_IntegerMax_cnst 2147483647
 /* минимальное значение отброшено как усложняющее жизнь и для использования
 	   в качестве имитации недопустимого значения */
@@ -30,11 +29,8 @@
 #define TypeLimits_SetMax_cnst 31
 #define TypeLimits_LongSetMax_cnst 63
 
-extern o7_bool TypeLimits_IsNan(double r);
-
 extern o7_bool TypeLimits_InByteRange(int v);
 
 extern o7_bool TypeLimits_InCharRange(int v);
 
-static inline void TypeLimits_init(void) { ; }
 #endif

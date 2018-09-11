@@ -40,7 +40,6 @@ extern void Out_Ln(void) {
 	success = O7_LEN(ln) - lnOfs == CFiles_WriteChars(CFiles_out, 2, ln, lnOfs, O7_LEN(ln) - lnOfs) && CFiles_Flush(CFiles_out);
 }
 
-/* TODO */
 extern void Out_Real(double x, int n) {
 	o7_char s[64];
 	int i;

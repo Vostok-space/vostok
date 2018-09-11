@@ -1,4 +1,4 @@
-(* Copyright 2017-2018 ComdivByZero
+(* Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,22 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE AndroidPaint;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Java*: BOOLEAN;
+  TYPE
+    T* = POINTER TO RECORD END;
 
-BEGIN
-  Posix   := FALSE;
-  Linux   := FALSE;
-  Bsd     := FALSE;
-  Dos     := FALSE;
-  Windows := FALSE;
-  Java    := FALSE
-END Platform.
+  PROCEDURE New*(): T;
+  RETURN
+    NIL
+  END New;
+
+  PROCEDURE SetColor*(p: T; color: INTEGER);
+  BEGIN
+    ASSERT((0 <= color) & (color < 1000000H));
+    ASSERT(FALSE)
+  END SetColor;
+
+  PROCEDURE SetOpacity*(p: T; opacity: INTEGER);
+  BEGIN
+    ASSERT((0 <= opacity) & (opacity < 100H));
+    ASSERT(FALSE)
+  END SetOpacity;
+
+END AndroidPaint.

@@ -574,7 +574,6 @@ static o7_bool CheckStructName(struct GeneratorC_Generator *gen, struct Ast_Reco
 		O7_ASSERT(StringStore_CopyChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, 10, (o7_char *)"_anon_0000", 0, 10));
 		O7_ASSERT((o7_cmp(O7_REF((*gen).opt)->index, 0) >= 0) && (o7_cmp(O7_REF((*gen).opt)->index, 10000) < 0));
 		i = o7_int(O7_REF((*gen).opt)->index);
-		/*Log.Int(i); Log.Ln;*/
 		j = o7_sub(l, 1);
 		while (i > 0) {
 			anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, j)] = o7_chr(o7_add((int)(o7_char)'0', o7_mod(i, 10)));
@@ -592,7 +591,6 @@ static void ArrayDeclLen(struct GeneratorC_Generator *gen, struct Ast_RType *arr
 		expression(&(*gen), O7_GUARD(Ast_RArray, &arr)->count);
 	} else {
 		GlobalName(&(*gen), decl);
-		/*TODO*/
 		TextGenerator_Str(&(*gen)._, 4, (o7_char *)"_len");
 		if (i < 0) {
 			i = 0;
@@ -843,7 +841,6 @@ static void Designator(struct GeneratorC_Generator *gen, struct Ast_Designator_s
 	Designator_Put(&sels, O7_REF(des)->sel);
 	sels.des = des;
 	sels.decl = O7_REF(des)->decl;
-	/* TODO */
 	O7_REF((*gen).opt)->lastSelectorDereference = (o7_cmp(sels.i, 0) > 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_Selectors_cnst, sels.i)], Ast_SelPointer_s_tag));
 	Selector(&(*gen), &sels, sels.i, &typ, O7_REF(des)->_._.type);
 }
@@ -1435,7 +1432,6 @@ static void Expression_Relation_Simple(struct GeneratorC_Generator *gen, struct 
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x30");
 		}
 	} else if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) && (O7_REF(rel)->_.value_ == NULL) && (o7_in(O7_REF(O7_REF(O7_REF(rel)->exprs[0])->type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst)))) && (IsMayNotInited(O7_REF(rel)->exprs[0]) || IsMayNotInited(O7_REF(rel)->exprs[1]))) {
-		/* TODO */
 		if (o7_cmp(O7_REF(O7_REF(O7_REF(rel)->exprs[0])->type)->_._.id, Ast_IdInteger_cnst) == 0) {
 			TextGenerator_Str(&(*gen)._, 7, (o7_char *)"o7_cmp(");
 		} else {
@@ -2173,16 +2169,6 @@ static void ArraySimpleUndef(struct GeneratorC_Generator *gen, int arrTypeId, st
 		TextGenerator_Str(&(*gen)._, 3, (o7_char *)"r->");
 	}
 	Name(&(*gen), d);
-	/*
-	FOR i := 2 TO arrDeep DO
-		Text.Str(gen, "[0]")
-	END;
-	Text.Str(gen, "), ");
-	Name(gen, d);
-	FOR i := 2 TO arrDeep DO
-		Text.Str(gen, "[0]")
-	END;
-	*/
 	TextGenerator_Str(&(*gen)._, 2, (o7_char *)");");
 }
 
@@ -2220,7 +2206,6 @@ static void RecordUndef_Memset(struct GeneratorC_Generator *gen, struct Ast_RDec
 	TextGenerator_StrLn(&(*gen)._, 3, (o7_char *)"));");
 }
 
-/* TODO Навести порядок */
 static void RecordUndef(struct GeneratorC_Generator *gen, struct Ast_Record_s *rec) {
 	struct Ast_RDeclaration *var_;
 	int arrTypeId, arrDeep;
@@ -2249,7 +2234,6 @@ static void RecordUndef(struct GeneratorC_Generator *gen, struct Ast_Record_s *r
 			if (IsArrayTypeSimpleUndef(O7_REF(var_)->type, &arrTypeId, &arrDeep)) {
 				ArraySimpleUndef(&(*gen), arrTypeId, var_, true);
 			} else if (typeUndef != NULL) {
-				/* TODO вложенные циклы */
 				TextGenerator_Str(&(*gen)._, 26, (o7_char *)"for (i = 0; i < O7_LEN(r->");
 				Name(&(*gen), var_);
 				TextGenerator_StrOpen(&(*gen)._, 12, (o7_char *)"); i += 1) {");
@@ -2647,7 +2631,6 @@ static void ExprSameType(struct GeneratorC_Generator *gen, struct Ast_RExpressio
 		TextGenerator_Str(&(*gen)._, 4, (o7_char *)")->_");
 	}
 	if ((base != NULL) && (extend != base)) {
-		/*ASSERT(expectType.id = Ast.IdRecord);*/
 		if (o7_bl(O7_REF((*gen).opt)->plan9)) {
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x2E");
 			GlobalName(&(*gen), &expectType->_);
@@ -2787,7 +2770,6 @@ static void Statement_Assign(struct GeneratorC_Generator *gen, struct Ast_Assign
 			Designator(&(*gen), O7_REF(st)->designator);
 			TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
 		} else if ((o7_cmp(O7_REF(O7_REF(O7_REF(st)->designator)->_._.type)->_._.id, Ast_IdArray_cnst) == 0)) {
-			/*    & (st.designator.type.type.id # Ast.IdString) */
 			Statement_Assign_AssertArraySize(&(*gen), O7_REF(st)->designator, O7_REF(st)->_.expr);
 			TextGenerator_Str(&(*gen)._, 7, (o7_char *)"memcpy(");
 			Designator(&(*gen), O7_REF(st)->designator);
@@ -3161,15 +3143,11 @@ static void Procedure_LocalProcs(struct MOut *out, struct Ast_RProcedure *proc) 
 	t = (&(O7_REF(proc)->_._.types)->_);
 	while ((t != NULL) && (o7_is(t, Ast_RType_tag))) {
 		TypeDecl(&(*out), O7_GUARD(Ast_RType, &t));
-		/*IF t IS Ast.Record THEN
-				RecordTag(out.g[Implementation], t(Ast.Record))
-			END;*/
 		t = O7_REF(t)->next;
 	}
 	p = (&(O7_REF(proc)->_._.procedures)->_._._);
 	if ((p != NULL) && !o7_bl(O7_REF((*out).opt)->procLocal)) {
 		if (!o7_bl(O7_REF(proc)->_._._.mark)) {
-			/* TODO также проверить наличие рекурсии из локальных процедур*/
 			ProcDecl(&(*out).g[Implementation_cnst], proc);
 		}
 		do {
@@ -3284,7 +3262,7 @@ extern struct GeneratorC_Options_s *GeneratorC_DefaultOptions(void) {
 	if (o != NULL) {
 		V_Init(&(*O7_REF(o))._);
 
-		O7_REF(o)->std = GeneratorC_IsoC99_cnst;
+		O7_REF(o)->std = GeneratorC_IsoC90_cnst;
 		O7_REF(o)->gnu = false;
 		O7_REF(o)->plan9 = false;
 		O7_REF(o)->procLocal = false;
@@ -3345,9 +3323,6 @@ static void MarkType(struct Ast_RType *t) {
 			d = (&(O7_GUARD(Ast_Record_s, &t)->vars)->_);
 			while (d != NULL) {
 				MarkType(O7_REF(d)->type);
-				/*IF Strings.IsDefined(d.name) THEN
-					Log.StrLn(d.name.block.s)
-				END;*/
 				d = O7_REF(d)->next;
 			}
 			t = (&(O7_GUARD(Ast_Record_s, &t)->base)->_._);
@@ -3580,16 +3555,11 @@ extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VData
 extern void GeneratorC_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
 		Ast_init();
 		StringStore_init();
 		Scanner_init();
-		VDataStream_init();
 		TextGenerator_init();
-		Utf8_init();
 		Log_init();
-		TypeLimits_init();
-		TranslatorLimits_init();
 
 		o7_tag_init(GeneratorC_MemoryOut_tag, VDataStream_Out_tag);
 		o7_tag_init(RecExt_s_tag, V_Base_tag);

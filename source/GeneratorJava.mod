@@ -46,7 +46,7 @@ TYPE
 	ProviderProcTypeName* = POINTER TO RProviderProcTypeName;
 	ProvideProcTypeName* =
 		PROCEDURE(prov: ProviderProcTypeName; typ: Ast.ProcType;
-		          VAR name: ARRAY OF CHAR): FileStream.Out;
+		          VAR name: Strings.String): FileStream.Out;
 	RProviderProcTypeName* = RECORD(V.Base)
 		gen: ProvideProcTypeName
 	END;
@@ -623,11 +623,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			CASE call.designator.decl.id OF
 			  SpecIdent.Abs:
 				IF call.type.id = Ast.IdInteger THEN
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				ELSIF call.type.id = Ast.IdLongInt THEN
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				ELSE
-					Text.Str(gen, "Math.abs(")
+					Text.Str(gen, "java.lang.Math.abs(")
 				END;
 				Expression(gen, e1, {});
 				Text.Str(gen, ")")
@@ -788,6 +788,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Text.Str(gen, ")");
 				Text.Str(gen, str);
 				Text.Str(gen, "0")
+			ELSIF (   (rel.exprs[0].type.id = Ast.IdChar)
+			       OR (rel.exprs[1].type.id = Ast.IdChar))
+			    & (rel.relation # Scanner.Equal)
+			THEN
+				Text.Str(gen, "(0xFF & ");
+				Expr(gen, rel.exprs[0]);
+				Text.Str(gen, ")");
+				Text.Str(gen, str);
+				Text.Str(gen, "(0xFF & ");
+				Expr(gen, rel.exprs[1]);
+				Text.Str(gen, ")")
 			ELSE
 				Expr(gen, rel.exprs[0]);
 				Text.Str(gen, str);
@@ -987,21 +998,18 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		IF e.asChar & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
-				Text.Str(gen, "'\''")
+				Text.Str(gen, "((byte)'\'')")
 			ELSIF ch = "\" THEN
-				Text.Str(gen, "'\\'")
+				Text.Str(gen, "((byte)'\\')")
+			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
+				Text.Str(gen, "((byte)'");
+				Text.Char(gen, ch);
+				Text.Str(gen, "')")
 			ELSE
-				IF (ch >= " ") & (ch <= CHR(127)) THEN
-					Text.Str(gen, "((byte)'");
-					Text.Char(gen, ch);
-					Text.Str(gen, "')")
-				ELSE
-					Text.Str(gen, "((byte)0x");
-					Text.Char(gen, ToHex(e.int DIV 16));
-					Text.Char(gen, ToHex(e.int MOD 16));
-					Text.Str(gen, ")")
-				END;
-
+				Text.Str(gen, "((byte)0x");
+				Text.Char(gen, ToHex(e.int DIV 16));
+				Text.Char(gen, ToHex(e.int MOD 16));
+				Text.Str(gen, ")")
 			END
 		ELSE
 			Text.Str(gen, "O7.bytes(");
@@ -1012,6 +1020,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				s[1] := "\";
 				IF e.int = ORD("\") THEN
 					s[2] := "\";
+					s[3] := Utf8.DQuote;
+					s[4] := Utf8.Null
+				ELSIF e.int = 0AH THEN
+					s[2] := "n";
+					s[3] := Utf8.DQuote;
+					s[4] := Utf8.Null
+				ELSIF e.int = ORD(Utf8.DQuote) THEN
+					s[2] := Utf8.DQuote;
 					s[3] := Utf8.DQuote;
 					s[4] := Utf8.Null
 				ELSE
@@ -1092,7 +1108,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			extType := extType.type;
 			ASSERT(CheckStructName(gen, extType(Ast.Record)));
 			Expression(gen, is.designator, {});
-			Text.Str(gen, " instanceof ")
 		ELSE
 			GlobalName(gen, decl);
 		END;
@@ -1387,7 +1402,7 @@ BEGIN
 				Name(gen, var);
 				Text.StrLn(gen, "[i];");
 			ELSE
-				Text.Str(gen, ".assign(r.");
+				Text.Str(gen, "[i].assign(r.");
 				Name(gen, var);
 				Text.StrLn(gen, "[i]);")
 			END;
@@ -1440,13 +1455,13 @@ BEGIN
 END GeneratorNotify;
 
 PROCEDURE ClassForProcType(VAR gen: Generator;
-                           name: ARRAY OF CHAR; typ: Ast.ProcType);
+                           name: Strings.String; typ: Ast.ProcType);
 BEGIN
 	GeneratorNotify(gen);
 	Text.StrLn(gen, "package o7;");
 	Text.Ln(gen);
 	Text.Str(gen, "public abstract class ");
-	Text.Str(gen, name);
+	Text.String(gen, name);
 	Text.StrLn(gen, " {");
 	Text.Ln(gen);
 	IF typ.type = NIL THEN
@@ -1462,37 +1477,90 @@ BEGIN
 	Text.StrLn(gen, "}")
 END ClassForProcType;
 
-PROCEDURE ProcTypeNameGenAndArray(VAR gen: Generator; VAR name: ARRAY OF CHAR;
+PROCEDURE ProcTypeNameGenAndArray(VAR gen: Generator; VAR name: Strings.String;
                                   proc: Ast.ProcType);
 VAR out: FileStream.Out;
     ng: Generator;
 BEGIN
 	out := gen.procTypeNamer.gen(gen.procTypeNamer, proc, name);
 	Text.Str(gen, "o7.");
-	Text.Str(gen, name);
+	Text.String(gen, name);
 	Text.Str(gen, " ");
-	GenInit(ng, out, gen.module, NIL, gen.opt);
-	ClassForProcType(ng, name, proc);
-	FileStream.CloseOut(out)
+	IF out # NIL THEN
+		GenInit(ng, out, gen.module, NIL, gen.opt);
+		ClassForProcType(ng, name, proc);
+		FileStream.CloseOut(out)
+	END
 END ProcTypeNameGenAndArray;
 
 PROCEDURE ProcTypeName(VAR gen: Generator; proc: Ast.ProcType);
-VAR name: ARRAY 1024 OF CHAR;
+VAR name: Strings.String;
 BEGIN
 	ProcTypeNameGenAndArray(gen, name, proc)
 END ProcTypeName;
+
+PROCEDURE AllocArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+VAR
+BEGIN
+	(* TODO многомерные массивы *)
+	ASSERT(v.type.type.id = Ast.IdRecord);
+
+	Text.Str(gen, "for (int i_ = 0; i_ < ");
+	Name(gen, v);
+	Text.StrOpen(gen, ".length; i_++) {");
+	Name(gen, v);
+	Text.Str(gen, "[i_] = new ");
+	type(gen, NIL, v.type.type, FALSE, FALSE);
+	Text.StrLn(gen, "();");
+	Text.StrLnClose(gen, "}")
+END AllocArrayOfRecord;
+
+PROCEDURE SearchArrayOfRecord(v: Ast.Declaration): Ast.Declaration;
+VAR subt: Ast.Type;
+BEGIN
+	WHILE (v # NIL) & (v.id = Ast.IdVar)
+	    & (   (v.type.id # Ast.IdArray)
+	       OR (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
+	        & (subt.id = Ast.IdRecord)
+	      )
+	DO
+		v := v.next
+	END;
+	IF (v # NIL) & (v.id # Ast.IdVar) THEN
+		v := NIL
+	END
+	RETURN v
+END SearchArrayOfRecord;
+
+PROCEDURE InitAllVarsWichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+VAR subt: Ast.Type;
+BEGIN
+	WHILE (v # NIL) & (v.id = Ast.IdVar) DO
+		IF (v.type.id = Ast.IdArray)
+		 & (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
+		 & (subt.id = Ast.IdRecord)
+		THEN
+			AllocArrayOfRecord(gen, v)
+		END;
+		v := v.next
+	END
+END InitAllVarsWichArrayOfRecord;
 
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
 
 	PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
 	VAR v: Ast.Declaration; needConstructor: BOOLEAN;
+
 		PROCEDURE Constructor(VAR gen: Generator; rec: Ast.Record);
 		BEGIN
 			Text.Ln(gen);
 			Text.Str(gen, "public ");
 			GlobalName(gen, rec);
 			Text.StrOpen(gen, "() {");
+
+			InitAllVarsWichArrayOfRecord(gen, rec.vars);
+
 			Text.StrLnClose(gen, "}")
 		END Constructor;
 	BEGIN
@@ -1517,7 +1585,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				pvar(gen, NIL, v, TRUE);
 
 				needConstructor := needConstructor
-				                OR (v.type.id IN {Ast.IdRecord, Ast.IdArray});
+				                OR (v.type.id IN {Ast.IdArray});
 				v := v.next
 			END;
 			IF needConstructor THEN
@@ -2063,6 +2131,8 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 
 		declarations(gen, proc);
 
+		InitAllVarsWichArrayOfRecord(gen, proc.vars);
+
 		Statements(gen, proc.stats);
 
 		IF proc.return # NIL THEN
@@ -2095,7 +2165,7 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 	END LocalProcs;
 
 	PROCEDURE Reference(VAR gen: Generator; proc: Ast.Procedure);
-	VAR name: ARRAY 1024 OF CHAR;
+	VAR name: Strings.String;
 
 		PROCEDURE Body(VAR gen: Generator; proc: Ast.Procedure);
 		VAR fp: Ast.Declaration;
@@ -2125,7 +2195,7 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 		Text.Str(gen, " ");
 		Name(gen, proc);
 		Text.Str(gen, "_proc = new ");
-		Text.Str(gen, name);
+		Text.String(gen, name);
 		Text.StrOpen(gen, "() {");
 		IF proc.header.type = NIL THEN
 			Text.Str(gen, "public void ")
@@ -2265,10 +2335,17 @@ PROCEDURE Generate*(out: Stream.POut;
 VAR gen: Generator;
 
 	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module);
+	VAR v: Ast.Declaration;
 	BEGIN
-		IF module.stats # NIL THEN
+		v := SearchArrayOfRecord(module.vars);
+		IF (module.stats # NIL) OR (v # NIL) THEN
 			Text.StrOpen(gen, "static {");
-			Statements(gen, module.stats);
+			IF v # NIL THEN
+				InitAllVarsWichArrayOfRecord(gen, v)
+			END;
+			IF module.stats # NIL THEN
+				Statements(gen, module.stats)
+			END;
 			Text.StrLnClose(gen, "}");
 			Text.Ln(gen)
 		END
@@ -2278,10 +2355,12 @@ VAR gen: Generator;
 	BEGIN
 		Text.StrOpen(gen, "public static void main(java.lang.String[] argv) {");
 		Text.StrLn(gen, "O7.init(argv);");
+		InitAllVarsWichArrayOfRecord(gen, module.vars);
 		Statements(gen, module.stats);
 		IF ~(cmd IS Ast.Nop) THEN
 			Statements(gen, cmd)
 		END;
+		Text.StrLn(gen, "O7.exit();");
 		Text.StrLnClose(gen, "}")
 	END Main;
 BEGIN

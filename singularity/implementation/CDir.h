@@ -1,4 +1,4 @@
-(* Copyright 2017-2018 ComdivByZero
+/* Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,23 +11,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *)
-MODULE Platform;
+ */
+#if !defined HEADER_GUARD_CDir
+#    define  HEADER_GUARD_CDir 1
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Java*: BOOLEAN;
+extern o7_cbool
+CDir_SetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t ofs);
 
-BEGIN
-  Posix   := FALSE;
-  Linux   := FALSE;
-  Bsd     := FALSE;
-  Dos     := FALSE;
-  Windows := FALSE;
-  Java    := FALSE
-END Platform.
+extern o7_cbool
+CDir_GetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t *ofs);
+
+O7_ALWAYS_INLINE void CDir_init(void) { ; }
+#endif

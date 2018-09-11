@@ -2846,7 +2846,7 @@ END ProcDecl;
 PROCEDURE ReleaseVars(VAR gen: Generator; var: Ast.Declaration);
 BEGIN
 	IF gen.opt.memManager = MemManagerCounter THEN
-		WHILE (var # NIL) & (var IS Ast.Var) DO
+		WHILE (var # NIL) & (var.id = Ast.IdVar) DO
 			IF var.type.id = Ast.IdArray THEN
 				IF var.type.type.id = Ast.IdPointer THEN (* TODO *)
 					Text.Str(gen, "O7_RELEASE_ARRAY(");
@@ -2855,14 +2855,14 @@ BEGIN
 				ELSIF (var.type.type.id = Ast.IdRecord)
 				    & (var.type.type.ext # NIL) & var.type.type.ext(RecExt).undef
 				THEN
-					Text.Str(gen, "{int o7_i; for (o7_i = 0; o7_i < O7_LEN(r->");
+					Text.Str(gen, "{int o7_i; for (o7_i = 0; o7_i < O7_LEN(");
 					GlobalName(gen, var);
 					Text.StrOpen(gen, "); o7_i += 1) {");
 					GlobalName(gen, var.type.type);
-					Text.Str(gen, "_release(&");
+					Text.Str(gen, "_release(");
 					GlobalName(gen, var);
 					Text.StrLn(gen, " + o7_i);");
-					Text.StrLnClose(gen, "}")
+					Text.StrLnClose(gen, "}}")
 				END
 			ELSIF var.type.id = Ast.IdPointer THEN
 				Text.Str(gen, "O7_NULL(&");
@@ -3141,7 +3141,7 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 
-		o.std           := IsoC99;
+		o.std           := IsoC90;
 		o.gnu           := FALSE;
 		o.plan9         := FALSE;
 		o.procLocal     := FALSE;

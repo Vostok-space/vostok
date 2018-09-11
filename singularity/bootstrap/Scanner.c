@@ -101,7 +101,6 @@ static void FillBuf(int buf_len0, o7_char buf[/*len0*/], int *ind, struct VDataS
 	}
 }
 
-/* TODO убрать*/
 static o7_char ScanChar(struct Scanner_Scanner *s) {
 	o7_char ch;
 
@@ -171,7 +170,6 @@ static void SNumber_Val(struct Scanner_Scanner *s, int *lex, int capacity, SuitD
 	val = 0;
 	i = o7_int((*s).lexStart);
 	d = valDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
-	/*Log.Str("IntMax "); Log.Int(IntMax); Log.Ln;*/
 	while (1) if (d >= 0) {
 		if (o7_div(IntMax_cnst, capacity) >= val) {
 			val = o7_mul(val, capacity);
@@ -193,7 +191,6 @@ static void SNumber_Val(struct Scanner_Scanner *s, int *lex, int capacity, SuitD
 }
 
 static void SNumber_ValReal(struct Scanner_Scanner *s, int *lex) {
-	/* TODO */
 	int i, d, scale;
 	o7_bool scMinus;
 	double val, t;
@@ -209,7 +206,6 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, int *lex) {
 		i = 0;
 		d = ValDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
-	/* skip dot */
 	i = o7_add(i, 1);
 	t = 10.0;
 	d = ValDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
@@ -248,7 +244,6 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, int *lex) {
 				d = ValDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 			} else break;
 			if (scale <= RealScaleMax_cnst) {
-				/* TODO */
 				while (scale > 0) {
 					if (scMinus) {
 						val = o7_fmul(val, 10.0);
@@ -438,10 +433,6 @@ static int CheckWord(int buf_len0, o7_char buf[/*len0*/], int ind, int end) {
 
 	save = buf[o7_ind(buf_len0, end)];
 	buf[o7_ind(buf_len0, end)] = 0x08u;
-	/*
-	Log.Str("lexStart "); Log.Int(ind); Log.Str(" ");
-	Log.Int(ORD(buf[ind])); Log.Ln;
-	*/
 	{ int o7_case_expr = buf[o7_ind(buf_len0, ind)];
 		switch (o7_case_expr) {
 		case 65:
@@ -545,7 +536,6 @@ static o7_bool ScanBlank(struct Scanner_Scanner *s) {
 	int start, i, comment, commentsCount;
 
 	i = o7_int((*s).ind);
-	/*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*/
 	O7_ASSERT(0 <= i);
 	start = i;
 	comment = 0;
@@ -586,7 +576,6 @@ static o7_bool ScanBlank(struct Scanner_Scanner *s) {
 		}
 		i = o7_int((*s).ind);
 	} else if ((comment > 0) && ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] != 0x00u)) {
-		/* & ~blank */
 		if ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (o7_char)'*') {
 			(*s).ind = i;
 			if (ScanChar(&(*s)) == (o7_char)')') {
@@ -748,9 +737,6 @@ extern int Scanner_Next(struct Scanner_Scanner *s) {
 				break;
 			}
 		}
-		/*
-		Log.Str("Scan "); Log.Int(lex); Log.Ln;
-		*/
 		(*s).lexEnd = o7_int((*s).ind);
 		(*s).lexLen = o7_sub(o7_add((*s).lexEnd, o7_mul((int)(o7_cmp((*s).lexEnd, (*s).lexStart) < 0), (O7_LEN((*s).buf) - 1))), (*s).lexStart);
 		O7_ASSERT((o7_cmp(0, (*s).lexLen) < 0) || (lex == Scanner_EndOfFile_cnst));
@@ -779,13 +765,8 @@ extern void Scanner_ResetComment(struct Scanner_Scanner *s) {
 extern void Scanner_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
-		VDataStream_init();
-		Utf8_init();
-		TranslatorLimits_init();
 		StringStore_init();
 		Log_init();
-
 
 		O7_STATIC_ASSERT(TranslatorLimits_LenName_cnst < Scanner_BlockSize_cnst);
 	}

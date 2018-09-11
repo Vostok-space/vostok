@@ -17,6 +17,7 @@
 MODULE Translator;
 
 IMPORT
+	V,
 	Log,
 	Out,
 	CLI,
@@ -31,6 +32,7 @@ IMPORT
 	AstTransform,
 	GeneratorC,
 	GeneratorJava,
+	JavaStoreProcTypes,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
 	CComp := CCompilerInterface,
@@ -75,8 +77,13 @@ TYPE
 		javac   : JavaComp.Compiler;
 		usejavac: BOOLEAN;
 
+		store : JavaStoreProcTypes.Store;
+
 		dir   : ARRAY 1024 OF CHAR;
 		dirLen: INTEGER
+	END;
+
+	MsgTempDirCreated* = RECORD(V.Message)
 	END;
 
 PROCEDURE Unlink(c: Container);
@@ -401,9 +408,11 @@ BEGIN
 END GenerateC;
 
 PROCEDURE GetTempOut(VAR dirOut: ARRAY OF CHAR; VAR len: INTEGER;
-                     name: Strings.String; tmp: ARRAY OF CHAR): BOOLEAN;
+                     name: Strings.String; VAR tmp: ARRAY OF CHAR;
+                     VAR listener: V.Base): BOOLEAN;
 VAR i: INTEGER;
-    ok: BOOLEAN;
+    ok, saveTemp: BOOLEAN;
+    tmpCreated: MsgTempDirCreated;
 BEGIN
 	len := 0;
 	IF tmp # "" THEN
@@ -433,6 +442,13 @@ BEGIN
 				ok := FileSys.MakeDir(dirOut);
 				INC(i)
 			END
+		END;
+		IF ok THEN
+			saveTemp := V.Do(listener, tmpCreated);
+			IF saveTemp THEN
+				i := 0;
+				ok := Strings.CopyCharsNull(tmp, i, dirOut)
+			END
 		END
 	END
 	RETURN ok
@@ -459,10 +475,11 @@ END GetMainClass;
 
 PROCEDURE GetTempOutC(VAR dirCOut: ARRAY OF CHAR; VAR len: INTEGER;
                       VAR bin: ARRAY OF CHAR; name: Strings.String;
-                      tmp: ARRAY OF CHAR): BOOLEAN;
+                      VAR tmp: ARRAY OF CHAR;
+                      VAR listener: V.Base): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
-	ok := GetTempOut(dirCOut, len, name, tmp);
+	ok := GetTempOut(dirCOut, len, name, tmp, listener);
 	IF ok & (bin[0] = Utf8.Null) THEN
 		ok := GetCBin(bin, dirCOut, name)
 	END
@@ -484,7 +501,8 @@ BEGIN
 END IdentEncoderForCompiler;
 
 PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
-                           module: Ast.Module; call: Ast.Call): INTEGER;
+                           module: Ast.Module; call: Ast.Call;
+                           VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
     opt: GeneratorC.Options;
     ccomp: CComp.Compiler;
@@ -507,6 +525,9 @@ VAR ret: INTEGER;
 		IF args.noIndexCheck THEN
 			opt.checkIndex := FALSE
 		END;
+		IF 0 <= args.cStd THEN
+			opt.std := args.cStd
+		END;
 		IF Cli.CyrillicSame <= args.cyrillic THEN
 			opt.identEnc := args.cyrillic - Cli.CyrillicSame
 		END
@@ -515,14 +536,15 @@ VAR ret: INTEGER;
 	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
 	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
-	              VAR cmd: CComp.Compiler; tmp: ARRAY OF CHAR): INTEGER;
+	              VAR cmd: CComp.Compiler; VAR tmp: ARRAY OF CHAR;
+	              VAR listener: V.Base): INTEGER;
 	VAR outCLen: INTEGER;
 	    ret: INTEGER;
 	    i, nameLen, cDirsLen: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
 	BEGIN
-		ok := GetTempOutC(outC, outCLen, bin, module.name, tmp);
+		ok := GetTempOutC(outC, outCLen, bin, module.name, tmp, listener);
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
@@ -614,7 +636,7 @@ BEGIN
 		                 ccomp, FALSE)
 	| Cli.ResultBin, Cli.ResultRun:
 		ret := Bin(res, args, module, call, opt, args.cDirs, args.cc, outC,
-		           args.resPath, ccomp, args.tmp);
+		           args.resPath, ccomp, args.tmp, listener);
 		IF (res = Cli.ResultRun) & (ret = ErrNo) THEN
 			ret := Run(args.resPath, args.arg)
 		END;
@@ -627,19 +649,25 @@ BEGIN
 END GenerateThroughC;
 
 (* TODO *)
-PROCEDURE GenerateProcType(name: ARRAY OF CHAR; t: Ast.ProcType;
+PROCEDURE GenerateProcType(name: Strings.String; t: Ast.ProcType;
                            VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                            VAR javac: JavaComp.Compiler; usejavac: BOOLEAN): File.Out;
 VAR file: File.Out;
-    ret: INTEGER;
+    ret, i: INTEGER;
+    nm: ARRAY 4096 OF CHAR;
 BEGIN
-	ret := OpenJavaOutput(file, NIL, name, dir, dirLen);
-	(* TODO *)
-	IF ret # ErrNo THEN
-		file := NIL
-	ELSIF usejavac THEN
+	i := 0;
+	IF Strings.CopyToChars(nm, i, name) THEN
+		ret := OpenJavaOutput(file, NIL, nm, dir, dirLen);
 		(* TODO *)
-		ASSERT(JavaComp.AddJava(javac, dir, 0))
+		IF ret # ErrNo THEN
+			file := NIL
+		ELSIF usejavac THEN
+			(* TODO *)
+			ASSERT(JavaComp.AddJava(javac, dir, 0))
+		END
+	ELSE
+		file := NIL
 	END
 	RETURN file
 END GenerateProcType;
@@ -647,53 +675,21 @@ END GenerateProcType;
 (* TODO *)
 PROCEDURE ProvideProcTypeName(prov: GeneratorJava.ProviderProcTypeName;
                               proc: Ast.ProcType;
-                              VAR name: ARRAY OF CHAR): File.Out;
-VAR p: Ast.Declaration;
-    i: INTEGER;
-    ok: BOOLEAN;
+                              VAR name: Strings.String): File.Out;
 
-	PROCEDURE Type(VAR name: ARRAY OF CHAR; VAR i: INTEGER; t: Ast.Type): BOOLEAN;
-	VAR ok: BOOLEAN;
-	BEGIN
-		CASE t.id OF
-		  Ast.IdInteger  ,
-		  Ast.IdSet      : ok := Strings.CopyCharsNull(name, i, "I")
-		| Ast.IdLongInt  ,
-		  Ast.IdLongSet  : ok := Strings.CopyCharsNull(name, i, "J")
-		| Ast.IdBoolean  : ok := Strings.CopyCharsNull(name, i, "Z")
-		| Ast.IdByte     : ok := Strings.CopyCharsNull(name, i, "B")
-		| Ast.IdChar     : ok := Strings.CopyCharsNull(name, i, "C")
-		| Ast.IdReal     : ok := Strings.CopyCharsNull(name, i, "D")
-		| Ast.IdReal32   : ok := Strings.CopyCharsNull(name, i, "F")
-		| Ast.IdPointer  : ok := Strings.CopyCharsNull(name, i, "R")
-
-		| Ast.IdArray    : ok := Strings.CopyCharsNull(name, i, "A")
-		| Ast.IdRecord   : ok := Strings.CopyCharsNull(name, i, "L")
-		| Ast.IdProcType : ok := Strings.CopyCharsNull(name, i, "P")
-		END
-		RETURN ok
-	END Type;
-
-	PROCEDURE Generate(name: ARRAY OF CHAR;
+	PROCEDURE Generate(VAR name: Strings.String;
 	                   proc: Ast.ProcType; prov: ProcNameProvider): File.Out;
-	RETURN
-		GenerateProcType(name, proc,
+	VAR out: File.Out;
+	BEGIN
+		IF JavaStoreProcTypes.GenerateName(prov.store, proc, name) THEN
+			out := GenerateProcType(name, proc,
 		                 prov.dir, prov.dirLen,
 		                 prov.javac, prov.usejavac)
+		ELSE
+			out := NIL
+		END
+		RETURN out
 	END Generate;
-BEGIN
-	i := 0;
-	IF proc.type = NIL THEN
-		ok := Strings.CopyCharsNull(name, i, "V")
-	ELSE
-		ok := Type(name, i, proc.type)
-	END;
-	p := proc.params;
-	WHILE (p # NIL) & ok DO
-		ok := Type(name, i, p.type);
-		p := p.next
-	END;
-	ok := ok & Strings.CopyCharsNull(name, i, "_proc")
 
 	RETURN Generate(name, proc, prov(ProcNameProvider))
 END ProvideProcTypeName;
@@ -702,7 +698,11 @@ PROCEDURE ProviderProcTypeNameNew(): ProcNameProvider;
 VAR prov: ProcNameProvider;
 BEGIN
 	NEW(prov);
-	GeneratorJava.ProviderProcTypeNameInit(prov, ProvideProcTypeName)
+	IF (prov # NIL) & JavaStoreProcTypes.New(prov.store) THEN
+		GeneratorJava.ProviderProcTypeNameInit(prov, ProvideProcTypeName)
+	ELSE
+		prov := NIL
+	END
 	RETURN prov
 END ProviderProcTypeNameNew;
 
@@ -766,7 +766,8 @@ BEGIN
 END GenerateJava;
 
 PROCEDURE GenerateThroughJava(res: INTEGER; VAR args: Cli.Args;
-                              module: Ast.Module; call: Ast.Statement): INTEGER;
+                              module: Ast.Module; call: Ast.Statement;
+                              VAR listener: V.Base): INTEGER;
 VAR opt: GeneratorJava.Options;
     javac: JavaComp.Compiler;
     ret: INTEGER;
@@ -790,13 +791,14 @@ VAR opt: GeneratorJava.Options;
 	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
 	                prov: ProcNameProvider;
 	                opt: GeneratorJava.Options;
-	                VAR outJava, mainClass: ARRAY OF CHAR): INTEGER;
+	                VAR outJava, mainClass: ARRAY OF CHAR;
+	                VAR listener: V.Base): INTEGER;
 	VAR ret: INTEGER;
 	    i, nameLen, dirsLen, outJavaLen: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
 	BEGIN
-		ok := GetTempOut(outJava, outJavaLen, m.name, args.tmp);
+		ok := GetTempOut(outJava, outJavaLen, m.name, args.tmp, listener);
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
@@ -886,7 +888,6 @@ BEGIN
 	opt := GeneratorJava.DefaultOptions();
 	SetOptions(opt, args);
 	ASSERT(JavaComp.Set(javac, "javac"));
-	DEC(args.resPathLen);
 
 	CASE res OF
 	  Cli.ResultJava:
@@ -905,7 +906,7 @@ BEGIN
 		IF call = NIL THEN
 			call := Ast.NopNew()
 		END;
-		ret := Class(module, args, call, prov, opt, out, mainClass);
+		ret := Class(module, args, call, prov, opt, out, mainClass, listener);
 		IF (res = Cli.ResultRunJava) & (ret = ErrNo) THEN
 			ret := Run(out, mainClass, args.arg)
 		END;
@@ -918,7 +919,7 @@ BEGIN
 	RETURN ret
 END GenerateThroughJava;
 
-PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args): INTEGER;
+PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args; VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
     mp: ModuleProvider;
     module: Ast.Module;
@@ -950,11 +951,12 @@ BEGIN
 			ret := ErrParse;
 			Message.AstError(ret); Message.Ln
 		ELSIF res IN Cli.ThroughJava THEN
+			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			AstTransform.Do(module, tranOpt);
-			ret := GenerateThroughJava(res, args, module, call)
+			ret := GenerateThroughJava(res, args, module, call, listener)
 		ELSE
-			ret := GenerateThroughC(res, args, module, call)
+			ret := GenerateThroughC(res, args, module, call, listener)
 		END
 	END;
 	IF mp.modules.last # NIL THEN
@@ -969,12 +971,12 @@ BEGIN
 	Message.Usage(TRUE)
 END Help;
 
-PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER): BOOLEAN;
+PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER; VAR listener: V.Base): BOOLEAN;
 BEGIN
 	IF ret = Cli.CmdHelp THEN
 		Help
 	ELSE
-		ret := Translate(ret, args)
+		ret := Translate(ret, args, listener)
 	END
 	RETURN 0 <= ret
 END Handle;
@@ -982,11 +984,13 @@ END Handle;
 PROCEDURE Start*;
 VAR ret: INTEGER;
     args: Cli.Args;
+    nothing: V.Base;
 BEGIN
 	Out.Open;
 	Log.Turn(FALSE);
 
-	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret) THEN
+	V.Init(nothing);
+	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret, nothing) THEN
 		CLI.SetExitCode(Exec.Ok + 1);
 		IF ret # ErrParse THEN
 			Message.CliError(ret)

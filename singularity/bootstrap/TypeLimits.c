@@ -7,10 +7,6 @@
 
 #include "TypeLimits.h"
 
-extern o7_bool TypeLimits_IsNan(double r) {
-	return r != r;
-}
-
 extern o7_bool TypeLimits_InByteRange(int v) {
 	return (0 <= v) && (v <= TypeLimits_ByteMax_cnst);
 }

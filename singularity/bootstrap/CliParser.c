@@ -218,7 +218,6 @@ static int ToC(struct CliParser_Args *args, int ret) {
 	if (o7_cmp(CLI_count, arg) <= 0) {
 		ret = CliParser_ErrNotEnoughArgs_cnst;
 	} else if (!CliParser_GetParam(65536, (*args).src, &(*args).srcLen, &arg)) {
-		/* TODO */
 		ret = CliParser_ErrTooLongSourceName_cnst;
 	} else {
 		argDest = arg;
@@ -266,15 +265,11 @@ extern o7_bool CliParser_Parse(struct CliParser_Args *args, int *ret) {
 extern void CliParser_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
 		CLI_init();
-		Utf8_init();
 		StringStore_init();
 		Platform_init();
 		Log_init();
 		GeneratorC_init();
-
-
 	}
 	++initialized;
 }

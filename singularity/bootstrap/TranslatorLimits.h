@@ -19,64 +19,30 @@
 #if !defined(HEADER_GUARD_TranslatorLimits)
 #define HEADER_GUARD_TranslatorLimits 1
 
-
-/* TODO  - избыточная часть имени *)
-
-	(* Сканер *)
-	(* длина имени */
 #define TranslatorLimits_LenName_cnst 63
-/* длина содержимого строки, не включая завершающего 0 */
 #define TranslatorLimits_LenString_cnst 255
-/* длина строкового представления числа */
 #define TranslatorLimits_LenNumber_cnst 63
-/* количество пустых символов между значащими */
 #define TranslatorLimits_BlankChars_cnst 1023
-/* Модуль *)
-	(* Кол-во ипортированных модулей */
 #define TranslatorLimits_ImportedModules_cnst 127
-/* Кол-во именованных постоянных */
 #define TranslatorLimits_GlobalConsts_cnst 2047
-/* Кол-во типов */
 #define TranslatorLimits_GlobalTypes_cnst 127
-/* Кол-во переменных */
 #define TranslatorLimits_GlobalVars_cnst 255
-/* Кол-во переменных, перечисленных через запятую */
 #define TranslatorLimits_VarsSeparatedByComa_cnst 31
-/* Кол-во процедур */
 #define TranslatorLimits_GlobalProcedures_cnst 1023
-/* Количество символов исходного кода модуля в Utf8 */
 #define TranslatorLimits_ModuleTextSize_cnst 262143
-/* Типы *)
-	(* Размерность массива */
 #define TranslatorLimits_ArrayDimension_cnst 7
-/* Количество переменных в структуре */
 #define TranslatorLimits_VarsInRecord_cnst 255
-/* Глубина расширения структур */
 #define TranslatorLimits_RecordExt_cnst 15
-/* Процедура *)
-	(* Количество параметров */
 #define TranslatorLimits_Params_cnst 15
-/* Количество именованных постоянных */
 #define TranslatorLimits_Consts_cnst 255
-/* Количество переменных */
 #define TranslatorLimits_Vars_cnst 31
-/* Количество линейно вложенных подпрограмм */
 #define TranslatorLimits_Procedures_cnst 31
-/* Глубина вложенности подпрограмм */
 #define TranslatorLimits_DeepProcedures_cnst 7
-/* Количество линейно вложенных операторов */
 #define TranslatorLimits_Statements_cnst 255
-/* Вложенность операторов */
 #define TranslatorLimits_DeepStatements_cnst 15
-/* Веток IF {ELSIF} ELSE */
 #define TranslatorLimits_IfBranches_cnst 255
-/* Выражения *)
-	(* Цепочка селекторов */
 #define TranslatorLimits_Selectors_cnst 63
-/* Количество подвыражений в одной сумме */
 #define TranslatorLimits_TermsInSum_cnst 255
-/* Количество подвыражений в умножении */
 #define TranslatorLimits_FactorsInTerm_cnst 255
 
-static inline void TranslatorLimits_init(void) { ; }
 #endif

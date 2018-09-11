@@ -22,6 +22,6 @@ extern void WindowsRand_Close(void);
 extern o7_cbool WindowsRand_Read(o7_int_t len, char unsigned buf[O7_VLA(len)],
                                  o7_int_t ofs, o7_int_t count);
 
-static inline void WindowsRand_init(void) { ; }
-static inline void WindowsRand_done(void) { ; }
+O7_ALWAYS_INLINE void WindowsRand_init(void) { ; }
+O7_ALWAYS_INLINE void WindowsRand_done(void) { ; }
 #endif

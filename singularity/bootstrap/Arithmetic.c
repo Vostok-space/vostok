@@ -47,28 +47,3 @@ extern o7_bool Arithmetic_Mul(int *prod, int m1, int m2) {
 	}
 	return norm;
 }
-
-/* Для полноты картины */
-extern o7_bool Arithmetic_Div(int *frac, int n, int d) {
-	if (d != 0) {
-		(*frac) = o7_div(n, d);
-	}
-	return d != 0;
-}
-
-extern o7_bool Arithmetic_Mod(int *mod, int n, int d) {
-	if (d != 0) {
-		(*mod) = o7_mod(n, d);
-	}
-	return d != 0;
-}
-
-extern void Arithmetic_init(void) {
-	static int initialized = 0;
-	if (0 == initialized) {
-		TypeLimits_init();
-
-	}
-	++initialized;
-}
-

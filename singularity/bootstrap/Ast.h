@@ -935,8 +935,6 @@ extern int Ast_CaseNew(struct Ast_Case_s **case_, struct Ast_RExpression *expr);
 
 extern int Ast_CaseElseSet(struct Ast_Case_s *case_, struct Ast_RStatement *else_);
 
-extern int Ast_CaseRangeSearch(struct Ast_Case_s *case_, int int_);
-
 extern int Ast_CaseLabelNew(struct Ast_CaseLabel_s **label, int id, int value_);
 
 extern int Ast_CaseLabelQualNew(struct Ast_CaseLabel_s **label, struct Ast_RDeclaration *decl);

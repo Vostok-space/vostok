@@ -173,12 +173,7 @@ extern void TextGenerator_Real(struct TextGenerator_Out *gen, double real) {
 extern void TextGenerator_init(void) {
 	static int initialized = 0;
 	if (0 == initialized) {
-		V_init();
-		Utf8_init();
 		StringStore_init();
-		VDataStream_init();
-
-
 	}
 	++initialized;
 }

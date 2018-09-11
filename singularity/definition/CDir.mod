@@ -1,4 +1,4 @@
-(* Copyright 2017-2018 ComdivByZero
+(* Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,22 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE CDir;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Java*: BOOLEAN;
+  PROCEDURE SetCurrent*(path: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  BEGIN
+    ASSERT((0 <= ofs) & (ofs < LEN(path)))
+  RETURN
+    FALSE
+  END SetCurrent;
 
-BEGIN
-  Posix   := FALSE;
-  Linux   := FALSE;
-  Bsd     := FALSE;
-  Dos     := FALSE;
-  Windows := FALSE;
-  Java    := FALSE
-END Platform.
+  PROCEDURE GetCurrent*(VAR path: ARRAY OF CHAR; VAR ofs: INTEGER): BOOLEAN;
+  BEGIN
+    ASSERT((0 <= ofs) & (ofs < LEN(path)))
+  RETURN
+    FALSE
+  END GetCurrent;
+
+END CDir.

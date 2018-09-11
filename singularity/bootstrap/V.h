@@ -98,5 +98,4 @@ extern void V_SetDo(struct V_Base *base, V_Handle do_);
 
 extern o7_bool V_Do(struct V_Base *handler, struct V_Message *message);
 
-extern void V_init(void);
 #endif

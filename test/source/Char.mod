@@ -14,8 +14,12 @@ BEGIN
 	c := CHR(C(CHR(ORD(c) * 1)));
 	c := CHR(C(CHR(255 - 25)));
 	c := CHR(255);
+	ASSERT(C("'") = 27H);
+	ASSERT(C(" ") = 20H);
 	ASSERT(255 = ORD(c));
-	ASSERT(249 < ORD(c) - 5)
+	ASSERT(249 < ORD(c) - 5);
+	ASSERT(" " < c);
+	ASSERT(" " <= c)
 END Go;
 
 END Char.

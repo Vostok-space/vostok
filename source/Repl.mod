@@ -19,12 +19,13 @@ MODULE Repl;
   IMPORT Out, Cli := CliParser, EditLine, Message, Translator, Utf8;
 
   PROCEDURE Loop(VAR args: Cli.Args);
-  VAR err: INTEGER;
+  VAR err: INTEGER; nothing: V.Base;
   BEGIN
     args.script := TRUE;
+    V.Init(nothing);
     WHILE EditLine.Read("O7: ", args.src) DO
       IF args.src[0] # Utf8.Null THEN
-        err := Translator.Translate(Cli.ResultRun, args);
+        err := Translator.Translate(Cli.ResultRun, args, nothing);
         IF (err # Translator.ErrNo) & (err # Translator.ErrParse) THEN
           Message.CliError(err)
         END

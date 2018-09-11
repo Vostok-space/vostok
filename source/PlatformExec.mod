@@ -106,7 +106,7 @@ PROCEDURE Quote(VAR d: ARRAY OF CHAR; VAR i: INTEGER): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
 	ok := i < LEN(d) - 1;
-	IF ok THEN
+	IF ok & ~Platform.Java THEN
 		IF Platform.Posix THEN
 			d[i] := "'"
 		ELSE ASSERT(Platform.Windows);
@@ -129,7 +129,8 @@ BEGIN
 	V.Init(c);
 	c.parts := FALSE;
 	c.len := 0;
-	IF name[0] = Utf8.Null THEN
+	(* TODO *)
+	IF (LEN(name) < 1) OR (name[0] = Utf8.Null) THEN
 		c.buf[c.len] := Utf8.Null;
 		ok := TRUE
 	ELSIF Platform.Posix THEN

@@ -544,7 +544,7 @@ BEGIN
 	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
 		l := p.l;
 		Scan(p);
-		IF p.l # Scanner.Or THEN
+		IF l # Scanner.Or THEN
 			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, FALSE)))
 		ELSE
 			Ast.TurnIf(ds);
@@ -681,14 +681,14 @@ VAR var: Ast.Declaration;
 	typ: Ast.Type;
 
 	PROCEDURE Name(VAR p: Parser; ds: Ast.Declarations);
-	VAR begin, end, emptyLines: INTEGER;
+	VAR begin, end, emptyLines: INTEGER; v: Ast.Var;
 	BEGIN
 		emptyLines := p.s.emptyLines;
 		ExpectIdent(p, begin, end, ErrExpectIdent);
-		CheckAst(p, Ast.VarAdd(ds, p.s.buf, begin, end));
-		ds.end.emptyLines := emptyLines;
-		DeclComment(p, ds.end);
-		Mark(p, ds.end)
+		CheckAst(p, Ast.VarAdd(v, ds, p.s.buf, begin, end));
+		v.emptyLines := emptyLines;
+		DeclComment(p, v);
+		Mark(p, v)
 	END Name;
 BEGIN
 	Name(p, dsAdd);
@@ -1501,7 +1501,8 @@ BEGIN
 	p.module := Ast.ScriptNew(prov);
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
-	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL))
+	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL));
+	CheckAst(p, Ast.ModuleEnd(p.module))
 	RETURN p.module
 END Script;
 
