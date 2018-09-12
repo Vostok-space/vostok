@@ -24,13 +24,14 @@ MODULE make;
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
  BEGIN
-    i := 0;
-    WHILE (i < LEN(n) - 1) & (i < LEN(nwe)) & (nwe[i] # ".") DO
-      n[i] := nwe[i];
-      INC(i)
-    END;
-    n[i] := 0X
-    RETURN nwe[i] = "."
+   i := 0;
+   WHILE (i < LEN(n) - 1) & (i < LEN(nwe)) & (nwe[i] # ".") DO
+     n[i] := nwe[i];
+     INC(i)
+   END;
+   n[i] := 0X
+ RETURN
+   nwe[i] = "."
  END CopyFileName;
 
  PROCEDURE Execute(code: Exec.Code; name: ARRAY OF CHAR): INTEGER;
@@ -42,7 +43,8 @@ MODULE make;
      Log.Str("Failed "); Log.StrLn(name);
      Log.Str("error code = "); Log.Int(ret); Log.Ln
    END
-   RETURN ret
+ RETURN
+   ret
  END Execute;
 
  PROCEDURE BuildBy(o7c, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
@@ -71,7 +73,8 @@ MODULE make;
     & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
 
     & (0 = Execute(code, "Build"))
-   RETURN ok
+ RETURN
+   ok
  END BuildBy;
 
  PROCEDURE Build*;
@@ -94,7 +97,8 @@ MODULE make;
    ELSE
      ret := Exec.Add(code, "run", 0)
    END
-   RETURN ret
+ RETURN
+   ret
  END AddRun;
 
  PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR;
@@ -120,20 +124,23 @@ MODULE make;
             )
            & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
            & AddRun(code, class)
-           & CopyFileName(c, n)
-           & ( example & Exec.Add(code, c, 0)
+         );
+         IF CopyFileName(c, n) THEN
+           ASSERT(
+             ( example & Exec.Add(code, c, 0)
             OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
              )
-           & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
-           & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
-           & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
-           & Exec.Add(code, "-cyrillic", 0)
-           & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
-         );
-         IF Execute(code, n) = 0 THEN
-           INC(pass)
-         ELSE
-           INC(fail)
+             & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
+             & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
+             & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
+             & Exec.Add(code, "-cyrillic", 0)
+             & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
+           );
+           IF Execute(code, n) = 0 THEN
+             INC(pass)
+           ELSE
+             INC(fail)
+           END
          END
        END
      END;
@@ -143,7 +150,8 @@ MODULE make;
      Log.Str("Failed: "); Log.Int(fail); Log.Ln;
      ASSERT(Dir.Close(dir))
    END
-   RETURN ok
+ RETURN
+   ok
  END TestBy;
 
  PROCEDURE Test*;
