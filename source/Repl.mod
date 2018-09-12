@@ -16,7 +16,7 @@
  *)
 MODULE Repl;
 
-  IMPORT Out, Cli := CliParser, EditLine, Message, Translator, Utf8;
+  IMPORT V, Out, Cli := CliParser, EditLine, Message, Translator, Utf8;
 
   PROCEDURE Loop(VAR args: Cli.Args);
   VAR err: INTEGER; nothing: V.Base;
