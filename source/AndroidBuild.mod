@@ -325,7 +325,7 @@ TYPE
 
   PROCEDURE InstallTools*;
   BEGIN
-    Sn("To install tools for build Android applications, run in command line:");
+    Sn("To install tools for build Android applications in Ubuntu 18.04, run in shell:");
     Out.String("  /usr/bin/sudo apt install default-jdk android-sdk");
     Sn(" google-android-platform-19-installer apksigner")
   END InstallTools;

@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+(* Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,31 +11,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-package o7;
+ *)
+MODULE AndroidGraphPath;
 
-import o7.O7;
+  TYPE
+    T* = POINTER TO RECORD END;
 
-public final class AndroidPaint {
+  PROCEDURE New*(): T;
+  RETURN
+    NIL
+  END New;
 
-public static class T extends android.graphics.Paint {}
+  PROCEDURE MoveTo*(p: T; x, y: REAL);
+  BEGIN
+    ASSERT(FALSE)
+  END MoveTo;
 
-public static T New() {
-	return new T();
-}
+  PROCEDURE LineTo*(p: T; x, y: REAL);
+  BEGIN
+    ASSERT(FALSE)
+  END LineTo;
 
-public static void SetColor(T p, int color) {
-	O7.asrt((0 <= color) && (color < 0x100_0000));
-	p.setColor(color | 0xFF00_0000);
-}
-
-public static void SetAlpha(T p, int value) {
-	O7.asrt((0 <= value) && (value < 0x100));
-	p.setAlpha(value);
-}
-
-public static void SetStyleFill(T p) {
-	p.setStyle(android.graphics.Paint.Style.FILL);
-}
-
-}
+END AndroidGraphPath.

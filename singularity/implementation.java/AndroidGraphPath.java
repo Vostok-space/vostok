@@ -16,26 +16,20 @@ package o7;
 
 import o7.O7;
 
-public final class AndroidPaint {
+public final class AndroidGraphPath {
 
-public static class T extends android.graphics.Paint {}
+public static class T extends android.graphics.Path { }
 
 public static T New() {
 	return new T();
 }
 
-public static void SetColor(T p, int color) {
-	O7.asrt((0 <= color) && (color < 0x100_0000));
-	p.setColor(color | 0xFF00_0000);
+public static void MoveTo(T p, double x, double y) {
+	p.moveTo((float)x, (float)y);
 }
 
-public static void SetAlpha(T p, int value) {
-	O7.asrt((0 <= value) && (value < 0x100));
-	p.setAlpha(value);
-}
-
-public static void SetStyleFill(T p) {
-	p.setStyle(android.graphics.Paint.Style.FILL);
+public static void LineTo(T p, double x, double y) {
+	p.lineTo((float)x, (float)y);
 }
 
 }

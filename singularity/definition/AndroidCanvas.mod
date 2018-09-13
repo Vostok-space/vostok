@@ -15,7 +15,7 @@
 MODULE AndroidCanvas;
 
   IMPORT
-    Paint := AndroidPaint;
+    Paint := AndroidPaint, GPath := AndroidGraphPath;
 
   TYPE
     T* = POINTER TO RECORD END;
@@ -29,6 +29,11 @@ MODULE AndroidCanvas;
   BEGIN
     ASSERT(FALSE)
   END Rect;
+
+  PROCEDURE Path*(cnv: T; path: GPath.T; paint: Paint.T);
+  BEGIN
+    ASSERT(FALSE)
+  END Path;
 
   PROCEDURE Width*(cnv: T): INTEGER;
   BEGIN

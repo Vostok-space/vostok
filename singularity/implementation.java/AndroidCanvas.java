@@ -49,6 +49,10 @@ Rect(T cnv, double left, double top, double right, double bottom,
 	cnv.c.drawRect((float)left, (float)top, (float)right, (float)bottom, paint);
 }
 
+public static void Path(T cnv, o7.AndroidGraphPath.T path, o7.AndroidPaint.T paint) {
+	cnv.c.drawPath(path, paint);
+}
+
 public static int Width (T cnv) { return cnv.c.getWidth();  }
 public static int Height(T cnv) { return cnv.c.getHeight(); }
 

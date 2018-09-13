@@ -34,4 +34,9 @@ MODULE AndroidPaint;
     ASSERT(FALSE)
   END SetOpacity;
 
+  PROCEDURE SetStyleFill*(p: T);
+  BEGIN
+    ASSERT(FALSE)
+  END SetStyleFill;
+
 END AndroidPaint.
