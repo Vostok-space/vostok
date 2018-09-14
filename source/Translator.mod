@@ -444,10 +444,11 @@ BEGIN
 			END
 		END;
 		IF ok THEN
+			i := 0;
+			ok := Strings.CopyCharsNull(tmp, i, dirOut);
 			saveTemp := V.Do(listener, tmpCreated);
-			IF saveTemp THEN
-				i := 0;
-				ok := Strings.CopyCharsNull(tmp, i, dirOut)
+			IF ~saveTemp THEN
+				tmp[0] := Utf8.Null
 			END
 		END
 	END

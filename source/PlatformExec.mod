@@ -129,8 +129,7 @@ BEGIN
 	V.Init(c);
 	c.parts := FALSE;
 	c.len := 0;
-	(* TODO *)
-	IF (LEN(name) < 1) OR (name[0] = Utf8.Null) THEN
+	IF name = "" THEN
 		c.buf[c.len] := Utf8.Null;
 		ok := TRUE
 	ELSIF Platform.Posix THEN
