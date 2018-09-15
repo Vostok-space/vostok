@@ -25,11 +25,11 @@
 	typedef int handle_t;
 	struct _finddata_t { char name[1]; };
 
-	O7_INLINE handle_t findfirst(char const *filespec, struct _finddata_t *fileinfo)
+	O7_INLINE handle_t _findfirst(char const *filespec, struct _finddata_t *fileinfo)
 	{ (void)filespec; (void)fileinfo; return -1; }
-	O7_INLINE int findnext(handle_t handle, struct _finddata_t *fileinfo)
+	O7_INLINE int _findnext(handle_t handle, struct _finddata_t *fileinfo)
 	{ (void)handle; (void)fileinfo; return -1; }
-	O7_INLINE int findclose(handle_t handle) { (void)handle; return -1; }
+	O7_INLINE int _findclose(handle_t handle) { (void)handle; return -1; }
 #endif
 
 #include "WindowsDir.h"
@@ -54,7 +54,7 @@ extern o7_bool WindowsDir_FindFirst(WindowsDir_FindId *id, WindowsDir_FindData *
 	o7_cbool ret;
 	assert((0 <= ofs) && (ofs < len - 1));
 	if (O7_NEW(id, WindowsDir_FindId_s) && O7_NEW(d, WindowsDir_FindData_s)) {
-		(*id)->h = findfirst((char *)(filespec + ofs), &(*d)->d);
+		(*id)->h = _findfirst((char *)(filespec + ofs), &(*d)->d);
 	}
 	if ((NULL == *id) || (NULL == *d) || (-1 == (*id)->h)) {
 		O7_NULL(id);
@@ -68,7 +68,7 @@ extern o7_bool WindowsDir_FindNext(WindowsDir_FindData *d, WindowsDir_FindId id)
 	assert(id != NULL);
 
 	if (O7_NEW(d, WindowsDir_FindData_s)
-	 && (0 != findnext(id->h, &(*d)->d)))
+	 && (0 != _findnext(id->h, &(*d)->d)))
 	{
 		O7_NULL(d);
 	}
@@ -79,7 +79,7 @@ extern o7_bool WindowsDir_Close(WindowsDir_FindId *id) {
 	o7_cbool ret;
 	ret = (*id == NULL);
 	if (!ret) {
-		ret = (0 == findclose((*id)->h));
+		ret = (0 == _findclose((*id)->h));
 		if (ret) {
 			O7_NULL(id);
 		}
