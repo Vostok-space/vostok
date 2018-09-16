@@ -3,7 +3,7 @@
 @cl >NUL
 @IF %ERRORLEVEL%==0 GOTO FOUND
 
-@ECHO can not found C compiler: vc
+@ECHO can not found C compiler: cl
 @EXIT
 
 :FOUND

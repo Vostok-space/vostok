@@ -46,7 +46,7 @@ MODULE CCompilerInterface;
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
-      ok := Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
+      ok := Exec.Init(exec, c) & ((ver = "") OR Exec.Add(exec, ver, 0))
           & ((Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
           OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
             )
@@ -75,6 +75,7 @@ MODULE CCompilerInterface;
    OR Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
 
    OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
+   OR Platform.Windows & Test(c, Unknown, "cl.exe",  "")
       ) & (~forRun OR Exec.AddClean(c.cmd, " -w"))
   END Search;
 
