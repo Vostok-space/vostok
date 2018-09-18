@@ -22,6 +22,11 @@ MODULE AndroidGraphPath;
     NIL
   END New;
 
+  PROCEDURE Reset*(p: T);
+  BEGIN
+    ASSERT(FALSE)
+  END Reset;
+
   PROCEDURE MoveTo*(p: T; x, y: REAL);
   BEGIN
     ASSERT(FALSE)

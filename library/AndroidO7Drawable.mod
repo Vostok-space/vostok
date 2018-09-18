@@ -46,6 +46,21 @@ TYPE
     END
   END SetDrawer;
 
+  PROCEDURE Width*(): INTEGER;
+  RETURN
+    Activity.GetViewWidth()
+  END Width;
+
+  PROCEDURE Height*(): INTEGER;
+  RETURN
+    Activity.GetViewHeight()
+  END Height;
+
+  PROCEDURE Invalidate*;
+  BEGIN
+    Activity.Invalidate
+  END Invalidate;
+
 BEGIN
   drawer  := Nothing;
   context := NIL

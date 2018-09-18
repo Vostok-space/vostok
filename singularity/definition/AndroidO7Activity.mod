@@ -17,4 +17,23 @@ MODULE AndroidO7Activity;
   PROCEDURE SetDrawable*;
   END SetDrawable;
 
+  PROCEDURE GetViewWidth*(): INTEGER;
+  BEGIN
+    ASSERT(FALSE)
+  RETURN
+    0
+  END GetViewWidth;
+
+  PROCEDURE GetViewHeight*(): INTEGER;
+  BEGIN
+    ASSERT(FALSE)
+  RETURN
+    0
+  END GetViewHeight;
+
+  PROCEDURE Invalidate*;
+  BEGIN
+    ASSERT(FALSE)
+  END Invalidate;
+
 END AndroidO7Activity.

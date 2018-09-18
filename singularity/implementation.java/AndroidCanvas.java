@@ -23,7 +23,7 @@ public static class T {
 	public final android.graphics.Canvas c;
 
 	public T() {
-		this.c = null;
+		this.c = new android.graphics.Canvas();
 	}
 	T(final android.graphics.Canvas c) {
 		this.c = c;
@@ -53,7 +53,10 @@ public static void Path(T cnv, o7.AndroidGraphPath.T path, o7.AndroidPaint.T pai
 	cnv.c.drawPath(path, paint);
 }
 
-public static int Width (T cnv) { return cnv.c.getWidth();  }
-public static int Height(T cnv) { return cnv.c.getHeight(); }
+public static int Width  (T cnv) { return cnv.c.getWidth();  }
+public static int Height (T cnv) { return cnv.c.getHeight(); }
+public static int Density(T cnv) { return cnv.c.getDensity();}
+
+public static void SetDensity(T cnv, int density) { cnv.c.setDensity(density); }
 
 }

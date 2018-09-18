@@ -24,6 +24,10 @@ public static T New() {
 	return new T();
 }
 
+public static void Reset(T p) {
+	p.reset();
+}
+
 public static void MoveTo(T p, double x, double y) {
 	p.moveTo((float)x, (float)y);
 }

@@ -49,4 +49,17 @@ MODULE AndroidCanvas;
     0
   END Height;
 
+  PROCEDURE Density*(cnv: T): INTEGER;
+  BEGIN
+    ASSERT(FALSE)
+  RETURN
+    0
+  END Density;
+
+  PROCEDURE SetDensity*(cnv: T; density: INTEGER);
+  BEGIN
+    ASSERT(FALSE)
+  END SetDensity;
+
+
 END AndroidCanvas.

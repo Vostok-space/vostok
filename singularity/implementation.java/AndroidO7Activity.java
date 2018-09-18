@@ -16,6 +16,8 @@ package o7;
 
 public final class AndroidO7Activity {
 
+private static android.widget.ImageView image_view = null;
+
 private static class Draw extends android.graphics.drawable.Drawable {
 	private o7.AndroidCanvas.T wrapper;
 	@Override
@@ -34,14 +36,42 @@ private static class Draw extends android.graphics.drawable.Drawable {
 }
 
 private static android.widget.ImageView newImageView() {
-	android.widget.ImageView iv;
+	final android.widget.ImageView iv;
+	final Draw draw;
+
 	iv = new android.widget.ImageView(o7.android.Activity.act);
-	iv.setImageDrawable(new Draw());
+	draw = new Draw();
+	iv.setImageDrawable(draw);
+	draw.setCallback(new android.graphics.drawable.Drawable.Callback() {
+		@Override
+		public void invalidateDrawable(android.graphics.drawable.Drawable who) {
+			iv.invalidate();
+		}
+		@Override
+		public void scheduleDrawable(android.graphics.drawable.Drawable who,
+		                             java.lang.Runnable what, long when) {}
+		@Override
+		public void unscheduleDrawable(android.graphics.drawable.Drawable who,
+		                               java.lang.Runnable what) {}
+	});
 	return iv;
 }
 
 public static void SetDrawable() {
-	o7.android.Activity.act.setContentView(newImageView());
+	image_view = newImageView();
+	o7.android.Activity.act.setContentView(image_view);
+}
+
+public static void Invalidate() {
+	image_view.invalidate();
+}
+
+public static int GetViewWidth() {
+	return image_view.getWidth();
+}
+
+public static int GetViewHeight() {
+	return image_view.getHeight();
 }
 
 }
