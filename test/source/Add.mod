@@ -1,6 +1,9 @@
 MODULE Add;
 
-CONST MAX = 2147483647;
+IMPORT Out;
+
+CONST MAX* = 2147483647;
+
 
 (* комментарий *)
 PROCEDURE Go*;
@@ -16,5 +19,10 @@ BEGIN
 	v := MAX;
 	ASSERT(v + 0 > 0)
 END Go;
+
+PROCEDURE Add*(a, b: INTEGER);
+BEGIN
+	Out.Int(a + b, 0); Out.Ln
+END Add;
 
 END Add.

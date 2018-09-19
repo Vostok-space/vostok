@@ -445,10 +445,14 @@ BEGIN
 		END;
 		IF ok THEN
 			i := 0;
-			ok := Strings.CopyCharsNull(tmp, i, dirOut);
-			saveTemp := V.Do(listener, tmpCreated);
-			IF ~saveTemp THEN
-				tmp[0] := Utf8.Null
+			IF tmp # "" THEN
+				saveTemp := V.Do(listener, tmpCreated)
+			ELSE
+				ok := Strings.CopyCharsNull(tmp, i, dirOut);
+				saveTemp := V.Do(listener, tmpCreated);
+				IF ~saveTemp THEN
+					tmp[0] := Utf8.Null
+				END
 			END
 		END
 	END
