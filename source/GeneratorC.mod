@@ -202,19 +202,23 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
     i: INTEGER;
     it: Strings.Iterator;
 BEGIN
-	IF (gen.opt.identEnc = IdentEncSame) OR (Strings.GetChar(ident, 0) < 80X)
-	THEN
-		Text.String(gen, ident)
-	ELSE
-		ASSERT(Strings.GetIter(it, ident, 0));
-		i := 0;
-		IF gen.opt.identEnc = IdentEncEscUnicode THEN
-			Utf8Transform.Escape(buf, i, it)
-		ELSE ASSERT(gen.opt.identEnc = IdentEncTranslit);
-			Utf8Transform.Transliterate(buf, i, it)
-		END;
-		Text.Data(gen, buf, 0, i)
-	END
+	ASSERT(Strings.GetIter(it, ident, 0));
+	i := 0;
+	IF (gen.opt.identEnc = IdentEncSame) OR (it.char < 80X) THEN
+		REPEAT
+			buf[i] := it.char;
+			INC(i);
+			IF it.char = "_" THEN
+				buf[i] := "_";
+				INC(i)
+			END
+		UNTIL ~Strings.IterNext(it)
+	ELSIF gen.opt.identEnc = IdentEncEscUnicode THEN
+		Utf8Transform.Escape(buf, i, it)
+	ELSE ASSERT(gen.opt.identEnc = IdentEncTranslit);
+		Utf8Transform.Transliterate(buf, i, it)
+	END;
+	Text.Data(gen, buf, 0, i)
 END Ident;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);

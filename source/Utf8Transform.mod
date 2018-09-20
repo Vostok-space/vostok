@@ -40,9 +40,13 @@ MODULE Utf8Transform;
   BEGIN
     REPEAT
       CASE it.char OF
-        "0" .. "9", "_":
+        "0" .. "9":
         buf[i] := it.char;
         INC(i)
+      | "_":
+        buf[i    ] := "_";
+        buf[i + 1] := "_";
+        INC(i, 2)
       | 0D0X, 0D1X:
         u := ORD(it.char) MOD 32;
         ASSERT(Strings.IterNext(it));
@@ -62,9 +66,13 @@ MODULE Utf8Transform;
     ASSERT((0 <= i) & (i < LEN(buf)));
     REPEAT
       CASE it.char OF
-        "0" .. "9", "_":
+        "0" .. "9":
         buf[i] := it.char;
         INC(i)
+      | "_":
+        buf[i    ] := "_";
+        buf[i + 1] := "_";
+        INC(i, 2)
       | 0D0X:
         ASSERT(Strings.IterNext(it));
         CASE ORD(it.char) - 90H + 15 OF
