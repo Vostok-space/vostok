@@ -16,16 +16,6 @@ package o7;
 
 import o7.O7;
 
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.FileSystems;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.file.StandardOpenOption;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 public final class CFiles {
 
 public static final int KiB = 1024,
@@ -33,9 +23,9 @@ public static final int KiB = 1024,
                         GiB = 1024 * MiB;
 
 public static class File {
-    FileChannel  fc;
-    InputStream  is;
-    OutputStream os;
+    java.nio.channels.FileChannel fc;
+    java.io.InputStream           is;
+    java.io.OutputStream          os;
 }
 
 public static File in_ = null,
@@ -44,24 +34,20 @@ public static File in_ = null,
 
 public static final File Open(final byte[] name, final int ofs, final byte[] mode) {
     File f;
-    FileChannel fc;
-    Path p;
-    java.util.HashSet<java.nio.file.OpenOption> opts = new java.util.HashSet<>();
+    java.nio.channels.FileChannel fc;
+    java.lang.String smode;
 
-    p = FileSystems.getDefault().getPath(O7.string(name));
+    smode = "r";
     try {
         for (int i = 0; i < mode.length; i += 1) {
-            if (mode[i] == 'r') {
-                opts.add(StandardOpenOption.READ);
-            } else if (mode[i] == 'w') {
-                opts.add(StandardOpenOption.WRITE);
-                opts.add(StandardOpenOption.CREATE);
+            if (mode[i] == 'w') {
+                smode = "rw";
             }
         }
-        fc = FileChannel.open(p, opts);
+        fc = new java.io.RandomAccessFile(O7.string(name), smode).getChannel();
         f = new File();
         f.fc = fc;
-    } catch (Exception e) {
+    } catch (java.lang.Exception e) {
         f = null;
     }
     return f;
@@ -81,17 +67,17 @@ public static final void Close(final File[] file, final int file_i) {
             f.is.close();
             f.is = null;
         }
-    } catch (IOException e) {}
+    } catch (java.io.IOException e) {}
     file[file_i] = null;
 }
 
 public static final int
 Read(final File file, final byte[] buf, final int ofs, final int count) {
-    ByteBuffer bb;
+    java.nio.ByteBuffer bb;
     int read;
     try {
         if (file.fc != null) {
-            bb = ByteBuffer.wrap(buf, ofs, count);
+            bb = java.nio.ByteBuffer.wrap(buf, ofs, count);
             read = file.fc.read(bb);
         } else if (file.is != null) {
             file.is.read(buf, ofs, count);
@@ -99,7 +85,7 @@ Read(final File file, final byte[] buf, final int ofs, final int count) {
         } else {
             read = 0;
         }
-    } catch (IOException e) {
+    } catch (java.io.IOException e) {
         read = 0;
     }
     return read;
@@ -107,11 +93,11 @@ Read(final File file, final byte[] buf, final int ofs, final int count) {
 
 public static final int
 Write(final File file, final byte[] buf, final int ofs, final int count) {
-    ByteBuffer bb;
+    java.nio.ByteBuffer bb;
     int write;
     try {
         if (file.fc != null) {
-            bb = ByteBuffer.wrap(buf, ofs, count);
+            bb = java.nio.ByteBuffer.wrap(buf, ofs, count);
             write = file.fc.write(bb);
         } else if (file.os != null) {
             file.os.write(buf, ofs, count);
@@ -119,7 +105,7 @@ Write(final File file, final byte[] buf, final int ofs, final int count) {
         } else {
             write = 0;
         }
-    } catch (IOException e) {
+    } catch (java.io.IOException e) {
         write = 0;
     }
     return write;
@@ -156,7 +142,14 @@ public static final boolean Remove(byte[] name, int ofs) {
 }
 
 public static final boolean Exist(byte[] name, int ofs) {
-    return java.nio.file.Files.exists(java.nio.file.Paths.get(O7.string(name, ofs)));
+    boolean exist;
+    exist = true;
+    try {
+        new java.io.RandomAccessFile(O7.string(name, ofs), "r").close();
+    } catch (java.io.FileNotFoundException e) {
+        exist = false;
+    } catch (java.io.IOException e) {}
+    return exist;
 }
 
 static {
