@@ -63,7 +63,7 @@ MODULE Rocket;
 
     Paint.SetColor(paint, 0FF0000H);
     Star.Draw(cnv, paint, path, 5,
-              x0, y0 + size / 3.0, size / 20.0, size / 60.0, 0.0)
+              x0, y0 + size / 3.0, size / 20.0, size / 53.0, 0.0)
   END Draw;
 
   PROCEDURE Sky(cnv: Canvas.T; paint: Paint.T; stars: Stars);
@@ -112,11 +112,11 @@ MODULE Rocket;
 
     w := Drawable.Width();
     h := Drawable.Height();
-    IF ctx.paint = NIL THEN
+    IF ctx.paint # NIL THEN
+      MoveStars(ctx.stars, w, h)
+    ELSIF Rand.Open() THEN
       ctx.paint := Paint.New();
       InitStars(ctx.stars, w, h)
-    ELSE
-      MoveStars(ctx.stars, w, h)
     END;
 
     r := ctx.r;
@@ -129,7 +129,7 @@ MODULE Rocket;
       ctx.fr := 0.0 - ctx.fr
     END;
     Sky(cnv, ctx.paint, ctx.stars);
-    IF Rand.Int(df) THEN
+    IF (ctx.paint # NIL) & Rand.Int(df) THEN
       Draw(cnv, ctx.paint, ctx.path,
            FLT(w DIV 2) + r, 20.0, FLT(h) * 0.6, 0.0, ctx.fr,
            FLT(df MOD 32) / 200.)
@@ -137,12 +137,15 @@ MODULE Rocket;
     Drawable.Invalidate
   END Drawer;
 
-  PROCEDURE Destroyer(ctx: Drawable.Context);
+  PROCEDURE Destroyer(context: Drawable.Context);
+  VAR ctx: Context;
   BEGIN
+    ctx := context(Context);
+    ctx.paint := NIL;
     Rand.Close
   END Destroyer;
 
-  PROCEDURE Go*;
+  PROCEDURE Fly*;
   VAR ctx: Context;
   BEGIN
     IF Rand.Open() THEN
@@ -156,6 +159,6 @@ MODULE Rocket;
       Drawable.SetDrawer(Drawer, ctx);
       Drawable.SetDestroyer(Destroyer)
     END
-  END Go;
+  END Fly;
 
 END Rocket.

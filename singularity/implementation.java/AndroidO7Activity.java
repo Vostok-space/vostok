@@ -62,6 +62,10 @@ public static void SetDrawable() {
 	o7.android.Activity.act.setContentView(image_view);
 }
 
+public static void Destroy() {
+	o7.AndroidO7Drawable.Destroy();
+}
+
 public static void Invalidate() {
 	image_view.invalidate();
 }

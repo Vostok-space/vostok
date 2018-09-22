@@ -84,6 +84,7 @@ TYPE
         & W(f, "o7.script.main(new String[] {});")
         & W(f, "}")
         & W(f, "protected void onDestroy() {")
+        & W(f, "o7.AndroidO7Drawable.Destroy();")
         & W(f, "act = null;")
         & W(f, "super.onDestroy();")
         & W(f, "}")
