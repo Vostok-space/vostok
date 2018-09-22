@@ -18,8 +18,8 @@ import o7.O7;
 
 public final class Math {
 
-public static final double  pi = 3.14159265358979323846;
-public static final double  e  = 2.71828182845904523536;
+public static final double pi = 3.14159265358979323846;
+public static final double e  = 2.71828182845904523536;
 
 public static double sqrt(double x) {
 	return java.lang.Math.sqrt(x);

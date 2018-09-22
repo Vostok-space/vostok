@@ -14,7 +14,7 @@
  *)
 MODULE OsRand;
 
- IMPORT File := CFiles, WindowsRand;
+ IMPORT File := CFiles, WindowsRand, JavaRand, Platform;
 
  CONST
    FileName = "/dev/urandom";
@@ -28,7 +28,14 @@ MODULE OsRand;
    IF ~init THEN
      ASSERT(file = NIL);
      file := File.Open(FileName, 0, "rb");
-     init := (file # NIL) OR WindowsRand.Open()
+     init := file # NIL;
+     IF init THEN
+       ;
+     ELSIF Platform.Java THEN
+       init := JavaRand.Open()
+     ELSE
+       init := WindowsRand.Open()
+     END
    END
    RETURN init
  END Open;
@@ -39,6 +46,8 @@ MODULE OsRand;
      ASSERT(file = NIL)
    ELSIF file # NIL THEN
      File.Close(file)
+   ELSIF Platform.Java THEN
+     JavaRand.Close
    ELSE
      WindowsRand.Close
    END;
@@ -48,10 +57,15 @@ MODULE OsRand;
  PROCEDURE Read*(VAR buf: ARRAY OF BYTE; VAR ofs: INTEGER; count: INTEGER): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
+   ASSERT(init);
    IF file # NIL THEN
      ok := count = File.Read(file, buf, ofs, count)
    ELSE
-     ok := init & WindowsRand.Read(buf, ofs, count);
+     IF Platform.Java THEN
+       ok := JavaRand.Read(buf, ofs, count)
+     ELSE
+       ok := WindowsRand.Read(buf, ofs, count)
+     END;
      IF ok THEN
        ofs := ofs + count
      END
