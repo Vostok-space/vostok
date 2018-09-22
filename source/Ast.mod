@@ -3818,7 +3818,7 @@ BEGIN
 		END;
 
 		IF (des.type.id = IdProcType) & (err = ErrNo)
-		 & (expr(Designator).decl.id = IdProc)
+		 & (expr # nil) & (expr(Designator).decl.id = IdProc)
 		THEN
 			expr(Designator).decl(Procedure).usedAsValue := TRUE
 		END
