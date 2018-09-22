@@ -27,6 +27,9 @@ public static final int  INT_UNDEF    = Integer.MIN_VALUE;
 public static final long LONG_UNDEF   = Long.MIN_VALUE;
 public static final long DOUBLE_UNDEF = 0x7FFF_FFFF_0000_0000L;
 
+public static final java.nio.charset.Charset UTF_8
+                  = java.nio.charset.Charset.forName("UTF-8");
+
 static int      exitCode  = 0;
 static byte[][] args      = null;
 
@@ -262,7 +265,7 @@ public static byte[] bytes(final java.lang.String s) {
     final byte ba[];
     final int len;
     /* TODO map */
-    bb = java.nio.charset.StandardCharsets.UTF_8.encode(s);
+    bb = UTF_8.encode(s);
     len = bb.limit();
     ba = new byte[len];
     bb.get(ba);
@@ -283,7 +286,7 @@ public static java.lang.String string(final byte[] bytes, final int ofs) {
          i += 1;
     }
     buf = java.nio.ByteBuffer.wrap(bytes, ofs, i);
-    return java.nio.charset.StandardCharsets.UTF_8.decode(buf).toString();
+    return UTF_8.decode(buf).toString();
 }
 
 public static java.lang.String string(final byte[] bytes) {

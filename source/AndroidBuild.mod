@@ -122,7 +122,7 @@ TYPE
           & Exec.Add(cmd, "-M", 0)
           & Exec.Add(cmd, "AndroidManifest.xml", 0)
           & Exec.Add(cmd, "-I", 0)
-          & Exec.Add(cmd, "/usr/lib/android-sdk/platforms/android-19/android.jar", 0)
+          & Exec.Add(cmd, "/usr/lib/android-sdk/platforms/android-9/android.jar", 0)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
@@ -239,7 +239,7 @@ TYPE
   BEGIN
     i := 0;
     ASSERT(Copy(javac, i, "javac -source 1.7 -target 1.7 -bootclasspath ")
-         & Copy(javac, i, "/usr/lib/android-sdk/platforms/android-19/android.jar ")
+         & Copy(javac, i, "/usr/lib/android-sdk/platforms/android-9/android.jar ")
          & Copy(javac, i, act)
     )
   END SetJavac;
@@ -331,7 +331,7 @@ TYPE
   BEGIN
     Sn("To install tools for build Android applications in Ubuntu 18.04, run in shell:");
     Out.String("  /usr/bin/sudo apt install default-jdk android-sdk");
-    Sn(" google-android-platform-19-installer apksigner")
+    Sn(" google-android-platform-9-installer apksigner")
   END InstallTools;
 
   PROCEDURE Go*;
