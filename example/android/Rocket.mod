@@ -137,6 +137,11 @@ MODULE Rocket;
     Drawable.Invalidate
   END Drawer;
 
+  PROCEDURE Destroyer(ctx: Drawable.Context);
+  BEGIN
+    Rand.Close
+  END Destroyer;
+
   PROCEDURE Go*;
   VAR ctx: Context;
   BEGIN
@@ -148,7 +153,8 @@ MODULE Rocket;
 
       ctx.path  := Path.New();
 
-      Drawable.SetDrawer(Drawer, ctx)
+      Drawable.SetDrawer(Drawer, ctx);
+      Drawable.SetDestroyer(Destroyer)
     END
   END Go;
 

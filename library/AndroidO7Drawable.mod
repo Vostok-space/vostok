@@ -18,12 +18,14 @@ IMPORT
   Canvas := AndroidCanvas, Activity := AndroidO7Activity;
 
 TYPE
-  RContext* = RECORD END;
-  Context*  = POINTER TO RContext;
-  Drawer*   = PROCEDURE(ctx: Context; cnv: Canvas.T);
+  RContext*  = RECORD END;
+  Context*   = POINTER TO RContext;
+  Drawer*    = PROCEDURE(ctx: Context; cnv: Canvas.T);
+  Destroyer* = PROCEDURE(ctx: Context);
 
-  VAR drawer : Drawer;
-      context: Context;
+  VAR drawer   : Drawer;
+      destroyer: Destroyer;
+      context  : Context;
 
   PROCEDURE Nothing(ctx: Context; cnv: Canvas.T);
   END Nothing;
@@ -32,6 +34,17 @@ TYPE
   BEGIN
     drawer(context, cnv)
   END Draw;
+
+  PROCEDURE Destroy*;
+  BEGIN
+    IF destroyer # NIL THEN
+      destroyer(context);
+
+      destroyer := NIL
+    END;
+    drawer  := Nothing;
+    context := NIL
+  END Destroy;
 
   PROCEDURE SetDrawer*(d: Drawer; c: Context);
   BEGIN
@@ -45,6 +58,12 @@ TYPE
       Activity.SetDrawable
     END
   END SetDrawer;
+
+  PROCEDURE SetDestroyer*(d: Destroyer);
+  BEGIN
+    ASSERT((destroyer = NIL) OR (d = NIL));
+    destroyer := d
+  END SetDestroyer;
 
   PROCEDURE Width*(): INTEGER;
   RETURN
@@ -62,6 +81,7 @@ TYPE
   END Invalidate;
 
 BEGIN
-  drawer  := Nothing;
-  context := NIL
+  drawer    := Nothing;
+  destroyer := NIL;
+  context   := NIL
 END AndroidO7Drawable.

@@ -83,6 +83,10 @@ TYPE
         & W(f, "act = this;")
         & W(f, "o7.script.main(new String[] {});")
         & W(f, "}")
+        & W(f, "protected void onDestroy() {")
+        & W(f, "act = null;")
+        & W(f, "super.onDestroy();")
+        & W(f, "}")
         & W(f, "}");
     Files.CloseOut(f)
   RETURN
