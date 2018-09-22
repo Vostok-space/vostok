@@ -6,7 +6,8 @@ MODULE Rocket;
     Paint    := AndroidPaint,
     Path     := AndroidGraphPath,
     Star,
-    Math;
+    Math,
+    Rand := OsRand;
 
   TYPE
     Stars = ARRAY 63 OF RECORD
@@ -21,19 +22,18 @@ MODULE Rocket;
       path: Path.T;
       paint: Paint.T;
 
-      stars: Stars;
-      rand: INTEGER
+      stars: Stars
     END;
 
   PROCEDURE Draw(cnv: Canvas.T; paint: Paint.T; path: Path.T;
-                 x0, y0, size, a, r: REAL);
+                 x0, y0, size, a, r, df: REAL);
     PROCEDURE Flame(cnv: Canvas.T; paint: Paint.T; path: Path.T;
-                    x0, y0, size, r: REAL);
+                    x0, y0, size, r, df: REAL);
     BEGIN
       Path.Reset(path);
       Path.MoveTo(path, x0, y0 + size * 0.8);
       Path.LineTo(path, x0 + size * 0.15, y0 + size * 0.935);
-      Path.LineTo(path, x0 - r, y0 + size * 1.6);
+      Path.LineTo(path, x0 - r, y0 + size * (1.5 + df));
       Path.LineTo(path, x0 - size * 0.15, y0 + size * 0.935);
       Path.LineTo(path, x0, y0 + size * 0.8);
       Paint.SetColor(paint, 0FFDD40H);
@@ -42,14 +42,14 @@ MODULE Rocket;
       Path.Reset(path);
       Path.MoveTo(path, x0, y0 + size * 0.8);
       Path.LineTo(path, x0 + size * 0.1, y0 + size * 0.88);
-      Path.LineTo(path, x0 - r / 2.0, y0 + size * 1.2);
+      Path.LineTo(path, x0 - r / 2.0, y0 + size * (1.1 + df / 4.0));
       Path.LineTo(path, x0 - size * 0.1, y0 + size * 0.89);
       Path.LineTo(path, x0, y0 + size * 0.8);
       Paint.SetColor(paint, 0FFA240H);
       Canvas.Path(cnv, path, paint)
     END Flame;
   BEGIN
-    Flame(cnv, paint, path, x0, y0, size, r);
+    Flame(cnv, paint, path, x0, y0, size, r, df);
 
     Path.Reset(path);
     Path.MoveTo(path, x0, y0);
@@ -67,58 +67,56 @@ MODULE Rocket;
   END Draw;
 
   PROCEDURE Sky(cnv: Canvas.T; paint: Paint.T; stars: Stars);
-  VAR i: INTEGER;
+  VAR i, j, wide: INTEGER;
   BEGIN
     Paint.SetColor(paint, 0FFFFFFH);
-
     FOR i := 0 TO LEN(stars) - 1 DO
-      Canvas.Line(cnv, FLT(stars[i].x), FLT(stars[i].y),
-                       FLT(stars[i].x), FLT(stars[i].y + 30), paint);
-      IF stars[i].wide THEN
-        Canvas.Line(cnv, FLT(stars[i].x + 1), FLT(stars[i].y),
-                         FLT(stars[i].x + 1), FLT(stars[i].y + 30), paint)
+      wide := ORD(stars[i].wide);
+      FOR j := 0 TO wide DO
+        Canvas.Line(cnv,
+          FLT(stars[i].x) + FLT(j) / 2.0, FLT(stars[i].y),
+          FLT(stars[i].x) + FLT(j) / 2.0, FLT(stars[i].y + 30 DIV (2 - wide)),
+          paint)
       END
     END
   END Sky;
 
-  PROCEDURE InitStars(ctx: Context; w, h: INTEGER);
-  VAR i: INTEGER;
+  PROCEDURE InitStars(VAR stars: Stars; w, h: INTEGER);
+  VAR i, r: INTEGER;
   BEGIN
-    ctx.rand := 13;
-    FOR i := 0 TO LEN(ctx.stars) - 1 DO
-      ctx.rand := (ctx.rand * 67 + 133) MOD 49547381;
-      ctx.stars[i].x := ctx.rand DIV 8 MOD w;
-      ctx.rand := (ctx.rand * 67 + 133) MOD 49547381;
-      ctx.stars[i].y := ctx.rand DIV 8 MOD (h + 60);
-      ctx.stars[i].wide := ctx.rand DIV 64 MOD 2 = 0
+    FOR i := 0 TO LEN(stars) - 1 DO
+      IF Rand.Int(r) THEN
+        stars[i].x := r MOD w;
+        stars[i].y := r DIV w MOD (h + 60);
+        stars[i].wide := r MOD 3 = 0
+      END
     END
   END InitStars;
 
-  PROCEDURE MoveStars(ctx: Context; w, h: INTEGER);
-  VAR i: INTEGER;
+  PROCEDURE MoveStars(VAR stars: Stars; w, h: INTEGER);
+  VAR i, r: INTEGER;
   BEGIN
-    FOR i := 0 TO LEN(ctx.stars) - 1 DO
-      ctx.stars[i].y := ctx.stars[i].y + 14;
-      IF ctx.stars[i].y > h THEN
-        ctx.rand := (ctx.rand * 67 + 133) MOD 49547381;
-        ctx.stars[i].x := ctx.rand DIV 8 MOD w;
-        ctx.rand := (ctx.rand * 67 + 133) MOD 49547381;
-        ctx.stars[i].y := - ctx.rand DIV 8 MOD 130
+    FOR i := 0 TO LEN(stars) - 1 DO
+      stars[i].y := stars[i].y + 14 DIV (2 - ORD(stars[i].wide));
+      IF (stars[i].y > h) & Rand.Int(r) THEN
+        stars[i].x := r MOD w;
+        stars[i].y := - r DIV w MOD 130
       END
     END
   END MoveStars;
 
   PROCEDURE Drawer(context: Drawable.Context; cnv: Canvas.T);
-  VAR r: REAL; i: INTEGER; ctx: Context; w, h: INTEGER;
+  VAR r: REAL; i, w, h, df: INTEGER; ctx: Context;
   BEGIN
     ctx := context(Context);
 
     w := Drawable.Width();
     h := Drawable.Height();
-    IF ctx.rand = -1 THEN
-      InitStars(ctx, w, h)
+    IF ctx.paint = NIL THEN
+      ctx.paint := Paint.New();
+      InitStars(ctx.stars, w, h)
     ELSE
-      MoveStars(ctx, w, h)
+      MoveStars(ctx.stars, w, h)
     END;
 
     r := ctx.r;
@@ -131,26 +129,27 @@ MODULE Rocket;
       ctx.fr := 0.0 - ctx.fr
     END;
     Sky(cnv, ctx.paint, ctx.stars);
-    Draw(cnv, ctx.paint, ctx.path,
-         FLT(w DIV 2) + r, 20.0, FLT(h) * 0.6, 0.0, ctx.fr);
-
+    IF Rand.Int(df) THEN
+      Draw(cnv, ctx.paint, ctx.path,
+           FLT(w DIV 2) + r, 20.0, FLT(h) * 0.6, 0.0, ctx.fr,
+           FLT(df MOD 32) / 200.)
+    END;
     Drawable.Invalidate
   END Drawer;
 
   PROCEDURE Go*;
   VAR ctx: Context;
   BEGIN
-    NEW(ctx);
-    ctx.r     := -1.0;
-    ctx.fr    := 4.0;
-    ctx.i     := 0;
+    IF Rand.Open() THEN
+      NEW(ctx);
+      ctx.r     := -1.0;
+      ctx.fr    := 4.0;
+      ctx.i     := 0;
 
-    ctx.path  := Path.New();
-    ctx.paint := Paint.New();
+      ctx.path  := Path.New();
 
-    ctx.rand := -1;
-
-    Drawable.SetDrawer(Drawer, ctx)
+      Drawable.SetDrawer(Drawer, ctx)
+    END
   END Go;
 
 END Rocket.

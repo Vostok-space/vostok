@@ -53,7 +53,7 @@ MODULE Star;
     ELSE
       r := y0 - 10.0
     END;
-    Draw(cnv, paint, path, ctx(Context).rays, x0, y0, r, r * ctx(Context).ratio, 0.0);
+    Draw(cnv, paint, path, ctx(Context).rays, x0, y0, r, r * ctx(Context).ratio, 0.0)
   END Drawer;
 
   PROCEDURE Go*(rays: INTEGER; ratio: REAL);
