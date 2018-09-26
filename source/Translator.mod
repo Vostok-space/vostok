@@ -59,8 +59,6 @@ TYPE
 
 	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
 		opt: Parser.Options;
-		fileExt: ARRAY 32 OF CHAR;
-		extLen: INTEGER;
 		path: ARRAY 4096 OF CHAR;
 		sing: SET;
 		modules: RECORD
@@ -175,31 +173,58 @@ END AddModule;
 PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
                     name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
 VAR m: Ast.Module;
-    source: File.In;
     mp: ModuleProvider;
-    pathOfs, pathInd: INTEGER;
+    pathInd, i: INTEGER;
+    ext: ARRAY 3, 6 OF CHAR;
 
-	PROCEDURE Open(p: ModuleProvider; VAR pathOfs: INTEGER;
-	               name: ARRAY OF CHAR; ofs, end: INTEGER): File.In;
-	VAR n: ARRAY 1024 OF CHAR;
-	    len, l: INTEGER;
-	    in: File.In;
+	PROCEDURE Search(p: ModuleProvider;
+	                 name: ARRAY OF CHAR; ofs, end: INTEGER;
+	                 ext: ARRAY OF CHAR;
+	                 VAR pathInd: INTEGER): Ast.Module;
+	VAR pathOfs: INTEGER;
+	    source: File.In;
+	    m: Ast.Module;
+
+		PROCEDURE Open(p: ModuleProvider; VAR pathOfs: INTEGER;
+		               name: ARRAY OF CHAR; ofs, end: INTEGER;
+		               ext: ARRAY OF CHAR): File.In;
+		VAR n: ARRAY 1024 OF CHAR;
+		    len, l: INTEGER;
+		    in: File.In;
+		BEGIN
+			len := Strings.CalcLen(p.path, pathOfs);
+			l := 0;
+			IF (0 < len)
+			 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
+			 & Strings.CopyCharsNull(n, l, Exec.dirSep)
+			 & Strings.CopyChars(n, l, name, ofs, end)
+			 & Strings.CopyCharsNull(n, l, ext)
+			THEN
+				in := File.OpenIn(n)
+			ELSE
+				in := NIL
+			END;
+			pathOfs := pathOfs + len + 1
+			RETURN in
+		END Open;
 	BEGIN
-		len := Strings.CalcLen(p.path, pathOfs);
-		l := 0;
-		IF (0 < len)
-		 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
-		 & Strings.CopyCharsNull(n, l, Exec.dirSep)
-		 & Strings.CopyChars(n, l, name, ofs, end)
-		 & Strings.CopyChars(n, l, p.fileExt, 0, p.extLen)
-		THEN
-			in := File.OpenIn(n)
-		ELSE
-			in := NIL
-		END;
-		pathOfs := pathOfs + len + 1
-		RETURN in
-	END Open;
+		pathInd := -1;
+		pathOfs := 0;
+		REPEAT
+			source := Open(p, pathOfs, name, ofs, end, ext);
+			IF source # NIL THEN
+				m := Parser.Parse(source, p, p.opt);
+				File.CloseIn(source);
+				IF ~p.nameOk THEN
+					m := NIL
+				END
+			ELSE
+				m := NIL
+			END;
+			INC(pathInd)
+		UNTIL (m # NIL) OR (p.path[pathOfs] = Utf8.Null)
+		RETURN m
+	END Search;
 BEGIN
 	mp := p(ModuleProvider);
 	m := SearchModule(mp, name, ofs, end);
@@ -209,19 +234,14 @@ BEGIN
 		mp.nameLen := 0;
 		ASSERT(Strings.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
 
-		pathInd := -1;
-		pathOfs := 0;
+		ext[0] := ".mod";
+		ext[1] := ".Mod";
+		ext[2] := ".ob07";
+		i := 0;
 		REPEAT
-			source := Open(mp, pathOfs, name, ofs, end);
-			IF source # NIL THEN
-				m := Parser.Parse(source, p, mp.opt);
-				File.CloseIn(source);
-				IF ~mp.nameOk THEN
-					m := NIL
-				END
-			END;
-			INC(pathInd)
-		UNTIL (m # NIL) OR (mp.path[pathOfs] = Utf8.Null);
+			m := Search(mp, name, ofs, end, ext[i], pathInd);
+			INC(i)
+		UNTIL (m # NIL) OR (i >= LEN(ext));
 		IF m # NIL THEN
 			IF pathInd IN mp.sing THEN
 				m.mark := TRUE
@@ -332,6 +352,7 @@ PROCEDURE NewProvider(VAR mp: ModuleProvider; args: Cli.Args);
 VAR len: INTEGER;
 BEGIN
 	NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
+
 	Parser.DefaultOptions(mp.opt);
 	mp.opt.printError := ErrorMessage;
 
@@ -342,8 +363,6 @@ BEGIN
 
 	mp.firstNotOk := TRUE;
 
-	mp.fileExt := ".mod"; (* TODO *)
-	mp.extLen := Strings.CalcLen(mp.fileExt, 0);
 	mp.opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
 	len := 0;
 	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
