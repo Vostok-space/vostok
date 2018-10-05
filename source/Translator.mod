@@ -175,7 +175,7 @@ PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
 VAR m: Ast.Module;
     mp: ModuleProvider;
     pathInd, i: INTEGER;
-    ext: ARRAY 3, 6 OF CHAR;
+    ext: ARRAY 4, 6 OF CHAR;
 
 	PROCEDURE Search(p: ModuleProvider;
 	                 name: ARRAY OF CHAR; ofs, end: INTEGER;
@@ -237,6 +237,7 @@ BEGIN
 		ext[0] := ".mod";
 		ext[1] := ".Mod";
 		ext[2] := ".ob07";
+		ext[3] := ".ob";
 		i := 0;
 		REPEAT
 			m := Search(mp, name, ofs, end, ext[i], pathInd);
