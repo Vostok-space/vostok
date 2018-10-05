@@ -5,7 +5,7 @@ SING_BS := singularity/bootstrap
 SELF := result/v1
 
 SRC := $(wildcard source/*.mod)
-SANITIZE := -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -DO7_LSAN_LEAK_IGNORE
+SANITIZE := -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -static-libasan -DO7_LSAN_LEAK_IGNORE
 SANITIZE_TEST := $(SANITIZE)
 O7_OPT := -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE
 #O7_OPT := -DO7_MEMNG_MODEL=O7_MEMNG_COUNTER
