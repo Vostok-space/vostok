@@ -118,7 +118,7 @@ BEGIN
 	Out.Ln
 END IndexedErrorMessage;
 
-PROCEDURE PrintErrors(mc: Container);
+PROCEDURE PrintErrors(mc: Container; module: Ast.Module);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
 	err: Ast.Error;
@@ -142,6 +142,9 @@ BEGIN
 			END
 		END;
 		mc := mc.next
+	END;
+	IF i = 0 THEN
+		IndexedErrorMessage(i, module.errors.code, module.errors.line, module.errors.column)
 	END
 END PrintErrors;
 
@@ -215,7 +218,7 @@ VAR m: Ast.Module;
 			IF source # NIL THEN
 				m := Parser.Parse(source, p, p.opt);
 				File.CloseIn(source);
-				IF ~p.nameOk THEN
+				IF (m # NIL) & (m.errors = NIL) & ~p.nameOk THEN
 					m := NIL
 				END
 			ELSE
@@ -574,16 +577,17 @@ VAR ret: INTEGER;
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
 			IF cc[0] = Utf8.Null THEN
-				ok := CComp.Search(cmd, res = Cli.ResultRun);
-				IF ok & (args.cyrillic = Cli.CyrillicDefault) THEN
-					opt.identEnc := IdentEncoderForCompiler(cmd.id)
-				END
+				ok := CComp.Search(cmd, res = Cli.ResultRun)
 			ELSE
 				ok := CComp.Set(cmd, cc)
 			END;
+
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundCCompiler
 			ELSE
+				IF args.cyrillic = Cli.CyrillicDefault THEN
+					opt.identEnc := IdentEncoderForCompiler(cmd.id)
+				END;
 				ret := GenerateC(module, TRUE, call, opt, outC, outCLen, cDirs, cmd, TRUE)
 			END;
 			outC[outCLen] := Utf8.Null;
@@ -963,7 +967,7 @@ BEGIN
 		ret := ErrParse
 	ELSIF module.errors # NIL THEN
 		ret := ErrParse;
-		PrintErrors(mp.modules.first.next)
+		PrintErrors(mp.modules.first.next, module)
 	ELSE
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
 			ret := Ast.CommandGet(call, module,

@@ -110,15 +110,15 @@ VAR
 
 PROCEDURE AddError(VAR p: Parser; err: INTEGER);
 BEGIN
-	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
-		INC(p.errorsCount);
+	IF p.module # NIL THEN
 		Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
 		Log.Int(p.s.line); Log.Str(":");
 		Log.Int(p.s.column); Log.Ln;
 		p.err := err > ErrAstBegin;
-		IF p.module # NIL THEN
-			Ast.AddError(p.module, err, p.s.line, p.s.column)
-		END
+
+		INC(p.errorsCount);
+		Ast.AddError(p.module, err, p.s.line, p.s.column);
+		ASSERT(p.module.errors # NIL)
 	END;
 	IF p.opt.multiErrors THEN
 		p.opt.printError(err);
@@ -1404,7 +1404,8 @@ BEGIN
 	Scan(p);
 	IF p.l # SpecIdent.Module THEN
 		p.module := Ast.ModuleNew("  ", 0, 0, prov);
-		AddError(p, ErrExpectModule)
+		AddError(p, ErrExpectModule);
+		ASSERT((p.module = NIL) OR (p.module.errors # NIL))
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
