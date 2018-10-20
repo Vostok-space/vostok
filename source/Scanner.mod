@@ -455,9 +455,12 @@ BEGIN
 	comment := 0;
 	commentsCount := 0;
 	s.emptyLines := -1;
-	WHILE (s.buf[i] = " ") OR (s.buf[i] = Utf8.CarRet) DO
+	WHILE s.buf[i] = " " DO
 		INC(i);
 		INC(column)
+	ELSIF s.buf[i] = Utf8.CarRet DO
+		INC(i);
+		column := 0;
 	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
@@ -491,7 +494,14 @@ BEGIN
 			END;
 			INC(i)
 		END
+	ELSIF (0EFX = s.buf[i])
+	    & (0BBX = Lookup(s, i))
+	    & (0BFX = Lookup(s, (i + 1) MOD (LEN(s.buf) - 1)))
+	DO
+		(* Пробел 0-й длины, также, используемый как BOM в UTF *)
+		i := (i + 3) MOD (LEN(s.buf) - 1)
 	END;
+
 	s.column := column;
 	s.ind := i
 	RETURN comment <= 0
