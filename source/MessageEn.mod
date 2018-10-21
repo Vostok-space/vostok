@@ -94,7 +94,7 @@ BEGIN
 	| Ast.ErrAssignIncompatibleType:
 		C("Incompatible types in assignment")
 	| Ast.ErrAssignExpectVarParam:
-		C("Expected variable expression in assignment")
+		C("Expected assignable designator")
 	| Ast.ErrAssignStringToNotEnoughArray:
 		C("Assign string to array with not enough size")
 	| Ast.ErrCallNotProc:
@@ -282,10 +282,16 @@ BEGIN
 		C("Expected имя модуля")
 	| Parser.ErrExpectEqual:
 		C("Expected '='")
+	| Parser.ErrExpectBrace1Open:
+		C("Expected '('")
 	| Parser.ErrExpectBrace1Close:
 		C("Expected ')'")
+	| Parser.ErrExpectBrace2Open:
+		C("Expected '['")
 	| Parser.ErrExpectBrace2Close:
 		C("Expected ']'")
+	| Parser.ErrExpectBrace3Open:
+		C("Expected '{'")
 	| Parser.ErrExpectBrace3Close:
 		C("Expected '}'")
 	| Parser.ErrExpectOf:
@@ -343,7 +349,7 @@ END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Translator from Oberon-07 to C and java. 2018");
+S("Translator from Oberon-07 to C and Java. 2018");
 S("Usage: ");
 S("  1) o7c help");
 S("  2) o7c to-c   Code OutDir { -m PTM | -i PTI | -infr Infr }");
@@ -356,7 +362,7 @@ S("3) to-bin converts modules to binary executable through implicit .c files");
 S("4) run executes implicit executable file");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");
-S("  Code = Call { ; Call } . Call = Module.Procedure [ '('Parameters')' ] .");
+S("  Code = Call { ; Call } . Call = Module [ .Procedure [ '('Parameters')' ] ] .");
 S("OutDir - directory for saving translated .h & .c files");
 S("OutBin - name of output executable file");
 S("");
