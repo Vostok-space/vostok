@@ -4,7 +4,8 @@ Project "Vostok"
 ==========================
 [Oberon-07](documents/Language.md) translator to C and Java.
 
-License is LGPL for translator's code and Apache for libraries
+License is LGPL for translator's code and Apache for libraries, tests and
+examples.
 
 ## Build:
 
