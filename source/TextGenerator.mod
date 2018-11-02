@@ -56,7 +56,7 @@ BEGIN
 	RETURN i - ofs
 END CalcLen;
 
-PROCEDURE Chars(VAR gen: Out; ch: CHAR; count: INTEGER);
+PROCEDURE CharFill(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
 	ASSERT(0 <= count);
@@ -65,7 +65,7 @@ BEGIN
 		gen.len := gen.len + Stream.WriteChars(gen.out^, c, 0, 1);
 		DEC(count)
 	END
-END Chars;
+END CharFill;
 
 PROCEDURE Char*(VAR gen: Out; ch: CHAR);
 VAR c: ARRAY 1 OF CHAR;
@@ -78,7 +78,7 @@ PROCEDURE NewLine(VAR gen: Out);
 BEGIN
 	IF gen.isNewLine THEN
 		gen.isNewLine := FALSE;
-		Chars(gen, Utf8.Tab, gen.tabs)
+		CharFill(gen, Utf8.Tab, gen.tabs)
 	END
 END NewLine;
 

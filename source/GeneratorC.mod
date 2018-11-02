@@ -2543,18 +2543,19 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 		CASE ORD(retain) + ORD(toByte)
 		   + ORD(st.designator.type.id = Ast.IdArray)
 		OF
-		  0: Text.StrLn(gen, ";")
-		| 1: Text.StrLn(gen, ");")
-		| 2: Text.StrLn(gen, "));")
+		  0: ;
+		| 1: Text.Str(gen, ")")
+		| 2: Text.Str(gen, "))")
 		END;
 		IF (gen.opt.memManager = MemManagerCounter)
 		 & (st.designator.type.id = Ast.IdRecord)
 		 & (~IsAnonStruct(st.designator.type(Ast.Record)))
 		THEN
+			Text.StrLn(gen, ";");
 			GlobalName(gen, st.designator.type);
 			Text.Str(gen, "_retain(&");
 			Designator(gen, st.designator);
-			Text.StrLn(gen, ");")
+			Text.Str(gen, ")")
 		END
 	END Equal;
 BEGIN
@@ -2812,7 +2813,8 @@ BEGIN
 		Text.Ln(gen)
 	END;
 	IF st IS Ast.Assign THEN
-		Assign(gen, st(Ast.Assign))
+		Assign(gen, st(Ast.Assign));
+		Text.StrLn(gen, ";")
 	ELSIF st IS Ast.Call THEN
 		gen.expressionSemicolon := TRUE;
 		Expression(gen, st.expr);
