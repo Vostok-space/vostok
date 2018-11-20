@@ -1373,19 +1373,19 @@ BEGIN
 	Text.StrLnClose(gen, "}")
 END RecordUndef;
 
+PROCEDURE IsRecordNeedAssign(rec: Ast.Record): BOOLEAN;
+BEGIN
+	WHILE (rec # NIL) & (rec.vars = NIL) DO
+		rec := rec.base
+	END
+	RETURN rec # NIL
+END IsRecordNeedAssign;
+
 PROCEDURE RecordAssign(VAR gen: Generator; rec: Ast.Record);
 VAR var: Ast.Declaration;
-
-	PROCEDURE IsNeedBase(rec: Ast.Record): BOOLEAN;
-	BEGIN
-		REPEAT
-			rec := rec.base
-		UNTIL (rec = NIL) OR (rec.vars # NIL)
-		RETURN rec # NIL
-	END IsNeedBase;
 BEGIN
 	RecordAssignHeader(gen, rec);
-	IF IsNeedBase(rec) THEN
+	IF IsRecordNeedAssign(rec.base) THEN
 		Text.StrLn(gen, "super.assign(r);")
 	END;
 	var := rec.vars;
@@ -1407,7 +1407,9 @@ BEGIN
 				Text.StrLn(gen, "[i]);")
 			END;
 			Text.StrLnClose(gen, "}")
-		ELSE
+		ELSIF (var.type.id # Ast.IdRecord)
+		   OR IsRecordNeedAssign(var.type(Ast.Record))
+		THEN
 			Text.Str(gen, "this.");
 			Name(gen, var);
 			IF var.type.id = Ast.IdRecord THEN
@@ -1909,35 +1911,39 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 	VAR toByte: BOOLEAN;
 	BEGIN
-		toByte := (st.designator.type.id = Ast.IdByte)
-		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-		IF st.designator.type.id = Ast.IdArray THEN
-			IF st.expr.id = Ast.IdString THEN
-				Text.Str(gen, "O7.strcpy(")
+		IF (st.designator.type.id # Ast.IdRecord)
+		OR IsRecordNeedAssign(st.designator.type(Ast.Record))
+		THEN
+			toByte := (st.designator.type.id = Ast.IdByte)
+			        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
+			IF st.designator.type.id = Ast.IdArray THEN
+				IF st.expr.id = Ast.IdString THEN
+					Text.Str(gen, "O7.strcpy(")
+				ELSE
+					Text.Str(gen, "O7.copy(")
+				END;
+				Designator(gen, st.designator, {ForSameType});
+				Text.Str(gen, ", ");
+				gen.opt.expectArray := TRUE
+			ELSIF st.designator.type.id = Ast.IdRecord THEN
+				Designator(gen, st.designator, {ForSameType});
+				Text.Str(gen, ".assign(")
+			ELSIF toByte THEN
+				Designator(gen, st.designator, {ForSameType});
+				Text.Str(gen, " = O7.toByte(")
 			ELSE
-				Text.Str(gen, "O7.copy(")
+				Designator(gen, st.designator, {ForSameType});
+				Text.Str(gen, " = ")
 			END;
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, ", ");
-			gen.opt.expectArray := TRUE
-		ELSIF st.designator.type.id = Ast.IdRecord THEN
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, ".assign(")
-		ELSIF toByte THEN
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, " = O7.toByte(")
-		ELSE
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, " = ")
-		END;
-		CheckExpr(gen, st.expr, IsForSameType(st.designator.type, st.expr.type));
-		gen.opt.expectArray := FALSE;
-		CASE ORD(toByte)
-		   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
-		OF
-		  0: Text.StrLn(gen, ";")
-		| 1: Text.StrLn(gen, ");")
-		| 2: Text.StrLn(gen, "));")
+			CheckExpr(gen, st.expr, IsForSameType(st.designator.type, st.expr.type));
+			gen.opt.expectArray := FALSE;
+			CASE ORD(toByte)
+			   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
+			OF
+			  0: Text.StrLn(gen, ";")
+			| 1: Text.StrLn(gen, ");")
+			| 2: Text.StrLn(gen, "));")
+			END
 		END
 	END Assign;
 
