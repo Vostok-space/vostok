@@ -82,24 +82,34 @@ TYPE
 		cyrillic*: INTEGER
 	END;
 
-PROCEDURE GetParam*(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN;
-    j: INTEGER;
+PROCEDURE GetParam*(VAR err: INTEGER; errTooLong: INTEGER;
+                    VAR str: ARRAY OF CHAR;
+                    VAR i, arg: INTEGER): BOOLEAN;
+VAR j: INTEGER;
+    ret: BOOLEAN;
 BEGIN
-	j := i;
-	ret := CLI.Get(str, i, arg);
-	INC(arg);
-	IF ret & Platform.Windows & (str[j] = "'") & (arg < CLI.count) THEN
-		str[j] := " ";
-		WHILE (arg < CLI.count) & ret & (str[i - 1] # "'") DO
-			str[i] := " ";
-			INC(i);
-			ret := CLI.Get(str, i, arg);
-			INC(arg)
+	IF arg >= CLI.count THEN
+		err := ErrNotEnoughArgs;
+		ret := FALSE
+	ELSE
+		j := i;
+		ret := CLI.Get(str, i, arg);
+		INC(arg);
+		IF ret & Platform.Windows & (str[j] = "'") & (arg < CLI.count) THEN
+			str[j] := " ";
+			WHILE (arg < CLI.count) & ret & (str[i - 1] # "'") DO
+				str[i] := " ";
+				INC(i);
+				ret := CLI.Get(str, i, arg);
+				INC(arg)
+			END;
+			str[i - 1] := Utf8.Null
 		END;
-		str[i - 1] := Utf8.Null
-	END;
-	i := j + Strings.TrimChars(str, j)
+		i := j + Strings.TrimChars(str, j);
+		IF ~ret OR (i >= LEN(str) - 1) THEN
+			err := errTooLong
+		END
+	END
 	RETURN ret
 END GetParam;
 
@@ -121,6 +131,7 @@ PROCEDURE Options*(VAR args: Args; VAR arg: INTEGER): INTEGER;
 VAR i, dirsOfs, javaDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
     ret: INTEGER;
     opt: ARRAY 256 OF CHAR;
+    ignore: BOOLEAN;
 
 	PROCEDURE CopyInfrPart(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER;
 	                       add: ARRAY OF CHAR): BOOLEAN;
@@ -146,66 +157,37 @@ BEGIN
 	    & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & ~IsEqualStr(opt, 0, "--")
 	DO
 		optLen := 0;
+		INC(arg);
 		IF (opt = "-i") OR (opt = "-m") THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF CLI.Get(args.modPath, i, arg) THEN
+			IF GetParam(ret, ErrTooLongModuleDirs, args.modPath, i, arg) THEN
 				IF opt = "-i" THEN
 					INCL(args.sing, count)
 				END;
 				INC(i);
 				args.modPath[i] := Utf8.Null;
 				INC(count)
-			ELSE
-				ret := ErrTooLongModuleDirs
 			END
 		ELSIF opt = "-c" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF CLI.Get(args.cDirs, dirsOfs, arg) & (dirsOfs < LEN(args.cDirs) - 1)
-			THEN
+			IF GetParam(ret, ErrTooLongCDirs, args.cDirs, dirsOfs, arg) THEN
 				INC(dirsOfs);
 				args.cDirs[dirsOfs] := Utf8.Null;
 				Log.Str("cDirs = ");
 				Log.StrLn(args.cDirs)
-			ELSE
-				ret := ErrTooLongCDirs
 			END
 		ELSIF opt = "-j" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF CLI.Get(args.javaDirs, javaDirsOfs, arg) & (javaDirsOfs < LEN(args.cDirs) - 1)
+			IF GetParam(ret, ErrTooLongJavaDirs,
+			            args.javaDirs, javaDirsOfs, arg)
 			THEN
 				INC(javaDirsOfs);
 				args.cDirs[javaDirsOfs] := Utf8.Null;
 				Log.Str("javaDirs = ");
 				Log.StrLn(args.javaDirs)
-			ELSE
-				ret := ErrTooLongJavaDirs
 			END
 		ELSIF opt = "-cc" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF GetParam(args.cc, ccLen, arg) THEN
-				DEC(arg)
-			ELSE
-				ret := ErrTooLongCc
-			END
+			ignore := GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)
 		ELSIF opt = "-javac" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF GetParam(args.javac, javacLen, arg) THEN
-				DEC(arg)
-			ELSE
-				ret := ErrTooLongCc
-			END
+			ignore := GetParam(ret, ErrTooLongCc, args.javac, javacLen, arg)
 		ELSIF opt = "-infr" THEN
-			INC(arg);
 			IF arg >= CLI.count THEN
 				ret := ErrNotEnoughArgs
 			ELSIF Platform.Posix
@@ -219,17 +201,15 @@ BEGIN
 			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "\singularity\implementation")
 			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "\singularity\implementation.java")
 			THEN
+				INC(arg);
 				INCL(args.sing, count);
 				INC(count, 2)
 			ELSE
 				ret := ErrTooLongModuleDirs
 			END
 		ELSIF opt = "-init" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF ~CLI.Get(opt, optLen, arg) THEN
-				ret := ErrUnknownInit
+			IF ~GetParam(ret, ErrUnknownInit, opt, optLen, arg) THEN
+				;
 			ELSIF opt = "noinit" THEN
 				args.init := GeneratorC.VarInitNo
 			ELSIF opt = "undef" THEN
@@ -238,14 +218,10 @@ BEGIN
 				args.init := GeneratorC.VarInitZero
 			ELSE
 				ret := ErrUnknownInit
-			END;
-			optLen := 0
+			END
 		ELSIF opt = "-memng" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF ~CLI.Get(opt, optLen, arg) THEN
-				ret := ErrUnknownMemMan
+			IF ~GetParam(ret, ErrUnknownMemMan, opt, optLen, arg) THEN
+				;
 			ELSIF opt = "nofree" THEN
 				args.memng := GeneratorC.MemManagerNoFree
 			ELSIF opt = "counter" THEN
@@ -254,16 +230,9 @@ BEGIN
 				args.memng := GeneratorC.MemManagerGC
 			ELSE
 				ret := ErrUnknownMemMan
-			END;
-			optLen := 0
+			END
 		ELSIF opt = "-t" THEN
-			INC(arg);
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF ~CLI.Get(args.tmp, optLen, arg) THEN
-				ret := ErrTooLongTemp
-			END;
-			optLen := 0
+			ignore := GetParam(ret, ErrTooLongTemp, args.tmp, optLen, arg)
 		ELSIF opt = "-no-array-index-check" THEN
 			args.noIndexCheck := TRUE
 		ELSIF opt = "-no-nil-check" THEN
@@ -287,7 +256,7 @@ BEGIN
 		ELSE
 			ret := ErrUnexpectArg
 		END;
-		INC(arg)
+		optLen := 0
 	END;
 	IF i + 1 < LEN(args.modPath) THEN
 		args.modPathLen := i + 1;
@@ -376,8 +345,11 @@ BEGIN
 
 		args.resPathLen := 0;
 		args.resPath[0] := Utf8.Null;
-		IF ~forRun & ~CLI.Get(args.resPath, args.resPathLen, argDest) THEN
-			ret := ErrTooLongOutName
+		IF ~forRun
+		 & ~GetParam(cpRet, ErrTooLongOutName,
+		             args.resPath, args.resPathLen, argDest)
+		THEN
+			ret := cpRet
 		END
 	END
 	RETURN ret
@@ -391,12 +363,7 @@ BEGIN
 	ArgsInit(args);
 
 	arg := 1;
-	IF CLI.count <= arg THEN
-		ret := ErrNotEnoughArgs
-	ELSIF ~GetParam(args.src, args.srcLen, arg) THEN
-		(* TODO *)
-		ret := ErrTooLongSourceName
-	ELSE
+	IF GetParam(ret, ErrTooLongSourceName, args.src, args.srcLen, arg) THEN
 		ret := ParseOptions(args, ret, arg)
 	END;
 	args.arg := arg
