@@ -41,7 +41,7 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__STDC_NO_VLA__)
+#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__COMPCERT__) && !defined(__STDC_NO_VLA__)
 #	define O7_VLA(len) static len
 #else
 #	define O7_VLA(len)
@@ -416,7 +416,7 @@ char unsigned o7_chr(int v) {
 	return (char unsigned)v;
 }
 
-#if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64)))
+#if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64))) && !defined(__COMPCERT__)
 /* TODO в вычислительных функциях можно будет убрать o7_dbl после проверки*/
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	double o7_dbl_finite(double v) {
