@@ -818,11 +818,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Factor(gen, rel.exprs[1], {});
 				Text.Str(gen, ")")
 			ELSE
-				IF rel.value # NIL THEN
-					Text.Str(gen, "O7.IN(")
-				ELSE
-					Text.Str(gen, "O7.in(")
-				END;
+				Text.Str(gen, "O7.in(");
 				Expression(gen, rel.exprs[0], {ForSameType});
 				ExpressionBraced(gen, ", ", rel.exprs[1], ")", {})
 			END
@@ -1760,11 +1756,11 @@ BEGIN
 			Text.StrLn(gen, ";")
 		END;
 		IF var.up # NIL THEN
-			Mark(gen, mark)
+			Mark(gen, mark);
+			IF var.up.d IS Ast.Module THEN
+				Text.Str(gen, "static ")
+			END
 		END;
-		IF (var.up # NIL) & (var.up.d IS Ast.Module) THEN
-			Text.Str(gen, "static ")
-		END
 	ELSE
 		Text.Str(gen, ", ")
 	END;

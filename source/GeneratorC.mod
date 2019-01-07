@@ -1230,7 +1230,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 		PROCEDURE In(VAR gen: Generator; rel: Ast.ExprRelation);
 		BEGIN
-			IF (rel.exprs[0].value # NIL)
+			IF (rel.value = NIL) (* TODO & option *)
+			 & (rel.exprs[0].value # NIL)
 			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. Limits.SetMax})
 			THEN
 				Text.Str(gen, "!!(");

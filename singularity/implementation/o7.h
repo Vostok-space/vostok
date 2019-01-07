@@ -1058,7 +1058,7 @@ o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
 	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
 }
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != (set) & ((o7_ulong_t)1u << (n))))
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_int_t o7_sti(o7_uint_t v) {

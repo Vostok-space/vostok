@@ -7,6 +7,9 @@ CONST
 	s4 = {1 .. 3, 4 .. 6};
 	s5 = {2, 4 .. 5, 13 .. 31};
 
+	bt = 27 IN s5;
+	bf =  7 IN s5;
+
 TYPE
 
 VAR i: INTEGER;
@@ -51,6 +54,9 @@ BEGIN
 	ASSERT(13 IN s5);
 	ASSERT(23 IN s5);
 	ASSERT(31 IN s5);
+
+	ASSERT(bt);
+	ASSERT(~bf);
 
 	ASSERT(FALSE OR TRUE)
 END Go;
