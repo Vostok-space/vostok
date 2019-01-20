@@ -2,7 +2,7 @@
 
 Project "Vostok"
 ==========================
-[Oberon-07](documents/Language.md) translator to C and Java.
+[Oberon-07](documents/Language.md) translator to C, Java and JavaScript.
 
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.

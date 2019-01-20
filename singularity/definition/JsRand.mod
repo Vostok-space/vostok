@@ -1,4 +1,4 @@
-(* Copyright 2017-2019 ComdivByZero
+(* Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE JsRand;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Darwin*,
-   Java*,
-   Javascript*: BOOLEAN;
+  PROCEDURE Open*(): BOOLEAN;
+  RETURN
+    FALSE
+  END Open;
 
-BEGIN
-  Posix      := FALSE;
-  Linux      := FALSE;
-  Bsd        := FALSE;
-  Dos        := FALSE;
-  Windows    := FALSE;
-  Darwin     := FALSE;
+  PROCEDURE Close*;
+  END Close;
 
-  Java       := FALSE;
-  Javascript := FALSE;
-END Platform.
+  PROCEDURE Read*(VAR buf: ARRAY OF BYTE; ofs: INTEGER; count: INTEGER)
+                 : BOOLEAN;
+  BEGIN
+    ASSERT(0 < count);
+    ASSERT((0 <= ofs) & (ofs <= LEN(buf) - count));
+  RETURN
+    FALSE
+  END Read;
+
+END JsRand.

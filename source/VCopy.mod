@@ -1,4 +1,5 @@
-(* Copyright 2017-2019 ComdivByZero
+(* Utility for copy from input to output
+ * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE VCopy;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Darwin*,
-   Java*,
-   Javascript*: BOOLEAN;
+  IMPORT V, Stream := VDataStream;
 
-BEGIN
-  Posix      := FALSE;
-  Linux      := FALSE;
-  Bsd        := FALSE;
-  Dos        := FALSE;
-  Windows    := FALSE;
-  Darwin     := FALSE;
+  CONST BlockSize = 4 * 1024;
 
-  Java       := FALSE;
-  Javascript := FALSE;
-END Platform.
+  PROCEDURE UntilEnd*(VAR in: Stream.In; VAR out: Stream.Out);
+  VAR buf: ARRAY BlockSize OF BYTE; size: INTEGER;
+  BEGIN
+    size := Stream.Read(in, buf, 0, LEN(buf));
+    WHILE (size > 0)
+        & (size = Stream.Write(out, buf, 0, size))
+    DO
+      size := Stream.Read(in, buf, 0, LEN(buf))
+    END
+  END UntilEnd;
+
+END VCopy.

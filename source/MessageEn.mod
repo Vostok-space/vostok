@@ -349,28 +349,38 @@ END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Translator from Oberon-07 to C and Java. 2018");
+S("Translator from Oberon-07 to C, Java and Javascript. 2019");
 S("Usage: ");
-S("  1) o7c help");
-S("  2) o7c to-c   Code OutDir { -m PTM | -i PTI | -infr Infr }");
-S("  3) o7c to-bin Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
-S("  4) o7c run    Code {-m PTM|-i PTI|-c PTHC|-cc CComp|-t Temp} [-- Args]");
+S(" 1) o7c help");
+S(" 2) o7c to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
+S(" 3) o7c to-bin   Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
+S(" 4) o7c run      Code {-m PM|-i PI|-c PHC|-cc CComp|-t Temp} [-- Args]");
+S(" 5) o7c to-java  Code OutDir {-m PM | -i PI | -infr Infr}");
+S(" 6) o7c to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Temp}");
+S(" 7) o7c run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
+S(" 8) o7c to-js    Code Out {-m PM | -i PI | -infr Infr}");
+S(" 9) o7c run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
 IF full THEN
 S("");
-S("2) to-c converts modules to .h & .c files");
-S("3) to-bin converts modules to binary executable through implicit .c files");
-S("4) run executes implicit executable file");
+S("2) to-c     converts modules to .h & .c files");
+S("3) to-bin   converts modules to executable through implicit .c files");
+S("4) run      executes implicit executable file");
+S("5) to-java  converts modules to .java files");
+S("6) to-class converts modules to .class through implicit .java files");
+S("7) run-java executes implicit class, created from Code");
+S("8) to-js    converts modules to .js files");
+S("9) run-js   executes implicit .js file, created by Code");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module [ .Procedure [ '('Parameters')' ] ] .");
 S("OutDir - directory for saving translated .h & .c files");
 S("OutBin - name of output executable file");
 S("");
-S("-m PTM - Path To directory with Modules for search.");
+S("-m PM - Path to directory with Modules for search.");
 S("  For example: -m library -m source -m test/source");
-S("-i PTI - Path To directory with Interface modules without real implementation");
+S("-i PI - Path to directory with Interface modules without real implementation");
 S("  For example: -i singularity/definition");
-S("-c PTHC - Path To directory with .h & .c -implementations of interface modules");
+S("-c PHC - Path to directory with .h & .c -implementations of interface modules");
 S("  For example: -c singularity/implementation");
 S("-infr Infr - path to Infr_astructure. '-infr p' is shortening to:");
 S("  -i p/singularity/definition -c p/singularity/implementation -m p/library");
@@ -458,6 +468,11 @@ BEGIN
 		S("Can not found Java compiler")
 	| Cli.ErrTooLongJavaDirs:
 		S("Too long overall length of paths to .java files")
+
+	| Cli.ErrOpenJs:
+		S("Can not open output .js file")
+	| Cli.ErrTooLongJsDirs:
+		S("Too long overall length of paths to .js files")
 	END
 END CliError;
 

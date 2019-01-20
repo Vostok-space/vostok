@@ -1,4 +1,4 @@
-(* Copyright 2017-2019 ComdivByZero
+/* Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,28 +11,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *)
-MODULE Platform;
+ */
+var o7;
+(function(o7) { 'use strict';
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Darwin*,
-   Java*,
-   Javascript*: BOOLEAN;
+var platform;
 
-BEGIN
-  Posix      := FALSE;
-  Linux      := FALSE;
-  Bsd        := FALSE;
-  Dos        := FALSE;
-  Windows    := FALSE;
-  Darwin     := FALSE;
+var module = {};
+o7.Platform = module;
 
-  Java       := FALSE;
-  Javascript := FALSE;
-END Platform.
+if (typeof require !== 'undefined') {
+    platform = require("os").platform();
+}
+
+module.Posix      = platform == "linux" || platform == 'darwin';
+module.Linux      = platform == "linux";
+module.Bsd        = false;
+module.Dos        = false;
+module.Windows    = platform == "windows";
+module.Darwin     = platform == "darwin";
+
+module.Java       = false;
+module.Javascript = true;
+
+return module;
+})(o7 || (o7 = {}));
+

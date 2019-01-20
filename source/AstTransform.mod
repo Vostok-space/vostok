@@ -668,7 +668,7 @@ MODULE AstTransform;
     Statements(ds.stats, o)
   END Declarations;
 
-  PROCEDURE Do*(m: Ast.Module; VAR o: Options);
+  PROCEDURE Transform(m: Ast.Module; VAR o: Options);
   VAR imp: Ast.Declaration;
   BEGIN
     imp := m.import;
@@ -676,7 +676,7 @@ MODULE AstTransform;
       IF imp.module.m.ext # o.mark THEN
         imp.module.m.ext := o.mark;
         Ast.ModuleReopen(imp.module.m);
-        Do(imp.module.m, o)
+        Transform(imp.module.m, o)
       END;
       imp := imp.next
     END;
@@ -687,6 +687,26 @@ MODULE AstTransform;
     o.types.last   := NIL;
     o.anon         := 0;
     Declarations(m, o)
+  END Transform;
+
+  PROCEDURE Fix(m: Ast.Module; mark: Ast.Expression);
+  VAR imp: Ast.Declaration;
+  BEGIN
+    imp := m.import;
+    WHILE (imp # NIL) & (imp IS Ast.Import) DO
+      IF imp.module.m.ext = mark THEN
+        imp.module.m.ext := NIL;
+        ASSERT(Ast.ErrNo = Ast.ModuleEnd(imp.module.m));
+        Fix(imp.module.m, mark)
+      END;
+      imp := imp.next
+    END;
+  END Fix;
+
+  PROCEDURE Do*(m: Ast.Module; VAR o: Options);
+  BEGIN
+    Transform(m, o);
+    Fix(m, o.mark)
   END Do;
 
   PROCEDURE Init;

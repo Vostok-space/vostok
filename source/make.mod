@@ -1,5 +1,5 @@
 (*  Build and test tasks for the translator
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,10 @@ MODULE make;
 
  IMPORT Log, Exec := PlatformExec, Dir, Platform;
 
- VAR ok*, windows, posix, java: BOOLEAN;
+ CONST C = 0; Java = 1; Js = 2;
+
+ VAR ok*, windows, posix: BOOLEAN;
+     lang: INTEGER;
      cc: ARRAY 256 OF CHAR;
 
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
@@ -72,6 +75,8 @@ MODULE make;
       )
     & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
 
+    & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
+
     & (0 = Execute(code, "Build"))
  RETURN
    ok
@@ -85,17 +90,13 @@ MODULE make;
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
  VAR ret: BOOLEAN;
  BEGIN
-   IF class THEN
-     ret := Exec.Add(code, "o7.Translator", 0)
-   ELSE
-     ret := TRUE
-   END;
-   IF ~ret THEN
-      ;
-   ELSIF java THEN
-     ret := Exec.Add(code, "run-java", 0)
-   ELSE
-     ret := Exec.Add(code, "run", 0)
+   ret := ~class OR Exec.Add(code, "o7.Translator", 0);
+   IF ret THEN
+     CASE lang OF
+       C   : ret := Exec.Add(code, "run", 0)
+     | Java: ret := Exec.Add(code, "run-java", 0)
+     | Js  : ret := Exec.Add(code, "run-js", 0)
+     END
    END
  RETURN
    ret
@@ -161,12 +162,16 @@ MODULE make;
 
  PROCEDURE Self*;
  BEGIN
-   IF java THEN
-     ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
-         & TestBy("test/source", FALSE, "o7c-v1-java", TRUE)
-   ELSE
+   CASE lang OF
+     C:
      ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
          & TestBy("test/source", FALSE, "o7c-v1", FALSE)
+   | Java:
+     ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
+         & TestBy("test/source", FALSE, "o7c-v1-java", TRUE)
+   | Js:
+     ok := BuildBy("o7c", "o7c-v1-js", "o7c-v1-js", "to-js")
+         & TestBy("test/source", FALSE, "o7c-v1-js", FALSE)
    END
  END Self;
 
@@ -198,20 +203,25 @@ MODULE make;
    Log.StrLn("  result/o7c run 'make.UseJava; make.Test' -infr . -m source")
  END Help;
 
- PROCEDURE UseJava*;
- BEGIN
-   java := TRUE
- END UseJava;
-
  PROCEDURE UseC*;
  BEGIN
-   java := FALSE
+   lang := C
  END UseC;
+
+ PROCEDURE UseJava*;
+ BEGIN
+   lang := Java
+ END UseJava;
+
+ PROCEDURE UseJs*;
+ BEGIN
+   lang := Js
+ END UseJs;
 
  PROCEDURE UseCC*(cli: ARRAY OF CHAR);
  BEGIN
    cc   := cli;
-   java := FALSE
+   lang := C
  END UseCC;
 
 BEGIN
@@ -221,7 +231,7 @@ BEGIN
   windows := Platform.Windows;
   posix   := Platform.Posix;
 
-  java := FALSE;
+  lang := C;
 
   cc[0] := 0X
 END make.

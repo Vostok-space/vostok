@@ -1,4 +1,4 @@
-/* Copyright 2017-2018 ComdivByZero
+/* Copyright 2017-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,10 +47,17 @@
   o7_cbool const Platform_Dos = 0 > 1;
 #endif
 
+#if defined(__APPLE__)
+  o7_cbool const Platform_Darwin = 0 < 1;
+#else
+  o7_cbool const Platform_Darwin = 0 > 1;
+#endif
+
 #if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__) || defined(__APPLE__)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;
 #endif
 
-o7_cbool const Platform_Java = 0 > 1;
+o7_cbool const Platform_Java       = 0 > 1;
+o7_cbool const Platform_Javascript = 0 > 1;

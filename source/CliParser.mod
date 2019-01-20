@@ -29,8 +29,12 @@ CONST
 	ResultClass*   = 6;
 	ResultRunJava* = 7;
 
+	ResultJs*      = 8;
+	ResultRunJs*   = 9;
+
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultRunJava};
+	ThroughJs*   = {ResultJs, ResultRunJs};
 
 	CyrillicNo*       = 0;
 	CyrillicDefault*  = 1;
@@ -64,17 +68,19 @@ CONST
 	ErrJavaCompiler*         = -31;
 	ErrCantFoundJavaCompiler*= -32;
 	ErrTooLongJavaDirs*      = -33;
+	ErrTooLongJsDirs*        = -34;
 
 	ErrOpenJava*         = -40;
+	ErrOpenJs*           = -41;
 
 TYPE
 	Args* = RECORD(V.Base)
 		src*   : ARRAY 65536 OF CHAR;
 		srcLen*: INTEGER;
-		script*: BOOLEAN;
-		outC*, resPath*, tmp*: ARRAY 1024 OF CHAR;
+		script*, toSingleFile*: BOOLEAN;
+		resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
-		modPath*, cDirs*, cc*, javaDirs*, javac*: ARRAY 4096 OF CHAR;
+		modPath*, cDirs*, cc*, javaDirs*, jsDirs*, javac*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*: INTEGER;
@@ -128,7 +134,7 @@ BEGIN
 END IsEqualStr;
 
 PROCEDURE Options*(VAR args: Args; VAR arg: INTEGER): INTEGER;
-VAR i, dirsOfs, javaDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
+VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
     ret: INTEGER;
     opt: ARRAY 256 OF CHAR;
     ignore: BOOLEAN;
@@ -148,6 +154,7 @@ BEGIN
 	i := 0;
 	dirsOfs := 0;
 	javaDirsOfs := 0;
+	jsDirsOfs := 0;
 	ccLen := 0;
 	javacLen := 0;
 	count := 0;
@@ -174,14 +181,23 @@ BEGIN
 				Log.Str("cDirs = ");
 				Log.StrLn(args.cDirs)
 			END
-		ELSIF opt = "-j" THEN
+		ELSIF opt = "-jv" THEN
 			IF GetParam(ret, ErrTooLongJavaDirs,
 			            args.javaDirs, javaDirsOfs, arg)
 			THEN
 				INC(javaDirsOfs);
-				args.cDirs[javaDirsOfs] := Utf8.Null;
+				args.javaDirs[javaDirsOfs] := Utf8.Null;
 				Log.Str("javaDirs = ");
 				Log.StrLn(args.javaDirs)
+			END
+		ELSIF opt = "-js" THEN
+			IF GetParam(ret, ErrTooLongJsDirs,
+			            args.jsDirs, jsDirsOfs, arg)
+			THEN
+				INC(jsDirsOfs);
+				args.jsDirs[jsDirsOfs] := Utf8.Null;
+				Log.Str("jsDirs = ");
+				Log.StrLn(args.jsDirs)
 			END
 		ELSIF opt = "-cc" THEN
 			ignore := GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)
@@ -195,11 +211,13 @@ BEGIN
 			    & CopyInfrPart(args.modPath, i, arg, "/library")
 			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "/singularity/implementation")
 			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "/singularity/implementation.java")
+			    & CopyInfrPart(args.jsDirs, jsDirsOfs, arg, "/singularity/implementation.js")
 			   OR Platform.Windows
 			    & CopyInfrPart(args.modPath, i, arg, "\singularity\definition")
 			    & CopyInfrPart(args.modPath, i, arg, "\library")
 			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "\singularity\implementation")
 			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "\singularity\implementation.java")
+			    & CopyInfrPart(args.jsDirs, jsDirsOfs, arg, "\singularity\implementation.js")
 			THEN
 				INC(arg);
 				INCL(args.sing, count);
@@ -291,6 +309,7 @@ BEGIN
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;
 	args.cyrillic        := CyrillicNo;
+	args.toSingleFile    := FALSE
 END ArgsInit;
 
 PROCEDURE ParseCommand*(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
@@ -327,6 +346,23 @@ BEGIN
 	RETURN i
 END ParseCommand;
 
+PROCEDURE IsEndByShortExt(name: ARRAY OF CHAR): BOOLEAN;
+VAR i, dot, sep: INTEGER;
+BEGIN
+	i   := 0;
+	dot := -988;
+	sep := -977;
+	WHILE name[i] # Utf8.Null DO
+		IF name[i] = "." THEN
+			dot := i
+		ELSIF (name[i] = "/") OR (name[i] = "\") THEN
+			sep := i
+		END;
+		INC(i)
+	END
+	RETURN (dot > sep) & (i - dot <= 4)
+END IsEndByShortExt;
+
 PROCEDURE ParseOptions(VAR args: Args; ret: INTEGER; VAR arg: INTEGER): INTEGER;
 VAR argDest, cpRet: INTEGER;
     forRun: BOOLEAN;
@@ -334,7 +370,7 @@ BEGIN
 	argDest := arg;
 	INC(args.srcLen);
 
-	forRun := ret IN {ResultRun, ResultRunJava};
+	forRun := ret IN {ResultRun, ResultRunJava, ResultRunJs};
 	arg := arg + ORD(~forRun);
 	cpRet := Options(args, arg);
 	IF cpRet # ErrNo THEN
@@ -345,10 +381,13 @@ BEGIN
 
 		args.resPathLen := 0;
 		args.resPath[0] := Utf8.Null;
-		IF ~forRun
-		 & ~GetParam(cpRet, ErrTooLongOutName,
-		             args.resPath, args.resPathLen, argDest)
+		IF forRun THEN
+			;
+		ELSIF GetParam(cpRet, ErrTooLongOutName,
+		               args.resPath, args.resPathLen, argDest)
 		THEN
+			args.toSingleFile := IsEndByShortExt(args.resPath)
+		ELSE
 			ret := cpRet
 		END
 	END
@@ -358,7 +397,7 @@ END ParseOptions;
 PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
 VAR arg: INTEGER;
 BEGIN
-	ASSERT(ret IN {ResultC .. ResultRunJava});
+	ASSERT(ret IN {ResultC .. ResultRunJs});
 
 	ArgsInit(args);
 
@@ -390,6 +429,10 @@ BEGIN
 		ret := Command(args, ResultClass)
 	ELSIF cmd = "run-java" THEN
 		ret := Command(args, ResultRunJava)
+	ELSIF cmd = "to-js" THEN
+		ret := Command(args, ResultJs)
+	ELSIF cmd = "run-js" THEN
+		ret := Command(args, ResultRunJs)
 	ELSE
 		ret := ErrUnknownCommand
 	END

@@ -457,6 +457,11 @@ BEGIN
 		S("Не вдалося знайти компілятор Java")
 	| Cli.ErrTooLongJavaDirs:
 		S("Загальна довжина тек з .java-файлами завелика")
+
+	| Cli.ErrOpenJs:
+		S("Не вдається відкрити вихідний .js файл")
+	| Cli.ErrTooLongJsDirs:
+		S("Загальна довжина тек з .js-файлами завелика")
 	END
 END CliError;
 

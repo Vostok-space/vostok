@@ -32,19 +32,22 @@ IMPORT
 	AstTransform,
 	GeneratorC,
 	GeneratorJava,
+	GeneratorJs,
 	JavaStoreProcTypes,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
 	CComp := CCompilerInterface,
 	JavaComp := JavaCompilerInterface,
 	JavaExec := JavaExecInterface,
+	JsExec := JavascriptExecInterface,
 	Message,
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
 	OsEnv,
 	FileSys := FileSystemUtil,
-	Text := TextGenerator;
+	Text := TextGenerator,
+	VCopy;
 
 CONST
 	ErrNo*    =  0;
@@ -325,9 +328,10 @@ BEGIN
 	RETURN ret
 END OpenCOutput;
 
-PROCEDURE OpenJavaOutput(VAR out: File.Out;
-                         module: Ast.Module; orName: ARRAY OF CHAR;
-                         VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+PROCEDURE OpenSingleOutput(VAR out: File.Out;
+                           module: Ast.Module; orName, ext: ARRAY OF CHAR;
+                           errOpen: INTEGER;
+                           VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 VAR destLen: INTEGER;
     ret: INTEGER;
 BEGIN
@@ -337,20 +341,36 @@ BEGIN
 	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name)
 	  OR (module = NIL) & Strings.CopyCharsNull(dir, destLen, orName)
 	    )
-	OR ~Strings.CopyCharsNull(dir, destLen, ".java")
+	OR ~Strings.CopyCharsNull(dir, destLen, ext)
 	THEN
 		ret := Cli.ErrTooLongOutName
 	ELSE
 		out := File.OpenOut(dir);
 		IF out = NIL THEN
-			ret := Cli.ErrOpenJava
+			ret := errOpen
 		ELSE
 			Log.StrLn(dir);
 			ret := ErrNo
 		END
 	END
 	RETURN ret
+END OpenSingleOutput;
+
+PROCEDURE OpenJavaOutput(VAR out: File.Out;
+                         module: Ast.Module; orName: ARRAY OF CHAR;
+                         VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+
+	RETURN OpenSingleOutput(out, module, orName, ".java", Cli.ErrOpenJava,
+	                        dir, dirLen)
 END OpenJavaOutput;
+
+PROCEDURE OpenJsOutput(VAR out: File.Out;
+                       module: Ast.Module; orName: ARRAY OF CHAR;
+                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+
+	RETURN OpenSingleOutput(out, module, orName, ".js", Cli.ErrOpenJs,
+	                        dir, dirLen)
+END OpenJsOutput;
 
 PROCEDURE NewProvider(VAR mp: ModuleProvider; args: Cli.Args);
 VAR len: INTEGER;
@@ -399,7 +419,7 @@ BEGIN
 		sing := FALSE;
 		IF module.mark THEN
 			i := 0;
-			WHILE cDirs[i] # Utf8.Null DO
+			WHILE ~sing & (cDirs[i] # Utf8.Null) DO
 				nameLen := 0;
 				cDirsLen := Strings.CalcLen(cDirs, i);
 				(* TODO *)
@@ -763,7 +783,7 @@ BEGIN
 		sing := FALSE;
 		IF module.mark THEN
 			i := 0;
-			WHILE javaDirs[i] # Utf8.Null DO
+			WHILE ~sing & (javaDirs[i] # Utf8.Null) DO
 				nameLen := 0;
 				javaDirsLen := Strings.CalcLen(javaDirs, i);
 				(* TODO *)
@@ -787,7 +807,7 @@ BEGIN
 				GeneratorJava.Generate(out, module, cmd, prov, opt);
 				File.CloseOut(out);
 				(* TODO *)
-				ASSERT(JavaComp.AddJava(javac, fileName, 0))
+				ASSERT(~usejavac OR JavaComp.AddJava(javac, fileName, 0))
 			END
 		END
 	END
@@ -948,6 +968,236 @@ BEGIN
 	RETURN ret
 END GenerateThroughJava;
 
+PROCEDURE CopyFileToOut(inName: ARRAY OF CHAR; out: File.Out): BOOLEAN;
+VAR in: File.In; ok: BOOLEAN;
+BEGIN
+	in := File.OpenIn(inName);
+	ok := in # NIL;
+	IF ok THEN
+		VCopy.UntilEnd(in^, out^);
+		File.CloseIn(in)
+	END
+	RETURN ok
+END CopyFileToOut;
+
+PROCEDURE AppendModuleName(VAR name: ARRAY OF CHAR; VAR nameLen: INTEGER;
+                           module: Ast.Module; ext: ARRAY OF CHAR
+                           ): BOOLEAN;
+BEGIN
+	RETURN Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+	     & CopyModuleNameForFile(name, nameLen, module.name)
+	     & Strings.CopyCharsNull(name, nameLen, ext)
+END AppendModuleName;
+
+PROCEDURE GenerateJs1(module: Ast.Module; cmd: Ast.Statement;
+                      outSingle: File.Out;
+                      opt: GeneratorJs.Options;
+                      VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                      jsDirs: ARRAY OF CHAR): INTEGER;
+VAR imp: Ast.Declaration;
+    ret, i, jsDirsLen, nameLen: INTEGER;
+    name: ARRAY 512 OF CHAR;
+    fileName: ARRAY 1024 OF CHAR;
+    sing: BOOLEAN;
+    out: File.Out;
+BEGIN
+	module.used := TRUE;
+
+	ret := ErrNo;
+	imp := module.import;
+	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+		IF ~imp.module.m.used THEN
+			ret := GenerateJs1(imp.module.m, NIL, outSingle, opt, dir, dirLen, jsDirs)
+		END;
+		imp := imp.next
+	END;
+	IF ret = ErrNo THEN
+		sing := FALSE;
+		IF module.mark THEN
+			i := 0;
+			WHILE ~sing & (jsDirs[i] # Utf8.Null) DO
+				nameLen := 0;
+				jsDirsLen := Strings.CalcLen(jsDirs, i);
+				(* TODO *)
+				ASSERT(Strings.CopyChars(name, nameLen, jsDirs, i, i + jsDirsLen)
+				     & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & Strings.CopyCharsNull(name, nameLen, ".js")
+				);
+				IF Files.Exist(name, 0) THEN
+					sing := TRUE;
+					IF outSingle # NIL THEN
+						(* TODO *)
+						ASSERT(CopyFileToOut(name, outSingle))
+					END
+				END;
+				i := i + jsDirsLen + 1
+			END
+			(* TODO проверка ошибки ненайденного файла *)
+		END;
+		IF ~sing & (ret = ErrNo) THEN
+			IF outSingle = NIL THEN
+				ret := OpenJsOutput(out, module, "", dir, dirLen)
+			ELSE
+				out := outSingle
+			END;
+			fileName := dir;
+			IF ret = ErrNo THEN
+				GeneratorJs.Generate(out, module, cmd, opt);
+				IF out # outSingle THEN
+					File.CloseOut(out)
+				END
+			END
+		END
+	END
+	RETURN ret
+END GenerateJs1;
+
+PROCEDURE GenerateJs(module: Ast.Module; cmd: Ast.Statement;
+                     toSingleFile: BOOLEAN;
+                     opt: GeneratorJs.Options;
+                     VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                     jsDirs: ARRAY OF CHAR): INTEGER;
+VAR out: File.Out; ret, i, nameLen, dirsLen: INTEGER;
+    name: ARRAY 1024 OF CHAR; ok: BOOLEAN;
+BEGIN
+	ret := ErrNo;
+	out := NIL;
+	IF toSingleFile THEN
+		out := File.OpenOut(dir);
+
+		IF out = NIL THEN
+			ret := Cli.ErrOpenJs;
+			Log.On;
+			Log.StrLn(dir);
+			Log.Off
+		ELSE
+			i := 0;
+			ok := TRUE;
+			WHILE ok & (jsDirs[i] # Utf8.Null) DO
+				nameLen := 0;
+				dirsLen := Strings.CalcLen(jsDirs, i);
+				ok := Strings.CopyChars(name, nameLen, jsDirs, i, i + dirsLen)
+				    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+				    & Strings.CopyCharsNull(name, nameLen, "o7.js")
+				    & (~Files.Exist(name, 0) OR CopyFileToOut(name, out));
+				i := i + dirsLen + 1
+			END
+		END
+	END;
+	IF ret = ErrNo THEN
+		ret := GenerateJs1(module, cmd, out, opt, dir, dirLen, jsDirs)
+	END;
+	File.CloseOut(out)
+	RETURN ret
+END GenerateJs;
+
+PROCEDURE GenerateThroughJs(res: INTEGER; VAR args: Cli.Args;
+                            module: Ast.Module; call: Ast.Statement;
+                            VAR listener: V.Base): INTEGER;
+VAR opt: GeneratorJs.Options;
+    ret: INTEGER;
+    out: ARRAY 1024 OF CHAR;
+    outLen: INTEGER;
+
+	PROCEDURE SetOptions(opt: GeneratorJs.Options; args: Cli.Args);
+	BEGIN
+		IF 0 <= args.init THEN
+			(* TODO проверять соответствие *)
+			opt.varInit := args.init
+		END;
+		IF args.noOverflowCheck THEN
+			opt.checkArith := FALSE
+		END;
+		IF Cli.CyrillicSame <= args.cyrillic THEN
+			opt.identEnc := args.cyrillic - Cli.CyrillicSame
+		END
+	END SetOptions;
+
+	PROCEDURE TempJs(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
+	                 opt: GeneratorJs.Options;
+	                 VAR out: ARRAY OF CHAR; VAR dirLen: INTEGER;
+	                 VAR listener: V.Base): INTEGER;
+	VAR ret: INTEGER;
+	    outLen: INTEGER;
+	    ok: BOOLEAN;
+	BEGIN
+		ok := GetTempOut(out, dirLen, m.name, args.tmp, listener);
+		IF ~ok THEN
+			ret := Cli.ErrCantCreateOutDir
+		ELSE
+			IF args.resPath[0] = Utf8.Null THEN
+				args.resPathLen := 0;
+				ASSERT(Strings.CopyChars(args.resPath, args.resPathLen,
+				                         out, 0, dirLen))
+			END;
+			(* TODO *)
+			outLen := dirLen;
+			ASSERT(AppendModuleName(out, outLen, m, ".js"));
+
+			ret := GenerateJs(m, call, TRUE, opt,
+			                  out, outLen,
+			                  args.jsDirs);
+		END
+		RETURN ret
+	END TempJs;
+
+	PROCEDURE Run(file: ARRAY OF CHAR; arg: INTEGER): INTEGER;
+	VAR cmd: Exec.Code;
+	    buf: ARRAY Exec.CodeSize OF CHAR;
+	    len: INTEGER;
+	    ret: INTEGER;
+	BEGIN
+		JsExec.Init(cmd);
+		ret := Cli.ErrTooLongRunArgs;
+		IF JsExec.File(cmd, file, 0) THEN
+			INC(arg);
+			len := 0;
+			WHILE (arg < CLI.count)
+			    & CLI.Get(buf, len, arg)
+			    & Exec.Add(cmd, buf, 0)
+			DO
+				len := 0;
+				INC(arg)
+			END;
+			IF CLI.count <= arg THEN
+				CLI.SetExitCode(Exec.Ok + ORD(Exec.Do(cmd) # Exec.Ok));
+				ret := ErrNo
+			END
+		END
+		RETURN ret
+	END Run;
+BEGIN
+	ASSERT(res IN Cli.ThroughJs);
+
+	opt := GeneratorJs.DefaultOptions();
+	SetOptions(opt, args);
+
+	CASE res OF
+	  Cli.ResultJs:
+		IF (call = NIL) & args.script THEN
+			call := Ast.NopNew()
+		END;
+		ret := GenerateJs(module, call, args.toSingleFile, opt,
+		                  args.resPath, args.resPathLen, args.jsDirs)
+	| Cli.ResultRunJs:
+		IF call = NIL THEN
+			call := Ast.NopNew()
+		END;
+		ret := TempJs(module, args, call, opt, out, outLen, listener);
+		IF (res = Cli.ResultRunJs) & (ret = ErrNo) THEN
+			ret := Run(out, args.arg)
+		END;
+		out[outLen] := Utf8.Null;
+		IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo)
+		THEN
+			ret := Cli.ErrCantRemoveOutDir
+		END
+	END
+
+	RETURN ret
+END GenerateThroughJs;
+
 PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args; VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
     mp: ModuleProvider;
@@ -979,11 +1229,15 @@ BEGIN
 		IF ret # Ast.ErrNo THEN
 			ret := ErrParse;
 			Message.AstError(ret); Message.Ln
-		ELSIF res IN Cli.ThroughJava THEN
+		ELSIF res IN Cli.ThroughJava + Cli.ThroughJs THEN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			AstTransform.Do(module, tranOpt);
-			ret := GenerateThroughJava(res, args, module, call, listener)
+			IF res IN Cli.ThroughJava THEN
+				ret := GenerateThroughJava(res, args, module, call, listener)
+			ELSE
+				ret := GenerateThroughJs(res, args, module, call, listener)
+			END
 		ELSE
 			ret := GenerateThroughC(res, args, module, call, listener)
 		END

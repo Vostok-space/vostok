@@ -22,7 +22,9 @@ extern o7_cbool const
   Platform_Mingw,
   Platform_Dos,
   Platform_Windows,
-  Platform_Java;
+  Platform_Darwin,
+  Platform_Java,
+  Platform_Javascript;
 
 O7_ALWAYS_INLINE void Platform_init(void) {}
 O7_ALWAYS_INLINE void Platform_done(void) {}

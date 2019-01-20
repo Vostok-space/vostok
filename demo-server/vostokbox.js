@@ -17,7 +17,7 @@ var VostokBox;
     box.runners = doc.getElementById('vostokbox-runners');
     box.log = doc.getElementById('vostokbox-log');
     return box;
-  }
+  };
 
   function errorLog(box, text) {
     var div;
@@ -81,19 +81,19 @@ var VostokBox;
     run.innerText = 'Run';
     run.onclick = function() {
       requestRun(box, inp.value);
-    }
+    };
     addel = box.doc.createElement('button');
     if (root) {
       box.script = inp;
       addel.innerText = 'Add';
       addel.onclick = function() {
         addRunner(box, inp.value, false);
-      }
+      };
     } else {
       addel.innerText = 'Del';
       addel.onclick = function() {
         box.runners.removeChild(div);
-      }
+      };
     }
 
     div.appendChild(inp);
@@ -105,10 +105,10 @@ var VostokBox;
 
   vb.addRootRunner = function(box, command) {
     addRunner(box, command, true);
-  }
+  };
 
   vb.addRunner = function(box, command) {
     addRunner(box, command, false);
-  }
+  };
 
 })(VostokBox || (VostokBox = {}));

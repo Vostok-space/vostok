@@ -14,7 +14,7 @@
  *)
 MODULE OsRand;
 
- IMPORT File := CFiles, WindowsRand, JavaRand, Platform;
+ IMPORT File := CFiles, WindowsRand, JavaRand, JsRand, Platform;
 
  CONST
    FileName = "/dev/urandom";
@@ -33,6 +33,8 @@ MODULE OsRand;
        ;
      ELSIF Platform.Java THEN
        init := JavaRand.Open()
+     ELSIF Platform.Javascript THEN
+       init := JsRand.Open()
      ELSE
        init := WindowsRand.Open()
      END
@@ -48,6 +50,8 @@ MODULE OsRand;
      File.Close(file)
    ELSIF Platform.Java THEN
      JavaRand.Close
+   ELSIF Platform.Javascript THEN
+     JsRand.Close
    ELSE
      WindowsRand.Close
    END;
@@ -63,6 +67,8 @@ MODULE OsRand;
    ELSE
      IF Platform.Java THEN
        ok := JavaRand.Read(buf, ofs, count)
+     ELSIF Platform.Javascript THEN
+       ok := JsRand.Read(buf, ofs, count)
      ELSE
        ok := WindowsRand.Read(buf, ofs, count)
      END;
