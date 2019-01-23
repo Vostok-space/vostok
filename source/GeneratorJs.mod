@@ -1311,7 +1311,7 @@ VAR var: Ast.Declaration;
 BEGIN
 	RecordAssignHeader(gen, rec);
 	IF IsNeedBase(rec) THEN
-		Name(gen, rec.base);
+		GlobalName(gen, rec.base);
 		Text.StrLn(gen, ".prototype.assign.call(this, r);")
 	END;
 	var := rec.vars;
