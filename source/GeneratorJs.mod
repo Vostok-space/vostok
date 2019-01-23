@@ -1426,15 +1426,20 @@ BEGIN
 	END
 END InitAllVarsWichArrayOfRecord;
 
-PROCEDURE Mark(VAR gen: Generator; decl: Ast.Declaration);
+PROCEDURE MarkWithDonor(VAR gen: Generator; decl, donor: Ast.Declaration);
 BEGIN
-	IF decl.mark & (decl.up # NIL) THEN
+	IF decl.mark & (donor.up # NIL) THEN
 		Text.Str(gen, "module.");
 		Name(gen, decl);
 		Text.Str(gen, " = ");
 		Name(gen, decl);
 		Text.StrLn(gen, ";")
 	END
+END MarkWithDonor;
+
+PROCEDURE Mark(VAR gen: Generator; decl: Ast.Declaration);
+BEGIN
+	MarkWithDonor(gen, decl, decl)
 END Mark;
 
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
@@ -1537,6 +1542,7 @@ BEGIN
 END Type;
 
 PROCEDURE TypeDecl(VAR gen: Generator; typ: Ast.Type);
+VAR mark: BOOLEAN; donor: Ast.Type;
 
 	PROCEDURE Typedef(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
@@ -1549,20 +1555,22 @@ BEGIN
 	 & ((typ.id # Ast.IdPointer) OR ~Strings.IsDefined(typ.type.name))
 	THEN
 		Typedef(gen, typ);
+		donor := typ;
 		IF (typ.id = Ast.IdRecord)
 		OR (typ.id = Ast.IdPointer) & (typ.type.next = NIL)
 		THEN
+			mark := typ.mark;
 			IF typ.id = Ast.IdPointer THEN
 				typ := typ.type
 			END;
-			typ.mark := typ.mark
+			typ.mark := mark
 			         OR (typ(Ast.Record).pointer # NIL)
 			          & (typ(Ast.Record).pointer.mark);
 			IF gen.opt.varInit = VarInitUndefined THEN
 				RecordUndef(gen, typ(Ast.Record))
 			END
 		END;
-		Mark(gen, typ)
+		MarkWithDonor(gen, typ, donor)
 	END
 END TypeDecl;
 
