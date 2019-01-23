@@ -31,13 +31,23 @@ function File() {}
 File.prototype.assign = function(r) {}
 
 function Open(bytes_name, ofs, mode) {
-	var f, name, fd;
+	var f, name, fd, smode, i;
 
 	f = null;
 	if (fs) {
 		name = o7.utf8ToStr1(bytes_name, ofs);
 		if (name != null) {
-			fd = fs.openSync(name, "r", 6 * 64 + 6 * 8 + 6);
+			smode = "r";
+			for (i = 0; i < mode.length; i += 1) {
+				if (mode[i] == 'w') {
+					smode = "rw";
+				}
+			}
+			try {
+				fd = fs.openSync(name, smode, 6 * 64 + 6 * 8 + 6);
+			} catch (exc) {
+				fd = -1;
+			}
 			if (fd != -1) {
 				f = new File();
 				f.fd = fd;
