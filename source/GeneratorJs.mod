@@ -1877,7 +1877,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
-			Text.Str(gen, "{ int o7_case_expr = ");
+			Text.Str(gen, "(function() { var o7_case_expr = ");
 			Expression(gen, st.expr, {});
 			Text.StrOpen(gen, ";");
 			Text.StrLn(gen, "switch (o7_case_expr) {")
@@ -1925,7 +1925,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		Text.StrLn(gen, "break;");
 		Text.StrLnClose(gen, "}");
 		IF caseExpr = NIL THEN
-			Text.StrLnClose(gen, "}")
+			Text.StrLnClose(gen, "})();")
 		END
 	END Case;
 BEGIN
