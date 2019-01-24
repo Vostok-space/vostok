@@ -39,8 +39,8 @@ function Open(bytes_name, ofs, mode) {
 		if (name != null) {
 			smode = "r";
 			for (i = 0; i < mode.length; i += 1) {
-				if (mode[i] == 'w') {
-					smode = "rw";
+				if (mode[i] == 'w'.charCodeAt(0)) {
+					smode = "w+";
 				}
 			}
 			try {
