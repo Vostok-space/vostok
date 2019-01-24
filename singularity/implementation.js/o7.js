@@ -325,7 +325,11 @@ var o7;
 
 
   o7.extend = function(ext, base) {
-    ext.prototype = { prototype: base.prototype, constructor: ext };
+    function proto() {}
+    proto.prototype = base.prototype;
+
+    ext.prototype = new proto();
+    ext.constructor = ext;
     ext.base = base;
     return ext;
   };

@@ -63,6 +63,24 @@ BEGIN
 	Out.String(" a = "); Out.Int(par.a, 0); Out.Ln
 END PrintExt21;
 
+PROCEDURE CheckIs(ab, ae1, ae2, ae21: Base);
+BEGIN
+	ASSERT(~(ab IS Ext1));
+	ASSERT(~(ab IS Ext2));
+
+	ASSERT(ae1 IS Ext1);
+	ASSERT(~(ae1 IS Ext2));
+	ASSERT(~(ae1 IS Ext21));
+
+	ASSERT(~(ae2 IS Ext1));
+	ASSERT(ae2 IS Ext2);
+	ASSERT(~(ae2 IS Ext21));
+
+	ASSERT(~(ae21 IS Ext1));
+	ASSERT(ae21 IS Ext2);
+	ASSERT(ae21 IS Ext21)
+END CheckIs;
+
 PROCEDURE Pointer(par: PBase);
 BEGIN
 	IF par # NIL THEN
@@ -102,7 +120,9 @@ BEGIN
 	ASSERT(pe1 = pb1);
 
 	Pointer(pb1);
-	pb := pb1
+	pb := pb1;
+
+	CheckIs(b, e1, e2, e21)
 END Go;
 
 END RecordExt.
