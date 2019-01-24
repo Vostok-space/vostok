@@ -66,10 +66,21 @@ function Close(file, file_ai) {
 }
 module.Close = Close;
 
+/* TODO сохранение буфера до Сlose */
+function bufGet(size) {
+	var data;
+	if (Buffer.allocUnsafe) {
+		data = Buffer.allocUnsafe(size);
+	} else {
+		data = new Buffer(count);
+	}
+	return data;
+}
+
 function Read(file, buf, ofs, count) {
 	var data, read, i;
 	if (typeof buf !== 'Uint8Aarray') {
-		data = new Uint8Array(count);
+		data = bufGet(count);
 		read = fs.readSync(file.fd, data, 0, count);
 		for (i = 0; i < read; i += 1) {
 			buf[i + ofs] = data[i];
@@ -84,7 +95,7 @@ module.Read = Read;
 function Write(file, buf, ofs, count) {
 	var data, write, i;
 	if (typeof buf !== 'Uint8Aarray') {
-		data = new Uint8Array(count);
+		data = bufGet(count);
 		for (i = 0; i < count; i += 1) {
 			data[i] = buf[i + ofs];
 		}
