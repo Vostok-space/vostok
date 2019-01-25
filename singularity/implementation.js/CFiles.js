@@ -72,7 +72,7 @@ function bufGet(size) {
 	if (Buffer.allocUnsafe) {
 		data = Buffer.allocUnsafe(size);
 	} else {
-		data = new Buffer(count);
+		data = new Buffer(size);
 	}
 	return data;
 }
