@@ -129,7 +129,6 @@ VAR up: Ast.Declarations;
     i: INTEGER;
 BEGIN
 	IF (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
-	OR (decl IS Ast.Procedure)
 	THEN
 		up := decl.up.d;
 		i := 0;
@@ -1978,56 +1977,33 @@ BEGIN
 END ProcHeader;
 
 PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
-
-	PROCEDURE Implement(VAR gen: Generator; proc: Ast.Procedure);
-	BEGIN
-		Comment(gen, proc.comment);
-
-		ProcHeader(gen, proc);
-		Text.StrOpen(gen, " {");
-
-		INC(gen.localDeep);
-
-		gen.fixedLen := gen.len;
-
-		declarations(gen, proc);
-
-		InitAllVarsWichArrayOfRecord(gen, proc.vars);
-
-		Statements(gen, proc.stats);
-
-		IF proc.return # NIL THEN
-			Text.Str(gen, "return ");
-			CheckExpr(gen, proc.return,
-			          IsForSameType(proc.header.type, proc.return.type));
-			Text.StrLn(gen, ";")
-		END;
-
-		DEC(gen.localDeep);
-		Text.StrLnClose(gen, "}");
-		Mark(gen, proc);
-		Text.Ln(gen)
-	END Implement;
-
-	PROCEDURE LocalProcs(VAR gen: Generator; proc: Ast.Procedure);
-	VAR p, t: Ast.Declaration;
-	BEGIN
-		t := proc.types;
-		WHILE (t # NIL) & (t IS Ast.Type) DO
-			TypeDecl(gen, t(Ast.Type));
-			t := t.next
-		END;
-		p := proc.procedures;
-		IF p # NIL THEN
-			REPEAT
-				Procedure(gen, p(Ast.Procedure));
-				p := p.next
-			UNTIL p = NIL
-		END
-	END LocalProcs;
 BEGIN
-	LocalProcs(gen, proc);
-	Implement(gen, proc);
+	Comment(gen, proc.comment);
+
+	ProcHeader(gen, proc);
+	Text.StrOpen(gen, " {");
+
+	INC(gen.localDeep);
+
+	gen.fixedLen := gen.len;
+
+	declarations(gen, proc);
+
+	InitAllVarsWichArrayOfRecord(gen, proc.vars);
+
+	Statements(gen, proc.stats);
+
+	IF proc.return # NIL THEN
+		Text.Str(gen, "return ");
+		CheckExpr(gen, proc.return,
+		          IsForSameType(proc.header.type, proc.return.type));
+		Text.StrLn(gen, ";")
+	END;
+
+	DEC(gen.localDeep);
+	Text.StrLnClose(gen, "}");
+	Mark(gen, proc);
+	Text.Ln(gen)
 END Procedure;
 
 PROCEDURE LnIfWrote(VAR gen: Generator);
@@ -2039,7 +2015,7 @@ BEGIN
 END LnIfWrote;
 
 PROCEDURE Declarations(VAR gen: Generator; ds: Ast.Declarations);
-VAR d, prev: Ast.Declaration; inModule: BOOLEAN;
+VAR d: Ast.Declaration; inModule: BOOLEAN;
 BEGIN
 	inModule := ds IS Ast.Module;
 
@@ -2055,36 +2031,21 @@ BEGIN
 	END;
 	LnIfWrote(gen);
 
-	IF inModule THEN
-		WHILE (d # NIL) & (d IS Ast.Type) DO
-			TypeDecl(gen, d(Ast.Type));
-			d := d.next
-		END;
-		LnIfWrote(gen);
-
-		WHILE (d # NIL) & (d IS Ast.Var) DO
-			Var(gen, NIL, d, TRUE);
-			d := d.next
-		END
-	ELSE
-		d := ds.vars;
-
-		prev := NIL;
-		WHILE (d # NIL) & (d IS Ast.Var) DO
-			Var(gen, prev, d, TRUE);
-			prev := d;
-			d := d.next
-		END;
-
-		d := ds.procedures
+	WHILE (d # NIL) & (d IS Ast.Type) DO
+		TypeDecl(gen, d(Ast.Type));
+		d := d.next
 	END;
 	LnIfWrote(gen);
 
-	IF inModule THEN
-		WHILE d # NIL DO
-			Procedure(gen, d(Ast.Procedure));
-			d := d.next
-		END
+	WHILE (d # NIL) & (d IS Ast.Var) DO
+		Var(gen, NIL, d, TRUE);
+		d := d.next
+	END;
+	LnIfWrote(gen);
+
+	WHILE d # NIL DO
+		Procedure(gen, d(Ast.Procedure));
+		d := d.next
 	END
 END Declarations;
 
