@@ -64,7 +64,8 @@ MODULE make;
       Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
     & Exec.Add(code, cmd, 0) & Exec.Add(code, "Translator.Start", 0)
     & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
-    & (windows & Exec.LastPart(code, ".exe")
+    & ((lang = Js) & Exec.LastPart(code, ".js")
+    OR windows & Exec.LastPart(code, ".exe")
     OR posix & Exec.LastPart(code, "")
       )
     & ((tmp[1] = "0")
@@ -103,7 +104,7 @@ MODULE make;
  END AddRun;
 
  PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR;
-                  class: BOOLEAN): BOOLEAN;
+                  runLang: INTEGER): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
      file: Dir.File;
@@ -120,11 +121,12 @@ MODULE make;
        ASSERT(Dir.CopyName(n, l, file));
        IF n[0] # "." THEN
          ASSERT(
-            (    class & Exec.Init(code, "java") & Exec.Add(code, "-cp", 0)
-             OR ~class & Exec.Init(code, "")
+            (   (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp", 0)
+             OR (runLang = Js) & Exec.Init(code, "node")
+             OR (runLang = C) & Exec.Init(code, "")
             )
            & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-           & AddRun(code, class)
+           & AddRun(code, runLang = Java)
          );
          IF CopyFileName(c, n) THEN
            ASSERT(
@@ -157,7 +159,7 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := TestBy("test/source", FALSE, "o7c", FALSE)
+   ok := TestBy("test/source", FALSE, "o7c", C)
  END Test;
 
  PROCEDURE Self*;
@@ -165,25 +167,25 @@ MODULE make;
    CASE lang OF
      C:
      ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
-         & TestBy("test/source", FALSE, "o7c-v1", FALSE)
+         & TestBy("test/source", FALSE, "o7c-v1", lang)
    | Java:
      ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
-         & TestBy("test/source", FALSE, "o7c-v1-java", TRUE)
+         & TestBy("test/source", FALSE, "o7c-v1-java", lang)
    | Js:
      ok := BuildBy("o7c", "o7c-v1-js", "o7c-v1-js", "to-js")
-         & TestBy("test/source", FALSE, "o7c-v1-js", FALSE)
+         & TestBy("test/source", FALSE, "o7c-v1-js", lang)
    END
  END Self;
 
  PROCEDURE SelfFull*;
  BEGIN
    ok := BuildBy("o7c-v1", "o7c-v2", "v2", "to-bin")
-       & TestBy("test/source", FALSE, "o7c-v2", FALSE)
+       & TestBy("test/source", FALSE, "o7c-v2", C)
  END SelfFull;
 
  PROCEDURE Example*;
  BEGIN
-   ok := TestBy("example", TRUE, "o7c", FALSE)
+   ok := TestBy("example", TRUE, "o7c", C)
  END Example;
 
  PROCEDURE Help*;
