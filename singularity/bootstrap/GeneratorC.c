@@ -833,14 +833,16 @@ static void Designator_Put(struct Selectors *sels, struct Ast_RSelector *sel) {
 static void Designator(struct GeneratorC_Generator *gen, struct Ast_Designator_s *des) {
 	struct Selectors sels;
 	struct Ast_RType *typ;
+	o7_bool lastSelectorDereference;
 	Selectors_undef(&sels);
 
 	typ = O7_REF(O7_REF(des)->decl)->type;
 	Designator_Put(&sels, O7_REF(des)->sel);
 	sels.des = des;
 	sels.decl = O7_REF(des)->decl;
-	O7_REF((*gen).opt)->lastSelectorDereference = (o7_cmp(sels.i, 0) > 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_Selectors_cnst, sels.i)], Ast_SelPointer_s_tag));
+	lastSelectorDereference = (o7_cmp(0, sels.i) <= 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_Selectors_cnst, sels.i)], Ast_SelPointer_s_tag));
 	Selector(&(*gen), &sels, sels.i, &typ, O7_REF(des)->_._.type);
+	O7_REF((*gen).opt)->lastSelectorDereference = lastSelectorDereference;
 }
 
 static o7_bool IsMayNotInited(struct Ast_RExpression *e) {
