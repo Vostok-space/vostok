@@ -79,6 +79,9 @@ Read(final File file, final byte[] buf, final int ofs, final int count) {
         if (file.fc != null) {
             bb = java.nio.ByteBuffer.wrap(buf, ofs, count);
             read = file.fc.read(bb);
+            if (read == -1) {
+                read = 0;
+            }
         } else if (file.is != null) {
             file.is.read(buf, ofs, count);
             read = count;
