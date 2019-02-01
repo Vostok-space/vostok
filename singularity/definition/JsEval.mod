@@ -40,10 +40,12 @@ MODULE JsEval;
     FALSE
   END AddBytes;
 
-  PROCEDURE End*(c: Code; startCliArg: INTEGER);
+  PROCEDURE End*(c: Code; startCliArg: INTEGER): BOOLEAN;
   BEGIN
     ASSERT(c # NIL);
     ASSERT(startCliArg >= 0)
+  RETURN
+    FALSE
   END End;
 
   PROCEDURE Do*(c: Code): BOOLEAN;

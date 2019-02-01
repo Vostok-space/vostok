@@ -1,4 +1,4 @@
-(* Copyright 2016 ComdivByZero
+(* Copyright 2016, 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ CONST
 	Ok*    = 0;
 
 PROCEDURE Do*(cmd: ARRAY OF CHAR): INTEGER;
+BEGIN
+	ASSERT(cmd[0] # 0X)
 RETURN
 	-1
 END Do;

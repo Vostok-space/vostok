@@ -21,6 +21,8 @@ o7.CLI = module;
 var MaxLen = 4096;
 module.MaxLen = MaxLen;
 
+var startCliArg;
+
 function copy(str, ofs, ofs_ai, argi) {
 	o7.assert((0 <= ofs[ofs_ai]) && (ofs[ofs_ai] < str.length));
 
@@ -52,7 +54,7 @@ module.GetName = GetName;
 
 function Get(str, ofs, ofs_ai, argi) {
 	o7.assert((0 <= argi) && (argi < module.count));
-	return copy(str, ofs, ofs_ai, argi + 2);
+	return copy(str, ofs, ofs_ai, argi + 2 + startCliArg);
 }
 module.Get = Get;
 
@@ -61,7 +63,13 @@ function SetExitCode(code) {
 }
 module.SetExitCode = SetExitCode;
 
-module.count = process.argv.length - 2;
+if (typeof start_cli_arg !== 'undefined') {
+	module.count = process.argv.length - 2 - start_cli_arg;
+	startCliArg  = start_cli_arg;
+} else {
+	module.count = process.argv.length - 2;
+	startCliArg  = 0;
+}
 
 return module;
 })(o7 || (o7 = {}));

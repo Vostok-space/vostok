@@ -47,11 +47,14 @@ IMPORT
 	OsEnv,
 	FileSys := FileSystemUtil,
 	Text := TextGenerator,
-	VCopy;
+	VCopy,
+	Mem := VMemStream,
+	JsEval, MemStreamToJsEval;
 
 CONST
-	ErrNo*    =  0;
-	ErrParse* = -1;
+	ErrNo*             =  0;
+	ErrParse*          = -1;
+	ErrCantGenJsToMem* = -2;
 
 TYPE
 	Container = POINTER TO RContainer;
@@ -968,7 +971,7 @@ BEGIN
 	RETURN ret
 END GenerateThroughJava;
 
-PROCEDURE CopyFileToOut(inName: ARRAY OF CHAR; out: File.Out): BOOLEAN;
+PROCEDURE CopyFileToOut(inName: ARRAY OF CHAR; out: Stream.POut): BOOLEAN;
 VAR in: File.In; ok: BOOLEAN;
 BEGIN
 	in := File.OpenIn(inName);
@@ -990,14 +993,13 @@ BEGIN
 END AppendModuleName;
 
 PROCEDURE GenerateJs1(module: Ast.Module; cmd: Ast.Statement;
-                      outSingle: File.Out;
+                      outSingle: Stream.POut;
                       opt: GeneratorJs.Options;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                       jsDirs: ARRAY OF CHAR): INTEGER;
 VAR imp: Ast.Declaration;
     ret, i, jsDirsLen, nameLen: INTEGER;
     name: ARRAY 512 OF CHAR;
-    fileName: ARRAY 1024 OF CHAR;
     sing: BOOLEAN;
     out: File.Out;
 BEGIN
@@ -1037,29 +1039,42 @@ BEGIN
 		END;
 		IF ~sing & (ret = ErrNo) THEN
 			IF outSingle = NIL THEN
-				ret := OpenJsOutput(out, module, "", dir, dirLen)
-			ELSE
-				out := outSingle
-			END;
-			fileName := dir;
-			IF ret = ErrNo THEN
-				GeneratorJs.Generate(out, module, cmd, opt);
-				IF out # outSingle THEN
+				ret := OpenJsOutput(out, module, "", dir, dirLen);
+				IF ret = ErrNo THEN
+					GeneratorJs.Generate(out, module, cmd, opt);
 					File.CloseOut(out)
 				END
-			END
+			ELSE
+				GeneratorJs.Generate(outSingle, module, cmd, opt)
+			END;
 		END
 	END
 	RETURN ret
 END GenerateJs1;
+
+PROCEDURE CopyO7js(jsDirs: ARRAY OF CHAR; out: Stream.POut);
+VAR i, nameLen, dirsLen: INTEGER; ok: BOOLEAN;
+    name: ARRAY 1024 OF CHAR;
+BEGIN
+	i := 0;
+	ok := TRUE;
+	WHILE ok & (jsDirs[i] # Utf8.Null) DO
+		nameLen := 0;
+		dirsLen := Strings.CalcLen(jsDirs, i);
+		ok := Strings.CopyChars(name, nameLen, jsDirs, i, i + dirsLen)
+		    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
+		    & Strings.CopyCharsNull(name, nameLen, "o7.js")
+		    & (~Files.Exist(name, 0) OR CopyFileToOut(name, out));
+		i := i + dirsLen + 1
+	END
+END CopyO7js;
 
 PROCEDURE GenerateJs(module: Ast.Module; cmd: Ast.Statement;
                      toSingleFile: BOOLEAN;
                      opt: GeneratorJs.Options;
                      VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                      jsDirs: ARRAY OF CHAR): INTEGER;
-VAR out: File.Out; ret, i, nameLen, dirsLen: INTEGER;
-    name: ARRAY 1024 OF CHAR; ok: BOOLEAN;
+VAR out: File.Out; ret: INTEGER;
 BEGIN
 	ret := ErrNo;
 	out := NIL;
@@ -1072,17 +1087,7 @@ BEGIN
 			Log.StrLn(dir);
 			Log.Off
 		ELSE
-			i := 0;
-			ok := TRUE;
-			WHILE ok & (jsDirs[i] # Utf8.Null) DO
-				nameLen := 0;
-				dirsLen := Strings.CalcLen(jsDirs, i);
-				ok := Strings.CopyChars(name, nameLen, jsDirs, i, i + dirsLen)
-				    & Strings.CopyCharsNull(name, nameLen, Exec.dirSep)
-				    & Strings.CopyCharsNull(name, nameLen, "o7.js")
-				    & (~Files.Exist(name, 0) OR CopyFileToOut(name, out));
-				i := i + dirsLen + 1
-			END
+			CopyO7js(jsDirs, out)
 		END
 	END;
 	IF ret = ErrNo THEN
@@ -1142,6 +1147,36 @@ VAR opt: GeneratorJs.Options;
 		RETURN ret
 	END TempJs;
 
+	PROCEDURE RunJs(m: Ast.Module; call: Ast.Statement;
+	                opt: GeneratorJs.Options; jsDirs: ARRAY OF CHAR;
+	                arg: INTEGER): INTEGER;
+	VAR ret: INTEGER; out: Mem.Out; code: JsEval.Code;
+	    blank: ARRAY 1 OF CHAR; blankLen: INTEGER;
+	BEGIN
+		IF ~Mem.New(out) THEN
+			(* TODO *)
+			ret := Cli.ErrOpenJs
+		ELSE
+			blankLen := 0;
+			CopyO7js(jsDirs, out);
+			ret := GenerateJs1(m, call, out, opt,
+			                   blank, blankLen,
+			                   jsDirs);
+			IF ret = ErrNo THEN
+				IF arg < CLI.count THEN
+					INC(arg)
+				END;
+				code := MemStreamToJsEval.Do(out, arg);
+				IF code = NIL THEN
+					ret := ErrCantGenJsToMem
+				ELSE
+					CLI.SetExitCode(Exec.Ok + ORD(~JsEval.Do(code)))
+				END
+			END
+		END
+		RETURN ret
+	END RunJs;
+
 	PROCEDURE Run(file: ARRAY OF CHAR; arg: INTEGER): INTEGER;
 	VAR cmd: Exec.Code;
 	    buf: ARRAY Exec.CodeSize OF CHAR;
@@ -1184,14 +1219,18 @@ BEGIN
 		IF call = NIL THEN
 			call := Ast.NopNew()
 		END;
-		ret := TempJs(module, args, call, opt, out, outLen, listener);
-		IF (res = Cli.ResultRunJs) & (ret = ErrNo) THEN
-			ret := Run(out, args.arg)
-		END;
-		out[outLen] := Utf8.Null;
-		IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo)
-		THEN
-			ret := Cli.ErrCantRemoveOutDir
+		IF JsEval.supported THEN
+			ret := RunJs(module, call, opt, args.jsDirs, args.arg)
+		ELSE
+			ret := TempJs(module, args, call, opt, out, outLen, listener);
+			IF (res = Cli.ResultRunJs) & (ret = ErrNo) THEN
+				ret := Run(out, args.arg)
+			END;
+			out[outLen] := Utf8.Null;
+			IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo)
+			THEN
+				ret := Cli.ErrCantRemoveOutDir
+			END
 		END
 	END
 
@@ -1238,7 +1277,7 @@ BEGIN
 			ELSE
 				ret := GenerateThroughJs(res, args, module, call, listener)
 			END
-		ELSE
+		ELSE ASSERT(res IN Cli.ThroughC);
 			ret := GenerateThroughC(res, args, module, call, listener)
 		END
 	END;

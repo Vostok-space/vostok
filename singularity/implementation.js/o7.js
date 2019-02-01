@@ -15,7 +15,9 @@
 var o7;
 (function(o7) { "use strict";
 
-  var utf8Enc, utf8Dec, u8array;
+  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache;
+
+  utf8Cache = [];
 
   function assert(check, msg) {
     if (check) {
@@ -206,7 +208,7 @@ var o7;
     utf8Enc = new TextEncoder('utf-8');
     utf8Dec = new TextDecoder('utf-8');
 
-    o7.toUtf8 = function(str) {
+    toUtf8 = function(str) {
       return utf8Enc.encode(str);
     };
 
@@ -215,7 +217,7 @@ var o7;
     };
   } else {
     /* str must be correct utf16 string */
-    o7.toUtf8 = function(str) {
+    toUtf8 = function(str) {
       var bytes, si, ch, len;
       bytes = [];
       si = 0;
@@ -287,7 +289,7 @@ var o7;
             ch3 = bytes[i];
             i += 1;
             /* TODO */
-            ok = ((ch1 & 0x00C0) == ch1) && ((ch2 & 0x00C0) == ch2) && ((ch2 & 0x00C0) == ch2);
+            ok = ((ch1 & 0x00C0) == ch1) && ((ch2 & 0x00C0) == ch2) && ((ch3 & 0x00C0) == ch3);
             buf.push(String.fromCharCode(((ch & 0x0007) << 18) | ((ch1 & 0x003F) << 12) | ((ch2 & 0x003F) << 6) | (ch3 & 0x003F)));
           } else {
             ok = false;
@@ -298,10 +300,21 @@ var o7;
         str = buf.join('');
       } else {
         str = null;
+        str = buf.join('');
       }
       return str;
     };
   }
+
+  o7.toUtf8 = function(str) {
+    var utf;
+    utf = utf8Cache[str];
+    if (!utf) {
+        utf = toUtf8(str);
+        utf8Cache[str] = utf;
+    }
+    return utf;
+  };
 
   /* TODO более оптимальный код и нормальное название */
   o7.utf8ToStr1 = function(bytes, ofs) {
@@ -329,7 +342,6 @@ var o7;
     proto.prototype = base.prototype;
 
     ext.prototype = new proto();
-    ext.constructor = ext;
     ext.base = base;
     return ext;
   };
@@ -437,10 +449,9 @@ var o7;
     var len, i;
 
     len = s.length;
-    i = 0;
-    while (i < len && s[i] != 0) {
+    assert(d.length > len);
+    for (i = 0; i < len; i += 1) {
       d[i] = s[i];
-      i += 1;
     }
     d[i] = 0;
   };

@@ -33,7 +33,7 @@ O7_ALWAYS_INLINE o7_cbool JsEval_AddBytes(JsEval_Code c, o7_int_t codePart_len0,
                                           o7_char codePart[/*len0*/])
 { O7_ASSERT(0 > 1); return 0 > 1; }
 
-O7_ALWAYS_INLINE void JsEval_End(JsEval_Code c, o7_int_t arg) { O7_ASSERT(0 > 1); }
+O7_ALWAYS_INLINE o7_cbool JsEval_End(JsEval_Code c, o7_int_t arg) { O7_ASSERT(0 > 1); return 0 > 1; }
 
 O7_ALWAYS_INLINE o7_cbool JsEval_Do(JsEval_Code c)
 { O7_ASSERT(0 > 1); return 0 > 1; }
