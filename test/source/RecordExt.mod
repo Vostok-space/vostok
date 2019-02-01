@@ -24,6 +24,8 @@ TYPE
 
 	PBase = POINTER TO Base;
 	PExt1 = POINTER TO Ext1;
+	PExt2 = POINTER TO Ext2;
+	PExt21 = POINTER TO Ext21;
 
 VAR
 	b	: Base;
@@ -67,6 +69,7 @@ PROCEDURE CheckIs(ab, ae1, ae2, ae21: Base);
 BEGIN
 	ASSERT(~(ab IS Ext1));
 	ASSERT(~(ab IS Ext2));
+	ASSERT(~(ab IS Ext21));
 
 	ASSERT(ae1 IS Ext1);
 	ASSERT(~(ae1 IS Ext2));
@@ -80,6 +83,44 @@ BEGIN
 	ASSERT(ae21 IS Ext2);
 	ASSERT(ae21 IS Ext21)
 END CheckIs;
+
+PROCEDURE PtrCheckIs(ab, ae1, ae2, ae21: PBase);
+BEGIN
+	ASSERT(~(ab IS PExt1));
+	ASSERT(~(ab IS PExt2));
+	ASSERT(~(ab IS PExt21));
+
+	ASSERT(ae1 IS PExt1);
+	ASSERT(~(ae1 IS PExt2));
+	ASSERT(~(ae1 IS PExt21));
+
+	ASSERT(~(ae2 IS PExt1));
+	ASSERT(ae2 IS PExt2);
+	ASSERT(~(ae2 IS PExt21));
+
+	ASSERT(~(ae21 IS PExt1));
+	ASSERT(ae21 IS PExt2);
+	ASSERT(ae21 IS PExt21);
+
+	CheckIs(ab^, ae1^, ae2^, ae21^)
+END PtrCheckIs;
+
+PROCEDURE PointersCheck;
+VAR lpb: PBase; lpe1: PExt1; lpe2: PExt2; lpe21: PExt21;
+    p: ARRAY 4 OF POINTER TO Base;
+BEGIN
+	NEW(lpb);
+	NEW(lpe1);
+	NEW(lpe2);
+	NEW(lpe21);
+	PtrCheckIs(lpb, lpe1, lpe2, lpe21);
+
+	p[0] := lpb;
+	p[1] := lpe1;
+	p[2] := lpe2;
+	p[3] := lpe21;
+	PtrCheckIs(p[0], p[1], p[2], p[3])
+END PointersCheck;
 
 PROCEDURE Pointer(par: PBase);
 BEGIN
@@ -122,7 +163,8 @@ BEGIN
 	Pointer(pb1);
 	pb := pb1;
 
-	CheckIs(b, e1, e2, e21)
+	CheckIs(b, e1, e2, e21);
+	PointersCheck
 END Go;
 
 END RecordExt.
