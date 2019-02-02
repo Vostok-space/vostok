@@ -1378,15 +1378,23 @@ BEGIN
 	END
 END GeneratorNotify;
 
-PROCEDURE AllocArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+PROCEDURE AllocArrayOfRecord(VAR gen: Generator; v: Ast.Declaration;
+                             inRecord: BOOLEAN);
 VAR
 BEGIN
 	(* TODO многомерные массивы *)
 	ASSERT(v.type.type.id = Ast.IdRecord);
 
-	Text.Str(gen, "for (var i_ = 0; i_ < ");
+	IF inRecord THEN
+		Text.Str(gen, "for (var i_ = 0; i_ < this.")
+	ELSE
+		Text.Str(gen, "for (var i_ = 0; i_ < ")
+	END;
 	Name(gen, v);
 	Text.StrOpen(gen, ".length; i_++) {");
+	IF inRecord THEN
+		Text.Str(gen, "this.")
+	END;
 	Name(gen, v);
 	Text.Str(gen, "[i_] = new ");
 	type(gen, NIL, v.type.type, FALSE, FALSE);
@@ -1411,7 +1419,8 @@ BEGIN
 	RETURN v
 END SearchArrayOfRecord;
 
-PROCEDURE InitAllVarsWichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+PROCEDURE InitAllVarsWichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration;
+                                       inRecord: BOOLEAN);
 VAR subt: Ast.Type;
 BEGIN
 	WHILE (v # NIL) & (v.id = Ast.IdVar) DO
@@ -1419,7 +1428,7 @@ BEGIN
 		 & (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
 		 & (subt.id = Ast.IdRecord)
 		THEN
-			AllocArrayOfRecord(gen, v)
+			AllocArrayOfRecord(gen, v, inRecord)
 		END;
 		v := v.next
 	END
@@ -1469,7 +1478,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 
 				v := v.next
 			END;
-			InitAllVarsWichArrayOfRecord(gen, rec.vars);
+			InitAllVarsWichArrayOfRecord(gen, rec.vars, TRUE);
 			Text.StrLnClose(gen, "}")
 		END;
 		IF rec.base # NIL THEN
@@ -1989,7 +1998,7 @@ BEGIN
 
 	declarations(gen, proc);
 
-	InitAllVarsWichArrayOfRecord(gen, proc.vars);
+	InitAllVarsWichArrayOfRecord(gen, proc.vars, FALSE);
 
 	Statements(gen, proc.stats);
 
@@ -2117,7 +2126,7 @@ VAR gen: Generator;
 		v := SearchArrayOfRecord(module.vars);
 		IF (module.stats # NIL) OR (v # NIL) THEN
 			IF v # NIL THEN
-				InitAllVarsWichArrayOfRecord(gen, v)
+				InitAllVarsWichArrayOfRecord(gen, v, FALSE)
 			END;
 			IF module.stats # NIL THEN
 				Statements(gen, module.stats)
@@ -2129,7 +2138,7 @@ VAR gen: Generator;
 	PROCEDURE Main(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
 		Text.StrOpen(gen, "o7.main(function() {");
-		InitAllVarsWichArrayOfRecord(gen, module.vars);
+		InitAllVarsWichArrayOfRecord(gen, module.vars, FALSE);
 		Statements(gen, module.stats);
 		IF ~(cmd IS Ast.Nop) THEN
 			Statements(gen, cmd)
