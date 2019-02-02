@@ -264,7 +264,7 @@ var o7;
           if (i < len) {
             ch1 = bytes[i];
             i += 1;
-            ok = (ch1 & 0x00C0) == ch1;
+            ok = (ch1 & 0x00C0) == 0x0080;
             buf.push(String.fromCharCode(((ch & 0x001F) << 6) | (ch1 & 0x003F)));
           } else {
             ok = false;
@@ -275,7 +275,7 @@ var o7;
             i += 1;
             ch2 = bytes[i];
             i += 1;
-            ok = ((ch1 & 0x00C0) == ch1) && ((ch2 & 0x00C0) == ch2);
+            ok = ((ch1 & 0x00C0) == 0x0080) && ((ch2 & 0x00C0) == 0x0080);
             buf.push(String.fromCharCode(((ch & 0x000F) << 12) | ((ch1 & 0x003F) << 6) | (ch2 & 0x003F)));
           } else {
             ok = false;
@@ -289,7 +289,7 @@ var o7;
             ch3 = bytes[i];
             i += 1;
             /* TODO */
-            ok = ((ch1 & 0x00C0) == ch1) && ((ch2 & 0x00C0) == ch2) && ((ch3 & 0x00C0) == ch3);
+            ok = ((ch1 & 0x00C0) == 0x0080) && ((ch2 & 0x00C0) == 0x0080) && ((ch3 & 0x00C0) == 0x0080);
             buf.push(String.fromCharCode(((ch & 0x0007) << 18) | ((ch1 & 0x003F) << 12) | ((ch2 & 0x003F) << 6) | (ch3 & 0x003F)));
           } else {
             ok = false;
@@ -300,7 +300,6 @@ var o7;
         str = buf.join('');
       } else {
         str = null;
-        str = buf.join('');
       }
       return str;
     };
