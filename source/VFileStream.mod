@@ -1,5 +1,5 @@
 (*  Implementations of VDataStream interfaces by CFiles
- *  Copyright (C) 2016 ComdivByZero
+ *  Copyright (C) 2016, 2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -40,6 +40,11 @@ PROCEDURE ReadChars(VAR in: V.Base; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER)
 	RETURN CFiles.ReadChars(in(RIn).file, buf, ofs, count)
 END ReadChars;
 
+PROCEDURE CloseRIn(VAR in: V.Base);
+BEGIN
+	CFiles.Close(in(RIn).file)
+END CloseRIn;
+
 PROCEDURE OpenIn*(name: ARRAY OF CHAR): In;
 VAR in: In;
 	file: CFiles.File;
@@ -50,7 +55,7 @@ BEGIN
 		IF file = NIL THEN
 			in := NIL
 		ELSE
-			Stream.InitIn(in^, Read, ReadChars);
+			Stream.InitIn(in^, Read, ReadChars, CloseRIn);
 			in.file := file
 		END
 	END
@@ -59,8 +64,10 @@ END OpenIn;
 
 PROCEDURE CloseIn*(VAR in: In);
 BEGIN
-	CFiles.Close(in.file);
-	in := NIL
+	IF in # NIL THEN
+		CFiles.Close(in.file);
+		in := NIL
+	END
 END CloseIn;
 
 PROCEDURE Write(VAR out: V.Base; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
@@ -70,6 +77,11 @@ END Write;
 PROCEDURE WriteChars(VAR out: V.Base; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 	RETURN CFiles.WriteChars(out(ROut).file, buf, ofs, count)
 END WriteChars;
+
+PROCEDURE CloseROut(VAR out: V.Base);
+BEGIN
+	CFiles.Close(out(ROut).file)
+END CloseROut;
 
 PROCEDURE OpenOut*(name: ARRAY OF CHAR): Out;
 VAR out: Out;
@@ -81,7 +93,7 @@ BEGIN
 		IF file = NIL THEN
 			out := NIL
 		ELSE
-			Stream.InitOut(out^, Write, WriteChars);
+			Stream.InitOut(out^, Write, WriteChars, CloseROut);
 			out.file := file
 		END
 	END

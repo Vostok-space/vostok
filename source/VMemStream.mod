@@ -113,7 +113,7 @@ MODULE VMemStream;
     NEW(out.first);
     IF out.first # NIL THEN
       out.first.next := NIL;
-      Stream.InitOut(out, Write, WriteChars);
+      Stream.InitOut(out, Write, WriteChars, NIL);
       out.last := out.first;
       out.ofs := 0
     END

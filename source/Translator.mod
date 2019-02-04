@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -49,7 +49,8 @@ IMPORT
 	Text := TextGenerator,
 	VCopy,
 	Mem := VMemStream,
-	JsEval, MemStreamToJsEval;
+	JsEval, MemStreamToJsEval,
+	ModulesStorage, ModulesProvider;
 
 CONST
 	ErrNo*             =  0;
@@ -57,26 +58,6 @@ CONST
 	ErrCantGenJsToMem* = -2;
 
 TYPE
-	Container = POINTER TO RContainer;
-	RContainer = RECORD
-		next: Container;
-		m: Ast.Module
-	END;
-
-	ModuleProvider = POINTER TO RECORD(Ast.RProvider)
-		opt: Parser.Options;
-		path: ARRAY 4096 OF CHAR;
-		sing: SET;
-		modules: RECORD
-			first, last: Container
-		END;
-
-		expectName: ARRAY TranLim.LenName + 1 OF CHAR;
-		nameLen   : INTEGER;
-		nameOk,
-		firstNotOk: BOOLEAN
-	END;
-
 	ProcNameProvider = POINTER TO RECORD(GeneratorJava.RProviderProcTypeName)
 		javac   : JavaComp.Compiler;
 		usejavac: BOOLEAN;
@@ -89,19 +70,6 @@ TYPE
 
 	MsgTempDirCreated* = RECORD(V.Message)
 	END;
-
-PROCEDURE Unlink(c: Container);
-VAR tc: Container;
-BEGIN
-	WHILE c # NIL DO
-		tc := c;
-		c := c.next;
-		Log.StrLn(tc.m.name.block.s);
-		Ast.Unlinks(tc.m);
-		tc.m.provider := NIL;
-		tc.m := NIL
-	END
-END Unlink;
 
 PROCEDURE ErrorMessage(code: INTEGER);
 BEGIN
@@ -124,162 +92,37 @@ BEGIN
 	Out.Ln
 END IndexedErrorMessage;
 
-PROCEDURE PrintErrors(mc: Container; module: Ast.Module);
+PROCEDURE PrintErrors(mc: ModulesStorage.Container; module: Ast.Module);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
-	err: Ast.Error;
+    err: Ast.Error;
+    m: Ast.Module;
 BEGIN
 	i := 0;
-	WHILE mc.m # NIL DO
-		err := mc.m.errors;
+	m := ModulesStorage.Next(mc);
+	WHILE m # NIL DO
+		err := m.errors;
 		WHILE (err # NIL) & (err.code = SkipError) DO
 			err := err.next
 		END;
 		IF err # NIL THEN
 			Message.Text("Found errors in the module ");
-			Out.String(mc.m.name.block.s); Out.String(": "); Out.Ln;
-			err := mc.m.errors;
+			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
+			err := m.errors;
 			WHILE err # NIL DO
 				IF err.code # SkipError THEN
 					INC(i);
-					IndexedErrorMessage(i, err.code, err.line, err.column);
+					IndexedErrorMessage(i, err.code, err.line, err.column)
 				END;
 				err := err.next
 			END
 		END;
-		mc := mc.next
+		m := ModulesStorage.Next(mc)
 	END;
 	IF i = 0 THEN
 		IndexedErrorMessage(i, module.errors.code, module.errors.line, module.errors.column)
 	END
 END PrintErrors;
-
-PROCEDURE SearchModule(mp: ModuleProvider;
-                       name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
-VAR mc: Container;
-BEGIN
-	mc := mp.modules.first.next;
-	WHILE (mc # mp.modules.first)
-	    & ~Strings.IsEqualToChars(mc.m.name, name, ofs, end)
-	DO
-		mc := mc.next
-	END
-	RETURN mc.m
-END SearchModule;
-
-PROCEDURE AddModule(mp: ModuleProvider; m: Ast.Module);
-VAR mc: Container;
-BEGIN
-	ASSERT(m.module.m = m);
-	NEW(mc);
-	mc.m := m;
-	mc.next := mp.modules.first;
-
-	mp.modules.last.next := mc;
-	mp.modules.last := mc
-END AddModule;
-
-PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
-                    name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
-VAR m: Ast.Module;
-    mp: ModuleProvider;
-    pathInd, i: INTEGER;
-    ext: ARRAY 4, 6 OF CHAR;
-
-	PROCEDURE Search(p: ModuleProvider;
-	                 name: ARRAY OF CHAR; ofs, end: INTEGER;
-	                 ext: ARRAY OF CHAR;
-	                 VAR pathInd: INTEGER): Ast.Module;
-	VAR pathOfs: INTEGER;
-	    source: File.In;
-	    m: Ast.Module;
-
-		PROCEDURE Open(p: ModuleProvider; VAR pathOfs: INTEGER;
-		               name: ARRAY OF CHAR; ofs, end: INTEGER;
-		               ext: ARRAY OF CHAR): File.In;
-		VAR n: ARRAY 1024 OF CHAR;
-		    len, l: INTEGER;
-		    in: File.In;
-		BEGIN
-			len := Strings.CalcLen(p.path, pathOfs);
-			l := 0;
-			IF (0 < len)
-			 & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
-			 & Strings.CopyCharsNull(n, l, Exec.dirSep)
-			 & Strings.CopyChars(n, l, name, ofs, end)
-			 & Strings.CopyCharsNull(n, l, ext)
-			THEN
-				in := File.OpenIn(n)
-			ELSE
-				in := NIL
-			END;
-			pathOfs := pathOfs + len + 1
-			RETURN in
-		END Open;
-	BEGIN
-		pathInd := -1;
-		pathOfs := 0;
-		REPEAT
-			source := Open(p, pathOfs, name, ofs, end, ext);
-			IF source # NIL THEN
-				m := Parser.Parse(source, p, p.opt);
-				File.CloseIn(source);
-				IF (m # NIL) & (m.errors = NIL) & ~p.nameOk THEN
-					m := NIL
-				END
-			ELSE
-				m := NIL
-			END;
-			INC(pathInd)
-		UNTIL (m # NIL) OR (p.path[pathOfs] = Utf8.Null)
-		RETURN m
-	END Search;
-BEGIN
-	mp := p(ModuleProvider);
-	m := SearchModule(mp, name, ofs, end);
-	IF m # NIL THEN
-		Log.StrLn("Найден уже разобранный модуль")
-	ELSE
-		mp.nameLen := 0;
-		ASSERT(Strings.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
-
-		ext[0] := ".mod";
-		ext[1] := ".Mod";
-		ext[2] := ".ob07";
-		ext[3] := ".ob";
-		i := 0;
-		REPEAT
-			m := Search(mp, name, ofs, end, ext[i], pathInd);
-			INC(i)
-		UNTIL (m # NIL) OR (i >= LEN(ext));
-		IF m # NIL THEN
-			IF pathInd IN mp.sing THEN
-				m.mark := TRUE
-			END
-		ELSIF mp.firstNotOk THEN
-			mp.firstNotOk := FALSE;
-			Message.Text("Can not found or open file of module ");
-			Out.String(mp.expectName);
-			Out.Ln
-		END
-	END
-	RETURN m
-END GetModule;
-
-PROCEDURE RegModule(p: Ast.Provider; m: Ast.Module): BOOLEAN;
-	PROCEDURE Reg(p: ModuleProvider; m: Ast.Module): BOOLEAN;
-	BEGIN
-		Log.Str(m.name.block.s); Log.Str(" : "); Log.StrLn(p.expectName);
-		p.nameOk := m.name.block.s = p.expectName;
-		IF p.nameOk THEN
-			AddModule(p, m)
-		END
-		RETURN p.nameOk
-	END Reg;
-BEGIN
-	Log.Str("RegModule "); Log.StrLn(m.name.block.s)
-	RETURN Reg(p(ModuleProvider), m)
-END RegModule;
 
 PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
                                 name: Strings.String): BOOLEAN;
@@ -375,25 +218,19 @@ PROCEDURE OpenJsOutput(VAR out: File.Out;
 	                        dir, dirLen)
 END OpenJsOutput;
 
-PROCEDURE NewProvider(VAR mp: ModuleProvider; args: Cli.Args);
-VAR len: INTEGER;
+PROCEDURE NewProvider(VAR p: ModulesStorage.Provider; VAR opt: Parser.Options;
+                      args: Cli.Args);
+VAR m: ModulesProvider.Provider;
 BEGIN
-	NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
+	ModulesProvider.New(m, args);
+	ModulesStorage.New(p, m);
 
-	Parser.DefaultOptions(mp.opt);
-	mp.opt.printError := ErrorMessage;
+	Parser.DefaultOptions(opt);
+	opt.printError := ErrorMessage;
+	opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
+	opt.provider := p;
 
-	NEW(mp.modules.first);
-	mp.modules.first.m := NIL;
-	mp.modules.first.next := mp.modules.first;
-	mp.modules.last := mp.modules.first;
-
-	mp.firstNotOk := TRUE;
-
-	mp.opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
-	len := 0;
-	ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
-	mp.sing := args.sing
+	ModulesProvider.SetParserOptions(m, opt)
 END NewProvider;
 
 (* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
@@ -1239,24 +1076,26 @@ END GenerateThroughJs;
 
 PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args; VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
-    mp: ModuleProvider;
+    mp: ModulesStorage.Provider;
     module: Ast.Module;
     call: Ast.Call;
     tranOpt: AstTransform.Options;
+    opt: Parser.Options;
 BEGIN
-	NewProvider(mp, args);
+	NewProvider(mp, opt, args);
+
+	ASSERT(opt.provider # NIL);
 
 	IF args.script THEN
-		module := Parser.Script(args.src, mp, mp.opt);
-		AddModule(mp, module)
+		module := Parser.Script(args.src, opt)
 	ELSE
-		module := GetModule(mp, NIL, args.src, 0, args.srcNameEnd)
+		module := ModulesStorage.GetModule(mp, NIL, args.src, 0, args.srcNameEnd)
 	END;
 	IF module = NIL THEN
 		ret := ErrParse
 	ELSIF module.errors # NIL THEN
 		ret := ErrParse;
-		PrintErrors(mp.modules.first.next, module)
+		PrintErrors(ModulesStorage.Iterate(mp), module)
 	ELSE
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
 			ret := Ast.CommandGet(call, module,
@@ -1281,10 +1120,7 @@ BEGIN
 			ret := GenerateThroughC(res, args, module, call, listener)
 		END
 	END;
-	IF mp.modules.last # NIL THEN
-		mp.modules.last.next := NIL;
-		Unlink(mp.modules.first.next)
-	END
+	ModulesStorage.Unlink(mp)
 	RETURN ret
 END Translate;
 

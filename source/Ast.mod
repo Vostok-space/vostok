@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -713,7 +713,7 @@ BEGIN
 	d.up := up.dag
 END DeclarationsConnect;
 
-PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER; p: Provider): Module;
+PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER): Module;
 VAR m: Module;
 BEGIN
 	NEW(m);
@@ -729,7 +729,6 @@ BEGIN
 
 	PutChars(m, m.name, name, begin, end);
 	m.module := m.bag;
-	m.provider := p;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
 	m.script := FALSE;
@@ -737,20 +736,28 @@ BEGIN
 	RETURN m
 END ModuleNew;
 
-
-PROCEDURE ScriptNew*(p: Provider): Module;
+PROCEDURE ScriptNew*(): Module;
 VAR m: Module;
 BEGIN
-	m := ModuleNew("script  ", 0, 6, p);
+	m := ModuleNew("script  ", 0, 6);
 	m.script := TRUE
 	RETURN m
 END ScriptNew;
 
-PROCEDURE GetModuleByName*(host: Module;
+PROCEDURE ProvideModule*(prov: Provider; host: Module;
+                         name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
+BEGIN
+	ASSERT(prov # NIL);
+	ASSERT((0 <= ofs) & (ofs <= end) & (end < LEN(name)))
+
+	RETURN prov.get(prov, host, name, ofs, end)
+END ProvideModule;
+
+PROCEDURE GetModuleByName*(prov: Provider; host: Module;
                            name: ARRAY OF CHAR; ofs, end: INTEGER): ModuleBag;
 VAR m: Module; b: ModuleBag;
 BEGIN
-	m := host.provider.get(host.provider, host, name, ofs, end);
+	m := ProvideModule(prov, host, name, ofs, end);
 	IF m # NIL THEN
 		b := m.bag
 	ELSE
@@ -823,13 +830,13 @@ BEGIN
 	m.handleImport := FALSE
 END ImportEnd;
 
-PROCEDURE ImportAdd*(m: Module; buf: ARRAY OF CHAR;
+PROCEDURE ImportAdd*(prov: Provider; m: Module; buf: ARRAY OF CHAR;
                      nameOfs, nameEnd, realOfs, realEnd: INTEGER): INTEGER;
 VAR imp: Import;
 	i: Declaration;
 	err: INTEGER;
 
-	PROCEDURE Load(VAR res: ModuleBag; host: Module;
+	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
 	VAR n: ARRAY TranLim.LenName OF CHAR;
 	    l, err: INTEGER;
@@ -839,9 +846,9 @@ VAR imp: Import;
 		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
 		(* TODO сделать загрузку модуля из символьного файла *)
 		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
-		res := GetModuleByName(host, buf, realOfs, realEnd);
+		res := GetModuleByName(prov, host, buf, realOfs, realEnd);
 		IF res = NIL THEN
-			m := ModuleNew(buf, realOfs, realEnd, host.provider);
+			m := ModuleNew(buf, realOfs, realEnd);
 			res := m.bag;
 			err := ErrImportModuleNotFound
 		ELSIF res.m.errors # NIL THEN
@@ -886,7 +893,7 @@ BEGIN
 			IF m.import = NIL THEN
 				m.import := imp
 			END;
-			err := Load(imp.module, m, buf, realOfs, realEnd)
+			err := Load(imp.module, prov, m, buf, realOfs, realEnd)
 		END
 	END
 	RETURN err
@@ -1650,14 +1657,14 @@ BEGIN
 	RETURN d
 END DeclErrorNew;
 
-PROCEDURE DeclarationGet*(VAR d: Declaration; ds: Declarations;
+PROCEDURE DeclarationGet*(VAR d: Declaration; prov: Provider; ds: Declarations;
                           VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
 		IF (ds.module # NIL) & ds.module.m.script THEN
-			err := ImportAdd(ds.module.m, buf, begin, end, begin, end);
+			err := ImportAdd(prov, ds.module.m, buf, begin, end, begin, end);
 			d := ds.end
 		ELSE
 			err := ErrNo
@@ -4045,7 +4052,6 @@ BEGIN
 	m.bag := NIL;
 
 	m.up := NIL;
-	m.provider := NIL;
 	DeclarationsUnlink(m);
 
 	WHILE values # NIL DO

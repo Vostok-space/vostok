@@ -48,12 +48,14 @@ function Add(c, partCode) {
 		c.code.push(partCode[i]);
 		i += 1;
 	}
+	/* TODO */
 	return true;
 }
 module.Add = Add;
 module.AddBytes = Add;
 
 function End(c, startCliArg) {
+	var code;
 	o7.assert(c != null);
 	if (typeof start_cli_arg !== 'undefined') {
 		startCliArg += start_cli_arg;
@@ -61,8 +63,12 @@ function End(c, startCliArg) {
 	o7.assert(0 <= startCliArg && startCliArg <= process.argv.length - 2);
 	o7.assert(!c.end);
 	c.end = true;
-	c.text = "(function(start_cli_arg){" + o7.utf8ToStr(c.code) + "})(" + startCliArg + ");";
-	return true;
+	code = o7.utf8ToStr(c.code);
+	if (code != null) {
+		c.text = "(function(start_cli_arg){" + code + "})(" + startCliArg + ");";
+	}
+	/* TODO */
+	return code != null;
 }
 module.End = End;
 
@@ -72,6 +78,7 @@ function Run(code) {
 		lastResult = eval(code);
 		ret = true;
 	} catch (exc) {
+		console.log("exception "  + exc);
 		lastException = exc;
 		ret = false;
 	}

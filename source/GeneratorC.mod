@@ -156,7 +156,7 @@ VAR m: PMemoryOut;
 BEGIN
 	IF opt.memOuts = NIL THEN
 		NEW(m);
-		Stream.InitOut(m^, NIL, MemWrite)
+		Stream.InitOut(m^, NIL, MemWrite, NIL)
 	ELSE
 		m := opt.memOuts;
 		opt.memOuts := m.next
