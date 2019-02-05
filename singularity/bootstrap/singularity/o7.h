@@ -1,26 +1,11 @@
-/* Copyright 2016-2017 ComdivByZero
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#if !defined(HEADER_GUARD_o7)
-#define HEADER_GUARD_o7 1
+#if !defined HEADER_GUARD_o7
+#    define  HEADER_GUARD_o7 1
 
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
-#include <math.h>
 #include <float.h>
 
 #if !defined(O7_INLINE)
@@ -41,7 +26,9 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(__TINYC__) && !defined(__COMPCERT__) && !defined(__STDC_NO_VLA__)
+#if (__STDC_VERSION__ >= 199901L) && !defined(__STDC_NO_VLA__) \
+ && !defined(__TINYC__) && !defined(__COMPCERT__)
+
 #	define O7_VLA(len) static len
 #else
 #	define O7_VLA(len)
@@ -61,19 +48,14 @@
 #if O7_INIT == O7_INIT_UNDEF
 #	if INT_MIN < -INT_MAX
 #		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
-#		define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
 #	else
 #		define O7_INT_UNDEF  0
-#		define O7_LONG_UNDEF 0
 #	endif
 #	define O7_DBL_UNDEF  o7_dbl_undef()
-#	define O7_FLT_UNDEF  o7_flt_undef()
 #	define O7_BOOL_UNDEF 0xFF
 #else
 #	define O7_INT_UNDEF  0
-#	define O7_LONG_UNDEF 0
 #	define O7_DBL_UNDEF  0.0
-#	define O7_FLT_UNDEF  0.0f
 #	define O7_BOOL_UNDEF (0>1)
 #endif
 
@@ -87,13 +69,6 @@ typedef char unsigned o7_char;
 	typedef o7_char o7_cbool;
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(_MSC_VER)
-#	include <stdbool.h>
-#elif !defined(__cplusplus)
-#	define true  (0 < 1)
-#	define false (0 > 1)
-#endif
-
 #if defined(O7_BOOL)
 	typedef O7_BOOL o7_bool;
 #elif defined(O7_BOOL_UNDEFINED)
@@ -103,67 +78,37 @@ typedef char unsigned o7_char;
 #endif
 
 #if defined(O7_INT_T)
-	typedef O7_INT_T o7_int_t;
-#	if !defined(O7_INT_MAX)
-#		error
-#	endif
+	typedef O7_INT_T  o7_int_t;
+	typedef O7_UINT_T o7_uint_t;
 #else
-#	define O7_INT_MAX 2147483647
-#	if INT_MAX    >= O7_INT_MAX
-		typedef int   o7_int_t;
-#	elif LONG_MAX >= O7_INT_MAX
-		typedef long  o7_int_t;
+#	if INT_MAX >= 2147483647
+#		define O7_INT_MAX 2147483647
+#		define O7_UINT_MAX 4294967295u
+		typedef int           o7_int_t;
+		typedef unsigned      o7_uint_t;
+#	elif LONG_MAX >= 2147483647l
+#		define O7_INT_MAX 2147483647l
+#		define O7_UINT_MAX 4294967295ul
+		typedef long          o7_int_t;
+		typedef unsigned long o7_uint_t;
 #	else
 #		error
 #	endif
 #endif
 
-#if defined(O7_LONG_T)
-	typedef O7_LONG_T             o7_long_t;
-	typedef O7_ULONG_T            o7_ulong_t;
-#	define O7_LABS(val)           O7_LONG_ABS(val)
-#	if !defined(O7_LONG_MAX)
-#		error
-#	endif
-#else
-#	define O7_LONG_MAX 9223372036854775807
-#	if LONG_MAX    >= O7_LONG_MAX
-		typedef long               o7_long_t;
-		typedef long unsigned      o7_ulong_t;
-#		define O7_LABS(val)        labs(val)
-#	elif LLONG_MAX >= O7_LONG_MAX
-		typedef long long          o7_long_t;
-		typedef long long unsigned o7_ulong_t;
-#		define O7_LABS(val)        llabs(val)
-#	else
-#		error
-#	endif
+#if !defined(O7_INT_MAX) || !defined(O7_UINT_MAX)
+#	error
 #endif
 
 #if O7_GNUC_BUILTIN_OVERFLOW
 #	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
 #	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
 #	define O7_GNUC_SMUL(a, b, res)  __builtin_smul_overflow(a, b, res)
-#	if LONG_MAX > O7_INT_MAX
-#		define O7_GNUC_SADDL(a, b, res) __builtin_saddl_overflow(a, b, res)
-#		define O7_GNUC_SSUBL(a, b, res) __builtin_ssubl_overflow(a, b, res)
-#		define O7_GNUC_SMULL(a, b, res) __builtin_smull_overflow(a, b, res)
-#	else
-#		define O7_GNUC_SADDL(a, b, res) __builtin_saddll_overflow(a, b, res)
-#		define O7_GNUC_SSUBL(a, b, res) __builtin_ssubll_overflow(a, b, res)
-#		define O7_GNUC_SMULL(a, b, res) __builtin_smulll_overflow(a, b, res)
-#	endif
 #else
 #	define O7_GNUC_SADD(a, b, res)  (0 < sizeof(*(res) = (a)+(b)))
 #	define O7_GNUC_SSUB(a, b, res)  (0 < sizeof(*(res) = (a)-(b)))
 #	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
-
-#	define O7_GNUC_SADDL(a, b, res) (0 < sizeof(*(res) = (a)+(b)))
-#	define O7_GNUC_SSUBL(a, b, res) (0 < sizeof(*(res) = (a)-(b)))
-#	define O7_GNUC_SMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
 #endif
-
-typedef o7_ulong_t o7_set64_t;
 
 #define O7_MEMNG_NOFREE  0
 #define O7_MEMNG_COUNTER 1
@@ -186,16 +131,12 @@ typedef o7_ulong_t o7_set64_t;
 #	define O7_MEMNG_NOFREE_BUFFER_SIZE 1lu
 #endif
 
-#if __GNUC__ >= 2
-#	define O7_ATTR_CONST __attribute__((const))
-#else
-#	define O7_ATTR_CONST
-#endif
-
 #if __GNUC__ > 2
-#	define O7_ATTR_PURE __attribute__((pure))
+#	define O7_ATTR_CONST  __attribute__((const))
+#	define O7_ATTR_PURE   __attribute__((pure))
 #	define O7_ATTR_MALLOC __attribute__((malloc))
 #else
+#	define O7_ATTR_CONST
 #	define O7_ATTR_PURE
 #	define O7_ATTR_MALLOC
 #endif
@@ -208,25 +149,62 @@ typedef o7_ulong_t o7_set64_t;
 
 #define O7_ALWAYS_INLINE O7_ATTR_ALWAYS_INLINE O7_INLINE
 
-O7_INLINE void o7_gc_init(void) O7_ATTR_ALWAYS_INLINE;
+#if defined(O7_MEMNG_COUNTER_TYPE)
+	typedef O7_MEMNG_COUNTER_TYPE
+	                  o7_mmc_t;
+#elif defined(__clang__) && (__SIZEOF_POINTER__ == __SIZEOF_INT__)
+	typedef int       o7_mmc_t;
+#elif defined(__clang__) && (__SIZEOF_POINTER__ == __SIZEOF_LONG__)
+	typedef long      o7_mmc_t;
+#elif ((size_t)-1) == O7_UINT_MAX
+	typedef o7_int_t  o7_mmc_t;
+#else
+	typedef long      o7_mmc_t;
+#endif
+
+#if !defined(O7_MAX_RECORD_EXT)
+#	define O7_MAX_RECORD_EXT 15
+#endif
+
+#if defined(O7_TAG_ID_TYPE)
+	typedef O7_TAG_ID_TYPE o7_id_t;
+#else
+	typedef int o7_id_t;
+#endif
+
+typedef struct {
+	o7_id_t ids[O7_MAX_RECORD_EXT + 1];
+	void (*release)(void *);
+} o7_tag_t;
+extern o7_tag_t o7_base_tag;
+
+enum {
+	O7_MEMINFO_SIZE = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
+	                + sizeof(o7_tag_t *)
+};
 
 #if O7_MEMNG == O7_MEMNG_GC
 #	include "gc.h"
-	O7_INLINE void o7_gc_init(void) { GC_INIT(); }
+	O7_ALWAYS_INLINE void o7_gc_init(void) {
+		GC_INIT();
+		GC_REGISTER_DISPLACEMENT(O7_MEMINFO_SIZE);
+	}
 #else
-	O7_INLINE void o7_gc_init(void) { assert(0 > 1); }
-#endif
-
-#if defined(O7_MEMNG_COUNTER_TYPE)
-	typedef O7_MEMNG_COUNTER_TYPE o7_mmc_t;
-#else
-	typedef o7_int_t o7_mmc_t;
+	O7_ALWAYS_INLINE void o7_gc_init(void) {
+		assert(0 > 1);
+	}
 #endif
 
 #if defined(O7_CHECK_OVERFLOW)
 	enum { O7_OVERFLOW = O7_CHECK_OVERFLOW };
 #else
 	enum { O7_OVERFLOW = 1 };
+#endif
+
+#if defined(O7_CHECK_NATURAL_DIVISOR)
+	enum { O7_NATURAL_DIVISOR = O7_CHECK_NATURAL_DIVISOR };
+#else
+	enum { O7_NATURAL_DIVISOR = 1 };
 #endif
 
 #if defined(O7_CHECK_DIV_BY_ZERO)
@@ -339,20 +317,7 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 	}
 #endif
 
-#if !defined(O7_MAX_RECORD_EXT)
-#	define O7_MAX_RECORD_EXT 15
-#endif
-
-#if defined(O7_TAG_ID_TYPE)
-	typedef O7_TAG_ID_TYPE o7_id_t;
-#else
-	typedef int o7_id_t;
-#endif
-
 #define O7_LEN(array) ((o7_int_t)(sizeof(array) / sizeof((array)[0])))
-
-typedef o7_id_t o7_tag_t[O7_MAX_RECORD_EXT + 1];
-extern o7_tag_t o7_base_tag;
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 o7_cbool o7_bool_inited(o7_bool b) {
@@ -367,26 +332,24 @@ o7_bool o7_bl(o7_bool b) {
 	return b;
 }
 
-extern o7_char* o7_bools_undef(int len, o7_char array[O7_VLA(len)]);
+extern o7_char* o7_bools_undef(o7_int_t len, o7_char array[O7_VLA(len)]);
 #define O7_BOOLS_UNDEF(array) \
-	o7_bools_undef(sizeof(array) / sizeof(o7_char), (o7_char *)(array))
+	o7_bools_undef((o7_int_t)(sizeof(array) / sizeof(o7_char)), (o7_char *)(array))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl_undef(void) {
-	double undef = 0.0;
-	if (sizeof(unsigned) == sizeof(double) / 2) {
-		unsigned const u = 0x7FFFFFFFul;
-		memcpy((unsigned *)&undef + 1, &u, sizeof(u));
-	} else {
-		unsigned long const u = 0x7FFFFFFFul;
-		memcpy((unsigned long *)&undef + 1, &u, sizeof(u));
-	}
-	return undef;
+	o7_uint_t const u = 0x7FFFFFFFul;
+	double signaling_nan;
+
+	signaling_nan = 0.0;
+	/* TODO check correctness for big endian */
+	memcpy((o7_uint_t *)&signaling_nan + 1, &u, sizeof(u));
+	return signaling_nan;
 }
 
-extern double* o7_doubles_undef(int len, double array[O7_VLA(len)]);
+extern double* o7_doubles_undef(o7_int_t len, double array[O7_VLA(len)]);
 #define O7_DOUBLES_UNDEF(array) \
-	o7_doubles_undef(sizeof(array) / sizeof(double), (double *)(array))
+	o7_doubles_undef((o7_int_t)(sizeof(array) / sizeof(double)), (double *)(array))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_dbl(double d) {
@@ -405,6 +368,16 @@ double o7_dbl(double d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
+double o7_flt_undef(void) {
+	o7_uint_t const u = 0x7FFFFFFFul;
+	float signaling_nan;
+
+	signaling_nan = 0.0;
+	memcpy((o7_uint_t *)&signaling_nan, &u, sizeof(u));
+	return signaling_nan;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
 char unsigned o7_byte(int v) {
 	assert((unsigned)v <= 255);
 	return (char unsigned)v;
@@ -416,15 +389,18 @@ char unsigned o7_chr(int v) {
 	return (char unsigned)v;
 }
 
-#if (__STDC_VERSION__ >= 199901L) && !(defined(__TINYC__) && (defined(_WIN32) || defined(_WIN64))) && !defined(__COMPCERT__)
-/* TODO в вычислительных функциях можно будет убрать o7_dbl после проверки*/
+#if (__STDC_VERSION__ >= 199901L) \
+ && !(defined(_WIN32) || defined(_WIN64)) \
+ && !defined(__COMPCERT__)
+
+	extern o7_cbool o7_isfinite(double);
+
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	double o7_dbl_finite(double v) {
-		assert(isfinite(v));
+		assert(o7_isfinite(v));
 		return v;
 	}
 #else
-	/* TODO */
 	O7_ATTR_CONST O7_ALWAYS_INLINE
 	double o7_dbl_finite(double v) {
 		assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
@@ -456,39 +432,39 @@ double o7_fdiv(double n, double d) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_bool o7_int_inited(int i) {
-	return i >= -INT_MAX;
+o7_bool o7_int_inited(o7_int_t i) {
+	return -O7_INT_MAX <= i;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_int(int i) {
+o7_int_t o7_int(o7_int_t i) {
 	if (O7_UNDEF) {
 		assert(o7_int_inited(i));
 	}
 	return i;
 }
 
-extern int* o7_ints_undef(int len, int array[O7_VLA(len)]);
+extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
-	o7_ints_undef((int)(sizeof(array) / (sizeof(int))), (int *)(array))
+	o7_ints_undef((o7_int_t)(sizeof(array) / (sizeof(o7_int_t))), (o7_int_t *)(array))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_add(int a1, int a2) {
-	int s;
+o7_int_t o7_add(o7_int_t a1, o7_int_t a2) {
+	o7_int_t s;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SADD(o7_int(a1), o7_int(a2), &s);
-		assert(!overflow && s >= -INT_MAX);
+		overflow = O7_GNUC_SADD(o7_int(a1), o7_int(a2), &s) || (-O7_INT_MAX > s);
+		assert(!overflow);
 	} else {
 		if (!O7_OVERFLOW) {
 			if (O7_UNDEF) {
 				assert(o7_int_inited(a1));
 				assert(o7_int_inited(a2));
 			}
-		} else if (a2 >= 0) {
-			assert(o7_int(a1) <=  INT_MAX - a2);
+		} else if (0 <= a2) {
+			assert(o7_int(a1) <= O7_INT_MAX - a2);
 		} else {
-			assert(a1 >= -INT_MAX - o7_int(a2));
+			assert(-O7_INT_MAX - o7_int(a2) <= a1);
 		}
 		s = a1 + a2;
 	}
@@ -496,20 +472,20 @@ int o7_add(int a1, int a2) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_sub(int m, int s) {
-	int d;
+o7_int_t o7_sub(o7_int_t m, o7_int_t s) {
+	o7_int_t d;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SSUB(o7_int(m), o7_int(s), &d);
-		assert(!overflow && d >= -INT_MAX);
+		overflow = O7_GNUC_SSUB(o7_int(m), o7_int(s), &d) || (-O7_INT_MAX > d);
+		assert(!overflow);
 	} else {
 		if (!O7_OVERFLOW) {
 			if (O7_UNDEF) {
 				assert(o7_int_inited(m));
 				assert(o7_int_inited(s));
 			}
-		} else if (s >= 0) {
-			assert(m >= -INT_MAX + s);
+		} else if (0 <= s) {
+			assert(-O7_INT_MAX + s <= m);
 		} else {
 			assert(o7_int(m) <= INT_MAX + o7_int(s));
 		}
@@ -519,15 +495,15 @@ int o7_sub(int m, int s) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_mul(int m1, int m2) {
-	int p;
+o7_int_t o7_mul(o7_int_t m1, o7_int_t m2) {
+	o7_int_t p;
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SMUL(o7_int(m1), o7_int(m2), &p);
-		assert(!overflow && p >= -INT_MAX);
+		overflow = O7_GNUC_SMUL(o7_int(m1), o7_int(m2), &p) || (-O7_INT_MAX > p);
+		assert(!overflow);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
-			assert(abs(m1) <= INT_MAX / abs(m2));
+			assert(abs(m1) <= O7_INT_MAX / abs(m2));
 		}
 		p = o7_int(m1) * o7_int(m2);
 	}
@@ -535,31 +511,50 @@ int o7_mul(int m1, int m2) {
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_div(int n, int d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+o7_int_t o7_divisor(o7_int_t d) {
+	if (O7_NATURAL_DIVISOR) {
+		assert(0 < d);
+	} else {
+		if (O7_OVERFLOW && O7_DIV_ZERO) {
+			assert(d != 0);
+		}
+		d = o7_int(d);
 	}
-	return o7_int(n) / o7_int(d);
+	return d;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_mod(int n, int d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
-		assert(d != 0);
+o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+	o7_int_t r;
+	if (0 <= n) {
+		r = n / o7_divisor(d);
+	} else {
+		r = -1 - (-1 - o7_int(n)) / o7_divisor(d);
 	}
-	return o7_int(n) % o7_int(d);
+	return  r;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_ind(int len, int ind) {
+o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
+	o7_int_t r;
+	if (0 <= n) {
+		r = n % o7_divisor(d);
+	} else {
+		r = d + (-1 - (-1 - o7_int(n)) % o7_divisor(d));
+	}
+	return r;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+o7_int_t o7_ind(o7_int_t len, o7_int_t ind) {
 	if (O7_ARRAY_INDEX) {
-		assert((unsigned)ind < (unsigned)len);
+		assert((o7_uint_t)ind < (o7_uint_t)len);
 	}
 	return ind;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_cmp(int a, int b) {
+int o7_cmp(o7_int_t a, o7_int_t b) {
 	int cmp;
 	if (a < b) {
 		if (O7_UNDEF) {
@@ -579,34 +574,46 @@ int o7_cmp(int a, int b) {
 	return cmp;
 }
 
-O7_ALWAYS_INLINE void o7_release(void *mem) {
+O7_ALWAYS_INLINE
+void o7_release(void *mem) {
 	o7_mmc_t *counter;
+	o7_mmc_t count;
+	o7_tag_t const **tag;
 	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
-		counter = (o7_mmc_t *)((o7_id_t **)mem - 1) - 1;
-		if (1 == *counter) {
-			free(counter);
+		tag = (o7_tag_t const **)mem - 1;
+		counter = (o7_mmc_t *)tag - 1;
+		count = *counter;
+		if (1 < count) {
+			*counter = count - 1;
 		} else {
-			assert(*counter > 1);
-			*counter -= 1;
+			assert(1 == count);
+			(*tag)->release(mem);
+			free(counter);
 		}
 	}
 }
 
-O7_ALWAYS_INLINE o7_cbool
-o7_new(void **pmem, int size, o7_tag_t const tag, void undef(void *)) {
+O7_ALWAYS_INLINE
+void* o7_mem_info_init(void *mem, o7_tag_t const *tag) {
+	o7_tag_t const **tg;
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		*(o7_mmc_t *)mem = 1;
+		tg = (o7_tag_t const **)((o7_mmc_t *)mem + 1);
+	} else {
+		tg = (o7_tag_t const **)mem;
+	}
+	*tg = tag;
+	return (void *)(tg + 1);
+}
+
+O7_ALWAYS_INLINE
+o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) {
 	void *mem;
-	mem = o7_malloc(
-	    sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
-	  + sizeof(o7_id_t *) + size);
+	mem = o7_malloc(O7_MEMINFO_SIZE + size);
 	if (NULL != mem) {
-		if (O7_MEMNG == O7_MEMNG_COUNTER) {
-			*(o7_mmc_t *)mem = 1;
-			mem = (void *)((o7_mmc_t *)mem + 1);
-		}
-		*(o7_id_t const **)mem = tag;
-		mem = (void *)((o7_id_t **)mem + 1);
+		mem = o7_mem_info_init(mem, tag);
 		if ((O7_INIT == O7_INIT_UNDEF) && (NULL != undef)) {
 			undef(mem);
 		}
@@ -616,44 +623,54 @@ o7_new(void **pmem, int size, o7_tag_t const tag, void undef(void *)) {
 	return NULL != mem;
 }
 
-#define O7_NEW(mem, name) \
-	o7_new((void **)mem, sizeof(**(mem)), name##_tag, (void (*)(void *))name##_undef)
+#if O7_INIT != O7_INIT_UNDEF
+#	define O7_NEW(mem, name) \
+		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, (void (*)(void *))name##_undef)
+#else
+#	define O7_NEW(mem, name) \
+		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, NULL)
+#endif
 
 #define O7_NEW2(mem, tag, undef) \
-	o7_new((void **)mem, sizeof(**(mem)), tag, (void (*)(void *))undef)
+	o7_new((void **)mem, sizeof(**(mem)), &tag, (void (*)(void *))undef)
 
-O7_ALWAYS_INLINE void* o7_retain(void *mem) {
+O7_ALWAYS_INLINE
+void* o7_retain(void *mem) {
 	if ((O7_MEMNG == O7_MEMNG_COUNTER) && (NULL != mem)) {
-		*((o7_mmc_t *)((o7_id_t **)mem - 1) - 1) += 1;
+		*((o7_mmc_t *)((o7_tag_t **)mem - 1) - 1) += 1;
 	}
 	return mem;
 }
 
 /** уменьшает счётчик на 1, но не освобождает объект при достижении 0 */
-O7_ALWAYS_INLINE void* o7_unhold(void *mem) {
+O7_ALWAYS_INLINE
+void* o7_unhold(void *mem) {
 	o7_mmc_t *counter;
+	o7_mmc_t count;
 	if ((O7_MEMNG == O7_MEMNG_COUNTER)
 	 && (NULL != mem))
 	{
-		counter = (o7_mmc_t *)((o7_id_t **)mem - 1) - 1;
-		assert(*counter > 0);
-		*counter -= 1;
+		counter = (o7_mmc_t *)((o7_tag_t **)mem - 1) - 1;
+		count = *counter;
+		assert(0 < count);/* TODO remove */
+		*counter = count - 1;
 	}
 	return mem;
 }
 
-
-#define O7_RELEASE_PARAMS(array) o7_release_array(sizeof(array) / sizeof(array[0]), array)
-
-O7_ALWAYS_INLINE void o7_null(void **mem) {
-	o7_release(*mem);
-	*mem = NULL;
+O7_ALWAYS_INLINE
+void o7_null(void **mem) {
+	if (NULL != *mem) {
+		o7_release(*mem);
+		*mem = NULL;
+	}
 }
 
 #define O7_NULL(mem) o7_null((void **)(mem))
 
-O7_ALWAYS_INLINE void o7_release_array(int count, void *mem[O7_VLA(count)]) {
-	int i;
+O7_ALWAYS_INLINE
+void o7_release_array(o7_int_t count, void *mem[O7_VLA(count)]) {
+	o7_int_t i;
 	if (O7_MEMNG == O7_MEMNG_COUNTER) {
 		for (i = 0; i < count; i += 1) {
 			o7_null(mem + i);
@@ -661,127 +678,163 @@ O7_ALWAYS_INLINE void o7_release_array(int count, void *mem[O7_VLA(count)]) {
 	}
 }
 
-O7_ALWAYS_INLINE void o7_assign(void **m1, void *m2) {
+#define O7_RELEASE_ARRAY(array) \
+	o7_release_array(sizeof(array) / sizeof(void *), (void **)array)
+
+O7_ALWAYS_INLINE
+void o7_retain_array(o7_int_t count, void *mem[O7_VLA(count)]) {
+	o7_int_t i;
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		for (i = 0; i < count; i += 1) {
+			o7_retain(mem + i);
+		}
+	}
+}
+
+#define O7_RETAIN_ARRAY(array) \
+	o7_retain_array(sizeof(array) / sizeof(void *), (void **)array)
+
+O7_ALWAYS_INLINE
+void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void release(void *)) {
+	o7_int_t i;
+	assert(0 > 1);/* TODO */
+	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		for (i = 0; i < count; i += 1) {
+			o7_null((void **)array + i);
+		}
+	}
+}
+
+O7_ALWAYS_INLINE
+void o7_assign(void **m1, void *m2) {
 	assert(NULL != m1);/* TODO remove */
 	o7_retain(m2);
-	if (NULL != *m1) {
-		o7_release(*m1);
-	}
+	o7_release(*m1);
 	*m1 = m2;
 }
 
 #define O7_ASSIGN(m1, m2) o7_assign((void **)(m1), m2)
 
-extern void o7_tag_init(o7_tag_t ext, o7_tag_t const base);
+extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *));
+
+#if O7_MEMNG == O7_MEMNG_COUNTER
+#	define O7_TAG_INIT(ExtType, BaseType) \
+		o7_tag_init(&ExtType##_tag, &BaseType##_tag, (void (*)(void *))ExtType##_release)
+#else
+#	define O7_TAG_INIT(ExtType, BaseType) \
+		o7_tag_init(&ExtType##_tag, &BaseType##_tag, NULL)
+#endif
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-o7_id_t const * o7_dynamic_tag(void const *mem) {
+o7_tag_t const * o7_dynamic_tag(void const *mem) {
 	assert(NULL != mem);
-	return *((o7_id_t const **)mem - 1);
+	return *((o7_tag_t const **)mem - 1);
 }
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-o7_bool o7_is_r(o7_id_t const *base, void const *strct, o7_tag_t const ext) {
+o7_bool o7_is_r(o7_tag_t const *base, void const *strct, o7_tag_t const *ext) {
 	if (NULL == base) {
 		base = o7_dynamic_tag(strct);
 	}
-	return base[ext[0]] == ext[ext[0]];
+	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-o7_bool o7_is(void const *strct, o7_tag_t const ext) {
-	o7_id_t const *base;
+o7_bool o7_is(void const *strct, o7_tag_t const *ext) {
+	o7_tag_t const *base;
 	base = o7_dynamic_tag(strct);
-	return base[ext[0]] == ext[ext[0]];
+	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-void **o7_must(void **strct, o7_tag_t const ext) {
+void **o7_must(void **strct, o7_tag_t const *ext) {
 	assert(o7_is(*strct, ext));
 	return strct;
 }
 
 #define O7_GUARD(ExtType, strct) \
-	(*(struct ExtType **)o7_must((void **)strct, ExtType##_tag))
+	(*(struct ExtType **)o7_must((void **)strct, &ExtType##_tag))
 
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-void * o7_must_r(o7_tag_t const base, void *strct, o7_tag_t const ext) {
+void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
 	assert(o7_is_r(base, strct, ext));
 	return strct;
 }
 
 #define O7_GUARD_R(ExtType, strct, base) \
-	(*(struct ExtType *)o7_must_r(base, strct, ExtType##_tag))
+	(*(struct ExtType *)o7_must_r(base, strct, &ExtType##_tag))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-unsigned o7_set(int low, int high) {
+o7_uint_t o7_set(o7_int_t low, o7_int_t high) {
 	assert(high <= 31);
 	assert(0 <= low && low <= high);
-	return (~0u << low) & (~0u >> (31 - high));
+	return (~(o7_uint_t)0 << low) & (~(o7_uint_t)0 >> (31 - high));
 }
 
-#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
+#define O7_SET(low, high) (((o7_uint_t)-1 << low) & ((o7_uint_t)-1 >> (31 - high)))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-o7_bool o7_in(int n, unsigned set) {
-	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
+o7_bool o7_in(o7_int_t n, o7_uint_t set) {
+	return (n >= 0) && (n <= 31) && (0 != (set & ((o7_uint_t)1 << n)));
 }
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != ((set) & ((o7_uint_t)1u << (n)))))
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_sti(unsigned v) {
-	assert(v <= (unsigned)INT_MAX);
-	return (int)v;
-}
-
-O7_ATTR_CONST O7_ALWAYS_INLINE
-int o7_floor(double v) {
-	assert((double)(-INT_MAX) <= v && v <= (double)INT_MAX);
-	return (int)v;
+o7_int_t o7_sti(o7_uint_t v) {
+	assert(v <= (o7_uint_t)O7_INT_MAX);
+	return (o7_int_t)v;
 }
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
-double o7_flt(int v) {
+o7_int_t o7_floor(double v) {
+	assert((double)(-O7_INT_MAX) <= v && v <= (double)O7_INT_MAX);
+	return (o7_int_t)v;
+}
+
+O7_ATTR_CONST O7_ALWAYS_INLINE
+double o7_flt(o7_int_t v) {
 	return (double)o7_int(v);
 }
 
-O7_ALWAYS_INLINE o7_cbool o7_ldexp(double *f, int n) {
-	*f = ldexp(o7_dbl(*f), o7_int(n));
-	return 0 < 1;/* TODO */
-}
+O7_ALWAYS_INLINE
+void o7_ldexp(double *f, o7_int_t n) {
+	extern double o7_raw_ldexp(double f, int n);
 
-O7_ALWAYS_INLINE o7_cbool o7_frexp(double *f, int *n) {
-	int p;
-	*f = frexp(o7_dbl(*f), &p) * 2.0;
-	*n = p - 1;
-	return 0 < 1;/* TODO */
+	*f = o7_dbl_finite(o7_raw_ldexp(o7_dbl_finite(*f), o7_int(n)));
 }
-
-extern int o7_strcmp(int s1_len, o7_char const s1[O7_VLA(s1_len)],
-                     int s2_len, o7_char const s2[O7_VLA(s2_len)])
-	O7_ATTR_PURE;
 
 O7_ALWAYS_INLINE
-void o7_memcpy(int dest_len, o7_char dest[O7_VLA(dest_len)],
-               int src_len, o7_char const src[O7_VLA(src_len)])
-{
-	assert(src_len <= dest_len);
-	memcpy(dest, dest, src_len);
+void o7_frexp(double *f, o7_int_t *n) {
+	extern double o7_raw_frexp(double x, int *exp);
+
+	int p;
+
+	*f = o7_raw_frexp(o7_dbl_finite(*f), &p) * 2.0;
+	if (*f == 0.0) {
+		*n = p;
+	} else {
+		*n = p - 1;
+	}
 }
 
-extern O7_NORETURN void o7_case_fail(int i);
+extern O7_ATTR_PURE
+int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
+              o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]);
+
+O7_ALWAYS_INLINE
+void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
+               o7_int_t src_len, o7_char const src[O7_VLA(src_len)])
+{
+	assert(src_len <= dest_len);
+	memcpy(dest, dest, (size_t)src_len);
+}
+
+extern O7_NORETURN void o7_case_fail(o7_int_t i);
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]);
 
 extern int o7_exit_code;
-
-#undef O7_GNUC_SADD
-#undef O7_GNUC_SSUB
-#undef O7_GNUC_SMUL
-#undef O7_GNUC_SADDL
-#undef O7_GNUC_SSUBL
-#undef O7_GNUC_SMULL
 
 #endif
