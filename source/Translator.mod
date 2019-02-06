@@ -222,7 +222,7 @@ PROCEDURE NewProvider(VAR p: ModulesStorage.Provider; VAR opt: Parser.Options;
                       args: Cli.Args);
 VAR m: ModulesProvider.Provider;
 BEGIN
-	ModulesProvider.New(m, args);
+	ModulesProvider.New(m, args.modPath, args.modPathLen, args.sing);
 	ModulesStorage.New(p, m);
 
 	Parser.DefaultOptions(opt);

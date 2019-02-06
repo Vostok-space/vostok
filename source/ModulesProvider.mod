@@ -19,7 +19,6 @@ MODULE ModulesProvider;
   IMPORT
     Log, Out,
     Ast,
-    Cli := CliParser,
     Strings := StringStore,
     Parser,
     TranLim := TranslatorLimits,
@@ -30,8 +29,7 @@ MODULE ModulesProvider;
 
   TYPE
     Provider* = POINTER TO RECORD(Ast.RProvider)
-      (* TODO *)
-      opt*: Parser.Options;
+      opt: Parser.Options;
 
       path: ARRAY 4096 OF CHAR;
       sing: SET;
@@ -78,7 +76,8 @@ MODULE ModulesProvider;
           in := NIL
         END;
         pathOfs := pathOfs + len + 1
-        RETURN in
+      RETURN
+        in
       END Open;
     BEGIN
       pathInd := -1;
@@ -96,7 +95,8 @@ MODULE ModulesProvider;
         END;
         INC(pathInd)
       UNTIL (m # NIL) OR (p.path[pathOfs] = Utf8.Null)
-      RETURN m
+    RETURN
+      m
     END Search;
   BEGIN
     mp := p(Provider);
@@ -130,25 +130,26 @@ MODULE ModulesProvider;
   PROCEDURE RegModule(p: Ast.Provider; m: Ast.Module): BOOLEAN;
     PROCEDURE Reg(p: Provider; m: Ast.Module): BOOLEAN;
     BEGIN
+      Log.Str("RegModule ");
       Log.Str(m.name.block.s); Log.Str(" : "); Log.StrLn(p.expectName);
       p.nameOk := m.name.block.s = p.expectName;
     RETURN
       p.nameOk
     END Reg;
-  BEGIN
-    Log.Str("RegModule ")
-    RETURN Reg(p(Provider), m)
+  RETURN
+    Reg(p(Provider), m)
   END RegModule;
 
-  PROCEDURE New*(VAR mp: Provider; args: Cli.Args);
+  PROCEDURE New*(VAR mp: Provider; searchPath: ARRAY OF CHAR; pathLen: INTEGER;
+                 definitionsInSearch: SET);
   VAR len: INTEGER;
   BEGIN
     NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
 
     mp.firstNotOk := TRUE;
     len := 0;
-    ASSERT(Strings.CopyChars(mp.path, len, args.modPath, 0, args.modPathLen));
-    mp.sing := args.sing
+    ASSERT(Strings.CopyChars(mp.path, len, searchPath, 0, pathLen));
+    mp.sing := definitionsInSearch
   END New;
 
   PROCEDURE SetParserOptions*(p: Provider; o: Parser.Options);
