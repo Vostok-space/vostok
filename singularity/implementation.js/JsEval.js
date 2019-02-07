@@ -16,7 +16,7 @@ var o7;
 (function(o7) { 'use strict';
 
 var module = {};
-o7.JsEval = module;
+o7.export.JsEval = module;
 
 function Code() {
 	this.code = [];

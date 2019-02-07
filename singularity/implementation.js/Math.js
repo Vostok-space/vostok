@@ -16,7 +16,7 @@ var o7;
 (function(o7) { 'use strict';
 
 var module = {};
-o7.Math = module;
+o7.export.Math = module;
 
 module.pi = Math.PI;
 module.e  = Math.E;

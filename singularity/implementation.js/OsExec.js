@@ -18,7 +18,7 @@ var o7;
 var child_process;
 
 var module = {};
-o7.OsExec = module;
+o7.export.OsExec = module;
 
 var Ok = 0;
 module.Ok = Ok;

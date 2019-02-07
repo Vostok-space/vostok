@@ -16,7 +16,7 @@ var o7;
 (function(o7) { 'use strict';
 
 var module = {};
-o7.CFiles = module;
+o7.export.CFiles = module;
 
 var fs;
 

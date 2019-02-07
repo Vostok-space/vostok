@@ -16,7 +16,7 @@ var o7;
 (function(o7) { 'use strict';
 
 var module = {};
-o7.CLI = module;
+o7.export.CLI = module;
 
 var MaxLen = 4096;
 module.MaxLen = MaxLen;

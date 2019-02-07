@@ -18,7 +18,7 @@ var o7;
 var platform;
 
 var module = {};
-o7.Platform = module;
+o7.export.Platform = module;
 
 if (typeof require !== 'undefined') {
     platform = require("os").platform();

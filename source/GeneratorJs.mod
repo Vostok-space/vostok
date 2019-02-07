@@ -2089,7 +2089,7 @@ VAR d: Ast.Declaration;
 	BEGIN
 		Text.Str(gen, "var ");
 		Ident(gen, decl.name);
-		Text.Str(gen, " = o7.");
+		Text.Str(gen, " = o7.import.");
 		Ident(gen, decl.module.m.name);
 		Text.StrLn(gen, ";");
 		ASSERT(decl.module.m.ext = NIL);
@@ -2167,7 +2167,7 @@ BEGIN
 	Imports(gen, module);
 
 	Text.StrLn(gen, "var module = {};");
-	Text.Str(gen, "o7.");
+	Text.Str(gen, "o7.export.");
 	Name(gen, module);
 	IF SpecIdentChecker.IsSpecModuleName(module.name) & ~module.spec THEN
 		Text.Str(gen, "_")

@@ -445,6 +445,7 @@ MODULE SpecIdentChecker;
   PROCEDURE O7(n: Strings.String): BOOLEAN;
   RETURN Eq(n, "initialized")
       OR Eq(n, "NULL")
+      OR Eq(n, "module")
   END O7;
 
   PROCEDURE IsSpecName*(n: Strings.String; filter: SET): BOOLEAN;

@@ -16,7 +16,7 @@ var o7;
 (function(o7) { 'use strict';
 
 var module = {};
-o7.JsRand = module;
+o7.export.JsRand = module;
 
 var crypto;
 

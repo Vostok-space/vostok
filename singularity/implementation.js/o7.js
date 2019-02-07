@@ -19,6 +19,9 @@ var o7;
 
   utf8Cache = [];
 
+  o7.export = {};
+  o7.import = o7.export;
+
   function assert(check, msg) {
     if (check) {
       ;
