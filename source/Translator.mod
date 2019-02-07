@@ -784,17 +784,11 @@ BEGIN
 		ASSERT(Strings.CopyChars(prov.dir, prov.dirLen,
 		                         args.resPath, 0, args.resPathLen));
 		prov.usejavac := FALSE;
-		IF (call = NIL) & args.script THEN
-			call := Ast.NopNew()
-		END;
 		ret := GenerateJava(module, call,
 		                    prov, opt,
 		                    args.resPath, args.resPathLen, args.javaDirs,
 		                    javac, FALSE)
 	| Cli.ResultClass, Cli.ResultRunJava:
-		IF call = NIL THEN
-			call := Ast.NopNew()
-		END;
 		ret := Class(module, args, call, prov, opt, out, mainClass, listener);
 		IF (res = Cli.ResultRunJava) & (ret = ErrNo) THEN
 			ret := Run(out, mainClass, args.arg)
@@ -1047,15 +1041,9 @@ BEGIN
 
 	CASE res OF
 	  Cli.ResultJs:
-		IF (call = NIL) & args.script THEN
-			call := Ast.NopNew()
-		END;
 		ret := GenerateJs(module, call, args.toSingleFile, opt,
 		                  args.resPath, args.resPathLen, args.jsDirs)
 	| Cli.ResultRunJs:
-		IF call = NIL THEN
-			call := Ast.NopNew()
-		END;
 		IF JsEval.supported THEN
 			ret := RunJs(module, call, opt, args.jsDirs, args.arg)
 		ELSE
@@ -1079,6 +1067,7 @@ VAR ret: INTEGER;
     mp: ModulesStorage.Provider;
     module: Ast.Module;
     call: Ast.Call;
+    cmd: Ast.Statement;
     tranOpt: AstTransform.Options;
     opt: Parser.Options;
 BEGIN
@@ -1099,10 +1088,11 @@ BEGIN
 	ELSE
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
 			ret := Ast.CommandGet(call, module,
-			                      args.src, args.srcNameEnd + 1, args.srcLen - 1)
+			                      args.src, args.srcNameEnd + 1, args.srcLen - 1);
+			cmd := call
 		ELSE
 			ret := ErrNo;
-			call := NIL
+			cmd := NIL
 		END;
 		IF ret # Ast.ErrNo THEN
 			ret := ErrParse;
@@ -1112,9 +1102,9 @@ BEGIN
 			AstTransform.DefaultOptions(tranOpt);
 			AstTransform.Do(module, tranOpt);
 			IF res IN Cli.ThroughJava THEN
-				ret := GenerateThroughJava(res, args, module, call, listener)
+				ret := GenerateThroughJava(res, args, module, cmd, listener)
 			ELSE
-				ret := GenerateThroughJs(res, args, module, call, listener)
+				ret := GenerateThroughJs(res, args, module, cmd, listener)
 			END
 		ELSE ASSERT(res IN Cli.ThroughC);
 			ret := GenerateThroughC(res, args, module, call, listener)

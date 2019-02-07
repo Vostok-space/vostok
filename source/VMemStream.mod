@@ -131,7 +131,7 @@ MODULE VMemStream;
     out # NIL
   END New;
 
-  PROCEDURE Pass*(ctx: V.Base; out: Out; handle: Handle): BOOLEAN;
+  PROCEDURE Pass*(out: Out; ctx: V.Base; handle: Handle): BOOLEAN;
   VAR b: Block; end: BOOLEAN;
   BEGIN
     b := out.first;

@@ -28,7 +28,7 @@ MODULE MemStreamToJsEval;
   BEGIN
     V.Init(w);
     IF ~JsEval.New(w.code)
-    OR ~Mem.Pass(w, mem, Handle)
+    OR ~Mem.Pass(mem, w, Handle)
     OR ~JsEval.End(w.code, arg)
     THEN
       w.code := NIL;

@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -3376,10 +3376,11 @@ VAR out: MOut;
 		Text.Ln(gen)
 	END HeaderGuard;
 
-	PROCEDURE ModuleInit(VAR interf, impl: Generator; module: Ast.Module);
+	PROCEDURE ModuleInit(VAR interf, impl: Generator; module: Ast.Module;
+	                     cmd: Ast.Statement);
 	BEGIN
 		IF (module.import = NIL)
-		 & (module.stats = NIL)
+		 & (module.stats = NIL) & (cmd = NIL)
 		 & (impl.opt.records = NIL)
 		THEN
 			IF impl.opt.std >= IsoC99 THEN
@@ -3402,6 +3403,7 @@ VAR out: MOut;
 			ImportInit(impl, module.import);
 			TagsInit(impl);
 			Statements(impl, module.stats);
+			Statements(impl, cmd);
 			Text.StrLnClose(impl, "}");
 			Text.StrLn(impl, "++initialized;");
 			Text.StrLnClose(impl, "}");
@@ -3499,7 +3501,7 @@ BEGIN
 	IF opt.main THEN
 		Main(out.g[Implementation], module, cmd)
 	ELSE
-		ModuleInit(out.g[Interface], out.g[Implementation], module);
+		ModuleInit(out.g[Interface], out.g[Implementation], module, cmd);
 		ModuleDone(out.g[Interface], out.g[Implementation], module);
 		Text.StrLn(out.g[Interface], "#endif")
 	END

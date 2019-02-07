@@ -358,7 +358,6 @@ TYPE
 	RModule* = RECORD(RDeclarations)
 		bag*: ModuleBag;
 		store: Strings.Store;
-		provider*: Provider;
 
 		script*, errorHide*: BOOLEAN;
 
@@ -507,8 +506,6 @@ TYPE
 
 		next*: Statement
 	END;
-
-	Nop* = POINTER TO RECORD(RStatement)END;
 
 	WhileIf* = POINTER TO RWhileIf;
 	RWhileIf* = RECORD(RStatement)
@@ -3839,13 +3836,6 @@ BEGIN
 	NEW(s); StatInit(s, NIL)
 	RETURN s
 END StatementErrorNew;
-
-PROCEDURE NopNew*(): Nop;
-VAR nop: Nop;
-BEGIN
-	NEW(nop); StatInit(nop, NIL)
-	RETURN nop
-END NopNew;
 
 PROCEDURE PredefinedDeclarationsInit;
 VAR tp: ProcType;

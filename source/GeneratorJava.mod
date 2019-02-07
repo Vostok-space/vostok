@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1530,7 +1530,7 @@ BEGIN
 	RETURN v
 END SearchArrayOfRecord;
 
-PROCEDURE InitAllVarsWichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
+PROCEDURE InitAllVarsWhichArrayOfRecord(VAR gen: Generator; v: Ast.Declaration);
 VAR subt: Ast.Type;
 BEGIN
 	WHILE (v # NIL) & (v.id = Ast.IdVar) DO
@@ -1542,7 +1542,7 @@ BEGIN
 		END;
 		v := v.next
 	END
-END InitAllVarsWichArrayOfRecord;
+END InitAllVarsWhichArrayOfRecord;
 
 PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
                typeDecl, sameType: BOOLEAN);
@@ -1557,7 +1557,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			GlobalName(gen, rec);
 			Text.StrOpen(gen, "() {");
 
-			InitAllVarsWichArrayOfRecord(gen, rec.vars);
+			InitAllVarsWhichArrayOfRecord(gen, rec.vars);
 
 			Text.StrLnClose(gen, "}")
 		END Constructor;
@@ -2133,7 +2133,7 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 
 		declarations(gen, proc);
 
-		InitAllVarsWichArrayOfRecord(gen, proc.vars);
+		InitAllVarsWhichArrayOfRecord(gen, proc.vars);
 
 		Statements(gen, proc.stats);
 
@@ -2336,18 +2336,15 @@ PROCEDURE Generate*(out: Stream.POut;
                     provider: ProviderProcTypeName; opt: Options);
 VAR gen: Generator;
 
-	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module);
+	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	VAR v: Ast.Declaration;
 	BEGIN
 		v := SearchArrayOfRecord(module.vars);
-		IF (module.stats # NIL) OR (v # NIL) THEN
+		IF (module.stats # NIL) OR (cmd # NIL) OR (v # NIL) THEN
 			Text.StrOpen(gen, "static {");
-			IF v # NIL THEN
-				InitAllVarsWichArrayOfRecord(gen, v)
-			END;
-			IF module.stats # NIL THEN
-				Statements(gen, module.stats)
-			END;
+			InitAllVarsWhichArrayOfRecord(gen, v);
+			Statements(gen, module.stats);
+			Statements(gen, cmd);
 			Text.StrLnClose(gen, "}");
 			Text.Ln(gen)
 		END
@@ -2357,11 +2354,9 @@ VAR gen: Generator;
 	BEGIN
 		Text.StrOpen(gen, "public static void main(java.lang.String[] argv) {");
 		Text.StrLn(gen, "O7.init(argv);");
-		InitAllVarsWichArrayOfRecord(gen, module.vars);
+		InitAllVarsWhichArrayOfRecord(gen, module.vars);
 		Statements(gen, module.stats);
-		IF ~(cmd IS Ast.Nop) THEN
-			Statements(gen, cmd)
-		END;
+		Statements(gen, cmd);
 		Text.StrLn(gen, "O7.exit();");
 		Text.StrLnClose(gen, "}")
 	END Main;
@@ -2399,7 +2394,7 @@ BEGIN
 	IF opt.main THEN
 		Main(gen, module, cmd)
 	ELSE
-		ModuleInit(gen, module)
+		ModuleInit(gen, module, cmd)
 	END;
 
 	Text.StrLn(gen, "}")

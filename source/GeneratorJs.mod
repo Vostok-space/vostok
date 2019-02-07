@@ -1,5 +1,5 @@
 (*  Generator of Javascript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -2120,17 +2120,14 @@ PROCEDURE Generate*(out: Stream.POut;
                     opt: Options);
 VAR gen: Generator;
 
-	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module);
+	PROCEDURE ModuleInit(VAR gen: Generator; module: Ast.Module; cmd: Ast.Statement);
 	VAR v: Ast.Declaration;
 	BEGIN
 		v := SearchArrayOfRecord(module.vars);
 		IF (module.stats # NIL) OR (v # NIL) THEN
-			IF v # NIL THEN
-				InitAllVarsWichArrayOfRecord(gen, v, FALSE)
-			END;
-			IF module.stats # NIL THEN
-				Statements(gen, module.stats)
-			END;
+			InitAllVarsWichArrayOfRecord(gen, v, FALSE);
+			Statements(gen, module.stats);
+			Statements(gen, cmd);
 			Text.Ln(gen)
 		END
 	END ModuleInit;
@@ -2140,9 +2137,7 @@ VAR gen: Generator;
 		Text.StrOpen(gen, "o7.main(function() {");
 		InitAllVarsWichArrayOfRecord(gen, module.vars, FALSE);
 		Statements(gen, module.stats);
-		IF ~(cmd IS Ast.Nop) THEN
-			Statements(gen, cmd)
-		END;
+		Statements(gen, cmd);
 		Text.StrLnClose(gen, "});");
 	END Main;
 BEGIN
@@ -2180,7 +2175,7 @@ BEGIN
 	IF opt.main THEN
 		Main(gen, module, cmd)
 	ELSE
-		ModuleInit(gen, module)
+		ModuleInit(gen, module, cmd)
 	END;
 
 	Text.StrLn(gen, "return module;");
