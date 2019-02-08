@@ -238,5 +238,6 @@ BEGIN
 
   lang := C;
 
-  cc[0] := 0X
+  cc[0] := 0X;
+  ok := TRUE
 END make.
