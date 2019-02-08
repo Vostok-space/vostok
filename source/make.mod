@@ -159,33 +159,36 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := TestBy("test/source", FALSE, "o7c", C)
+   ok := ok & TestBy("test/source", FALSE, "o7c", C)
  END Test;
 
  PROCEDURE Self*;
  BEGIN
-   CASE lang OF
-     C:
-     ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
-         & TestBy("test/source", FALSE, "o7c-v1", lang)
-   | Java:
-     ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
-         & TestBy("test/source", FALSE, "o7c-v1-java", lang)
-   | Js:
-     ok := BuildBy("o7c", "o7c-v1-js", "o7c-v1-js", "to-js")
-         & TestBy("test/source", FALSE, "o7c-v1-js", lang)
+   IF ok THEN
+      CASE lang OF
+        C:
+        ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
+            & TestBy("test/source", FALSE, "o7c-v1", lang)
+      | Java:
+        ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
+            & TestBy("test/source", FALSE, "o7c-v1-java", lang)
+      | Js:
+        ok := BuildBy("o7c", "o7c-v1-js", "o7c-v1-js", "to-js")
+            & TestBy("test/source", FALSE, "o7c-v1-js", lang)
+      END
    END
  END Self;
 
  PROCEDURE SelfFull*;
  BEGIN
-   ok := BuildBy("o7c-v1", "o7c-v2", "v2", "to-bin")
+   ok := ok
+       & BuildBy("o7c-v1", "o7c-v2", "v2", "to-bin")
        & TestBy("test/source", FALSE, "o7c-v2", C)
  END SelfFull;
 
  PROCEDURE Example*;
  BEGIN
-   ok := TestBy("example", TRUE, "o7c", C)
+   ok := ok & TestBy("example", TRUE, "o7c", C)
  END Example;
 
  PROCEDURE Help*;
