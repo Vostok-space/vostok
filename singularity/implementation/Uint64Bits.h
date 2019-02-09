@@ -17,12 +17,12 @@
 
 #include "Uint64.h"
 
-O7_ALWAYS_INLINE o7_uint_t Uint64Bits_BitsLow(Uint64_Type v) {
+O7_CONST_INLINE o7_uint_t Uint64Bits_BitsLow(Uint64_Type v) {
   /* TODO incorrect for big endian */
   return (o7_uint_t)*(Uint64_t *)v;
 }
 
-O7_ALWAYS_INLINE o7_uint_t Uint64Bits_BitsHigh(Uint64_Type v) {
+O7_CONST_INLINE o7_uint_t Uint64Bits_BitsHigh(Uint64_Type v) {
   /* TODO incorrect for big endian */
   return (o7_uint_t)(*(Uint64_t *)v >> 32);
 }

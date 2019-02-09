@@ -19,42 +19,43 @@
 #define Math_pi_cnst 3.14159265358979323846
 #define Math_e_cnst 2.71828182845904523536
 
+O7_ATTR_CONST
 extern double Math_sqrt(double x);
-
+O7_ATTR_CONST
 extern double Math_power(double x, double base);
-
+O7_ATTR_CONST
 extern double Math_exp(double x);
-
+O7_ATTR_CONST
 extern double Math_ln(double x);
-
+O7_ATTR_CONST
 extern double Math_log(double x, double base);
-
+O7_ATTR_CONST
 extern double Math_round(double x);
-
+O7_ATTR_CONST
 extern double Math_sin(double x);
-
+O7_ATTR_CONST
 extern double Math_cos(double x);
-
+O7_ATTR_CONST
 extern double Math_tan(double x);
-
+O7_ATTR_CONST
 extern double Math_arcsin(double x);
-
+O7_ATTR_CONST
 extern double Math_arccos(double x);
-
+O7_ATTR_CONST
 extern double Math_arctan(double x);
-
+O7_ATTR_CONST
 extern double Math_arctan2(double x, double y);
-
+O7_ATTR_CONST
 extern double Math_sinh(double x);
-
+O7_ATTR_CONST
 extern double Math_cosh(double x);
-
+O7_ATTR_CONST
 extern double Math_tanh(double x);
-
+O7_ATTR_CONST
 extern double Math_arcsinh(double x);
-
+O7_ATTR_CONST
 extern double Math_arccosh(double x);
-
+O7_ATTR_CONST
 extern double Math_arctanh(double x);
 
 O7_ALWAYS_INLINE void Math_init(void) { ; }
