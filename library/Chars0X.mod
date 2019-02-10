@@ -1,4 +1,5 @@
-(* Copyright 2018 ComdivByZero
+(* Operations with arrays of chars, which represent 0-terminated strings
+ * Copyright 2018 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +15,10 @@
  *)
 
 (* Модуль для работы с цепочками литер, имитирующих строки.
- * Конец строки определяется по концу массива или по положению 0-го символа с 
+ * Конец строки определяется по концу массива или по положению 0-го символа с
  * наименьшим индексом
  *)
 MODULE Chars0X;
-
-  IMPORT Out; 
 
   PROCEDURE Set0X*(VAR dest: ARRAY OF CHAR; ofs: INTEGER);
   BEGIN
@@ -27,7 +26,7 @@ MODULE Chars0X;
       dest[ofs] := 0X
     END
   END Set0X;
-  
+
   PROCEDURE CalcLen*(str: ARRAY OF CHAR): INTEGER;
   VAR i: INTEGER;
   BEGIN
@@ -63,7 +62,7 @@ MODULE Chars0X;
   RETURN
     ok
   END Fill;
-  
+
   PROCEDURE Copy*(src: ARRAY OF CHAR; VAR srcOfs: INTEGER;
                   null: BOOLEAN; len: INTEGER;
                   VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER)
@@ -88,7 +87,7 @@ MODULE Chars0X;
       IF LEN(src) - srcOfs < l THEN
         l := LEN(src) - srcOfs
       END;
-    
+
       WHILE (0 < l) & (src[s] # 0X) DO
         dest[d] := src[s];
         INC(d);
@@ -97,9 +96,9 @@ MODULE Chars0X;
       END;
 
       ok := (s - len = srcOfs)
-         OR null & ((s = LEN(src)) OR (src[s] = 0X)) 
+         OR null & ((s = LEN(src)) OR (src[s] = 0X))
     END;
-    
+
     Set0X(dest, d);
     srcOfs  := s;
     destOfs := d;
