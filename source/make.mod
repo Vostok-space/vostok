@@ -147,7 +147,7 @@ MODULE make;
          END
        END
      END;
-     ok := fail = 0;
+     ok := fail <= pass DIV 8;
      Log.Ln;
      Log.Str("Passed: "); Log.Int(pass); Log.Ln;
      Log.Str("Failed: "); Log.Int(fail); Log.Ln;
