@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ public static final java.nio.charset.Charset UTF_8
 
 static int      exitCode  = 0;
 static byte[][] args      = null;
+
+private static final java.util.HashMap<java.lang.String, byte[]> stringsCache
+                   = new java.util.HashMap<>();
 
 public static void exit() {
     if (0 != exitCode) {
@@ -262,16 +265,18 @@ public static double flt(final int i) {
 
 public static byte[] bytes(final java.lang.String s) {
     final java.nio.ByteBuffer bb;
-    final byte ba[];
     final int len;
-    /* TODO map */
-    bb = UTF_8.encode(s);
-    len = bb.limit();
-    ba = new byte[len];
-    bb.get(ba);
-/*
-    System.out.println("bytes(\"" + s + "\") = " + java.util.Arrays.toString(ba));
-*/
+    byte ba[];
+
+    ba = stringsCache.get(s);
+    if (ba == null) {
+        bb = UTF_8.encode(s);
+        len = bb.limit();
+        ba = new byte[len];
+        bb.get(ba);
+
+        stringsCache.put(s, ba);
+    }
     return ba;
 }
 
@@ -315,10 +320,6 @@ public static int strcmp(final byte[] s1, final byte[] s2) {
     } else {
         c2 = 0;
     }
-/*
-    System.out.println("compare " + java.util.Arrays.toString(s1) + " : "
-                     + java.util.Arrays.toString(s2) + " = " + (c1 - c2));
-*/
     return c1 - c2;
 }
 
