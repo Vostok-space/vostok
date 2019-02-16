@@ -48,6 +48,12 @@ public static void asrt(final boolean c) {
     }
 }
 
+public static void asrt(final boolean c, final String msg) {
+    if (!c) {
+        throw new java.lang.AssertionError(msg);
+    }
+}
+
 public static void caseFail(final int c) {
     throw new java.lang.AssertionError("case fail: " + c);
 }
@@ -188,27 +194,19 @@ public static long mul(final long a, final long b) {
 }
 
 public static int div(final int a, final int b) {
-    final int r;
-    asrt(b > 0);
+    asrt(b >= 0);
+    final int mask;
 
-    if (a >= 0) {
-        r = a / b;
-    } else {
-        r = -1 - (-1 - inited(a)) / b;
-    }
-    return r;
+    mask = a >> 31;
+    return mask ^ ((mask ^ inited(a)) / b);
 }
 
 public static int mod(final int a, final int b) {
-    final int r;
-    asrt(b > 0);
+    asrt(b >= 0);
+    final int mask;
 
-    if (a >= 0) {
-        r = a % b;
-    } else {
-        r = b + (-1 - (-1 - inited(a)) % b);
-    }
-    return r;
+    mask = a >> 31;
+    return (b & mask) + (mask ^ ((mask ^ inited(a)) % b));
 }
 
 public static int floor(final double d) {

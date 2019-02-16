@@ -379,31 +379,20 @@ var o7;
   };
 
   o7.div = function(a, b) {
-    // TODO
-    var r;
+    var mask;
     if (b > 0) {
-      if (a >= 0) {
-        r = a / b | 0;
-      } else {
-        //r = -1 - ((-1 - a) / b | 0);
-        r = ~((~a) / b);
-      }
-      return r;
+      mask = a >> 31;
+      return mask ^ ((mask ^ a) / b);
     } else {
       throw new RangeError("divider can't be < 1");
     }
   };
 
   o7.mod = function(a, b) {
-    // TODO
-    var r;
+    var mask;
     if (b > 0) {
-      if (a >= 0) {
-        r = a % b;
-      } else {
-        r = b + (-1 - (-1 - a) % b);
-      }
-      return r;
+      mask = a >> 31;
+      return (b & mask) + (mask ^ ((mask ^ a) % b));
     } else {
       throw new RangeError("divider can't be < 1");
     }
