@@ -17,7 +17,7 @@
 
 #include "Uint32.h"
 
-O7_ALWAYS_INLINE o7_uint_t Uint32Bits_Bits(Uint32_Type v) {
+O7_PURE_INLINE o7_uint_t Uint32Bits_Bits(Uint32_Type v) {
   return *(Uint32_t *)v;
 }
 

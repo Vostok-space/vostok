@@ -28,7 +28,7 @@ O7_ALWAYS_INLINE void Uint32_FromInt(Uint32_Type v, o7_int_t i) {
 	*(Uint32_t *)v = o7_int(i);
 }
 
-O7_ALWAYS_INLINE o7_int_t Uint32_ToInt(Uint32_Type v) {
+O7_PURE_INLINE o7_int_t Uint32_ToInt(Uint32_Type v) {
 	if (O7_OVERFLOW) {
 		assert(*(Uint32_t *)v <= O7_INT_MAX);
 	}
@@ -105,7 +105,7 @@ Uint32_DivMod(Uint32_Type div, Uint32_Type mod, Uint32_Type n, Uint32_Type d)
 	*(Uint32_t *)mod = *(Uint32_t *)n % *(Uint32_t *)d;
 }
 
-O7_ALWAYS_INLINE int Uint32_Cmp(Uint32_Type l, Uint32_Type r) {
+O7_PURE_INLINE int Uint32_Cmp(Uint32_Type l, Uint32_Type r) {
 	int cmp;
 	if (*(Uint32_t *)l < *(Uint32_t *)r) {
 		cmp = -1;

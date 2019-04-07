@@ -30,7 +30,7 @@ O7_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, o7_int_t high, o7_int_t low) {
 	*(Int64_t *)v = o7_int(high) * ((Int64_t)O7_INT_MAX + 1) + o7_int(low);
 }
 
-O7_ALWAYS_INLINE o7_int_t Int64_ToInt(Int64_Type v) {
+O7_PURE_INLINE o7_int_t Int64_ToInt(Int64_Type v) {
 	if (O7_OVERFLOW) {
 		assert((-O7_INT_MAX <= *(Int64_t *)v) && (*(Int64_t *)v <= O7_INT_MAX));
 	}
@@ -128,7 +128,7 @@ O7_ALWAYS_INLINE void
 	*(Int64_t *)mod = *(Int64_t *)n % *(Int64_t *)d;
 }
 
-O7_ALWAYS_INLINE int Int64_Cmp(Int64_Type l, Int64_Type r) {
+O7_PURE_INLINE int Int64_Cmp(Int64_Type l, Int64_Type r) {
 	int cmp;
 	if (*(Int64_t *)l < *(Int64_t *)r) {
 		cmp = -1;
