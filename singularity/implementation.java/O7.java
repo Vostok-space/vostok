@@ -31,7 +31,7 @@ public static final java.nio.charset.Charset UTF_8
                   = java.nio.charset.Charset.forName("UTF-8");
 
 static int      exitCode  = 0;
-static byte[][] args      = null;
+static byte[][] args      = new byte[][]{};
 
 private static final java.util.HashMap<java.lang.String, byte[]> stringsCache
                    = new java.util.HashMap<>();

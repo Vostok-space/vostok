@@ -18,8 +18,8 @@ import o7.O7;
 
 public final class CLI {
 
-public  static int      count = O7.args.length;
-private static byte[][] args  = O7.args;
+public  static int      count;
+private static byte[][] args;
 
 public static final boolean GetName(byte[] str, int[] v_ofs, int v_ofs_i) {
     int ofs = v_ofs[v_ofs_i];
@@ -62,6 +62,8 @@ public static final void SetExitCode(int code) {
 }
 
 static {
+    args  = O7.args;
+    count = O7.args.length;
     O7.argsReceiver = new O7.ArgsReceiver() {
         @Override protected void set(byte[][] vargs) {
             args  = vargs;
