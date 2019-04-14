@@ -288,7 +288,7 @@ public static java.lang.String string(final byte[] bytes, final int ofs) {
     while (i < len && bytes[i] != 0) {
          i += 1;
     }
-    buf = java.nio.ByteBuffer.wrap(bytes, ofs, i);
+    buf = java.nio.ByteBuffer.wrap(bytes, ofs, i - ofs);
     return UTF_8.decode(buf).toString();
 }
 

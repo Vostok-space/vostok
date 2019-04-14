@@ -23,11 +23,10 @@ print(final java.io.InputStream is, byte[] buf, java.io.PrintStream ps)
 throws java.io.IOException
 {
     int len;
-    len = is.read(buf, 0, buf.length - 1);
+    len = is.read(buf, 0, buf.length);
     while (len > 0) {
-        buf[len] = 0;
-        ps.print(O7.string(buf));
-        len = is.read(buf, 0, buf.length - 1);
+        ps.write(buf, 0, len);
+        len = is.read(buf, 0, buf.length);
     }
 }
 
