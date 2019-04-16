@@ -1,4 +1,4 @@
-(*  Provider of modules which have access to file system with modules. Extracted from Translator
+(*  Provider of modules through file system. Extracted from Translator
  *  Copyright (C) 2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify

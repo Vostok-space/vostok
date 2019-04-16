@@ -1476,23 +1476,21 @@ PROCEDURE MultArrayLenByExpr*(VAR size: INTEGER; e: Expression): INTEGER;
 VAR i, err: INTEGER;
 BEGIN
 	err := ErrNo;
-	IF (e # NIL) & (e.value # NIL) & (e.value IS ExprInteger) THEN
+	IF e = NIL THEN
+		(* TODO стоит избавиться от такой возможности *)
+	ELSIF (e.value # NIL) & (e.value IS ExprInteger) THEN
 		i := e.value(ExprInteger).int;
 		IF i <= 0 THEN
-			err := ErrArrayLenLess1;
-			i := 1
+			err := ErrArrayLenLess1
 		ELSE
-			Log.Str("Array Len "); Log.Int(i); Log.Ln
+			Log.Str("Array Len "); Log.Int(i); Log.Ln;
+			IF ~Arithmetic.Mul(size, size, i) THEN
+				size := 0;
+				err := ErrArrayLenTooBig
+			END
 		END
-	ELSE
-		i := 1;
-		IF e # NIL THEN
-			err := ErrExpectConstIntExpr
-		END
-	END;
-	IF ~Arithmetic.Mul(size, size, i) THEN
-		size := 0;
-		err := ErrArrayLenTooBig
+	ELSIF e.id # IdError THEN
+		err := ErrExpectConstIntExpr
 	END
 	RETURN err
 END MultArrayLenByExpr;
@@ -1650,7 +1648,9 @@ VAR d: Declaration;
 BEGIN
 	NEW(d); NodeInit(d^, IdError);
 	DeclConnect(d, ds, buf, begin, end);
-	d.type := TypeErrorNew()
+	d.type := TypeErrorNew();
+	d.used := TRUE;
+	d.mark := TRUE
 	RETURN d
 END DeclErrorNew;
 

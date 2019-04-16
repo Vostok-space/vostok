@@ -92,7 +92,8 @@ BEGIN
 	Out.Ln
 END IndexedErrorMessage;
 
-PROCEDURE PrintErrors(mc: ModulesStorage.Container; module: Ast.Module);
+PROCEDURE PrintErrors(multiErrors: BOOLEAN;
+                      mc: ModulesStorage.Container; module: Ast.Module);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
     err: Ast.Error;
@@ -114,7 +115,11 @@ BEGIN
 					INC(i);
 					IndexedErrorMessage(i, err.code, err.line, err.column)
 				END;
-				err := err.next
+				IF multiErrors THEN
+					err := err.next
+				ELSE
+					err := NIL
+				END
 			END
 		END;
 		m := ModulesStorage.Next(mc)
@@ -229,6 +234,7 @@ BEGIN
 	opt.printError := ErrorMessage;
 	opt.cyrillic := args.cyrillic # Cli.CyrillicNo;
 	opt.provider := p;
+	opt.multiErrors := args.multiErrors;
 
 	ModulesProvider.SetParserOptions(m, opt)
 END NewProvider;
@@ -572,8 +578,8 @@ PROCEDURE ProvideProcTypeName(prov: GeneratorJava.ProviderProcTypeName;
 	BEGIN
 		IF JavaStoreProcTypes.GenerateName(prov.store, proc, name) THEN
 			out := GenerateProcType(name, proc,
-		                 prov.dir, prov.dirLen,
-		                 prov.javac, prov.usejavac)
+			             prov.dir, prov.dirLen,
+			             prov.javac, prov.usejavac)
 		ELSE
 			out := NIL
 		END
@@ -1084,7 +1090,7 @@ BEGIN
 		ret := ErrParse
 	ELSIF module.errors # NIL THEN
 		ret := ErrParse;
-		PrintErrors(ModulesStorage.Iterate(mp), module)
+		PrintErrors(args.multiErrors, ModulesStorage.Iterate(mp), module)
 	ELSE
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
 			ret := Ast.CommandGet(call, module,

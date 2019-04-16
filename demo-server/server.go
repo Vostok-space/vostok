@@ -78,7 +78,7 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
     }
 
     cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
-                       "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic");
+                       "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {

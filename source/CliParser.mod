@@ -85,7 +85,9 @@ TYPE
 		sing*: SET;
 		init*, memng*, arg*, cStd*: INTEGER;
 		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
-		cyrillic*: INTEGER
+		cyrillic*: INTEGER;
+
+		multiErrors*: BOOLEAN
 	END;
 
 PROCEDURE GetParam*(VAR err: INTEGER; errTooLong: INTEGER;
@@ -271,6 +273,8 @@ BEGIN
 			args.cStd := GeneratorC.IsoC99
 		ELSIF opt = "-C11" THEN
 			args.cStd := GeneratorC.IsoC11
+		ELSIF opt = "-multi-errors" THEN
+			args.multiErrors := TRUE
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -309,7 +313,8 @@ BEGIN
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;
 	args.cyrillic        := CyrillicNo;
-	args.toSingleFile    := FALSE
+	args.toSingleFile    := FALSE;
+	args.multiErrors     := FALSE
 END ArgsInit;
 
 PROCEDURE ParseCommand*(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)

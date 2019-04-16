@@ -1389,7 +1389,7 @@ BEGIN
 			CheckAst(p, Ast.ImportAdd(p.opt.provider, p.module, p.s.buf,
 			                          nameOfs, nameEnd, realOfs, realEnd)
 			)
-		ELSE
+		ELSIF p.err THEN
 			p.err := FALSE;
 			WHILE (p.l < SpecIdent.Import)
 			    & (p.l # Scanner.Comma)
