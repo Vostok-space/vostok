@@ -696,9 +696,9 @@ O7_CONST_INLINE
 o7_int_t o7_div_general(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
 	if (0 <= n) {
-		r = n / o7_divisor(d);
+		r = n / d;
 	} else {
-		r = -1 - (-1 - o7_int(n)) / o7_divisor(d);
+		r = -1 - (-1 - o7_int(n)) / d;
 	}
 	return  r;
 }
@@ -707,11 +707,11 @@ O7_CONST_INLINE
 o7_int_t o7_div_specific(o7_int_t n, o7_int_t d) {
 	o7_int_t mask;
 	mask = n >> (O7_INT_BITS - 1);
-	return mask ^ ((mask ^ o7_int(n)) / o7_divisor(d));
+	return mask ^ ((mask ^ o7_int(n)) / d);
 }
 
 O7_CONST_INLINE
-o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+o7_int_t o7_div_nat(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
 	if (O7_DIV_BRANCHLESS) {
 		r = o7_div_specific(n, d);
@@ -722,12 +722,17 @@ o7_int_t o7_div(o7_int_t n, o7_int_t d) {
 }
 
 O7_CONST_INLINE
+o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+	return o7_div_nat(n, o7_divisor(d));
+}
+
+O7_CONST_INLINE
 o7_int_t o7_mod_general(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
 	if (0 <= n) {
-		r = n % o7_divisor(d);
+		r = n % d;
 	} else {
-		r = d + (-1 - (-1 - o7_int(n)) % o7_divisor(d));
+		r = d + (-1 - (-1 - o7_int(n)) % d);
 	}
 	return r;
 }
@@ -736,11 +741,11 @@ O7_CONST_INLINE
 o7_int_t o7_mod_specific(o7_int_t n, o7_int_t d) {
 	o7_int_t mask;
 	mask = n >> (O7_INT_BITS - 1);
-	return (d & mask) + (mask ^ ((mask ^ o7_int(n)) % o7_divisor(d)));
+	return (d & mask) + (mask ^ ((mask ^ o7_int(n)) % d));
 }
 
 O7_CONST_INLINE
-o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
+o7_int_t o7_mod_nat(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
 	if (O7_DIV_BRANCHLESS) {
 		r = o7_mod_specific(n, d);
@@ -748,6 +753,11 @@ o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
 		r = o7_mod_general(n, d);
 	}
 	return r;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
+	return o7_mod_nat(n, o7_divisor(d));
 }
 
 O7_CONST_INLINE
@@ -826,9 +836,9 @@ O7_CONST_INLINE
 o7_long_t o7_ldiv_general(o7_long_t n, o7_long_t d) {
 	o7_long_t r;
 	if (0 <= n) {
-		r = n / o7_ldivisor(d);
+		r = n / d;
 	} else {
-		r = -1 - (-1 - o7_long(n)) / o7_ldivisor(d);
+		r = -1 - (-1 - o7_long(n)) / d;
 	}
 	return  r;
 }
@@ -837,11 +847,11 @@ O7_CONST_INLINE
 o7_long_t o7_ldiv_specific(o7_long_t n, o7_long_t d) {
 	o7_long_t mask;
 	mask = n >> (O7_LONG_BITS - 1);
-	return mask ^ ((mask ^ o7_long(n)) / o7_ldivisor(d));
+	return mask ^ ((mask ^ o7_long(n)) / d);
 }
 
 O7_CONST_INLINE
-o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
+o7_long_t o7_ldiv_nat(o7_long_t n, o7_long_t d) {
 	o7_long_t r;
 	if (O7_DIV_BRANCHLESS) {
 		r = o7_ldiv_specific(n, d);
@@ -852,12 +862,17 @@ o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
 }
 
 O7_CONST_INLINE
+o7_long_t o7_ldiv(o7_long_t n, o7_long_t d) {
+	return o7_ldiv_nat(n, o7_ldivisor(d));
+}
+
+O7_CONST_INLINE
 o7_long_t o7_lmod_general(o7_long_t n, o7_long_t d) {
 	o7_long_t r;
 	if (0 <= n) {
-		r = n % o7_ldivisor(d);
+		r = n % d;
 	} else {
-		r = d + (-1 - (-1 - o7_long(n)) % o7_ldivisor(d));
+		r = d + (-1 - (-1 - o7_long(n)) % d);
 	}
 	return r;
 }
@@ -866,11 +881,11 @@ O7_CONST_INLINE
 o7_long_t o7_lmod_specific(o7_long_t n, o7_long_t d) {
 	o7_long_t mask;
 	mask = n >> (O7_LONG_BITS - 1);
-	return (d & mask) + (mask ^ ((mask ^ o7_long(n)) % o7_ldivisor(d)));
+	return (d & mask) + (mask ^ ((mask ^ o7_long(n)) % d));
 }
 
 O7_CONST_INLINE
-o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
+o7_long_t o7_lmod_nat(o7_long_t n, o7_long_t d) {
 	o7_long_t r;
 	if (O7_DIV_BRANCHLESS) {
 		r = o7_lmod_specific(n, d);
@@ -878,6 +893,11 @@ o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
 		r = o7_lmod_general(n, d);
 	}
 	return r;
+}
+
+O7_CONST_INLINE
+o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
+	return o7_lmod_nat(n, o7_ldivisor(d));
 }
 
 O7_CONST_INLINE
