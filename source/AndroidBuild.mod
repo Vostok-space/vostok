@@ -17,10 +17,16 @@
 MODULE AndroidBuild;
 
 IMPORT
-  V, FileSys := FileSystemUtil,
-  Out, Cli := CliParser, CLI, Translator, Message, Exec := PlatformExec,
+  V,
+  FileSys := FileSystemUtil,
+  Out,
+  Cli := CliParser, CLI,
+  Translator,
+  Message,
+  Exec := PlatformExec,
   Files := VFileStream, Stream := VDataStream,
-  Dir := CDir, Strings := StringStore;
+  Dir := CDir,
+  Strings := StringStore;
 
 TYPE
   Listener = RECORD(V.Base)
@@ -39,7 +45,12 @@ TYPE
     Sn("Usage:");
     Sn("  1) o7a run   Script            Options");
     Sn("  2) o7a build Script Result.apk Options");
-    Sn("  3) o7a install-tools")
+    Sn("  3) o7a install-tools");
+    Sn("Options same as for o7c, run 'o7c help' to see more");
+    Sn("");
+    Sn("Example:");
+    Sn("  o7a build 'Star.Go(5, 0.38)' result/star.apk -infr . -m example/android");
+    Sn("  o7a run Rocket.Fly -infr . -m example/android")
   END Help;
 
   PROCEDURE W(f: Files.Out; str: ARRAY OF CHAR): BOOLEAN;
