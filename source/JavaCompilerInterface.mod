@@ -46,6 +46,10 @@ MODULE JavaCompilerInterface;
   RETURN Exec.AddClean(c.cmd, " -implicit:none")
   END Implicit;
 
+  PROCEDURE Debug*(VAR c: Compiler): BOOLEAN;
+  RETURN Exec.AddClean(c.cmd, " -g")
+  END Debug;
+
   PROCEDURE Search*(VAR c: Compiler): BOOLEAN;
 
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;

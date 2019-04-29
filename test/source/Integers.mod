@@ -1,6 +1,7 @@
 MODULE Integers;
 
- IMPORT Out, I64 := Int64, U64 := Uint64, U32 := Uint32, I32 := Int32;
+ IMPORT Out, I64 := Int64, U64 := Uint64, U32 := Uint32, I32 := Int32,
+        I16 := Int16;
 
  CONST Max = 2147483647;
 
@@ -58,6 +59,42 @@ MODULE Integers;
    I32.FromInt(i1, Max);
    ASSERT(I32.Cmp(i3, i1) = 0)
  END Int32;
+
+ PROCEDURE Int16;
+ VAR i1, i2, i3: I16.Type;
+ BEGIN
+   I16.FromInt(i1, 127);
+   I16.FromInt(i2, 63);
+
+   ASSERT(I16.Cmp(i1, i2) = +1);
+   ASSERT(I16.Cmp(i2, i1) = -1);
+   ASSERT(I16.Cmp(i2, i2) =  0);
+
+   I16.Div(i3, i1, i2);
+   ASSERT(I16.ToInt(i3) = 2);
+
+   I16.Div(i3, i2, i1);
+   ASSERT(I16.ToInt(i3) = 0);
+
+   I16.FromInt(i1, I16.Max DIV 3);
+   i2 := i1;
+   ASSERT(I16.Cmp(i2, i1) = 0);
+   I16.FromInt(i2, 3);
+   I16.Mul(i3, i1, i2);
+   I16.FromInt(i2, 1);
+   I16.Add(i3, i3, i2);
+   I16.FromInt(i1, I16.Max);
+   ASSERT(I16.Cmp(i3, i1) = 0);
+
+   I16.FromInt(i1, I16.Min DIV 2);
+   i2 := i1;
+   ASSERT(I16.Cmp(i2, i1) = 0);
+   I16.FromInt(i2, 2);
+   I16.Mul(i3, i1, i2);
+   I16.FromInt(i1, I16.Min);
+   ASSERT(I16.Cmp(i3, i1) = 0)
+
+ END Int16;
 
  PROCEDURE Uint64;
  VAR i1, i2, i3: U64.Type;
@@ -121,6 +158,7 @@ MODULE Integers;
  BEGIN
    Uint32;
    Uint64;
+   Int16;
    Int32;
    Int64;
  END Go;
