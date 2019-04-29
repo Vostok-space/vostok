@@ -240,7 +240,7 @@ BEGIN
 END NewProvider;
 
 (* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
-PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Call;
+PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Statement;
                     opt: GeneratorC.Options;
                     VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                     cDirs: ARRAY OF CHAR;
@@ -395,7 +395,7 @@ BEGIN
 END IdentEncoderForCompiler;
 
 PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
-                           module: Ast.Module; call: Ast.Call;
+                           module: Ast.Module; call: Ast.Statement;
                            VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
     opt: GeneratorC.Options;
@@ -428,7 +428,7 @@ VAR ret: INTEGER;
 	END SetOptions;
 
 	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
-	              module: Ast.Module; call: Ast.Call; opt: GeneratorC.Options;
+	              module: Ast.Module; call: Ast.Statement; opt: GeneratorC.Options;
 	              cDirs, cc: ARRAY OF CHAR; VAR outC, bin: ARRAY OF CHAR;
 	              VAR cmd: CComp.Compiler; VAR tmp: ARRAY OF CHAR;
 	              VAR listener: V.Base): INTEGER;
@@ -1109,11 +1109,11 @@ BEGIN
 			AstTransform.Do(module, tranOpt);
 			IF res IN Cli.ThroughJava THEN
 				ret := GenerateThroughJava(res, args, module, cmd, listener)
-			ELSE
+			ELSE ASSERT(res IN Cli.ThroughJs);
 				ret := GenerateThroughJs(res, args, module, cmd, listener)
 			END
 		ELSE ASSERT(res IN Cli.ThroughC);
-			ret := GenerateThroughC(res, args, module, call, listener)
+			ret := GenerateThroughC(res, args, module, cmd, listener)
 		END
 	END;
 	ModulesStorage.Unlink(mp)
