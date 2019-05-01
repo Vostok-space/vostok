@@ -54,7 +54,7 @@ MODULE make;
  VAR code: Exec.Code;
  BEGIN
    IF posix THEN
-     ok := Exec.Init(code, "rm") & Exec.Add(code, "-rf", 0);
+     ok := Exec.Init(code, "rm") & Exec.Add(code, "-rf");
    ELSE ASSERT(windows);
      ok := Exec.Init(code, "rmdir") & Exec.AddClean(code, " /s/q");
    END;
@@ -62,21 +62,21 @@ MODULE make;
        & (0 = Execute(code, "Delete old temp directory"));
    ok :=
       Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
-    & Exec.Add(code, cmd, 0) & Exec.Add(code, "Translator.Start", 0)
+    & Exec.Add(code, cmd) & Exec.Add(code, "Translator.Start")
     & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
     & ((lang = Js) & Exec.LastPart(code, ".js")
     OR windows & Exec.LastPart(code, ".exe")
     OR posix & Exec.LastPart(code, "")
       )
     & ((tmp[1] = "0")
-     & Exec.Add(code, "-i", 0) & Exec.Add(code, "singularity/definition", 0)
-     & Exec.Add(code, "-c", 0) & Exec.Add(code, "singularity/bootstrap/singularity", 0)
+     & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
+     & Exec.Add(code, "-c") & Exec.Add(code, "singularity/bootstrap/singularity")
      & Exec.AddClean(code, " -m source -m library -t")
     OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source -t")
       )
     & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
 
-    & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
+    & ((cc[0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
 
     & (0 = Execute(code, "Build"))
  RETURN
@@ -91,12 +91,12 @@ MODULE make;
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
  VAR ret: BOOLEAN;
  BEGIN
-   ret := ~class OR Exec.Add(code, "o7.Translator", 0);
+   ret := ~class OR Exec.Add(code, "o7.Translator");
    IF ret THEN
      CASE lang OF
-       C   : ret := Exec.Add(code, "run", 0)
-     | Java: ret := Exec.Add(code, "run-java", 0)
-     | Js  : ret := Exec.Add(code, "run-js", 0)
+       C   : ret := Exec.Add(code, "run")
+     | Java: ret := Exec.Add(code, "run-java")
+     | Js  : ret := Exec.Add(code, "run-js")
      END
    END
  RETURN
@@ -121,7 +121,7 @@ MODULE make;
        ASSERT(Dir.CopyName(n, l, file));
        IF n[0] # "." THEN
          ASSERT(
-            (   (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp", 0)
+            (   (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp")
              OR (runLang = Js) & Exec.Init(code, "node")
              OR (runLang = C) & Exec.Init(code, "")
             )
@@ -130,14 +130,14 @@ MODULE make;
          );
          IF CopyFileName(c, n) THEN
            ASSERT(
-             ( example & Exec.Add(code, c, 0)
+             ( example & Exec.Add(code, c)
             OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
              )
-             & Exec.Add(code, "-infr", 0) & Exec.Add(code, ".", 0)
-             & Exec.Add(code, "-m", 0) & Exec.Add(code, "example", 0)
-             & Exec.Add(code, "-m", 0) & Exec.Add(code, "test/source", 0)
-             & Exec.Add(code, "-cyrillic", 0)
-             & ((cc[0] = 0X) OR Exec.Add(code, "-cc", 0) & Exec.Add(code, cc, 0))
+             & Exec.Add(code, "-infr") & Exec.Add(code, ".")
+             & Exec.Add(code, "-m") & Exec.Add(code, "example")
+             & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
+             & Exec.Add(code, "-cyrillic")
+             & ((cc[0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
            );
            IF Execute(code, n) = 0 THEN
              INC(pass)

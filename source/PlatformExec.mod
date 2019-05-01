@@ -140,7 +140,7 @@ BEGIN
 	RETURN ok
 END Init;
 
-PROCEDURE Add*(VAR c: Code; arg: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+PROCEDURE AddByOfs*(VAR c: Code; arg: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
 	ok := c.len < LEN(c.buf) - 1;
@@ -156,6 +156,10 @@ BEGIN
 		END
 	END
 	RETURN ok
+END AddByOfs;
+
+PROCEDURE Add*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, arg, 0)
 END Add;
 
 PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;

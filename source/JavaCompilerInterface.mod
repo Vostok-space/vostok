@@ -55,7 +55,7 @@ MODULE JavaCompilerInterface;
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
-      ok := Exec.Init(exec, c) & Exec.Add(exec, ver, 0)
+      ok := Exec.Init(exec, c) & Exec.Add(exec, ver)
           & (Platform.Java
           OR (Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
           OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
@@ -83,8 +83,8 @@ MODULE JavaCompilerInterface;
     ASSERT(~c.destDir);
     c.destDir := TRUE
   RETURN
-    Exec.Add(c.cmd, "-d", 0)
-  & Exec.Add(c.cmd, o, 0)
+    Exec.Add(c.cmd, "-d")
+  & Exec.Add(c.cmd, o)
   END AddDestinationDir;
 
   PROCEDURE AddClassPath*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
@@ -93,18 +93,18 @@ MODULE JavaCompilerInterface;
     ASSERT(~c.classPath);
     c.classPath := TRUE
   RETURN
-    Exec.Add(c.cmd, "-cp", 0)
-  & Exec.Add(c.cmd, path, ofs)
+    Exec.Add(c.cmd, "-cp")
+  & Exec.AddByOfs(c.cmd, path, ofs)
   END AddClassPath;
 
   PROCEDURE AddJava*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, file, ofs)
+    Exec.AddByOfs(c.cmd, file, ofs)
   END AddJava;
 
   PROCEDURE AddOpt*(VAR c: Compiler; opt: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, opt, 0)
+    Exec.Add(c.cmd, opt)
   END AddOpt;
 
   PROCEDURE AddTargetVersion*(VAR c: Compiler; ver: INTEGER): BOOLEAN;
@@ -114,8 +114,8 @@ MODULE JavaCompilerInterface;
     s := "1.0";
     s[2] := CHR(ORD("0") + ver)
   RETURN
-    Exec.Add(c.cmd, "-source", 0) & Exec.Add(c.cmd, s, 0)
-  & Exec.Add(c.cmd, "-target", 0) & Exec.Add(c.cmd, s, 0)
+    Exec.Add(c.cmd, "-source") & Exec.Add(c.cmd, s)
+  & Exec.Add(c.cmd, "-target") & Exec.Add(c.cmd, s)
   END AddTargetVersion;
 
   PROCEDURE Do*(VAR c: Compiler): INTEGER;

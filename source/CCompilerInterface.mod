@@ -46,7 +46,7 @@ MODULE CCompilerInterface;
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
-      ok := Exec.Init(exec, c) & ((ver = "") OR Exec.Add(exec, ver, 0))
+      ok := Exec.Init(exec, c) & ((ver = "") OR Exec.Add(exec, ver))
           & ((Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
           OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
             )
@@ -81,25 +81,25 @@ MODULE CCompilerInterface;
 
   PROCEDURE AddOutput*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, "-o", 0)
-  & Exec.Add(c.cmd, o, 0)
+    Exec.Add(c.cmd, "-o")
+  & Exec.Add(c.cmd, o)
   END AddOutput;
 
   PROCEDURE AddInclude*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
                        : BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, "-I", 0)
-  & Exec.Add(c.cmd, path, ofs)
+    Exec.Add(c.cmd, "-I")
+  & Exec.AddByOfs(c.cmd, path, ofs)
   END AddInclude;
 
   PROCEDURE AddC*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, file, ofs)
+    Exec.AddByOfs(c.cmd, file, ofs)
   END AddC;
 
   PROCEDURE AddOpt*(VAR c: Compiler; opt: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, opt, 0)
+    Exec.AddByOfs(c.cmd, opt, 0)
   END AddOpt;
 
   PROCEDURE Do*(VAR c: Compiler): INTEGER;

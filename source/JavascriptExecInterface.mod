@@ -26,7 +26,7 @@ MODULE JavascriptExecInterface;
   PROCEDURE File*(VAR e: Exec.Code;
                   path: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
-    Exec.Add(e, path, ofs)
+    Exec.AddByOfs(e, path, ofs)
   END File;
 
 END JavascriptExecInterface.

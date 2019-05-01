@@ -506,7 +506,7 @@ VAR ret: INTEGER;
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf, 0)
+			    & Exec.Add(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)
@@ -758,13 +758,13 @@ VAR opt: GeneratorJava.Options;
 		JavaExec.Init(cmd);
 		ret := Cli.ErrTooLongRunArgs;
 		IF JavaExec.AddClassPath(cmd, outClass, 0)
-		 & Exec.Add(cmd, mainClass, 0)
+		 & Exec.Add(cmd, mainClass)
 		THEN
 			INC(arg);
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf, 0)
+			    & Exec.Add(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)
@@ -1027,7 +1027,7 @@ VAR opt: GeneratorJs.Options;
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf, 0)
+			    & Exec.Add(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)
