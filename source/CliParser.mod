@@ -418,8 +418,10 @@ PROCEDURE Parse*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
 VAR cmdLen: INTEGER; cmd: ARRAY 16 OF CHAR;
 BEGIN
 	cmdLen := 0;
-	IF (CLI.count <= 0) OR ~CLI.Get(cmd, cmdLen, 0) THEN
+	IF CLI.count <= 0 THEN
 		ret := ErrWrongArgs
+	ELSIF ~CLI.Get(cmd, cmdLen, 0) THEN
+		ret := ErrUnknownCommand
 	ELSIF cmd = "help" THEN
 		ret := CmdHelp
 	ELSIF cmd = "to-c" THEN
