@@ -344,6 +344,8 @@ BEGIN
 		C("As label in CASE not accepted not 1 char strings")
 	| Parser.ErrExpectAnotherModuleName:
 		C("Expect module with another name")
+	| Parser.ErrUnexpectedContentInScript:
+		C("Unexpected content at the start of the code")
 	END
 END ParseError;
 

@@ -73,6 +73,8 @@ CONST
 	ErrEndProcedureNameNotMatch*    = Err - 53;
 	ErrFunctionWithoutBraces*       = Err - 54;
 
+	ErrUnexpectedContentInScript*   = Err - 55;
+
 	ErrAstBegin* = Err - 100;
 	ErrAstEnd* = ErrAstBegin + Ast.ErrMin;
 
@@ -1520,7 +1522,9 @@ BEGIN
 	p.module := Ast.ScriptNew();
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
-	ASSERT((p.module.stats # NIL) OR (p.module.errors # NIL));
+	IF (p.module.stats = NIL) & (p.module.errors = NIL) THEN
+		AddError(p, ErrUnexpectedContentInScript);
+	END;
 	CheckAst(p, Ast.ModuleEnd(p.module))
 	RETURN p.module
 END Script;

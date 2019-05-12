@@ -343,6 +343,8 @@ BEGIN
 		C("В качестве метки CASE недопустимы не односимвольные строки")
 	| Parser.ErrExpectAnotherModuleName:
 		C("Ожидался модуль с другим именем")
+	| Parser.ErrUnexpectedContentInScript:
+		C("Неожиданное содержимое в начала текста кода")
 	END
 END ParseError;
 
