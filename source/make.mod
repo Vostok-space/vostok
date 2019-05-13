@@ -16,7 +16,7 @@
  *)
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, Platform;
+ IMPORT Log, Exec := PlatformExec, Dir, Platform, FS := FileSystemUtil, Chars0X;
 
  CONST C = 0; Java = 1; Js = 2;
 
@@ -36,6 +36,11 @@ MODULE make;
  RETURN
    nwe[i] = "."
  END CopyFileName;
+
+ PROCEDURE Msg(str: ARRAY OF CHAR);
+ BEGIN
+   Log.StrLn(str)
+ END Msg;
 
  PROCEDURE Execute(code: Exec.Code; name: ARRAY OF CHAR): INTEGER;
  VAR ret: INTEGER;
@@ -191,21 +196,84 @@ MODULE make;
    ok := ok & TestBy("example", TRUE, "o7c", C)
  END Example;
 
+ PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
+ VAR i, j, k: INTEGER;
+ BEGIN
+   i := 0; j := 0; k := 0;
+ RETURN
+   Chars0X.Copy(a, j, TRUE, LEN(a), dest, i)
+ & Chars0X.Copy(b, k, TRUE, LEN(b), dest, i)
+ END Concat;
+
+ PROCEDURE InstallTo*(dest: ARRAY OF CHAR);
+
+   PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
+                  baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
+   VAR dest: ARRAY 1024 OF CHAR;
+   RETURN
+     Concat(dest, baseDest, addDest)
+   & FS.Copy(src, dest, dir)
+   END Copy;
+
+   PROCEDURE MakeDir(base, add: ARRAY OF CHAR): BOOLEAN;
+   VAR dest: ARRAY 1024 OF CHAR;
+   RETURN
+     Concat(dest, base, add)
+   & FS.MakeDir(dest)
+   END MakeDir;
+
+ BEGIN
+   ok := Copy("result/o7c", FALSE, dest, "/bin/")
+       & MakeDir(dest, "/share/vostok")
+       & Copy("library", TRUE, dest, "/share/vostok/")
+       & Copy("singularity", TRUE, dest, "/share/vostok/");
+   IF ~ok THEN
+     Msg("Installation is failed")
+   END
+ END InstallTo;
+
+ PROCEDURE Install*;
+ BEGIN
+   InstallTo("/usr/local")
+ END Install;
+
+ PROCEDURE RemoveFrom*(base: ARRAY OF CHAR);
+ VAR dest: ARRAY 1024 OF CHAR;
+ BEGIN
+   ok := Concat(dest, base, "/share/vostok")
+       & FS.RemoveDir(dest)
+       & Concat(dest, base, "/bin/o7c")
+       & FS.RemoveFile(dest);
+   IF ~ok THEN
+     Msg("Uninstallation is failed");
+   END
+ END RemoveFrom;
+
+ PROCEDURE Remove*;
+ BEGIN
+   RemoveFrom("/usr/local")
+ END Remove;
+
  PROCEDURE Help*;
  BEGIN
-   Log.StrLn("Commands:");
-   Log.StrLn("  Build     - build from source o7c translator by bootstrap");
-   Log.StrLn("  Test      - build and run tests from test/source");
-   Log.StrLn("  Example   - build examples");
-   Log.StrLn("  Self      - build itself then run tests");
-   Log.StrLn("  SelfFull  - build translator by 2nd generation translator then tests");
-   Log.StrLn("  UseJava   - turn translation through Java");
-   Log.StrLn("  UseC      - turn translation through C");
-   Log.StrLn("  UseCC(cc) - set C compiler from string and turn translation through C");
+   Msg("Commands:");
+   Msg("  Build         build from source o7c translator by bootstrap");
+   Msg("  Test          build and run tests from test/source");
+   Msg("  Example       build examples");
+   Msg("  Self          build itself then run tests");
+   Msg("  SelfFull      build translator by 2nd generation translator then tests");
+   Msg("  UseJava       turn translation through Java");
+   Msg("  UseJs         turn translation through Javascript");
+   Msg("  UseC          turn translation through C");
+   Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
+   Msg("  Install       install files to /usr/local");
+   Msg("  InstallTo(d)  install files to target directory");
+   Msg("  Remove        remove installed files from /usr/local");
+   Msg("  RemoveFrom(d) remove files from target directory");
 
-   Log.Ln; Log.StrLn("Examples:");
-   Log.StrLn("  result/bs-o7c run 'make.Build; make.Test; make.Self' -infr . -m source");
-   Log.StrLn("  result/o7c run 'make.UseJava; make.Test' -infr . -m source")
+   Msg(""); Msg("Examples:");
+   Msg("  result/bs-o7c run 'make.Build; make.Test; make.Self' -infr . -m source");
+   Msg("  result/o7c run 'make.UseJava; make.Test' -infr . -m source")
  END Help;
 
  PROCEDURE UseC*;

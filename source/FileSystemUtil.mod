@@ -1,5 +1,5 @@
 (*  Utilities for work with file system
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,7 +16,7 @@
  *)
 MODULE FileSystemUtil;
 
-  IMPORT Platform, Exec := PlatformExec;
+  IMPORT Platform, Exec := PlatformExec, Files := CFiles;
 
   PROCEDURE MakeDir*(name: ARRAY OF CHAR): BOOLEAN;
   VAR cmd: Exec.Code;
@@ -47,5 +47,30 @@ MODULE FileSystemUtil;
     END
     RETURN Exec.Do(cmd) = Exec.Ok
   END RemoveDir;
+
+  PROCEDURE Copy*(src, dest: ARRAY OF CHAR; dir: BOOLEAN): BOOLEAN;
+  VAR cmd: Exec.Code;
+  BEGIN
+    IF Platform.Posix THEN
+      ASSERT(Exec.Init(cmd, "cp")
+           & (~dir OR Exec.Add(cmd, "-r"))
+           & Exec.Add(cmd, src)
+           & Exec.Add(cmd, dest))
+    ELSE ASSERT(FALSE)
+    END
+    RETURN Exec.Do(cmd) = Exec.Ok
+  END Copy;
+
+  PROCEDURE CopyFile*(src, dest: ARRAY OF CHAR): BOOLEAN;
+    RETURN Copy(src, dest, FALSE)
+  END CopyFile;
+
+  PROCEDURE CopyDir*(src, dest: ARRAY OF CHAR): BOOLEAN;
+    RETURN Copy(src, dest, TRUE)
+  END CopyDir;
+
+  PROCEDURE RemoveFile*(src: ARRAY OF CHAR): BOOLEAN;
+    RETURN Files.Remove(src, 0)
+  END RemoveFile;
 
 END FileSystemUtil.
