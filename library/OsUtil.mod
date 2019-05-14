@@ -1,4 +1,5 @@
-(* Copyright 2017-2019 ComdivByZero
+(* Subroutines for work in OS like GNU/Linux or Windows
+ * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,30 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE OsUtil;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Darwin*,
+  IMPORT Platform, Unistd;
 
-   C*,
-   Java*,
-   Javascript*: BOOLEAN;
+  PROCEDURE PathToSelfExe*(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
+  VAR l: INTEGER; str: ARRAY 64 OF CHAR;
+  BEGIN
+    IF Platform.Posix THEN
+      str := "/proc/self/exe";
+      l := Unistd.Readlink(str, path);
+      IF l >= 0 THEN
+        len := l
+      ELSE
+        len := 0
+      END
+    ELSE
+      (* TODO *)
+      ASSERT(FALSE)
+    END
+  RETURN
+    l >= 0
+  END PathToSelfExe;
 
-BEGIN
-  Posix      := FALSE;
-  Linux      := FALSE;
-  Bsd        := FALSE;
-  Dos        := FALSE;
-  Windows    := FALSE;
-  Darwin     := FALSE;
-
-  C          := FALSE;
-  Java       := FALSE;
-  Javascript := FALSE;
-END Platform.
+END OsUtil.

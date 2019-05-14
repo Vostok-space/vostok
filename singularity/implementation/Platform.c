@@ -59,5 +59,7 @@
   o7_cbool const Platform_Posix = 0 > 1;
 #endif
 
+
+o7_cbool const Platform_C          = 0 < 1;
 o7_cbool const Platform_Java       = 0 > 1;
 o7_cbool const Platform_Javascript = 0 > 1;

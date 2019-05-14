@@ -1,4 +1,5 @@
-(* Copyright 2017-2019 ComdivByZero
+(* Bindings of some functions from unistd.h
+ * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,30 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Platform;
+MODULE Unistd;
 
- VAR
-   Posix*,
-   Linux*,
-   Bsd*,
-   Mingw*,
-   Dos*,
-   Windows*,
-   Darwin*,
+  PROCEDURE Len(str: ARRAY OF CHAR): INTEGER;
+  VAR i: INTEGER;
+  BEGIN
+    i := 0;
+    WHILE (i < LEN(str)) & (str[i] # 0X) DO
+      INC(i)
+    END
+  RETURN
+    i
+  END Len;
 
-   C*,
-   Java*,
-   Javascript*: BOOLEAN;
+  PROCEDURE Readlink*(pathname: ARRAY OF CHAR; VAR buf: ARRAY OF CHAR): INTEGER;
+  BEGIN
+    ASSERT(Len(pathname) < LEN(pathname));
+  RETURN
+    -1
+  END Readlink;
 
-BEGIN
-  Posix      := FALSE;
-  Linux      := FALSE;
-  Bsd        := FALSE;
-  Dos        := FALSE;
-  Windows    := FALSE;
-  Darwin     := FALSE;
-
-  C          := FALSE;
-  Java       := FALSE;
-  Javascript := FALSE;
-END Platform.
+END Unistd.
