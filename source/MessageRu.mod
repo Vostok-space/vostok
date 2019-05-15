@@ -1,5 +1,5 @@
 (*  Russian messages for interface
- *  Copyright (C) 2017-2018 ComdivByZero
+ *  Copyright (C) 2017-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -352,15 +352,15 @@ PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 S("Транслятор Oberon-07 в C, Java и Javascript. 2019");
 S("Использование: ");
-S(" 1) o7c help");
-S(" 2) o7c to-c     Код ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр}");
-S(" 3) o7c to-bin   Код Исполн {-m ПМ|-i ПИ|-infr И|-c ПHC|-cc Компил|-t ВремКат}");
-S(" 4) o7c run      Код {-m ПкМ|-i ПкИ|-c ПHC|-infr И|-cc К|-t ВрКат} [-- Пар-ры]");
-S(" 5) o7c to-java  Код ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр}");
-S(" 6) o7c to-class Код ВыхКат {-m ПМ|-i ПИ|-infr И|-jv ПJ|-javac Компил|-t ВрКат}");
-S(" 7) o7c run-java Код {-m ПкМ|-i ПкИ|-jv ПJ|-t ВремКат} [-- Пар-ры]");
-S(" 8) o7c to-js    Код Вых {-m ПкМ | -i ПкИ | -infr Инфр}");
-S(" 9) o7c run-js   Код {-m ПкМ|-i ПкИ|-js ПJs|-t ВремКат} [-- Пар-ры]");
+S(" 1) ost help");
+S(" 2) ost to-c     Код ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр}");
+S(" 3) ost to-bin   Код Исполн {-m ПМ|-i ПИ|-infr И|-c ПHC|-cc Компил|-t ВремКат}");
+S(" 4) ost run      Код {-m ПкМ|-i ПкИ|-c ПHC|-infr И|-cc К|-t ВрКат} [-- Пар-ры]");
+S(" 5) ost to-java  Код ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр}");
+S(" 6) ost to-class Код ВыхКат {-m ПМ|-i ПИ|-infr И|-jv ПJ|-javac Компил|-t ВрКат}");
+S(" 7) ost run-java Код {-m ПкМ|-i ПкИ|-jv ПJ|-t ВремКат} [-- Пар-ры]");
+S(" 8) ost to-js    Код Вых {-m ПкМ | -i ПкИ | -infr Инфр}");
+S(" 9) ost run-js   Код {-m ПкМ|-i ПкИ|-js ПJs|-t ВремКат} [-- Пар-ры]");
 IF full THEN
 S("");
 S("2) to-c     преобразовывает модули в набор .h и .c файлов");

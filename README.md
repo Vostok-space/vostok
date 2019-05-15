@@ -17,7 +17,7 @@ Build translator for POSIX:
 
     $ make
     $ # or
-    $ ./make.sh && result/bs-o7c run make.Build -infr . -m source
+    $ ./make.sh && result/bs-ost run make.Build -infr . -m source
 
 Test under POSIX:
 
@@ -28,25 +28,25 @@ Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc
     > make.cmd
     > :: or
     > make.cmd
-    > result/bs-o7c run make.Build -infr . -m source -cc tcc
+    > result/bs-ost run make.Build -infr . -m source -cc tcc
 
 Test under POSIX and Windows
 
-    result/bs-o7c run 'make.Test; make.Self; make.SelfFull' -infr . -m source -cc tcc
+    result/bs-ost run 'make.Test; make.Self; make.SelfFull' -infr . -m source -cc tcc
 
 ## Usage:
 
 Help about translator usage:
 
-    $ result/o7c help
+    $ result/ost help
 
 Oberon-modules running example:
 
-    $ result/o7c run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+    $ result/ost run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
 Example of executable binary build:
 
-    $ result/o7c to-bin ReadDir.Go result/Dir -infr . -m test/source
+    $ result/ost to-bin ReadDir.Go result/Dir -infr . -m test/source
     $ result/Dir
 
 Demo web-server:

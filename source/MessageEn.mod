@@ -1,5 +1,5 @@
 (*  English messages for interface
- *  Copyright (C) 2017-2018 ComdivByZero
+ *  Copyright (C) 2017-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -353,15 +353,15 @@ PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 S("Translator from Oberon-07 to C, Java and Javascript. 2019");
 S("Usage: ");
-S(" 1) o7c help");
-S(" 2) o7c to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
-S(" 3) o7c to-bin   Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
-S(" 4) o7c run      Code {-m PM|-i PI|-c PHC|-cc CComp|-t Temp} [-- Args]");
-S(" 5) o7c to-java  Code OutDir {-m PM | -i PI | -infr Infr}");
-S(" 6) o7c to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Temp}");
-S(" 7) o7c run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
-S(" 8) o7c to-js    Code Out {-m PM | -i PI | -infr Infr}");
-S(" 9) o7c run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
+S(" 1) ost help");
+S(" 2) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
+S(" 3) ost to-bin   Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
+S(" 4) ost run      Code {-m PM|-i PI|-c PHC|-cc CComp|-t Temp} [-- Args]");
+S(" 5) ost to-java  Code OutDir {-m PM | -i PI | -infr Infr}");
+S(" 6) ost to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Temp}");
+S(" 7) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
+S(" 8) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
+S(" 9) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
 IF full THEN
 S("");
 S("2) to-c     converts modules to .h & .c files");

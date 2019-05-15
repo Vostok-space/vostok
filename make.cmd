@@ -27,7 +27,7 @@
 
 
 @CD singularity\bootstrap
-@%CC% %SRC%  -I . -I singularity -o ..\..\result\bs-o7c.exe
+@%CC% %SRC%  -I . -I singularity -o ..\..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
 @CD ..\..
 @EXIT
@@ -36,7 +36,7 @@
 
 :: @%CC% /c /TP - Ðåæèì C++
 @%CC% /c %SRC% /I. /Isingularity
-link *.obj /SUBSYSTEM:CONSOLE /out:..\..\result\bs-o7c.exe
+link *.obj /SUBSYSTEM:CONSOLE /out:..\..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
 @CD ..\..
 @EXIT
@@ -46,4 +46,4 @@ link *.obj /SUBSYSTEM:CONSOLE /out:..\..\result\bs-o7c.exe
 @CD ..\..
 @ECHO:
 @ECHO Bootstrap version of translator was built. Info about next steps:
-@ECHO   result\bs-o7c run make.Help -infr . -m source
+@ECHO   result\bs-ost run make.Help -infr . -m source

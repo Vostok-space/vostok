@@ -12,7 +12,7 @@ CC=gcc
 CC_OPT="$WARN $OPTIM $DEBUG $O7_OPT $OPT"
 
 mkdir -p result
-$CC $CC_OPT $SANITIZE -I$SING_BS -I$SING_BS/singularity $SING_BS/*.c $SING_BS/singularity/*.c -o result/bs-o7c
+$CC $CC_OPT $SANITIZE -I$SING_BS -I$SING_BS/singularity $SING_BS/*.c $SING_BS/singularity/*.c -o result/bs-ost
 
 echo Bootstrap version of translator was built. Info about next steps:
-echo "  result/bs-o7c run make.Help -infr . -m source"
+echo "  result/bs-ost run make.Help -infr . -m source"

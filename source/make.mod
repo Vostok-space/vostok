@@ -55,7 +55,7 @@ MODULE make;
    ret
  END Execute;
 
- PROCEDURE BuildBy(o7c, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE BuildBy(ost, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
  BEGIN
    IF posix THEN
@@ -66,7 +66,7 @@ MODULE make;
    ok := ok & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
        & (0 = Execute(code, "Delete old temp directory"));
    ok :=
-      Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
+      Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
     & Exec.Add(code, cmd) & Exec.Add(code, "Translator.Start")
     & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
     & ((lang = Js) & Exec.LastPart(code, ".js")
@@ -90,7 +90,7 @@ MODULE make;
 
  PROCEDURE Build*;
  BEGIN
-   ok := BuildBy("bs-o7c", "o7c", "v0", "to-bin")
+   ok := BuildBy("bs-ost", "ost", "v0", "to-bin")
  END Build;
 
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
@@ -108,7 +108,7 @@ MODULE make;
    ret
  END AddRun;
 
- PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; o7c: ARRAY OF CHAR;
+ PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; ost: ARRAY OF CHAR;
                   runLang: INTEGER): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
@@ -130,7 +130,7 @@ MODULE make;
              OR (runLang = Js) & Exec.Init(code, "node")
              OR (runLang = C) & Exec.Init(code, "")
             )
-           & Exec.FirstPart(code, "result/") & Exec.LastPart(code, o7c)
+           & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
            & AddRun(code, runLang = Java)
          );
          IF CopyFileName(c, n) THEN
@@ -164,7 +164,7 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := ok & TestBy("test/source", FALSE, "o7c", C)
+   ok := ok & TestBy("test/source", FALSE, "ost", C)
  END Test;
 
  PROCEDURE Self*;
@@ -172,14 +172,14 @@ MODULE make;
    IF ok THEN
       CASE lang OF
         C:
-        ok := BuildBy("o7c", "o7c-v1", "v1", "to-bin")
-            & TestBy("test/source", FALSE, "o7c-v1", lang)
+        ok := BuildBy("ost", "ost-v1", "v1", "to-bin")
+            & TestBy("test/source", FALSE, "ost-v1", lang)
       | Java:
-        ok := BuildBy("o7c", "o7c-v1-java", "o7c-v1-java", "to-class")
-            & TestBy("test/source", FALSE, "o7c-v1-java", lang)
+        ok := BuildBy("ost", "ost-v1-java", "ost-v1-java", "to-class")
+            & TestBy("test/source", FALSE, "ost-v1-java", lang)
       | Js:
-        ok := BuildBy("o7c", "o7c-v1-js", "o7c-v1-js", "to-js")
-            & TestBy("test/source", FALSE, "o7c-v1-js", lang)
+        ok := BuildBy("ost", "ost-v1-js", "ost-v1-js", "to-js")
+            & TestBy("test/source", FALSE, "ost-v1-js", lang)
       END
    END
  END Self;
@@ -187,13 +187,13 @@ MODULE make;
  PROCEDURE SelfFull*;
  BEGIN
    ok := ok
-       & BuildBy("o7c-v1", "o7c-v2", "v2", "to-bin")
-       & TestBy("test/source", FALSE, "o7c-v2", C)
+       & BuildBy("ost-v1", "ost-v2", "v2", "to-bin")
+       & TestBy("test/source", FALSE, "ost-v2", C)
  END SelfFull;
 
  PROCEDURE Example*;
  BEGIN
-   ok := ok & TestBy("example", TRUE, "o7c", C)
+   ok := ok & TestBy("example", TRUE, "ost", C)
  END Example;
 
  PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
@@ -223,7 +223,7 @@ MODULE make;
    END MakeDir;
 
  BEGIN
-   ok := Copy("result/o7c", FALSE, dest, "/bin/")
+   ok := Copy("result/ost", FALSE, dest, "/bin/")
        & MakeDir(dest, "/share/vostok")
        & Copy("library", TRUE, dest, "/share/vostok/")
        & Copy("singularity", TRUE, dest, "/share/vostok/");
@@ -242,7 +242,7 @@ MODULE make;
  BEGIN
    ok := Concat(dest, base, "/share/vostok")
        & FS.RemoveDir(dest)
-       & Concat(dest, base, "/bin/o7c")
+       & Concat(dest, base, "/bin/ost")
        & FS.RemoveFile(dest);
    IF ~ok THEN
      Msg("Uninstallation is failed");
@@ -257,7 +257,7 @@ MODULE make;
  PROCEDURE Help*;
  BEGIN
    Msg("Commands:");
-   Msg("  Build         build from source o7c translator by bootstrap");
+   Msg("  Build         build from source ost translator by bootstrap");
    Msg("  Test          build and run tests from test/source");
    Msg("  Example       build examples");
    Msg("  Self          build itself then run tests");
@@ -272,8 +272,8 @@ MODULE make;
    Msg("  RemoveFrom(d) remove files from target directory");
 
    Msg(""); Msg("Examples:");
-   Msg("  result/bs-o7c run 'make.Build; make.Test; make.Self' -infr . -m source");
-   Msg("  result/o7c run 'make.UseJava; make.Test' -infr . -m source")
+   Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
+   Msg("  result/ost run 'make.UseJava; make.Test' -infr . -m source")
  END Help;
 
  PROCEDURE UseC*;

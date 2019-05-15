@@ -1,5 +1,5 @@
 (*  Ukraine messages for interface
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -352,10 +352,10 @@ PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 S("Транслятор Oberon-07 в C та Java. 2018");
 S("Використання: ");
-S("  1) o7c help");
-S("  2) o7c to-c   Код ВихКат {-m ТзМ | -i ТзІ | -infr Інфр}");
-S("  3) o7c to-bin Код Викон {-m ТМ|-i ТІ|-infr І|-c Тhc|-cc Компіл|-t ТимчТек}");
-S("  4) o7c run    Код {-m ТзМ|-i ТзІ|-c Тhc|-t ТимчТек} [-- Пар-ри]");
+S("  1) ost help");
+S("  2) ost to-c   Код ВихКат {-m ТзМ | -i ТзІ | -infr Інфр}");
+S("  3) ost to-bin Код Викон {-m ТМ|-i ТІ|-infr І|-c Тhc|-cc Компіл|-t ТимчТек}");
+S("  4) ost run    Код {-m ТзМ|-i ТзІ|-c Тhc|-t ТимчТек} [-- Пар-ри]");
 IF full THEN
 S("");
 S("2) to-c   перетворює модулі у набір .h и .c файлів");
