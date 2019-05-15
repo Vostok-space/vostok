@@ -16,7 +16,7 @@
  *)
 MODULE CliParser;
 
-IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC;
+IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC, OsUtil;
 
 CONST
 	CmdHelp*       = 1;
@@ -90,6 +90,8 @@ TYPE
 		multiErrors*: BOOLEAN
 	END;
 
+VAR dirSep: CHAR;
+
 PROCEDURE GetParam*(VAR err: INTEGER; errTooLong: INTEGER;
                     VAR str: ARRAY OF CHAR;
                     VAR i, arg: INTEGER): BOOLEAN;
@@ -135,23 +137,73 @@ BEGIN
 	RETURN str[ofs] = sample[i]
 END IsEqualStr;
 
-PROCEDURE Options*(VAR args: Args; VAR arg: INTEGER): INTEGER;
-VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
-    ret: INTEGER;
-    opt: ARRAY 256 OF CHAR;
-    ignore: BOOLEAN;
+PROCEDURE CopyInfr(VAR args: Args;
+                   VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, count: INTEGER;
+                   base: ARRAY OF CHAR): BOOLEAN;
+VAR ok: BOOLEAN;
 
-	PROCEDURE CopyInfrPart(VAR str: ARRAY OF CHAR; VAR i, arg: INTEGER;
-	                       add: ARRAY OF CHAR): BOOLEAN;
+	PROCEDURE Copy(VAR str: ARRAY OF CHAR; VAR i: INTEGER;
+	               base, add: ARRAY OF CHAR): BOOLEAN;
 	VAR ret: BOOLEAN;
 	BEGIN
-		ret := CLI.Get(str, i, arg) & Strings.CopyCharsNull(str, i, add);
+		ret := Strings.CopyCharsNull(str, i, base)
+		     & Strings.CopyCharsNull(str, i, add);
 		IF ret THEN
 			INC(i);
 			str[i] := Utf8.Null
 		END
 		RETURN ret
-	END CopyInfrPart;
+	END Copy;
+BEGIN
+	IF Platform.Posix THEN
+		ok := Copy(args.modPath, i, base, "/singularity/definition")
+		    & Copy(args.modPath, i, base, "/library")
+		    & Copy(args.cDirs, dirsOfs, base, "/singularity/implementation")
+		    & Copy(args.javaDirs, javaDirsOfs, base, "/singularity/implementation.java")
+		    & Copy(args.jsDirs, jsDirsOfs, base, "/singularity/implementation.js")
+	ELSIF Platform.Windows THEN
+		ok := Copy(args.modPath, i, base, "\singularity\definition")
+		    & Copy(args.modPath, i, base, "\library")
+		    & Copy(args.cDirs, dirsOfs, base, "\singularity\implementation")
+		    & Copy(args.javaDirs, javaDirsOfs, base, "\singularity\implementation.java")
+		    & Copy(args.jsDirs, jsDirsOfs, base, "\singularity\implementation.js")
+	ELSE
+		(* TODO сообщение об ошибке *)
+		ok := FALSE
+	END;
+	IF ok THEN
+		INCL(args.sing, count);
+		INC(count, 2)
+	END
+	RETURN ok
+END CopyInfr;
+
+PROCEDURE ReadNearInfr(VAR infr: ARRAY OF CHAR): BOOLEAN;
+VAR i, len: INTEGER; ok: BOOLEAN;
+BEGIN
+	ok := ~Platform.Posix;
+	IF ~ok THEN
+		ok := OsUtil.PathToSelfExe(infr, len) & (len < LEN(infr));
+		IF ok THEN
+			i := 2;
+			WHILE (len >= 0) & (i > 0) DO
+				DEC(len);
+				IF infr[len] = dirSep THEN
+					DEC(i)
+				END
+			END;
+			INC(len);
+			ok := (i = 0) & Strings.CopyCharsNull(infr, len, "share/vostok")
+		END
+	END
+	RETURN ok
+END ReadNearInfr;
+
+PROCEDURE Options*(VAR args: Args; VAR arg: INTEGER): INTEGER;
+VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, ccLen, javacLen, count, optLen: INTEGER;
+    ret: INTEGER;
+    opt: ARRAY 256 OF CHAR;
+    ignore: BOOLEAN;
 BEGIN
 	i := 0;
 	dirsOfs := 0;
@@ -206,25 +258,11 @@ BEGIN
 		ELSIF opt = "-javac" THEN
 			ignore := GetParam(ret, ErrTooLongCc, args.javac, javacLen, arg)
 		ELSIF opt = "-infr" THEN
-			IF arg >= CLI.count THEN
-				ret := ErrNotEnoughArgs
-			ELSIF Platform.Posix
-			    & CopyInfrPart(args.modPath, i, arg, "/singularity/definition")
-			    & CopyInfrPart(args.modPath, i, arg, "/library")
-			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "/singularity/implementation")
-			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "/singularity/implementation.java")
-			    & CopyInfrPart(args.jsDirs, jsDirsOfs, arg, "/singularity/implementation.js")
-			   OR Platform.Windows
-			    & CopyInfrPart(args.modPath, i, arg, "\singularity\definition")
-			    & CopyInfrPart(args.modPath, i, arg, "\library")
-			    & CopyInfrPart(args.cDirs, dirsOfs, arg, "\singularity\implementation")
-			    & CopyInfrPart(args.javaDirs, javaDirsOfs, arg, "\singularity\implementation.java")
-			    & CopyInfrPart(args.jsDirs, jsDirsOfs, arg, "\singularity\implementation.js")
+			IF GetParam(ret, ErrTooLongModuleDirs, opt, optLen, arg)
+			 & ~CopyInfr(args,
+			             i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
+			             opt)
 			THEN
-				INC(arg);
-				INCL(args.sing, count);
-				INC(count, 2)
-			ELSE
 				ret := ErrTooLongModuleDirs
 			END
 		ELSIF opt = "-init" THEN
@@ -281,6 +319,15 @@ BEGIN
 		optLen := 0
 	END;
 	IF i + 1 < LEN(args.modPath) THEN
+		IF (ret = ErrNo) & (i = 0) & ReadNearInfr(opt) THEN
+			IF ~CopyInfr(args,
+			             i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
+			             opt)
+			THEN
+				ret := ErrTooLongModuleDirs
+			END
+		END;
+
 		args.modPathLen := i + 1;
 		args.modPath[i + 1] := Utf8.Null;
 		IF count >= 32 THEN
@@ -446,4 +493,10 @@ BEGIN
 	RETURN 0 <= ret
 END Parse;
 
+BEGIN
+	IF Platform.Posix THEN
+		dirSep := "/"
+	ELSE ASSERT(Platform.Windows);
+		dirSep := "\"
+	END
 END CliParser.

@@ -15,6 +15,8 @@
  *)
 MODULE Unistd;
 
+  IMPORT Platform;
+
   PROCEDURE Len(str: ARRAY OF CHAR): INTEGER;
   VAR i: INTEGER;
   BEGIN
@@ -28,6 +30,7 @@ MODULE Unistd;
 
   PROCEDURE Readlink*(pathname: ARRAY OF CHAR; VAR buf: ARRAY OF CHAR): INTEGER;
   BEGIN
+    ASSERT(Platform.Posix);
     ASSERT(Len(pathname) < LEN(pathname));
   RETURN
     -1
