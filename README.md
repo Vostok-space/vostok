@@ -9,30 +9,22 @@ examples.
 
 ## Build:
 
-Short build help for POSIX systems:
-
-    $ make help-en
-
 Build translator for POSIX:
 
-    $ make
-    $ # or
-    $ ./make.sh && result/bs-ost run make.Build -infr . -m source
-
-Test under POSIX:
-
-    $ make test self self-full
+    $ ./init.sh && result/bs-ost run make.Build -infr . -m source
 
 Build under Windows using [tcc](http://download.savannah.gnu.org/releases/tinycc/):
 
-    > make.cmd
-    > :: or
-    > make.cmd
-    > result/bs-ost run make.Build -infr . -m source -cc tcc
+    > init.cmd
+    > result\bs-ost run make.Build -infr . -m source -cc tcc
 
 Test under POSIX and Windows
 
     result/bs-ost run 'make.Test; make.Self; make.SelfFull' -infr . -m source -cc tcc
+
+Short build help for POSIX systems:
+
+    result/bs-ost run make.Help -infr . -m source
 
 ## Usage:
 
