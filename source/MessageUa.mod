@@ -242,6 +242,8 @@ BEGIN
 		C("Існує незадіяна декларація в цій області видимості")
 	| Ast.ErrProcNestedTooDeep:
 		C("Занадто велика вкладеність підпрограм")
+	| Ast.ErrExpectProcNameWithoutParams:
+		C("Очікувалось ім'я команди - підпрограми без параметрів")
 	END
 END AstError;
 

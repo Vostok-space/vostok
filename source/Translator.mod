@@ -1101,8 +1101,8 @@ BEGIN
 			cmd := NIL
 		END;
 		IF ret # Ast.ErrNo THEN
-			ret := ErrParse;
-			Message.AstError(ret); Message.Ln
+			Message.AstError(ret); Message.Ln;
+			ret := ErrParse
 		ELSIF res IN Cli.ThroughJava + Cli.ThroughJs THEN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);

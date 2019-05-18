@@ -243,6 +243,8 @@ BEGIN
 		C("Exist unused declaration in the scope")
 	| Ast.ErrProcNestedTooDeep:
 		C("Too deep nesting of subroutines")
+	| Ast.ErrExpectProcNameWithoutParams:
+		C("Expect command name - subroutine withut parameters")
 	END
 END AstError;
 

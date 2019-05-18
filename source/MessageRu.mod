@@ -242,6 +242,8 @@ BEGIN
 		C("Существует незадействованное объявление в этой области видимости")
 	| Ast.ErrProcNestedTooDeep:
 		C("Слишком глубокая вложенность подпрограмм")
+	| Ast.ErrExpectProcNameWithoutParams:
+		C("Ожидалось имя команды - подпрограммы без параметров")
 	END
 END AstError;
 

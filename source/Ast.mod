@@ -141,6 +141,8 @@ CONST
 	ErrDeclarationUnused*           = -103;
 	ErrProcNestedTooDeep*           = -104;
 
+	ErrExpectProcNameWithoutParams* = -105;
+
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -1666,7 +1668,7 @@ BEGIN
 		ELSE
 			err := ErrNo
 		END;
-		IF d = NIL THEN
+		IF (d = NIL) & (err = ErrNo) THEN
 			err := ErrDeclarationNotFound;
 			d := DeclErrorNew(ds, buf, begin, end);
 			ASSERT(d.type # NIL)
@@ -3397,7 +3399,10 @@ VAR d: Declaration;
 	err: INTEGER;
 BEGIN
 	d := SearchName(m.start, name, begin, end);
-	IF d = NIL THEN
+	IF begin = end THEN
+		ASSERT(d = NIL);
+		err := ErrExpectProcNameWithoutParams
+	ELSIF d = NIL THEN
 		err := ErrDeclarationNotFound
 	ELSIF ~d.mark THEN
 		err := ErrDeclarationIsPrivate
