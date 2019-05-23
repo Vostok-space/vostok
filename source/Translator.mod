@@ -502,7 +502,6 @@ VAR ret: INTEGER;
 	BEGIN
 		ret := Cli.ErrTooLongRunArgs;
 		IF Exec.Init(cmd, bin) THEN
-			INC(arg);
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
@@ -760,7 +759,6 @@ VAR opt: GeneratorJava.Options;
 		IF JavaExec.AddClassPath(cmd, outClass, 0)
 		 & Exec.Add(cmd, mainClass)
 		THEN
-			INC(arg);
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
@@ -1000,9 +998,6 @@ VAR opt: GeneratorJs.Options;
 			                   blank, blankLen,
 			                   jsDirs);
 			IF ret = ErrNo THEN
-				IF arg < CLI.count THEN
-					INC(arg)
-				END;
 				code := MemStreamToJsEval.Do(out, arg);
 				IF code = NIL THEN
 					ret := ErrCantGenJsToMem
@@ -1023,7 +1018,6 @@ VAR opt: GeneratorJs.Options;
 		JsExec.Init(cmd);
 		ret := Cli.ErrTooLongRunArgs;
 		IF JsExec.File(cmd, file, 0) THEN
-			INC(arg);
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)

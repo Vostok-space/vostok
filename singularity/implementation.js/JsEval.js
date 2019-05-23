@@ -60,7 +60,7 @@ function End(c, startCliArg) {
 	if (typeof start_cli_arg !== 'undefined') {
 		startCliArg += start_cli_arg;
 	}
-	o7.assert(0 <= startCliArg && startCliArg <= process.argv.length - 2);
+	o7.assert(0 <= startCliArg && startCliArg <= process.argv.length - 1);
 	o7.assert(!c.end);
 	c.end = true;
 	code = o7.utf8ToStr(c.code);

@@ -16,7 +16,8 @@
  *)
 MODULE CliParser;
 
-IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC, OsUtil;
+IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC, OsUtil,
+       Chars0X;
 
 CONST
 	CmdHelp*       = 1;
@@ -181,8 +182,8 @@ END CopyInfr;
 PROCEDURE ReadNearInfr(VAR infr: ARRAY OF CHAR): BOOLEAN;
 VAR i, len: INTEGER; ok: BOOLEAN;
 BEGIN
-	ok := ~Platform.Posix;
-	IF ~ok THEN
+	ok := Platform.Posix;
+	IF ok THEN
 		ok := OsUtil.PathToSelfExe(infr, len) & (len < LEN(infr));
 		IF ok THEN
 			i := 2;
@@ -364,6 +365,117 @@ BEGIN
 	args.multiErrors     := FALSE
 END ArgsInit;
 
+PROCEDURE IsEndByShortExt(name: ARRAY OF CHAR; VAR dot, sep: INTEGER): BOOLEAN;
+VAR i: INTEGER;
+BEGIN
+	i   := 0;
+	dot := -988;
+	sep := -977;
+	WHILE name[i] # Utf8.Null DO
+		IF name[i] = "." THEN
+			dot := i
+		ELSIF (name[i] = "/") OR (name[i] = "\") THEN
+			sep := i
+		END;
+		INC(i)
+	END
+	RETURN (dot > sep) & (i - dot <= 4)
+END IsEndByShortExt;
+
+PROCEDURE ArgsForRunFile*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
+VAR i, arg, dot, sep, methodLen: INTEGER;
+    file: ARRAY 256 OF CHAR;
+    method: ARRAY 64 OF CHAR;
+
+	PROCEDURE Parse(VAR args: Args; VAR ret: INTEGER;
+	                file: ARRAY OF CHAR; dot, sep: INTEGER;
+	                method: ARRAY OF CHAR);
+	VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, count: INTEGER;
+	    infr: ARRAY 256 OF CHAR;
+	BEGIN
+		dirsOfs := 0;
+		javaDirsOfs := 0;
+		jsDirsOfs := 0;
+		count := 0;
+
+		i := 0;
+		IF sep >= 0 THEN
+			IF Strings.CopyChars(args.modPath, i, file, 0, sep + 1) THEN
+				INC(i);
+				args.modPathLen := i;
+				args.modPath[i] := Utf8.Null;
+				args.modPath[i + 1] := Utf8.Null;
+				INC(count)
+			ELSE
+				ret := ErrTooLongModuleDirs
+			END;
+			i := sep + 1
+		ELSE
+			args.modPathLen := 1;
+			args.modPath[0] := ".";
+			args.modPath[1] := Utf8.Null;
+			args.modPath[2] := Utf8.Null;
+			INC(count);
+			i := 0
+		END;
+		args.srcNameEnd := 0;
+		ASSERT(Strings.CopyChars(args.src, args.srcNameEnd, file, i, dot));
+		args.srcLen := args.srcNameEnd;
+		IF method[0] # 0X THEN
+			ASSERT(Strings.CopyCharsNull(args.src, args.srcLen, method));
+			INC(args.srcLen)
+		END;
+		IF (ret = ErrNo)
+		 & (   ReadNearInfr(infr)
+		    & ~CopyInfr(args,
+		                args.modPathLen, dirsOfs, javaDirsOfs, jsDirsOfs, count,
+		                infr)
+		   )
+		THEN
+			ret := ErrTooLongModuleDirs
+		END
+	END Parse;
+BEGIN
+	ArgsInit(args);
+	args.script := FALSE;
+
+	i := 0;
+	ret := ErrNo;
+	IF GetParam(ret, ErrTooLongSourceName, file, i, arg) THEN
+		IF (file[0] = ".") & (file[1] # "/") THEN
+			methodLen := 0;
+			IF ~Strings.CopyCharsNull(method, methodLen, file) THEN
+				(* TODO *)
+				ret := ErrTooLongSourceName
+			ELSE
+				i := 0;
+				IF GetParam(ret, ErrTooLongSourceName, file, i, arg)
+				 & (   (method[1] # 0X)
+				    OR GetParam(ret, ErrTooLongSourceName, method, methodLen, arg)
+				   )
+				THEN
+					;
+				END
+			END
+		ELSE
+			method[0] := 0X
+		END;
+		IF ret # ErrNo THEN
+			;
+		ELSIF ~IsEndByShortExt(file, dot, sep) THEN
+			(* TODO *)
+			ret := ErrWrongArgs
+		ELSE
+			Parse(args, ret, file, dot, sep, method)
+		END
+	END;
+	IF ret = ErrNo THEN
+		ret := ResultRun;
+		args.arg := arg
+	END
+	RETURN ret = ResultRun
+END ArgsForRunFile;
+
 PROCEDURE ParseCommand*(cyr: BOOLEAN; src: ARRAY OF CHAR; VAR script: BOOLEAN)
                        : INTEGER;
 VAR i, j, k: INTEGER;
@@ -398,25 +510,8 @@ BEGIN
 	RETURN i
 END ParseCommand;
 
-PROCEDURE IsEndByShortExt(name: ARRAY OF CHAR): BOOLEAN;
-VAR i, dot, sep: INTEGER;
-BEGIN
-	i   := 0;
-	dot := -988;
-	sep := -977;
-	WHILE name[i] # Utf8.Null DO
-		IF name[i] = "." THEN
-			dot := i
-		ELSIF (name[i] = "/") OR (name[i] = "\") THEN
-			sep := i
-		END;
-		INC(i)
-	END
-	RETURN (dot > sep) & (i - dot <= 4)
-END IsEndByShortExt;
-
 PROCEDURE ParseOptions(VAR args: Args; ret: INTEGER; VAR arg: INTEGER): INTEGER;
-VAR argDest, cpRet: INTEGER;
+VAR argDest, cpRet, dot, sep: INTEGER;
     forRun: BOOLEAN;
 BEGIN
 	argDest := arg;
@@ -438,7 +533,7 @@ BEGIN
 		ELSIF GetParam(cpRet, ErrTooLongOutName,
 		               args.resPath, args.resPathLen, argDest)
 		THEN
-			args.toSingleFile := IsEndByShortExt(args.resPath)
+			args.toSingleFile := IsEndByShortExt(args.resPath, dot, sep)
 		ELSE
 			ret := cpRet
 		END
@@ -457,18 +552,27 @@ BEGIN
 	IF GetParam(ret, ErrTooLongSourceName, args.src, args.srcLen, arg) THEN
 		ret := ParseOptions(args, ret, arg)
 	END;
-	args.arg := arg
+	args.arg := arg + 1
 	RETURN ret
 END Command;
 
 PROCEDURE Parse*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
-VAR cmdLen: INTEGER; cmd: ARRAY 16 OF CHAR;
+VAR cmdLen: INTEGER; cmd: ARRAY 100H OF CHAR; ignore: BOOLEAN;
+
+	PROCEDURE SearchDot(str: ARRAY OF CHAR): BOOLEAN;
+	VAR i: INTEGER;
+	BEGIN
+		i := 0;
+		RETURN Chars0X.SearchChar(str, i, ".")
+	END SearchDot;
 BEGIN
 	cmdLen := 0;
 	IF CLI.count <= 0 THEN
 		ret := ErrWrongArgs
 	ELSIF ~CLI.Get(cmd, cmdLen, 0) THEN
 		ret := ErrUnknownCommand
+	ELSIF SearchDot(cmd) THEN
+		ignore := ArgsForRunFile(args, ret)
 	ELSIF cmd = "help" THEN
 		ret := CmdHelp
 	ELSIF cmd = "to-c" THEN
