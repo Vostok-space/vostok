@@ -1,5 +1,5 @@
 (* Operations with arrays of chars, which represent 0-terminated strings
- * Copyright 2018 ComdivByZero
+ * Copyright 2018-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,5 +107,19 @@ MODULE Chars0X;
   RETURN
     ok
   END Copy;
+
+  PROCEDURE SearchChar*(str: ARRAY OF CHAR; VAR pos: INTEGER; c: CHAR): BOOLEAN;
+  VAR i: INTEGER;
+  BEGIN
+    i := pos;
+    ASSERT((0 <= i) & (i < LEN(str)) & (str[i] # 0X));
+
+    WHILE (str[i] # c) & (str[i] # 0X) DO
+      INC(i)
+    END;
+    pos := i
+  RETURN
+    str[i] = c
+  END SearchChar;
 
 END Chars0X.
