@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SING_BS=singularity/bootstrap
+SING_BS=bootstrap
 
 SANITIZE="-ftrapv -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -static-libasan -DO7_LSAN_LEAK_IGNORE"
 O7_OPT="-DO7_MEMNG_MODEL=O7_MEMNG_NOFREE"
@@ -10,6 +10,8 @@ OPTIM=-O1
 OPT=
 CC=gcc
 CC_OPT="$WARN $OPTIM $DEBUG $O7_OPT $OPT"
+
+echo C compiler is $CC
 
 mkdir -p result
 $CC $CC_OPT $SANITIZE -I$SING_BS -I$SING_BS/singularity $SING_BS/*.c $SING_BS/singularity/*.c -o result/bs-ost

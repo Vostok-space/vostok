@@ -1,6 +1,6 @@
 OST := result/ost
 
-SING_BS := singularity/bootstrap
+SING_BS := bootstrap
 
 SELF := result/v1
 

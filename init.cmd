@@ -25,25 +25,25 @@
 
 @ECHO Compiler is %CC%
 
-
-@CD singularity\bootstrap
-@%CC% %SRC%  -I . -I singularity -o ..\..\result\bs-ost.exe
+@CD bootstrap
+@%CC% %SRC%  -I . -I singularity -o ..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
-@CD ..\..
+@CD ..
 @EXIT
 
 :FOUND_CL
 
-:: @%CC% /c /TP - Ðåæèì C++
+@CD bootstrap
+:: @%CC% /c /TP - Режим C++
 @%CC% /c %SRC% /I. /Isingularity
-link *.obj /SUBSYSTEM:CONSOLE /out:..\..\result\bs-ost.exe
+link *.obj /SUBSYSTEM:CONSOLE /out:..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
-@CD ..\..
+@CD ..
 @EXIT
 
 :SUCCESS
 
-@CD ..\..
+@CD ..
 @ECHO:
 @ECHO Bootstrap version of translator was built. Info about next steps:
 @ECHO   result\bs-ost run make.Help -infr . -m source

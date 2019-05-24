@@ -75,7 +75,7 @@ MODULE make;
       )
     & ((tmp[1] = "0")
      & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
-     & Exec.Add(code, "-c") & Exec.Add(code, "singularity/bootstrap/singularity")
+     & Exec.Add(code, "-c") & Exec.Add(code, "bootstrap/singularity")
      & Exec.AddClean(code, " -m source -m library -t")
     OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source -t")
       )
