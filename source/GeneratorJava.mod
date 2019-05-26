@@ -755,13 +755,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Expression(gen, e, {})
 				END
 			END Expr;
+
+			PROCEDURE IsArrayAndNotChar(e: Ast.Expression): BOOLEAN;
+				RETURN (e.type.id = Ast.IdArray)
+				     & ((e.value = NIL) OR ~e.value(Ast.ExprString).asChar)
+			END IsArrayAndNotChar;
 		BEGIN
-			IF (rel.exprs[0].type.id = Ast.IdArray)
-			 & (  (rel.exprs[0].value = NIL)
-			   OR ~rel.exprs[0].value(Ast.ExprString).asChar
-			   )
+			IF IsArrayAndNotChar(rel.exprs[0])
+			OR IsArrayAndNotChar(rel.exprs[1])
 			THEN
 				IF rel.value # NIL THEN
+					(* TODO Нужно ли это в Java? *)
 					Expression(gen, rel.value, {})
 				ELSE
 					Text.Str(gen, "O7.strcmp(");

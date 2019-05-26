@@ -1187,6 +1187,26 @@ extern O7_ATTR_PURE
 int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
               o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]);
 
+O7_PURE_INLINE
+int o7_strchcmp(o7_int_t len, o7_char const s[O7_VLA(len)], o7_char c) {
+	int ret;
+	if (len == 0) {
+		/* TODO не должно быть таких строк */
+		ret = -(int)c;
+	} else {
+		ret = (int)s[0] - c;
+		if (ret == 0 && len > 1 && c != '\0' && s[1] != '\0') {
+			ret = -1;
+		}
+	}
+	return ret;
+}
+
+O7_PURE_INLINE
+int o7_chstrcmp(o7_char c, o7_int_t len, o7_char const s[O7_VLA(len)]) {
+	return -o7_strchcmp(len, s, c);
+}
+
 O7_ALWAYS_INLINE
 void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
                o7_int_t src_len, o7_char const src[O7_VLA(src_len)])

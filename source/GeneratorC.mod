@@ -291,6 +291,7 @@ END Import;
 PROCEDURE Factor(VAR gen: Generator; expr: Ast.Expression);
 BEGIN
 	IF expr IS Ast.Factor THEN
+		(* TODO *)
 		expression(gen, expr)
 	ELSE
 		Text.Str(gen, "(");
@@ -1142,6 +1143,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 		PROCEDURE Simple(VAR gen: Generator; rel: Ast.ExprRelation;
 		                 str: ARRAY OF CHAR);
+		VAR notChar0, notChar1: BOOLEAN;
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
 			VAR brace: BOOLEAN;
@@ -1180,25 +1182,38 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					ArrayDeclLen(gen, des.type, des.decl, des.sel, -1)
 				END
 			END Len;
+
+			PROCEDURE IsArrayAndNotChar(e: Ast.Expression): BOOLEAN;
+				RETURN (e.type.id = Ast.IdArray)
+				     & ((e.value = NIL) OR ~e.value(Ast.ExprString).asChar)
+			END IsArrayAndNotChar;
 		BEGIN
-			IF (rel.exprs[0].type.id = Ast.IdArray)
-			 & (  (rel.exprs[0].value = NIL)
-			   OR ~rel.exprs[0].value(Ast.ExprString).asChar
-			   )
-			THEN
+			notChar0 := IsArrayAndNotChar(rel.exprs[0]);
+			IF notChar0 OR IsArrayAndNotChar(rel.exprs[1]) THEN
 				IF rel.value # NIL THEN
 					Expression(gen, rel.value)
 				ELSE
-					Text.Str(gen, "o7_strcmp(");
-
-					Len(gen, rel.exprs[0]);
-					Text.Str(gen, ", ");
+					notChar1 := ~notChar0 OR IsArrayAndNotChar(rel.exprs[1]);
+					IF notChar0 = notChar1 THEN
+						ASSERT(notChar0);
+						Text.Str(gen, "o7_strcmp(")
+					ELSIF notChar1 THEN
+						Text.Str(gen, "o7_chstrcmp(")
+					ELSE ASSERT(notChar0);
+						Text.Str(gen, "o7_strchcmp(")
+					END;
+					IF notChar0 THEN
+						Len(gen, rel.exprs[0]);
+						Text.Str(gen, ", ")
+					END;
 					Expr(gen, rel.exprs[0], -rel.distance);
 
 					Text.Str(gen, ", ");
 
-					Len(gen, rel.exprs[1]);
-					Text.Str(gen, ", ");
+					IF notChar1 THEN
+						Len(gen, rel.exprs[1]);
+						Text.Str(gen, ", ")
+					END;
 					Expr(gen, rel.exprs[1], rel.distance);
 
 					Text.Str(gen, ")");

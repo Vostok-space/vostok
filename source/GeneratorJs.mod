@@ -725,6 +725,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 
 		PROCEDURE Simple(VAR gen: Generator; rel: Ast.ExprRelation;
 		                 str: ARRAY OF CHAR);
+		VAR notChar0, notChar1: BOOLEAN;
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
@@ -736,16 +737,26 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Expression(gen, e, {})
 				END
 			END Expr;
+
+			PROCEDURE IsArrayAndNotChar(e: Ast.Expression): BOOLEAN;
+				RETURN (e.type.id = Ast.IdArray)
+				     & ((e.value = NIL) OR ~e.value(Ast.ExprString).asChar)
+			END IsArrayAndNotChar;
 		BEGIN
-			IF (rel.exprs[0].type.id = Ast.IdArray)
-			 & (  (rel.exprs[0].value = NIL)
-			   OR ~rel.exprs[0].value(Ast.ExprString).asChar
-			   )
-			THEN
+			notChar0 := IsArrayAndNotChar(rel.exprs[0]);
+			IF notChar0 OR IsArrayAndNotChar(rel.exprs[1]) THEN
 				IF rel.value # NIL THEN
 					Expression(gen, rel.value, {})
 				ELSE
-					Text.Str(gen, "o7.strcmp(");
+					notChar1 := ~notChar0 OR IsArrayAndNotChar(rel.exprs[1]);
+					IF notChar0 = notChar1 THEN
+						ASSERT(notChar0);
+						Text.Str(gen, "o7.strcmp(")
+					ELSIF notChar1 THEN
+						Text.Str(gen, "o7.chstrcmp(")
+					ELSE ASSERT(notChar0);
+						Text.Str(gen, "o7.strchcmp(")
+					END;
 					Expr(gen, rel.exprs[0]);
 					Text.Str(gen, ", ");
 					Expr(gen, rel.exprs[1]);

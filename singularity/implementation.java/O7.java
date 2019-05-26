@@ -321,6 +321,27 @@ public static int strcmp(final byte[] s1, final byte[] s2) {
     return c1 - c2;
 }
 
+public static int strcmp(final byte[] s1, final byte s2) {
+    final int c1, c2;
+    int ret;
+    if (s1.length == 0) {
+        /* TODO не должно быть таких строк */
+        c1 = 0;
+    } else {
+        c1 = 0xFF & s1[0];
+    }
+    c2 = 0xFF & s2;
+    ret = c1 - c2;
+    if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
+        ret = 0xFF & s1[1];
+    }
+    return ret;
+}
+
+public static int strcmp(final byte s1, final byte[] s2) {
+    return -strcmp(s2, s1);
+}
+
 /* Copy chars */
 public static void strcpy(final byte[] d, final byte[] s) {
     final int len;

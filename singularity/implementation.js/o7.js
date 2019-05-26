@@ -435,6 +435,29 @@ var o7;
     return c1 - c2;
   };
 
+
+  function strchcmp(s1, c2) {
+    var c1, ret;
+
+    if (s1.length == 0) {
+      /* TODO не должно быть таких строк */
+      c1 = 0;
+    } else {
+      c1 = s1[0];
+    }
+    ret = c1 - c2;
+    if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
+        ret = s1[1];
+    }
+    return ret;
+  }
+
+  o7.strchcmp = strchcmp;
+
+  o7.chstrcmp = function(c1, s2) {
+    return -strchcmp(s2, c1);
+  };
+
   /* Copy chars */
   o7.strcpy = function(d, s) {
     var len, i;

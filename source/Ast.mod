@@ -2535,6 +2535,26 @@ VAR err: INTEGER;
 		RETURN CheckSetRange(i)
 		     & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
 	END InSet;
+
+	PROCEDURE IsEqualChars(v1, v2: ExprInteger): BOOLEAN;
+	BEGIN
+		Log.On; Log.Int(v1.int); Log.Str(" : "); Log.Int(v2.int); Log.Ln; Log.Off;
+
+		ASSERT(Limits.InCharRange(v1.int));
+		ASSERT(Limits.InCharRange(v2.int))
+
+		RETURN v1.int = v2.int
+	END IsEqualChars;
+
+	PROCEDURE IsEqualStrings(v1, v2: ExprInteger): BOOLEAN;
+	VAR ret: BOOLEAN;
+	BEGIN
+		ret := (v1.int = v2.int);
+		IF ret & (v1.int = -1) THEN
+			ret := Strings.Compare(v1(ExprString).string, v2(ExprString).string) = 0
+		END
+		RETURN ret
+	END IsEqualStrings;
 BEGIN
 	ASSERT(relation IN AcceptableRelationLexems);
 
@@ -2553,8 +2573,8 @@ BEGIN
 		CASE relation OF
 		  Scanner.Equal:
 			CASE expr1.type.id OF
-			  IdInteger,
-			  IdChar     : res := v1(ExprInteger).int = v2(ExprInteger).int
+			  IdInteger  : res := v1(ExprInteger).int = v2(ExprInteger).int
+			| IdChar     : res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
 			| IdBoolean  : res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
 			| IdReal     :
 				(* TODO правильная обработка *)
@@ -2563,24 +2583,18 @@ BEGIN
 			             : res := IsEqualSets(v1(ExprSet).set, v2(ExprSet).set)
 			| IdPointer  : ASSERT(v1 = v2); res := TRUE
 			| IdArray    :
-				(* TODO обработка смешанных сравнений *)
-				IF v1 IS ExprInteger THEN
-					res := v1(ExprInteger).int = v2(ExprInteger).int
-				ELSE
-					res := Strings.Compare(v1(ExprString).string,
-					                       v2(ExprString).string
-					                      ) = 0
-				END
+				res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
 			| IdProcType : (* TODO *) res := FALSE
 			END
 		| Scanner.Inequal:
 			CASE expr1.type.id OF
-			  IdInteger, IdChar : res := v1(ExprInteger).int # v2(ExprInteger).int
+			  IdInteger         : res := v1(ExprInteger).int # v2(ExprInteger).int
+			| IdChar            : res := ~IsEqualChars(v1(ExprInteger), v2(ExprInteger))
 			| IdBoolean         : res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
 			| IdReal            : res := v1(ExprReal).real # v2(ExprReal).real
 			| IdSet, IdLongSet  : res := ~IsEqualSets(v1(ExprSet).set, v2(ExprSet).set)
 			| IdPointer         : ASSERT(v1 = v2); res := FALSE
-			| IdArray           : (* TODO *) res := FALSE
+			| IdArray           : res := ~IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
 			| IdProcType        : (* TODO *) res := FALSE
 			END
 		| Scanner.Less:
