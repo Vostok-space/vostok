@@ -20,7 +20,8 @@
 #include "PosixDir.h"
 
 
-#if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__) \
+#if defined(__linux__) || defined(__linux) \
+ || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) \
  || defined(__MINGW32__) || defined(__MINGW64__)
 	o7_bool PosixDir_supported = 0 < 1;
 #	include <dirent.h>
