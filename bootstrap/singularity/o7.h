@@ -261,6 +261,10 @@ void* o7_ref(void *ptr) {
 #endif
 
 #if __STDC_VERSION__ >= 201112L
+#	if !defined(static_assert)
+		/* fixed compilation with dietlibc and in OpenBSD */
+#		define static_assert(cond, msg) _Static_assert(cond, msg)
+#	endif
 #	define O7_STATIC_ASSERT(cond) static_assert(cond, "")
 #	define O7_NORETURN _Noreturn
 #else
