@@ -35,7 +35,8 @@
   o7_cbool const Platform_Mingw = 0 > 1;
 #endif
 
-#if defined(BSD) || defined(__bsdi__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
+# define Platform_Bsd_Macro
   o7_cbool const Platform_Bsd = 0 < 1;
 #else
   o7_cbool const Platform_Bsd = 0 > 1;
@@ -53,12 +54,11 @@
   o7_cbool const Platform_Darwin = 0 > 1;
 #endif
 
-#if defined(__linux__) || defined(__linux) || defined(BSD) || defined(__bsdi__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) || defined(__APPLE__) || defined(__minix)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;
 #endif
-
 
 o7_cbool const Platform_C          = 0 < 1;
 o7_cbool const Platform_Java       = 0 > 1;

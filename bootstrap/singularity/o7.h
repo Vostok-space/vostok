@@ -389,24 +389,17 @@ char unsigned o7_chr(int v) {
 	return (char unsigned)v;
 }
 
-#if (__STDC_VERSION__ >= 199901L) \
- && !(defined(_WIN32) || defined(_WIN64)) \
- && !defined(__COMPCERT__)
+O7_ATTR_CONST O7_ALWAYS_INLINE
+double o7_dbl_finite(double v) {
+	assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
+	return v;
+}
 
-	extern o7_cbool o7_isfinite(double);
-
-	O7_ATTR_CONST O7_ALWAYS_INLINE
-	double o7_dbl_finite(double v) {
-		assert(o7_isfinite(v));
-		return v;
-	}
-#else
-	O7_ATTR_CONST O7_ALWAYS_INLINE
-	double o7_dbl_finite(double v) {
-		assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
-		return v;
-	}
-#endif
+O7_ATTR_CONST O7_ALWAYS_INLINE
+float o7_flt_finite(float v) {
+	assert((v == v) && (-FLT_MAX <= v) && (v <= FLT_MAX));
+	return v;
+}
 
 O7_ATTR_CONST O7_ALWAYS_INLINE
 double o7_fadd(double a1, double a2) {

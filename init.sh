@@ -2,13 +2,14 @@
 
 SING_BS=bootstrap
 
-SANITIZE="-ftrapv -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -static-libasan -DO7_LSAN_LEAK_IGNORE"
+SANITIZE="-ftrapv"
+#SANITIZE="-fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -static-libasan -DO7_LSAN_LEAK_IGNORE"
 O7_OPT="-DO7_MEMNG_MODEL=O7_MEMNG_NOFREE"
 WARN="-Wall -Wno-parentheses"
 DEBUG=-g
 OPTIM=-O1
 OPT=
-CC=gcc
+CC=cc
 CC_OPT="$WARN $OPTIM $DEBUG $O7_OPT $OPT"
 
 echo C compiler is $CC
