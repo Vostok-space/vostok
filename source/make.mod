@@ -273,7 +273,8 @@ MODULE make;
 
    Msg(""); Msg("Examples:");
    Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
-   Msg("  result/ost run 'make.UseJava; make.Test' -infr . -m source")
+   Msg("  result/ost run 'make.UseJava; make.Test' -infr . -m source");
+   Msg("  /usr/bin/sudo result/ost run make.Install -infr . -m source")
  END Help;
 
  PROCEDURE UseC*;
