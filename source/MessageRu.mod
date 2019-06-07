@@ -167,7 +167,7 @@ BEGIN
 	| Ast.ErrDeclarationNotVar:
 		C("Ожидалась переменная")
 	| Ast.ErrForIteratorNotInteger:
-		C("Итератор FOR не целочисленного типа")
+		C("Итератор FOR должен задаваться именем переменной типа INTEGER")
 	| Ast.ErrNotBoolInIfCondition:
 		C("Выражение в охране условного оператора должно быть логическим")
 	| Ast.ErrNotBoolInWhileCondition:

@@ -168,7 +168,7 @@ BEGIN
 	| Ast.ErrDeclarationNotVar:
 		C("Expected variable")
 	| Ast.ErrForIteratorNotInteger:
-		C("Iterator of 'FOR'-loop not integer")
+		C("Iterator of 'FOR'-loop should be and identifier of INTEGER variable")
 	| Ast.ErrNotBoolInIfCondition:
 		C("Expression in IF must be of boolean type")
 	| Ast.ErrNotBoolInWhileCondition:

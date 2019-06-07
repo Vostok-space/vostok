@@ -167,7 +167,7 @@ BEGIN
 	| Ast.ErrDeclarationNotVar:
 		C("Очікувалась змінна")
 	| Ast.ErrForIteratorNotInteger:
-		C("Ітератор FOR не цілочисельного типу")
+		C("Ітератор FOR має бути іменем змінної типу INTEGER")
 	| Ast.ErrNotBoolInIfCondition:
 		C("Вираз у охороні умовного оператору має бути логічного типу")
 	| Ast.ErrNotBoolInWhileCondition:
