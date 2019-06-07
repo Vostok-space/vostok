@@ -50,7 +50,7 @@ func getModuleName(source string) (name string) {
 func saveModule(name, source string) (tmp string, err error) {
   var (filename string)
   if 0 < len(name) {
-    tmp = fmt.Sprintf("%s/o7c", os.TempDir());
+    tmp = fmt.Sprintf("%s/ost", os.TempDir());
     err = os.Mkdir(tmp, 0777);
     tmp, err = ioutil.TempDir(tmp, name);
     if err == nil {
@@ -77,7 +77,7 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
       bin = fmt.Sprintf("%v/%v", tmp, name)
     }
 
-    cmd = exec.Command("vostok/result/o7c", "to-bin", script, bin,
+    cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
                        "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
