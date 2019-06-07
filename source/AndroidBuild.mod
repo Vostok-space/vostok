@@ -1,5 +1,5 @@
 (*  Builder of simple Android applications from Oberon-07
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -43,14 +43,14 @@ TYPE
   BEGIN
     Sn("Builder of simple Android applications. 2018");
     Sn("Usage:");
-    Sn("  1) o7a run   Script            Options");
-    Sn("  2) o7a build Script Result.apk Options");
-    Sn("  3) o7a install-tools");
+    Sn("  1) osa run   Script            Options");
+    Sn("  2) osa build Script Result.apk Options");
+    Sn("  3) osa install-tools");
     Sn("Options same as for o7c, run 'o7c help' to see more");
     Sn("");
     Sn("Example:");
-    Sn("  o7a build 'Star.Go(5, 0.38)' result/star.apk -infr . -m example/android");
-    Sn("  o7a run Rocket.Fly -infr . -m example/android")
+    Sn("  osa build 'Star.Go(5, 0.38)' result/star.apk -infr . -m example/android");
+    Sn("  osa run Rocket.Fly -infr . -m example/android")
   END Help;
 
   PROCEDURE W(f: Files.Out; str: ARRAY OF CHAR): BOOLEAN;
@@ -234,16 +234,16 @@ TYPE
     Strings.CopyCharsNull(dest, i, src)
   END Copy;
 
-  PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR);
+  PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR): BOOLEAN;
   VAR i: INTEGER;
   BEGIN
     i := 0;
-    ASSERT(((dir[0] = 0X)
-        OR Copy(act, i, dir)
-         & Copy(act, i, "/")
-           )
-         & Copy(act, i, "Activity.java")
+  RETURN
+    ((dir[0] = 0X)
+  OR Copy(act, i, dir)
+   & Copy(act, i, "/")
     )
+  & Copy(act, i, "Activity.java")
   END ActivityPath;
 
   PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; act: ARRAY OF CHAR);
@@ -261,8 +261,7 @@ TYPE
 
     PROCEDURE Do(VAR l: Listener);
     BEGIN
-      ActivityPath(l.act, l.args.tmp);
-      IF GenerateActivity(l.act) THEN
+      IF ActivityPath(l.act, l.args.tmp) & GenerateActivity(l.act) THEN
         SetJavac(l.args.javac, l.act)
       ELSE
         Sn("Can not generate Activity.java")
@@ -351,7 +350,7 @@ TYPE
   BEGIN
     len := 0;
     IF (CLI.count <= 0) OR ~CLI.Get(cmd, len, 0) THEN
-      Sn("Not enough parameters. Run 'o7a help' too see available commands")
+      Sn("Not enough parameters. Run 'osa help' too see available commands")
     ELSIF cmd = "help" THEN
       Help
     ELSIF cmd = "run" THEN
@@ -361,7 +360,7 @@ TYPE
     ELSIF cmd = "install-tools" THEN
       InstallTools
     ELSE
-      Sn("Unknown command. Run 'o7a help' too see available commands")
+      Sn("Unknown command. Run 'osa help' too see available commands")
     END
   END Go;
 
