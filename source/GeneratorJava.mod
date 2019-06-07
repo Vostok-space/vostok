@@ -1291,16 +1291,6 @@ BEGIN
 		Text.Str(gen, "r.")
 	END;
 	Name(gen, d);
-	(*
-	FOR i := 2 TO arrDeep DO
-		Text.Str(gen, "[0]")
-	END;
-	Text.Str(gen, "), ");
-	Name(gen, d);
-	FOR i := 2 TO arrDeep DO
-		Text.Str(gen, "[0]")
-	END;
-	*)
 	Text.Str(gen, ");")
 END ArraySimpleUndef;
 
