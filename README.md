@@ -26,25 +26,32 @@ Short build help for POSIX systems:
 
     result/bs-ost run make.Help -infr . -m source
 
+## Install in POSIX:
+
+    $ /usr/bin/sudo result/ost run make.Install -infr . -m source
+
 ## Usage:
 
 Help about translator usage:
 
-    $ result/ost help
+    $ ost help
 
 Oberon-modules running example:
+
+    $ ost run 'Out.Int(999 * 555, 0); Out.Ln'
+
+Same without installation:
 
     $ result/ost run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
 Example of executable binary build:
 
-    $ result/ost to-bin ReadDir.Go result/Dir -infr . -m test/source
+    $ result/ost to-bin ReadDir.Go result/Dir -infr . -m example
     $ result/Dir
 
 Demo web-server:
 
     $ cd demo-server
-
     $ go build server.go && ./server
 
 ## Questions:
