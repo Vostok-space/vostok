@@ -3363,9 +3363,6 @@ VAR out: MOut;
 			Text.StrLn(gen, "#include <stdbool.h>")
 		END;
 		Text.Ln(gen);
-		IF gen.opt.varInit = VarInitUndefined THEN
-			Text.StrLn(gen, "#define O7_BOOL_UNDEFINED")
-		END;
 		Text.StrLn(gen, "#include <o7.h>");
 		Text.Ln(gen)
 	END Includes;

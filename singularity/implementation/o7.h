@@ -54,7 +54,11 @@
 #define O7_INIT_NO    2
 
 #if defined(O7_INIT_MODEL)
-#	define O7_INIT O7_INIT_MODEL
+#	if (O7_INIT_UNDEF <= O7_INIT_MODEL) && (O7_INIT_MODEL <= O7_INIT_NO)
+#		define O7_INIT O7_INIT_MODEL
+#	else
+#		error Wrong value of O7_INIT_MODEL
+#	endif
 #else
 #	define O7_INIT O7_INIT_UNDEF
 #endif
@@ -90,7 +94,7 @@ typedef char unsigned o7_char;
 
 #if defined(O7_BOOL)
 	typedef O7_BOOL o7_bool;
-#elif defined(O7_BOOL_UNDEFINED)
+#elif O7_INIT == O7_INIT_UNDEF
 	typedef o7_char o7_bool;
 #else
 	typedef o7_cbool o7_bool;
