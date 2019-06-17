@@ -534,7 +534,7 @@ BEGIN
 		IF count = 1 THEN
 			s.isChar := TRUE;
 			s.integer := ORD(s.buf[j])
-		END;
+		END
 	ELSE
 		l := ErrExpectDQuote
 	END;

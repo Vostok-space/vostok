@@ -3362,7 +3362,6 @@ VAR out: MOut;
 		IF gen.opt.std >= IsoC99 THEN
 			Text.StrLn(gen, "#include <stdbool.h>")
 		END;
-		Text.Ln(gen);
 		Text.StrLn(gen, "#include <o7.h>");
 		Text.Ln(gen)
 	END Includes;
