@@ -16,7 +16,7 @@ BEGIN
 END err;
 *)
 
-PROCEDURE case(i: INTEGER);
+PROCEDURE case*(i: INTEGER);
 VAR n: INTEGER;
 BEGIN
 	CASE i OF
@@ -30,7 +30,7 @@ BEGIN
 	ASSERT(i = n * 2)
 END case;
 
-PROCEDURE caseChar(c: CHAR);
+PROCEDURE caseChar*(c: CHAR);
 CONST a = CHR(ORD("a"));
 VAR n: INTEGER;
 BEGIN
@@ -60,5 +60,10 @@ BEGIN
 		caseChar(CHR(i + ORD("a")))
 	END
 END Go;
+
+PROCEDURE Fail*;
+BEGIN
+	caseChar(CHR(0))
+END Fail;
 
 END Case.
