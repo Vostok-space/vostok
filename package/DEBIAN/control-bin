@@ -1,0 +1,8 @@
+Package      : vostok-bin
+Version      : 0.0.0.dev
+Maintainer   : Vostok <project-Vostok@yandex.ru>
+Section      : devel
+Architecture : i386
+Depends      : vostok-deflib
+Suggests     : tcc
+Description  : Oberon translator to C, Js, Java

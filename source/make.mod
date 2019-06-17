@@ -16,7 +16,7 @@
  *)
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, Platform, FS := FileSystemUtil, Chars0X;
+ IMPORT Log, Exec := PlatformExec, Dir, CDir, Platform, FS := FileSystemUtil, Chars0X;
 
  CONST C = 0; Java = 1; Js = 2;
 
@@ -205,28 +205,52 @@ MODULE make;
  & Chars0X.Copy(b, k, TRUE, LEN(b), dest, i)
  END Concat;
 
- PROCEDURE InstallTo*(dest: ARRAY OF CHAR);
+ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
+                baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
+ VAR dest: ARRAY 1024 OF CHAR;
+ RETURN
+   Concat(dest, baseDest, addDest)
+ & FS.Copy(src, dest, dir)
+ END Copy;
 
-   PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
-                  baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
-   VAR dest: ARRAY 1024 OF CHAR;
-   RETURN
-     Concat(dest, baseDest, addDest)
-   & FS.Copy(src, dest, dir)
-   END Copy;
+ PROCEDURE CopyBinTo(dest: ARRAY OF CHAR): BOOLEAN;
+ RETURN
+   Copy("result/ost", FALSE, dest, "/bin/")
+ END CopyBinTo;
 
-   PROCEDURE MakeDir(base, add: ARRAY OF CHAR): BOOLEAN;
-   VAR dest: ARRAY 1024 OF CHAR;
-   RETURN
-     Concat(dest, base, add)
-   & FS.MakeDir(dest)
-   END MakeDir;
-
+ PROCEDURE InstallBinTo*(dest: ARRAY OF CHAR);
  BEGIN
-   ok := Copy("result/ost", FALSE, dest, "/bin/")
-       & MakeDir(dest, "/share/vostok")
-       & Copy("library", TRUE, dest, "/share/vostok/")
-       & Copy("singularity", TRUE, dest, "/share/vostok/");
+   ok := Copy("result/ost", FALSE, dest, "/bin/");
+   IF ~ok THEN
+     Msg("Failed to install the binary")
+   END
+ END InstallBinTo;
+
+ PROCEDURE MakeDir(base, add: ARRAY OF CHAR): BOOLEAN;
+ VAR dest: ARRAY 1024 OF CHAR;
+ RETURN
+   Concat(dest, base, add)
+ & FS.MakeDir(dest)
+ END MakeDir;
+
+ PROCEDURE CopyLibTo(dest: ARRAY OF CHAR): BOOLEAN;
+ RETURN
+   MakeDir(dest, "/share/vostok")
+ & Copy("library", TRUE, dest, "/share/vostok/")
+ & Copy("singularity", TRUE, dest, "/share/vostok/")
+ END CopyLibTo;
+
+ PROCEDURE InstallLibTo*(dest: ARRAY OF CHAR);
+ BEGIN
+   ok := CopyLibTo(dest);
+   IF ~ok THEN
+     Msg("Failed to install the library")
+   END
+ END InstallLibTo;
+
+ PROCEDURE InstallTo*(dest: ARRAY OF CHAR);
+ BEGIN
+   ok := CopyBinTo(dest) & CopyLibTo(dest);
    IF ~ok THEN
      Msg("Installation is failed")
    END
@@ -245,7 +269,7 @@ MODULE make;
        & Concat(dest, base, "/bin/ost")
        & FS.RemoveFile(dest);
    IF ~ok THEN
-     Msg("Uninstallation is failed");
+     Msg("Uninstallation is failed")
    END
  END RemoveFrom;
 
@@ -253,6 +277,77 @@ MODULE make;
  BEGIN
    RemoveFrom("/usr/local")
  END Remove;
+
+ PROCEDURE Md5Deep(dir: ARRAY OF CHAR; out: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "md5deep")
+ & Exec.Add(cmd, "-rl")
+ & Exec.Add(cmd, dir)
+ & Exec.AddClean(cmd, " > ")
+ & Exec.Add(cmd, out)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END Md5Deep;
+
+ PROCEDURE DpkgDeb(dir: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "fakeroot")
+ & Exec.Add(cmd, "dpkg-deb")
+ & Exec.Add(cmd, "--build")
+ & Exec.Add(cmd, dir)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END DpkgDeb;
+
+ PROCEDURE CreateDebDir(name: ARRAY OF CHAR): BOOLEAN;
+ VAR ignore: BOOLEAN;
+ BEGIN
+   ignore := FS.RemoveDir(name);
+ RETURN
+   FS.MakeDir(name)
+ & MakeDir(name, "DEBIAN")
+ & MakeDir(name, "usr")
+ END CreateDebDir;
+
+ PROCEDURE HashAndPack(name: ARRAY OF CHAR): BOOLEAN;
+ RETURN
+   CDir.SetCurrent("result", 0)
+ & CDir.SetCurrent(name, 0)
+ & Md5Deep("usr", "DEBIAN/md5sums")
+ & CDir.SetCurrent("..", 0)
+ & DpkgDeb(name)
+ & CDir.SetCurrent("..", 0)
+ END HashAndPack;
+
+ PROCEDURE DebLib*;
+ BEGIN
+   ok := CreateDebDir("result/vostok-deflib/")
+       & FS.MakeDir("result/vostok-deflib/usr/share")
+       & CopyLibTo("result/vostok-deflib/usr")
+       & FS.CopyFile("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
+       & HashAndPack("vostok-deflib");
+   IF ~ok THEN
+     Msg("Failed to pack library to deb")
+   END
+ END DebLib;
+
+ PROCEDURE DebBin*;
+ BEGIN
+   ok := CreateDebDir("result/vostok-bin/")
+       & FS.MakeDir("result/vostok-bin/usr/bin")
+       & CopyBinTo("result/vostok-bin/usr")
+       & FS.CopyFile("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
+       & HashAndPack("vostok-bin");
+   IF ~ok THEN
+     Msg("Failed to pack executable binary to deb")
+   END
+ END DebBin;
+
+ PROCEDURE Deb*;
+ BEGIN
+   DebLib;
+   DebBin
+ END Deb;
 
  PROCEDURE Help*;
  BEGIN
@@ -266,10 +361,11 @@ MODULE make;
    Msg("  UseJs         turn translation through Javascript");
    Msg("  UseC          turn translation through C");
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
-   Msg("  Install       install files to /usr/local");
-   Msg("  InstallTo(d)  install files to target directory");
+   Msg("  Install       install translator and libraries to /usr/local");
+   Msg("  InstallTo(d)  install translator and libraries files to target directory");
    Msg("  Remove        remove installed files from /usr/local");
    Msg("  RemoveFrom(d) remove files from target directory");
+   Msg("  Deb           pack source library and translator to .deb-files");
 
    Msg(""); Msg("Examples:");
    Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
