@@ -182,20 +182,18 @@ END CopyInfr;
 PROCEDURE ReadNearInfr(VAR infr: ARRAY OF CHAR): BOOLEAN;
 VAR i, len: INTEGER; ok: BOOLEAN;
 BEGIN
-	ok := Platform.Posix;
+	ok := Platform.Posix
+	    & OsUtil.PathToSelfExe(infr, len) & (len < LEN(infr));
 	IF ok THEN
-		ok := OsUtil.PathToSelfExe(infr, len) & (len < LEN(infr));
-		IF ok THEN
-			i := 2;
-			WHILE (len >= 0) & (i > 0) DO
-				DEC(len);
-				IF infr[len] = dirSep THEN
-					DEC(i)
-				END
-			END;
-			INC(len);
-			ok := (i = 0) & Strings.CopyCharsNull(infr, len, "share/vostok")
-		END
+		i := 2;
+		WHILE (len >= 0) & (i > 0) DO
+			DEC(len);
+			IF infr[len] = dirSep THEN
+				DEC(i)
+			END
+		END;
+		INC(len);
+		ok := (i = 0) & Strings.CopyCharsNull(infr, len, "share/vostok")
 	END
 	RETURN ok
 END ReadNearInfr;
@@ -319,16 +317,16 @@ BEGIN
 		END;
 		optLen := 0
 	END;
-	IF i + 1 < LEN(args.modPath) THEN
-		IF (ret = ErrNo) & (i = 0) & ReadNearInfr(opt) THEN
-			IF ~CopyInfr(args,
-			             i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
-			             opt)
-			THEN
-				ret := ErrTooLongModuleDirs
-			END
-		END;
-
+	IF (ret = ErrNo) & ReadNearInfr(opt)
+	 & ~CopyInfr(args,
+		         i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
+		         opt)
+	THEN
+		ret := ErrTooLongModuleDirs
+	END;
+	IF ret # ErrNo THEN
+		;
+	ELSIF i + 1 < LEN(args.modPath) THEN
 		args.modPathLen := i + 1;
 		args.modPath[i + 1] := Utf8.Null;
 		IF count >= 32 THEN
