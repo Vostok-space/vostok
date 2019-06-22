@@ -1,9 +1,10 @@
-Package      : vostok-deflib
-Version      : 0.0.0.dev
-Maintainer   : Vostok <project-Vostok@yandex.ru>
-Section      : devel
-Architecture : all
-Multi-arch   : foreign
-Recommends   : vostok-bin
-Description  : Default source-level library for Vostok - Oberon translator
-
+Package:      vostok-deflib
+Version:      0.0.0.dev
+Maintainer:   Vostok <project-Vostok@yandex.ru>
+Section:      devel
+Architecture: all
+Multi-arch:   foreign
+Priority:     optional
+Recommends:   vostok-bin
+Description:  Default source-level library for Vostok - Oberon translator
+ Library provides runtime-code, basic input and output and some extra functions
