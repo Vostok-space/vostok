@@ -97,4 +97,4 @@ init.sh собирает из предварительно сгенериров�
 [zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
 
 ### Новости:
-[Тема в блоге](https://comdivbyzero.blogspot.com/search/label/%22%D0%92%D0%BE%D1%81%D1%82%D0%BE%D0%BA%22)
+[Блог о проекте](https://vostok-space.blogspot.com/)

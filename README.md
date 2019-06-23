@@ -58,3 +58,7 @@ Demo web-server:
 Russian-speaking forums, but possible to ask in english:
 [forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217),
 [zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
+
+## News:
+Russian [blog](https://vostok-space.blogspot.com/) through
+[google translate](https://translate.google.com/translate?sl=ru&tl=en&u=https%3A%2F%2Fvostok-space.blogspot.com)
