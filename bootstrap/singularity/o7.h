@@ -11,7 +11,7 @@
 #if !defined(O7_INLINE)
 #	if __STDC_VERSION__ >= 199901L
 #		define O7_INLINE static inline
-#	elif __GNUC__ > 2
+#	elif __GNUC__ * 100 + __GNUC_MINOR__ >= 295
 #		define O7_INLINE static __inline__
 #	else
 #		define O7_INLINE static
@@ -141,7 +141,7 @@ typedef char unsigned o7_char;
 #	define O7_ATTR_MALLOC
 #endif
 
-#if __GNUC__ * 10 + __GNUC_MINOR__ >= 31
+#if __GNUC__ * 100 + __GNUC_MINOR__ >= 301
 #	define O7_ATTR_ALWAYS_INLINE __attribute__((always_inline))
 #else
 #	define O7_ATTR_ALWAYS_INLINE

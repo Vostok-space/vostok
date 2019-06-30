@@ -54,7 +54,13 @@
   o7_cbool const Platform_Darwin = 0 > 1;
 #endif
 
-#if defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) || defined(__APPLE__) || defined(__minix)
+#if defined(__HAIKU__)
+  o7_cbool const Platform_Haiku = 0 < 1;
+#else
+  o7_cbool const Platform_Haiku = 0 > 1;
+#endif
+
+#if defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) || defined(__APPLE__) || defined(__minix) || defined(__HAIKU__)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;

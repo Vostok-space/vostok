@@ -2,7 +2,7 @@
 
 SING_BS=bootstrap
 
-SANITIZE="-ftrapv"
+#SANITIZE="-ftrapv"
 #SANITIZE="-fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error -static-libasan -DO7_LSAN_LEAK_IGNORE"
 O7_OPT="-DO7_MEMNG_MODEL=O7_MEMNG_NOFREE"
 WARN="-Wall -Wno-parentheses"

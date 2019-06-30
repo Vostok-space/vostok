@@ -23,6 +23,7 @@ extern o7_cbool const
   Platform_Dos,
   Platform_Windows,
   Platform_Darwin,
+  Platform_Haiku,
   Platform_C,
   Platform_Java,
   Platform_Javascript;
