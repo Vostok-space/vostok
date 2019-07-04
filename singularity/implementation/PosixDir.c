@@ -21,8 +21,10 @@
 
 
 #if defined(__linux__) || defined(__linux) \
+ || defined(__minix__) || defined(__minix) \
  || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) \
- || defined(__MINGW32__) || defined(__MINGW64__) || defined(__HAIKU__)
+ || defined(__MINGW32__) || defined(__MINGW64__) \
+ || defined(__HAIKU__) || defined(__APPLE__)
 	o7_bool PosixDir_supported = 0 < 1;
 #	include <dirent.h>
 #else
