@@ -60,9 +60,11 @@
   o7_cbool const Platform_Haiku = 0 > 1;
 #endif
 
-#if defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) \
+#if defined(__unix__) || defined(__unix) \
+ || defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) \
  || defined(__minix__) || defined(__minix) \
- || defined(__APPLE__) || defined(__HAIKU__)
+ || defined(__APPLE__) || defined(__HAIKU__) \
+ || defined(__sun__) || defined(__sun)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;

@@ -24,13 +24,16 @@ if (typeof require !== 'undefined') {
     platform = require("os").platform();
 }
 
-module.Posix      = platform == "linux" || platform == 'darwin';
-module.Linux      = platform == "linux";
-module.Bsd        = false;
+module.Posix      = platform == 'linux' || platform == 'darwin'
+                 || platform == 'openbsd' || platform == 'freebsd'
+                 || platform == 'sunos';
+module.Linux      = platform == 'linux';
+module.Bsd        = platform == 'freebsd';
 module.Dos        = false;
-module.Windows    = platform == "windows";
-module.Darwin     = platform == "darwin";
+module.Windows    = platform == 'win32';
+module.Darwin     = platform == 'darwin';
 
+module.C          = false;
 module.Java       = false;
 module.Javascript = true;
 

@@ -19,12 +19,13 @@
 
 #include "PosixDir.h"
 
-
-#if defined(__linux__) || defined(__linux) \
+#if defined(__unix__) || defined(__unix) \
+ || defined(__linux__) || defined(__linux) \
  || defined(__minix__) || defined(__minix) \
  || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) \
  || defined(__MINGW32__) || defined(__MINGW64__) \
- || defined(__HAIKU__) || defined(__APPLE__)
+ || defined(__HAIKU__) || defined(__APPLE__) \
+ || defined(__sun__) || defined(__sun)
 	o7_bool PosixDir_supported = 0 < 1;
 #	include <dirent.h>
 #else

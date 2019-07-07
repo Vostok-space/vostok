@@ -26,6 +26,7 @@ public static final boolean Posix,
                             Windows,
                             Darwin,
 
+                            C,
                             Java,
                             Javascript;
 
@@ -38,6 +39,7 @@ static {
     Windows    = false;
     Darwin     = false;
 
+    C          = false;
     Java       = true;
     Javascript = false;
 }
