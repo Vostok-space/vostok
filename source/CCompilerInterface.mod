@@ -102,6 +102,11 @@ MODULE CCompilerInterface;
     Exec.AddByOfs(c.cmd, opt, 0)
   END AddOpt;
 
+  PROCEDURE AddOptByOfs*(VAR c: Compiler; opt: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  RETURN
+    Exec.AddByOfs(c.cmd, opt, ofs)
+  END AddOptByOfs;
+
   PROCEDURE Do*(VAR c: Compiler): INTEGER;
   BEGIN
     Exec.Log(c.cmd)

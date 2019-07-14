@@ -98,7 +98,10 @@ BEGIN
 			END
 		END
 	END;
-	d[i] := Utf8.Null
+	d[i] := Utf8.Null;
+	IF i < LEN(d) - 1 THEN
+		d[i + 1] := Utf8.Null
+	END
 	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
 END Copy;
 

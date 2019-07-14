@@ -434,7 +434,7 @@ VAR ret: INTEGER;
 	              VAR listener: V.Base): INTEGER;
 	VAR outCLen: INTEGER;
 	    ret: INTEGER;
-	    i, nameLen, cDirsLen: INTEGER;
+	    i, nameLen, cDirsLen, ccEnd: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
 	BEGIN
@@ -442,7 +442,8 @@ VAR ret: INTEGER;
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
-			IF cc[0] = Utf8.Null THEN
+			ccEnd := Strings.CalcLen(cc, 0);
+			IF ccEnd = 0 THEN
 				ok := CComp.Search(cmd, res = Cli.ResultRun)
 			ELSE
 				ok := CComp.Set(cmd, cc)
@@ -483,6 +484,11 @@ VAR ret: INTEGER;
 				   & CComp.AddOpt(cmd, "-lgc")
 				  )
 				& (~Platform.Posix OR CComp.AddOpt(cmd, "-lm"));
+
+				IF ok & (ccEnd < LEN(cc) - 1) & (cc[ccEnd + 1] # Utf8.Null)
+				THEN
+					ok := CComp.AddOptByOfs(cmd, cc, ccEnd + 1)
+				END;
 
 				(* TODO *)
 				ASSERT(ok);

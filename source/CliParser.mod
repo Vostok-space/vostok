@@ -253,7 +253,16 @@ BEGIN
 				Log.StrLn(args.jsDirs)
 			END
 		ELSIF opt = "-cc" THEN
-			ignore := GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)
+			IF GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)
+			 & (arg < CLI.count) & CLI.Get(opt, optLen, arg) & (opt = "...")
+			THEN
+				optLen := 0;
+				INC(arg);
+				INC(ccLen);
+				ignore := GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)
+			ELSIF ccLen < LEN(args.cc) - 1 THEN
+				args.cc[ccLen + 1] := Utf8.Null
+			END
 		ELSIF opt = "-javac" THEN
 			ignore := GetParam(ret, ErrTooLongCc, args.javac, javacLen, arg)
 		ELSIF opt = "-infr" THEN
@@ -319,8 +328,8 @@ BEGIN
 	END;
 	IF (ret = ErrNo) & ReadNearInfr(opt)
 	 & ~CopyInfr(args,
-		         i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
-		         opt)
+	             i, dirsOfs, javaDirsOfs, jsDirsOfs, count,
+	             opt)
 	THEN
 		ret := ErrTooLongModuleDirs
 	END;
@@ -350,6 +359,7 @@ BEGIN
 	args.cDirs[0] := Utf8.Null;
 	args.tmp[0]   := Utf8.Null;
 	args.cc[0]    := Utf8.Null;
+	args.cc[1]    := Utf8.Null;
 	args.javac[0] := Utf8.Null;
 	args.sing     := {};
 	args.init     := -1;
