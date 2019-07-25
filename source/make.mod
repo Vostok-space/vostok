@@ -363,7 +363,6 @@ MODULE make;
                  "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-bin",
                       "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
-          & FS.CopyFile("package/DEBIAN/ost.1", "result/vostok-bin/DEBIAN/ost.1")
           & HashAndPack("vostok-bin");
       IF ~ok THEN
         Msg("Failed to pack executable binary to deb")

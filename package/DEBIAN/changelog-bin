@@ -1,3 +1,9 @@
+ vostok-bin (0.0.1.dev) unstable; urgency=low
+  * Splitted value of "-cc" argument for possibility to add arguments after files names
+  * Fixed generation of initializers calling of records of the imported module
+
+ -- project Vostok <project-Vostok@yandex.ru> Fri, 25 July 2019 00:00:00 +0200
+
  vostok-bin (0.0.0.dev) unstable; urgency=low
   * Initial package
 
