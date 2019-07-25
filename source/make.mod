@@ -337,32 +337,37 @@ MODULE make;
 
  PROCEDURE DebLib*;
  BEGIN
-   ok := CreateDebDir("vostok-deflib")
-       & CopyLibTo("result/vostok-deflib/usr")
-       & FS.CopyFile("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
-       & Gzip("package/DEBIAN/changelog-deflib",
-              "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
-       & FS.CopyFile("package/DEBIAN/copyright-deflib",
-                   "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
-       & HashAndPack("vostok-deflib");
-   IF ~ok THEN
-     Msg("Failed to pack library to deb")
+   IF ok THEN
+      ok := CreateDebDir("vostok-deflib")
+          & CopyLibTo("result/vostok-deflib/usr")
+          & FS.CopyFile("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
+          & Gzip("package/DEBIAN/changelog-deflib",
+                 "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
+          & FS.CopyFile("package/DEBIAN/copyright-deflib",
+                      "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
+          & HashAndPack("vostok-deflib");
+      IF ~ok THEN
+        Msg("Failed to pack library to deb")
+      END
    END
  END DebLib;
 
  PROCEDURE DebBin*;
  BEGIN
-   ok := CreateDebDir("vostok-bin")
-       & FS.MakeDir("result/vostok-bin/usr/bin")
-       & CopyBinTo("result/vostok-bin/usr")
-       & FS.CopyFile("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
-       & Gzip("package/DEBIAN/changelog-bin",
-              "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
-       & FS.CopyFile("package/DEBIAN/copyright-bin",
-                   "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
-       & HashAndPack("vostok-bin");
-   IF ~ok THEN
-     Msg("Failed to pack executable binary to deb")
+   IF ok THEN
+      ok := CreateDebDir("vostok-bin")
+          & FS.MakeDir("result/vostok-bin/usr/bin")
+          & CopyBinTo("result/vostok-bin/usr")
+          & FS.CopyFile("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
+          & Gzip("package/DEBIAN/changelog-bin",
+                 "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
+          & FS.CopyFile("package/DEBIAN/copyright-bin",
+                      "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
+          & FS.CopyFile("package/DEBIAN/ost.1", "result/vostok-bin/DEBIAN/ost.1")
+          & HashAndPack("vostok-bin");
+      IF ~ok THEN
+        Msg("Failed to pack executable binary to deb")
+      END
    END
  END DebBin;
 
