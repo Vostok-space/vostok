@@ -472,7 +472,7 @@ PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
 	IF ~record & ~(var.type.id IN {Ast.IdArray, Ast.IdRecord})
 	 & ~var(Ast.Var).checkInit
-	 & (var.up # NIL) & (var.up.d.up = NIL) (* TODO *)
+	 & Ast.IsGlobal(var)
 	THEN
 		IF var.type.id = Ast.IdPointer THEN
 			Text.Str(gen, " = null")

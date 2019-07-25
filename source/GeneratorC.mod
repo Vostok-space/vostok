@@ -3070,7 +3070,8 @@ BEGIN
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
 			IF (gen.opt.varInit = VarInitUndefined)
-			 & (d.type.ext # NIL)
+			 & (d.type.id = Ast.IdRecord) & Strings.IsDefined(d.type.name)
+			 & Ast.IsGlobal(d.type)
 			THEN
 				RecordUndefCall(gen, d)
 			ELSIF (gen.opt.varInit = VarInitZero)

@@ -3055,6 +3055,10 @@ PROCEDURE ExprCallNew*(VAR e: ExprCall; des: Designator): INTEGER;
 	RETURN ExprCallCreate(e, des, TRUE)
 END ExprCallNew;
 
+PROCEDURE IsGlobal*(d: Declaration): BOOLEAN;
+	RETURN (d.up # NIL) & (d.up.d.up = NIL)
+END IsGlobal;
+
 PROCEDURE IsChangeable*(des: Designator): BOOLEAN;
 VAR v: Var;
     sel: Selector;
@@ -3062,7 +3066,7 @@ VAR v: Var;
     able: BOOLEAN;
 BEGIN
 	v := des.decl(Var);
-	IF (v.up # NIL) & (v.up.d.up = NIL) THEN
+	IF IsGlobal(v) THEN
 		able := ~v.module.m.fixed
 	ELSE
 		able := ~(v IS FormalParam)
