@@ -189,8 +189,12 @@ CONST
 	InitedNil*    = 1;
 	InitedValue*  = 2;
 	InitedFail*   = 3;
-	Used*         = 4;
-	Dereferenced* = 5;
+	(* Означает, что несмотря на формалистическое InitedValue, нужно проверять
+	   инициализированность во время работы. Нужно из-за VAR
+	   TODO систематизировать совместно с RVar.checkInit  *)
+	InitedCheck*  = 4;
+	Used*         = 5;
+	Dereferenced* = 6;
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)
@@ -2009,16 +2013,11 @@ BEGIN
 			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized (* TODO *)
 		ELSIF varParam THEN
-			(*
-			IF v.state.inited # Inited THEN
-				(* TODO Зависит от типа varParam, доработать *)
-				v.state.inited := InitedPartly;
-				v.checkInit := TRUE
+			IF ~(InitedValue IN v.state.inited) THEN
+				v.checkInit := TRUE;
+				INCL(v.state.inited, InitedCheck)
 			END;
-			*)
-			(* TODO временный код *)
-			v.state.inited := { InitedValue }
-
+			v.state.inited := v.state.inited - {InitedNo} + {InitedValue}
 		ELSIF ~(~(InitedNo IN v.state.inited)
 		    OR v.state.inCondition & ({} # v.state.inited - {InitedNo})
 		       )
