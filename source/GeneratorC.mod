@@ -1012,7 +1012,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
 		                      VAR fp: Ast.Declaration);
 		VAR t: Ast.Type;
-			i, j, dist: INTEGER;
+		    i, j, dist: INTEGER;
+		    paramOut: BOOLEAN;
 
 			PROCEDURE ArrayDeep(t: Ast.Type): INTEGER;
 			VAR d: INTEGER;
@@ -1066,8 +1067,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					t := fp.type
 				END;
 				dist := p.distance;
-				IF ((Ast.ParamOut IN fp(Ast.FormalParam).access)
-				 & ~(t IS Ast.Array))
+				paramOut := Ast.ParamOut IN fp(Ast.FormalParam).access;
+				IF (paramOut & ~(t IS Ast.Array))
 				OR (t IS Ast.Record)
 				OR (t.id = Ast.IdPointer) & (0 < dist) & ~gen.opt.plan9
 				THEN
@@ -1075,7 +1076,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
 				gen.opt.expectArray := fp.type.id = Ast.IdArray;
-				Expression(gen, p.expr);
+				IF paramOut THEN
+					Expression(gen, p.expr)
+				ELSE
+					CheckExpr(gen, p.expr)
+				END;
 				gen.opt.expectArray := FALSE;
 
 				IF ~gen.opt.vla THEN
