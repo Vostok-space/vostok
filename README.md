@@ -7,6 +7,11 @@ Project "Vostok"
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.
 
+## Install in Ubuntu 18.04:
+Add [repository](http://obertone.ru/repo) and execute command:
+
+    $ /usr/bin/sudo apt install vostok-bin
+
 ## Build:
 
 Build translator for POSIX:
