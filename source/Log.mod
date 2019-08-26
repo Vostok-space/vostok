@@ -75,6 +75,20 @@ BEGIN
 	END
 END Bool;
 
+PROCEDURE Set*(s: SET);
+VAR i: INTEGER;
+BEGIN
+	IF state THEN
+		Out.String("{ ");
+		FOR i := 0 TO 31 DO
+			IF i IN s THEN
+				Out.Int(i, 0); Out.String(" ")
+			END
+		END;
+		Out.String("}");
+	END
+END Set;
+
 PROCEDURE Turn*(st: BOOLEAN);
 BEGIN
 	IF st & ~init THEN

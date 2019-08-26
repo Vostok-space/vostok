@@ -2028,6 +2028,7 @@ BEGIN
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
 			v.state.inited := { InitedValue }
 		ELSIF InitedNo IN v.state.inited THEN
+			INCL(v.state.inited, InitedCheck);
 			v.checkInit := TRUE
 		END;
 		INCL(v.state.inited, Used)
@@ -3802,9 +3803,9 @@ BEGIN
 				var.used := TRUE
 			END;
 
-			var.state.inited := var.state.inited - {InitedNo, InitedValue, InitedNil};
+			var.state.inited := var.state.inited - {InitedNo, InitedValue, InitedCheck, InitedNil};
 			IF (des.sel = NIL)
-			 & ((var.up # NIL) & (var.up.d.up # NIL) OR (var IS FormalParam))
+			 & (~IsGlobal(var) OR (var IS FormalParam))
 			 & (expr # NIL) & (expr.value # NIL) & (expr.value = ExprNilGet())
 			THEN
 				INCL(var.state.inited, InitedNil)

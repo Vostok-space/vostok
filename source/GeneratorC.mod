@@ -50,6 +50,9 @@ CONST
 	IdentEncTranslit*   = 1;
 	IdentEncEscUnicode* = 2;
 
+	CheckableArithTypes = {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32};
+	CheckableInitTypes =  CheckableArithTypes + {Ast.IdBoolean};
+
 TYPE
 	PMemoryOut = POINTER TO MemoryOut;
 	MemoryOut = RECORD(Stream.Out)
@@ -608,6 +611,15 @@ BEGIN
 	END
 END Selector;
 
+PROCEDURE IsDesignatorMayNotInited(des: Ast.Designator): BOOLEAN;
+	RETURN ({Ast.InitedNo, Ast.InitedCheck} * des.inited # {})
+	    OR (des.sel # NIL)
+END IsDesignatorMayNotInited;
+
+PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
+	RETURN (e IS Ast.Designator) & IsDesignatorMayNotInited(e(Ast.Designator))
+END IsMayNotInited;
+
 PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator);
 VAR sels: Selectors;
     typ: Ast.Type;
@@ -640,29 +652,11 @@ BEGIN
 	gen.opt.lastSelectorDereference := lastSelectorDereference
 END Designator;
 
-PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
-VAR des: Ast.Designator; var: Ast.Var;
-BEGIN
-	var := NIL;
-	IF e IS Ast.Designator THEN
-		des := e(Ast.Designator);
-		IF des.decl IS Ast.Var THEN
-			var := des.decl(Ast.Var)
-		ELSE
-			des := NIL
-		END
-	ELSE
-		des := NIL
-	END
-	RETURN (des # NIL)
-	     & ((des.inited # {Ast.InitedValue}) OR (des.sel # NIL) OR var.checkInit)
-END IsMayNotInited;
-
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
 BEGIN
 	IF (gen.opt.varInit = VarInitUndefined)
 	 & (e.value = NIL)
-	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
+	 & (e.type.id IN CheckableInitTypes)
 	 & IsMayNotInited(e)
 	THEN
 		CASE e.type.id OF
@@ -1647,14 +1641,14 @@ BEGIN
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
 		IF	  gen.opt.checkArith
-			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
+			& (expr.type.id IN CheckableArithTypes)
 			& (expr.value = NIL)
 		THEN	SumCheck(gen, expr(Ast.ExprSum))
 		ELSE	Sum(gen, expr(Ast.ExprSum))
 		END
 	| Ast.IdTerm:
 		IF	  gen.opt.checkArith
-			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
+			& (expr.type.id IN CheckableArithTypes)
 			& (expr.value = NIL)
 		THEN
 			TermCheck(gen, expr(Ast.ExprTerm))
@@ -2429,7 +2423,7 @@ END IsCaseElementWithRange;
 PROCEDURE ExprSameType(VAR gen: Generator;
                        expr: Ast.Expression; expectType: Ast.Type);
 VAR reref, brace: BOOLEAN;
-	base, extend: Ast.Record;
+    base, extend: Ast.Record;
 BEGIN
 	base := NIL;
 	reref := (expr.type.id = Ast.IdPointer)
