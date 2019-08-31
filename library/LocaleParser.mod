@@ -14,7 +14,13 @@
  *)
 
 (* Разборщик строки с локалью на подстроки. Формат локали соответствует тому,
- * что можно получить в значении переменной окружения LANG в POSIX *)
+ * что можно получить в значении переменной окружения LANG в POSIX.
+ *
+ * Пример:
+ *   locale = "ru_RU.UTF-8"
+ *  ->
+ *   lang = "ru"     state = "RU"     enc = "UTF-8"
+ *)
 MODULE LocaleParser;
 
   IMPORT Chars0X;
@@ -47,5 +53,5 @@ MODULE LocaleParser;
   RETURN
     ParseByOfs(locale, 0, lang, state, enc)
   END Parse;
-  
+
 END LocaleParser.
