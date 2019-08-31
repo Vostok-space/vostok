@@ -1,5 +1,5 @@
 (*  Transformations of abstract syntax tree to simplify generation
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published

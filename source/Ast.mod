@@ -461,16 +461,21 @@ TYPE
 		asChar*: BOOLEAN
 	END;
 
-	LongSet = ARRAY 2 OF SET;
-
 	ExprNil* = POINTER TO RECORD(RFactor) END;
 
 	ExprSet* = POINTER TO RExprSet;
 	RExprSet = RECORD(RFactor)
-		set*: LongSet;
 		exprs*: ARRAY 2 OF Expression;
 
 		next*: ExprSet
+	END;
+
+	LongSet = ARRAY 2 OF SET;
+
+	(* TODO ввести тип Value как основы вместо RFactor *)
+	ExprSetValue* = POINTER TO RECORD(RFactor)
+		set *: LongSet;
+		long*: BOOLEAN
 	END;
 
 	ExprNegate* = POINTER TO RECORD(RFactor)
@@ -1867,14 +1872,11 @@ BEGIN
 	RETURN e
 END ExprBracesNew;
 
-PROCEDURE ExprSetByValue*(set: LongSet): ExprSet;
-VAR e: ExprSet;
+PROCEDURE ExprSetByValue*(set: LongSet): ExprSetValue;
+VAR e: ExprSetValue;
 BEGIN
 	NEW(e); ValueInit(e, IdSet, TypeGet(IdSet));
-	e.exprs[0] := NIL;
-	e.exprs[1] := NIL;
 	e.set := set;
-	e.next := NIL
 	RETURN e
 END ExprSetByValue;
 
@@ -1882,16 +1884,53 @@ PROCEDURE CheckSetRange(int: INTEGER): BOOLEAN;
 	RETURN (0 <= int) & (int <= Limits.SetMax * 2 + 1)
 END CheckSetRange;
 
+PROCEDURE AddSet(VAR s: LongSet; a: LongSet);
+BEGIN
+	s[0] := s[0] + a[0];
+	s[1] := s[1] + a[1]
+END AddSet;
+
+PROCEDURE SubSet(VAR s: LongSet; a: LongSet);
+BEGIN
+	s[0] := s[0] - a[0];
+	s[1] := s[1] - a[1]
+END SubSet;
+
+PROCEDURE IsEqualSets(s1, s2: LongSet): BOOLEAN;
+	RETURN (s1[0] = s2[0]) & (s1[1] = s2[1])
+END IsEqualSets;
+
+PROCEDURE InSet(i: INTEGER; s: LongSet): BOOLEAN;
+BEGIN
+	RETURN CheckSetRange(i)
+		 & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
+END InSet;
+
+PROCEDURE SetNeg(VAR s: LongSet);
+BEGIN
+	s[0] := -s[0];
+	s[1] := -s[1]
+END SetNeg;
+
+PROCEDURE ConvertableToInt(s: LongSet): BOOLEAN;
+	RETURN ~(Limits.SetMax IN s[0]) & (s[1] = {})
+END ConvertableToInt;
+
+PROCEDURE OrdSet(s: LongSet): INTEGER;
+BEGIN
+	ASSERT(ConvertableToInt(s))
+
+	RETURN ORD(s[0])
+END OrdSet;
+
 (* TODO сделать дизайн получше *)
 PROCEDURE ExprSetNew*(VAR base, e: ExprSet; expr1, expr2: Expression): INTEGER;
-VAR err, left, right: INTEGER;
+VAR err, left, right: INTEGER; set: LongSet;
 BEGIN
 	NEW(e); ExprInit(e, IdSet, TypeGet(IdSet));
 	e.exprs[0] := expr1;
 	e.exprs[1] := expr2;
 	e.next := NIL;
-	e.set[0] := {};
-	e.set[1] := {};
 	err := ErrNo;
 	IF (expr1 = NIL) & (expr2 = NIL) THEN
 		;
@@ -1903,6 +1942,9 @@ BEGIN
 		THEN
 			err := ErrNotIntSetElem
 		ELSIF (expr1.value # NIL) & ((expr2 = NIL) OR (expr2.value # NIL)) THEN
+			set[0] := {};
+			set[1] := {};
+
 			left := expr1.value(ExprInteger).int;
 			IF expr2 # NIL THEN
 				right := expr2.value(ExprInteger).int
@@ -1913,26 +1955,22 @@ BEGIN
 				err := ErrSetElemOutOfRange
 			ELSIF expr2 = NIL THEN
 				IF left <= Limits.SetMax THEN
-					e.set[0] := {left};
-					e.set[1] := {}
+					set[0] := {left};
 				ELSE
-					e.set[0] := {};
-					e.set[1] := {left MOD (Limits.SetMax + 1)}
+					set[1] := {left MOD (Limits.SetMax + 1)}
 				END
 			ELSIF left > right THEN
 				err := ErrSetLeftElemBiggerRightElem
 			ELSIF right <= Limits.SetMax THEN
-				e.set[0] := {left .. right};
-				e.set[1] := {}
+				set[0] := {left .. right}
 			ELSIF left > Limits.SetMax THEN
-				e.set[0] := {};
-				e.set[1] := {left MOD (Limits.SetMax + 1) .. right MOD (Limits.SetMax + 1)}
+				set[1] := {left MOD (Limits.SetMax + 1) .. right MOD (Limits.SetMax + 1)}
 			ELSE
-				e.set[0] := {left .. Limits.SetMax};
-				e.set[1] := {0, right MOD (Limits.SetMax + 1)}
+				set[0] := {left .. Limits.SetMax};
+				set[1] := {0, right MOD (Limits.SetMax + 1)}
 			END;
 			IF err = ErrNo THEN
-				e.value := e;
+				e.value := ExprSetByValue(set);
 
 				e.nextValue := values;
 				values := e
@@ -1941,9 +1979,8 @@ BEGIN
 	END;
 	IF base = NIL THEN
 		base := e
-	ELSE
-		base.set[0] := base.set[0] + e.set[0];
-		base.set[1] := base.set[1] + e.set[1]
+	ELSIF (base.value # NIL) & (e.value # NIL) THEN
+		AddSet(base.value(ExprSetValue).set, set)
 	END;
 	PropTouch(base, Prop(expr1) + Prop(expr2))
 
@@ -2502,10 +2539,10 @@ VAR err: INTEGER;
 		IF (t1 = NIL) OR (t2 = NIL) THEN
 			continue := FALSE
 		ELSIF relation = Scanner.In THEN
-			continue := (t1.id = IdInteger) & (t2.id IN {IdSet, IdLongSet});
+			continue := (t1.id = IdInteger) & (t2.id IN Sets);
 			IF ~continue THEN
 				err := ErrExprInWrongTypes - 3 + ORD(t1.id # IdInteger)
-				                               + ORD(~(t2.id IN {IdSet, IdLongSet})) * 2
+				                               + ORD(~(t2.id IN Sets)) * 2
 			END
 		ELSIF ~CompatibleTypes(dist1, t1, t2, FALSE)
 		    & ~CompatibleTypes(dist2, t2, t1, FALSE)
@@ -2535,16 +2572,6 @@ VAR err: INTEGER;
 		distance := dist1 - dist2
 		RETURN continue
 	END CheckType;
-
-	PROCEDURE IsEqualSets(s1, s2: LongSet): BOOLEAN;
-		RETURN (s1[0] = s2[0]) & (s1[1] = s2[1])
-	END IsEqualSets;
-
-	PROCEDURE InSet(i: INTEGER; s: LongSet): BOOLEAN;
-	BEGIN
-		RETURN CheckSetRange(i)
-		     & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
-	END InSet;
 
 	PROCEDURE IsEqualChars(v1, v2: ExprInteger): BOOLEAN;
 	BEGIN
@@ -2590,7 +2617,7 @@ BEGIN
 				(* TODO правильная обработка *)
 				res := (v1(ExprReal).real = v2(ExprReal).real) OR TRUE
 			| IdSet, IdLongSet
-			             : res := IsEqualSets(v1(ExprSet).set, v2(ExprSet).set)
+			             : res := IsEqualSets(v1(ExprSetValue).set, v2(ExprSetValue).set)
 			| IdPointer  : ASSERT(v1 = v2); res := TRUE
 			| IdArray    :
 				res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
@@ -2602,7 +2629,7 @@ BEGIN
 			| IdChar            : res := ~IsEqualChars(v1(ExprInteger), v2(ExprInteger))
 			| IdBoolean         : res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
 			| IdReal            : res := v1(ExprReal).real # v2(ExprReal).real
-			| IdSet, IdLongSet  : res := ~IsEqualSets(v1(ExprSet).set, v2(ExprSet).set)
+			| IdSet, IdLongSet  : res := ~IsEqualSets(v1(ExprSetValue).set, v2(ExprSetValue).set)
 			| IdPointer         : ASSERT(v1 = v2); res := FALSE
 			| IdArray           : res := ~IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
 			| IdProcType        : (* TODO *) res := FALSE
@@ -2632,7 +2659,7 @@ BEGIN
 			| IdArray           : (* TODO *) res := FALSE
 			END
 		| Scanner.In:
-			res := InSet(v1(ExprInteger).int, v2(ExprSet).set)
+			res := InSet(v1(ExprInteger).int, v2(ExprSetValue).set)
 		END;
 		IF expr1.type.id # IdReal THEN
 			e.value := ExprBooleanGet(res)
@@ -2677,11 +2704,6 @@ END ExprSumCreate;
 
 PROCEDURE ExprSumNew*(VAR e: ExprSum; add: INTEGER; term: Expression): INTEGER;
 VAR err: INTEGER;
-	PROCEDURE SetNeg(VAR s: LongSet);
-	BEGIN
-		s[0] := -s[0];
-		s[1] := -s[1]
-	END SetNeg;
 BEGIN
 	ASSERT(add IN {NoSign, Plus, Minus});
 
@@ -2708,9 +2730,9 @@ BEGIN
 				*)
 				e.value := NIL
 			| IdSet, IdLongSet:
-				e.value := ExprSetByValue(term.value(ExprSet).set);
+				e.value := ExprSetByValue(term.value(ExprSetValue).set);
 				IF add = Minus THEN
-					SetNeg(e.value(ExprSet).set)
+					SetNeg(e.value(ExprSetValue).set)
 				END
 			| IdBoolean:
 				e.value := ExprBooleanGet(term.value(ExprBoolean).bool)
@@ -2748,18 +2770,6 @@ VAR e: ExprSum;
 		END
 		RETURN continue
 	END CheckType;
-
-	PROCEDURE AddSet(VAR s: LongSet; a: LongSet);
-	BEGIN
-		s[0] := s[0] + a[0];
-		s[1] := s[1] + a[1]
-	END AddSet;
-
-	PROCEDURE SubSet(VAR s: LongSet; a: LongSet);
-	BEGIN
-		s[0] := s[0] - a[0];
-		s[1] := s[1] - a[1]
-	END SubSet;
 BEGIN
 	ASSERT(add IN {Plus, Minus, Or});
 
@@ -2794,9 +2804,9 @@ BEGIN
 				*)
 			| IdSet:
 				IF add = Plus THEN
-					AddSet(fullSum.value(ExprSet).set, term.value(ExprSet).set)
+					AddSet(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
 				ELSE ASSERT(add = Minus);
-					SubSet(fullSum.value(ExprSet).set, term.value(ExprSet).set)
+					SubSet(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
 				END
 			END
 		END
@@ -2907,8 +2917,8 @@ VAR err: INTEGER;
 	PROCEDURE St(res: Expression; mult: INTEGER; b: Expression);
 	VAR s, s1, s2: LongSet;
 	BEGIN
-		s1 := res.value(ExprSet).set;
-		s2 := b.value(ExprSet).set;
+		s1 := res.value(ExprSetValue).set;
+		s2 := b.value(ExprSetValue).set;
 		IF mult = Scanner.Asterisk THEN
 			s[0] := s1[0] * s2[0];
 			s[1] := s1[1] * s2[1]
@@ -2919,7 +2929,7 @@ VAR err: INTEGER;
 		IF res.value = NIL THEN
 			res.value := ExprSetByValue(s)
 		ELSE
-			res.value(ExprSet).set := s
+			res.value(ExprSetValue).set := s
 		END
 	END St;
 
@@ -3349,11 +3359,9 @@ VAR err: INTEGER;
 				END
 			ELSIF v.type.id = IdBoolean THEN
 				call.value := ExprIntegerNew(ORD(v(ExprBoolean).bool))
-			ELSIF v.type.id IN {IdSet, IdLongSet} THEN
-				IF ~(Limits.SetMax IN v(ExprSet).set[0])
-				 & (v(ExprSet).set[1] = {})
-				THEN
-					call.value := ExprIntegerNew(ORD(v(ExprSet).set[0]))
+			ELSIF v.type.id IN Sets THEN
+				IF ConvertableToInt(v(ExprSetValue).set) THEN
+					call.value := ExprIntegerNew(OrdSet(v(ExprSetValue).set))
 				ELSE
 					err := ErrSetElemMaxNotConvertToInt
 				END

@@ -50,8 +50,8 @@ CONST
 	IdentEncTranslit*   = 1;
 	IdentEncEscUnicode* = 2;
 
-	CheckableArithTypes = {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32};
-	CheckableInitTypes =  CheckableArithTypes + {Ast.IdBoolean};
+	CheckableArithTypes = Ast.Numbers - {Ast.IdByte};
+	CheckableInitTypes  = CheckableArithTypes + {Ast.IdBoolean};
 
 TYPE
 	PMemoryOut = POINTER TO MemoryOut;
@@ -1578,11 +1578,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END
 	END ExprLongInt;
 
+	PROCEDURE SetValue(VAR gen: Generator; set: Ast.ExprSetValue);
+	BEGIN
+		Text.Int(gen, ORD(set.set[0]));
+		Text.Char(gen, "u")
+	END SetValue;
+
 	PROCEDURE Set(VAR gen: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR gen: Generator; set: Ast.ExprSet);
 		BEGIN
 			IF set.exprs[0] = NIL THEN
-				Text.Str(gen, "0")
+				Text.Char(gen, "0")
 			ELSE
 				IF set.exprs[1] = NIL THEN
 					Text.Str(gen, "(1u << ");
@@ -1652,7 +1658,11 @@ BEGIN
 	| Ast.IdString:
 		CString(gen, expr(Ast.ExprString))
 	| Ast.IdSet:
-		Set(gen, expr(Ast.ExprSet))
+		IF expr IS Ast.ExprSet THEN
+			Set(gen, expr(Ast.ExprSet))
+		ELSE
+			SetValue(gen, expr(Ast.ExprSetValue))
+		END
 	| Ast.IdCall:
 		Call(gen, expr(Ast.ExprCall))
 	| Ast.IdDesignator:
