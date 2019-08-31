@@ -196,6 +196,11 @@ CONST
 	Used*         = 5;
 	Dereferenced* = 6;
 
+	Integers* = {IdByte, IdInteger, IdLongInt};
+	Reals*    = {IdReal32, IdReal};
+	Numbers*  = Integers + Reals;
+	Sets*     = {IdSet, IdLongSet};
+
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)
 	ExprPointerTouch* = 0;
@@ -206,6 +211,11 @@ CONST
 	(* в RType для индикации того, что переменная этого типа была присвоена,
 	   что важно при подсчёте ссылок *)
 	TypeAssigned* = 0;
+
+	Plus *  = Scanner.Plus;
+	Minus*  = Scanner.Minus;
+	Or   *  = Scanner.Or;
+	NoSign* = 0;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -2631,13 +2641,12 @@ BEGIN
 	RETURN err
 END ExprRelationNew;
 
-PROCEDURE LexToSign(lex: INTEGER): INTEGER;
+PROCEDURE LexToSign(sign: INTEGER): INTEGER;
 VAR s: INTEGER;
 BEGIN
-	IF (lex = -1) OR (lex = Scanner.Plus) THEN
+	IF sign IN {NoSign, Plus} THEN
 		s := +1
-	ELSE
-		ASSERT(lex = Scanner.Minus);
+	ELSE ASSERT(sign = Minus);
 		s := -1
 	END
 	RETURN s
@@ -2674,11 +2683,12 @@ VAR err: INTEGER;
 		s[1] := -s[1]
 	END SetNeg;
 BEGIN
-	ASSERT((add = -1) OR (add = Scanner.Plus) OR (add = Scanner.Minus));
+	ASSERT(add IN {NoSign, Plus, Minus});
+
 	ExprSumCreate(e, add, NIL, term);
 	err := ErrNo;
 	IF e.type # NIL THEN
-		IF ~(e.type.id IN {IdByte, IdInteger, IdReal, IdSet, IdLongSet}) & (add # -1) THEN
+		IF ~(e.type.id IN {IdByte, IdInteger, IdReal, IdSet, IdLongSet}) & (add # NoSign) THEN
 			IF e.type.id # IdBoolean THEN
 				err := ErrNotNumberAndNotSetInAdd
 			ELSE
@@ -2699,7 +2709,7 @@ BEGIN
 				e.value := NIL
 			| IdSet, IdLongSet:
 				e.value := ExprSetByValue(term.value(ExprSet).set);
-				IF add = Scanner.Minus THEN
+				IF add = Minus THEN
 					SetNeg(e.value(ExprSet).set)
 				END
 			| IdBoolean:
@@ -2751,7 +2761,7 @@ VAR e: ExprSum;
 		s[1] := s[1] - a[1]
 	END SubSet;
 BEGIN
-	ASSERT((add = Scanner.Plus) OR (add = Scanner.Minus) OR (add = Scanner.Or));
+	ASSERT(add IN {Plus, Minus, Or});
 
 	ExprSumCreate(e, add, fullSum, term);
 	err := ErrNo;
@@ -2771,7 +2781,7 @@ BEGIN
 						term.value(ExprInteger).int * LexToSign(add))
 				THEN
 					;
-				ELSIF add = Scanner.Minus THEN
+				ELSIF add = Minus THEN
 					err := ErrConstSubOverflow
 				ELSE
 					err := ErrConstAddOverflow
@@ -2783,9 +2793,9 @@ BEGIN
 				  + term.value(ExprReal).real * FLT(LexToSign(add))
 				*)
 			| IdSet:
-				IF add = Scanner.Plus THEN
+				IF add = Plus THEN
 					AddSet(fullSum.value(ExprSet).set, term.value(ExprSet).set)
-				ELSE
+				ELSE ASSERT(add = Minus);
 					SubSet(fullSum.value(ExprSet).set, term.value(ExprSet).set)
 				END
 			END
@@ -4086,6 +4096,8 @@ BEGIN
 END Unlinks;
 
 BEGIN
+	ASSERT(~(NoSign IN {Plus, Minus, Or}));
+
 	PredefinedDeclarationsInit;
 	booleans[0] := NIL;
 	booleans[1] := NIL;

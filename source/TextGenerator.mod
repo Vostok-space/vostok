@@ -56,7 +56,7 @@ BEGIN
 	RETURN i - ofs
 END CalcLen;
 
-PROCEDURE CharFill(VAR gen: Out; ch: CHAR; count: INTEGER);
+PROCEDURE CharFill*(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
 	ASSERT(0 <= count);

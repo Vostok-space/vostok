@@ -29,7 +29,8 @@ MODULE AstTransform;
 
   TYPE
     Options* = RECORD(V.Base)
-      outParamToArray*: BOOLEAN;
+      outParamToArray*,
+      setSubBrace*    : BOOLEAN;
 
       anonRecord*: INTEGER;
 
@@ -49,7 +50,7 @@ MODULE AstTransform;
 
   VAR
     type      : PROCEDURE(t: Ast.Type;   VAR o: Options);
-    expression: PROCEDURE(e: Ast.Expression; o: Options);
+    expression: PROCEDURE(VAR e: Ast.Expression; o: Options);
     incParam  : Ast.FormalParam;
 
   PROCEDURE Import(imp: Ast.Import; o: Options);
@@ -60,7 +61,8 @@ MODULE AstTransform;
 
   PROCEDURE DefaultOptions*(VAR o: Options);
   BEGIN
-    o.outParamToArray   := TRUE;
+    o.outParamToArray := TRUE;
+    o.setSubBrace := TRUE;
     o.anonRecord := AnonDeclareGlobalScope;
 
     o.mark := Ast.ExprIntegerNew(1)
@@ -91,6 +93,11 @@ MODULE AstTransform;
       )
   END NameAppend;
 
+  PROCEDURE AstOk(err: INTEGER);
+  BEGIN
+    ASSERT(Ast.ErrNo = err);
+  END AstOk;
+
   PROCEDURE FormalParam(proc: Ast.ProcType; ds: Ast.Procedure;
                         VAR sfp: Ast.Declaration; o: Options);
   VAR np, fp: Ast.FormalParam; var: Ast.Var;
@@ -100,14 +107,15 @@ MODULE AstTransform;
       PROCEDURE AssignFormalParamToLocalArray(ds: Ast.Procedure; var, fp: Ast.Var; o: Options);
       VAR dst, src: Ast.Designator; a: Ast.Assign;
       BEGIN
-        ASSERT(Ast.ErrNo = Ast.DesignatorNew(dst, var));
-        ASSERT(Ast.ErrNo = Ast.SelArrayNew(dst.sel, dst.type, Ast.ExprIntegerNew(0)));
-        ASSERT(Ast.ErrNo = Ast.DesignatorNew(src, fp));
-        ASSERT(Ast.ErrNo = Ast.AssignNew(a, FALSE, dst, src));
+        AstOk(Ast.DesignatorNew(dst, var));
+        AstOk(Ast.SelArrayNew(dst.sel, dst.type, Ast.ExprIntegerNew(0)));
+        AstOk(Ast.DesignatorNew(src, fp));
+        AstOk(Ast.AssignNew(a, FALSE, dst, src));
         a.next := ds.stats;
         ds.stats := a;
         a.ext := o.mark
       END AssignFormalParamToLocalArray;
+
   BEGIN
     fp := sfp(Ast.FormalParam);
     IF ~o.outParamToArray
@@ -118,15 +126,13 @@ MODULE AstTransform;
       fp.type := Ast.ArrayGet(fp.type, NIL);
       fp.ext := o.mark;
       NameAppend(name, ofs, fp.name, "_ai");
-      ASSERT(Ast.ErrNo
-           = Ast.ParamInsert(np, fp, o.module, proc, name, 0, ofs,
-                             Ast.TypeGet(Ast.IdInteger), {Ast.ParamIn})
-      );
+      AstOk(Ast.ParamInsert(np, fp, o.module, proc, name, 0, ofs,
+                            Ast.TypeGet(Ast.IdInteger), {Ast.ParamIn}));
       sfp := np
     ELSIF (ds # NIL) & fp.inVarParam THEN
       ASSERT(fp.ext = NIL);
       NameAppend(name, ofs, fp.name, "_prm");
-      ASSERT(Ast.ErrNo = Ast.VarAdd(var, ds, name, 0, ofs));
+      AstOk(Ast.VarAdd(var, ds, name, 0, ofs));
       var.type := Ast.ArrayGet(fp.type, o.mark (* 1 *));
       fp.ext := var;
       AssignFormalParamToLocalArray(ds, var, fp, o)
@@ -146,16 +152,18 @@ MODULE AstTransform;
   PROCEDURE Record(r: Ast.Record; VAR o: Options);
   VAR d: Ast.Declaration;
 
+    (* TODO Привязать действия к опции o.anonRecord *)
     PROCEDURE Link(t: Ast.Record; VAR o: Options);
 
       PROCEDURE Name(d: Ast.Declaration; i: INTEGER);
+      CONST Z = ORD("0");
       VAR name: ARRAY 10 OF CHAR;
       BEGIN
         name    := "Anon_";
-        name[5] := CHR(ORD("0") + i DIV 1000 MOD 10);
-        name[6] := CHR(ORD("0") + i DIV 100  MOD 10);
-        name[7] := CHR(ORD("0") + i DIV 10   MOD 10);
-        name[8] := CHR(ORD("0") + i          MOD 10);
+        name[5] := CHR(Z + i DIV 1000 MOD 10);
+        name[6] := CHR(Z + i DIV 100  MOD 10);
+        name[7] := CHR(Z + i DIV 10   MOD 10);
+        name[8] := CHR(Z + i          MOD 10);
 
         Ast.PutChars(d.module.m, d.name, name, 0, LEN(name) - 1)
       END Name;
@@ -224,7 +232,7 @@ MODULE AstTransform;
     ELSIF t(Ast.Array).count = mark THEN
       index := Ast.ExprIntegerNew(0)
     ELSIF (v IS Ast.FormalParam) & (v.ext = mark) THEN
-      ASSERT(Ast.ErrNo = Ast.DesignatorNew(d, v(Ast.FormalParam).next));
+      AstOk(Ast.DesignatorNew(d, v(Ast.FormalParam).next));
       index := d
     ELSE
       index := NIL
@@ -254,7 +262,7 @@ MODULE AstTransform;
         END
       END
     ELSIF e.decl IS Ast.FormalParam THEN
-      ASSERT(Ast.ErrNo = Ast.DesignatorNew(di, e.decl(Ast.FormalParam).next));
+      AstOk(Ast.DesignatorNew(di, e.decl(Ast.FormalParam).next));
       i := di
     ELSE
       i := Ast.ExprIntegerNew(0)
@@ -273,7 +281,7 @@ MODULE AstTransform;
       index := IsChangedParam(v, mark);
       IF index # NIL THEN
         t := v.type;
-        ASSERT(Ast.ErrNo = Ast.SelArrayNew(ns, t, index));
+        AstOk(Ast.SelArrayNew(ns, t, index));
         (*
         ASSERT(d.type = ns.type);
         *)
@@ -331,7 +339,7 @@ MODULE AstTransform;
     END
   END Designator;
 
-  PROCEDURE Expression(e: Ast.Expression; o: Options);
+  PROCEDURE Expression(VAR e: Ast.Expression; o: Options);
 
     PROCEDURE Set(set: Ast.ExprSet; o: Options);
     BEGIN
@@ -380,18 +388,57 @@ MODULE AstTransform;
       Expression(r.exprs[1], o)
     END Relation;
 
-    PROCEDURE Sum(sum: Ast.ExprSum; o: Options);
+    PROCEDURE Sum(sum: Ast.ExprSum; o: Options): Ast.ExprSum;
+    VAR s: Ast.ExprSum;
+
+      PROCEDURE IsolateAdd(VAR sum: Ast.ExprSum);
+      VAR p, s: Ast.ExprSum; value: Ast.Factor;
+      BEGIN
+        value := sum.value;
+        REPEAT
+          s := sum.next;
+          WHILE (s # NIL) & (s.add # Ast.Plus) DO
+            s := s.next
+          END;
+          WHILE (s # NIL) & (s.add # Ast.Minus) DO
+            p := s;
+            s := s.next
+          END;
+          IF s # NIL THEN
+            p.next := NIL;
+            AstOk(Ast.ExprSumNew(sum, Ast.NoSign, Ast.ExprBracesNew(sum)));
+            sum.next := s
+          END
+        UNTIL s = NIL;
+        sum.value := value
+      END IsolateAdd;
+
     BEGIN
+      s := sum;
       REPEAT
-        Expression(sum.term, o);
-        sum := sum.next;
-      UNTIL sum = NIL
+        Expression(s.term, o);
+        s := s.next;
+      UNTIL s = NIL;
+      IF o.setSubBrace & (sum.type.id IN Ast.Sets) THEN
+        IsolateAdd(sum)
+      END;
+    RETURN
+      sum
     END Sum;
 
     PROCEDURE Term(term: Ast.ExprTerm; o: Options);
+
+      PROCEDURE Factor(f: Ast.Factor; o: Options);
+      VAR e: Ast.Expression;
+      BEGIN
+        e := f;
+        Expression(e, o);
+        ASSERT(e = f)
+      END Factor;
+
     BEGIN
       REPEAT
-        Expression(term.factor, o);
+        Factor(term.factor, o);
         IF term.expr IS Ast.ExprTerm THEN
           term := term.expr(Ast.ExprTerm)
         ELSE
@@ -415,7 +462,7 @@ MODULE AstTransform;
     | Ast.IdCall       : Call(e(Ast.ExprCall), o)
     | Ast.IdDesignator : Designator(e(Ast.Designator), o, NIL, NIL)
     | Ast.IdRelation   : Relation(e(Ast.ExprRelation), o)
-    | Ast.IdSum        : Sum(e(Ast.ExprSum), o)
+    | Ast.IdSum        : e := Sum(e(Ast.ExprSum), o)
     | Ast.IdTerm       : Term(e(Ast.ExprTerm), o)
     | Ast.IdNegate     : Expression(e(Ast.ExprNegate).expr, o)
     | Ast.IdBraces     : Expression(e(Ast.ExprBraces).expr, o)
@@ -696,7 +743,7 @@ MODULE AstTransform;
     WHILE (imp # NIL) & (imp IS Ast.Import) DO
       IF imp.module.m.ext = mark THEN
         imp.module.m.ext := NIL;
-        ASSERT(Ast.ErrNo = Ast.ModuleEnd(imp.module.m));
+        AstOk(Ast.ModuleEnd(imp.module.m));
         Fix(imp.module.m, mark)
       END;
       imp := imp.next

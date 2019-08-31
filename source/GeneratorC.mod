@@ -1279,31 +1279,63 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	END Relation;
 
 	PROCEDURE Sum(VAR gen: Generator; sum: Ast.ExprSum);
-	VAR first: BOOLEAN;
+	VAR i: INTEGER;
+
+		PROCEDURE CountSignChanges(sum: Ast.ExprSum): INTEGER;
+		VAR i: INTEGER;
+		BEGIN
+			i := 0;
+			IF sum # NIL THEN
+				WHILE sum.next # NIL DO
+					INC(i, ORD(sum.add # sum.next.add));
+					sum := sum.next;
+				END
+			END
+			RETURN i
+		END CountSignChanges;
 	BEGIN
-		first := TRUE;
-		REPEAT
-			IF sum.add = Scanner.Minus THEN
-				IF sum.type.id # Ast.IdSet THEN
-					Text.Str(gen, " - ")
-				ELSIF first THEN
-					Text.Str(gen, " ~")
-				ELSE
-					Text.Str(gen, " & ~")
-				END
-			ELSIF sum.add = Scanner.Plus THEN
-				IF sum.type.id = Ast.IdSet THEN
-					Text.Str(gen, " | ")
-				ELSE
-					Text.Str(gen, " + ")
-				END
-			ELSIF sum.add = Scanner.Or THEN
-				Text.Str(gen, " || ")
+		IF sum.type.id IN {Ast.IdSet, Ast.IdLongSet} THEN
+			i := CountSignChanges(sum.next);
+			Text.CharFill(gen, "(", i);
+			IF sum.add = Ast.Minus THEN
+				Text.Str(gen, " ~")
 			END;
 			CheckExpr(gen, sum.term);
 			sum := sum.next;
-			first := FALSE
-		UNTIL sum = NIL
+			WHILE sum # NIL DO
+				ASSERT(sum.type.id IN {Ast.IdSet, Ast.IdLongSet});
+				IF sum.add = Ast.Minus THEN
+					Text.Str(gen, " & ~")
+				ELSE ASSERT(sum.add = Ast.Plus);
+					Text.Str(gen, " | ")
+				END;
+				CheckExpr(gen, sum.term);
+				IF (sum.next # NIL) & (sum.next.add # sum.add) THEN
+					Text.Char(gen, ")")
+				END;
+				sum := sum.next
+			END;
+		ELSIF sum.type.id = Ast.IdBoolean THEN
+			CheckExpr(gen, sum.term);
+			sum := sum.next;
+			WHILE sum # NIL DO
+				ASSERT(sum.type.id = Ast.IdBoolean);
+				Text.Str(gen, " || ");
+				CheckExpr(gen, sum.term);
+				sum := sum.next;
+			END;
+		ELSE
+			REPEAT
+				ASSERT(sum.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32});
+				IF sum.add = Ast.Minus THEN
+					Text.Str(gen, " - ")
+				ELSIF sum.add = Ast.Plus THEN
+					Text.Str(gen, " + ")
+				END;
+				CheckExpr(gen, sum.term);
+				sum := sum.next;
+			UNTIL sum = NIL
+		END
 	END Sum;
 
 	PROCEDURE SumCheck(VAR gen: Generator; sum: Ast.ExprSum);
@@ -2357,7 +2389,7 @@ BEGIN
 	Text.Str(gen, "define ");
 	GlobalName(gen, const);
 	Text.Str(gen, " ");
-	IF const.mark & (const.expr # NIL) THEN
+	IF const.mark & (const.expr.value # NIL) THEN
 		Factor(gen, const.expr.value)
 	ELSE
 		Factor(gen, const.expr)

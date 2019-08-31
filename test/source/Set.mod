@@ -41,6 +41,9 @@ BEGIN
 	ASSERT(v4 = (s4 - {3} + {8}));
 	ASSERT(v4 = s4 - {3} + {8});
 
+	ASSERT(v4 = (s4 + {8} - {3}));
+	ASSERT(v4 = s4 + {8} - {3});
+
 	ASSERT(v4 # (s4 - {3} + {8, 0}));
 	ASSERT(v4 # s4 - {3} + {8, 0});
 

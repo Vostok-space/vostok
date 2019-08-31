@@ -539,10 +539,10 @@ BEGIN
 		e := Term(p, ds, varParam);
 		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
 			IF p.l # Scanner.Or THEN
-				CheckAst(p, Ast.ExprSumNew(sum, -1, e))
+				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
 			ELSE
 				Ast.TurnIf(ds);
-				CheckAst(p, Ast.ExprSumNew(sum, -1, e));
+				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e));
 				(* TODO Выход в другом месте, но пока будет здесь *)
 				Ast.BackFromBranch(ds)
 			END;
