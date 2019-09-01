@@ -544,7 +544,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					*)
 				| Ast.IdBoolean:
 					ExpressionBraced(gen, "o7.bti(", e, ")", {});
-				| Ast.IdSet:
+				| Ast.IdSet, Ast.IdLongSet:
 					ExpressionBraced(gen, "o7.sti(", e, ")", {})
 				END
 			END Ord;
@@ -729,7 +729,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
-				IF (e.type.id IN {Ast.IdSet, Ast.IdBoolean})
+				IF (e.type.id IN (Ast.Sets + {Ast.IdBoolean}))
 				 & ~(e IS Ast.Factor)
 				THEN
 					ExpressionBraced(gen, "(", e, ")", {})
@@ -833,7 +833,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		first := TRUE;
 		REPEAT
 			IF sum.add = Scanner.Minus THEN
-				IF sum.type.id # Ast.IdSet THEN
+				IF ~(sum.type.id IN Ast.Sets) THEN
 					Text.Str(gen, " - ")
 				ELSIF first THEN
 					Text.Str(gen, " ~")
@@ -841,7 +841,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Text.Str(gen, " & ~")
 				END
 			ELSIF sum.add = Scanner.Plus THEN
-				IF sum.type.id = Ast.IdSet THEN
+				IF sum.type.id IN Ast.Sets THEN
 					Text.Str(gen, " | ")
 				ELSE
 					Text.Str(gen, " + ")
@@ -904,13 +904,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			CheckExpr(gen, term.factor, {});
 			CASE term.mult OF
 			  Scanner.Asterisk           :
-				IF term.type.id = Ast.IdSet THEN
+				IF term.type.id IN Ast.Sets THEN
 					Text.Str(gen, " & ")
 				ELSE
 					Text.Str(gen, " * ")
 				END
 			| Scanner.Slash, Scanner.Div :
-				IF term.type.id = Ast.IdSet THEN
+				IF term.type.id IN Ast.Sets THEN
 					ASSERT(term.mult = Scanner.Slash);
 					Text.Str(gen, " ^ ")
 				ELSE
@@ -1039,6 +1039,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		END
 	END ExprLongInt;
 
+	PROCEDURE SetValue(VAR gen: Generator; set: Ast.ExprSetValue);
+	BEGIN
+		Text.Int(gen, ORD(set.set[0]));
+		Text.Char(gen, "u")
+	END SetValue;
+
 	PROCEDURE Set(VAR gen: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR gen: Generator; set: Ast.ExprSet);
 		BEGIN
@@ -1101,8 +1107,12 @@ BEGIN
 		END
 	| Ast.IdString:
 		CString(gen, expr(Ast.ExprString))
-	| Ast.IdSet:
-		Set(gen, expr(Ast.ExprSet))
+	| Ast.IdSet, Ast.IdLongSet:
+		IF expr IS Ast.ExprSet THEN
+			Set(gen, expr(Ast.ExprSet))
+		ELSE
+			SetValue(gen, expr(Ast.ExprSetValue))
+		END
 	| Ast.IdCall:
 		Call(gen, expr(Ast.ExprCall), {})
 	| Ast.IdDesignator:
@@ -1136,7 +1146,7 @@ BEGIN
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:
-		IF expr.type.id IN { Ast.IdSet, Ast.IdLongSet } THEN
+		IF expr.type.id IN Ast.Sets THEN
 			Text.Str(gen, "~");
 			Expression(gen, expr(Ast.ExprNegate).expr, {})
 		ELSE

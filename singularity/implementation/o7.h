@@ -196,6 +196,7 @@ typedef char unsigned o7_char;
 #	define O7_GNUC_UMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
+typedef o7_uint_t  o7_set_t;
 typedef o7_ulong_t o7_set64_t;
 
 #define O7_MEMNG_NOFREE  0

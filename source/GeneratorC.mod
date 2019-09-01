@@ -1294,7 +1294,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			RETURN i
 		END CountSignChanges;
 	BEGIN
-		IF sum.type.id IN {Ast.IdSet, Ast.IdLongSet} THEN
+		IF sum.type.id IN Ast.Sets THEN
 			i := CountSignChanges(sum.next);
 			Text.CharFill(gen, "(", i);
 			IF sum.add = Ast.Minus THEN
@@ -1303,7 +1303,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			CheckExpr(gen, sum.term);
 			sum := sum.next;
 			WHILE sum # NIL DO
-				ASSERT(sum.type.id IN {Ast.IdSet, Ast.IdLongSet});
+				ASSERT(sum.type.id IN Ast.Sets);
 				IF sum.add = Ast.Minus THEN
 					Text.Str(gen, " & ~")
 				ELSE ASSERT(sum.add = Ast.Plus);
@@ -1398,13 +1398,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			CheckExpr(gen, term.factor);
 			CASE term.mult OF
 			  Scanner.Asterisk           :
-				IF term.type.id = Ast.IdSet THEN
+				IF term.type.id IN Ast.Sets THEN
 					Text.Str(gen, " & ")
 				ELSE
 					Text.Str(gen, " * ")
 				END
 			| Scanner.Slash, Scanner.Div :
-				IF term.type.id = Ast.IdSet THEN
+				IF term.type.id IN Ast.Sets THEN
 					ASSERT(term.mult = Scanner.Slash);
 					Text.Str(gen, " ^ ")
 				ELSE
@@ -1657,7 +1657,7 @@ BEGIN
 		END
 	| Ast.IdString:
 		CString(gen, expr(Ast.ExprString))
-	| Ast.IdSet:
+	| Ast.IdSet, Ast.IdLongSet:
 		IF expr IS Ast.ExprSet THEN
 			Set(gen, expr(Ast.ExprSet))
 		ELSE
@@ -1702,7 +1702,7 @@ BEGIN
 			Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:
-		IF expr.type.id IN { Ast.IdSet, Ast.IdLongSet } THEN
+		IF expr.type.id IN Ast.Sets THEN
 			Text.Str(gen, "~");
 			Expression(gen, expr(Ast.ExprNegate).expr)
 		ELSE
@@ -1728,7 +1728,7 @@ BEGIN
 	| Ast.IdLongInt:
 		Text.Str(gen, "o7_long_t")
 	| Ast.IdSet:
-		Text.Str(gen, "unsigned")
+		Text.Str(gen, "o7_set_t")
 	| Ast.IdLongSet:
 		Text.Str(gen, "o7_set64_t")
 	| Ast.IdBoolean:
@@ -2224,7 +2224,7 @@ BEGIN
 			| Ast.IdLongInt:
 				Simple(gen, "o7_long_t ")
 			| Ast.IdSet:
-				Simple(gen, "unsigned ")
+				Simple(gen, "o7_set_t ")
 			| Ast.IdLongSet:
 				Simple(gen, "o7_set64_t ")
 			| Ast.IdBoolean:
