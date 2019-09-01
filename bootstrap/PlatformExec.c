@@ -23,7 +23,7 @@ static o7_bool Copy_IsBackSlash(o7_char c) {
 static o7_bool Copy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t s_len0, o7_char s[/*len0*/], o7_int_t j, o7_bool parts) {
 	o7_int_t k;
 
-	if (o7_bl(Platform_Posix)) {
+	if (Platform_Posix) {
 		while (1) if ((j < s_len0) && (s[o7_ind(s_len0, j)] == (o7_char)'\'') && ((*i) < o7_sub(d_len0, 4))) {
 			d[o7_ind(d_len0, (*i))] = (o7_char)'\'';
 			d[o7_ind(d_len0, o7_add((*i), 1))] = (o7_char)'\\';
@@ -31,7 +31,7 @@ static o7_bool Copy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t 
 			d[o7_ind(d_len0, o7_add((*i), 3))] = (o7_char)'\'';
 			(*i) = o7_add((*i), 4);
 			j = o7_add(j, 1);
-		} else if ((o7_cmp(j, s_len0) < 0) && (s[o7_ind(s_len0, j)] != 0x00u) && ((*i) < o7_sub(d_len0, 1))) {
+		} else if ((j < s_len0) && (s[o7_ind(s_len0, j)] != 0x00u) && ((*i) < o7_sub(d_len0, 1))) {
 			if ((s[o7_ind(s_len0, j)] != (o7_char)'\\') || !o7_bl(autoCorrectDirSeparator)) {
 				d[o7_ind(d_len0, (*i))] = s[o7_ind(s_len0, j)];
 			} else {
@@ -48,8 +48,8 @@ static o7_bool Copy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t 
 				do {
 					k = o7_add(k, 1);
 					j = o7_add(j, 1);
-				} while (!((o7_cmp(j, s_len0) == 0) || !Copy_IsBackSlash(s[o7_ind(s_len0, j)])));
-				if ((o7_cmp(j, s_len0) == 0) || (s[o7_ind(s_len0, j)] == 0x00u)) {
+				} while (!((j == s_len0) || !Copy_IsBackSlash(s[o7_ind(s_len0, j)])));
+				if ((j == s_len0) || (s[o7_ind(s_len0, j)] == 0x00u)) {
 					if (!parts) {
 						k = o7_mul(k, 2);
 					}
@@ -60,7 +60,7 @@ static o7_bool Copy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t 
 					j = o7_sub(j, 1);
 					k = o7_sub(o7_sub(d_len0, 1), (*i));
 				}
-				while (o7_cmp(k, 0) > 0) {
+				while (k > 0) {
 					d[o7_ind(d_len0, (*i))] = (o7_char)'\\';
 					(*i) = o7_add((*i), 1);
 					k = o7_sub(k, 1);
@@ -73,7 +73,10 @@ static o7_bool Copy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t 
 		}
 	}
 	d[o7_ind(d_len0, (*i))] = 0x00u;
-	return (o7_cmp(j, s_len0) == 0) || (s[o7_ind(s_len0, j)] == 0x00u);
+	if ((*i) < o7_sub(d_len0, 1)) {
+		d[o7_ind(d_len0, o7_add((*i), 1))] = 0x00u;
+	}
+	return (j == s_len0) || (s[o7_ind(s_len0, j)] == 0x00u);
 }
 
 static o7_bool Quote(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i) {
@@ -81,16 +84,16 @@ static o7_bool Quote(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i) {
 
 	ok = (*i) < o7_sub(d_len0, 1);
 	if (ok && !Platform_Java) {
-		if (o7_bl(Platform_Posix)) {
+		if (Platform_Posix) {
 			d[o7_ind(d_len0, (*i))] = (o7_char)'\'';
 		} else {
-			O7_ASSERT(o7_bl(Platform_Windows));
+			O7_ASSERT(Platform_Windows);
 			d[o7_ind(d_len0, (*i))] = (o7_char)'"';
 		}
 		(*i) = o7_add((*i), 1);
 		d[o7_ind(d_len0, (*i))] = 0x00u;
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
 static o7_bool FullCopy(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *i, o7_int_t s_len0, o7_char s[/*len0*/], o7_int_t j) {
@@ -106,16 +109,16 @@ extern o7_bool PlatformExec_Init(struct PlatformExec_Code *c, o7_int_t name_len0
 	if (o7_strcmp(name_len0, name, 0, (o7_char *)"") == 0) {
 		(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = 0x00u;
 		ok = (0 < 1);
-	} else if (o7_bl(Platform_Posix)) {
+	} else if (Platform_Posix) {
 		ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, 0);
 	} else {
-		O7_ASSERT(o7_bl(Platform_Windows));
-		ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, 0, (*c).parts);
+		O7_ASSERT(Platform_Windows);
+		ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, name_len0, name, 0, o7_bl((*c).parts));
 	}
 	return ok;
 }
 
-extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/], o7_int_t ofs) {
+extern o7_bool PlatformExec_AddByOfs(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/], o7_int_t ofs) {
 	o7_bool ok;
 
 	ok = o7_cmp((*c).len, O7_LEN((*c).buf) - 1) < 0;
@@ -124,14 +127,18 @@ extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, 
 			(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)' ';
 			(*c).len = o7_add((*c).len, 1);
 			ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs);
-		} else if (o7_bl(Platform_Posix)) {
+		} else if (Platform_Posix) {
 			ok = FullCopy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs);
 		} else {
-			O7_ASSERT(o7_bl(Platform_Windows));
-			ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs, (*c).parts);
+			O7_ASSERT(Platform_Windows);
+			ok = Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, ofs, o7_bl((*c).parts));
 		}
 	}
-	return o7_bl(ok);
+	return ok;
+}
+
+extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
+	return PlatformExec_AddByOfs(&(*c), arg_len0, arg, 0);
 }
 
 extern o7_bool PlatformExec_AddClean(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
@@ -147,7 +154,7 @@ extern o7_bool PlatformExec_AddDirSep(struct PlatformExec_Code *c) {
 		(*c).len = o7_add((*c).len, 1);
 		(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = 0x00u;
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
 extern o7_bool PlatformExec_FirstPart(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
@@ -163,22 +170,22 @@ extern o7_bool PlatformExec_FirstPart(struct PlatformExec_Code *c, o7_int_t arg_
 			(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = (o7_char)' ';
 			(*c).len = o7_add((*c).len, 1);
 		} else {
-			(*c).partsQuote = o7_bl(Platform_Posix);
+			(*c).partsQuote = Platform_Posix;
 		}
-		ok = ok && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len)) && Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, (*c).parts);
+		ok = ok && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len)) && Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, o7_bl((*c).parts));
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
 extern o7_bool PlatformExec_AddPart(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
 	O7_ASSERT(o7_bl((*c).parts));
-	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, (*c).parts);
+	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, o7_bl((*c).parts));
 }
 
 extern o7_bool PlatformExec_LastPart(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
 	O7_ASSERT(o7_bl((*c).parts));
 	(*c).parts = (0 > 1);
-	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, (*c).parts) && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len));
+	return Copy(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg, 0, o7_bl((*c).parts)) && (!o7_bl((*c).partsQuote) || Quote(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len));
 }
 
 extern void PlatformExec_Log(struct PlatformExec_Code *c) {
@@ -204,10 +211,10 @@ extern void PlatformExec_init(void) {
 
 		autoCorrectDirSeparator = (0 > 1);
 
-		if (o7_bl(Platform_Posix)) {
+		if (Platform_Posix) {
 			PlatformExec_dirSep[0] = (o7_char)'/';
 		} else {
-			O7_ASSERT(o7_bl(Platform_Windows));
+			O7_ASSERT(Platform_Windows);
 			PlatformExec_dirSep[0] = (o7_char)'\\';
 		}
 	}

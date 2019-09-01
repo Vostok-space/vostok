@@ -25,7 +25,7 @@ static o7_bool O(o7_int_t *lex, o7_int_t str_len0, o7_char str[/*len0*/], o7_int
 	if (spec) {
 		(*lex) = l;
 	}
-	return o7_bl(spec);
+	return spec;
 }
 
 static o7_bool T(o7_int_t *lex, o7_int_t s1_len0, o7_char s1[/*len0*/], o7_int_t l1, o7_int_t s2_len0, o7_char s2[/*len0*/], o7_int_t l2, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ind, o7_int_t end) {

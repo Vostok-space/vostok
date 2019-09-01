@@ -59,9 +59,9 @@ static struct Ast_RModule *SearchModule(struct ModulesStorage_Provider__s *mp, o
 }
 
 static void Add(struct ModulesStorage_Provider__s *mp, struct Ast_RModule *m) {
-	struct ModulesStorage_RContainer *mc;
+	struct ModulesStorage_RContainer *mc = NULL;
 
-	O7_ASSERT(O7_REF(O7_REF(m)->_._.module)->m == m);
+	O7_ASSERT(O7_REF(O7_REF(m)->_._.module_)->m == m);
 	O7_NEW(&mc, ModulesStorage_RContainer);
 	O7_REF(mc)->m = m;
 	O7_REF(mc)->next = O7_REF(O7_REF(mp)->last)->next;
@@ -93,7 +93,7 @@ static o7_bool RegModule_Reg(struct ModulesStorage_Provider__s *p, struct Ast_RM
 	if (ok) {
 		Add(p, m);
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
 static o7_bool RegModule(struct Ast_RProvider *p, struct Ast_RModule *m) {
@@ -123,3 +123,4 @@ extern void ModulesStorage_init(void) {
 	}
 	++initialized;
 }
+

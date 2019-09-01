@@ -88,7 +88,7 @@ static void FillBuf(o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t *ind, str
 		if (buf[o7_ind(buf_len0, (*ind))] == 0x0Cu) {
 			size = VDataStream_ReadChars(&(*in_), in__tag, buf_len0, buf, (*ind), o7_div(buf_len0, 2));
 			FillBuf_Normalize(buf_len0, buf, (*ind), o7_add((*ind), size));
-			if (o7_cmp(size, o7_div(buf_len0, 2)) == 0) {
+			if (size == o7_div(buf_len0, 2)) {
 				buf[o7_ind(buf_len0, o7_mod((o7_add((*ind), o7_div(buf_len0, 2))), (o7_sub(buf_len0, 1))))] = 0x0Cu;
 			} else {
 				buf[o7_ind(buf_len0, o7_add((*ind), size))] = 0x04u;
@@ -156,7 +156,7 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7_int_t *lex, o7_int_t capac
 	while (1) if (d >= 0) {
 		if (o7_div(IntMax_cnst, capacity) >= val) {
 			val = o7_mul(val, capacity);
-			if (o7_cmp(o7_sub(IntMax_cnst, d), val) >= 0) {
+			if (o7_sub(IntMax_cnst, d) >= val) {
 				val = o7_add(val, d);
 			} else {
 				(*lex) = Scanner_ErrNumberTooBig_cnst;
@@ -170,7 +170,7 @@ static void SNumber_Val(struct Scanner_Scanner *s, o7_int_t *lex, o7_int_t capac
 		i = 0;
 		d = valDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 	} else break;
-	(*s).integer = o7_int(val);
+	(*s).integer = val;
 }
 
 static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
@@ -192,7 +192,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
 	i = o7_add(i, 1);
 	t = 10.0;
 	d = ValDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
-	while (1) if (o7_cmp(d, 0) >= 0) {
+	while (1) if (d >= 0) {
 		(*s).column = o7_add((*s).column, 1);
 		val = o7_fadd(val, o7_fdiv(o7_flt(d), t));
 		t = o7_fmul(t, 10.0);
@@ -230,7 +230,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
 				FillBuf(Scanner_BlockSize_cnst * 2 + 1, (*s).buf, &i, &(*O7_REF((*s).in_)), NULL);
 				d = ValDigit((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]);
 			} else break;
-			if (o7_cmp(scale, RealScaleMax_cnst) <= 0) {
+			if (scale <= RealScaleMax_cnst) {
 				while (scale > 0) {
 					if (scMinus) {
 						val = o7_fmul(val, 10.0);
@@ -246,8 +246,8 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
 			(*lex) = Scanner_ErrExpectDigitInScale_cnst;
 		}
 	}
-	(*s).ind = o7_int(i);
-	(*s).real = o7_dbl(val);
+	(*s).ind = i;
+	(*s).real = val;
 }
 
 static o7_int_t SNumber(struct Scanner_Scanner *s) {
@@ -257,7 +257,7 @@ static o7_int_t SNumber(struct Scanner_Scanner *s) {
 	lex = Scanner_Number_cnst;
 	ScanChars(&(*s), IsDigit);
 	ch = (*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
-	(*s).isReal = (ch == (o7_char)'.') && (Lookup(&(*s), (*s).ind) != (o7_char)'.');
+	(*s).isReal = (ch == (o7_char)'.') && (Lookup(&(*s), o7_int((*s).ind)) != (o7_char)'.');
 	if (o7_bl((*s).isReal)) {
 		(*s).ind = o7_add((*s).ind, 1);
 		(*s).column = o7_add((*s).column, 1);
@@ -286,7 +286,7 @@ static o7_int_t SNumber(struct Scanner_Scanner *s) {
 	Log_Str(13, (o7_char *)"Number lex = ");
 	Log_Int(lex);
 	Log_Ln();
-	return o7_int(lex);
+	return lex;
 }
 
 static o7_bool IsLetterOrDigit(o7_char ch) {
@@ -299,7 +299,7 @@ static o7_int_t SWord(struct Scanner_Scanner *s) {
 	ScanChars(&(*s), IsLetterOrDigit);
 	len = o7_add(o7_sub((*s).ind, (*s).lexStart), o7_mul((o7_int_t)(o7_cmp((*s).ind, (*s).lexStart) < 0), (O7_LEN((*s).buf) - 1)));
 	O7_ASSERT(0 < len);
-	if (o7_cmp(len, TranslatorLimits_LenName_cnst) <= 0) {
+	if (len <= TranslatorLimits_LenName_cnst) {
 		l = Scanner_Ident_cnst;
 	} else {
 		l = Scanner_ErrWordLenTooBig_cnst;
@@ -326,13 +326,13 @@ static o7_bool IsCurrentCyrillic(struct Scanner_Scanner *s) {
 	{ o7_int_t o7_case_expr = (*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, (*s).ind)];
 		switch (o7_case_expr) {
 		case 208:
-			ret = IsCurrentCyrillic_ForD0(Lookup(&(*s), (*s).ind));
+			ret = IsCurrentCyrillic_ForD0(Lookup(&(*s), o7_int((*s).ind)));
 			break;
 		case 209:
-			ret = IsCurrentCyrillic_ForD1(Lookup(&(*s), (*s).ind));
+			ret = IsCurrentCyrillic_ForD1(Lookup(&(*s), o7_int((*s).ind)));
 			break;
 		case 210:
-			ret = IsCurrentCyrillic_ForD2(Lookup(&(*s), (*s).ind));
+			ret = IsCurrentCyrillic_ForD2(Lookup(&(*s), o7_int((*s).ind)));
 			break;
 		default:
 			if ((0 <= o7_case_expr && o7_case_expr <= 207) || (211 <= o7_case_expr && o7_case_expr <= 255)) {
@@ -355,7 +355,7 @@ static o7_int_t CyrWord(struct Scanner_Scanner *s) {
 	} else break;
 	len = o7_add(o7_sub((*s).ind, (*s).lexStart), o7_mul((o7_int_t)(o7_cmp((*s).ind, (*s).lexStart) < 0), (O7_LEN((*s).buf) - 1)));
 	O7_ASSERT(0 < len);
-	if (o7_cmp(len, TranslatorLimits_LenName_cnst) <= 0) {
+	if (len <= TranslatorLimits_LenName_cnst) {
 		l = Scanner_Ident_cnst;
 	} else {
 		l = Scanner_ErrWordLenTooBig_cnst;
@@ -393,13 +393,13 @@ static o7_bool ScanBlank(struct Scanner_Scanner *s) {
 		column = o7_add(column, 2);
 		comment = o7_add(comment, 1);
 		commentsCount = o7_add(commentsCount, 1);
-		if (o7_cmp(commentsCount, 1) == 0) {
+		if (commentsCount == 1) {
 			(*s).commentOfs = i;
 		}
-	} else if ((o7_cmp(0, comment) < 0) && ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] != 0x00u)) {
+	} else if ((0 < comment) && ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] != 0x00u)) {
 		if (((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == (o7_char)'*') && (Lookup(&(*s), i) == (o7_char)')')) {
 			comment = o7_sub(comment, 1);
-			if (o7_cmp(comment, 0) == 0) {
+			if (comment == 0) {
 				(*s).commentEnd = i;
 				(*s).emptyLines =  - 1;
 			}
@@ -415,9 +415,9 @@ static o7_bool ScanBlank(struct Scanner_Scanner *s) {
 		i = o7_mod((o7_add(i, 3)), (O7_LEN((*s).buf) - 1));
 	} else break;
 
-	(*s).column = o7_int(column);
-	(*s).ind = o7_int(i);
-	return o7_cmp(comment, 0) <= 0;
+	(*s).column = column;
+	(*s).ind = i;
+	return comment <= 0;
 }
 
 static o7_int_t ScanString(struct Scanner_Scanner *s) {
@@ -428,7 +428,7 @@ static o7_int_t ScanString(struct Scanner_Scanner *s) {
 	if ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x0Cu) {
 		FillBuf(Scanner_BlockSize_cnst * 2 + 1, (*s).buf, &i, &(*O7_REF((*s).in_)), NULL);
 	}
-	j = o7_int(i);
+	j = i;
 	count = 0;
 	while (1) if (((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] != (o7_char)'"') && (((o7_char)' ' <= (*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)]) || ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] == 0x09u))) {
 		if (((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] < 0x80u) || ((*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, i)] >= 0xC0u)) {
@@ -473,7 +473,7 @@ static void Next_Li(o7_int_t *lex, struct Scanner_Scanner *s, o7_char ch, o7_int
 }
 
 extern o7_int_t Scanner_Next(struct Scanner_Scanner *s) {
-	o7_int_t lex;
+	o7_int_t lex = O7_INT_UNDEF;
 
 	if (!ScanBlank(&(*s))) {
 		lex = Scanner_ErrUnclosedComment_cnst;
@@ -585,7 +585,7 @@ extern o7_bool Scanner_TakeCommentPos(struct Scanner_Scanner *s, o7_int_t *ofs, 
 		(*end) = o7_int((*s).commentEnd);
 		(*s).commentOfs =  - 1;
 	}
-	return o7_bl(ret);
+	return ret;
 }
 
 extern void Scanner_ResetComment(struct Scanner_Scanner *s) {
@@ -603,3 +603,4 @@ extern void Scanner_init(void) {
 	}
 	++initialized;
 }
+

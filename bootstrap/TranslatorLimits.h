@@ -12,6 +12,7 @@
 #define TranslatorLimits_VarsSeparatedByComa_cnst 31
 #define TranslatorLimits_GlobalProcedures_cnst 1023
 #define TranslatorLimits_ModuleTextSize_cnst 262143
+#define TranslatorLimits_MaxLexemsToModule_cnst 4095
 #define TranslatorLimits_ArrayDimension_cnst 7
 #define TranslatorLimits_VarsInRecord_cnst 255
 #define TranslatorLimits_RecordExt_cnst 15

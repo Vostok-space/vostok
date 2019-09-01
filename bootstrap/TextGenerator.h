@@ -5,6 +5,7 @@
 #include "Utf8.h"
 #include "StringStore.h"
 #include "VDataStream.h"
+#include "TypesLimits.h"
 
 typedef struct TextGenerator_Out {
 	V_Base _;
@@ -22,6 +23,8 @@ extern void TextGenerator_Init(struct TextGenerator_Out *g, struct VDataStream_O
 extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, struct TextGenerator_Out *d);
 
 extern o7_int_t TextGenerator_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs);
+
+extern void TextGenerator_CharFill(struct TextGenerator_Out *gen, o7_char ch, o7_int_t count);
 
 extern void TextGenerator_Char(struct TextGenerator_Out *gen, o7_char ch);
 
@@ -52,6 +55,12 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct 
 extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7_int_t int_);
 
 extern void TextGenerator_Real(struct TextGenerator_Out *gen, double real);
+
+extern void TextGenerator_HexSeparateHighBit(struct TextGenerator_Out *gen, o7_int_t v, o7_bool highBit);
+
+extern void TextGenerator_Hex(struct TextGenerator_Out *gen, o7_int_t v);
+
+extern void TextGenerator_Set(struct TextGenerator_Out *gen, o7_set_t *set);
 
 extern void TextGenerator_init(void);
 #endif

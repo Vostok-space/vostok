@@ -19,7 +19,7 @@ extern o7_bool SpecIdentChecker_IsJsKeyWord(struct StringStore_String *n);
 
 extern o7_bool SpecIdentChecker_IsJavaLib(struct StringStore_String *n);
 
-extern o7_bool SpecIdentChecker_IsSpecName(struct StringStore_String *n, unsigned filter);
+extern o7_bool SpecIdentChecker_IsSpecName(struct StringStore_String *n, o7_set_t filter);
 
 extern o7_bool SpecIdentChecker_IsSpecModuleName(struct StringStore_String *n);
 

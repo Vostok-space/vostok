@@ -32,6 +32,8 @@ extern o7_bool CCompilerInterface_AddC(struct CCompilerInterface_Compiler *c, o7
 
 extern o7_bool CCompilerInterface_AddOpt(struct CCompilerInterface_Compiler *c, o7_int_t opt_len0, o7_char opt[/*len0*/]);
 
+extern o7_bool CCompilerInterface_AddOptByOfs(struct CCompilerInterface_Compiler *c, o7_int_t opt_len0, o7_char opt[/*len0*/], o7_int_t ofs);
+
 extern o7_int_t CCompilerInterface_Do(struct CCompilerInterface_Compiler *c);
 
 extern void CCompilerInterface_init(void);

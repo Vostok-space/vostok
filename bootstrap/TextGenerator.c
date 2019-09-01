@@ -36,13 +36,13 @@ extern o7_int_t TextGenerator_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], 
 	return o7_sub(i, ofs);
 }
 
-static void CharFill(struct TextGenerator_Out *gen, o7_char ch, o7_int_t count) {
+extern void TextGenerator_CharFill(struct TextGenerator_Out *gen, o7_char ch, o7_int_t count) {
 	o7_char c[1];
 	memset(&c, 0, sizeof(c));
 
 	O7_ASSERT(0 <= count);
 	c[0] = ch;
-	while (o7_cmp(count, 0) > 0) {
+	while (count > 0) {
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, c, 0, 1));
 		count = o7_sub(count, 1);
 	}
@@ -59,7 +59,7 @@ extern void TextGenerator_Char(struct TextGenerator_Out *gen, o7_char ch) {
 static void NewLine(struct TextGenerator_Out *gen) {
 	if (o7_bl((*gen).isNewLine)) {
 		(*gen).isNewLine = (0 > 1);
-		CharFill(&(*gen), 0x09u, (*gen).tabs);
+		TextGenerator_CharFill(&(*gen), 0x09u, o7_int((*gen).tabs));
 	}
 }
 
@@ -137,7 +137,7 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct 
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, StringStore_BlockSize_cnst + 1, O7_REF(block)->s, last, o7_add(o7_sub(i, last), 1)));
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, (o7_char *)"\x5C", 0, 1));
 		i = o7_add(i, 1);
-		last = o7_int(i);
+		last = i;
 	} else if (O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
 		i = o7_add(i, 1);
 	} else break;
@@ -161,8 +161,8 @@ extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7_int_t int_) {
 		i = o7_sub(i, 1);
 		buf[o7_ind(14, i)] = o7_chr(o7_add((o7_int_t)(o7_char)'0', o7_mod(int_, 10)));
 		int_ = o7_div(int_, 10);
-	} while (!(o7_cmp(int_, 0) == 0));
-	if (o7_bl(sign)) {
+	} while (!(int_ == 0));
+	if (sign) {
 		i = o7_sub(i, 1);
 		buf[o7_ind(14, i)] = (o7_char)'-';
 	}
@@ -174,6 +174,46 @@ extern void TextGenerator_Real(struct TextGenerator_Out *gen, double real) {
 	TextGenerator_Str(&(*gen), 20, (o7_char *)"Real not implemented");
 }
 
+static o7_char ToHex(o7_int_t d) {
+	O7_ASSERT(o7_in(d, O7_SET(0, 15)));
+	if (d < 10) {
+		d = o7_add(d, (o7_int_t)(o7_char)'0');
+	} else {
+		d = o7_add(d, (o7_int_t)(o7_char)'A' - 10);
+	}
+	return o7_chr(d);
+}
+
+extern void TextGenerator_HexSeparateHighBit(struct TextGenerator_Out *gen, o7_int_t v, o7_bool highBit) {
+	o7_char buf[8];
+	o7_int_t i;
+	memset(&buf, 0, sizeof(buf));
+
+	O7_ASSERT(v >= 0);
+
+	i = O7_LEN(buf) - 1;
+	buf[o7_ind(8, i)] = ToHex(o7_mod(v, 16));
+	v = o7_add(o7_div(v, 16), o7_mul((o7_int_t)o7_bl(highBit), 134217728));
+	while (v != 0) {
+		i = o7_sub(i, 1);
+		buf[o7_ind(8, i)] = ToHex(o7_mod(v, 16));
+		v = o7_div(v, 16);
+	}
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 8, buf, i, o7_sub(O7_LEN(buf), i)));
+}
+
+extern void TextGenerator_Hex(struct TextGenerator_Out *gen, o7_int_t v) {
+	if (v < 0) {
+		TextGenerator_HexSeparateHighBit(&(*gen), o7_add(o7_add(v, TypesLimits_IntegerMax_cnst), 1), (0 < 1));
+	} else {
+		TextGenerator_HexSeparateHighBit(&(*gen), v, (0 > 1));
+	}
+}
+
+extern void TextGenerator_Set(struct TextGenerator_Out *gen, o7_set_t *set) {
+	TextGenerator_HexSeparateHighBit(&(*gen), o7_sti((*set) & ~(1u << TypesLimits_SetMax_cnst)), !!( (1u << TypesLimits_SetMax_cnst) & (*set)));
+}
+
 extern void TextGenerator_init(void) {
 	static unsigned initialized = 0;
 	if (0 == initialized) {
@@ -182,3 +222,4 @@ extern void TextGenerator_init(void) {
 	}
 	++initialized;
 }
+

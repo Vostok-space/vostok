@@ -324,10 +324,10 @@ extern o7_bool SpecIdentChecker_IsJavaLib(struct StringStore_String *n) {
 }
 
 static o7_bool O7(struct StringStore_String *n) {
-	return Eq(&(*n), 11, (o7_char *)"initialized") || Eq(&(*n), 4, (o7_char *)"NULL");
+	return Eq(&(*n), 11, (o7_char *)"initialized") || Eq(&(*n), 4, (o7_char *)"NULL") || Eq(&(*n), 6, (o7_char *)"module");
 }
 
-extern o7_bool SpecIdentChecker_IsSpecName(struct StringStore_String *n, unsigned filter) {
+extern o7_bool SpecIdentChecker_IsSpecName(struct StringStore_String *n, o7_set_t filter) {
 	return O7(&(*n)) || ((o7_char)'a' <= O7_REF((*n).block)->s[o7_ind(StringStore_BlockSize_cnst + 1, (*n).ofs)]) && (O7_REF((*n).block)->s[o7_ind(StringStore_BlockSize_cnst + 1, (*n).ofs)] <= (o7_char)'z') && (SpecIdentChecker_IsCKeyWord(&(*n)) || SpecIdentChecker_IsCLib(&(*n)) || !(!!( (1u << SpecIdentChecker_MathC_cnst) & filter)) && SpecIdentChecker_IsCMath(&(*n)) || SpecIdentChecker_IsCMacros(&(*n)) || SpecIdentChecker_IsCppKeyWord(&(*n)) || SpecIdentChecker_IsJsKeyWord(&(*n)));
 }
 
@@ -336,7 +336,7 @@ extern o7_bool SpecIdentChecker_IsSpecModuleName(struct StringStore_String *n) {
 }
 
 extern o7_bool SpecIdentChecker_IsO7SpecName(struct StringStore_String *name) {
-	return Eq(&(*name), 4, (o7_char *)"init") || Eq(&(*name), 4, (o7_char *)"cnst") || Eq(&(*name), 3, (o7_char *)"len") || Eq(&(*name), 4, (o7_char *)"proc") || Eq(&(*name), 4, (o7_char *)"cyrl");
+	return Eq(&(*name), 4, (o7_char *)"init") || Eq(&(*name), 4, (o7_char *)"cnst") || Eq(&(*name), 3, (o7_char *)"len") || Eq(&(*name), 4, (o7_char *)"proc");
 }
 
 extern void SpecIdentChecker_init(void) {

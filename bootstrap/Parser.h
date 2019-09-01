@@ -55,6 +55,8 @@
 #define Parser_ErrEndProcedureNameNotMatch_cnst (-153)
 #define Parser_ErrFunctionWithoutBraces_cnst (-154)
 
+#define Parser_ErrUnexpectedContentInScript_cnst (-155)
+
 #define Parser_ErrAstBegin_cnst (-200)
 #define Parser_ErrAstEnd_cnst (-400)
 

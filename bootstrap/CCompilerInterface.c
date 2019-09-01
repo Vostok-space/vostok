@@ -23,7 +23,7 @@ static o7_bool Search_Test(struct CCompilerInterface_Compiler *cc, o7_int_t id, 
 	o7_bool ok;
 	PlatformExec_Code_undef(&exec);
 
-	ok = PlatformExec_Init(&exec, c_len0, c) && ((o7_strcmp(ver_len0, ver, 0, (o7_char *)"") == 0) || PlatformExec_Add(&exec, ver_len0, ver, 0)) && ((o7_bl(Platform_Posix) && PlatformExec_AddClean(&exec, 23, (o7_char *)" >/dev/null 2>/dev/null")) || (o7_bl(Platform_Windows) && PlatformExec_AddClean(&exec, 10, (o7_char *)">NUL 2>NUL"))) && (PlatformExec_Ok_cnst == PlatformExec_Do(&exec));
+	ok = PlatformExec_Init(&exec, c_len0, c) && ((o7_strcmp(ver_len0, ver, 0, (o7_char *)"") == 0) || PlatformExec_Add(&exec, ver_len0, ver)) && ((o7_bl(Platform_Posix) && PlatformExec_AddClean(&exec, 23, (o7_char *)" >/dev/null 2>/dev/null")) || (o7_bl(Platform_Windows) && PlatformExec_AddClean(&exec, 10, (o7_char *)">NUL 2>NUL"))) && (PlatformExec_Ok_cnst == PlatformExec_Do(&exec));
 	if (ok) {
 		O7_ASSERT(PlatformExec_Init(&(*cc).cmd, c_len0, c));
 		(*cc).id = id;
@@ -37,19 +37,23 @@ extern o7_bool CCompilerInterface_Search(struct CCompilerInterface_Compiler *c, 
 }
 
 extern o7_bool CCompilerInterface_AddOutput(struct CCompilerInterface_Compiler *c, o7_int_t o_len0, o7_char o[/*len0*/]) {
-	return PlatformExec_Add(&(*c).cmd, 2, (o7_char *)"-o", 0) && PlatformExec_Add(&(*c).cmd, o_len0, o, 0);
+	return PlatformExec_Add(&(*c).cmd, 2, (o7_char *)"-o") && PlatformExec_Add(&(*c).cmd, o_len0, o);
 }
 
 extern o7_bool CCompilerInterface_AddInclude(struct CCompilerInterface_Compiler *c, o7_int_t path_len0, o7_char path[/*len0*/], o7_int_t ofs) {
-	return PlatformExec_Add(&(*c).cmd, 2, (o7_char *)"-I", 0) && PlatformExec_Add(&(*c).cmd, path_len0, path, ofs);
+	return PlatformExec_Add(&(*c).cmd, 2, (o7_char *)"-I") && PlatformExec_AddByOfs(&(*c).cmd, path_len0, path, ofs);
 }
 
 extern o7_bool CCompilerInterface_AddC(struct CCompilerInterface_Compiler *c, o7_int_t file_len0, o7_char file[/*len0*/], o7_int_t ofs) {
-	return PlatformExec_Add(&(*c).cmd, file_len0, file, ofs);
+	return PlatformExec_AddByOfs(&(*c).cmd, file_len0, file, ofs);
 }
 
 extern o7_bool CCompilerInterface_AddOpt(struct CCompilerInterface_Compiler *c, o7_int_t opt_len0, o7_char opt[/*len0*/]) {
-	return PlatformExec_Add(&(*c).cmd, opt_len0, opt, 0);
+	return PlatformExec_AddByOfs(&(*c).cmd, opt_len0, opt, 0);
+}
+
+extern o7_bool CCompilerInterface_AddOptByOfs(struct CCompilerInterface_Compiler *c, o7_int_t opt_len0, o7_char opt[/*len0*/], o7_int_t ofs) {
+	return PlatformExec_AddByOfs(&(*c).cmd, opt_len0, opt, ofs);
 }
 
 extern o7_int_t CCompilerInterface_Do(struct CCompilerInterface_Compiler *c) {

@@ -28,7 +28,9 @@ extern o7_char PlatformExec_dirSep[1];
 
 extern o7_bool PlatformExec_Init(struct PlatformExec_Code *c, o7_int_t name_len0, o7_char name[/*len0*/]);
 
-extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/], o7_int_t ofs);
+extern o7_bool PlatformExec_AddByOfs(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/], o7_int_t ofs);
+
+extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]);
 
 extern o7_bool PlatformExec_AddClean(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]);
 

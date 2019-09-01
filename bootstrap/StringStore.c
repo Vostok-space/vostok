@@ -63,16 +63,15 @@ extern void StringStore_Put(struct StringStore_Store *store, struct StringStore_
 	o7_int_t i;
 
 	O7_ASSERT((s_len0 % 2 == 1) || (j <= end));
-	O7_ASSERT((o7_cmp(0, j) <= 0) && (j < o7_sub(s_len0, 1)));
-	O7_ASSERT((o7_cmp(0, end) <= 0) && (end < s_len0));
+	O7_ASSERT((0 <= j) && (j < o7_sub(s_len0, 1)));
+	O7_ASSERT((0 <= end) && (end < s_len0));
 	b = (*store).last;
 	i = o7_int((*store).ofs);
 	V_Init(&(*w)._);
 	(*w).block = b;
 	(*w).ofs = i;
-	while (o7_cmp(j, end) != 0) {
-		if (o7_cmp(i, O7_LEN(O7_REF(b)->s) - 1) == 0) {
-			O7_ASSERT(o7_cmp(i, (*w).ofs) != 0);
+	while (j != end) {
+		if (i == O7_LEN(O7_REF(b)->s) - 1) {
 			O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] = 0x0Cu;
 			Put_AddBlock(&b, &i);
 		}
@@ -81,18 +80,18 @@ extern void StringStore_Put(struct StringStore_Store *store, struct StringStore_
 		i = o7_add(i, 1);
 
 		j = o7_add(j, 1);
-		if ((o7_cmp(j, o7_sub(s_len0, 1)) == 0) && (end < o7_sub(s_len0, 1))) {
+		if ((j == o7_sub(s_len0, 1)) && (end < o7_sub(s_len0, 1))) {
 			j = 0;
 		}
 	}
 	O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] = 0x00u;
-	if (o7_cmp(i, O7_LEN(O7_REF(b)->s) - 2) < 0) {
+	if (i < O7_LEN(O7_REF(b)->s) - 2) {
 		i = o7_add(i, 1);
 	} else {
 		Put_AddBlock(&b, &i);
 	}
 	(*store).last = b;
-	(*store).ofs = o7_int(i);
+	(*store).ofs = i;
 }
 
 extern o7_bool StringStore_GetIter(struct StringStore_Iterator *iter, struct StringStore_String *s, o7_int_t ofs) {
@@ -266,7 +265,7 @@ extern void StringStore_StoreDone(struct StringStore_Store *s) {
 extern o7_bool StringStore_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t srcOfs, o7_int_t srcEnd) {
 	o7_bool ret;
 
-	O7_ASSERT((0 <= (*destOfs)) && (0 <= srcOfs) && (o7_cmp(srcOfs, srcEnd) <= 0) && (o7_cmp(srcEnd, src_len0) <= 0));
+	O7_ASSERT((0 <= (*destOfs)) && (0 <= srcOfs) && (srcOfs <= srcEnd) && (srcEnd <= src_len0));
 
 	ret = o7_sub(o7_add((*destOfs), srcEnd), srcOfs) < o7_sub(dest_len0, 1);
 	if (ret) {
@@ -277,20 +276,20 @@ extern o7_bool StringStore_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/],
 		}
 	}
 	dest[o7_ind(dest_len0, (*destOfs))] = 0x00u;
-	return o7_bl(ret);
+	return ret;
 }
 
 extern o7_bool StringStore_CopyCharsNullStartFrom(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t i) {
 	O7_ASSERT((0 <= (*destOfs)) && ((*destOfs) < dest_len0));
 	O7_ASSERT((0 <= i) && (i < src_len0));
 
-	while ((o7_cmp((*destOfs), o7_sub(dest_len0, 1)) < 0) && (i < src_len0) && (src[o7_ind(src_len0, i)] != 0x00u)) {
+	while (((*destOfs) < o7_sub(dest_len0, 1)) && (i < src_len0) && (src[o7_ind(src_len0, i)] != 0x00u)) {
 		dest[o7_ind(dest_len0, (*destOfs))] = src[o7_ind(src_len0, i)];
 		(*destOfs) = o7_add((*destOfs), 1);
 		i = o7_add(i, 1);
 	}
 	dest[o7_ind(dest_len0, (*destOfs))] = 0x00u;
-	return (o7_cmp(i, src_len0) >= 0) || (src[o7_ind(src_len0, i)] == 0x00u);
+	return (i >= src_len0) || (src[o7_ind(src_len0, i)] == 0x00u);
 }
 
 extern o7_bool StringStore_CopyCharsNull(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/]) {
@@ -314,7 +313,7 @@ extern o7_int_t StringStore_TrimChars(o7_int_t str_len0, o7_char str[/*len0*/], 
 	while ((i < str_len0) && ((str[o7_ind(str_len0, i)] == (o7_char)' ') || (str[o7_ind(str_len0, i)] == 0x09u))) {
 		i = o7_add(i, 1);
 	}
-	if (o7_cmp(ofs, i) < 0) {
+	if (ofs < i) {
 		j = ofs;
 		while ((i < str_len0) && (str[o7_ind(str_len0, i)] != 0x00u)) {
 			str[o7_ind(str_len0, j)] = str[o7_ind(str_len0, i)];
@@ -324,7 +323,7 @@ extern o7_int_t StringStore_TrimChars(o7_int_t str_len0, o7_char str[/*len0*/], 
 	} else {
 		j = o7_add(ofs, StringStore_CalcLen(str_len0, str, ofs));
 	}
-	while ((o7_cmp(ofs, j) < 0) && ((str[o7_ind(str_len0, o7_sub(j, 1))] == (o7_char)' ') || (str[o7_ind(str_len0, o7_sub(j, 1))] == 0x09u))) {
+	while ((ofs < j) && ((str[o7_ind(str_len0, o7_sub(j, 1))] == (o7_char)' ') || (str[o7_ind(str_len0, o7_sub(j, 1))] == 0x09u))) {
 		j = o7_sub(j, 1);
 	}
 	str[o7_ind(str_len0, j)] = 0x00u;
@@ -349,7 +348,7 @@ extern o7_int_t StringStore_Write(struct VDataStream_Out *out, o7_tag_t *out_tag
 	} else break;
 	O7_ASSERT(O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u);
 	len = VDataStream_WriteChars(&(*out), out_tag, StringStore_BlockSize_cnst + 1, O7_REF(block)->s, ofs, o7_sub(i, ofs));
-	return o7_int(len);
+	return len;
 }
 
 extern void StringStore_init(void) {
@@ -360,3 +359,4 @@ extern void StringStore_init(void) {
 	}
 	++initialized;
 }
+

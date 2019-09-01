@@ -62,7 +62,7 @@ static struct Ast_RModule *GetModule_Search(struct ModulesProvider_Provider__s *
 static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end) {
 	struct Ast_RModule *m;
 	struct ModulesProvider_Provider__s *mp;
-	o7_int_t pathInd, i;
+	o7_int_t pathInd = O7_INT_UNDEF, i;
 	o7_char ext[4][6];
 	memset(&ext, 0, sizeof(ext));
 
@@ -95,6 +95,7 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 
 static o7_bool RegModule(struct Ast_RProvider *p, struct Ast_RModule *m);
 static o7_bool RegModule_Reg(struct ModulesProvider_Provider__s *p, struct Ast_RModule *m) {
+	Log_Str(10, (o7_char *)"RegModule ");
 	Log_Str(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(m)->_._.name.block)->s);
 	Log_Str(3, (o7_char *)" : ");
 	Log_StrLn(TranslatorLimits_LenName_cnst + 1, O7_REF(p)->expectName);
@@ -103,11 +104,10 @@ static o7_bool RegModule_Reg(struct ModulesProvider_Provider__s *p, struct Ast_R
 }
 
 static o7_bool RegModule(struct Ast_RProvider *p, struct Ast_RModule *m) {
-	Log_Str(10, (o7_char *)"RegModule ");
 	return RegModule_Reg(O7_GUARD(ModulesProvider_Provider__s, &p), m);
 }
 
-extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, struct CliParser_Args *args) {
+extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, o7_int_t searchPath_len0, o7_char searchPath[/*len0*/], o7_int_t pathLen, o7_set_t definitionsInSearch) {
 	o7_int_t len;
 
 	O7_NEW(&(*mp), ModulesProvider_Provider__s);
@@ -115,8 +115,8 @@ extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, struct 
 
 	O7_REF((*mp))->firstNotOk = (0 < 1);
 	len = 0;
-	O7_ASSERT(StringStore_CopyChars(4096, O7_REF((*mp))->path, &len, 4096, (*args).modPath, 0, (*args).modPathLen));
-	O7_REF((*mp))->sing = (*args).sing;
+	O7_ASSERT(StringStore_CopyChars(4096, O7_REF((*mp))->path, &len, searchPath_len0, searchPath, 0, pathLen));
+	O7_REF((*mp))->sing = definitionsInSearch;
 }
 
 extern void ModulesProvider_SetParserOptions(struct ModulesProvider_Provider__s *p, struct Parser_Options *o) {
@@ -129,7 +129,6 @@ extern void ModulesProvider_init(void) {
 		Log_init();
 		Out_init();
 		Ast_init();
-		CliParser_init();
 		StringStore_init();
 		Parser_init();
 		VFileStream_init();
@@ -140,3 +139,4 @@ extern void ModulesProvider_init(void) {
 	}
 	++initialized;
 }
+

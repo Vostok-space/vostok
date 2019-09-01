@@ -18,7 +18,7 @@ typedef struct ModulesProvider_Provider__s {
 	struct Parser_Options opt;
 
 	o7_char path[4096];
-	unsigned sing;
+	o7_set_t sing;
 
 	o7_char expectName[TranslatorLimits_LenName_cnst + 1];
 	o7_int_t nameLen;
@@ -29,7 +29,7 @@ extern o7_tag_t ModulesProvider_Provider__s_tag;
 
 extern void ModulesProvider_Provider__s_undef(struct ModulesProvider_Provider__s *r);
 
-extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, struct CliParser_Args *args);
+extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, o7_int_t searchPath_len0, o7_char searchPath[/*len0*/], o7_int_t pathLen, o7_set_t definitionsInSearch);
 
 extern void ModulesProvider_SetParserOptions(struct ModulesProvider_Provider__s *p, struct Parser_Options *o);
 

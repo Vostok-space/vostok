@@ -110,6 +110,8 @@ typedef char unsigned o7_char;
 #	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
+typedef o7_uint_t o7_set_t;
+
 #define O7_MEMNG_NOFREE  0
 #define O7_MEMNG_COUNTER 1
 #define O7_MEMNG_GC      2

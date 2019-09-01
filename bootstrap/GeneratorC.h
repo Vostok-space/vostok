@@ -84,7 +84,7 @@ extern void GeneratorC_Options__s_undef(struct GeneratorC_Options__s *r);
 
 typedef struct GeneratorC_Generator {
 	TextGenerator_Out _;
-	struct Ast_RModule *module;
+	struct Ast_RModule *module_;
 
 	o7_int_t localDeep;
 
@@ -104,7 +104,7 @@ extern void GeneratorC_Generator_undef(struct GeneratorC_Generator *r);
 
 extern struct GeneratorC_Options__s *GeneratorC_DefaultOptions(void);
 
-extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module, struct Ast_RStatement *cmd, struct GeneratorC_Options__s *opt);
+extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module_, struct Ast_RStatement *cmd, struct GeneratorC_Options__s *opt);
 
 extern void GeneratorC_init(void);
 #endif

@@ -6,6 +6,9 @@
 #define Interface_cnst 1
 #define Implementation_cnst 0
 
+#define CheckableArithTypes_cnst (Ast_Numbers_cnst & ~(1u << Ast_IdByte_cnst))
+#define CheckableInitTypes_cnst (CheckableArithTypes_cnst | (1u << Ast_IdBoolean_cnst))
+
 o7_tag_t GeneratorC_MemoryOut_tag;
 extern void GeneratorC_MemoryOut_undef(struct GeneratorC_MemoryOut *r) {
 	VDataStream_Out_undef(&r->_);
@@ -43,7 +46,7 @@ extern void GeneratorC_Options__s_undef(struct GeneratorC_Options__s *r) {
 #define GeneratorC_Generator_tag TextGenerator_Out_tag
 extern void GeneratorC_Generator_undef(struct GeneratorC_Generator *r) {
 	TextGenerator_Out_undef(&r->_);
-	r->module = NULL;
+	r->module_ = NULL;
 	r->localDeep = O7_INT_UNDEF;
 	r->fixedLen = O7_INT_UNDEF;
 	r->interface_ = O7_BOOL_UNDEF;
@@ -102,11 +105,11 @@ static void MemoryWrite(struct GeneratorC_MemoryOut *out, o7_int_t buf_len0, o7_
 
 static o7_int_t MemWrite(struct V_Base *out, o7_tag_t *out_tag, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ofs, o7_int_t count) {
 	MemoryWrite(&O7_GUARD_R(GeneratorC_MemoryOut, &(*out), out_tag), buf_len0, buf, ofs, count);
-	return o7_int(count);
+	return count;
 }
 
 static struct GeneratorC_MemoryOut *PMemoryOutGet(struct GeneratorC_Options__s *opt) {
-	struct GeneratorC_MemoryOut *m;
+	struct GeneratorC_MemoryOut *m = NULL;
 
 	if (O7_REF(opt)->memOuts == NULL) {
 		O7_NEW(&m, GeneratorC_MemoryOut);
@@ -134,7 +137,7 @@ static void MemWriteInvert(struct GeneratorC_MemoryOut *mo) {
 	if (o7_cmp((*mo).mem[o7_ind(2, inv)].len, 0) == 0) {
 		(*mo).invert = !o7_bl((*mo).invert);
 	} else {
-		O7_ASSERT(StringStore_CopyChars(4096, (*mo).mem[o7_ind(2, inv)].buf, &(*mo).mem[o7_ind(2, inv)].len, 4096, (*mo).mem[o7_ind(2, o7_sub(1, inv))].buf, 0, (*mo).mem[o7_ind(2, o7_sub(1, inv))].len));
+		O7_ASSERT(StringStore_CopyChars(4096, (*mo).mem[o7_ind(2, inv)].buf, &(*mo).mem[o7_ind(2, inv)].len, 4096, (*mo).mem[o7_ind(2, o7_sub(1, inv))].buf, 0, o7_int((*mo).mem[o7_ind(2, o7_sub(1, inv))].len)));
 		(*mo).mem[o7_ind(2, o7_sub(1, inv))].len = 0;
 	}
 }
@@ -144,7 +147,7 @@ static void MemWriteDirect(struct GeneratorC_Generator *gen, struct GeneratorC_M
 
 	inv = (o7_int_t)o7_bl((*mo).invert);
 	O7_ASSERT(o7_cmp((*mo).mem[o7_ind(2, o7_sub(1, inv))].len, 0) == 0);
-	TextGenerator_Data(&(*gen)._, 4096, (*mo).mem[o7_ind(2, inv)].buf, 0, (*mo).mem[o7_ind(2, inv)].len);
+	TextGenerator_Data(&(*gen)._, 4096, (*mo).mem[o7_ind(2, inv)].buf, 0, o7_int((*mo).mem[o7_ind(2, inv)].len));
 	(*mo).mem[o7_ind(2, inv)].len = 0;
 }
 
@@ -174,7 +177,7 @@ static void Name(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl
 	o7_int_t i;
 	memset(&prs, 0, sizeof(prs));
 
-	if ((o7_is(decl, &Ast_RType_tag)) && (O7_REF(decl)->up != NULL) && (O7_REF(O7_REF(decl)->up)->d != &O7_REF(O7_REF(decl)->module)->m->_) || !o7_bl(O7_REF((*gen).opt)->procLocal) && (o7_is(decl, &Ast_RProcedure_tag))) {
+	if ((o7_is(decl, &Ast_RType_tag)) && (O7_REF(decl)->up != NULL) && (O7_REF(O7_REF(decl)->up)->d != &O7_REF(O7_REF(decl)->module_)->m->_) || !o7_bl(O7_REF((*gen).opt)->procLocal) && (o7_is(decl, &Ast_RProcedure_tag))) {
 		up = O7_REF(O7_REF(decl)->up)->d;
 		i = 0;
 		while (O7_REF(up)->_.up != NULL) {
@@ -182,7 +185,7 @@ static void Name(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl
 			i = o7_add(i, 1);
 			up = O7_REF(O7_REF(up)->_.up)->d;
 		}
-		while (o7_cmp(i, 0) > 0) {
+		while (i > 0) {
 			i = o7_sub(i, 1);
 			Ident(&(*gen), &O7_REF(prs[o7_ind(TranslatorLimits_DeepProcedures_cnst + 1, i)])->_.name);
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x5F");
@@ -197,11 +200,11 @@ static void Name(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl
 }
 
 static void GlobalName(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl) {
-	if (o7_bl(O7_REF(decl)->mark) || (O7_REF(decl)->module != NULL) && ((*gen).module != O7_REF(O7_REF(decl)->module)->m)) {
-		O7_ASSERT(O7_REF(decl)->module != NULL);
-		Ident(&(*gen), &O7_REF(O7_REF(O7_REF(decl)->module)->m)->_._.name);
+	if (o7_bl(O7_REF(decl)->mark) || (O7_REF(decl)->module_ != NULL) && ((*gen).module_ != O7_REF(O7_REF(decl)->module_)->m)) {
+		O7_ASSERT(O7_REF(decl)->module_ != NULL);
+		Ident(&(*gen), &O7_REF(O7_REF(O7_REF(decl)->module_)->m)->_._.name);
 
-		TextGenerator_Data(&(*gen)._, 2, (o7_char *)"__", 0, o7_add((o7_int_t)(SpecIdentChecker_IsSpecModuleName(&O7_REF(O7_REF(O7_REF(decl)->module)->m)->_._.name) && !o7_bl(O7_REF(O7_REF(O7_REF(decl)->module)->m)->spec) || SpecIdentChecker_IsO7SpecName(&O7_REF(decl)->name)), 1));
+		TextGenerator_Data(&(*gen)._, 2, (o7_char *)"__", 0, o7_add((o7_int_t)(SpecIdentChecker_IsSpecModuleName(&O7_REF(O7_REF(O7_REF(decl)->module_)->m)->_._.name) && !o7_bl(O7_REF(O7_REF(O7_REF(decl)->module_)->m)->spec) || SpecIdentChecker_IsO7SpecName(&O7_REF(decl)->name)), 1));
 		Ident(&(*gen), &O7_REF(decl)->name);
 		if (o7_is(decl, &Ast_Const__s_tag)) {
 			TextGenerator_Str(&(*gen)._, 5, (o7_char *)"_cnst");
@@ -222,7 +225,7 @@ static void Import(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *de
 		name = O7_REF(decl)->name;
 	} else {
 		O7_ASSERT(o7_is(decl, &Ast_Import__s_tag));
-		name = O7_REF(O7_REF(O7_REF(decl)->module)->m)->_._.name;
+		name = O7_REF(O7_REF(O7_REF(decl)->module_)->m)->_._.name;
 	}
 	TextGenerator_String(&(*gen)._, &name);
 	i = (o7_int_t)!SpecIdentChecker_IsSpecModuleName(&name);
@@ -259,16 +262,16 @@ static o7_bool CheckStructName(struct GeneratorC_Generator *gen, struct Ast_RRec
 	if (StringStore_IsDefined(&O7_REF(rec)->_._._.name)) {
 	} else if ((O7_REF(rec)->pointer != NULL) && StringStore_IsDefined(&O7_REF(O7_REF(rec)->pointer)->_._._.name)) {
 		l = 0;
-		O7_ASSERT(O7_REF(rec)->_._._.module != NULL);
+		O7_ASSERT(O7_REF(rec)->_._._.module_ != NULL);
 		O7_REF(rec)->_._._.mark = o7_bl(O7_REF(O7_REF(rec)->pointer)->_._._.mark);
 		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(rec)->pointer)->_._._.name));
 		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, l)] = (o7_char)'_';
 		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, o7_add(l, 1))] = (o7_char)'s';
 		anon[o7_ind(TranslatorLimits_LenName_cnst * 2 + 3, o7_add(l, 2))] = 0x00u;
-		Ast_PutChars(O7_REF(O7_REF(O7_REF(rec)->pointer)->_._._.module)->m, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, o7_add(l, 2));
+		Ast_PutChars(O7_REF(O7_REF(O7_REF(rec)->pointer)->_._._.module_)->m, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, o7_add(l, 2));
 	} else {
 		l = 0;
-		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(O7_REF(rec)->_._._.module)->m)->_._.name));
+		O7_ASSERT(StringStore_CopyToChars(TranslatorLimits_LenName_cnst * 2 + 3, anon, &l, &O7_REF(O7_REF(O7_REF(rec)->_._._.module_)->m)->_._.name));
 
 		Log_StrLn(6, (o7_char *)"Record");
 
@@ -283,7 +286,7 @@ static o7_bool CheckStructName(struct GeneratorC_Generator *gen, struct Ast_RRec
 			j = o7_sub(j, 1);
 		}
 		O7_REF((*gen).opt)->index = o7_add(O7_REF((*gen).opt)->index, 1);
-		Ast_PutChars(O7_REF(O7_REF(rec)->_._._.module)->m, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, l);
+		Ast_PutChars(O7_REF(O7_REF(rec)->_._._.module_)->m, &O7_REF(rec)->_._._.name, TranslatorLimits_LenName_cnst * 2 + 3, anon, 0, l);
 	}
 	return StringStore_IsDefined(&O7_REF(rec)->_._._.name);
 }
@@ -518,6 +521,14 @@ static void Selector(struct GeneratorC_Generator *gen, struct Selectors *sels, o
 	}
 }
 
+static o7_bool IsDesignatorMayNotInited(struct Ast_Designator__s *des) {
+	return ((((1u << Ast_InitedNo_cnst) | (1u << Ast_InitedCheck_cnst)) & O7_REF(des)->inited) != 0) || (O7_REF(des)->sel != NULL);
+}
+
+static o7_bool IsMayNotInited(struct Ast_RExpression *e) {
+	return (o7_is(e, &Ast_Designator__s_tag)) && IsDesignatorMayNotInited(O7_GUARD(Ast_Designator__s, &e));
+}
+
 static void Designator(struct GeneratorC_Generator *gen, struct Ast_Designator__s *des);
 static void Designator_Put(struct Selectors *sels, struct Ast_RSelector *sel) {
 	(*sels).i =  - 1;
@@ -546,30 +557,12 @@ static void Designator(struct GeneratorC_Generator *gen, struct Ast_Designator__
 	sels.decl = O7_REF(des)->decl;
 	/* TODO */
 	lastSelectorDereference = (o7_cmp(0, sels.i) <= 0) && (o7_is(sels.list[o7_ind(TranslatorLimits_Selectors_cnst, sels.i)], &Ast_SelPointer__s_tag));
-	Selector(&(*gen), &sels, sels.i, &typ, O7_REF(des)->_._.type);
+	Selector(&(*gen), &sels, o7_int(sels.i), &typ, O7_REF(des)->_._.type);
 	O7_REF((*gen).opt)->lastSelectorDereference = lastSelectorDereference;
 }
 
-static o7_bool IsMayNotInited(struct Ast_RExpression *e) {
-	struct Ast_Designator__s *des;
-	struct Ast_RVar *var_;
-
-	var_ = NULL;
-	if (o7_is(e, &Ast_Designator__s_tag)) {
-		des = O7_GUARD(Ast_Designator__s, &e);
-		if (o7_is(O7_REF(des)->decl, &Ast_RVar_tag)) {
-			var_ = O7_GUARD(Ast_RVar, &O7_REF(des)->decl);
-		} else {
-			des = NULL;
-		}
-	} else {
-		des = NULL;
-	}
-	return (des != NULL) && ((O7_REF(des)->inited != (1u << Ast_InitedValue_cnst)) || (O7_REF(des)->sel != NULL) || o7_bl(O7_REF(var_)->checkInit));
-}
-
 static void CheckExpr(struct GeneratorC_Generator *gen, struct Ast_RExpression *e) {
-	if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) && (O7_REF(e)->value_ == NULL) && (o7_in(O7_REF(O7_REF(e)->type)->_._.id, ((1u << Ast_IdBoolean_cnst) | (1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst) | (1u << Ast_IdReal_cnst) | (1u << Ast_IdReal32_cnst)))) && IsMayNotInited(e)) {
+	if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) && (O7_REF(e)->value_ == NULL) && (o7_in(O7_REF(O7_REF(e)->type)->_._.id, CheckableInitTypes_cnst)) && IsMayNotInited(e)) {
 		switch (O7_REF(O7_REF(e)->type)->_._.id) {
 		case 2:
 			TextGenerator_Str(&(*gen)._, 6, (o7_char *)"o7_bl(");
@@ -961,12 +954,13 @@ static o7_int_t Expression_Call_ActualParam_ArrayDeep(struct Ast_RType *t) {
 		t = O7_REF(t)->_.type;
 		d = o7_add(d, 1);
 	}
-	return o7_int(d);
+	return d;
 }
 
 static void Expression_Call_ActualParam(struct GeneratorC_Generator *gen, struct Ast_RParameter **p, struct Ast_RDeclaration **fp) {
 	struct Ast_RType *t;
 	o7_int_t i, j, dist;
+	o7_bool paramOut;
 
 	t = O7_REF((*fp))->type;
 	if ((o7_cmp(O7_REF(t)->_._.id, Ast_IdByte_cnst) == 0) && (o7_in(O7_REF(O7_REF(O7_REF((*p))->expr)->type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst)))) && o7_bl(O7_REF((*gen).opt)->checkArith) && (O7_REF(O7_REF((*p))->expr)->value_ == NULL)) {
@@ -1003,12 +997,17 @@ static void Expression_Call_ActualParam(struct GeneratorC_Generator *gen, struct
 			t = O7_REF((*fp))->type;
 		}
 		dist = o7_int(O7_REF((*p))->distance);
-		if (((!!( (1u << Ast_ParamOut_cnst) & O7_GUARD(Ast_RFormalParam, &(*fp))->access)) && !(o7_is(t, &Ast_RArray_tag))) || (o7_is(t, &Ast_RRecord_tag)) || (o7_cmp(O7_REF(t)->_._.id, Ast_IdPointer_cnst) == 0) && (0 < dist) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
+		paramOut = !!( (1u << Ast_ParamOut_cnst) & O7_GUARD(Ast_RFormalParam, &(*fp))->access);
+		if ((paramOut && !(o7_is(t, &Ast_RArray_tag))) || (o7_is(t, &Ast_RRecord_tag)) || (o7_cmp(O7_REF(t)->_._.id, Ast_IdPointer_cnst) == 0) && (0 < dist) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x26");
 		}
 		O7_REF((*gen).opt)->lastSelectorDereference = (0 > 1);
 		O7_REF((*gen).opt)->expectArray = o7_cmp(O7_REF(O7_REF((*fp))->type)->_._.id, Ast_IdArray_cnst) == 0;
-		Expression(&(*gen), O7_REF((*p))->expr);
+		if (paramOut) {
+			Expression(&(*gen), O7_REF((*p))->expr);
+		} else {
+			CheckExpr(&(*gen), O7_REF((*p))->expr);
+		}
 		O7_REF((*gen).opt)->expectArray = (0 > 1);
 
 		if (!o7_bl(O7_REF((*gen).opt)->vla)) {
@@ -1018,12 +1017,12 @@ static void Expression_Call_ActualParam(struct GeneratorC_Generator *gen, struct
 			}
 		}
 
-		if ((o7_cmp(dist, 0) > 0) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
+		if ((dist > 0) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
 			if (o7_cmp(O7_REF(t)->_._.id, Ast_IdPointer_cnst) == 0) {
 				dist = o7_sub(dist, 1);
 				TextGenerator_Str(&(*gen)._, 3, (o7_char *)"->_");
 			}
-			while (o7_cmp(dist, 0) > 0) {
+			while (dist > 0) {
 				dist = o7_sub(dist, 1);
 				TextGenerator_Str(&(*gen)._, 2, (o7_char *)"._");
 			}
@@ -1084,12 +1083,12 @@ static void Expression_Relation_Simple_Expr(struct GeneratorC_Generator *gen, st
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x26");
 	}
 	Expression(&(*gen), e);
-	if ((o7_cmp(dist, 0) > 0) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
+	if ((dist > 0) && !o7_bl(O7_REF((*gen).opt)->plan9)) {
 		if (o7_cmp(O7_REF(O7_REF(e)->type)->_._.id, Ast_IdPointer_cnst) == 0) {
 			dist = o7_sub(dist, 1);
 			TextGenerator_Str(&(*gen)._, 3, (o7_char *)"->_");
 		}
-		while (o7_cmp(dist, 0) > 0) {
+		while (dist > 0) {
 			dist = o7_sub(dist, 1);
 			TextGenerator_Str(&(*gen)._, 2, (o7_char *)"._");
 		}
@@ -1110,22 +1109,41 @@ static void Expression_Relation_Simple_Len(struct GeneratorC_Generator *gen, str
 	}
 }
 
+static o7_bool Expression_Relation_Simple_IsArrayAndNotChar(struct Ast_RExpression *e) {
+	return (o7_cmp(O7_REF(O7_REF(e)->type)->_._.id, Ast_IdArray_cnst) == 0) && ((O7_REF(e)->value_ == NULL) || !o7_bl(O7_GUARD(Ast_ExprString__s, &O7_REF(e)->value_)->asChar));
+}
+
 static void Expression_Relation_Simple(struct GeneratorC_Generator *gen, struct Ast_ExprRelation__s *rel, o7_int_t str_len0, o7_char str[/*len0*/]) {
-	if ((o7_cmp(O7_REF(O7_REF(O7_REF(rel)->exprs[0])->type)->_._.id, Ast_IdArray_cnst) == 0) && ((O7_REF(O7_REF(rel)->exprs[0])->value_ == NULL) || !o7_bl(O7_GUARD(Ast_ExprString__s, &O7_REF(O7_REF(rel)->exprs[0])->value_)->asChar))) {
+	o7_bool notChar0, notChar1;
+
+	notChar0 = Expression_Relation_Simple_IsArrayAndNotChar(O7_REF(rel)->exprs[0]);
+	if (notChar0 || Expression_Relation_Simple_IsArrayAndNotChar(O7_REF(rel)->exprs[1])) {
 		if (O7_REF(rel)->_.value_ != NULL) {
 			Expression(&(*gen), &O7_REF(rel)->_.value_->_);
 		} else {
-			TextGenerator_Str(&(*gen)._, 10, (o7_char *)"o7_strcmp(");
-
-			Expression_Relation_Simple_Len(&(*gen), O7_REF(rel)->exprs[0]);
-			TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
+			notChar1 = !notChar0 || Expression_Relation_Simple_IsArrayAndNotChar(O7_REF(rel)->exprs[1]);
+			if (notChar0 == notChar1) {
+				O7_ASSERT(notChar0);
+				TextGenerator_Str(&(*gen)._, 10, (o7_char *)"o7_strcmp(");
+			} else if (notChar1) {
+				TextGenerator_Str(&(*gen)._, 12, (o7_char *)"o7_chstrcmp(");
+			} else {
+				O7_ASSERT(notChar0);
+				TextGenerator_Str(&(*gen)._, 12, (o7_char *)"o7_strchcmp(");
+			}
+			if (notChar0) {
+				Expression_Relation_Simple_Len(&(*gen), O7_REF(rel)->exprs[0]);
+				TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
+			}
 			Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[0], o7_sub(0, O7_REF(rel)->distance));
 
 			TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
 
-			Expression_Relation_Simple_Len(&(*gen), O7_REF(rel)->exprs[1]);
-			TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
-			Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], O7_REF(rel)->distance);
+			if (notChar1) {
+				Expression_Relation_Simple_Len(&(*gen), O7_REF(rel)->exprs[1]);
+				TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
+			}
+			Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], o7_int(O7_REF(rel)->distance));
 
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 			TextGenerator_Str(&(*gen)._, str_len0, str);
@@ -1139,14 +1157,14 @@ static void Expression_Relation_Simple(struct GeneratorC_Generator *gen, struct 
 		}
 		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[0], o7_sub(0, O7_REF(rel)->distance));
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
-		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], O7_REF(rel)->distance);
+		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], o7_int(O7_REF(rel)->distance));
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 		TextGenerator_Str(&(*gen)._, str_len0, str);
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x30");
 	} else {
 		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[0], o7_sub(0, O7_REF(rel)->distance));
 		TextGenerator_Str(&(*gen)._, str_len0, str);
-		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], O7_REF(rel)->distance);
+		Expression_Relation_Simple_Expr(&(*gen), O7_REF(rel)->exprs[1], o7_int(O7_REF(rel)->distance));
 	}
 }
 
@@ -1200,32 +1218,66 @@ static void Expression_Relation(struct GeneratorC_Generator *gen, struct Ast_Exp
 	}
 }
 
-static void Expression_Sum(struct GeneratorC_Generator *gen, struct Ast_RExprSum *sum) {
-	o7_bool first;
+static void Expression_Sum(struct GeneratorC_Generator *gen, struct Ast_RExprSum *sum);
+static o7_int_t Expression_Sum_CountSignChanges(struct Ast_RExprSum *sum) {
+	o7_int_t i;
 
-	first = (0 < 1);
-	do {
-		if (o7_cmp(O7_REF(sum)->add, Scanner_Minus_cnst) == 0) {
-			if (o7_cmp(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_IdSet_cnst) != 0) {
-				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" - ");
-			} else if (first) {
-				TextGenerator_Str(&(*gen)._, 2, (o7_char *)" ~");
-			} else {
-				TextGenerator_Str(&(*gen)._, 4, (o7_char *)" & ~");
-			}
-		} else if (o7_cmp(O7_REF(sum)->add, Scanner_Plus_cnst) == 0) {
-			if (o7_cmp(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_IdSet_cnst) == 0) {
-				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" | ");
-			} else {
-				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" + ");
-			}
-		} else if (o7_cmp(O7_REF(sum)->add, Scanner_Or_cnst) == 0) {
-			TextGenerator_Str(&(*gen)._, 4, (o7_char *)" || ");
+	i = 0;
+	if (sum != NULL) {
+		while (O7_REF(sum)->next != NULL) {
+			i = o7_add(i, (o7_int_t)(o7_cmp(O7_REF(sum)->add, O7_REF(O7_REF(sum)->next)->add) != 0));
+			sum = O7_REF(sum)->next;
+		}
+	}
+	return i;
+}
+
+static void Expression_Sum(struct GeneratorC_Generator *gen, struct Ast_RExprSum *sum) {
+	o7_int_t i;
+
+	if (o7_in(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_Sets_cnst)) {
+		i = Expression_Sum_CountSignChanges(O7_REF(sum)->next);
+		TextGenerator_CharFill(&(*gen)._, (o7_char)'(', i);
+		if (o7_cmp(O7_REF(sum)->add, Ast_Minus_cnst) == 0) {
+			TextGenerator_Str(&(*gen)._, 2, (o7_char *)" ~");
 		}
 		CheckExpr(&(*gen), O7_REF(sum)->term);
 		sum = O7_REF(sum)->next;
-		first = (0 > 1);
-	} while (!(sum == NULL));
+		while (sum != NULL) {
+			O7_ASSERT(o7_in(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_Sets_cnst));
+			if (o7_cmp(O7_REF(sum)->add, Ast_Minus_cnst) == 0) {
+				TextGenerator_Str(&(*gen)._, 4, (o7_char *)" & ~");
+			} else {
+				O7_ASSERT(o7_cmp(O7_REF(sum)->add, Ast_Plus_cnst) == 0);
+				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" | ");
+			}
+			CheckExpr(&(*gen), O7_REF(sum)->term);
+			if ((O7_REF(sum)->next != NULL) && (o7_cmp(O7_REF(O7_REF(sum)->next)->add, O7_REF(sum)->add) != 0)) {
+				TextGenerator_Char(&(*gen)._, (o7_char)')');
+			}
+			sum = O7_REF(sum)->next;
+		}
+	} else if (o7_cmp(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_IdBoolean_cnst) == 0) {
+		CheckExpr(&(*gen), O7_REF(sum)->term);
+		sum = O7_REF(sum)->next;
+		while (sum != NULL) {
+			O7_ASSERT(o7_cmp(O7_REF(O7_REF(sum)->_.type)->_._.id, Ast_IdBoolean_cnst) == 0);
+			TextGenerator_Str(&(*gen)._, 4, (o7_char *)" || ");
+			CheckExpr(&(*gen), O7_REF(sum)->term);
+			sum = O7_REF(sum)->next;
+		}
+	} else {
+		do {
+			O7_ASSERT(o7_in(O7_REF(O7_REF(sum)->_.type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst) | (1u << Ast_IdReal_cnst) | (1u << Ast_IdReal32_cnst))));
+			if (o7_cmp(O7_REF(sum)->add, Ast_Minus_cnst) == 0) {
+				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" - ");
+			} else if (o7_cmp(O7_REF(sum)->add, Ast_Plus_cnst) == 0) {
+				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" + ");
+			}
+			CheckExpr(&(*gen), O7_REF(sum)->term);
+			sum = O7_REF(sum)->next;
+		} while (!(sum == NULL));
+	}
 }
 
 static void Expression_SumCheck(struct GeneratorC_Generator *gen, struct Ast_RExprSum *sum);
@@ -1286,7 +1338,7 @@ static void Expression_SumCheck(struct GeneratorC_Generator *gen, struct Ast_REx
 		break;
 	}
 	i = 0;
-	while (o7_cmp(i, last) < 0) {
+	while (i < last) {
 		i = o7_add(i, 1);
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
 		Expression(&(*gen), O7_REF(arr[o7_ind(TranslatorLimits_TermsInSum_cnst, i)])->term);
@@ -1299,7 +1351,7 @@ static void Expression_Term(struct GeneratorC_Generator *gen, struct Ast_ExprTer
 		CheckExpr(&(*gen), &O7_REF(term)->factor->_);
 		switch (O7_REF(term)->mult) {
 		case 19:
-			if (o7_cmp(O7_REF(O7_REF(term)->_.type)->_._.id, Ast_IdSet_cnst) == 0) {
+			if (o7_in(O7_REF(O7_REF(term)->_.type)->_._.id, Ast_Sets_cnst)) {
 				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" & ");
 			} else {
 				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" * ");
@@ -1307,7 +1359,7 @@ static void Expression_Term(struct GeneratorC_Generator *gen, struct Ast_ExprTer
 			break;
 		case 20:
 		case 22:
-			if (o7_cmp(O7_REF(O7_REF(term)->_.type)->_._.id, Ast_IdSet_cnst) == 0) {
+			if (o7_in(O7_REF(O7_REF(term)->_.type)->_._.id, Ast_Sets_cnst)) {
 				O7_ASSERT(o7_cmp(O7_REF(term)->mult, Scanner_Slash_cnst) == 0);
 				TextGenerator_Str(&(*gen)._, 3, (o7_char *)" ^ ");
 			} else {
@@ -1345,7 +1397,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 		term = O7_GUARD(Ast_ExprTerm__s, &O7_REF(term)->expr);
 		arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)] = term;
 	}
-	last = o7_int(i);
+	last = i;
 	switch (O7_REF(O7_REF(term)->_.type)->_._.id) {
 	case 0:
 		while (i >= 0) {
@@ -1423,7 +1475,7 @@ static void Expression_TermCheck(struct GeneratorC_Generator *gen, struct Ast_Ex
 	}
 	Expression(&(*gen), &O7_REF(arr[0])->factor->_);
 	i = 0;
-	while (o7_cmp(i, last) < 0) {
+	while (i < last) {
 		i = o7_add(i, 1);
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
 		Expression(&(*gen), &O7_REF(arr[o7_ind(TranslatorLimits_FactorsInTerm_cnst, i)])->factor->_);
@@ -1453,7 +1505,7 @@ static void Expression_Boolean(struct GeneratorC_Generator *gen, struct Ast_Expr
 static void Expression_CString(struct GeneratorC_Generator *gen, struct Ast_ExprString__s *e);
 static o7_char Expression_CString_ToHex(o7_int_t d) {
 	O7_ASSERT(o7_in(d, O7_SET(0, 15)));
-	if (o7_cmp(d, 10) < 0) {
+	if (d < 10) {
 		d = o7_add(d, (o7_int_t)(o7_char)'0');
 	} else {
 		d = o7_add(d, (o7_int_t)(o7_char)'A' - 10);
@@ -1525,7 +1577,7 @@ static void Expression_ExprInt(struct GeneratorC_Generator *gen, o7_int_t int_) 
 
 static void Expression_ExprLongInt(struct GeneratorC_Generator *gen, o7_int_t int_) {
 	O7_ASSERT((0 > 1));
-	if (o7_cmp(int_, 0) >= 0) {
+	if (int_ >= 0) {
 		TextGenerator_Int(&(*gen)._, int_);
 	} else {
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)"(-");
@@ -1534,10 +1586,18 @@ static void Expression_ExprLongInt(struct GeneratorC_Generator *gen, o7_int_t in
 	}
 }
 
+static void Expression_SetValue(struct GeneratorC_Generator *gen, struct Ast_ExprSetValue__s *set) {
+	O7_ASSERT(O7_REF(set)->set[1] == 0);
+
+	TextGenerator_Str(&(*gen)._, 2, (o7_char *)"0x");
+	TextGenerator_Set(&(*gen)._, &O7_REF(set)->set[0]);
+	TextGenerator_Char(&(*gen)._, (o7_char)'u');
+}
+
 static void Expression_Set(struct GeneratorC_Generator *gen, struct Ast_RExprSet *set);
 static void Expression_Set_Item(struct GeneratorC_Generator *gen, struct Ast_RExprSet *set) {
 	if (O7_REF(set)->exprs[0] == NULL) {
-		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x30");
+		TextGenerator_Char(&(*gen)._, (o7_char)'0');
 	} else {
 		if (O7_REF(set)->exprs[1] == NULL) {
 			TextGenerator_Str(&(*gen)._, 7, (o7_char *)"(1u << ");
@@ -1597,10 +1657,10 @@ static void Expression_IsExtension(struct GeneratorC_Generator *gen, struct Ast_
 static void Expression(struct GeneratorC_Generator *gen, struct Ast_RExpression *expr) {
 	switch (O7_REF(expr)->_.id) {
 	case 0:
-		Expression_ExprInt(&(*gen), O7_GUARD(Ast_RExprInteger, &expr)->int_);
+		Expression_ExprInt(&(*gen), o7_int(O7_GUARD(Ast_RExprInteger, &expr)->int_));
 		break;
 	case 1:
-		Expression_ExprLongInt(&(*gen), O7_GUARD(Ast_RExprInteger, &expr)->int_);
+		Expression_ExprLongInt(&(*gen), o7_int(O7_GUARD(Ast_RExprInteger, &expr)->int_));
 		break;
 	case 2:
 		Expression_Boolean(&(*gen), O7_GUARD(Ast_ExprBoolean__s, &expr));
@@ -1610,14 +1670,19 @@ static void Expression(struct GeneratorC_Generator *gen, struct Ast_RExpression 
 		if (StringStore_IsDefined(&O7_GUARD(Ast_ExprReal__s, &expr)->str)) {
 			TextGenerator_String(&(*gen)._, &O7_GUARD(Ast_ExprReal__s, &expr)->str);
 		} else {
-			TextGenerator_Real(&(*gen)._, O7_GUARD(Ast_ExprReal__s, &expr)->real);
+			TextGenerator_Real(&(*gen)._, o7_dbl(O7_GUARD(Ast_ExprReal__s, &expr)->real));
 		}
 		break;
 	case 15:
 		Expression_CString(&(*gen), O7_GUARD(Ast_ExprString__s, &expr));
 		break;
 	case 7:
-		Expression_Set(&(*gen), O7_GUARD(Ast_RExprSet, &expr));
+	case 8:
+		if (o7_is(expr, &Ast_RExprSet_tag)) {
+			Expression_Set(&(*gen), O7_GUARD(Ast_RExprSet, &expr));
+		} else {
+			Expression_SetValue(&(*gen), O7_GUARD(Ast_ExprSetValue__s, &expr));
+		}
 		break;
 	case 25:
 		Expression_Call(&(*gen), O7_GUARD(Ast_ExprCall__s, &expr));
@@ -1642,14 +1707,14 @@ static void Expression(struct GeneratorC_Generator *gen, struct Ast_RExpression 
 		Expression_Relation(&(*gen), O7_GUARD(Ast_ExprRelation__s, &expr));
 		break;
 	case 22:
-		if (o7_bl(O7_REF((*gen).opt)->checkArith) && (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst) | (1u << Ast_IdReal_cnst) | (1u << Ast_IdReal32_cnst)))) && (O7_REF(expr)->value_ == NULL)) {
+		if (o7_bl(O7_REF((*gen).opt)->checkArith) && (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, CheckableArithTypes_cnst)) && (O7_REF(expr)->value_ == NULL)) {
 			Expression_SumCheck(&(*gen), O7_GUARD(Ast_RExprSum, &expr));
 		} else {
 			Expression_Sum(&(*gen), O7_GUARD(Ast_RExprSum, &expr));
 		}
 		break;
 	case 23:
-		if (o7_bl(O7_REF((*gen).opt)->checkArith) && (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, ((1u << Ast_IdInteger_cnst) | (1u << Ast_IdLongInt_cnst) | (1u << Ast_IdReal_cnst) | (1u << Ast_IdReal32_cnst)))) && (O7_REF(expr)->value_ == NULL)) {
+		if (o7_bl(O7_REF((*gen).opt)->checkArith) && (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, CheckableArithTypes_cnst)) && (O7_REF(expr)->value_ == NULL)) {
 			Expression_TermCheck(&(*gen), O7_GUARD(Ast_ExprTerm__s, &expr));
 		} else if ((O7_REF(expr)->value_ != NULL) && (!!( (1u << Ast_ExprIntNegativeDividentTouch_cnst) & O7_REF(expr)->properties))) {
 			Expression(&(*gen), &O7_REF(expr)->value_->_);
@@ -1658,7 +1723,7 @@ static void Expression(struct GeneratorC_Generator *gen, struct Ast_RExpression 
 		}
 		break;
 	case 24:
-		if (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, ((1u << Ast_IdSet_cnst) | (1u << Ast_IdLongSet_cnst)))) {
+		if (o7_in(O7_REF(O7_REF(expr)->type)->_._.id, Ast_Sets_cnst)) {
 			TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x7E");
 			Expression(&(*gen), O7_GUARD(Ast_ExprNegate__s, &expr)->expr);
 		} else {
@@ -1692,7 +1757,7 @@ static void Qualifier(struct GeneratorC_Generator *gen, struct Ast_RType *typ) {
 		TextGenerator_Str(&(*gen)._, 9, (o7_char *)"o7_long_t");
 		break;
 	case 7:
-		TextGenerator_Str(&(*gen)._, 8, (o7_char *)"unsigned");
+		TextGenerator_Str(&(*gen)._, 8, (o7_char *)"o7_set_t");
 		break;
 	case 8:
 		TextGenerator_Str(&(*gen)._, 10, (o7_char *)"o7_set64_t");
@@ -1791,7 +1856,7 @@ static void Declarator(struct GeneratorC_Generator *gen, struct Ast_RDeclaration
 	TextGenerator_Init(&g._, &mo->_);
 	g.memout = mo;
 	TextGenerator_SetTabs(&g._, &(*gen)._);
-	g.module = (*gen).module;
+	g.module_ = (*gen).module_;
 	g.interface_ = o7_bl((*gen).interface_);
 	g.opt = (*gen).opt;
 
@@ -1916,7 +1981,7 @@ static struct Ast_RType *TypeForUndef(struct Ast_RType *t) {
 
 static void RecordUndef(struct GeneratorC_Generator *gen, struct Ast_RRecord *rec);
 static void RecordUndef_IteratorIfNeed(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *var_) {
-	o7_int_t id, deep;
+	o7_int_t id = O7_INT_UNDEF, deep = O7_INT_UNDEF;
 
 	while ((var_ != NULL) && ((o7_cmp(O7_REF(O7_REF(var_)->type)->_._.id, Ast_IdArray_cnst) != 0) || IsArrayTypeSimpleUndef(O7_REF(var_)->type, &id, &deep) || (TypeForUndef(O7_REF(O7_REF(var_)->type)->_.type) == NULL))) {
 		var_ = O7_REF(var_)->next;
@@ -1936,7 +2001,7 @@ static void RecordUndef_Memset(struct GeneratorC_Generator *gen, struct Ast_RDec
 
 static void RecordUndef(struct GeneratorC_Generator *gen, struct Ast_RRecord *rec) {
 	struct Ast_RDeclaration *var_;
-	o7_int_t arrTypeId, arrDeep;
+	o7_int_t arrTypeId = O7_INT_UNDEF, arrDeep = O7_INT_UNDEF;
 	struct Ast_RType *typeUndef;
 
 	RecordUndefHeader(&(*gen), rec, (0 > 1));
@@ -1960,7 +2025,7 @@ static void RecordUndef(struct GeneratorC_Generator *gen, struct Ast_RRecord *re
 		} else if (o7_cmp(O7_REF(O7_REF(var_)->type)->_._.id, Ast_IdArray_cnst) == 0) {
 			typeUndef = TypeForUndef(O7_REF(O7_REF(var_)->type)->_.type);
 			if (IsArrayTypeSimpleUndef(O7_REF(var_)->type, &arrTypeId, &arrDeep)) {
-				ArraySimpleUndef(&(*gen), arrTypeId, var_, (0 < 1));
+				ArraySimpleUndef(&(*gen), o7_int(arrTypeId), var_, (0 < 1));
 			} else if (typeUndef != NULL) {
 				TextGenerator_Str(&(*gen)._, 26, (o7_char *)"for (i = 0; i < O7_LEN(r->");
 				Name(&(*gen), var_);
@@ -2070,7 +2135,7 @@ static void Type_Simple(struct GeneratorC_Generator *gen, o7_int_t str_len0, o7_
 static void Type_Record(struct GeneratorC_Generator *gen, struct Ast_RRecord *rec) {
 	struct Ast_RDeclaration *v;
 
-	O7_REF(rec)->_._._.module = O7_REF((*gen).module)->bag;
+	O7_REF(rec)->_._._.module_ = O7_REF((*gen).module_)->bag;
 	TextGenerator_Str(&(*gen)._, 7, (o7_char *)"struct ");
 	if (CheckStructName(&(*gen), rec)) {
 		GlobalName(&(*gen), &rec->_._._);
@@ -2176,7 +2241,7 @@ static void Type(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *decl
 				Type_Simple(&(*gen), 10, (o7_char *)"o7_long_t ");
 				break;
 			case 7:
-				Type_Simple(&(*gen), 9, (o7_char *)"unsigned ");
+				Type_Simple(&(*gen), 9, (o7_char *)"o7_set_t ");
 				break;
 			case 8:
 				Type_Simple(&(*gen), 11, (o7_char *)"o7_set64_t ");
@@ -2265,7 +2330,7 @@ static void TypeDecl_Typedef(struct GeneratorC_Generator *gen, struct Ast_RType 
 }
 
 static void TypeDecl_LinkRecord(struct GeneratorC_Options__s *opt, struct Ast_RRecord *rec) {
-	struct RecExt__s *ext;
+	struct RecExt__s *ext = NULL;
 
 	O7_ASSERT(O7_REF(rec)->_._._._.ext == NULL);
 	O7_NEW(&ext, RecExt__s);
@@ -2353,7 +2418,7 @@ static void Const(struct GeneratorC_Generator *gen, struct Ast_Const__s *const_)
 	TextGenerator_Str(&(*gen)._, 7, (o7_char *)"define ");
 	GlobalName(&(*gen), &const_->_);
 	TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x20");
-	if (o7_bl(O7_REF(const_)->_.mark) && (O7_REF(const_)->expr != NULL)) {
+	if (o7_bl(O7_REF(const_)->_.mark) && (O7_REF(O7_REF(const_)->expr)->value_ != NULL)) {
 		Factor(&(*gen), &O7_REF(O7_REF(const_)->expr)->value_->_);
 	} else {
 		Factor(&(*gen), O7_REF(const_)->expr);
@@ -2376,13 +2441,13 @@ static void Var(struct MOut *out, struct Ast_RDeclaration *prev, struct Ast_RDec
 	} else {
 		TextGenerator_Str(&(*out).g[o7_ind(2, (o7_int_t)o7_bl(mark))]._, 2, (o7_char *)", ");
 	}
-	if (o7_bl(mark)) {
+	if (mark) {
 		Declarator(&(*out).g[Interface_cnst], var_, (0 > 1), same, (0 < 1));
 		if (last) {
 			TextGenerator_StrLn(&(*out).g[Interface_cnst]._, 1, (o7_char *)"\x3B");
 		}
 
-		if (o7_bl(same)) {
+		if (same) {
 			TextGenerator_Str(&(*out).g[Implementation_cnst]._, 2, (o7_char *)", ");
 		} else if (prev != NULL) {
 			TextGenerator_StrLn(&(*out).g[Implementation_cnst]._, 1, (o7_char *)"\x3B");
@@ -2422,7 +2487,7 @@ static void ExprSameType(struct GeneratorC_Generator *gen, struct Ast_RExpressio
 	base = NULL;
 	reref = (o7_cmp(O7_REF(O7_REF(expr)->type)->_._.id, Ast_IdPointer_cnst) == 0) && (O7_REF(O7_REF(expr)->type)->_.type != O7_REF(expectType)->_.type) && (o7_cmp(O7_REF(expr)->_.id, Ast_IdPointer_cnst) != 0);
 	brace = reref;
-	if (!o7_bl(reref)) {
+	if (!reref) {
 		CheckExpr(&(*gen), expr);
 		if (o7_cmp(O7_REF(O7_REF(expr)->type)->_._.id, Ast_IdRecord_cnst) == 0) {
 			base = O7_GUARD(Ast_RRecord, &expectType);
@@ -2626,7 +2691,7 @@ static void Statement_For(struct GeneratorC_Generator *gen, struct Ast_For__s *s
 			TextGenerator_Str(&(*gen)._, 2, (o7_char *)"; ");
 			GlobalName(&(*gen), &O7_REF(st)->var_->_);
 			TextGenerator_Str(&(*gen)._, 4, (o7_char *)" += ");
-			TextGenerator_Int(&(*gen)._, O7_REF(st)->by);
+			TextGenerator_Int(&(*gen)._, o7_int(O7_REF(st)->by));
 		}
 	} else {
 		TextGenerator_Str(&(*gen)._, 4, (o7_char *)" >= ");
@@ -2654,11 +2719,11 @@ static void Statement_Case_CaseElement(struct GeneratorC_Generator *gen, struct 
 		r = O7_REF(elem)->labels;
 		while (r != NULL) {
 			TextGenerator_Str(&(*gen)._, 5, (o7_char *)"case ");
-			TextGenerator_Int(&(*gen)._, O7_REF(r)->value_);
+			TextGenerator_Int(&(*gen)._, o7_int(O7_REF(r)->value_));
 			if (O7_REF(r)->right != NULL) {
 				O7_ASSERT(o7_bl(O7_REF((*gen).opt)->gnu));
 				TextGenerator_Str(&(*gen)._, 5, (o7_char *)" ... ");
-				TextGenerator_Int(&(*gen)._, O7_REF(O7_REF(r)->right)->value_);
+				TextGenerator_Int(&(*gen)._, o7_int(O7_REF(O7_REF(r)->right)->value_));
 			}
 			TextGenerator_StrLn(&(*gen)._, 1, (o7_char *)"\x3A");
 
@@ -2681,11 +2746,11 @@ static void Statement_Case_CaseElementAsIf_CaseRange(struct GeneratorC_Generator
 			Expression(&(*gen), caseExpr);
 			TextGenerator_Str(&(*gen)._, 4, (o7_char *)" == ");
 		}
-		TextGenerator_Int(&(*gen)._, O7_REF(r)->value_);
+		TextGenerator_Int(&(*gen)._, o7_int(O7_REF(r)->value_));
 	} else {
 		O7_ASSERT(o7_cmp(O7_REF(r)->value_, O7_REF(O7_REF(r)->right)->value_) <= 0);
 		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x28");
-		TextGenerator_Int(&(*gen)._, O7_REF(r)->value_);
+		TextGenerator_Int(&(*gen)._, o7_int(O7_REF(r)->value_));
 		if (caseExpr == NULL) {
 			TextGenerator_Str(&(*gen)._, 36, (o7_char *)" <= o7_case_expr && o7_case_expr <= ");
 		} else {
@@ -2695,7 +2760,7 @@ static void Statement_Case_CaseElementAsIf_CaseRange(struct GeneratorC_Generator
 			Expression(&(*gen), caseExpr);
 			TextGenerator_Str(&(*gen)._, 4, (o7_char *)" <= ");
 		}
-		TextGenerator_Int(&(*gen)._, O7_REF(O7_REF(r)->right)->value_);
+		TextGenerator_Int(&(*gen)._, o7_int(O7_REF(O7_REF(r)->right)->value_));
 	}
 	TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 }
@@ -2817,7 +2882,7 @@ static void Statements(struct GeneratorC_Generator *gen, struct Ast_RStatement *
 }
 
 static void ProcDecl(struct GeneratorC_Generator *gen, struct Ast_RProcedure *proc) {
-	Mark(&(*gen), O7_REF(proc)->_._._.mark);
+	Mark(&(*gen), o7_bl(O7_REF(proc)->_._._.mark));
 	Declarator(&(*gen), &proc->_._._, (0 > 1), (0 > 1), (0 < 1));
 	TextGenerator_StrLn(&(*gen)._, 1, (o7_char *)"\x3B");
 }
@@ -2911,7 +2976,7 @@ static void Procedure_Implement(struct MOut *out, struct GeneratorC_Generator *g
 	struct Ast_RDeclaration *retainParams;
 
 	Comment(&(*gen), &O7_REF(proc)->_._._._.comment);
-	Mark(&(*gen), O7_REF(proc)->_._._.mark);
+	Mark(&(*gen), o7_bl(O7_REF(proc)->_._._.mark));
 	Declarator(&(*gen), &proc->_._._, (0 > 1), (0 > 1), (0 < 1));
 	TextGenerator_StrOpen(&(*gen)._, 2, (o7_char *)" {");
 
@@ -3013,11 +3078,11 @@ static void LnIfWrote(struct MOut *out) {
 }
 
 static void VarsInit(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *d) {
-	o7_int_t arrDeep, arrTypeId = O7_INT_UNDEF;
+	o7_int_t arrDeep = O7_INT_UNDEF, arrTypeId = O7_INT_UNDEF;
 
 	while ((d != NULL) && (o7_is(d, &Ast_RVar_tag))) {
 		if (o7_in(O7_REF(O7_REF(d)->type)->_._.id, ((1u << Ast_IdArray_cnst) | (1u << Ast_IdRecord_cnst)))) {
-			if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) && (O7_REF(O7_REF(d)->type)->_._.ext != NULL)) {
+			if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) && (o7_cmp(O7_REF(O7_REF(d)->type)->_._.id, Ast_IdRecord_cnst) == 0) && StringStore_IsDefined(&O7_REF(O7_REF(d)->type)->_.name) && Ast_IsGlobal(&O7_REF(d)->type->_)) {
 				RecordUndefCall(&(*gen), d);
 			} else if ((o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitZero_cnst) == 0) || (o7_cmp(O7_REF(O7_REF(d)->type)->_._.id, Ast_IdRecord_cnst) == 0) || (o7_cmp(O7_REF(O7_REF(d)->type)->_._.id, Ast_IdArray_cnst) == 0) && !IsArrayTypeSimpleUndef(O7_REF(d)->type, &arrTypeId, &arrDeep)) {
 				TextGenerator_Str(&(*gen)._, 8, (o7_char *)"memset(&");
@@ -3027,7 +3092,7 @@ static void VarsInit(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *
 				TextGenerator_StrLn(&(*gen)._, 3, (o7_char *)"));");
 			} else {
 				O7_ASSERT(o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0);
-				ArraySimpleUndef(&(*gen), arrTypeId, d, (0 > 1));
+				ArraySimpleUndef(&(*gen), o7_int(arrTypeId), d, (0 > 1));
 			}
 		}
 		d = O7_REF(d)->next;
@@ -3090,7 +3155,7 @@ static void Declarations(struct MOut *out, struct Ast_RDeclarations *ds) {
 }
 
 extern struct GeneratorC_Options__s *GeneratorC_DefaultOptions(void) {
-	struct GeneratorC_Options__s *o;
+	struct GeneratorC_Options__s *o = NULL;
 
 	O7_NEW(&o, GeneratorC_Options__s);
 	if (o != NULL) {
@@ -3152,7 +3217,7 @@ static void MarkType(struct Ast_RType *t) {
 			if (o7_cmp(O7_REF(t)->_._.id, Ast_IdPointer_cnst) == 0) {
 				t = O7_REF(t)->_.type;
 				O7_REF(t)->_.mark = (0 < 1);
-				O7_ASSERT(O7_REF(t)->_.module != NULL);
+				O7_ASSERT(O7_REF(t)->_.module_ != NULL);
 			}
 			d = (&(O7_GUARD(Ast_RRecord, &t)->vars)->_);
 			while (d != NULL) {
@@ -3206,7 +3271,7 @@ static void MarkUsedInMarked(struct Ast_RModule *m) {
 
 	imp = (&(O7_REF(m)->import_)->_);
 	while ((imp != NULL) && (o7_is(imp, &Ast_Import__s_tag))) {
-		MarkUsedInMarked(O7_REF(O7_REF(imp)->module)->m);
+		MarkUsedInMarked(O7_REF(O7_REF(imp)->module_)->m);
 		imp = O7_REF(imp)->next;
 	}
 	MarkUsedInMarked_Consts(&O7_REF(m)->_.consts->_);
@@ -3219,7 +3284,7 @@ static void ImportInitDone(struct GeneratorC_Generator *gen, struct Ast_RDeclara
 		O7_ASSERT(o7_is(imp, &Ast_Import__s_tag));
 
 		do {
-			Name(&(*gen), &O7_REF(O7_REF(imp)->module)->m->_._);
+			Name(&(*gen), &O7_REF(O7_REF(imp)->module_)->m->_._);
 			TextGenerator_StrLn(&(*gen)._, initDone_len0, initDone);
 
 			imp = O7_REF(imp)->next;
@@ -3262,9 +3327,9 @@ static void TagsInit(struct GeneratorC_Generator *gen) {
 	}
 }
 
-static void Generate_Init(struct GeneratorC_Generator *gen, struct VDataStream_Out *out, struct Ast_RModule *module, struct GeneratorC_Options__s *opt, o7_bool interface_) {
+static void Generate_Init(struct GeneratorC_Generator *gen, struct VDataStream_Out *out, struct Ast_RModule *module_, struct GeneratorC_Options__s *opt, o7_bool interface_) {
 	TextGenerator_Init(&(*gen)._, out);
-	(*gen).module = module;
+	(*gen).module_ = module_;
 	(*gen).localDeep = 0;
 
 	(*gen).opt = opt;
@@ -3282,46 +3347,43 @@ static void Generate_Includes(struct GeneratorC_Generator *gen) {
 	if (o7_cmp(O7_REF((*gen).opt)->std, GeneratorC_IsoC99_cnst) >= 0) {
 		TextGenerator_StrLn(&(*gen)._, 20, (o7_char *)"#include <stdbool.h>");
 	}
-	TextGenerator_Ln(&(*gen)._);
-	if (o7_cmp(O7_REF((*gen).opt)->varInit, GeneratorC_VarInitUndefined_cnst) == 0) {
-		TextGenerator_StrLn(&(*gen)._, 25, (o7_char *)"#define O7_BOOL_UNDEFINED");
-	}
 	TextGenerator_StrLn(&(*gen)._, 15, (o7_char *)"#include <o7.h>");
 	TextGenerator_Ln(&(*gen)._);
 }
 
 static void Generate_HeaderGuard(struct GeneratorC_Generator *gen) {
 	TextGenerator_Str(&(*gen)._, 26, (o7_char *)"#if !defined HEADER_GUARD_");
-	TextGenerator_String(&(*gen)._, &O7_REF((*gen).module)->_._.name);
+	TextGenerator_String(&(*gen)._, &O7_REF((*gen).module_)->_._.name);
 	TextGenerator_Ln(&(*gen)._);
 	TextGenerator_Str(&(*gen)._, 26, (o7_char *)"#    define  HEADER_GUARD_");
-	TextGenerator_String(&(*gen)._, &O7_REF((*gen).module)->_._.name);
+	TextGenerator_String(&(*gen)._, &O7_REF((*gen).module_)->_._.name);
 	TextGenerator_StrLn(&(*gen)._, 2, (o7_char *)" 1");
 	TextGenerator_Ln(&(*gen)._);
 }
 
-static void Generate_ModuleInit(struct GeneratorC_Generator *interf, struct GeneratorC_Generator *impl, struct Ast_RModule *module) {
-	if ((O7_REF(module)->import_ == NULL) && (O7_REF(module)->_.stats == NULL) && (O7_REF((*impl).opt)->records == NULL)) {
+static void Generate_ModuleInit(struct GeneratorC_Generator *interf, struct GeneratorC_Generator *impl, struct Ast_RModule *module_, struct Ast_RStatement *cmd) {
+	if ((O7_REF(module_)->import_ == NULL) && (O7_REF(module_)->_.stats == NULL) && (cmd == NULL) && (O7_REF((*impl).opt)->records == NULL)) {
 		if (o7_cmp(O7_REF((*impl).opt)->std, GeneratorC_IsoC99_cnst) >= 0) {
 			TextGenerator_Str(&(*interf)._, 19, (o7_char *)"static inline void ");
 		} else {
 			TextGenerator_Str(&(*interf)._, 15, (o7_char *)"O7_INLINE void ");
 		}
-		Name(&(*interf), &module->_._);
+		Name(&(*interf), &module_->_._);
 		TextGenerator_StrLn(&(*interf)._, 17, (o7_char *)"_init(void) { ; }");
 	} else {
 		TextGenerator_Str(&(*interf)._, 12, (o7_char *)"extern void ");
-		Name(&(*interf), &module->_._);
+		Name(&(*interf), &module_->_._);
 		TextGenerator_StrLn(&(*interf)._, 12, (o7_char *)"_init(void);");
 
 		TextGenerator_Str(&(*impl)._, 12, (o7_char *)"extern void ");
-		Name(&(*impl), &module->_._);
+		Name(&(*impl), &module_->_._);
 		TextGenerator_StrOpen(&(*impl)._, 13, (o7_char *)"_init(void) {");
 		TextGenerator_StrLn(&(*impl)._, 32, (o7_char *)"static unsigned initialized = 0;");
 		TextGenerator_StrOpen(&(*impl)._, 23, (o7_char *)"if (0 == initialized) {");
-		ImportInit(&(*impl), &O7_REF(module)->import_->_);
+		ImportInit(&(*impl), &O7_REF(module_)->import_->_);
 		TagsInit(&(*impl));
-		Statements(&(*impl), O7_REF(module)->_.stats);
+		Statements(&(*impl), O7_REF(module_)->_.stats);
+		Statements(&(*impl), cmd);
 		TextGenerator_StrLnClose(&(*impl)._, 1, (o7_char *)"\x7D");
 		TextGenerator_StrLn(&(*impl)._, 14, (o7_char *)"++initialized;");
 		TextGenerator_StrLnClose(&(*impl)._, 1, (o7_char *)"\x7D");
@@ -3329,41 +3391,41 @@ static void Generate_ModuleInit(struct GeneratorC_Generator *interf, struct Gene
 	}
 }
 
-static void Generate_ModuleDone(struct GeneratorC_Generator *interf, struct GeneratorC_Generator *impl, struct Ast_RModule *module) {
+static void Generate_ModuleDone(struct GeneratorC_Generator *interf, struct GeneratorC_Generator *impl, struct Ast_RModule *module_) {
 	if ((o7_cmp(O7_REF((*impl).opt)->memManager, GeneratorC_MemManagerCounter_cnst) != 0)) {
-	} else if ((O7_REF(module)->import_ == NULL) && (O7_REF((*impl).opt)->records == NULL)) {
+	} else if ((O7_REF(module_)->import_ == NULL) && (O7_REF((*impl).opt)->records == NULL)) {
 		if (o7_cmp(O7_REF((*impl).opt)->std, GeneratorC_IsoC99_cnst) >= 0) {
 			TextGenerator_Str(&(*interf)._, 19, (o7_char *)"static inline void ");
 		} else {
 			TextGenerator_Str(&(*interf)._, 15, (o7_char *)"O7_INLINE void ");
 		}
-		Name(&(*interf), &module->_._);
+		Name(&(*interf), &module_->_._);
 		TextGenerator_StrLn(&(*interf)._, 17, (o7_char *)"_done(void) { ; }");
 	} else {
 		TextGenerator_Str(&(*interf)._, 12, (o7_char *)"extern void ");
-		Name(&(*interf), &module->_._);
+		Name(&(*interf), &module_->_._);
 		TextGenerator_StrLn(&(*interf)._, 12, (o7_char *)"_done(void);");
 
 		TextGenerator_Str(&(*impl)._, 12, (o7_char *)"extern void ");
-		Name(&(*impl), &module->_._);
+		Name(&(*impl), &module_->_._);
 		TextGenerator_StrOpen(&(*impl)._, 13, (o7_char *)"_done(void) {");
-		ReleaseVars(&(*impl), &O7_REF(module)->_.vars->_);
-		ImportDone(&(*impl), &O7_REF(module)->import_->_);
+		ReleaseVars(&(*impl), &O7_REF(module_)->_.vars->_);
+		ImportDone(&(*impl), &O7_REF(module_)->import_->_);
 		TextGenerator_StrLnClose(&(*impl)._, 1, (o7_char *)"\x7D");
 		TextGenerator_Ln(&(*impl)._);
 	}
 }
 
-static void Generate_Main(struct GeneratorC_Generator *gen, struct Ast_RModule *module, struct Ast_RStatement *cmd) {
+static void Generate_Main(struct GeneratorC_Generator *gen, struct Ast_RModule *module_, struct Ast_RStatement *cmd) {
 	TextGenerator_StrOpen(&(*gen)._, 41, (o7_char *)"extern int main(int argc, char *argv[]) {");
 	TextGenerator_StrLn(&(*gen)._, 20, (o7_char *)"o7_init(argc, argv);");
-	ImportInit(&(*gen), &O7_REF(module)->import_->_);
+	ImportInit(&(*gen), &O7_REF(module_)->import_->_);
 	TagsInit(&(*gen));
-	Statements(&(*gen), O7_REF(module)->_.stats);
+	Statements(&(*gen), O7_REF(module_)->_.stats);
 	Statements(&(*gen), cmd);
 	if (o7_cmp(O7_REF((*gen).opt)->memManager, GeneratorC_MemManagerCounter_cnst) == 0) {
-		ReleaseVars(&(*gen), &O7_REF(module)->_.vars->_);
-		ImportDone(&(*gen), &O7_REF(module)->import_->_);
+		ReleaseVars(&(*gen), &O7_REF(module_)->_.vars->_);
+		ImportDone(&(*gen), &O7_REF(module_)->import_->_);
 	}
 	TextGenerator_StrLn(&(*gen)._, 20, (o7_char *)"return o7_exit_code;");
 	TextGenerator_StrLnClose(&(*gen)._, 1, (o7_char *)"\x7D");
@@ -3376,11 +3438,11 @@ static void Generate_GeneratorNotify(struct GeneratorC_Generator *gen) {
 	}
 }
 
-extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module, struct Ast_RStatement *cmd, struct GeneratorC_Options__s *opt) {
+extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VDataStream_Out *implementation, struct Ast_RModule *module_, struct Ast_RStatement *cmd, struct GeneratorC_Options__s *opt) {
 	struct MOut out;
 	MOut_undef(&out);
 
-	O7_ASSERT(!Ast_HasError(module));
+	O7_ASSERT(!Ast_HasError(module_));
 
 	if (opt == NULL) {
 		opt = GeneratorC_DefaultOptions();
@@ -3394,33 +3456,33 @@ extern void GeneratorC_Generate(struct VDataStream_Out *interface_, struct VData
 	O7_REF(opt)->main_ = interface_ == NULL;
 
 	if (!o7_bl(O7_REF(opt)->main_)) {
-		MarkUsedInMarked(module);
+		MarkUsedInMarked(module_);
 	}
 
 	if (interface_ != NULL) {
-		Generate_Init(&out.g[Interface_cnst], interface_, module, opt, (0 < 1));
+		Generate_Init(&out.g[Interface_cnst], interface_, module_, opt, (0 < 1));
 		Generate_GeneratorNotify(&out.g[Interface_cnst]);
 	}
 
-	Generate_Init(&out.g[Implementation_cnst], implementation, module, opt, (0 > 1));
+	Generate_Init(&out.g[Implementation_cnst], implementation, module_, opt, (0 > 1));
 	Generate_GeneratorNotify(&out.g[Implementation_cnst]);
 
-	Comment(&out.g[o7_ind(2, (o7_int_t)!o7_bl(O7_REF(opt)->main_))], &O7_REF(module)->_._._.comment);
+	Comment(&out.g[o7_ind(2, (o7_int_t)!o7_bl(O7_REF(opt)->main_))], &O7_REF(module_)->_._._.comment);
 
 	Generate_Includes(&out.g[Implementation_cnst]);
 
 	if (!o7_bl(O7_REF(opt)->main_)) {
 		Generate_HeaderGuard(&out.g[Interface_cnst]);
-		Import(&out.g[Implementation_cnst], &module->_._);
+		Import(&out.g[Implementation_cnst], &module_->_._);
 	}
 
-	Declarations(&out, &module->_);
+	Declarations(&out, &module_->_);
 
 	if (o7_bl(O7_REF(opt)->main_)) {
-		Generate_Main(&out.g[Implementation_cnst], module, cmd);
+		Generate_Main(&out.g[Implementation_cnst], module_, cmd);
 	} else {
-		Generate_ModuleInit(&out.g[Interface_cnst], &out.g[Implementation_cnst], module);
-		Generate_ModuleDone(&out.g[Interface_cnst], &out.g[Implementation_cnst], module);
+		Generate_ModuleInit(&out.g[Interface_cnst], &out.g[Implementation_cnst], module_, cmd);
+		Generate_ModuleDone(&out.g[Interface_cnst], &out.g[Implementation_cnst], module_);
 		TextGenerator_StrLn(&out.g[Interface_cnst]._, 6, (o7_char *)"#endif");
 	}
 }
@@ -3447,3 +3509,4 @@ extern void GeneratorC_init(void) {
 	}
 	++initialized;
 }
+
