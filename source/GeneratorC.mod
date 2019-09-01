@@ -1580,7 +1580,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE SetValue(VAR gen: Generator; set: Ast.ExprSetValue);
 	BEGIN
-		Text.Int(gen, ORD(set.set[0]));
+		(* TODO *)
+		ASSERT(set.set[1] = {});
+
+		Text.Str(gen, "0x");
+		Text.Set(gen, set.set[0]);
 		Text.Char(gen, "u")
 	END SetValue;
 

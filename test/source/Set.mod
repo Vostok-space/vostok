@@ -6,7 +6,7 @@ CONST
 	s3 = s2 - s;
 	s4 = {1 .. 3, 4 .. 6};
 	s5 = {2, 4 .. 5, 13 .. 31};
-	s6*= s2 - s - {31};
+	s6*= s2 - s;
 
 	bt = 27 IN s5;
 	bf =  7 IN s5;
@@ -59,7 +59,7 @@ BEGIN
 	ASSERT(23 IN s5);
 	ASSERT(31 IN s5);
 
-	ASSERT(s6 = s3 - {31});
+	ASSERT(s6 = s3);
 
 	ASSERT(bt);
 	ASSERT(~bf);

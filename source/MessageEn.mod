@@ -244,7 +244,7 @@ BEGIN
 	| Ast.ErrProcNestedTooDeep:
 		C("Too deep nesting of subroutines")
 	| Ast.ErrExpectProcNameWithoutParams:
-		C("Expect command name - subroutine withut parameters")
+		C("Expect command name - subroutine without parameters")
 	END
 END AstError;
 
