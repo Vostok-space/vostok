@@ -1,4 +1,5 @@
 (* Utils for work with 64 bit sets, when available only 32 bit sets
+ *
  * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,27 +19,64 @@ MODULE LongSet;
   IMPORT Limits := TypesLimits;
 
   CONST
+    Mod  = Limits.SetMax + 1;
     Max* = Limits.SetMax * 2 + 1;
 
   TYPE
     Type* = ARRAY 2 OF SET;
 
-  PROCEDURE CheckRange*(int: INTEGER): BOOLEAN;
-  RETURN
-    (0 <= int) & (int <= Max)
-  END CheckRange;
+  PROCEDURE Empty*(VAR s: Type);
+  BEGIN
+    s[0] := {};
+    s[1] := {}
+  END Empty;
 
-  PROCEDURE Add*(VAR s: Type; a: Type);
+  PROCEDURE Set*(VAR s: Type; low, high: SET);
+  BEGIN
+    s[0] := low;
+    s[1] := high
+  END Set;
+
+  PROCEDURE InRange*(i: INTEGER): BOOLEAN;
+  RETURN
+    (0 <= i) & (i <= Max)
+  END InRange;
+
+  PROCEDURE Incl*(VAR s: Type; i: INTEGER);
+  BEGIN
+    ASSERT(InRange(i));
+    INCL(s[i DIV Mod], i MOD Mod)
+  END Incl;
+
+  PROCEDURE Excl*(VAR s: Type; i: INTEGER);
+  BEGIN
+    ASSERT(InRange(i));
+    EXCL(s[i DIV Mod], i MOD Mod)
+  END Excl;
+
+  PROCEDURE Union*(VAR s: Type; a: Type);
   BEGIN
     s[0] := s[0] + a[0];
     s[1] := s[1] + a[1]
-  END Add;
+  END Union;
 
-  PROCEDURE Sub*(VAR s: Type; a: Type);
+  PROCEDURE Diff*(VAR s: Type; a: Type);
   BEGIN
     s[0] := s[0] - a[0];
     s[1] := s[1] - a[1]
-  END Sub;
+  END Diff;
+
+  PROCEDURE Inter*(VAR s: Type; a: Type);
+  BEGIN
+    s[0] := s[0] * a[0];
+    s[1] := s[1] * a[1];
+  END Inter;
+
+  PROCEDURE SymDiff*(VAR s: Type; a: Type);
+  BEGIN
+    s[0] := s[0] / a[0];
+    s[1] := s[1] / a[1];
+  END SymDiff;
 
   PROCEDURE Equal*(s1, s2: Type): BOOLEAN;
   RETURN
@@ -47,14 +85,14 @@ MODULE LongSet;
 
   PROCEDURE In*(i: INTEGER; s: Type): BOOLEAN;
   RETURN
-    CheckRange(i) & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
+    InRange(i) & (i MOD (Limits.SetMax + 1) IN s[i DIV (Limits.SetMax + 1)])
   END In;
 
-  PROCEDURE Neg*(VAR s: Type);
+  PROCEDURE Not*(VAR s: Type);
   BEGIN
     s[0] := -s[0];
     s[1] := -s[1]
-  END Neg;
+  END Not;
 
   PROCEDURE ConvertableToInt*(s: Type): BOOLEAN;
   RETURN
@@ -67,11 +105,5 @@ MODULE LongSet;
   RETURN
     ORD(s[0])
   END Ord;
-
-  PROCEDURE Empty*(VAR s: Type);
-  BEGIN
-    s[0] := {};
-    s[1] := {}
-  END Empty;
 
 END LongSet.

@@ -1904,8 +1904,8 @@ BEGIN
 			IF expr2 # NIL THEN
 				right := expr2.value(ExprInteger).int
 			END;
-			IF ~LongSet.CheckRange(left)
-			OR (expr2 # NIL) & ~LongSet.CheckRange(right)
+			IF ~LongSet.InRange(left)
+			OR (expr2 # NIL) & ~LongSet.InRange(right)
 			THEN
 				err := ErrSetElemOutOfRange
 			ELSIF expr2 = NIL THEN
@@ -1935,7 +1935,7 @@ BEGIN
 	IF base = NIL THEN
 		base := e
 	ELSIF (base.value # NIL) & (e.value # NIL) THEN
-		LongSet.Add(base.value(ExprSetValue).set, set)
+		LongSet.Union(base.value(ExprSetValue).set, set)
 	END;
 	PropTouch(base, Prop(expr1) + Prop(expr2))
 
@@ -2687,7 +2687,7 @@ BEGIN
 			| IdSet, IdLongSet:
 				e.value := ExprSetByValue(term.value(ExprSetValue).set);
 				IF add = Minus THEN
-					LongSet.Neg(e.value(ExprSetValue).set)
+					LongSet.Not(e.value(ExprSetValue).set)
 				END
 			| IdBoolean:
 				e.value := ExprBooleanGet(term.value(ExprBoolean).bool)
@@ -2759,9 +2759,9 @@ BEGIN
 				*)
 			| IdSet:
 				IF add = Plus THEN
-					LongSet.Add(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
+					LongSet.Union(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
 				ELSE ASSERT(add = Minus);
-					LongSet.Sub(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
+					LongSet.Diff(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
 				END
 			END
 		END
