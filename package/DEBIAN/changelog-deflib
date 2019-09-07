@@ -1,3 +1,9 @@
+ vostok-deflib (0.0.1.dev) unstable; urgency=low
+  * Added LongSet module
+  * Added o7_set_t to o7.h
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 4 September 2019 00:00:00 +0200
+
  vostok-deflib (0.0.0.dev) unstable; urgency=low
   * Initial package
 

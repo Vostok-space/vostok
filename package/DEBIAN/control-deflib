@@ -1,5 +1,5 @@
 Package:      vostok-deflib
-Version:      0.0.0.dev
+Version:      0.0.1.dev
 Maintainer:   Vostok <project-Vostok@yandex.ru>
 Section:      devel
 Architecture: all
