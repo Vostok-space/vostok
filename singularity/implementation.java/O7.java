@@ -33,8 +33,9 @@ public static final java.nio.charset.Charset UTF_8
 static int      exitCode  = 0;
 static byte[][] args      = new byte[][]{};
 
-private static final java.util.HashMap<java.lang.String, byte[]> stringsCache
-                   = new java.util.HashMap<>();
+private static
+    java.lang.ref.SoftReference<java.util.HashMap<java.lang.String, byte[]>>
+    stringsCache = new java.lang.ref.SoftReference<>(null);
 
 public static void exit() {
     if (0 != exitCode) {
@@ -264,16 +265,24 @@ public static double flt(final int i) {
 public static byte[] bytes(final java.lang.String s) {
     final java.nio.ByteBuffer bb;
     final int len;
+    java.util.HashMap<java.lang.String, byte[]> cache;
     byte ba[];
 
-    ba = stringsCache.get(s);
+    cache = stringsCache.get();
+    if (cache == null) {
+        cache = new java.util.HashMap<>();
+        stringsCache = new java.lang.ref.SoftReference<>(cache);
+        ba = null;
+    } else {
+        ba = cache.get(s);
+    }
     if (ba == null) {
         bb = UTF_8.encode(s);
         len = bb.limit();
         ba = new byte[len];
         bb.get(ba);
 
-        stringsCache.put(s, ba);
+        cache.put(s, ba);
     }
     return ba;
 }
