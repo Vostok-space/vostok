@@ -9,10 +9,10 @@ WARN="-Wall -Wno-parentheses"
 DEBUG=-g
 OPTIM=-O0
 OPT=
-LD_OPT=-lm
+LD_OPT=
 CC_OPT="$WARN $OPTIM $DEBUG $O7_OPT $OPT $LD_OPT $SANITIZE"
 
-for CC in cc gcc clang tcc; do
+for CC in cc gcc clang tcc zapcc ccomp; do
     if $CC -v >/dev/null 2>/dev/null; then
         echo C compiler is $CC
         break

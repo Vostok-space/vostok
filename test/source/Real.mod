@@ -8,27 +8,38 @@ CONST
 
 VAR p1, p2: POINTER TO RECORD END;
 
-PROCEDURE Pack;
-VAR a, b: REAL;
+PROCEDURE Pack(sign: INTEGER);
+VAR a, b, c, one: REAL;
     n: INTEGER;
 BEGIN
-	a := 1.0;
+	ASSERT(ABS(sign) = 1);
+
+	one := FLT(sign);
+	a := one;
 	PACK(a, 30);
-	ASSERT(a = FLT(ORD({30})));
+	ASSERT(a = one * FLT(ORD({30})));
 
 	b := a;
 	UNPK(b, n);
 	Out.Real(b, 0); Out.Ln;
-	ASSERT(b = 1.0);
+	ASSERT(b = one);
 	ASSERT(n = 30);
 
-	PACK(a, 27);
-	ASSERT(a = FLT(ORD({30})) * FLT(ORD({27})));
+	PACK(a, 77);
+	c := one * FLT(ORD({30})) * FLT(ORD({30})) * FLT(ORD({30})) * FLT(ORD({17}));
+	ASSERT(a = c);
 
 	b := a;
 	UNPK(b, n);
-	ASSERT(b = 1.0);
-	ASSERT(n = 57)
+	ASSERT(b = one);
+	ASSERT(n = 107);
+
+	PACK(a, -201);
+	b := a;
+	UNPK(b, n);
+	ASSERT(b = one);
+	ASSERT(n = -94)
+
 END Pack;
 
 PROCEDURE Fail*;
@@ -61,7 +72,8 @@ BEGIN
 	Out.Real(c, 0); Out.Ln;
 	ASSERT(c = 1.02);
 
-	Pack
+	Pack(+1);
+	Pack(-1)
 END Go;
 
 BEGIN

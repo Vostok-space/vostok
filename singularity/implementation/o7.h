@@ -1174,22 +1174,14 @@ double o7_flt(o7_int_t v) {
 O7_ALWAYS_INLINE
 void o7_ldexp(double *f, o7_int_t n) {
 	extern double o7_raw_ldexp(double f, int n);
-
+	/* TODO убрать o7_dbl_finite для результата */
 	*f = o7_dbl_finite(o7_raw_ldexp(o7_dbl_finite(*f), o7_int(n)));
 }
 
 O7_ALWAYS_INLINE
 void o7_frexp(double *f, o7_int_t *n) {
-	extern double o7_raw_frexp(double x, int *exp);
-
-	int p;
-
-	*f = o7_raw_frexp(o7_dbl_finite(*f), &p) * 2.0;
-	if (*f == 0.0) {
-		*n = p;
-	} else {
-		*n = p - 1;
-	}
+	extern double o7_raw_unpk(double x, int *exp);
+	*f = o7_raw_unpk(o7_dbl_finite(*f), n);
 }
 
 extern O7_ATTR_PURE
