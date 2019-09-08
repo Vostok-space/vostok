@@ -100,6 +100,14 @@ typedef char unsigned o7_char;
 #	error
 #endif
 
+#	if LONG_MAX >= 9223372036854775807l
+		typedef long unsigned      o7_ulong_t;
+#	elif LLONG_MAX >= 9223372036854775807ll
+		typedef long long unsigned o7_ulong_t;
+#	else
+#		error
+#	endif
+
 #if O7_GNUC_BUILTIN_OVERFLOW
 #	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
 #	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
@@ -806,16 +814,8 @@ void o7_ldexp(double *f, o7_int_t n) {
 
 O7_ALWAYS_INLINE
 void o7_frexp(double *f, o7_int_t *n) {
-	extern double o7_raw_frexp(double x, int *exp);
-
-	int p;
-
-	*f = o7_raw_frexp(o7_dbl_finite(*f), &p) * 2.0;
-	if (*f == 0.0) {
-		*n = p;
-	} else {
-		*n = p - 1;
-	}
+	extern double o7_raw_unpk(double x, int *exp);
+	*f = o7_raw_unpk(o7_dbl_finite(*f), n);
 }
 
 extern O7_ATTR_PURE

@@ -1,5 +1,7 @@
 #include "o7.h"
 
+#include <float.h>
+
 #include <math.h>
 #if defined(_WIN32) || defined(_WIN64)
 	extern double ldexp(double, int);
@@ -163,10 +165,52 @@ extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
 	return c1 - c2;
 }
 
-extern double o7_raw_ldexp(double f, int n) {
-	return ldexp(f, n);
+extern double o7_raw_unpk(double x, o7_int_t *exp) {
+#	define D 0x0010000000000000ULL
+
+	o7_ulong_t u;
+	o7_int_t e;
+	double m;
+
+	memcpy(&u, &x, sizeof(u));
+
+	e = u / D;
+	m = u % D / (double)D + 1.0;
+	if (e >= 0x800) {
+		e -= 0xBFF;
+		m = -m;
+	} else {
+		e -= 0x3FF;
+	}
+	*exp = e;
+	return m;
+
+#	undef D
 }
 
-extern double o7_raw_frexp(double x, int *exp) {
-	return frexp(x, exp);
+extern double o7_raw_ldexp(double x, int n) {
+#	define D 0x8000000000000000ULL
+	o7_int_t e;
+
+	x = o7_raw_unpk(x, &e);
+	n += e;
+	if (n > 0) {
+		assert(n < DBL_MAX_EXP);
+		while (n > 63) {
+			x *= D;
+			n -= 63;
+		}
+		x *= 1ULL << n;
+	} else if (n < DBL_MIN_EXP - DBL_MANT_DIG) {
+		x = 0.0;
+	} else {
+		while (n < -63) {
+			x *= 1.0 / D;
+			n += 63;
+		}
+		x /= 1ULL << -n;
+	}
+	return x;
+
+#	undef D
 }
