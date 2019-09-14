@@ -448,6 +448,7 @@ BEGIN
 	args.script := FALSE;
 
 	i := 0;
+	arg := 0;
 	ret := ErrNo;
 	IF GetParam(ret, ErrTooLongSourceName, file, i, arg) THEN
 		IF (file[0] = ".") & (file[1] # "/") THEN
