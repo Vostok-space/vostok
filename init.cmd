@@ -1,5 +1,5 @@
 @MKDIR result\v0 result\v1 2>NUL
-@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c
+@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c LongSet.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c
 
 
 @SET CC=tcc
@@ -33,10 +33,11 @@
 
 :FOUND_CL
 
+@ECHO Compiler is cl
+
 @CD bootstrap
-:: @%CC% /c /TP - Режим C++
-@%CC% /c %SRC% /I. /Isingularity
-link *.obj /SUBSYSTEM:CONSOLE /out:..\result\bs-ost.exe
+:: @cl /TP - Режим C++
+@cl %SRC% /I. /Isingularity /Fe:..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
 @CD ..
 @EXIT
