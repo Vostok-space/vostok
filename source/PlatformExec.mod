@@ -121,6 +121,10 @@ BEGIN
 	RETURN ok
 END Quote;
 
+PROCEDURE AddQuote*(VAR c: Code): BOOLEAN;
+	RETURN Quote(c.buf, c.len)
+END AddQuote;
+
 PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
                    s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
 	RETURN Quote(d, i) & Copy(d, i, s, j, FALSE) & Quote(d, i)

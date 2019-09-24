@@ -460,7 +460,7 @@ VAR ret: INTEGER;
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
 				ok := ok
-				    & CComp.AddOutput(cmd, bin)
+				    & CComp.AddOutputExe(cmd, bin)
 				    & CComp.AddInclude(cmd, outC, 0);
 				i := 0;
 				WHILE ok & (cDirs[i] # Utf8.Null) DO

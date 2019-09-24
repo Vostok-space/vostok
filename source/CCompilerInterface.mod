@@ -24,6 +24,7 @@ MODULE CCompilerInterface;
     Gnu*      = 2;
     Clang*    = 3;
     CompCert* = 4;
+    Msvc*     = 5;
 
   TYPE
     Compiler* = RECORD(V.Base)
@@ -75,15 +76,25 @@ MODULE CCompilerInterface;
    OR Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
 
    OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
-   OR Platform.Windows & Test(c, Unknown, "cl.exe",  "")
+   OR Platform.Windows & Test(c, Msvc, "cl.exe",  "")
       ) & (~forRun OR Exec.AddClean(c.cmd, " -w"))
   END Search;
 
-  PROCEDURE AddOutput*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE AddOutputExe*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
+  VAR ok: BOOLEAN;
+  BEGIN
+    IF c.id = Msvc THEN
+      ok := Exec.AddClean(c.cmd, " -Fe")
+          & Exec.AddQuote(c.cmd)
+          & Exec.AddClean(c.cmd, o)
+          & Exec.AddQuote(c.cmd)
+    ELSE
+      ok := Exec.Add(c.cmd, "-o")
+          & Exec.Add(c.cmd, o)
+    END
   RETURN
-    Exec.Add(c.cmd, "-o")
-  & Exec.Add(c.cmd, o)
-  END AddOutput;
+    ok
+  END AddOutputExe;
 
   PROCEDURE AddInclude*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
                        : BOOLEAN;
