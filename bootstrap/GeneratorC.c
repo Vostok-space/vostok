@@ -682,10 +682,28 @@ static void VarInit(struct GeneratorC_Generator *gen, struct Ast_RDeclaration *v
 static void Expression(struct GeneratorC_Generator *gen, struct Ast_RExpression *expr);
 static void Expression_Call(struct GeneratorC_Generator *gen, struct Ast_ExprCall__s *call);
 static void Expression_Call_Predefined(struct GeneratorC_Generator *gen, struct Ast_ExprCall__s *call);
-static void Expression_Call_Predefined_Shift(struct GeneratorC_Generator *gen, o7_int_t shift_len0, o7_char shift[/*len0*/], struct Ast_RParameter *ps) {
+static void Expression_Call_Predefined_LeftShift(struct GeneratorC_Generator *gen, struct Ast_RParameter *ps) {
 	TextGenerator_Str(&(*gen)._, 22, (o7_char *)"(o7_int_t)((o7_uint_t)");
 	Factor(&(*gen), O7_REF(ps)->expr);
-	TextGenerator_Str(&(*gen)._, shift_len0, shift);
+	TextGenerator_Str(&(*gen)._, 4, (o7_char *)" << ");
+	Factor(&(*gen), O7_REF(O7_REF(ps)->next)->expr);
+	TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
+}
+
+static void Expression_Call_Predefined_ArithmeticRightShift(struct GeneratorC_Generator *gen, struct Ast_RParameter *ps) {
+	if ((O7_REF(O7_REF(ps)->expr)->value_ != NULL) && (O7_REF(O7_REF(O7_REF(ps)->next)->expr)->value_ != NULL)) {
+		TextGenerator_Str(&(*gen)._, 7, (o7_char *)"O7_ASR(");
+		Factor(&(*gen), O7_REF(ps)->expr);
+		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
+	} else if (o7_bl(O7_REF((*gen).opt)->gnu)) {
+		TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x28");
+		Factor(&(*gen), O7_REF(ps)->expr);
+		TextGenerator_Str(&(*gen)._, 4, (o7_char *)" >> ");
+	} else {
+		TextGenerator_Str(&(*gen)._, 7, (o7_char *)"o7_asr(");
+		Factor(&(*gen), O7_REF(ps)->expr);
+		TextGenerator_Str(&(*gen)._, 2, (o7_char *)", ");
+	}
 	Factor(&(*gen), O7_REF(O7_REF(ps)->next)->expr);
 	TextGenerator_Str(&(*gen)._, 1, (o7_char *)"\x29");
 }
@@ -867,10 +885,10 @@ static void Expression_Call_Predefined(struct GeneratorC_Generator *gen, struct 
 		Expression_Call_Predefined_Len(&(*gen), e1);
 		break;
 	case 217:
-		Expression_Call_Predefined_Shift(&(*gen), 4, (o7_char *)" << ", O7_REF(call)->params);
+		Expression_Call_Predefined_LeftShift(&(*gen), O7_REF(call)->params);
 		break;
 	case 201:
-		Expression_Call_Predefined_Shift(&(*gen), 4, (o7_char *)" >> ", O7_REF(call)->params);
+		Expression_Call_Predefined_ArithmeticRightShift(&(*gen), O7_REF(call)->params);
 		break;
 	case 224:
 		TextGenerator_Str(&(*gen)._, 7, (o7_char *)"o7_ror(");

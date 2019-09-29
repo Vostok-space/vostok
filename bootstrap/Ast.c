@@ -1636,7 +1636,7 @@ extern o7_int_t Ast_ExprSetNew(struct Ast_RExprSet **base, struct Ast_RExprSet *
 			if (expr2 != NULL) {
 				right = o7_int(O7_GUARD(Ast_RExprInteger, &O7_REF(expr2)->value_)->int_);
 			}
-			if (!LongSet_CheckRange(left) || (expr2 != NULL) && !LongSet_CheckRange(o7_int(right))) {
+			if (!LongSet_InRange(left) || (expr2 != NULL) && !LongSet_InRange(o7_int(right))) {
 				err = Ast_ErrSetElemOutOfRange_cnst;
 			} else if (expr2 == NULL) {
 				if (left <= TypesLimits_SetMax_cnst) {
@@ -1665,7 +1665,7 @@ extern o7_int_t Ast_ExprSetNew(struct Ast_RExprSet **base, struct Ast_RExprSet *
 	if ((*base) == NULL) {
 		(*base) = (*e);
 	} else if ((O7_REF((*base))->_._.value_ != NULL) && (O7_REF((*e))->_._.value_ != NULL)) {
-		LongSet_Add(O7_GUARD(Ast_ExprSetValue__s, &O7_REF((*base))->_._.value_)->set, set);
+		LongSet_Union(O7_GUARD(Ast_ExprSetValue__s, &O7_REF((*base))->_._.value_)->set, set);
 	}
 	PropTouch(&(*base)->_._, Prop(expr1) | Prop(expr2));
 	return err;
@@ -2211,8 +2211,8 @@ static o7_bool ExprRelationNew_CheckType(struct Ast_RType *t1, struct Ast_RType 
 }
 
 static o7_bool ExprRelationNew_IsEqualChars(struct Ast_RExprInteger *v1, struct Ast_RExprInteger *v2) {
-	O7_ASSERT(TypesLimits_InCharRange(O7_REF(v1)->int_));
-	O7_ASSERT(TypesLimits_InCharRange(O7_REF(v2)->int_));
+	O7_ASSERT(TypesLimits_InCharRange(o7_int(O7_REF(v1)->int_)));
+	O7_ASSERT(TypesLimits_InCharRange(o7_int(O7_REF(v2)->int_)));
 	return o7_cmp(O7_REF(v1)->int_, O7_REF(v2)->int_) == 0;
 }
 
@@ -2454,7 +2454,7 @@ extern o7_int_t Ast_ExprSumNew(struct Ast_RExprSum **e, o7_int_t add, struct Ast
 			case 8:
 				O7_REF((*e))->_.value_ = (&(Ast_ExprSetByValue(O7_GUARD(Ast_ExprSetValue__s, &O7_REF(term)->value_)->set))->_);
 				if (add == Ast_Minus_cnst) {
-					LongSet_Neg(O7_GUARD(Ast_ExprSetValue__s, &O7_REF((*e))->_.value_)->set);
+					LongSet_Not(O7_GUARD(Ast_ExprSetValue__s, &O7_REF((*e))->_.value_)->set);
 				}
 				break;
 			case 2:
@@ -2518,10 +2518,10 @@ extern o7_int_t Ast_ExprSumAdd(struct Ast_RExpression *fullSum, struct Ast_RExpr
 				break;
 			case 7:
 				if (add == Ast_Plus_cnst) {
-					LongSet_Add(O7_GUARD(Ast_ExprSetValue__s, &O7_REF(fullSum)->value_)->set, O7_GUARD(Ast_ExprSetValue__s, &O7_REF(term)->value_)->set);
+					LongSet_Union(O7_GUARD(Ast_ExprSetValue__s, &O7_REF(fullSum)->value_)->set, O7_GUARD(Ast_ExprSetValue__s, &O7_REF(term)->value_)->set);
 				} else {
 					O7_ASSERT(add == Ast_Minus_cnst);
-					LongSet_Sub(O7_GUARD(Ast_ExprSetValue__s, &O7_REF(fullSum)->value_)->set, O7_GUARD(Ast_ExprSetValue__s, &O7_REF(term)->value_)->set);
+					LongSet_Diff(O7_GUARD(Ast_ExprSetValue__s, &O7_REF(fullSum)->value_)->set, O7_GUARD(Ast_ExprSetValue__s, &O7_REF(term)->value_)->set);
 				}
 				break;
 			default:
@@ -3009,12 +3009,12 @@ static void CallParamsEnd_CalcPredefined(struct Ast_ExprCall__s *call, struct As
 		break;
 	case 201:
 		if (O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_ != NULL) {
-			O7_REF(call)->_._.value_ = (&(Ast_ExprIntegerNew((o7_int_t)((o7_uint_t)O7_GUARD(Ast_RExprInteger, &v)->int_ >> O7_GUARD(Ast_RExprInteger, &O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_)->int_)))->_._);
+			O7_REF(call)->_._.value_ = (&(Ast_ExprIntegerNew(o7_asr(O7_GUARD(Ast_RExprInteger, &v)->int_, O7_GUARD(Ast_RExprInteger, &O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_)->int_)))->_._);
 		}
 		break;
 	case 224:
 		if (O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_ != NULL) {
-			O7_REF(call)->_._.value_ = (&(Ast_ExprIntegerNew((o7_int_t)((o7_uint_t)O7_GUARD(Ast_RExprInteger, &v)->int_ >> O7_GUARD(Ast_RExprInteger, &O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_)->int_)))->_._);
+			O7_REF(call)->_._.value_ = (&(Ast_ExprIntegerNew(o7_ror(O7_GUARD(Ast_RExprInteger, &v)->int_, O7_GUARD(Ast_RExprInteger, &O7_REF(O7_REF(O7_REF(O7_REF(call)->params)->next)->expr)->value_)->int_)))->_._);
 		}
 		break;
 	case 209:

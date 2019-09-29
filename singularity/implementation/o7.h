@@ -123,10 +123,12 @@ typedef char unsigned o7_char;
 #define O7_LONG_BITS (sizeof(o7_long_t) * CHAR_BIT)
 
 #if defined(__GNUC__) || defined(__TINYC__) || defined(__COMPCERT__)
-	enum { O7_DIV_BRANCHLESS = 1 };
+	enum { O7_ARITHMETIC_SHIFT = 1 };
 #else
-	enum { O7_DIV_BRANCHLESS = 0 };
+	enum { O7_ARITHMETIC_SHIFT = 0 };
 #endif
+
+enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 
 #if !defined(O7_INT_MAX) || !defined(O7_UINT_MAX)
 #	error
@@ -888,6 +890,36 @@ o7_long_t o7_lmod_nat(o7_long_t n, o7_long_t d) {
 O7_CONST_INLINE
 o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
 	return o7_lmod_nat(n, o7_ldivisor(d));
+}
+
+#define O7_ASR(n, shift) \
+	((O7_ARITHMETIC_SHIFT || (n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift)))
+
+O7_CONST_INLINE
+o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
+	o7_int_t r;
+	assert(shift >= 0);
+	if (O7_ARITHMETIC_SHIFT || n >= 0) {
+		r = o7_int(n) >> shift;
+	} else {
+		r = -1 - ((-1 - o7_int(n)) >> shift);
+	}
+	return r;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
+	o7_uint_t u;
+
+	assert(n >= 0);
+	assert(shift >= 0);
+
+	u = n & 0xFFFFFFFFul;
+	shift %= 32;
+	u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
+
+	assert(u < 0x80000000ul);
+	return u;
 }
 
 O7_CONST_INLINE

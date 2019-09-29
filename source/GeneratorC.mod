@@ -752,15 +752,34 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		VAR e1: Ast.Expression;
 			p2: Ast.Parameter;
 
-			PROCEDURE Shift(VAR gen: Generator; shift: ARRAY OF CHAR;
-			                ps: Ast.Parameter);
+			PROCEDURE LeftShift(VAR gen: Generator; ps: Ast.Parameter);
 			BEGIN
+				(* TODO *)
 				Text.Str(gen, "(o7_int_t)((o7_uint_t)");
 				Factor(gen, ps.expr);
-				Text.Str(gen, shift);
+				Text.Str(gen, " << ");
 				Factor(gen, ps.next.expr);
 				Text.Str(gen, ")")
-			END Shift;
+			END LeftShift;
+
+			PROCEDURE ArithmeticRightShift(VAR gen: Generator; ps: Ast.Parameter);
+			BEGIN
+				IF (ps.expr.value # NIL) & (ps.next.expr.value # NIL) THEN
+					Text.Str(gen, "O7_ASR(");
+					Factor(gen, ps.expr);
+					Text.Str(gen, ", ")
+				ELSIF gen.opt.gnu THEN
+					Text.Str(gen, "(");
+					Factor(gen, ps.expr);
+					Text.Str(gen, " >> ")
+				ELSE
+					Text.Str(gen, "o7_asr(");
+					Factor(gen, ps.expr);
+					Text.Str(gen, ", ")
+				END;
+				Factor(gen, ps.next.expr);
+				Text.Str(gen, ")")
+			END ArithmeticRightShift;
 
 			PROCEDURE Len(VAR gen: Generator; e: Ast.Expression);
 			VAR sel: Ast.Selector;
@@ -943,9 +962,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| SpecIdent.Len:
 				Len(gen, e1)
 			| SpecIdent.Lsl:
-				Shift(gen, " << ", call.params)
+				LeftShift(gen, call.params)
 			| SpecIdent.Asr:
-				Shift(gen, " >> ", call.params)
+				ArithmeticRightShift(gen, call.params)
 			| SpecIdent.Ror:
 				Text.Str(gen, "o7_ror(");
 				Expression(gen, e1);

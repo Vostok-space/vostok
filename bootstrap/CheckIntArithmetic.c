@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "CheckIntArithmetic.h"
@@ -17,7 +16,7 @@ extern o7_bool CheckIntArithmetic_Add(o7_int_t *sum, o7_int_t a1, o7_int_t a2) {
 	if (norm) {
 		(*sum) = o7_add(a1, a2);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 extern o7_bool CheckIntArithmetic_Sub(o7_int_t *diff, o7_int_t m, o7_int_t s) {
@@ -31,7 +30,7 @@ extern o7_bool CheckIntArithmetic_Sub(o7_int_t *diff, o7_int_t m, o7_int_t s) {
 	if (norm) {
 		(*diff) = o7_sub(m, s);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 extern o7_bool CheckIntArithmetic_Mul(o7_int_t *prod, o7_int_t m1, o7_int_t m2) {
@@ -41,21 +40,21 @@ extern o7_bool CheckIntArithmetic_Mul(o7_int_t *prod, o7_int_t m1, o7_int_t m2) 
 	if (norm) {
 		(*prod) = o7_mul(m1, m2);
 	}
-	return o7_bl(norm);
+	return norm;
 }
 
 extern o7_bool CheckIntArithmetic_Div(o7_int_t *frac, o7_int_t n, o7_int_t d) {
 	if (0 < d) {
 		(*frac) = o7_div(n, d);
 	}
-	return o7_cmp(0, d) < 0;
+	return 0 < d;
 }
 
 extern o7_bool CheckIntArithmetic_Mod(o7_int_t *mod, o7_int_t n, o7_int_t d) {
 	if (0 < d) {
 		(*mod) = o7_mod(n, d);
 	}
-	return o7_cmp(0, d) < 0;
+	return 0 < d;
 }
 
 extern o7_bool CheckIntArithmetic_DivMod(o7_int_t *frac, o7_int_t *mod, o7_int_t n, o7_int_t d) {
@@ -63,5 +62,5 @@ extern o7_bool CheckIntArithmetic_DivMod(o7_int_t *frac, o7_int_t *mod, o7_int_t
 		(*frac) = o7_div(n, d);
 		(*mod) = o7_mod(n, d);
 	}
-	return o7_cmp(0, d) < 0;
+	return 0 < d;
 }

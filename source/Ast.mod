@@ -3294,7 +3294,7 @@ VAR err: INTEGER;
 			END
 		| SpecIdent.Ror:
 			IF call.params.next.expr.value # NIL THEN
-				call.value := ExprIntegerNew(ASR(
+				call.value := ExprIntegerNew(ROR(
 					v(ExprInteger).int,
 					call.params.next.expr.value(ExprInteger).int
 				))

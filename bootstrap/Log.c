@@ -57,7 +57,7 @@ extern void Log_Turn(o7_bool st) {
 		init = (0 < 1);
 		Out_Open();
 	}
-	Log_state = o7_bl(st);
+	Log_state = st;
 }
 
 extern void Log_On(void) {

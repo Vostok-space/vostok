@@ -176,10 +176,10 @@
 #define Ast_Used_cnst 5
 #define Ast_Dereferenced_cnst 6
 
-#define Ast_Integers_cnst (11u)
-#define Ast_Reals_cnst (96u)
-#define Ast_Numbers_cnst (107u)
-#define Ast_Sets_cnst (384u)
+#define Ast_Integers_cnst 0xBu
+#define Ast_Reals_cnst 0x60u
+#define Ast_Numbers_cnst 0x6Bu
+#define Ast_Sets_cnst 0x180u
 /* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang */
 #define Ast_ExprPointerTouch_cnst 0
