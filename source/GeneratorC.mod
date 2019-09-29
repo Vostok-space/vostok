@@ -752,34 +752,55 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		VAR e1: Ast.Expression;
 			p2: Ast.Parameter;
 
-			PROCEDURE LeftShift(VAR gen: Generator; ps: Ast.Parameter);
+			PROCEDURE LeftShift(VAR gen: Generator; n, s: Ast.Expression);
 			BEGIN
 				(* TODO *)
 				Text.Str(gen, "(o7_int_t)((o7_uint_t)");
-				Factor(gen, ps.expr);
+				Factor(gen, n);
 				Text.Str(gen, " << ");
-				Factor(gen, ps.next.expr);
+				Factor(gen, s);
 				Text.Str(gen, ")")
 			END LeftShift;
 
-			PROCEDURE ArithmeticRightShift(VAR gen: Generator; ps: Ast.Parameter);
+			PROCEDURE ArithmeticRightShift(VAR gen: Generator; n, s: Ast.Expression);
 			BEGIN
-				IF (ps.expr.value # NIL) & (ps.next.expr.value # NIL) THEN
+				IF (n.value # NIL) & (s.value # NIL) THEN
 					Text.Str(gen, "O7_ASR(");
-					Factor(gen, ps.expr);
-					Text.Str(gen, ", ")
+					Expression(gen, n);
+					Text.Str(gen, ", ");
+					Expression(gen, s);
+					Text.Str(gen, ")")
 				ELSIF gen.opt.gnu THEN
 					Text.Str(gen, "(");
-					Factor(gen, ps.expr);
-					Text.Str(gen, " >> ")
+					Factor(gen, n);
+					IF gen.opt.checkArith & (s.value = NIL) THEN
+						Text.Str(gen, " >> o7_not_neg(")
+					ELSE
+						Text.Str(gen, " >> (")
+					END;
+					Expression(gen, s);
+					Text.Str(gen, "))")
 				ELSE
 					Text.Str(gen, "o7_asr(");
-					Factor(gen, ps.expr);
-					Text.Str(gen, ", ")
-				END;
-				Factor(gen, ps.next.expr);
-				Text.Str(gen, ")")
+					Expression(gen, n);
+					Text.Str(gen, ", ");
+					Expression(gen, s);
+					Text.Str(gen, ")")
+				END
 			END ArithmeticRightShift;
+
+			PROCEDURE Rotate(VAR gen: Generator; n, r: Ast.Expression);
+			BEGIN
+				IF (n.value # NIL) & (r.value # NIL) THEN
+					Text.Str(gen, "O7_ROR(")
+				ELSE
+					Text.Str(gen, "o7_ror(")
+				END;
+				Expression(gen, n);
+				Text.Str(gen, ", ");
+				Expression(gen, r);
+				Text.Str(gen, ")")
+			END Rotate;
 
 			PROCEDURE Len(VAR gen: Generator; e: Ast.Expression);
 			VAR sel: Ast.Selector;
@@ -962,15 +983,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			| SpecIdent.Len:
 				Len(gen, e1)
 			| SpecIdent.Lsl:
-				LeftShift(gen, call.params)
+				LeftShift(gen, e1, p2.expr)
 			| SpecIdent.Asr:
-				ArithmeticRightShift(gen, call.params)
+				ArithmeticRightShift(gen, e1, p2.expr)
 			| SpecIdent.Ror:
-				Text.Str(gen, "o7_ror(");
-				Expression(gen, e1);
-				Text.Str(gen, ", ");
-				Expression(gen, p2.expr);
-				Text.Str(gen, ")")
+				Rotate(gen, e1, p2.expr);
 			| SpecIdent.Floor:
 				Text.Str(gen, "o7_floor(");
 				Expression(gen, e1);

@@ -588,6 +588,12 @@ o7_int_t o7_int(o7_int_t i) {
 	return i;
 }
 
+O7_CONST_INLINE
+o7_int_t o7_not_neg(o7_int_t i) {
+	assert(0 <= i);
+	return i;
+}
+
 extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
 	o7_ints_undef((o7_int_t)(sizeof(array) / (sizeof(o7_int_t))), (o7_int_t *)(array))
@@ -906,6 +912,9 @@ o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 	}
 	return r;
 }
+
+#define O7_ROR(n, shift) \
+	((((n) >> ((shift) % 32)) | ((n) << (32 - (shift) % 32))) & 0xFFFFFFFFul)
 
 O7_CONST_INLINE
 o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
