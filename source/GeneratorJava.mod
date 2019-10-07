@@ -1155,6 +1155,9 @@ BEGIN
 			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 			& (expr.value = NIL)
 		THEN	TermCheck(gen, expr(Ast.ExprTerm))
+		ELSIF (expr.value # NIL)
+		    & (Ast.ExprIntNegativeDividentTouch IN expr.properties)
+		THEN	Expression(gen, expr.value, {})
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:

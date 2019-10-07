@@ -410,6 +410,15 @@ var o7;
     }
   };
 
+  o7.ror = function(n, shift) {
+    assert(n     >= 0);
+    assert(shift >= 0);
+    shift &= 31;
+    n = (n >>> shift) | (n << (32 - shift));
+    assert(n     >= 0);
+    return n;
+  }
+
   o7.strcmp = function(s1, s2) {
     var c1, c2, len, i;
 

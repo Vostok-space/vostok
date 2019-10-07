@@ -631,7 +631,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Asr:
 				Shift(gen, " >> ", e1, p2.expr)
 			| SpecIdent.Ror:
-				ExpressionBraced(gen, "O7.ror(", e1, ", ", {});
+				ExpressionBraced(gen, "o7.ror(", e1, ", ", {});
 				Expression(gen, p2.expr, {});
 				Text.Str(gen, ")")
 			| SpecIdent.Floor:
@@ -1127,6 +1127,9 @@ BEGIN
 			& (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 			& ((expr.value = NIL) OR TRUE (*TODO*))
 		THEN	TermCheck(gen, expr(Ast.ExprTerm))
+		ELSIF (expr.value # NIL)
+		    & (Ast.ExprIntNegativeDividentTouch IN expr.properties)
+		THEN	Expression(gen, expr.value, {})
 		ELSE	Term(gen, expr(Ast.ExprTerm))
 		END
 	| Ast.IdNegate:

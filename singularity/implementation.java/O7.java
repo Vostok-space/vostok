@@ -401,6 +401,15 @@ public static boolean in(final int n, final long set) {
     return (0 <= n) && (n <= 63) && (0 != (set & (1l << n)));
 }
 
+public static int ror(final int n, final int shift) {
+    asrt(shift >= 0);
+    asrt(n >= 0);
+    final int r;
+    r = Integer.rotateRight(n, shift);
+    asrt(r >= 0);
+    return r;
+}
+
 public static void init(final java.lang.String[] sargs) {
     args = new byte[sargs.length][];
     for (int i = 0; i < sargs.length; i += 1) {
