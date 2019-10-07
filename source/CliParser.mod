@@ -16,7 +16,7 @@
  *)
 MODULE CliParser;
 
-IMPORT V, CLI, Utf8, Strings := StringStore, Platform, Log, GeneratorC, OsUtil,
+IMPORT V, CLI, Utf8, Strings := StringStore, Platform, GeneratorC, OsUtil,
        Chars0X;
 
 CONST
@@ -230,27 +230,21 @@ BEGIN
 		ELSIF opt = "-c" THEN
 			IF GetParam(ret, ErrTooLongCDirs, args.cDirs, dirsOfs, arg) THEN
 				INC(dirsOfs);
-				args.cDirs[dirsOfs] := Utf8.Null;
-				Log.Str("cDirs = ");
-				Log.StrLn(args.cDirs)
+				args.cDirs[dirsOfs] := Utf8.Null
 			END
 		ELSIF opt = "-jv" THEN
 			IF GetParam(ret, ErrTooLongJavaDirs,
 			            args.javaDirs, javaDirsOfs, arg)
 			THEN
 				INC(javaDirsOfs);
-				args.javaDirs[javaDirsOfs] := Utf8.Null;
-				Log.Str("javaDirs = ");
-				Log.StrLn(args.javaDirs)
+				args.javaDirs[javaDirsOfs] := Utf8.Null
 			END
 		ELSIF opt = "-js" THEN
 			IF GetParam(ret, ErrTooLongJsDirs,
 			            args.jsDirs, jsDirsOfs, arg)
 			THEN
 				INC(jsDirsOfs);
-				args.jsDirs[jsDirsOfs] := Utf8.Null;
-				Log.Str("jsDirs = ");
-				Log.StrLn(args.jsDirs)
+				args.jsDirs[jsDirsOfs] := Utf8.Null
 			END
 		ELSIF opt = "-cc" THEN
 			IF GetParam(ret, ErrTooLongCc, args.cc, ccLen, arg)

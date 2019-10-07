@@ -748,8 +748,7 @@ BEGIN
 	m.module := m.bag;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
-	m.script := FALSE;
-	Log.Str("Module "); Log.Str(m.name.block.s); Log.StrLn(" ")
+	m.script := FALSE
 	RETURN m
 END ModuleNew;
 
@@ -1108,7 +1107,6 @@ END VarStateNew;
 
 PROCEDURE VarStateUp(VAR vs: VarState);
 BEGIN
-	Log.StrLn("VarStateUp");
 	ASSERT((vs.root.if = vs) OR (vs.root.else = vs));
 
 	vs := vs.root;
@@ -1140,8 +1138,6 @@ PROCEDURE TurnIf*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	Log.StrLn("TurnIf");
-
 	IF ds IS Procedure THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
@@ -1157,7 +1153,6 @@ PROCEDURE TurnElse*(ds: Declarations);
 			v := d(Var);
 			ASSERT(v.state.root.if = v.state);
 			vs := VarStateNew(v.state.root);
-			Log.Int(ORD(vs.inited));
 			ASSERT(v.state.root.else = vs);
 			ASSERT(v.state.root.if = v.state);
 			v.state := vs;
@@ -1165,8 +1160,6 @@ PROCEDURE TurnElse*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	Log.StrLn("TurnElse: ");
-
 	IF ds IS Procedure THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
@@ -1182,7 +1175,6 @@ PROCEDURE TurnFail*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	Log.StrLn("TurnFail");
 	IF ds IS Procedure THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
@@ -1198,7 +1190,6 @@ PROCEDURE BackFromBranch*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	Log.StrLn("BackFromBranch");
 	IF ds IS Procedure THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
@@ -1344,18 +1335,9 @@ PROCEDURE IsNeedTag*(p: FormalParam): BOOLEAN;
 END IsNeedTag;
 
 PROCEDURE NewNeedTag(p: FormalParam; need: BOOLEAN);
-VAR n: ARRAY 256 OF CHAR;
-    i: INTEGER;
 BEGIN
 	ASSERT(p.needTag = NIL);
 	ASSERT(p.link = NIL);
-
-	Log.Str("NewNeedTag ");
-	i := 0;
-	ASSERT(Strings.CopyToChars(n, i, p.name));
-	Log.Str(n);
-	Log.Str(" = "); Log.Bool(need);
-	Log.Ln;
 
 	NEW(p.needTag);
 	p.needTag.count := 1;
@@ -1369,17 +1351,7 @@ BEGIN
 END NewNeedTag;
 
 PROCEDURE SetNeedTag(p: FormalParam);
-VAR n: ARRAY 256 OF CHAR;
-    i: INTEGER;
 BEGIN
-	Log.Str("SetNeedTag ");
-	i := 0;
-	ASSERT(Strings.CopyToChars(n, i, p.name));
-	Log.Str(n); Log.Str(":");
-	i := 0;
-	ASSERT(Strings.CopyToChars(n, i, p.type.name));
-	Log.Str(n);
-	Log.Ln;
 	IF p.needTag = NIL THEN
 		NewNeedTag(p, TRUE)
 	ELSE
@@ -1470,7 +1442,6 @@ END AddError;
 
 PROCEDURE TypeGet*(id: INTEGER): Type;
 BEGIN
-	(*Log.Str("TypeGet "); Log.Int(id); Log.Ln;*)
 	ASSERT(types[id] # NIL)
 	RETURN types[id]
 END TypeGet;
@@ -1502,12 +1473,9 @@ BEGIN
 		i := e.value(ExprInteger).int;
 		IF i <= 0 THEN
 			err := ErrArrayLenLess1
-		ELSE
-			Log.Str("Array Len "); Log.Int(i); Log.Ln;
-			IF ~Arithmetic.Mul(size, size, i) THEN
-				size := 0;
-				err := ErrArrayLenTooBig
-			END
+		ELSIF ~Arithmetic.Mul(size, size, i) THEN
+			size := 0;
+			err := ErrArrayLenTooBig
 		END
 	ELSIF e.id # IdError THEN
 		err := ErrExpectConstIntExpr
@@ -1607,7 +1575,6 @@ VAR d: Declaration;
 	l: INTEGER;
 BEGIN
 	IF SpecIdent.IsPredefined(l, buf, begin, end) THEN
-		Log.Str("SearchPredefined "); Log.Int(l); Log.Ln;
 		d := PredefinedGet(l);
 		ASSERT(d # NIL)
 	ELSE
@@ -2012,7 +1979,6 @@ BEGIN
 		   & ({} # (v.state.inited * {InitedNo, InitedNil}))
 		   )
 		THEN
-			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized (* TODO *)
 		ELSIF varParam THEN
 			IF ~(InitedValue IN v.state.inited) THEN
@@ -2026,7 +1992,6 @@ BEGIN
 		   & ~inLoop (* TODO *)
 		   & ((v.up # NIL) & (v.up.d.up # NIL) OR (v IS FormalParam))
 		THEN
-			Log.Int(ORD(v.state.inited)); Log.Ln;
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
 			v.state.inited := { InitedValue }
 		ELSIF InitedNo IN v.state.inited THEN
@@ -2079,9 +2044,7 @@ BEGIN
 		END
 	ELSE
 		t0 := NIL; t1 := NIL
-	END;
-	Log.Int(ORD(t0 = t1));
-	Log.Ln
+	END
 	RETURN t0 = t1
 END IsRecordExtension;
 
@@ -2131,11 +2094,7 @@ BEGIN
 	ELSE
 		err := ErrNo
 	END;
-	Log.Str("SelArrayNew tid="); Log.Int(type.id); Log.Str(" -> ");
 	type := type.type;
-	IF type # NIL THEN
-		Log.Int(type.id); Log.Ln;
-	END;
 	sel.type := type
 	RETURN err
 END SelArrayNew;
@@ -2370,9 +2329,6 @@ BEGIN
 	comp := (t1 = NIL) OR (t2 = NIL);
 	IF ~comp THEN
 		comp := t1 = t2;
-		Log.Str("Идентификаторы типов : ");
-		Log.Int(t1.id); Log.Str(" : ");
-		Log.Int(t2.id); Log.Ln;
 		IF comp THEN
 			;
 		ELSIF (t1.id = t2.id)
@@ -2443,9 +2399,6 @@ END ExprIsExtensionNew;
 PROCEDURE CompatibleAsCharAndString(t1: Type; VAR e2: Expression): BOOLEAN;
 VAR ret: BOOLEAN;
 BEGIN
-	Log.Str("1 CompatibleAsCharAndString ");
-	Log.Int(ORD((e2.value # NIL)));
-	Log.Ln;
 	ret := (t1.id = IdChar)
 	     & (e2.value # NIL)
 	     & (e2.value IS ExprString)
@@ -2530,8 +2483,6 @@ VAR err: INTEGER;
 
 	PROCEDURE IsEqualChars(v1, v2: ExprInteger): BOOLEAN;
 	BEGIN
-		Log.On; Log.Int(v1.int); Log.Str(" : "); Log.Int(v2.int); Log.Ln; Log.Off;
-
 		ASSERT(Limits.InCharRange(v1.int));
 		ASSERT(Limits.InCharRange(v2.int))
 
@@ -3000,8 +2951,6 @@ BEGIN
 	t := NIL;
 	err := ErrNo;
 	IF des # NIL THEN
-		Log.Str("ExprCallCreate des.decl.id = "); Log.Int(des.decl.id);
-		Log.Ln;
 		IF des.decl.id = IdError THEN
 			pt := ProcTypeNew(FALSE);
 			des.decl.type := pt;
@@ -3061,8 +3010,6 @@ BEGIN
 END IsChangeable;
 
 PROCEDURE IsVar*(e: Expression): BOOLEAN;
-BEGIN
-	Log.Str("IsVar: e.id = "); Log.Int(e.id); Log.Ln
 	RETURN (e IS Designator) & (e(Designator).decl IS Var)
 END IsVar;
 
@@ -3603,7 +3550,6 @@ BEGIN
 	    & (decl(Const).expr(ExprString).int > -1)
 	       )
 	THEN
-		(*Log.Str("Label type id "); Log.Int(decl(Const).expr.type.id); Log.Ln;*)
 		err := ErrCaseLabelNotIntOrChar
 	ELSIF decl(Const).expr.type.id = IdInteger THEN
 		err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)
@@ -3648,8 +3594,7 @@ BEGIN
 	ELSE
 		cross := (l1.value = l2.value)
 			  OR (l2.right # NIL) & (l2.right.value >= l1.value)
-	END;
-	Log.Str("IsRangesCross "); Log.Bool(cross); Log.Ln
+	END
 	RETURN cross
 END IsRangesCross;
 
@@ -3657,8 +3602,7 @@ PROCEDURE IsListCrossRange(list, range: CaseLabel): BOOLEAN;
 BEGIN
 	WHILE (list # NIL) & ~IsRangesCross(list, range) DO
 		list := list.next
-	END;
-	Log.Str("IsListCrossRange "); Log.Bool(list # NIL); Log.Ln
+	END
 	RETURN list # NIL
 END IsListCrossRange;
 
@@ -3666,8 +3610,7 @@ PROCEDURE IsElementsCrossRange(elem: CaseElement; range: CaseLabel): BOOLEAN;
 BEGIN
 	WHILE (elem # NIL) & ~IsListCrossRange(elem.labels, range) DO
 		elem := elem.next
-	END;
-	Log.Str("IsElementsCrossRange "); Log.Bool(elem # NIL); Log.Ln
+	END
 	RETURN elem # NIL
 END IsElementsCrossRange;
 

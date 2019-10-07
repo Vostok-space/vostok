@@ -26,7 +26,6 @@ IMPORT
 	Stream := VDataStream,
 	Text := TextGenerator,
 	Utf8, Utf8Transform,
-	Log,
 	Limits := TypesLimits,
 	TranLim := TranslatorLimits;
 
@@ -336,12 +335,9 @@ BEGIN
 		l := 0;
 		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
-		Log.StrLn("Record");
-
 		ASSERT(Strings.CopyChars(anon, l, "_anon_0000", 0, 10));
 		ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
 		i := gen.opt.index;
-		(*Log.Int(i); Log.Ln;*)
 		j := l - 1;
 		WHILE i > 0 DO
 			anon[j] := CHR(ORD("0") + i MOD 10);
@@ -569,7 +565,6 @@ BEGIN
 			Selector(gen, sels, i, typ, desType);
 			Record(gen, typ, sel)
 		ELSIF sel IS Ast.SelArray THEN
-			Log.StrLn("SelArray");
 			Selector(gen, sels, i, typ, desType);
 			Array(gen, typ, sel, sels.decl,
 			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
@@ -1552,8 +1547,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END ToHex;
 	BEGIN
 		w := e.string;
-		Log.Str("e.asChar = "); Log.Bool(e.asChar);
-		Log.Str(" expectArray = "); Log.Bool(gen.opt.expectArray); Log.Ln;
 		IF e.asChar & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
@@ -1706,15 +1699,6 @@ BEGIN
 	| Ast.IdCall:
 		Call(gen, expr(Ast.ExprCall))
 	| Ast.IdDesignator:
-		Log.Str("Expr Designator type.id = ");
-		Log.Int(expr.type.id);
-		Log.Str(" (expr.value # NIL) = ");
-		Log.Bool(expr.value # NIL);
-		IF expr.value # NIL THEN
-			Log.Str(" expr.value.id = ");
-			Log.Int(expr.value.id)
-		END;
-		Log.Ln;
 		IF (expr.value # NIL) & (expr.value.id = Ast.IdString)
 		THEN	CString(gen, expr.value(Ast.ExprString))
 		ELSE	Designator(gen, expr(Ast.Designator))
@@ -3301,9 +3285,6 @@ BEGIN
 			d := t(Ast.Record).vars;
 			WHILE d # NIL DO
 				MarkType(d.type);
-				(*IF Strings.IsDefined(d.name) THEN
-					Log.StrLn(d.name.block.s)
-				END;*)
 				d := d.next
 			END;
 			t := t(Ast.Record).base

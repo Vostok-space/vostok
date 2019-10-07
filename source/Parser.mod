@@ -254,7 +254,6 @@ END Set;
 PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
-	Log.StrLn("DeclarationGet");
 	CheckAst(p, Ast.DeclarationGet(d, p.opt.provider, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
 	RETURN d
 END DeclarationGet;
@@ -275,8 +274,6 @@ END ExpectDecl;
 PROCEDURE Qualident(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
-	Log.StrLn("Qualident");
-
 	d := ExpectDecl(p, ds);
 	IF d IS Ast.Import THEN
 		Expect(p, Scanner.Dot, ErrExpectDot);
@@ -311,8 +308,6 @@ VAR des: Ast.Designator;
 		prev := sel
 	END SetSel;
 BEGIN
-	Log.StrLn("Designator");
-
 	ASSERT(p.l = Scanner.Ident);
 	decl := Qualident(p, ds);
 	CheckAst(p, Ast.DesignatorNew(des, decl));
@@ -449,8 +444,6 @@ VAR e: Ast.Expression;
 		RETURN neg
 	END Negate;
 BEGIN
-	Log.StrLn("Factor");
-
 	IF p.l = Scanner.Number THEN
 		IF p.s.isReal THEN
 			e := Ast.ExprRealNew(p.s.real, p.module,
@@ -495,7 +488,6 @@ VAR e: Ast.Expression;
 	l: INTEGER;
 	turnIf: BOOLEAN;
 BEGIN
-	Log.StrLn("Term");
 	e := Factor(p, ds, varParam);
 	IF (Scanner.MultFirst <= p.l) & (p.l <= Scanner.MultLast) THEN
 		l := p.l;
@@ -528,7 +520,6 @@ VAR e: Ast.Expression;
 	sum: Ast.ExprSum;
 	l: INTEGER;
 BEGIN
-	Log.StrLn("Sum");
 	l := p.l;
 
 	IF l IN {Scanner.Plus, Scanner.Minus} THEN
@@ -633,7 +624,6 @@ VAR a: Ast.Array;
 	lens: ARRAY TranLim.ArrayDimension OF Ast.Expression;
 	i, size: INTEGER;
 BEGIN
-	Log.StrLn("Array");
 	ASSERT(p.l = SpecIdent.Array);
 	Scan(p);
 	a := Ast.ArrayGet(NIL, Expression(p, ds, FALSE));
@@ -1228,7 +1218,6 @@ VAR stats, last: Ast.Statement;
 		st: Ast.Statement;
 		commentOfs, commentEnd, emptyLines: INTEGER;
 	BEGIN
-		(* Log.StrLn("Statement"); *)
 		IF ~p.opt.saveComments
 		OR ~Scanner.TakeCommentPos(p.s, commentOfs, commentEnd)
 		THEN
@@ -1267,7 +1256,6 @@ VAR stats, last: Ast.Statement;
 			END
 		END;
 		IF p.err THEN
-			Log.StrLn("Error");
 			WHILE (p.l # Scanner.Semicolon) & NotEnd(p.l) DO
 				Scan(p)
 			END;
@@ -1302,8 +1290,6 @@ END Statements;
 PROCEDURE Return(VAR p: Parser; proc: Ast.Procedure);
 BEGIN
 	IF p.l = SpecIdent.Return THEN
-		Log.StrLn("Return");
-
 		Scan(p);
 		CheckAst(p, Ast.ProcedureSetReturn(proc, Expression(p, proc, FALSE)));
 		IF p.l = Scanner.Semicolon THEN

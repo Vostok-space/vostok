@@ -245,7 +245,6 @@ VAR
 		val := 0;
 		i := s.lexStart;
 		d := valDigit(s.buf[i]);
-		(*Log.Str("IntMax "); Log.Int(IntMax); Log.Ln;*)
 		WHILE d >= 0 DO
 			IF IntMax DIV capacity >= val THEN
 				val := val * capacity;
@@ -264,7 +263,6 @@ VAR
 			d := valDigit(s.buf[i])
 		END;
 		s.integer := val
-		(*Log.Str("Val integer "); Log.Int(s.integer); Log.Ln*)
 	END Val;
 
 	PROCEDURE ValReal(VAR s: Scanner; VAR lex: INTEGER); (* TODO *)
@@ -375,8 +373,7 @@ BEGIN
 		END
 	ELSE
 		Val(s, lex, 10, ValDigit)
-	END;
-	Log.Str("Number lex = "); Log.Int(lex); Log.Ln
+	END
 	RETURN lex
 END SNumber;
 
@@ -449,7 +446,6 @@ PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
 VAR i, column, comment, commentsCount: INTEGER;
 BEGIN
 	i := s.ind;
-	(*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*)
 	ASSERT(0 <= i);
 	column := s.column;
 	comment := 0;
@@ -610,9 +606,6 @@ BEGIN
 		| "}": L(lex, s, Brace3Close)
 		| Utf8.DQuote: lex := ScanString(s)
 		END;
-		(*
-		Log.Str("Scan "); Log.Int(lex); Log.Ln;
-		*)
 		s.lexEnd := s.ind
 	END
 	RETURN lex

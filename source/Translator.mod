@@ -170,7 +170,6 @@ BEGIN
 			ELSE
 				(* TODO *)
 				ASSERT(~usecc OR CComp.AddC(ccomp, dir, 0));
-				Log.StrLn(dir);
 
 				ret := ErrNo
 			END
@@ -200,7 +199,6 @@ BEGIN
 		IF out = NIL THEN
 			ret := errOpen
 		ELSE
-			Log.StrLn(dir);
 			ret := ErrNo
 		END
 	END
@@ -923,10 +921,7 @@ BEGIN
 		out := File.OpenOut(dir);
 
 		IF out = NIL THEN
-			ret := Cli.ErrOpenJs;
-			Log.On;
-			Log.StrLn(dir);
-			Log.Off
+			ret := Cli.ErrOpenJs
 		ELSE
 			CopyO7js(jsDirs, out)
 		END
@@ -1141,7 +1136,7 @@ VAR ret: INTEGER;
     nothing: V.Base;
 BEGIN
 	Out.Open;
-	Log.Turn(FALSE);
+	Log.Off;
 
 	V.Init(nothing);
 	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret, nothing) THEN

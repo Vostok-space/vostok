@@ -52,7 +52,6 @@ MODULE ModulesStorage;
       WHILE c # NIL DO
         tc := c;
         c := c.next;
-        Log.StrLn(tc.m.name.block.s);
         Ast.Unlinks(tc.m);
         tc.m := NIL
       END;
