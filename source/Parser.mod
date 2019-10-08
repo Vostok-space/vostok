@@ -81,7 +81,7 @@ CONST
 	ErrMin* = ErrAstEnd;
 
 TYPE
-	PrintError* = PROCEDURE(code: INTEGER);
+	PrintError* = PROCEDURE(code: INTEGER; str: Strings.String);
 	Options* = RECORD(V.Base)
 		strictSemicolon*,
 		strictReturn*,
@@ -129,7 +129,7 @@ BEGIN
 		ASSERT(p.module.errors # NIL)
 	END;
 	IF p.opt.multiErrors THEN
-		p.opt.printError(err);
+		p.opt.printError(err, p.module.errLast.str);
 		Log.Str(". ");
 		Log.Int(p.s.line + 1);
 		Log.Str(":");
@@ -1458,7 +1458,7 @@ BEGIN
 	END
 END Module;
 
-PROCEDURE Blank(code: INTEGER);
+PROCEDURE Blank(code: INTEGER; str: Strings.String);
 END Blank;
 
 PROCEDURE DefaultOptions*(VAR opt: Options);
@@ -1468,7 +1468,7 @@ BEGIN
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn    := TRUE;
 	opt.saveComments    := TRUE;
-	opt.multiErrors     := FALSE;
+	opt.multiErrors     := TRUE;
 	opt.cyrillic        := FALSE;
 	opt.printError      := Blank;
 

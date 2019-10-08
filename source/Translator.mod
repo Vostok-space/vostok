@@ -71,21 +71,22 @@ TYPE
 	MsgTempDirCreated* = RECORD(V.Message)
 	END;
 
-PROCEDURE ErrorMessage(code: INTEGER);
+PROCEDURE ErrorMessage(code: INTEGER; str: Strings.String);
 BEGIN
 	IF code <= Parser.ErrAstBegin THEN
-		Message.AstError(code - Parser.ErrAstBegin)
+		Message.AstError(code - Parser.ErrAstBegin, str)
 	ELSE
 		Message.ParseError(code)
 	END
 END ErrorMessage;
 
-PROCEDURE IndexedErrorMessage(index, code, line, column: INTEGER);
+PROCEDURE IndexedErrorMessage(index, code: INTEGER; str: Strings.String;
+                              line, column: INTEGER);
 BEGIN
 	Out.String("  ");
 	Out.Int(index, 2); Out.String(") ");
 
-	ErrorMessage(code);
+	ErrorMessage(code, str);
 
 	Out.String(" "); Out.Int(line + 1, 0);
 	Out.String(" : "); Out.Int(column, 0);
@@ -113,7 +114,7 @@ BEGIN
 			WHILE err # NIL DO
 				IF err.code # SkipError THEN
 					INC(i);
-					IndexedErrorMessage(i, err.code, err.line, err.column)
+					IndexedErrorMessage(i, err.code, err.str, err.line, err.column)
 				END;
 				IF multiErrors THEN
 					err := err.next
@@ -125,7 +126,8 @@ BEGIN
 		m := ModulesStorage.Next(mc)
 	END;
 	IF i = 0 THEN
-		IndexedErrorMessage(i, module.errors.code, module.errors.line, module.errors.column)
+		IndexedErrorMessage(i, module.errors.code, module.errors.str,
+		                    module.errors.line, module.errors.column)
 	END
 END PrintErrors;
 
@@ -1071,6 +1073,7 @@ VAR ret: INTEGER;
     cmd: Ast.Statement;
     tranOpt: AstTransform.Options;
     opt: Parser.Options;
+    str: Strings.String;
 BEGIN
 	NewProvider(mp, opt, args);
 
@@ -1096,7 +1099,8 @@ BEGIN
 			cmd := NIL
 		END;
 		IF ret # Ast.ErrNo THEN
-			Message.AstError(ret); Message.Ln;
+			Strings.Undef(str);
+			Message.AstError(ret, str); Message.Ln;
 			ret := ErrParse
 		ELSIF res IN Cli.ThroughJava + Cli.ThroughJs THEN
 			Ast.ModuleReopen(module);

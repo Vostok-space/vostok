@@ -239,7 +239,7 @@ BEGIN
 	| Ast.ErrArrayTypeOfPointerToRecordForward:
 		C("Указатель на недообъявленную запись в качестве подтипа массива")
 	| Ast.ErrDeclarationUnused:
-		C("Существует незадействованное объявление в этой области видимости")
+		C("Существует незадействованное объявление в этой области видимости - ")
 	| Ast.ErrProcNestedTooDeep:
 		C("Слишком глубокая вложенность подпрограмм")
 	| Ast.ErrExpectProcNameWithoutParams:

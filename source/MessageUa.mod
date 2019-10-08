@@ -239,7 +239,7 @@ BEGIN
 	| Ast.ErrArrayTypeOfPointerToRecordForward:
 		C("Покажчик на незадекларований запис в якості підтипу масиву")
 	| Ast.ErrDeclarationUnused:
-		C("Існує незадіяна декларація в цій області видимості")
+		C("Існує незадіяна декларація в цій області видимості - ")
 	| Ast.ErrProcNestedTooDeep:
 		C("Занадто велика вкладеність підпрограм")
 	| Ast.ErrExpectProcNameWithoutParams:

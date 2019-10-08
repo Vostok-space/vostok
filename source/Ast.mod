@@ -247,6 +247,7 @@ TYPE
 	RError = RECORD(Node)
 		code*: INTEGER;
 		line*, column*, bytes*: INTEGER;
+		str*: Strings.String;
 		next*: Error
 	END;
 
@@ -384,7 +385,10 @@ TYPE
 		fixed,
 		spec*: BOOLEAN;
 
-		errors*, errLast: Error
+		(* TODO переделать *)
+		unusedDecl: Declaration;
+
+		errors*, errLast*: Error
 	END;
 
 	GeneralProcedure* = POINTER TO RGeneralProcedure;
@@ -789,8 +793,7 @@ END RegModule;
 
 PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
 VAR d: Declaration;
-    err, i: INTEGER;
-    str: ARRAY 256 OF CHAR;
+    err: INTEGER;
 BEGIN
 	d := ds.start;
 	WHILE (d # NIL) & (d IS Import) DO
@@ -806,10 +809,7 @@ BEGIN
 	IF d = NIL THEN
 		err := ErrNo
 	ELSE
-		i := 0;
-		ASSERT(Strings.CopyToChars(str, i, d.name));
-		Out.String(str); Out.Ln;
-
+		ds.module.m.unusedDecl := d;
 		err := ErrDeclarationUnused
 	END
 	RETURN err
@@ -1432,6 +1432,12 @@ BEGIN
 	e.code := error;
 	e.line := line;
 	e.column := column;
+	IF m.unusedDecl = NIL THEN
+		Strings.Undef(e.str)
+	ELSE
+		e.str := m.unusedDecl.name;
+		m.unusedDecl := NIL
+	END;
 	IF m.errLast = NIL THEN
 		m.errors := e
 	ELSE

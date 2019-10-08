@@ -240,7 +240,7 @@ BEGIN
 	| Ast.ErrArrayTypeOfPointerToRecordForward:
 		C("Pointer to incompletely declared record is used as subtype of array")
 	| Ast.ErrDeclarationUnused:
-		C("Exist unused declaration in the scope")
+		C("Exist unused declaration in the scope - ");
 	| Ast.ErrProcNestedTooDeep:
 		C("Too deep nesting of subroutines")
 	| Ast.ErrExpectProcNameWithoutParams:

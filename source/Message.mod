@@ -17,6 +17,7 @@
 MODULE Message;
 
 IMPORT Env := OsEnv, Platform, LocaleParser,
+       Strings := StringStore,
        MessageUa, MessageRu, MessageEn, Out;
 
 CONST
@@ -26,12 +27,26 @@ CONST
 
 VAR lang: INTEGER;
 
-PROCEDURE AstError*(code: INTEGER);
+PROCEDURE Str(s: Strings.String);
+VAR i: INTEGER; buf: ARRAY 256 OF CHAR;
+BEGIN
+	i := 0;
+	IF Strings.CopyToChars(buf, i, s) THEN
+		Out.String(buf)
+	ELSE
+		Out.String("...")
+	END
+END Str;
+
+PROCEDURE AstError*(code: INTEGER; str: Strings.String);
 BEGIN
 	CASE lang OF
 	  En: MessageEn.AstError(code)
 	| Ru: MessageRu.AstError(code)
 	| Ua: MessageUa.AstError(code)
+	END;
+	IF Strings.IsDefined(str) THEN
+		Str(str)
 	END
 END AstError;
 
