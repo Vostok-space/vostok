@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -21,7 +21,7 @@ IMPORT
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
-	Strings := StringStore,
+	Chars0X,
 	Log;
 
 CONST
@@ -145,7 +145,7 @@ BEGIN
 	s.buf[0] := " ";
 
 	len := 1;
-	ret := Strings.CopyCharsNull(s.buf, len, in);
+	ret := Chars0X.CopyString(s.buf, len, in);
 	s.buf[len] := Utf8.TransmissionEnd
 	RETURN ret
 END InitByString;

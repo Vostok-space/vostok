@@ -20,22 +20,17 @@
  *)
 MODULE Chars0X;
 
-  PROCEDURE Set0X*(VAR dest: ARRAY OF CHAR; ofs: INTEGER);
-  BEGIN
-    IF ofs < LEN(dest) THEN
-      dest[ofs] := 0X
-    END
-  END Set0X;
+  IMPORT Utf8;
 
-  PROCEDURE CalcLen*(str: ARRAY OF CHAR): INTEGER;
+  PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
   VAR i: INTEGER;
   BEGIN
-    i := 0;
-    WHILE (i < LEN(str)) & (str[i] # 0X) DO
+    i := ofs;
+    WHILE str[i] # Utf8.Null DO
       INC(i)
     END
   RETURN
-    i
+    i - ofs
   END CalcLen;
 
   PROCEDURE Fill*(ch: CHAR; count: INTEGER;
@@ -43,83 +38,173 @@ MODULE Chars0X;
   VAR ok: BOOLEAN;
       i, end: INTEGER;
   BEGIN
-    ASSERT(ch # 0X);
-    ASSERT((0 <= ofs) & (ofs <= LEN(dest)));
+    ASSERT(ch # Utf8.Null);
+    ASSERT((0 <= ofs) & (ofs < LEN(dest)));
 
-    ok := count <= LEN(dest) - ofs;
+    ok := count < LEN(dest) - ofs;
+    i := ofs;
     IF ok THEN
-      i := ofs;
       end := i + count;
       WHILE i < end DO
         dest[i] := ch;
         INC(i)
       END;
-      ofs := i;
-      Set0X(dest, ofs)
-    ELSE
-      dest[ofs] := 0X
+      ofs := i
     END;
+    dest[i] := Utf8.Null
   RETURN
     ok
   END Fill;
 
-  PROCEDURE Copy*(src: ARRAY OF CHAR; VAR srcOfs: INTEGER;
-                  null: BOOLEAN; len: INTEGER;
-                  VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER)
-                 : BOOLEAN;
+  PROCEDURE CopyAtMost*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                        src: ARRAY OF CHAR; VAR srcOfs: INTEGER;
+                        atMost: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN;
-      s, d, l: INTEGER;
+      s, d, lim: INTEGER;
   BEGIN
-    ASSERT((0 <= srcOfs)  & (srcOfs  <= LEN(src)));
-    ASSERT((0 <= destOfs) & (destOfs <= LEN(dest)));
-    ASSERT(0 < len);
-
     s := srcOfs;
     d := destOfs;
+    ASSERT((0 <= s) & (s <= LEN(src)));
+    ASSERT((0 <= d) & (d <= LEN(dest)));
+    ASSERT(0 <= atMost);
 
-    l := LEN(dest) - destOfs;
-    IF (l < len) & ~null THEN
-      ok := FALSE
-    ELSE
-      IF len < l THEN
-        l := len
-      END;
-      IF LEN(src) - srcOfs < l THEN
-        l := LEN(src) - srcOfs
-      END;
-
-      WHILE (0 < l) & (src[s] # 0X) DO
-        dest[d] := src[s];
-        INC(d);
-        INC(s);
-        DEC(l)
-      END;
-
-      ok := (s - len = srcOfs)
-         OR null & ((s = LEN(src)) OR (src[s] = 0X))
+    lim := d + atMost;
+    IF LEN(dest) - 1 < lim THEN
+      lim := LEN(dest) - 1
     END;
 
-    Set0X(dest, d);
+    WHILE (d < lim) & (src[s] # Utf8.Null) DO
+      dest[d] := src[s];
+      INC(d);
+      INC(s)
+    END;
+
+    ok := (d = destOfs + atMost) OR (src[s] = Utf8.Null);
+
+    dest[d] := Utf8.Null;
     srcOfs  := s;
     destOfs := d;
 
-    ASSERT((destOfs = LEN(dest)) OR (dest[destOfs] = 0X))
+    ASSERT((destOfs = LEN(dest)) OR (dest[destOfs] = Utf8.Null))
   RETURN
     ok
+  END CopyAtMost;
+
+  PROCEDURE Copy*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                  src: ARRAY OF CHAR; VAR srcOfs: INTEGER)
+                 : BOOLEAN;
+  VAR s, d: INTEGER;
+  BEGIN
+    s := srcOfs;
+    d := destOfs;
+    ASSERT((0 <= s) & (s <= LEN(src)));
+    ASSERT((0 <= d) & (d <= LEN(dest)));
+
+    WHILE (d < LEN(dest) - 1) & (src[s] # Utf8.Null) DO
+      dest[d] := src[s];
+      INC(d);
+      INC(s)
+    END;
+
+    dest[d] := Utf8.Null;
+    srcOfs  := s;
+    destOfs := d;
+
+    ASSERT(dest[destOfs] = Utf8.Null)
+  RETURN
+    src[s] = Utf8.Null
   END Copy;
+
+  PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                       src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
+  VAR s, d: INTEGER; ok: BOOLEAN;
+  BEGIN
+    s := srcOfs;
+    d := destOfs;
+    ASSERT((0 <= s) & (s <= LEN(src)));
+    ASSERT((0 <= d) & (d <= LEN(dest)));
+    ASSERT(s <= srcEnd);
+
+    ok := d < LEN(dest) - (srcEnd - srcOfs);
+    IF ~ok THEN
+      srcEnd := LEN(dest) - (srcEnd - srcOfs) - 1
+    END;
+    WHILE s < srcEnd DO
+      ASSERT(src[s] # Utf8.Null);
+      dest[d] := src[s];
+      INC(d);
+      INC(s)
+    END;
+    dest[d] := Utf8.Null;
+    destOfs := d
+  RETURN
+    ok
+  END CopyChars;
+
+  PROCEDURE CopyString*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
+                        src: ARRAY OF CHAR): BOOLEAN;
+  VAR i: INTEGER;
+  BEGIN
+    i := 0
+  RETURN
+    (* После поправки с оканчивающимся 0 заменить на Copy *)
+    CopyAtMost(dest, ofs, src, i, LEN(src))
+  END CopyString;
+
+  PROCEDURE CopyChar*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
+                      ch: CHAR): BOOLEAN;
+  VAR ok: BOOLEAN; i: INTEGER;
+  BEGIN
+    i := ofs;
+    ASSERT(ch # Utf8.Null);
+    ASSERT((0 <= i) & (i < LEN(dest)));
+    ok := i < LEN(dest) - 1;
+    IF ok THEN
+      dest[i] := ch;
+      INC(i)
+    END;
+    dest[i] := Utf8.Null;
+    ofs := i
+  RETURN
+    ok
+  END CopyChar;
 
   PROCEDURE SearchChar*(str: ARRAY OF CHAR; VAR pos: INTEGER; c: CHAR): BOOLEAN;
   VAR i: INTEGER;
   BEGIN
     i := pos;
-    ASSERT((0 <= i) & (i < LEN(str)) & (str[i] # 0X));
+    ASSERT((0 <= i) & (i < LEN(str)));
 
-    WHILE (str[i] # c) & (str[i] # 0X) DO
+    WHILE (str[i] # c) & (str[i] # Utf8.Null) DO
       INC(i)
     END;
     pos := i
   RETURN
     str[i] = c
   END SearchChar;
+
+  PROCEDURE Trim*(VAR str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
+  VAR i, j: INTEGER;
+  BEGIN
+    i := ofs;
+    WHILE (str[i] = " ") OR (str[i] = Utf8.Tab) DO
+      INC(i)
+    END;
+    IF ofs < i THEN
+      j := ofs;
+      WHILE str[i] # Utf8.Null DO
+        str[j] := str[i];
+        INC(j); INC(i)
+      END
+    ELSE
+      j := ofs + CalcLen(str, ofs)
+    END;
+    WHILE (ofs < j) & ((str[j - 1] = " ") OR (str[j - 1] = Utf8.Tab)) DO
+      DEC(j)
+    END;
+    str[j] := Utf8.Null
+  RETURN
+    j - ofs
+  END Trim;
 
 END Chars0X.

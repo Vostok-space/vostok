@@ -71,7 +71,7 @@ typedef char unsigned o7_char;
 
 #if defined(O7_BOOL)
 	typedef O7_BOOL o7_bool;
-#elif defined(O7_BOOL_UNDEFINED)
+#elif O7_INIT == O7_INIT_UNDEF
 	typedef o7_char o7_bool;
 #else
 	typedef o7_cbool o7_bool;

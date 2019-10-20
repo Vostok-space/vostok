@@ -23,7 +23,7 @@ IMPORT
 	V,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
-	Strings := StringStore,
+	Strings := StringStore, Chars0X,
 	TranLim := TranslatorLimits,
 	Arithmetic := CheckIntArithmetic,
 	LongSet;
@@ -854,14 +854,9 @@ VAR imp: Import;
 
 	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
-	VAR n: ARRAY TranLim.LenName OF CHAR;
-	    l, err: INTEGER;
+	VAR err: INTEGER;
 	    m: Module;
 	BEGIN
-		l := 0;
-		ASSERT(Strings.CopyChars(n, l, buf, realOfs, realEnd));
-		(* TODO сделать загрузку модуля из символьного файла *)
-		Log.Str("Модуль '"); Log.Str(n); Log.StrLn("' загружается");
 		res := GetModuleByName(prov, host, buf, realOfs, realEnd);
 		IF res = NIL THEN
 			m := ModuleNew(buf, realOfs, realEnd);

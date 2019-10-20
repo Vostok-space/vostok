@@ -16,7 +16,7 @@
  *)
 MODULE ModulesStorage;
 
-  IMPORT Log, Ast, Strings := StringStore, TranLim := TranslatorLimits;
+  IMPORT Log, Ast, Strings := StringStore;
 
   TYPE
     Container* = POINTER TO RContainer;
@@ -89,7 +89,7 @@ MODULE ModulesStorage;
 
   (* TODO убрать экспорт *)
   PROCEDURE GetModule*(p: Ast.Provider; host: Ast.Module;
-                      name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
+                       name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
   VAR m: Ast.Module;
       mp: Provider;
   BEGIN

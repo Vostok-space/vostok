@@ -1,5 +1,5 @@
 (*  Storage of procedure types for Java Generator
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,7 +16,7 @@
  *)
 MODULE JavaStoreProcTypes;
 
-  IMPORT V, Ast, Strings := StringStore, Log;
+  IMPORT V, Ast, Strings := StringStore, Chars0X, Log;
 
   CONST
 
@@ -80,7 +80,7 @@ MODULE JavaStoreProcTypes;
           INC(end);
           n := n DIV 10;
         END;
-        ok := Strings.CopyCharsNull(name, end, "_proc");
+        ok := Chars0X.CopyString(name, end, "_proc");
 
         Log.Str("Corr name: "); Log.StrLn(name)
       END;
@@ -136,19 +136,19 @@ MODULE JavaStoreProcTypes;
     BEGIN
       CASE t.id OF
         Ast.IdInteger  ,
-        Ast.IdSet      : ok := Strings.CopyCharsNull(name, i, "I")
+        Ast.IdSet      : ok := Chars0X.CopyChar(name, i, "I")
       | Ast.IdLongInt  ,
-        Ast.IdLongSet  : ok := Strings.CopyCharsNull(name, i, "J")
-      | Ast.IdBoolean  : ok := Strings.CopyCharsNull(name, i, "Z")
-      | Ast.IdByte     : ok := Strings.CopyCharsNull(name, i, "B")
-      | Ast.IdChar     : ok := Strings.CopyCharsNull(name, i, "C")
-      | Ast.IdReal     : ok := Strings.CopyCharsNull(name, i, "D")
-      | Ast.IdReal32   : ok := Strings.CopyCharsNull(name, i, "F")
-      | Ast.IdPointer  : ok := Strings.CopyCharsNull(name, i, "L")
+        Ast.IdLongSet  : ok := Chars0X.CopyChar(name, i, "J")
+      | Ast.IdBoolean  : ok := Chars0X.CopyChar(name, i, "Z")
+      | Ast.IdByte     : ok := Chars0X.CopyChar(name, i, "B")
+      | Ast.IdChar     : ok := Chars0X.CopyChar(name, i, "C")
+      | Ast.IdReal     : ok := Chars0X.CopyChar(name, i, "D")
+      | Ast.IdReal32   : ok := Chars0X.CopyChar(name, i, "F")
+      | Ast.IdPointer  : ok := Chars0X.CopyChar(name, i, "L")
 
-      | Ast.IdArray    : ok := Strings.CopyCharsNull(name, i, "A")
-      | Ast.IdRecord   : ok := Strings.CopyCharsNull(name, i, "R")
-      | Ast.IdProcType : ok := Strings.CopyCharsNull(name, i, "P")
+      | Ast.IdArray    : ok := Chars0X.CopyChar(name, i, "A")
+      | Ast.IdRecord   : ok := Chars0X.CopyChar(name, i, "R")
+      | Ast.IdProcType : ok := Chars0X.CopyChar(name, i, "P")
       END
     RETURN
       ok
@@ -157,7 +157,7 @@ MODULE JavaStoreProcTypes;
   BEGIN
     i := 0;
     IF proc.type = NIL THEN
-      ok := Strings.CopyCharsNull(nm, i, "V");
+      ok := Chars0X.CopyChar(nm, i, "V");
       generic := FALSE
     ELSE
       ok := Type(nm, i, proc.type);
@@ -169,7 +169,7 @@ MODULE JavaStoreProcTypes;
       generic := generic OR (p.type.id IN GenericTypes);
       p := p.next
     END;
-    ok := ok & Strings.CopyCharsNull(nm, i, "_proc");
+    ok := ok & Chars0X.CopyString(nm, i, "_proc");
   RETURN
     Add(store, name, proc, generic, nm, i)
   END GenerateName;

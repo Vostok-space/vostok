@@ -1,5 +1,5 @@
 (*  Wrapper over OS-specific execution
- *  Copyright (C) 2017-2018 ComdivByZero
+ *  Copyright (C) 2017-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -22,7 +22,7 @@ IMPORT
 	OsExec,
 	log := Log,
 	Platform,
-	Strings := StringStore;
+	Chars0X;
 
 CONST
 	CodeSize* = 8192;
@@ -170,7 +170,7 @@ PROCEDURE Add*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 END Add;
 
 PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-	RETURN Strings.CopyCharsNull(c.buf, c.len, arg)
+	RETURN Chars0X.CopyString(c.buf, c.len, arg)
 END AddClean;
 
 PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;

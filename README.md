@@ -9,7 +9,7 @@ error-resistant code for industrial programming languages.
 Also, a possible future target is machine code, probably through intermediaries
 as LLVM.
 
-The translator is written in its own input language.
+The translator is written in its own input language - Oberon.
 Generates code for:
 
   * A common subset of C and C++ compatible with gcc, clang, tcc and CompCert.
@@ -20,7 +20,7 @@ License is LGPL for translator's code and Apache for libraries, tests and
 examples.
 
 ## Install in Ubuntu 18.04:
-Add [repository](http://obertone.ru/repo) and execute command:
+Add [repository](https://translate.google.com/translate?sl=ru&tl=en&u=http%3A%2F%2Fobertone.ru%2Frepo) and execute command:
 
     $ /usr/bin/sudo apt install vostok-bin
 

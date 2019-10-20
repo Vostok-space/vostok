@@ -19,7 +19,7 @@ MODULE GeneratorC;
 IMPORT
 	V,
 	Ast,
-	Strings := StringStore,
+	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
@@ -140,7 +140,7 @@ VAR
 
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
 BEGIN
-	ASSERT(Strings.CopyChars(
+	ASSERT(Chars0X.CopyChars(
 		out.mem[ORD(out.invert)].buf, out.mem[ORD(out.invert)].len,
 		buf, ofs, ofs + count
 	))
@@ -178,15 +178,16 @@ BEGIN
 END PMemoryOutBack;
 
 PROCEDURE MemWriteInvert(VAR mo: MemoryOut);
-VAR inv: INTEGER;
+VAR inv, direct: INTEGER;
 BEGIN
 	inv := ORD(mo.invert);
 	IF mo.mem[inv].len = 0 THEN
 		mo.invert := ~mo.invert
 	ELSE
-		ASSERT(Strings.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
-		                         mo.mem[1 - inv].buf, 0, mo.mem[1 - inv].len));
-		mo.mem[1 - inv].len := 0
+		direct := 1 - inv;
+		ASSERT(Chars0X.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
+		                         mo.mem[direct].buf, 0, mo.mem[direct].len));
+		mo.mem[direct].len := 0
 	END
 END MemWriteInvert;
 
@@ -335,7 +336,7 @@ BEGIN
 		l := 0;
 		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
-		ASSERT(Strings.CopyChars(anon, l, "_anon_0000", 0, 10));
+		ASSERT(Chars0X.CopyString(anon, l, "_anon_0000"));
 		ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
 		i := gen.opt.index;
 		j := l - 1;

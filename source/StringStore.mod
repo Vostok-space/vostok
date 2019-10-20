@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -48,14 +48,6 @@ TYPE
 		first, last: Block;
 		ofs: INTEGER
 	END;
-
-PROCEDURE LogLoopStr*(s: ARRAY OF CHAR; j, end: INTEGER);
-BEGIN
-	WHILE j # end DO
-		Log.Char(s[j]);
-		j := (j + 1) MOD (LEN(s) - 1)
-	END
-END LogLoopStr;
 
 PROCEDURE Undef*(VAR s: String);
 BEGIN
@@ -296,90 +288,10 @@ BEGIN
 	s.last := NIL
 END StoreDone;
 
-PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
-                     src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
-VAR ret: BOOLEAN;
-BEGIN
-	(*
-	Log.Str("CopyChars: "); Log.Int(destOfs);
-	Log.Str(", "); Log.Int(srcOfs);
-	Log.Str(", "); Log.Int(srcEnd);
-	Log.Str(" "); Log.StrLn(src);
-	*)
-	ASSERT((0 <= destOfs)
-		 & (0 <= srcOfs) & (srcOfs <= srcEnd)
-		 & (srcEnd <= LEN(src)));
-
-	ret := destOfs + srcEnd - srcOfs < LEN(dest) - 1;
-	IF ret THEN
-		WHILE srcOfs < srcEnd DO
-			dest[destOfs] := src[srcOfs];
-			INC(destOfs);
-			INC(srcOfs)
-		END
-	END;
-	dest[destOfs] := Utf8.Null
-	RETURN ret
-END CopyChars;
-
-PROCEDURE CopyCharsNullStartFrom*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
-                                  src: ARRAY OF CHAR; i: INTEGER): BOOLEAN;
-BEGIN
-	ASSERT((0 <= destOfs) & (destOfs < LEN(dest)));
-	ASSERT((0 <= i) & (i < LEN(src)));
-
-	WHILE (destOfs < LEN(dest) - 1) & (i < LEN(src)) & (src[i] # Utf8.Null) DO
-		dest[destOfs] := src[i];
-		INC(destOfs);
-		INC(i)
-	END;
-	dest[destOfs] := Utf8.Null
-	RETURN (i >= LEN(src)) OR (src[i] = Utf8.Null)
-END CopyCharsNullStartFrom;
-
-PROCEDURE CopyCharsNull*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
-                         src: ARRAY OF CHAR): BOOLEAN;
-	RETURN CopyCharsNullStartFrom(dest, destOfs, src, 0)
-END CopyCharsNull;
-
-PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
-VAR i: INTEGER;
-BEGIN
-	i := ofs;
-	WHILE str[i] # Utf8.Null DO
-		INC(i)
-	END
-	RETURN i - ofs
-END CalcLen;
-
-PROCEDURE TrimChars*(VAR str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
-VAR i, j: INTEGER;
-BEGIN
-	i := ofs;
-	WHILE (i < LEN(str)) & ((str[i] = " ") OR (str[i] = Utf8.Tab)) DO
-		INC(i)
-	END;
-	IF ofs < i THEN
-		j := ofs;
-		WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
-			str[j] := str[i];
-			INC(j); INC(i)
-		END
-	ELSE
-		j := ofs + CalcLen(str, ofs)
-	END;
-	WHILE (ofs < j) & ((str[j - 1] = " ") OR (str[j - 1] = Utf8.Tab)) DO
-		DEC(j)
-	END;
-	str[j] := Utf8.Null
-	RETURN j - ofs
-END TrimChars;
-
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
 	TODO учесть возможность ошибки при записи *)
 PROCEDURE Write*(VAR out: Stream.Out; str: String): INTEGER;
-VAR i, len, ofs: INTEGER;
-	block: Block;
+VAR i, len, ofs: INTEGER; block: Block;
 BEGIN
 	block := str.block;
 	i := str.ofs;

@@ -1,4 +1,4 @@
-(* Copyright 2018 ComdivByZero
+(* Copyright 2018-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,22 @@ MODULE LocaleParser;
   VAR tOfs: INTEGER;
       ok: BOOLEAN;
   BEGIN
+    ASSERT(LEN(lang)  > 2);
+    ASSERT(LEN(state) > 2);
+    ASSERT(LEN(enc)   > 2);
+
     tOfs := 0;
-    ok := Chars0X.Copy(locale, ofs, FALSE, 2, lang, tOfs)
+    ok := Chars0X.CopyAtMost(lang, tOfs, locale, ofs, 2)
         & (locale[ofs] = "_");
     IF ok THEN
       INC(ofs);
       tOfs := 0;
-      ok := Chars0X.Copy(locale, ofs, FALSE, 2, state, tOfs)
+      ok := Chars0X.CopyAtMost(state, tOfs, locale, ofs, 2)
           & (locale[ofs] = ".");
       IF ok THEN
         INC(ofs);
         tOfs := 0;
-        ok := Chars0X.Copy(locale, ofs, TRUE, LEN(enc), enc, tOfs)
+        ok := Chars0X.Copy(enc, tOfs, locale, ofs)
       END
     END
   RETURN

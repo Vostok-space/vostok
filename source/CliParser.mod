@@ -21,6 +21,7 @@ IMPORT V, CLI, Utf8, Strings := StringStore, Platform, GeneratorC, OsUtil,
 
 CONST
 	CmdHelp*       = 1;
+	CmdVersion*    = 11;
 	(* TODO переименовать *)
 	ResultC*       = 2;
 	ResultBin*     = 3;
@@ -116,7 +117,7 @@ BEGIN
 			END;
 			str[i - 1] := Utf8.Null
 		END;
-		i := j + Strings.TrimChars(str, j);
+		i := j + Chars0X.Trim(str, j);
 		IF ~ret OR (i >= LEN(str) - 1) THEN
 			err := errTooLong
 		END
@@ -147,8 +148,8 @@ VAR ok: BOOLEAN;
 	               base, add: ARRAY OF CHAR): BOOLEAN;
 	VAR ret: BOOLEAN;
 	BEGIN
-		ret := Strings.CopyCharsNull(str, i, base)
-		     & Strings.CopyCharsNull(str, i, add);
+		ret := Chars0X.CopyString(str, i, base)
+		     & Chars0X.CopyString(str, i, add);
 		IF ret THEN
 			INC(i);
 			str[i] := Utf8.Null
@@ -193,7 +194,7 @@ BEGIN
 			END
 		END;
 		INC(len);
-		ok := (i = 0) & Strings.CopyCharsNull(infr, len, "share/vostok")
+		ok := (i = 0) & Chars0X.CopyString(infr, len, "share/vostok")
 	END
 	RETURN ok
 END ReadNearInfr;
@@ -392,7 +393,7 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 	PROCEDURE Parse(VAR args: Args; VAR ret: INTEGER;
 	                file: ARRAY OF CHAR; dot, sep: INTEGER;
 	                method: ARRAY OF CHAR);
-	VAR i, dirsOfs, javaDirsOfs, jsDirsOfs, count: INTEGER;
+	VAR i, j, dirsOfs, javaDirsOfs, jsDirsOfs, count: INTEGER;
 	    infr: ARRAY 256 OF CHAR;
 	BEGIN
 		dirsOfs := 0;
@@ -402,29 +403,27 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 
 		i := 0;
 		IF sep >= 0 THEN
-			IF Strings.CopyChars(args.modPath, i, file, 0, sep + 1) THEN
-				INC(i);
-				args.modPathLen := i;
-				args.modPath[i] := Utf8.Null;
+			j := 0;
+			IF Chars0X.CopyChars(args.modPath, i, file, j, sep + 1) THEN
+				args.modPathLen := i + 1;
 				args.modPath[i + 1] := Utf8.Null;
+				args.modPath[i + 2] := Utf8.Null;
 				INC(count)
 			ELSE
 				ret := ErrTooLongModuleDirs
-			END;
-			i := sep + 1
+			END
 		ELSE
 			args.modPathLen := 1;
 			args.modPath[0] := ".";
 			args.modPath[1] := Utf8.Null;
 			args.modPath[2] := Utf8.Null;
-			INC(count);
-			i := 0
+			INC(count)
 		END;
 		args.srcNameEnd := 0;
-		ASSERT(Strings.CopyChars(args.src, args.srcNameEnd, file, i, dot));
+		ASSERT(Chars0X.CopyChars(args.src, args.srcNameEnd, file, i, dot));
 		args.srcLen := args.srcNameEnd;
-		IF method[0] # 0X THEN
-			ASSERT(Strings.CopyCharsNull(args.src, args.srcLen, method));
+		IF method[0] # Utf8.Null THEN
+			ASSERT(Chars0X.CopyString(args.src, args.srcLen, method));
 			INC(args.srcLen)
 		END;
 		IF (ret = ErrNo)
@@ -447,7 +446,7 @@ BEGIN
 	IF GetParam(ret, ErrTooLongSourceName, file, i, arg) THEN
 		IF (file[0] = ".") & (file[1] # "/") THEN
 			methodLen := 0;
-			IF ~Strings.CopyCharsNull(method, methodLen, file) THEN
+			IF ~Chars0X.CopyString(method, methodLen, file) THEN
 				(* TODO *)
 				ret := ErrTooLongSourceName
 			ELSE
@@ -576,8 +575,10 @@ BEGIN
 		ret := ErrUnknownCommand
 	ELSIF SearchDot(cmd) THEN
 		ignore := ArgsForRunFile(args, ret)
-	ELSIF cmd = "help" THEN
+	ELSIF (cmd = "help") OR (cmd = "--help") THEN
 		ret := CmdHelp
+	ELSIF (cmd = "version") OR (cmd = "--version") THEN
+		ret := CmdVersion
 	ELSIF cmd = "to-c" THEN
 		ret := Command(args, ResultC)
 	ELSIF cmd = "to-bin" THEN

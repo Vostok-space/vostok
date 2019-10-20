@@ -19,7 +19,7 @@ MODULE GeneratorJava;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Strings := StringStore,
+	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
@@ -225,7 +225,7 @@ BEGIN
 		l := 0;
 		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
-		ASSERT(Strings.CopyChars(anon, l, "_anon_0000", 0, 10));
+		ASSERT(Chars0X.CopyString(anon, l, "_anon_0000"));
 		ASSERT((gen.opt.index >= 0) & (gen.opt.index < 10000));
 		i := gen.opt.index;
 		j := l - 1;

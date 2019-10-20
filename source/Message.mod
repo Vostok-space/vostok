@@ -1,5 +1,5 @@
 (*  Wrapper for modules with localized messages for interface
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -89,8 +89,8 @@ END Text;
 PROCEDURE InitLang;
 VAR env: ARRAY 16 OF CHAR;
     ofs: INTEGER;
-    lng, state: ARRAY 2 OF CHAR;
-    enc: ARRAY 5 OF CHAR;
+    lng, state: ARRAY 3 OF CHAR;
+    enc: ARRAY 6 OF CHAR;
 BEGIN
 	ofs := 0;
 	IF ~(  Platform.Posix & Env.Get(env, ofs, "LANG")

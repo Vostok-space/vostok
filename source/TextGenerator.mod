@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017 ComdivByZero
+ *  Copyright (C) 2017,2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -19,7 +19,7 @@ MODULE TextGenerator;
 IMPORT
 	V,
 	Utf8,
-	Strings := StringStore,
+	Strings := StringStore, Chars0X,
 	Stream  := VDataStream,
 	Limits  := TypesLimits;
 
@@ -47,16 +47,6 @@ BEGIN
 	g.tabs := d.tabs
 END SetTabs;
 
-PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
-VAR i: INTEGER;
-BEGIN
-	i := ofs;
-	WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
-		INC(i)
-	END
-	RETURN i - ofs
-END CalcLen;
-
 PROCEDURE CharFill*(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
@@ -82,6 +72,16 @@ BEGIN
 		CharFill(gen, Utf8.Tab, gen.tabs)
 	END
 END NewLine;
+
+PROCEDURE CalcLen(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
+VAR i: INTEGER;
+BEGIN
+	i := ofs;
+	WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
+		INC(i)
+	END
+	RETURN i - ofs
+END CalcLen;
 
 PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN

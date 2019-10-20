@@ -26,7 +26,7 @@ IMPORT
   Exec := PlatformExec,
   Files := VFileStream, Stream := VDataStream,
   Dir := CDir,
-  Strings := StringStore;
+  Chars0X;
 
 TYPE
   Listener = RECORD(V.Base)
@@ -41,12 +41,12 @@ TYPE
 
   PROCEDURE Help*;
   BEGIN
-    Sn("Builder of simple Android applications. 2018");
+    Sn("Builder of simple Android applications. 2019");
     Sn("Usage:");
     Sn("  1) osa run   Script            Options");
     Sn("  2) osa build Script Result.apk Options");
     Sn("  3) osa install-tools");
-    Sn("Options same as for o7c, run 'o7c help' to see more");
+    Sn("Options same as for ost, run 'ost help' to see more");
     Sn("");
     Sn("Example:");
     Sn("  osa build 'Star.Go(5, 0.38)' result/star.apk -infr . -m example/android");
@@ -231,7 +231,7 @@ TYPE
   PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR)
                 : BOOLEAN;
   RETURN
-    Strings.CopyCharsNull(dest, i, src)
+    Chars0X.CopyString(dest, i, src)
   END Copy;
 
   PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR): BOOLEAN;

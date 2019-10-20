@@ -201,8 +201,8 @@ MODULE make;
  BEGIN
    i := 0; j := 0; k := 0;
  RETURN
-   Chars0X.Copy(a, j, TRUE, LEN(a), dest, i)
- & Chars0X.Copy(b, k, TRUE, LEN(b), dest, i)
+   Chars0X.Copy(dest, i, a, j)
+ & Chars0X.Copy(dest, i, b, k)
  END Concat;
 
  PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;

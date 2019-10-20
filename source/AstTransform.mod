@@ -19,6 +19,7 @@ MODULE AstTransform;
   IMPORT Out, V, Ast,
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
+         Chars0X,
          SpecIdent := OberonSpecIdent;
 
   CONST
@@ -89,7 +90,7 @@ MODULE AstTransform;
   BEGIN
       len := 0;
       ASSERT(Strings.CopyToChars(new, len, name)
-           & Strings.CopyCharsNull(new, len, append)
+           & Chars0X.CopyString (new, len, append)
       )
   END NameAppend;
 
@@ -556,7 +557,7 @@ MODULE AstTransform;
     REPEAT
       DEC(i)
     UNTIL ~Strings.CopyToChars(name, ofs, prs[i].name)
-       OR ~Strings.CopyCharsNull(name, ofs, "_")
+       OR ~Chars0X.CopyChar(name, ofs, "_")
        OR (i = 0);
 
     IF (i = 0) & Strings.CopyToChars(name, ofs, decl.name) THEN

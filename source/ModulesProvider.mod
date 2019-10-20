@@ -19,7 +19,8 @@ MODULE ModulesProvider;
   IMPORT
     Log, Out,
     Ast,
-    Strings := StringStore,
+    Strings := StringStore, Chars0X,
+    ArrayCopy,
     Parser,
     TranLim := TranslatorLimits,
     File := VFileStream,
@@ -45,7 +46,7 @@ MODULE ModulesProvider;
   VAR m: Ast.Module;
       mp: Provider;
       pathInd, i: INTEGER;
-      ext: ARRAY 4, 6 OF CHAR;
+      ext: ARRAY 5, 6 OF CHAR;
 
     PROCEDURE Search(p: Provider;
                      name: ARRAY OF CHAR; ofs, end: INTEGER;
@@ -59,23 +60,21 @@ MODULE ModulesProvider;
                      name: ARRAY OF CHAR; ofs, end: INTEGER;
                      ext: ARRAY OF CHAR): File.In;
       VAR n: ARRAY 1024 OF CHAR;
-          len, l: INTEGER;
+          l: INTEGER;
           in: File.In;
       BEGIN
-        len := Strings.CalcLen(p.path, pathOfs);
         l := 0;
-        IF (0 < len)
-         & Strings.CopyChars(n, l, p.path, pathOfs, pathOfs + len)
-         & Strings.CopyCharsNull(n, l, Exec.dirSep)
-         & Strings.CopyChars(n, l, name, ofs, end)
-         & Strings.CopyCharsNull(n, l, ext)
+        IF Chars0X.Copy      (n, l, p.path, pathOfs)
+         & Chars0X.CopyString(n, l, Exec.dirSep)
+         & Chars0X.CopyAtMost(n, l, name, ofs, end - ofs)
+         & Chars0X.CopyString(n, l, ext)
         THEN
           Log.Str("Open "); Log.StrLn(n);
           in := File.OpenIn(n)
         ELSE
           in := NIL
         END;
-        pathOfs := pathOfs + len + 1
+        INC(pathOfs)
       RETURN
         in
       END Open;
@@ -101,12 +100,13 @@ MODULE ModulesProvider;
   BEGIN
     mp := p(Provider);
     mp.nameLen := 0;
-    ASSERT(Strings.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
+    ASSERT(Chars0X.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
 
     ext[0] := ".mod";
     ext[1] := ".Mod";
     ext[2] := ".ob07";
     ext[3] := ".ob";
+    ext[4] := ".obn";
     i := 0;
     REPEAT
       m := Search(mp, name, ofs, end, ext[i], pathInd);
@@ -148,7 +148,7 @@ MODULE ModulesProvider;
 
     mp.firstNotOk := TRUE;
     len := 0;
-    ASSERT(Strings.CopyChars(mp.path, len, searchPath, 0, pathLen));
+    ArrayCopy.Chars(mp.path, len, searchPath, 0, pathLen);
     mp.sing := definitionsInSearch
   END New;
 
