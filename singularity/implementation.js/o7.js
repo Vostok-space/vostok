@@ -212,7 +212,10 @@ var o7;
     utf8Dec = new TextDecoder('utf-8');
 
     toUtf8 = function(str) {
-      return utf8Enc.encode(str);
+      var a;
+      a = utf8Enc.encode(str);
+      a.push(0x0);
+      return a;
     };
 
     o7.utf8ToStr = function(bytes) {
@@ -246,6 +249,7 @@ var o7;
         }
         si += 1;
       }
+      bytes.push(0x0);
       return u8array(bytes);
     };
 
@@ -420,28 +424,12 @@ var o7;
   }
 
   o7.strcmp = function(s1, s2) {
-    var c1, c2, len, i;
-
-    if (s1.length <= s2.length) {
-      len = s1.length;
-    } else {
-      len = s2.length;
-    }
+    var i;
     i = 0;
-    while ((i < len) && (s1[i] == s2[i]) && (s1[i] != 0)) {
+    while ((s1[i] == s2[i]) && (s1[i] != 0)) {
       i += 1;
     }
-    if (i < s1.length) {
-      c1 = s1[i];
-    } else {
-      c1 = 0;
-    }
-    if (i < s2.length) {
-      c2 = s2[i];
-    } else {
-      c2 = 0;
-    }
-    return c1 - c2;
+    return s1[i] - s2[i];
   };
 
 
@@ -472,11 +460,12 @@ var o7;
     var len, i;
 
     len = s.length;
-    assert(d.length > len);
+    assert(d.length >= len);
     for (i = 0; i < len; i += 1) {
       d[i] = s[i];
     }
-    d[i] = 0;
+    assert(i == len);
+    assert(d[i - 1] == 0);
   };
 
   o7.copy = function(d, s) {

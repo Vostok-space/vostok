@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,21 +37,21 @@ public static final boolean Get(byte[] str, int[] v_ofs, int v_ofs_i, int arg) {
 
     boolean ret;
 
-    last = ofs + len;
-    ret = last <= str.length;
+    last = ofs + len - 1;
+    ret = last < str.length;
     if (ret) {
         i = 0;
         while (ofs < last) {
             str[ofs] = args[arg][i];
+            /* предотвращение попадания завершения посреди строки */
             if (str[ofs] == 0) {
                 str[ofs] = 1;
             }
             ofs += 1;
             i   += 1;
         }
-        if (ofs < str.length) {
-            str[ofs] = 0;
-        }
+        assert args[arg][i] == 0;
+        str[ofs] = 0;
         v_ofs[v_ofs_i] = ofs;
     }
     return ret;

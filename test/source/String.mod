@@ -45,6 +45,14 @@ BEGIN
 	RETURN b1
 END Eq2;
 
+PROCEDURE EqLen(len: INTEGER; str: ARRAY OF CHAR);
+BEGIN
+	ASSERT(len = LEN(str));
+	ASSERT(LEN(str) = len);
+	ASSERT(str[len - 1] = 0X);
+	ASSERT(0X = str[LEN(str) - 1])
+END EqLen;
+
 PROCEDURE Fail*;
 (*
 VAR s: ARRAY 2 OF CHAR;
@@ -90,9 +98,12 @@ BEGIN
 	ASSERT(s1 # s2);
 	ASSERT(s2 # s1);
 
-	ASSERT(LEN("1234") = 4);
-	ASSERT(4 = L);
-	ASSERT(LEN(S) = 4);
+	ASSERT(LEN("1234") = 5);
+	ASSERT(5 = L);
+	ASSERT(LEN(S) = 5);
+
+	EqLen(6, "12345");
+	EqLen(5, S);
 
 	ASSERT(s2 = s3[1]);
 
@@ -104,9 +115,9 @@ BEGIN
 	ASSERT(~Eq1(s3, s4));
 
 	ASSERT(S1 = S2);
-	ASSERT(LEN(S1) = 1);
+	ASSERT(LEN(S1) = 2);
 	i := LEN(S1);
-	ASSERT(i = 1);
+	ASSERT(2 = i);
 
 	s1[0] := S[0];
 	ASSERT(s1[0] = "0");

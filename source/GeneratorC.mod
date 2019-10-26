@@ -1531,10 +1531,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 	END Boolean;
 
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
-	VAR s1: ARRAY 6 OF CHAR;
-		s2: ARRAY 3 OF CHAR;
-		ch: CHAR;
-		w: Strings.String;
+	VAR s: ARRAY 6 OF CHAR; ch: CHAR; w: Strings.String;
 
 		PROCEDURE ToHex(d: INTEGER): CHAR;
 		BEGIN
@@ -1556,16 +1553,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, "(o7_char)'\\'")
 			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
 				Text.Str(gen, "(o7_char)");
-				s2[0] := "'";
-				s2[1] := ch;
-				s2[2] := "'";
-				Text.Str(gen, s2)
+				s[0] := "'";
+				s[1] := ch;
+				s[2] := "'";
+				Text.Data(gen, s, 0, 3)
 			ELSE
 				Text.Str(gen, "0x");
-				s2[0] := ToHex(e.int DIV 16);
-				s2[1] := ToHex(e.int MOD 16);
-				s2[2] := "u";
-				Text.Str(gen, s2)
+				s[0] := ToHex(e.int DIV 16);
+				s[1] := ToHex(e.int MOD 16);
+				s[2] := "u";
+				Text.Data(gen, s, 0, 3)
 			END
 		ELSE
 			IF ~gen.insideSizeOf THEN
@@ -1574,13 +1571,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
 				Text.ScreeningString(gen, w)
 			ELSE
-				s1[0] := Utf8.DQuote;
-				s1[1] := "\";
-				s1[2] := "x";
-				s1[3] := ToHex(e.int DIV 16);
-				s1[4] := ToHex(e.int MOD 16);
-				s1[5] := Utf8.DQuote;
-				Text.Str(gen, s1)
+				s[0] := Utf8.DQuote;
+				s[1] := "\";
+				s[2] := "x";
+				s[3] := ToHex(e.int DIV 16);
+				s[4] := ToHex(e.int MOD 16);
+				s[5] := Utf8.DQuote;
+				Text.Data(gen, s, 0, 6)
 			END
 		END
 	END CString;

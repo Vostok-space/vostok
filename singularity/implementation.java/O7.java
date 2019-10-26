@@ -279,8 +279,8 @@ public static byte[] bytes(final java.lang.String s) {
     if (ba == null) {
         bb = UTF_8.encode(s);
         len = bb.limit();
-        ba = new byte[len];
-        bb.get(ba);
+        ba = new byte[len + 1];
+        bb.get(ba, 0, len);
 
         cache.put(s, ba);
     }
@@ -289,12 +289,10 @@ public static byte[] bytes(final java.lang.String s) {
 
 public static java.lang.String string(final byte[] bytes, final int ofs) {
     int i;
-    final int len;
     final java.nio.ByteBuffer buf;
 
     i = ofs;
-    len = bytes.length;
-    while (i < len && bytes[i] != 0) {
+    while (bytes[i] != 0) {
          i += 1;
     }
     buf = java.nio.ByteBuffer.wrap(bytes, ofs, i - ofs);
@@ -306,28 +304,12 @@ public static java.lang.String string(final byte[] bytes) {
 }
 
 public static int strcmp(final byte[] s1, final byte[] s2) {
-    final int c1, c2, len;
     int i;
-    if (s1.length <= s2.length) {
-        len = s1.length;
-    } else {
-        len = s2.length;
-    }
     i = 0;
-    while ((i < len) && (s1[i] == s2[i]) && (s1[i] != 0)) {
+    while ((s1[i] == s2[i]) && (s1[i] != 0)) {
         i += 1;
     }
-    if (i < s1.length) {
-        c1 = 0xFF & s1[i];
-    } else {
-        c1 = 0;
-    }
-    if (i < s2.length) {
-        c2 = 0xFF & s2[i];
-    } else {
-        c2 = 0;
-    }
-    return c1 - c2;
+    return (s1[i] & 0xFF) - (s2[i] & 0xFF);
 }
 
 public static int strcmp(final byte[] s1, final byte s2) {
@@ -353,12 +335,10 @@ public static int strcmp(final byte s1, final byte[] s2) {
 
 /* Copy chars */
 public static void strcpy(final byte[] d, final byte[] s) {
-    final int len;
     int i;
 
-    len = s.length;
     i = 0;
-    while (i < len && s[i] != 0) {
+    while (s[i] != 0) {
         d[i] = s[i];
         i += 1;
     }

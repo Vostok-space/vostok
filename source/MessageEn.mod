@@ -352,10 +352,11 @@ BEGIN
 END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
-BEGIN
+	PROCEDURE Short;
+	BEGIN
 S("Translator from Oberon-07 to C, Java and Javascript. 2019");
-S("Usage: ");
-S(" 0) ost help");
+S("Usage: ost command [parameter] {-option}");
+S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
 S(" 2) ost to-bin   Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}");
 S(" 3) ost run      Code {-m PM|-i PI|-c PHC|-cc CComp|-t Temp} [-- Args]");
@@ -366,9 +367,11 @@ S(" 7) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
 S(" 8) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
 S(" 9) ost          File.mod         [ Args ]");
 S(" A) ost .Command File.mod         [ Args ]");
-S(" B) ost .        File.mod Command [ Args ]");
-IF full THEN
-S("");
+S(" B) ost .        File.mod Command [ Args ]")
+	END Short;
+
+	PROCEDURE Details;
+	BEGIN
 S("1) to-c     converts modules to .h & .c files");
 S("2) to-bin   converts modules to executable through implicit .c files");
 S("3) run      executes implicit executable file");
@@ -421,7 +424,14 @@ S("   by default used suitable method of name generation, specific for compiler.
 S("  -same     translate to identical C names.");
 S("  -escape   translate with escaped unicode chars - \uXXXX.");
 S("  -translit use transliteration in output names in C.")
-END
+	END Details;
+
+BEGIN
+	Short;
+	IF full THEN
+		S("");
+		Details
+	END
 END Usage;
 
 PROCEDURE CliError*(err: INTEGER);

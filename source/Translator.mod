@@ -310,11 +310,11 @@ BEGIN
 		ASSERT(Chars0X.CopyString(dirOut, len, tmp))
 	ELSIF Platform.Posix THEN
 		ok := TRUE;
-		ASSERT(Chars0X.CopyString (dirOut, len, "/tmp/o7c-")
+		ASSERT(Chars0X.CopyString (dirOut, len, "/tmp/ost-")
 		     & Strings.CopyToChars(dirOut, len, name))
 	ELSE ASSERT(Platform.Windows);
 		ok := OsEnv.Get(dirOut, len, "temp")
-		    & Chars0X.CopyString (dirOut, len, "\o7c-")
+		    & Chars0X.CopyString (dirOut, len, "\ost-")
 		    & Strings.CopyToChars(dirOut, len, name)
 	END;
 

@@ -1770,14 +1770,14 @@ BEGIN
 END ExprBooleanGet;
 
 PROCEDURE ExprStringNew*(m: Module; buf: ARRAY OF CHAR; begin, end: INTEGER): ExprString;
-VAR e: ExprString;
-	len: INTEGER;
+VAR e: ExprString; len: INTEGER;
 BEGIN
 	len := end - begin;
+	(* поправка на циклический буфер *)
 	IF len < 0 THEN
 		len := len + LEN(buf) - 1
 	END;
-	DEC(len, 2);
+	DEC(len, 1);
 	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
 	e.int := -1;
 	e.asChar := FALSE;
@@ -1788,7 +1788,7 @@ END ExprStringNew;
 PROCEDURE ExprCharNew*(int: INTEGER): ExprString;
 VAR e: ExprString;
 BEGIN
-	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(1)));
+	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(2)));
 	Strings.Undef(e.string);
 	e.int := int;
 	e.asChar := TRUE
@@ -3756,7 +3756,7 @@ BEGIN
 		 & (expr.value # NIL) & (expr.value IS ExprString)
 		 & (des.type.id = IdArray) & (des.type(Array).count # NIL)
 		 & (   des.type(Array).count(ExprInteger).int
-		    <= expr.value.type(Array).count(ExprInteger).int)
+		    < expr.value.type(Array).count(ExprInteger).int)
 		THEN
 			err := ErrAssignStringToNotEnoughArray
 		END;

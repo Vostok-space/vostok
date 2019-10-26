@@ -972,9 +972,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 	END Boolean;
 
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
-	VAR s: ARRAY 8 OF CHAR;
-		ch: CHAR;
-		w: Strings.String;
+	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
 
 		PROCEDURE ToHex(d: INTEGER): CHAR;
 		BEGIN
@@ -1011,27 +1009,23 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			ELSE
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
+				len := 4;
 				IF e.int = ORD("\") THEN
-					s[2] := "\";
-					s[3] := Utf8.DQuote;
-					s[4] := Utf8.Null
+					s[2] := "\"
 				ELSIF e.int = 0AH THEN
-					s[2] := "n";
-					s[3] := Utf8.DQuote;
-					s[4] := Utf8.Null
+					s[2] := "n"
 				ELSIF e.int = ORD(Utf8.DQuote) THEN
-					s[2] := Utf8.DQuote;
-					s[3] := Utf8.DQuote;
-					s[4] := Utf8.Null
+					s[2] := Utf8.DQuote
 				ELSE
 					s[2] := "u";
 					s[3] := "0";
 					s[4] := "0";
 					s[5] := ToHex(e.int DIV 16);
 					s[6] := ToHex(e.int MOD 16);
-					s[7] := Utf8.DQuote
+					len := 8
 				END;
-				Text.Str(gen, s)
+				s[len - 1] := Utf8.DQuote;
+				Text.Data(gen, s, 0, len)
 			END;
 			Text.Str(gen, ")")
 		END

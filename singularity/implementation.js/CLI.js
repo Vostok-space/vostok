@@ -24,26 +24,28 @@ module.MaxLen = MaxLen;
 var startCliArg;
 
 function copy(str, ofs, ofs_ai, argi) {
-	o7.assert((0 <= ofs[ofs_ai]) && (ofs[ofs_ai] < str.length));
-
 	var arg, i, len, j, ok;
 
-	arg = o7.toUtf8(process.argv[argi]);
-	len = arg.length;
 	j = ofs[ofs_ai];
-	ok = j <= str.length - len;
-	i = 0;
+	o7.assert((0 <= j) && (j < str.length));
+
+	arg = o7.toUtf8(process.argv[argi]);
+	len = arg.length - 1;
+	ok = j < str.length - len;
 	if (ok) {
+		i = 0;
 		while (i < len) {
 			str[j] = arg[i];
+			/* предотвращение попадания завершения посреди строки */
+			if (str[j] == 0) {
+				str[j] = 1;
+			}
 			i += 1;
 			j += 1;
 		}
 		ofs[ofs_ai] = j;
 	}
-	if (j < str.length) {
-		str[j] = 0;
-	}
+	str[j] = 0;
 	return ok;
 }
 
