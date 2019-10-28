@@ -5,7 +5,7 @@ MODULE ColorCells;
     Canvas   := AndroidCanvas,
     Paint    := AndroidPaint;
 
-  PROCEDURE Draw(ctx: Drawable.Context; cnv: Canvas.T);
+  PROCEDURE Draw(ignored: Drawable.Context; cnv: Canvas.T);
   VAR i, j: INTEGER; x, y: REAL; paint: Paint.T; nx, ny: INTEGER;
   BEGIN
     nx := Drawable.Width () DIV 40;

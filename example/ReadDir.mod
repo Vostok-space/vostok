@@ -9,7 +9,7 @@ MODULE ReadDir;
      n: ARRAY 256 OF CHAR;
  BEGIN
    IF ~D.Open(d, name, 0) THEN
-     Out.String("Can not open ");
+     Out.String("Can not open directory ");
      Out.String(name);
      Out.Ln
    ELSE
