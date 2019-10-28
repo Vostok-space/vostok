@@ -54,8 +54,10 @@ TYPE
   END Help;
 
   PROCEDURE W(f: Files.Out; str: ARRAY OF CHAR): BOOLEAN;
+  BEGIN
+    ASSERT(str[LEN(str) - 1] = 0X)
   RETURN
-    LEN(str) = Stream.WriteChars(f^, str, 0, LEN(str))
+    LEN(str) - 1 = Stream.WriteChars(f^, str, 0, LEN(str) - 1)
   END W;
 
   PROCEDURE GenerateManifest(): BOOLEAN;
@@ -276,54 +278,70 @@ TYPE
     handled
   END Temp;
 
+  PROCEDURE ListenerInit(VAR l: Listener);
+  BEGIN
+    V.Init(l);
+    V.SetDo(l, Temp);
+    Cli.ArgsInit(l.args)
+  END ListenerInit;
+
+  PROCEDURE PrepareCliArgs(VAR args: Cli.Args; VAR res: ARRAY OF CHAR;
+                           arg: INTEGER; run: BOOLEAN)
+                          : BOOLEAN;
+  VAR ok: BOOLEAN; len: INTEGER;
+  BEGIN
+    ok := FALSE;
+    len := 0;
+    args.arg := arg + 1 + ORD(~run);
+    IF CLI.count < args.arg THEN
+      Help
+    ELSIF ~CLI.Get(args.src, args.srcLen, arg)
+       OR ~run & ~CLI.Get(res, len, arg + 1)
+    THEN
+      Help
+    ELSE
+      args.script := TRUE;
+      IF Cli.Options(args, args.arg) # Cli.ErrNo THEN
+        Help
+      ELSE
+        ok := TRUE
+      END
+    END
+  RETURN
+    ok
+  END PrepareCliArgs;
+
   PROCEDURE Build*(run: BOOLEAN; arg: INTEGER);
   VAR err, len: INTEGER;
       apk, res: ARRAY 1024 OF CHAR;
       listener: Listener;
       delTmp, ok: BOOLEAN;
   BEGIN
-    V.Init(listener);
-    V.SetDo(listener, Temp);
-    Cli.ArgsInit(listener.args);
-
-    len := 0;
-    listener.args.arg := arg + 1 + ORD(~run);
-    IF CLI.count < listener.args.arg THEN
-      Help
-    ELSIF ~CLI.Get(listener.args.src, listener.args.srcLen, arg)
-       OR ~run & ~CLI.Get(res, len, arg + 1)
-    THEN
-      Help
-    ELSE
-      listener.args.script := TRUE;
-      err := Cli.Options(listener.args, listener.args.arg);
-      IF err # Cli.ErrNo THEN
-        Help
-      ELSE
-        len := 0;
-        delTmp := listener.args.tmp[0] = 0X;
-        err := Translator.Translate(Cli.ResultClass, listener.args, listener);
-        ok := FALSE;
-        IF err # Translator.ErrNo THEN
-          IF err # Translator.ErrParse THEN
-            Message.CliError(err)
-          END
-        ELSIF run THEN
-          IF Android(listener.args, "oberon.apk") THEN
-            RunApp("oberon.apk")
-          END
-        ELSIF res[0] = "/" THEN
-          ok := Android(listener.args, res)
-        ELSIF ~Dir.GetCurrent(apk, len) THEN
-          Sn("Can not get current directory")
-        ELSIF ~(Copy(apk, len, "/") & Copy(apk, len, res)) THEN
-          Sn("Full path to result is too long")
-        ELSE
-          ok := Android(listener.args, apk)
-        END;
-        IF delTmp & ~FileSys.RemoveDir(listener.args.tmp) THEN
-          Sn("Error when deleting temporary directory")
+    ListenerInit(listener);
+    IF PrepareCliArgs(listener.args, res, arg, run) THEN
+      len := 0;
+      delTmp := listener.args.tmp[0] = 0X;
+      err := Translator.Translate(Cli.ResultClass, listener.args, listener);
+      ok := FALSE;
+      IF err # Translator.ErrNo THEN
+        IF err # Translator.ErrParse THEN
+          Message.CliError(err)
         END
+      ELSIF run THEN
+        IF Android(listener.args, "oberon.apk") THEN
+          RunApp("oberon.apk")
+        END
+      ELSIF res[0] = "/" THEN
+        ok := Android(listener.args, res)
+      ELSIF ~Dir.GetCurrent(apk, len) THEN
+        Sn("Can not get current directory")
+      ELSIF ~(Copy(apk, len, "/") & Copy(apk, len, res)) THEN
+        Sn("Full path to result is too long")
+      ELSE
+        ok := Android(listener.args, apk)
+      END;
+      IF delTmp & ~FileSys.RemoveDir(listener.args.tmp) THEN
+        Sn("Error when deleting temporary directory")
       END
     END
   END Build;

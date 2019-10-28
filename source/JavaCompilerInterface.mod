@@ -119,12 +119,6 @@ MODULE JavaCompilerInterface;
   END AddTargetVersion;
 
   PROCEDURE Do*(VAR c: Compiler): INTEGER;
-  BEGIN
-  (*
-    Log.On;
-    Exec.Log(c.cmd);
-    Log.Off
-  *)
   RETURN
     Exec.Do(c.cmd)
   END Do;
