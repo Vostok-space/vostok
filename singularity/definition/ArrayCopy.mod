@@ -1,4 +1,6 @@
-(* Copyright 2019 ComdivByZero
+(* Copying arrays of chars and bytes in any direction
+ *
+ * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +15,17 @@
  * limitations under the License.
  *)
 MODULE ArrayCopy;
+
+  CONST
+    FromChars* = {0};
+    FromBytes* = {1};
+    ToChars*   = {2};
+    ToBytes*   = {3};
+
+    FromCharsToChars* = FromChars + ToChars;
+    FromCharsToBytes* = FromChars + ToBytes;
+    FromBytesToChars* = FromBytes + ToChars;
+    FromBytesToBytes* = FromBytes + ToBytes;
 
   PROCEDURE Chars*(VAR dest: ARRAY OF CHAR; destOfs: INTEGER;
                         src: ARRAY OF CHAR;  srcOfs: INTEGER;
@@ -105,5 +118,24 @@ MODULE ArrayCopy;
       END
     END
   END BytesToChars;
+
+  PROCEDURE Data*(direction: SET;
+                  VAR destBytes: ARRAY OF BYTE; VAR destChars: ARRAY OF CHAR;
+                  destOfs: INTEGER;
+                  srcBytes: ARRAY OF BYTE; srcChars: ARRAY OF CHAR;
+                  srcOfs, count: INTEGER);
+  CONST CC = ORD(FromCharsToChars);
+        CB = ORD(FromCharsToBytes);
+        BC = ORD(FromBytesToChars);
+        BB = ORD(FromBytesToBytes);
+  VAR
+  BEGIN
+    CASE ORD(direction) OF
+      CC: Chars       (destChars, destOfs, srcChars, srcOfs, count)
+    | CB: CharsToBytes(destBytes, destOfs, srcChars, srcOfs, count)
+    | BC: BytesToChars(destChars, destOfs, srcBytes, srcOfs, count)
+    | BB: Bytes       (destBytes, destOfs, srcBytes, srcOfs, count)
+    END
+  END Data;
 
 END ArrayCopy.

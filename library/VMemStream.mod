@@ -39,6 +39,8 @@ MODULE VMemStream;
 
     Handle* = PROCEDURE(ctx: V.Base; data: ARRAY OF BYTE; len: INTEGER): BOOLEAN;
 
+  VAR dummy: ARRAY 1 OF BYTE;
+
   PROCEDURE AddBlock(VAR out: ROut): BOOLEAN;
   VAR ok: BOOLEAN;
   BEGIN
@@ -52,67 +54,46 @@ MODULE VMemStream;
     ok
   END AddBlock;
 
+  PROCEDURE WriteFrom(VAR out: ROut; dir: SET;
+                      bytes: ARRAY OF BYTE; chars: ARRAY OF CHAR;
+                      ofs, count: INTEGER)
+                      : INTEGER;
+  VAR rest: INTEGER; dummyOut: ARRAY 1 OF CHAR;
+  BEGIN
+    rest := count;
+    IF rest > Size - out.ofs THEN
+      IF out.ofs # Size THEN
+        ArrayCopy.Data(dir, out.last.data, dummyOut, out.ofs,
+                       bytes, chars, ofs, Size - out.ofs);
+        ofs  := ofs + (Size - out.ofs);
+        rest := rest - (Size - out.ofs)
+      END;
+      out.ofs := 0;
+      WHILE AddBlock(out) & (rest >= Size) DO
+        ArrayCopy.Data(dir, out.last.data, dummyOut, 0, bytes, chars, ofs, Size);
+        INC(ofs, Size);
+        DEC(rest, Size)
+      END
+    END;
+    IF rest > 0 THEN
+      ArrayCopy.Data(dir, out.last.data, dummyOut, out.ofs, bytes, chars, ofs, rest);
+      out.ofs := out.ofs + rest;
+      rest    := 0
+    END
+  RETURN
+    count - rest
+  END WriteFrom;
+
   PROCEDURE Write(VAR out: V.Base; buf: ARRAY OF BYTE; ofs, count: INTEGER)
                  : INTEGER;
-
-    PROCEDURE Copy(VAR out: ROut; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
-    VAR rest: INTEGER;
-    BEGIN
-      rest := count;
-      IF rest > Size - out.ofs THEN
-        IF out.ofs # Size THEN
-          ArrayCopy.Bytes(out.last.data, out.ofs, buf, ofs, Size - out.ofs);
-          ofs := ofs + (Size - out.ofs);
-          rest := rest - (Size - out.ofs)
-        END;
-        out.ofs := 0;
-        WHILE AddBlock(out) & (rest >= Size) DO
-          ArrayCopy.Bytes(out.last.data, 0, buf, ofs, Size);
-          INC(ofs, Size);
-          DEC(rest, Size)
-        END
-      END;
-      IF rest > 0 THEN
-        ArrayCopy.Bytes(out.last.data, out.ofs, buf, ofs, rest);
-        out.ofs := out.ofs + rest;
-        rest := 0
-      END
-    RETURN
-      count - rest
-    END Copy;
   RETURN
-    Copy(out(ROut), buf, ofs, count)
+    WriteFrom(out(ROut), ArrayCopy.FromBytesToBytes, buf, "", ofs, count)
   END Write;
 
   PROCEDURE WriteChars(VAR out: V.Base; buf: ARRAY OF CHAR; ofs, count: INTEGER)
                       : INTEGER;
-    PROCEDURE Copy(VAR out: ROut; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
-    VAR rest: INTEGER;
-    BEGIN
-      rest := count;
-      IF rest > Size - out.ofs THEN
-        IF out.ofs # Size THEN
-          ArrayCopy.CharsToBytes(out.last.data, out.ofs, buf, ofs, Size - out.ofs);
-          ofs := ofs + (Size - out.ofs);
-          rest := rest - (Size - out.ofs)
-        END;
-        out.ofs := 0;
-        WHILE AddBlock(out) & (rest >= Size) DO
-          ArrayCopy.CharsToBytes(out.last.data, 0, buf, ofs, Size);
-          INC(ofs, Size);
-          DEC(rest, Size)
-        END
-      END;
-      IF rest > 0 THEN
-        ArrayCopy.CharsToBytes(out.last.data, out.ofs, buf, ofs, rest);
-        out.ofs := out.ofs + rest;
-        rest := 0
-      END
-    RETURN
-      count - rest
-    END Copy;
   RETURN
-    Copy(out(ROut), buf, ofs, count)
+    WriteFrom(out(ROut), ArrayCopy.FromCharsToBytes, dummy, buf, ofs, count)
   END WriteChars;
 
   PROCEDURE Init(VAR out: ROut): BOOLEAN;
@@ -178,95 +159,60 @@ MODULE VMemStream;
     END
   END IncOfs;
 
+  PROCEDURE ReadTo(VAR in: RIn; dir: SET;
+                   VAR buf: ARRAY OF BYTE; VAR chars: ARRAY OF CHAR;
+                   ofs, count: INTEGER)
+                   : INTEGER;
+  VAR rest, len: INTEGER;
+  BEGIN
+    rest := count;
+    len := in.end - in.ofs;
+    IF len > 0 THEN
+      IF in.ofs > 0 THEN
+        IF rest < len THEN
+          len := rest
+        END;
+        ArrayCopy.Data(dir, buf, chars, ofs, in.block.data, "", in.ofs, len);
+        IncOfs(in, len);
+        INC(ofs, len);
+        DEC(rest, len)
+      ELSE
+        ASSERT(in.ofs = 0)
+      END;
+      WHILE (rest >= Size) & (in.block.next # NIL) DO
+        ArrayCopy.Data(dir, buf, chars, ofs, in.block.data, "", in.ofs, Size);
+        in.block := in.block.next;
+        INC(ofs, Size);
+        DEC(rest, Size)
+      END;
+      IF in.block.next = NIL THEN
+        in.end := in.last
+      END;
+      len := in.end - in.ofs;
+      IF (len > 0) & (rest > 0) THEN
+        IF rest < len THEN
+          len := rest
+        END;
+        ArrayCopy.Data(dir, buf, chars, ofs, in.block.data, "", in.ofs, len);
+        IncOfs(in, len);
+        DEC(rest, len)
+      END
+    END
+  RETURN
+    count - rest
+  END ReadTo;
+
   PROCEDURE Read(VAR in: V.Base; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER)
                 : INTEGER;
-
-    PROCEDURE Copy(VAR in: RIn; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
-    VAR rest, len: INTEGER;
-    BEGIN
-      rest := count;
-      len := in.end - in.ofs;
-      IF len > 0 THEN
-        IF in.ofs > 0 THEN
-          IF rest < len THEN
-            len := rest
-          END;
-          ArrayCopy.Bytes(buf, ofs, in.block.data, in.ofs, len);
-          IncOfs(in, len);
-          ofs  := ofs + len;
-          rest := rest - len
-        ELSE
-          ASSERT(in.ofs = 0)
-        END;
-        WHILE (rest >= Size) & (in.block.next # NIL) DO
-          ArrayCopy.Bytes(buf, ofs, in.block.data, in.ofs, Size);
-          in.block := in.block.next;
-          INC(ofs, Size);
-          DEC(rest, Size)
-        END;
-        IF in.block.next = NIL THEN
-          in.end := in.last
-        END;
-        len := in.end - in.ofs;
-        IF (len > 0) & (rest > 0) THEN
-          IF rest < len THEN
-            len := rest
-          END;
-          ArrayCopy.Bytes(buf, ofs, in.block.data, in.ofs, len);
-          IncOfs(in, len);
-          rest := rest - len
-        END
-      END
-    RETURN
-      count - rest
-    END Copy;
+  VAR dummyChars: ARRAY 1 OF CHAR;
   RETURN
-    Copy(in(RIn), buf, ofs, count)
+    ReadTo(in(RIn), ArrayCopy.FromBytesToBytes, buf, dummyChars, ofs, count)
   END Read;
 
   PROCEDURE ReadChars(VAR in: V.Base; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER)
-                : INTEGER;
-    PROCEDURE Copy(VAR in: RIn; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
-    VAR rest, len: INTEGER;
-    BEGIN
-      rest := count;
-      len := in.end - in.ofs;
-      IF len > 0 THEN
-        IF in.ofs > 0 THEN
-          IF rest < len THEN
-            len := rest
-          END;
-          ArrayCopy.BytesToChars(buf, ofs, in.block.data, in.ofs, len);
-          IncOfs(in, len);
-          ofs  := ofs + len;
-          rest := rest - len
-        ELSE
-          ASSERT(in.ofs = 0)
-        END;
-        WHILE (rest >= Size) & (in.block.next # NIL) DO
-          ArrayCopy.BytesToChars(buf, ofs, in.block.data, in.ofs, Size);
-          in.block := in.block.next;
-          INC(ofs, Size);
-          DEC(rest, Size)
-        END;
-        IF in.block.next = NIL THEN
-          in.end := in.last
-        END;
-        len := in.end - in.ofs;
-        IF (len > 0) & (rest > 0) THEN
-          IF rest < len THEN
-            len := rest
-          END;
-          ArrayCopy.BytesToChars(buf, ofs, in.block.data, in.ofs, len);
-          IncOfs(in, len);
-          rest := rest - len
-        END
-      END
-    RETURN
-      count - rest
-    END Copy;
+                     : INTEGER;
   RETURN
-    Copy(in(RIn), buf, ofs, count)
+    ReadTo(in(RIn), ArrayCopy.FromBytesToChars, dummy, buf, ofs, count)
   END ReadChars;
 
   PROCEDURE InitIn(VAR in: RIn; out: ROut);
