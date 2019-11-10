@@ -19,32 +19,30 @@ var VostokBox;
     return box;
   };
 
+  function log(box, className, text) {
+    var pre, table, needScroll;
+    pre = box.doc.createElement('pre');
+    pre.innerText = text;
+    pre.className = className;
+    table = box.doc.createElement('table');
+    table.appendChild(pre);
+    needScroll = box.log.scrollHeight - box.log.scrollTop < box.log.clientHeight + 40;
+    box.log.appendChild(table);
+    if (needScroll) {
+      table.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+    }
+  }
+
   function errorLog(box, text) {
-    var div;
-    div = box.doc.createElement('div');
-    div.innerText = text;
-    div.className = 'vostokbox-log-error';
-    box.log.appendChild(div);
-    div.scrollIntoView();
+    log(box, 'vostokbox-log-error', text);
   }
 
   function normalLog(box, text) {
-    var pre;
-    pre = box.doc.createElement('pre');
-    pre.innerText = text;
-    pre.className = 'vostokbox-log-out';
-    box.log.appendChild(pre);
-    pre.scrollIntoView();
+    log(box, 'vostokbox-log-out', text);
   }
 
   function scriptEcho(box, src) {
-    var pre, table;
-    pre = box.doc.createElement('pre');
-    pre.innerText = src;
-    pre.className = 'vostokbox-log-script';
-    table = box.doc.createElement('table');
-    table.appendChild(pre);
-    box.log.appendChild(table);
+    log(box, 'vostokbox-log-script', src);
   }
 
   function requestRun(box, scr) {
