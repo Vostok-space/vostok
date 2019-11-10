@@ -4,7 +4,6 @@
 #include "Log.h"
 #include "Ast.h"
 #include "StringStore.h"
-#include "TranslatorLimits.h"
 
 typedef struct ModulesStorage_RContainer *ModulesStorage_Container;
 typedef struct ModulesStorage_RContainer {

@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "PlatformExec.h"
@@ -106,7 +105,7 @@ extern o7_bool PlatformExec_Init(struct PlatformExec_Code *c, o7_int_t name_len0
 	V_Init(&(*c)._);
 	(*c).parts = (0 > 1);
 	(*c).len = 0;
-	if (o7_strcmp(name_len0, name, 0, (o7_char *)"") == 0) {
+	if (o7_strcmp(name_len0, name, 1, (o7_char *)"") == 0) {
 		(*c).buf[o7_ind(PlatformExec_CodeSize_cnst, (*c).len)] = 0x00u;
 		ok = (0 < 1);
 	} else if (Platform_Posix) {
@@ -142,7 +141,7 @@ extern o7_bool PlatformExec_Add(struct PlatformExec_Code *c, o7_int_t arg_len0, 
 }
 
 extern o7_bool PlatformExec_AddClean(struct PlatformExec_Code *c, o7_int_t arg_len0, o7_char arg[/*len0*/]) {
-	return StringStore_CopyCharsNull(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg);
+	return Chars0X_CopyString(PlatformExec_CodeSize_cnst, (*c).buf, &(*c).len, arg_len0, arg);
 }
 
 extern o7_bool PlatformExec_AddDirSep(struct PlatformExec_Code *c) {
@@ -207,7 +206,6 @@ extern void PlatformExec_init(void) {
 		OsExec_init();
 		Log_init();
 		Platform_init();
-		StringStore_init();
 
 		autoCorrectDirSeparator = (0 > 1);
 

@@ -9,6 +9,7 @@
 #include "Scanner.h"
 #include "OberonSpecIdent.h"
 #include "StringStore.h"
+#include "Chars0X.h"
 #include "TranslatorLimits.h"
 #include "CheckIntArithmetic.h"
 #include "LongSet.h"
@@ -236,6 +237,7 @@ typedef struct Ast_RError {
 	o7_int_t line;
 	o7_int_t column;
 	o7_int_t bytes;
+	struct StringStore_String str;
 	struct Ast_RError *next;
 } Ast_RError;
 #define Ast_RError_tag Ast_Node_tag
@@ -439,6 +441,7 @@ typedef struct Ast_RModule {
 
 	o7_bool fixed;
 	o7_bool spec;
+	struct Ast_RDeclaration *unusedDecl;
 
 	struct Ast_RError *errors;
 	struct Ast_RError *errLast;

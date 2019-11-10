@@ -24,7 +24,7 @@ extern o7_bool CCompilerInterface_Set(struct CCompilerInterface_Compiler *c, o7_
 
 extern o7_bool CCompilerInterface_Search(struct CCompilerInterface_Compiler *c, o7_bool forRun);
 
-extern o7_bool CCompilerInterface_AddOutput(struct CCompilerInterface_Compiler *c, o7_int_t o_len0, o7_char o[/*len0*/]);
+extern o7_bool CCompilerInterface_AddOutputExe(struct CCompilerInterface_Compiler *c, o7_int_t o_len0, o7_char o[/*len0*/]);
 
 extern o7_bool CCompilerInterface_AddInclude(struct CCompilerInterface_Compiler *c, o7_int_t path_len0, o7_char path[/*len0*/], o7_int_t ofs);
 

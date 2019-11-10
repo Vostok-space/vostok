@@ -1,5 +1,6 @@
 #include "o7.h"
 
+#include <stdio.h>
 #include <float.h>
 
 #include <math.h>
@@ -86,28 +87,29 @@ extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *
 }
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i) {
-	extern int puts(char const *s);
-	char buf[26];
+	char buf[25];
 	o7_cbool neg;
 	int ofs;
 	neg = i < 0;
 	if (neg) {
 		i = -o7_int(i);
 	}
-	buf[15] = '\0';
-	ofs = 15;
-	while (i > 0) {
+
+	ofs = sizeof(buf) - 1;
+	buf[ofs] = '\n';
+	do {
 		ofs -= 1;
 		buf[ofs] = '0' + i % 10;
 		i /= 10;
-	}
+	} while (i > 0);
+
 	if (neg) {
 		ofs -= 1;
 		buf[ofs] = '-';
 	}
 	ofs -= sizeof("case fail: ") - 1;
 	memcpy(buf + ofs, "case fail: ", sizeof("case fail: ") - 1);
-	puts(buf + ofs);
+	fwrite(buf + ofs, 1, sizeof(buf) - ofs, stderr);
 	abort();
 }
 

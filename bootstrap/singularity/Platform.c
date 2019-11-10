@@ -40,11 +40,22 @@
   o7_cbool const Platform_Darwin = 0 > 1;
 #endif
 
-#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) || defined(__APPLE__) || defined(__minix) || defined(__HAIKU__) || defined(__sun__) || defined(__sun)
+#if defined(__HAIKU__)
+  o7_cbool const Platform_Haiku = 0 < 1;
+#else
+  o7_cbool const Platform_Haiku = 0 > 1;
+#endif
+
+#if defined(__unix__) || defined(__unix) \
+ || defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) \
+ || defined(__minix__) || defined(__minix) \
+ || defined(__APPLE__) || defined(__HAIKU__) \
+ || defined(__sun__) || defined(__sun)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;
 #endif
 
+o7_cbool const Platform_C          = 0 < 1;
 o7_cbool const Platform_Java       = 0 > 1;
 o7_cbool const Platform_Javascript = 0 > 1;

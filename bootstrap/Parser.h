@@ -62,7 +62,7 @@
 
 #define Parser_ErrMin_cnst (-400)
 
-typedef void (*Parser_PrintError)(o7_int_t code);
+typedef void (*Parser_PrintError)(o7_int_t code, struct StringStore_String *str);
 typedef struct Parser_Options {
 	V_Base _;
 	o7_bool strictSemicolon;

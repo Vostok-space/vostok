@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "TextGenerator.h"
@@ -24,16 +23,6 @@ extern void TextGenerator_Init(struct TextGenerator_Out *g, struct VDataStream_O
 
 extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, struct TextGenerator_Out *d) {
 	(*g).tabs = o7_int((*d).tabs);
-}
-
-extern o7_int_t TextGenerator_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs) {
-	o7_int_t i;
-
-	i = ofs;
-	while ((i < str_len0) && (str[o7_ind(str_len0, i)] != 0x00u)) {
-		i = o7_add(i, 1);
-	}
-	return o7_sub(i, ofs);
 }
 
 extern void TextGenerator_CharFill(struct TextGenerator_Out *gen, o7_char ch, o7_int_t count) {
@@ -65,18 +54,18 @@ static void NewLine(struct TextGenerator_Out *gen) {
 
 extern void TextGenerator_Str(struct TextGenerator_Out *gen, o7_int_t str_len0, o7_char str[/*len0*/]) {
 	NewLine(&(*gen));
-	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, TextGenerator_CalcLen(str_len0, str, 0)));
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, Chars0X_CalcLen(str_len0, str, 0)));
 }
 
 extern void TextGenerator_StrLn(struct TextGenerator_Out *gen, o7_int_t str_len0, o7_char str[/*len0*/]) {
 	NewLine(&(*gen));
-	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, TextGenerator_CalcLen(str_len0, str, 0)));
-	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, (o7_char *)"\x0A", 0, 1));
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, Chars0X_CalcLen(str_len0, str, 0)));
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 2, (o7_char *)"\x0A", 0, 1));
 	(*gen).isNewLine = (0 < 1);
 }
 
 extern void TextGenerator_Ln(struct TextGenerator_Out *gen) {
-	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, (o7_char *)"\x0A", 0, 1));
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 2, (o7_char *)"\x0A", 0, 1));
 	(*gen).isNewLine = (0 < 1);
 }
 
@@ -105,7 +94,7 @@ extern void TextGenerator_StrLnClose(struct TextGenerator_Out *gen, o7_int_t str
 }
 
 extern void TextGenerator_StrIgnoreIndent(struct TextGenerator_Out *gen, o7_int_t str_len0, o7_char str[/*len0*/]) {
-	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, TextGenerator_CalcLen(str_len0, str, 0)));
+	(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, str_len0, str, 0, Chars0X_CalcLen(str_len0, str, 0)));
 }
 
 extern void TextGenerator_String(struct TextGenerator_Out *gen, struct StringStore_String *word) {
@@ -135,7 +124,7 @@ extern void TextGenerator_ScreeningString(struct TextGenerator_Out *gen, struct 
 		last = 0;
 	} else if (O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == (o7_char)'\\') {
 		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, StringStore_BlockSize_cnst + 1, O7_REF(block)->s, last, o7_add(o7_sub(i, last), 1)));
-		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 1, (o7_char *)"\x5C", 0, 1));
+		(*gen).len = o7_add((*gen).len, VDataStream_WriteChars(&(*O7_REF((*gen).out)), NULL, 2, (o7_char *)"\x5C", 0, 1));
 		i = o7_add(i, 1);
 		last = i;
 	} else if (O7_REF(block)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] != 0x00u) {
@@ -171,7 +160,7 @@ extern void TextGenerator_Int(struct TextGenerator_Out *gen, o7_int_t int_) {
 
 extern void TextGenerator_Real(struct TextGenerator_Out *gen, double real) {
 	NewLine(&(*gen));
-	TextGenerator_Str(&(*gen), 20, (o7_char *)"Real not implemented");
+	TextGenerator_Str(&(*gen), 21, (o7_char *)"Real not implemented");
 }
 
 static o7_char ToHex(o7_int_t d) {

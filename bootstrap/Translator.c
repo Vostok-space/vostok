@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "V.h"
@@ -8,6 +7,7 @@
 #include "VDataStream.h"
 #include "VFileStream.h"
 #include "Utf8.h"
+#include "Chars0X.h"
 #include "StringStore.h"
 #include "SpecIdentChecker.h"
 #include "Parser.h"
@@ -40,24 +40,24 @@ static void Translator_MsgTempDirCreated_undef(struct Translator_MsgTempDirCreat
 	V_Message_undef(&r->_);
 }
 
-static void ErrorMessage(o7_int_t code) {
+static void ErrorMessage(o7_int_t code, struct StringStore_String *str) {
 	if (code <= Parser_ErrAstBegin_cnst) {
-		Message_AstError(o7_sub(code, Parser_ErrAstBegin_cnst));
+		Message_AstError(o7_sub(code, Parser_ErrAstBegin_cnst), &(*str));
 	} else {
 		Message_ParseError(code);
 	}
 }
 
-static void IndexedErrorMessage(o7_int_t index, o7_int_t code, o7_int_t line, o7_int_t column) {
-	Out_String(2, (o7_char *)"  ");
+static void IndexedErrorMessage(o7_int_t index, o7_int_t code, struct StringStore_String *str, o7_int_t line, o7_int_t column) {
+	Out_String(3, (o7_char *)"  ");
 	Out_Int(index, 2);
-	Out_String(2, (o7_char *)") ");
+	Out_String(3, (o7_char *)") ");
 
-	ErrorMessage(code);
+	ErrorMessage(code, &(*str));
 
-	Out_String(1, (o7_char *)"\x20");
+	Out_String(2, (o7_char *)"\x20");
 	Out_Int(o7_add(line, 1), 0);
-	Out_String(3, (o7_char *)" : ");
+	Out_String(4, (o7_char *)" : ");
 	Out_Int(column, 0);
 	Out_Ln();
 }
@@ -77,15 +77,15 @@ static void PrintErrors(struct ModulesStorage_RContainer *mc, struct Ast_RModule
 			err = O7_REF(err)->next;
 		}
 		if (err != NULL) {
-			Message_Text(27, (o7_char *)"Found errors in the module ");
+			Message_Text(28, (o7_char *)"Found errors in the module ");
 			Out_String(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(m)->_._.name.block)->s);
-			Out_String(2, (o7_char *)": ");
+			Out_String(3, (o7_char *)": ");
 			Out_Ln();
 			err = O7_REF(m)->errors;
 			while (err != NULL) {
 				if (o7_cmp(O7_REF(err)->code, SkipError_cnst) != 0) {
 					i = o7_add(i, 1);
-					IndexedErrorMessage(i, o7_int(O7_REF(err)->code), o7_int(O7_REF(err)->line), o7_int(O7_REF(err)->column));
+					IndexedErrorMessage(i, o7_int(O7_REF(err)->code), &O7_REF(err)->str, o7_int(O7_REF(err)->line), o7_int(O7_REF(err)->column));
 				}
 				err = O7_REF(err)->next;
 			}
@@ -93,13 +93,13 @@ static void PrintErrors(struct ModulesStorage_RContainer *mc, struct Ast_RModule
 		m = ModulesStorage_Next(&mc);
 	}
 	if (i == 0) {
-		IndexedErrorMessage(i, o7_int(O7_REF(O7_REF(module_)->errors)->code), o7_int(O7_REF(O7_REF(module_)->errors)->line), o7_int(O7_REF(O7_REF(module_)->errors)->column));
+		IndexedErrorMessage(i, o7_int(O7_REF(O7_REF(module_)->errors)->code), &O7_REF(O7_REF(module_)->errors)->str, o7_int(O7_REF(O7_REF(module_)->errors)->line), o7_int(O7_REF(O7_REF(module_)->errors)->column));
 	}
 #	undef SkipError_cnst
 }
 
 static o7_bool CopyModuleNameForFile(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t *len, struct StringStore_String *name) {
-	return StringStore_CopyToChars(str_len0, str, &(*len), &(*name)) && (!SpecIdentChecker_IsSpecModuleName(&(*name)) || StringStore_CopyCharsNull(str_len0, str, &(*len), 1, (o7_char *)"\x5F"));
+	return StringStore_CopyToChars(str_len0, str, &(*len), &(*name)) && (!SpecIdentChecker_IsSpecModuleName(&(*name)) || Chars0X_CopyChar(str_len0, str, &(*len), (o7_char)'_'));
 }
 
 static o7_int_t OpenCOutput(struct VFileStream_ROut **interface_, struct VFileStream_ROut **implementation, struct Ast_RModule *module_, o7_bool isMain, o7_int_t dir_len0, o7_char dir[/*len0*/], o7_int_t dirLen, struct CCompilerInterface_Compiler *ccomp, o7_bool usecc) {
@@ -108,7 +108,7 @@ static o7_int_t OpenCOutput(struct VFileStream_ROut **interface_, struct VFileSt
 	(*interface_) = NULL;
 	(*implementation) = NULL;
 	destLen = dirLen;
-	if (!StringStore_CopyCharsNull(dir_len0, dir, &destLen, 1, PlatformExec_dirSep) || !CopyModuleNameForFile(dir_len0, dir, &destLen, &O7_REF(module_)->_._.name) || (destLen > o7_sub(dir_len0, 3))) {
+	if (!Chars0X_CopyString(dir_len0, dir, &destLen, 1, PlatformExec_dirSep) || !CopyModuleNameForFile(dir_len0, dir, &destLen, &O7_REF(module_)->_._.name) || (destLen > o7_sub(dir_len0, 3))) {
 		ret = CliParser_ErrTooLongOutName_cnst;
 	} else {
 		dir[o7_ind(dir_len0, destLen)] = (o7_char)'.';
@@ -128,7 +128,6 @@ static o7_int_t OpenCOutput(struct VFileStream_ROut **interface_, struct VFileSt
 			} else {
 				/* TODO */
 				O7_ASSERT(!usecc || CCompilerInterface_AddC(&(*ccomp), dir_len0, dir, 0));
-				Log_StrLn(dir_len0, dir);
 
 				ret = Translator_ErrNo_cnst;
 			}
@@ -174,9 +173,9 @@ static o7_int_t GenerateC(struct Ast_RModule *module_, o7_bool isMain, struct As
 			i = 0;
 			while (!sing && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
 				nameLen = 0;
-				cDirsLen = StringStore_CalcLen(cDirs_len0, cDirs, i);
+				cDirsLen = Chars0X_CalcLen(cDirs_len0, cDirs, i);
 				/* TODO */
-				O7_ASSERT(StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 1, PlatformExec_dirSep) && CopyModuleNameForFile(512, name, &nameLen, &O7_REF(module_)->_._.name) && StringStore_CopyCharsNull(512, name, &nameLen, 2, (o7_char *)".c"));
+				O7_ASSERT(Chars0X_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && Chars0X_CopyString(512, name, &nameLen, 1, PlatformExec_dirSep) && CopyModuleNameForFile(512, name, &nameLen, &O7_REF(module_)->_._.name) && Chars0X_CopyString(512, name, &nameLen, 3, (o7_char *)".c"));
 				if (CFiles_Exist(512, name, 0)) {
 					sing = (0 < 1);
 					O7_ASSERT(!usecc || CCompilerInterface_AddC(&(*ccomp), 512, name, 0));
@@ -206,24 +205,24 @@ static o7_bool GetTempOut(o7_int_t dirOut_len0, o7_char dirOut[/*len0*/], o7_int
 	Translator_MsgTempDirCreated_undef(&tmpCreated);
 
 	(*len) = 0;
-	if (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") != 0) {
+	if (o7_strcmp(tmp_len0, tmp, 1, (o7_char *)"") != 0) {
 		ok = (0 < 1);
-		O7_ASSERT(StringStore_CopyCharsNull(dirOut_len0, dirOut, &(*len), tmp_len0, tmp));
+		O7_ASSERT(Chars0X_CopyString(dirOut_len0, dirOut, &(*len), tmp_len0, tmp));
 	} else if (Platform_Posix) {
 		ok = (0 < 1);
-		O7_ASSERT(StringStore_CopyCharsNull(dirOut_len0, dirOut, &(*len), 9, (o7_char *)"/tmp/o7c-") && StringStore_CopyToChars(dirOut_len0, dirOut, &(*len), &(*name)));
+		O7_ASSERT(Chars0X_CopyString(dirOut_len0, dirOut, &(*len), 10, (o7_char *)"/tmp/ost-") && StringStore_CopyToChars(dirOut_len0, dirOut, &(*len), &(*name)));
 	} else {
 		O7_ASSERT(Platform_Windows);
-		ok = OsEnv_Get(dirOut_len0, dirOut, &(*len), 4, (o7_char *)"temp") && StringStore_CopyCharsNull(dirOut_len0, dirOut, &(*len), 5, (o7_char *)"\\o7c-") && StringStore_CopyToChars(dirOut_len0, dirOut, &(*len), &(*name));
+		ok = OsEnv_Get(dirOut_len0, dirOut, &(*len), 5, (o7_char *)"temp") && Chars0X_CopyString(dirOut_len0, dirOut, &(*len), 6, (o7_char *)"\\ost-") && StringStore_CopyToChars(dirOut_len0, dirOut, &(*len), &(*name));
 	}
 
 	if (ok) {
 		i = 0;
 		ok = FileSystemUtil_MakeDir(dirOut_len0, dirOut);
-		if (!ok && (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") == 0)) {
+		if (!ok && (o7_strcmp(tmp_len0, tmp, 1, (o7_char *)"") == 0)) {
 			while (!ok && (i < 100)) {
 				if (i == 0) {
-					O7_ASSERT(StringStore_CopyCharsNull(dirOut_len0, dirOut, &(*len), 3, (o7_char *)"-00"));
+					O7_ASSERT(Chars0X_CopyString(dirOut_len0, dirOut, &(*len), 4, (o7_char *)"-00"));
 				} else {
 					dirOut[o7_ind(dirOut_len0, o7_sub((*len), 2))] = o7_chr(o7_add((o7_int_t)(o7_char)'0', o7_div(i, 10)));
 					dirOut[o7_ind(dirOut_len0, o7_sub((*len), 1))] = o7_chr(o7_add((o7_int_t)(o7_char)'0', o7_mod(i, 10)));
@@ -234,10 +233,10 @@ static o7_bool GetTempOut(o7_int_t dirOut_len0, o7_char dirOut[/*len0*/], o7_int
 		}
 		if (ok) {
 			i = 0;
-			if (o7_strcmp(tmp_len0, tmp, 0, (o7_char *)"") != 0) {
+			if (o7_strcmp(tmp_len0, tmp, 1, (o7_char *)"") != 0) {
 				saveTemp = V_Do(&(*listener), &tmpCreated._);
 			} else {
-				ok = StringStore_CopyCharsNull(tmp_len0, tmp, &i, dirOut_len0, dirOut);
+				ok = Chars0X_CopyString(tmp_len0, tmp, &i, dirOut_len0, dirOut);
 				saveTemp = V_Do(&(*listener), &tmpCreated._);
 				if (!saveTemp) {
 					tmp[0] = 0x00u;
@@ -252,7 +251,7 @@ static o7_bool GetCBin(o7_int_t bin_len0, o7_char bin[/*len0*/], o7_int_t dir_le
 	o7_int_t len;
 
 	len = 0;
-	return StringStore_CopyCharsNull(bin_len0, bin, &len, dir_len0, dir) && StringStore_CopyCharsNull(bin_len0, bin, &len, 1, PlatformExec_dirSep) && StringStore_CopyToChars(bin_len0, bin, &len, &(*name)) && (!Platform_Windows || StringStore_CopyCharsNull(bin_len0, bin, &len, 4, (o7_char *)".exe"));
+	return Chars0X_CopyString(bin_len0, bin, &len, dir_len0, dir) && Chars0X_CopyString(bin_len0, bin, &len, 1, PlatformExec_dirSep) && StringStore_CopyToChars(bin_len0, bin, &len, &(*name)) && (!Platform_Windows || Chars0X_CopyString(bin_len0, bin, &len, 5, (o7_char *)".exe"));
 }
 
 static o7_bool GetTempOutC(o7_int_t dirCOut_len0, o7_char dirCOut[/*len0*/], o7_int_t *len, o7_int_t bin_len0, o7_char bin[/*len0*/], struct StringStore_String *name, o7_int_t tmp_len0, o7_char tmp[/*len0*/], struct V_Base *listener) {
@@ -296,7 +295,7 @@ static o7_int_t GenerateThroughC_Bin(o7_int_t res, struct CliParser_Args *args, 
 	if (!ok) {
 		ret = CliParser_ErrCantCreateOutDir_cnst;
 	} else {
-		ccEnd = StringStore_CalcLen(cc_len0, cc, 0);
+		ccEnd = Chars0X_CalcLen(cc_len0, cc, 0);
 		if (ccEnd == 0) {
 			ok = CCompilerInterface_Search(&(*cmd), res == CliParser_ResultRun_cnst);
 		} else {
@@ -310,15 +309,15 @@ static o7_int_t GenerateThroughC_Bin(o7_int_t res, struct CliParser_Args *args, 
 		}
 		outC[o7_ind(outC_len0, outCLen)] = 0x00u;
 		if (ret == Translator_ErrNo_cnst) {
-			ok = ok && CCompilerInterface_AddOutput(&(*cmd), bin_len0, bin) && CCompilerInterface_AddInclude(&(*cmd), outC_len0, outC, 0);
+			ok = ok && CCompilerInterface_AddOutputExe(&(*cmd), bin_len0, bin) && CCompilerInterface_AddInclude(&(*cmd), outC_len0, outC, 0);
 			i = 0;
 			while (ok && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
 				nameLen = 0;
-				cDirsLen = StringStore_CalcLen(cDirs_len0, cDirs, i);
-				ok = CCompilerInterface_AddInclude(&(*cmd), cDirs_len0, cDirs, i) && StringStore_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && StringStore_CopyCharsNull(512, name, &nameLen, 1, PlatformExec_dirSep) && StringStore_CopyCharsNull(512, name, &nameLen, 4, (o7_char *)"o7.c") && (!CFiles_Exist(512, name, 0) || CCompilerInterface_AddC(&(*cmd), 512, name, 0));
+				cDirsLen = Chars0X_CalcLen(cDirs_len0, cDirs, i);
+				ok = CCompilerInterface_AddInclude(&(*cmd), cDirs_len0, cDirs, i) && Chars0X_CopyChars(512, name, &nameLen, cDirs_len0, cDirs, i, o7_add(i, cDirsLen)) && Chars0X_CopyString(512, name, &nameLen, 1, PlatformExec_dirSep) && Chars0X_CopyString(512, name, &nameLen, 5, (o7_char *)"o7.c") && (!CFiles_Exist(512, name, 0) || CCompilerInterface_AddC(&(*cmd), 512, name, 0));
 				i = o7_add(o7_add(i, cDirsLen), 1);
 			}
-			ok = ok && ((o7_cmp(O7_REF(opt)->memManager, GeneratorC_MemManagerCounter_cnst) != 0) || CCompilerInterface_AddOpt(&(*cmd), 33, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")) && ((o7_cmp(O7_REF(opt)->memManager, GeneratorC_MemManagerGC_cnst) != 0) || CCompilerInterface_AddOpt(&(*cmd), 28, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_GC") && CCompilerInterface_AddOpt(&(*cmd), 4, (o7_char *)"-lgc")) && (!Platform_Posix || CCompilerInterface_AddOpt(&(*cmd), 3, (o7_char *)"-lm"));
+			ok = ok && ((o7_cmp(O7_REF(opt)->memManager, GeneratorC_MemManagerCounter_cnst) != 0) || CCompilerInterface_AddOpt(&(*cmd), 34, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")) && ((o7_cmp(O7_REF(opt)->memManager, GeneratorC_MemManagerGC_cnst) != 0) || CCompilerInterface_AddOpt(&(*cmd), 29, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_GC") && CCompilerInterface_AddOpt(&(*cmd), 5, (o7_char *)"-lgc")) && (!Platform_Posix || CCompilerInterface_AddOpt(&(*cmd), 4, (o7_char *)"-lm"));
 
 			if (ok && (ccEnd < o7_sub(cc_len0, 1)) && (cc[o7_ind(cc_len0, o7_add(ccEnd, 1))] != 0x00u)) {
 				ok = CCompilerInterface_AddOptByOfs(&(*cmd), cc_len0, cc, o7_add(ccEnd, 1));
@@ -369,7 +368,7 @@ static o7_int_t GenerateThroughC(o7_int_t res, struct CliParser_Args *args, stru
 	GenerateThroughC_SetOptions(opt, &(*args));
 	switch (res) {
 	case 2:
-		O7_ASSERT(CCompilerInterface_Set(&ccomp, 2, (o7_char *)"cc"));
+		O7_ASSERT(CCompilerInterface_Set(&ccomp, 3, (o7_char *)"cc"));
 		ret = GenerateC(module_, (call != NULL) || o7_bl((*args).script), call, opt, 1024, (*args).resPath, o7_int((*args).resPathLen), 4096, (*args).cDirs, &ccomp, (0 > 1));
 		break;
 	case 3:
@@ -378,7 +377,7 @@ static o7_int_t GenerateThroughC(o7_int_t res, struct CliParser_Args *args, stru
 		if ((res == CliParser_ResultRun_cnst) && (ret == Translator_ErrNo_cnst)) {
 			ret = GenerateThroughC_Run(1024, (*args).resPath, o7_int((*args).arg));
 		}
-		if ((o7_strcmp(1024, (*args).tmp, 0, (o7_char *)"") == 0) && !FileSystemUtil_RemoveDir(1024, outC) && (ret == Translator_ErrNo_cnst)) {
+		if ((o7_strcmp(1024, (*args).tmp, 1, (o7_char *)"") == 0) && !FileSystemUtil_RemoveDir(1024, outC) && (ret == Translator_ErrNo_cnst)) {
 			ret = CliParser_ErrCantRemoveOutDir_cnst;
 		}
 		break;
@@ -396,6 +395,7 @@ static o7_int_t Translator_Translate(o7_int_t res, struct CliParser_Args *args, 
 	struct Ast_Call__s *call = NULL;
 	struct Ast_RStatement *cmd;
 	struct Parser_Options opt;
+	struct StringStore_String str;
 	Parser_Options_undef(&opt);
 
 	NewProvider(&mp, &opt, &(*args));
@@ -421,8 +421,10 @@ static o7_int_t Translator_Translate(o7_int_t res, struct CliParser_Args *args, 
 			cmd = NULL;
 		}
 		if (ret != Ast_ErrNo_cnst) {
-			Message_AstError(ret);
+			StringStore_Undef(&str);
+			Message_AstError(ret, &str);
 			Message_Ln();
+			ret = Translator_ErrParse_cnst;
 		} else {
 			O7_ASSERT(o7_in(res, CliParser_ThroughC_cnst));
 			ret = GenerateThroughC(res, &(*args), module_, cmd, &(*listener));
@@ -453,7 +455,7 @@ static void Translator_Start(void) {
 	V_Base_undef(&nothing);
 
 	Out_Open();
-	Log_Turn((0 > 1));
+	Log_Off();
 
 	V_Init(&nothing);
 	if (!CliParser_Parse(&args, &ret) || !Handle(&args, &ret, &nothing)) {

@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "V.h"

@@ -48,8 +48,6 @@ typedef struct StringStore_Store {
 
 extern void StringStore_Store_undef(struct StringStore_Store *r);
 
-extern void StringStore_LogLoopStr(o7_int_t s_len0, o7_char s[/*len0*/], o7_int_t j, o7_int_t end);
-
 extern void StringStore_Undef(struct StringStore_String *s);
 
 extern o7_bool StringStore_IsDefined(struct StringStore_String *s);
@@ -75,16 +73,6 @@ extern o7_bool StringStore_CopyToChars(o7_int_t d_len0, o7_char d[/*len0*/], o7_
 extern void StringStore_StoreInit(struct StringStore_Store *s);
 
 extern void StringStore_StoreDone(struct StringStore_Store *s);
-
-extern o7_bool StringStore_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t srcOfs, o7_int_t srcEnd);
-
-extern o7_bool StringStore_CopyCharsNullStartFrom(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t i);
-
-extern o7_bool StringStore_CopyCharsNull(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/]);
-
-extern o7_int_t StringStore_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs);
-
-extern o7_int_t StringStore_TrimChars(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs);
 
 extern o7_int_t StringStore_Write(struct VDataStream_Out *out, o7_tag_t *out_tag, struct StringStore_String *str);
 

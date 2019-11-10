@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "VDataStream.h"
@@ -69,7 +68,7 @@ extern o7_int_t VDataStream_Read(struct VDataStream_In *in_, o7_tag_t *in__tag, 
 	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	r = (*in_).read(&(*in_)._._, in__tag, buf_len0, buf, ofs, count);
 	O7_ASSERT((0 <= r) && (r <= count));
-	return o7_int(r);
+	return r;
 }
 
 extern o7_int_t VDataStream_ReadChars(struct VDataStream_In *in_, o7_tag_t *in__tag, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ofs, o7_int_t count) {
@@ -78,7 +77,7 @@ extern o7_int_t VDataStream_ReadChars(struct VDataStream_In *in_, o7_tag_t *in__
 	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	r = (*in_).readChars(&(*in_)._._, in__tag, buf_len0, buf, ofs, count);
 	O7_ASSERT((0 <= r) && (r <= count));
-	return o7_int(r);
+	return r;
 }
 
 extern void VDataStream_InitOut(struct VDataStream_Out *out, VDataStream_WriteProc write, VDataStream_WriteCharsProc writeChars, VDataStream_CloseStream close) {
@@ -100,7 +99,7 @@ extern o7_int_t VDataStream_Write(struct VDataStream_Out *out, o7_tag_t *out_tag
 	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	w = (*out).write(&(*out)._._, out_tag, buf_len0, buf, ofs, count);
 	O7_ASSERT((0 <= w) && (w <= count));
-	return o7_int(w);
+	return w;
 }
 
 extern o7_int_t VDataStream_WriteChars(struct VDataStream_Out *out, o7_tag_t *out_tag, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ofs, o7_int_t count) {
@@ -109,7 +108,7 @@ extern o7_int_t VDataStream_WriteChars(struct VDataStream_Out *out, o7_tag_t *ou
 	O7_ASSERT((0 <= ofs) && (0 <= count) && (ofs <= o7_sub(buf_len0, count)));
 	w = (*out).writeChars(&(*out)._._, out_tag, buf_len0, buf, ofs, count);
 	O7_ASSERT((0 <= w) && (w <= count));
-	return o7_int(w);
+	return w;
 }
 
 extern void VDataStream_InitInOpener(struct VDataStream_InOpener *opener, VDataStream_OpenIn open) {

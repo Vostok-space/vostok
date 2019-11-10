@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "ModulesStorage.h"
@@ -47,14 +46,14 @@ static struct Ast_RModule *SearchModule(struct ModulesStorage_Provider__s *mp, o
 
 	first = O7_REF(mp)->first;
 	mc = O7_REF(first)->next;
-	Log_StrLn(6, (o7_char *)"Search");
+	Log_StrLn(7, (o7_char *)"Search");
 	while ((mc != first) && !StringStore_IsEqualToChars(&O7_REF(O7_REF(mc)->m)->_._.name, name_len0, name, ofs, end)) {
 		Log_Str(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(O7_REF(mc)->m)->_._.name.block)->s);
-		Log_Str(3, (o7_char *)" : ");
+		Log_Str(4, (o7_char *)" : ");
 		Log_StrLn(name_len0, name);
 		mc = O7_REF(mc)->next;
 	}
-	Log_StrLn(10, (o7_char *)"End Search");
+	Log_StrLn(11, (o7_char *)"End Search");
 	return O7_REF(mc)->m;
 }
 
@@ -79,7 +78,7 @@ extern struct Ast_RModule *ModulesStorage_GetModule(struct Ast_RProvider *p, str
 	if (m == NULL) {
 		m = Ast_ProvideModule(O7_REF(mp)->provider, host, name_len0, name, ofs, end);
 	} else {
-		Log_Str(56, (o7_char *)"Найден уже разобранный модуль ");
+		Log_Str(57, (o7_char *)"Найден уже разобранный модуль ");
 		Log_StrLn(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(m)->_._.name.block)->s);
 	}
 	return m;

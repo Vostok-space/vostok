@@ -110,6 +110,10 @@ BEGIN
 	RETURN r
 END Read;
 
+PROCEDURE ReadWhole*(VAR in: In; VAR buf: ARRAY OF BYTE): INTEGER;
+	RETURN Read(in, buf, 0, LEN(buf))
+END ReadWhole;
+
 PROCEDURE ReadChars*(VAR in: In; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 VAR r: INTEGER;
 BEGIN
@@ -118,6 +122,10 @@ BEGIN
 	ASSERT((0 <= r) & (r <= count))
 	RETURN r
 END ReadChars;
+
+PROCEDURE ReadCharsWhole*(VAR in: In; VAR buf: ARRAY OF CHAR): INTEGER;
+	RETURN ReadChars(in, buf, 0, LEN(buf))
+END ReadCharsWhole;
 
 PROCEDURE InitOut*(VAR out: Out;
                    write: WriteProc; writeChars: WriteCharsProc; close: CloseStream);

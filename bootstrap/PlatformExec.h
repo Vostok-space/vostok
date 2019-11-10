@@ -6,7 +6,7 @@
 #include "OsExec.h"
 #include "Log.h"
 #include "Platform.h"
-#include "StringStore.h"
+#include "Chars0X.h"
 
 #define PlatformExec_CodeSize_cnst 8192
 

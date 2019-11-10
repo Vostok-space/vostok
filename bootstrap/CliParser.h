@@ -6,8 +6,8 @@
 #include "Utf8.h"
 #include "StringStore.h"
 #include "Platform.h"
-#include "Log.h"
 #include "GeneratorC.h"
+#include "Chars0X.h"
 
 #define CliParser_CmdHelp_cnst 1
 #define CliParser_ResultC_cnst 2
@@ -61,7 +61,7 @@ typedef struct CliParser_Args {
 	o7_char cDirs[4096];
 	o7_char cc[4096];
 	o7_int_t modPathLen;
-	unsigned sing;
+	o7_set_t sing;
 	o7_int_t init;
 	o7_int_t memng;
 	o7_int_t arg;

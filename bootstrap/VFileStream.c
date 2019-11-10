@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "VFileStream.h"
@@ -27,12 +26,12 @@ static void CloseRIn(struct V_Base *in_, o7_tag_t *in__tag) {
 }
 
 extern struct VFileStream_RIn *VFileStream_OpenIn(o7_int_t name_len0, o7_char name[/*len0*/]) {
-	struct VFileStream_RIn *in_;
+	struct VFileStream_RIn *in_ = NULL;
 	CFiles_File file;
 
 	O7_NEW(&in_, VFileStream_RIn);
 	if (in_ != NULL) {
-		file = CFiles_Open(name_len0, name, 0, 2, (o7_char *)"rb");
+		file = CFiles_Open(name_len0, name, 0, 3, (o7_char *)"rb");
 		if (file == NULL) {
 			in_ = NULL;
 		} else {
@@ -63,12 +62,12 @@ static void CloseROut(struct V_Base *out, o7_tag_t *out_tag) {
 }
 
 extern struct VFileStream_ROut *VFileStream_OpenOut(o7_int_t name_len0, o7_char name[/*len0*/]) {
-	struct VFileStream_ROut *out;
+	struct VFileStream_ROut *out = NULL;
 	CFiles_File file;
 
 	O7_NEW(&out, VFileStream_ROut);
 	if (out != NULL) {
-		file = CFiles_Open(name_len0, name, 0, 2, (o7_char *)"wb");
+		file = CFiles_Open(name_len0, name, 0, 3, (o7_char *)"wb");
 		if (file == NULL) {
 			out = NULL;
 		} else {

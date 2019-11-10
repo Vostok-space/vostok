@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "Log.h"
@@ -46,9 +45,9 @@ extern void Log_Real(double x) {
 extern void Log_Bool(o7_bool b) {
 	if (!o7_bl(Log_state)) {
 	} else if (b) {
-		Out_String(4, (o7_char *)"TRUE");
+		Out_String(5, (o7_char *)"TRUE");
 	} else {
-		Out_String(5, (o7_char *)"FALSE");
+		Out_String(6, (o7_char *)"FALSE");
 	}
 }
 

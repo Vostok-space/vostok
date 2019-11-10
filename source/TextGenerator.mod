@@ -73,26 +73,16 @@ BEGIN
 	END
 END NewLine;
 
-PROCEDURE CalcLen(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
-VAR i: INTEGER;
-BEGIN
-	i := ofs;
-	WHILE (i < LEN(str)) & (str[i] # Utf8.Null) DO
-		INC(i)
-	END
-	RETURN i - ofs
-END CalcLen;
-
 PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0))
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0))
 END Str;
 
 PROCEDURE StrLn*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0));
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0));
 	gen.len := gen.len + Stream.WriteChars(gen.out^, Utf8.NewLine, 0, 1);
 	gen.isNewLine := TRUE
 END StrLn;
@@ -134,7 +124,7 @@ END StrLnClose;
 
 PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, CalcLen(str, 0))
+	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0))
 END StrIgnoreIndent;
 
 PROCEDURE String*(VAR gen: Out; word: Strings.String);

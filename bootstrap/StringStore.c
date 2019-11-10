@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "StringStore.h"
@@ -29,13 +28,6 @@ extern void StringStore_Store_undef(struct StringStore_Store *r) {
 	r->first = NULL;
 	r->last = NULL;
 	r->ofs = O7_INT_UNDEF;
-}
-
-extern void StringStore_LogLoopStr(o7_int_t s_len0, o7_char s[/*len0*/], o7_int_t j, o7_int_t end) {
-	while (j != end) {
-		Log_Char(s[o7_ind(s_len0, j)]);
-		j = o7_mod((o7_add(j, 1)), (o7_sub(s_len0, 1)));
-	}
 }
 
 extern void StringStore_Undef(struct StringStore_String *s) {
@@ -222,8 +214,8 @@ extern o7_bool StringStore_SearchSubString(struct StringStore_String *w, o7_int_
 			b = O7_REF(b)->next;
 			i = 0;
 		} else break;
-	} while (!((o7_cmp(j, s_len0) == 0) || (s[o7_ind(s_len0, j)] == 0x00u) || (O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u)));
-	return (o7_cmp(j, s_len0) == 0) || (s[o7_ind(s_len0, j)] == 0x00u);
+	} while (!((j == s_len0) || (s[o7_ind(s_len0, j)] == 0x00u) || (O7_REF(b)->s[o7_ind(StringStore_BlockSize_cnst + 1, i)] == 0x00u)));
+	return (j == s_len0) || (s[o7_ind(s_len0, j)] == 0x00u);
 }
 
 extern o7_bool StringStore_CopyToChars(o7_int_t d_len0, o7_char d[/*len0*/], o7_int_t *dofs, struct StringStore_String *w) {
@@ -260,74 +252,6 @@ extern void StringStore_StoreDone(struct StringStore_Store *s) {
 		(*s).first = O7_REF((*s).first)->next;
 	}
 	(*s).last = NULL;
-}
-
-extern o7_bool StringStore_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t srcOfs, o7_int_t srcEnd) {
-	o7_bool ret;
-
-	O7_ASSERT((0 <= (*destOfs)) && (0 <= srcOfs) && (srcOfs <= srcEnd) && (srcEnd <= src_len0));
-
-	ret = o7_sub(o7_add((*destOfs), srcEnd), srcOfs) < o7_sub(dest_len0, 1);
-	if (ret) {
-		while (srcOfs < srcEnd) {
-			dest[o7_ind(dest_len0, (*destOfs))] = src[o7_ind(src_len0, srcOfs)];
-			(*destOfs) = o7_add((*destOfs), 1);
-			srcOfs = o7_add(srcOfs, 1);
-		}
-	}
-	dest[o7_ind(dest_len0, (*destOfs))] = 0x00u;
-	return ret;
-}
-
-extern o7_bool StringStore_CopyCharsNullStartFrom(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t i) {
-	O7_ASSERT((0 <= (*destOfs)) && ((*destOfs) < dest_len0));
-	O7_ASSERT((0 <= i) && (i < src_len0));
-
-	while (((*destOfs) < o7_sub(dest_len0, 1)) && (i < src_len0) && (src[o7_ind(src_len0, i)] != 0x00u)) {
-		dest[o7_ind(dest_len0, (*destOfs))] = src[o7_ind(src_len0, i)];
-		(*destOfs) = o7_add((*destOfs), 1);
-		i = o7_add(i, 1);
-	}
-	dest[o7_ind(dest_len0, (*destOfs))] = 0x00u;
-	return (i >= src_len0) || (src[o7_ind(src_len0, i)] == 0x00u);
-}
-
-extern o7_bool StringStore_CopyCharsNull(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/]) {
-	return StringStore_CopyCharsNullStartFrom(dest_len0, dest, &(*destOfs), src_len0, src, 0);
-}
-
-extern o7_int_t StringStore_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs) {
-	o7_int_t i;
-
-	i = ofs;
-	while (str[o7_ind(str_len0, i)] != 0x00u) {
-		i = o7_add(i, 1);
-	}
-	return o7_sub(i, ofs);
-}
-
-extern o7_int_t StringStore_TrimChars(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs) {
-	o7_int_t i, j;
-
-	i = ofs;
-	while ((i < str_len0) && ((str[o7_ind(str_len0, i)] == (o7_char)' ') || (str[o7_ind(str_len0, i)] == 0x09u))) {
-		i = o7_add(i, 1);
-	}
-	if (ofs < i) {
-		j = ofs;
-		while ((i < str_len0) && (str[o7_ind(str_len0, i)] != 0x00u)) {
-			str[o7_ind(str_len0, j)] = str[o7_ind(str_len0, i)];
-			j = o7_add(j, 1);
-			i = o7_add(i, 1);
-		}
-	} else {
-		j = o7_add(ofs, StringStore_CalcLen(str_len0, str, ofs));
-	}
-	while ((ofs < j) && ((str[o7_ind(str_len0, o7_sub(j, 1))] == (o7_char)' ') || (str[o7_ind(str_len0, o7_sub(j, 1))] == 0x09u))) {
-		j = o7_sub(j, 1);
-	}
-	str[o7_ind(str_len0, j)] = 0x00u;
-	return o7_sub(j, ofs);
 }
 
 extern o7_int_t StringStore_Write(struct VDataStream_Out *out, o7_tag_t *out_tag, struct StringStore_String *str) {

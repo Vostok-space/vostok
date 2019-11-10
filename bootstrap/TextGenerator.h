@@ -4,6 +4,7 @@
 #include "V.h"
 #include "Utf8.h"
 #include "StringStore.h"
+#include "Chars0X.h"
 #include "VDataStream.h"
 #include "TypesLimits.h"
 
@@ -21,8 +22,6 @@ extern void TextGenerator_Out_undef(struct TextGenerator_Out *r);
 extern void TextGenerator_Init(struct TextGenerator_Out *g, struct VDataStream_Out *out);
 
 extern void TextGenerator_SetTabs(struct TextGenerator_Out *g, struct TextGenerator_Out *d);
-
-extern o7_int_t TextGenerator_CalcLen(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs);
 
 extern void TextGenerator_CharFill(struct TextGenerator_Out *gen, o7_char ch, o7_int_t count);
 

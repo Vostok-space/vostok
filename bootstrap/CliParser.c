@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "CliParser.h"
@@ -52,19 +51,19 @@ extern o7_bool CliParser_GetParam(o7_int_t *err, o7_int_t errTooLong, o7_int_t s
 			}
 			str[o7_ind(str_len0, o7_sub((*i), 1))] = 0x00u;
 		}
-		(*i) = o7_add(j, StringStore_TrimChars(str_len0, str, j));
-		if (!o7_bl(ret) || ((*i) >= o7_sub(str_len0, 1))) {
+		(*i) = o7_add(j, Chars0X_Trim(str_len0, str, j));
+		if (!ret || ((*i) >= o7_sub(str_len0, 1))) {
 			(*err) = errTooLong;
 		}
 	}
-	return o7_bl(ret);
+	return ret;
 }
 
 static o7_bool IsEqualStr(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs, o7_int_t sample_len0, o7_char sample[/*len0*/]) {
 	o7_int_t i;
 
 	i = 0;
-	while ((str[o7_ind(str_len0, ofs)] == sample[o7_ind(sample_len0, i)]) && (sample[o7_ind(sample_len0, i)] != 0x00u) && (ofs < o7_sub(str_len0, 1)) && (o7_cmp(ofs, o7_sub(sample_len0, 1)) < 0)) {
+	while ((str[o7_ind(str_len0, ofs)] == sample[o7_ind(sample_len0, i)]) && (sample[o7_ind(sample_len0, i)] != 0x00u) && (ofs < o7_sub(str_len0, 1)) && (ofs < o7_sub(sample_len0, 1))) {
 		ofs = o7_add(ofs, 1);
 		i = o7_add(i, 1);
 	}
@@ -74,25 +73,25 @@ static o7_bool IsEqualStr(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t ofs
 static o7_bool CopyInfr_Copy(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t *i, o7_int_t base_len0, o7_char base[/*len0*/], o7_int_t add_len0, o7_char add[/*len0*/]) {
 	o7_bool ret;
 
-	ret = StringStore_CopyCharsNull(str_len0, str, &(*i), base_len0, base) && StringStore_CopyCharsNull(str_len0, str, &(*i), add_len0, add);
+	ret = Chars0X_CopyString(str_len0, str, &(*i), base_len0, base) && Chars0X_CopyString(str_len0, str, &(*i), add_len0, add);
 	if (ret) {
 		(*i) = o7_add((*i), 1);
 		str[o7_ind(str_len0, (*i))] = 0x00u;
 	}
-	return o7_bl(ret);
+	return ret;
 }
 
 static o7_bool CopyInfr(struct CliParser_Args *args, o7_int_t *i, o7_int_t *dirsOfs, o7_int_t *count, o7_int_t base_len0, o7_char base[/*len0*/]) {
 	o7_bool ok;
 
 	if (o7_bl(Platform_Posix)) {
-		ok = CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 23, (o7_char *)"/singularity/definition")
-		&& CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 8, (o7_char *)"/library")
-		&& CopyInfr_Copy(4096, (*args).cDirs, &(*dirsOfs), base_len0, base, 27, (o7_char *)"/singularity/implementation");
+		ok = CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 24, (o7_char *)"/singularity/definition")
+		&& CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 9, (o7_char *)"/library")
+		&& CopyInfr_Copy(4096, (*args).cDirs, &(*dirsOfs), base_len0, base, 28, (o7_char *)"/singularity/implementation");
 	} else if (o7_bl(Platform_Windows)) {
-		ok = CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 23, (o7_char *)"\\singularity\\definition")
-		&& CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 8, (o7_char *)"\\library")
-		&& CopyInfr_Copy(4096, (*args).cDirs, &(*dirsOfs), base_len0, base, 27, (o7_char *)"\\singularity\\implementation");
+		ok = CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 24, (o7_char *)"\\singularity\\definition")
+		&& CopyInfr_Copy(4096, (*args).modPath, &(*i), base_len0, base, 9, (o7_char *)"\\library")
+		&& CopyInfr_Copy(4096, (*args).cDirs, &(*dirsOfs), base_len0, base, 28, (o7_char *)"\\singularity\\implementation");
 	} else {
 		ok = (0 > 1);
 	}
@@ -100,7 +99,7 @@ static o7_bool CopyInfr(struct CliParser_Args *args, o7_int_t *i, o7_int_t *dirs
 		(*args).sing |= 1u << (*count);
 		(*count) = o7_add((*count), 2);
 	}
-	return o7_bl(ok);
+	return ok;
 }
 
 extern o7_int_t CliParser_Options(struct CliParser_Args *args, o7_int_t *arg) {
@@ -115,27 +114,25 @@ extern o7_int_t CliParser_Options(struct CliParser_Args *args, o7_int_t *arg) {
 	count = 0;
 	ret = CliParser_ErrNo_cnst;
 	optLen = 0;
-	while ((ret == CliParser_ErrNo_cnst) && (count < 32) && (o7_cmp((*arg), CLI_count) < 0) && CLI_Get(256, opt, &optLen, (*arg)) && !IsEqualStr(256, opt, 0, 2, (o7_char *)"--")) {
+	while ((ret == CliParser_ErrNo_cnst) && (count < 32) && (o7_cmp((*arg), CLI_count) < 0) && CLI_Get(256, opt, &optLen, (*arg)) && !IsEqualStr(256, opt, 0, 3, (o7_char *)"--")) {
 		optLen = 0;
 		(*arg) = o7_add((*arg), 1);
-		if ((o7_strcmp(256, opt, 2, (o7_char *)"-i") == 0) || (o7_strcmp(256, opt, 2, (o7_char *)"-m") == 0)) {
+		if ((o7_strcmp(256, opt, 3, (o7_char *)"-i") == 0) || (o7_strcmp(256, opt, 3, (o7_char *)"-m") == 0)) {
 			if (CliParser_GetParam(&ret, CliParser_ErrTooLongModuleDirs_cnst, 4096, (*args).modPath, &i, &(*arg))) {
-				if (o7_strcmp(256, opt, 2, (o7_char *)"-i") == 0) {
+				if (o7_strcmp(256, opt, 3, (o7_char *)"-i") == 0) {
 					(*args).sing |= 1u << count;
 				}
 				i = o7_add(i, 1);
 				(*args).modPath[o7_ind(4096, i)] = 0x00u;
 				count = o7_add(count, 1);
 			}
-		} else if (o7_strcmp(256, opt, 2, (o7_char *)"-c") == 0) {
+		} else if (o7_strcmp(256, opt, 3, (o7_char *)"-c") == 0) {
 			if (CliParser_GetParam(&ret, CliParser_ErrTooLongCDirs_cnst, 4096, (*args).cDirs, &dirsOfs, &(*arg))) {
 				dirsOfs = o7_add(dirsOfs, 1);
 				(*args).cDirs[o7_ind(4096, dirsOfs)] = 0x00u;
-				Log_Str(8, (o7_char *)"cDirs = ");
-				Log_StrLn(4096, (*args).cDirs);
 			}
-		} else if (o7_strcmp(256, opt, 3, (o7_char *)"-cc") == 0) {
-			if (CliParser_GetParam(&ret, CliParser_ErrTooLongCc_cnst, 4096, (*args).cc, &ccLen, &(*arg)) && (o7_cmp((*arg), CLI_count) < 0) && CLI_Get(256, opt, &optLen, (*arg)) && (o7_strcmp(256, opt, 3, (o7_char *)"...") == 0)) {
+		} else if (o7_strcmp(256, opt, 4, (o7_char *)"-cc") == 0) {
+			if (CliParser_GetParam(&ret, CliParser_ErrTooLongCc_cnst, 4096, (*args).cc, &ccLen, &(*arg)) && (o7_cmp((*arg), CLI_count) < 0) && CLI_Get(256, opt, &optLen, (*arg)) && (o7_strcmp(256, opt, 4, (o7_char *)"...") == 0)) {
 				optLen = 0;
 				(*arg) = o7_add((*arg), 1);
 				ccLen = o7_add(ccLen, 1);
@@ -143,52 +140,52 @@ extern o7_int_t CliParser_Options(struct CliParser_Args *args, o7_int_t *arg) {
 			} else if (ccLen < O7_LEN((*args).cc) - 1) {
 				(*args).cc[o7_ind(4096, o7_add(ccLen, 1))] = 0x00u;
 			}
-		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-infr") == 0) {
+		} else if (o7_strcmp(256, opt, 6, (o7_char *)"-infr") == 0) {
 			if (CliParser_GetParam(&ret, CliParser_ErrTooLongModuleDirs_cnst, 256, opt, &optLen, &(*arg)) && !CopyInfr(&(*args), &i, &dirsOfs, &count, 256, opt)) {
 				ret = CliParser_ErrTooLongModuleDirs_cnst;
 			}
-		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-init") == 0) {
+		} else if (o7_strcmp(256, opt, 6, (o7_char *)"-init") == 0) {
 			if (!CliParser_GetParam(&ret, CliParser_ErrUnknownInit_cnst, 256, opt, &optLen, &(*arg))) {
-			} else if (o7_strcmp(256, opt, 6, (o7_char *)"noinit") == 0) {
+			} else if (o7_strcmp(256, opt, 7, (o7_char *)"noinit") == 0) {
 				(*args).init = GeneratorC_VarInitNo_cnst;
-			} else if (o7_strcmp(256, opt, 5, (o7_char *)"undef") == 0) {
+			} else if (o7_strcmp(256, opt, 6, (o7_char *)"undef") == 0) {
 				(*args).init = GeneratorC_VarInitUndefined_cnst;
-			} else if (o7_strcmp(256, opt, 4, (o7_char *)"zero") == 0) {
+			} else if (o7_strcmp(256, opt, 5, (o7_char *)"zero") == 0) {
 				(*args).init = GeneratorC_VarInitZero_cnst;
 			} else {
 				ret = CliParser_ErrUnknownInit_cnst;
 			}
-		} else if (o7_strcmp(256, opt, 6, (o7_char *)"-memng") == 0) {
+		} else if (o7_strcmp(256, opt, 7, (o7_char *)"-memng") == 0) {
 			if (!CliParser_GetParam(&ret, CliParser_ErrUnknownMemMan_cnst, 256, opt, &optLen, &(*arg))) {
-			} else if (o7_strcmp(256, opt, 6, (o7_char *)"nofree") == 0) {
+			} else if (o7_strcmp(256, opt, 7, (o7_char *)"nofree") == 0) {
 				(*args).memng = GeneratorC_MemManagerNoFree_cnst;
-			} else if (o7_strcmp(256, opt, 7, (o7_char *)"counter") == 0) {
+			} else if (o7_strcmp(256, opt, 8, (o7_char *)"counter") == 0) {
 				(*args).memng = GeneratorC_MemManagerCounter_cnst;
 			} else if (o7_strcmp(256, opt, 2, (o7_char *)"gc") == 0) {
 				(*args).memng = GeneratorC_MemManagerGC_cnst;
 			} else {
 				ret = CliParser_ErrUnknownMemMan_cnst;
 			}
-		} else if (o7_strcmp(256, opt, 2, (o7_char *)"-t") == 0) {
+		} else if (o7_strcmp(256, opt, 3, (o7_char *)"-t") == 0) {
 			ignore = CliParser_GetParam(&ret, CliParser_ErrTooLongTemp_cnst, 1024, (*args).tmp, &optLen, &(*arg));
-		} else if (o7_strcmp(256, opt, 21, (o7_char *)"-no-array-index-check") == 0) {
+		} else if (o7_strcmp(256, opt, 22, (o7_char *)"-no-array-index-check") == 0) {
 			(*args).noIndexCheck = (0 < 1);
-		} else if (o7_strcmp(256, opt, 13, (o7_char *)"-no-nil-check") == 0) {
+		} else if (o7_strcmp(256, opt, 14, (o7_char *)"-no-nil-check") == 0) {
 			(*args).noNilCheck = (0 < 1);
-		} else if (o7_strcmp(256, opt, 29, (o7_char *)"-no-arithmetic-overflow-check") == 0) {
+		} else if (o7_strcmp(256, opt, 30, (o7_char *)"-no-arithmetic-overflow-check") == 0) {
 			(*args).noOverflowCheck = (0 < 1);
-		} else if (o7_strcmp(256, opt, 4, (o7_char *)"-C90") == 0) {
+		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-C90") == 0) {
 			(*args).cStd = GeneratorC_IsoC90_cnst;
-		} else if (o7_strcmp(256, opt, 4, (o7_char *)"-C99") == 0) {
+		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-C99") == 0) {
 			(*args).cStd = GeneratorC_IsoC99_cnst;
-		} else if (o7_strcmp(256, opt, 4, (o7_char *)"-C11") == 0) {
+		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-C11") == 0) {
 			(*args).cStd = GeneratorC_IsoC11_cnst;
 		} else {
 			ret = CliParser_ErrUnexpectArg_cnst;
 		}
 		optLen = 0;
 	}
-	if (o7_cmp(ret, CliParser_ErrNo_cnst) != 0) {
+	if (ret != CliParser_ErrNo_cnst) {
 	} else if (o7_add(i, 1) < O7_LEN((*args).modPath)) {
 		(*args).modPathLen = o7_add(i, 1);
 		(*args).modPath[o7_ind(4096, o7_add(i, 1))] = 0x00u;
@@ -259,17 +256,17 @@ extern o7_int_t CliParser_ParseCommand(o7_int_t src_len0, o7_char src[/*len0*/],
 		while (((o7_char)'a' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'z') || ((o7_char)'A' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'Z') || ((o7_char)'0' <= src[o7_ind(src_len0, j)]) && (src[o7_ind(src_len0, j)] <= (o7_char)'9')) {
 			j = o7_add(j, 1);
 		}
-		k = o7_int(j);
+		k = j;
 		ParseCommand_Empty(src_len0, src, &k);
 		(*script) = src[o7_ind(src_len0, k)] != 0x00u;
 	} else {
 		(*script) = (0 > 1);
 	}
-	return o7_int(i);
+	return i;
 }
 
 static o7_int_t ParseOptions(struct CliParser_Args *args, o7_int_t ret, o7_int_t *arg) {
-	o7_int_t argDest, cpRet, dot, sep;
+	o7_int_t argDest, cpRet, dot = O7_INT_UNDEF, sep = O7_INT_UNDEF;
 	o7_bool forRun;
 
 	argDest = (*arg);
@@ -307,7 +304,7 @@ static o7_int_t Command(struct CliParser_Args *args, o7_int_t ret) {
 		ret = ParseOptions(&(*args), ret, &arg);
 	}
 	(*args).arg = o7_add(arg, 1);
-	return o7_int(ret);
+	return ret;
 }
 
 extern o7_bool CliParser_Parse(struct CliParser_Args *args, o7_int_t *ret) {
@@ -318,19 +315,15 @@ extern o7_bool CliParser_Parse(struct CliParser_Args *args, o7_int_t *ret) {
 	cmdLen = 0;
 	if ((o7_cmp(CLI_count, 0) <= 0) || !CLI_Get(16, cmd, &cmdLen, 0)) {
 		(*ret) = CliParser_ErrWrongArgs_cnst;
-	} else if (o7_strcmp(16, cmd, 4, (o7_char *)"help") == 0) {
+	} else if (o7_strcmp(16, cmd, 5, (o7_char *)"help") == 0) {
 		(*ret) = CliParser_CmdHelp_cnst;
-	} else if (o7_strcmp(16, cmd, 4, (o7_char *)"to-c") == 0) {
+	} else if (o7_strcmp(16, cmd, 5, (o7_char *)"to-c") == 0) {
 		(*ret) = Command(&(*args), CliParser_ResultC_cnst);
-	} else if (o7_strcmp(16, cmd, 6, (o7_char *)"to-bin") == 0) {
+	} else if (o7_strcmp(16, cmd, 7, (o7_char *)"to-bin") == 0) {
 		(*ret) = Command(&(*args), CliParser_ResultBin_cnst);
-	} else if (o7_strcmp(16, cmd, 3, (o7_char *)"run") == 0) {
+	} else if (o7_strcmp(16, cmd, 4, (o7_char *)"run") == 0) {
 		(*ret) = Command(&(*args), CliParser_ResultRun_cnst);
 	} else {
-		Log_On();
-		Log_Str(16, cmd);
-		Log_Ln();
-		Log_Off();
 		(*ret) = CliParser_ErrUnknownCommand_cnst;
 	}
 	return 0 <= (*ret);

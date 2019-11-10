@@ -8,7 +8,7 @@
 #include "Out.h"
 #include "Utf8.h"
 
-extern void Message_AstError(o7_int_t code);
+extern void Message_AstError(o7_int_t code, struct StringStore_String *str);
 
 extern void Message_ParseError(o7_int_t code);
 

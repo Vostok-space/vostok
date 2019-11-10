@@ -5,7 +5,7 @@
 #include "VDataStream.h"
 #include "Utf8.h"
 #include "TranslatorLimits.h"
-#include "StringStore.h"
+#include "Chars0X.h"
 #include "Log.h"
 
 

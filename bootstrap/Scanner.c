@@ -1,4 +1,3 @@
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "Scanner.h"
@@ -60,7 +59,7 @@ extern o7_bool Scanner_InitByString(struct Scanner_Scanner *s, o7_int_t in__len0
 	(*s).buf[0] = (o7_char)' ';
 
 	len = 1;
-	ret = StringStore_CopyCharsNull(Scanner_BlockSize_cnst * 2 + 1, (*s).buf, &len, in__len0, in_);
+	ret = Chars0X_CopyString(Scanner_BlockSize_cnst * 2 + 1, (*s).buf, &len, in__len0, in_);
 	(*s).buf[o7_ind(Scanner_BlockSize_cnst * 2 + 1, len)] = 0x04u;
 	return ret;
 }
@@ -80,7 +79,7 @@ static void FillBuf(o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t *ind, str
 
 	O7_ASSERT((buf_len0 % 2 == 1));
 	if (o7_mod((*ind), (o7_div(buf_len0, 2))) != 0) {
-		Log_StrLn(77, (o7_char *)"индекс новой страницы в неожиданном месте");
+		Log_StrLn(78, (o7_char *)"индекс новой страницы в неожиданном месте");
 		O7_ASSERT(buf[o7_ind(buf_len0, (*ind))] == 0x0Cu);
 		buf[o7_ind(buf_len0, (*ind))] = 0x00u;
 	} else {
@@ -283,7 +282,7 @@ static o7_int_t SNumber(struct Scanner_Scanner *s) {
 	} else {
 		SNumber_Val(&(*s), &lex, 10, ValDigit);
 	}
-	Log_Str(13, (o7_char *)"Number lex = ");
+	Log_Str(14, (o7_char *)"Number lex = ");
 	Log_Int(lex);
 	Log_Ln();
 	return lex;
@@ -596,7 +595,6 @@ extern void Scanner_init(void) {
 	static unsigned initialized = 0;
 	if (0 == initialized) {
 		VDataStream_init();
-		StringStore_init();
 		Log_init();
 
 		O7_STATIC_ASSERT(TranslatorLimits_LenName_cnst < Scanner_BlockSize_cnst);
