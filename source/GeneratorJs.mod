@@ -143,12 +143,7 @@ BEGIN
 		END
 	END;
 	Ident(gen, decl.name);
-	IF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC})
-	OR (decl IS Ast.Type) & (decl.id IN {Ast.IdRecord, Ast.IdPointer})
-	 & (decl.up # NIL)
-	 & (decl.up.d = decl.module.m)
-	 & (Strings.Compare(decl.name, decl.module.m.name) = 0)
-	THEN
+	IF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC}) THEN
 		Text.Char(gen, "_")
 	END
 END Name;
@@ -175,9 +170,6 @@ BEGIN
 				Text.Char(gen, ".")
 			END;
 			Name(gen, decl)
-(*
-			OR SpecIdentChecker.IsO7SpecName(decl.name)
-*)
 		END
 	ELSE
 		Name(gen, decl)

@@ -128,6 +128,12 @@ PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
     prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
     i: INTEGER;
+
+	PROCEDURE IsGlobalRecordWithSameNameAsModule(decl: Ast.Declaration): BOOLEAN;
+	RETURN (decl IS Ast.Type) & (decl.id IN {Ast.IdRecord, Ast.IdPointer})
+	     & Ast.IsGlobal(decl)
+	     & (Strings.Compare(decl.name, decl.module.m.name) = 0)
+	END IsGlobalRecordWithSameNameAsModule;
 BEGIN
 	IF (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
 	OR (decl IS Ast.Procedure)
@@ -147,10 +153,7 @@ BEGIN
 	END;
 	Ident(gen, decl.name);
 	IF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC})
-	OR (decl IS Ast.Type) & (decl.id IN {Ast.IdRecord, Ast.IdPointer})
-	 & (decl.up # NIL)
-	 & (decl.up.d = decl.module.m)
-	 & (Strings.Compare(decl.name, decl.module.m.name) = 0)
+	OR IsGlobalRecordWithSameNameAsModule(decl)
 	THEN
 		Text.Char(gen, "_")
 	END
@@ -187,11 +190,8 @@ BEGIN
 				Text.Char(gen, ".")
 			END;
 			IF ~SpecNameForTypeNamedAsModule(gen, decl) THEN
-				Ident(gen, decl.name)
+				Name(gen, decl)
 			END
-(*
-			OR SpecIdentChecker.IsO7SpecName(decl.name)
-*)
 		END
 	ELSIF ~SpecNameForTypeNamedAsModule(gen, decl) THEN
 		Name(gen, decl)
