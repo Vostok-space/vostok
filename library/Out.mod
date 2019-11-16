@@ -1,4 +1,6 @@
-(* Copyright 2017-2018 ComdivByZero
+(* Simple module for formatted output based on Oakwood guidelines
+ *
+ * Copyright 2017-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +16,32 @@
  *)
 MODULE Out;
 
- IMPORT File := CFiles, Platform;
+ IMPORT Stream := VDataStream, IO := VDefaultIO, Chars0X, Platform;
 
  VAR
    success: BOOLEAN;
-   ln: ARRAY 2 OF CHAR;
-   lnOfs: INTEGER;
+   ln     : ARRAY 2 OF CHAR;
+   lnOfs  : INTEGER;
+   out    : Stream.POut;
+
+ PROCEDURE Write(s: ARRAY OF CHAR; ofs, len: INTEGER);
+ BEGIN
+   (* TODO исправить ошибку диагностики использования неинициализированной переменной*)
+   IF FALSE THEN NEW(out) END;
+
+   success := len = Stream.WriteChars(out^, s, ofs, len)
+ END Write;
 
  PROCEDURE String*(s: ARRAY OF CHAR);
- VAR i: INTEGER;
  BEGIN
-   i := 0;
-   WHILE (i < LEN(s)) & (s[i] # 0X) DO
-     INC(i)
-   END;
-   success := i = File.WriteChars(File.out, s, 0, i)
+   Write(s, 0, Chars0X.CalcLen(s, 0))
  END String;
 
  PROCEDURE Char*(ch: CHAR);
  VAR s: ARRAY 1 OF CHAR;
  BEGIN
    s[0] := ch;
-   success := 1 = File.WriteChars(File.out, s, 0, 1)
+   Write(s, 0, 1)
  END Char;
 
  PROCEDURE Int*(x, n: INTEGER);
@@ -74,14 +80,12 @@ MODULE Out;
      DEC(i);
      s[i] := " "
    END;
-   success := LEN(s) - i = File.WriteChars(File.out, s, i, LEN(s) - i)
+   Write(s, i, LEN(s) - i)
  END Int;
 
  PROCEDURE Ln*;
  BEGIN
-   success :=
-     (LEN(ln) - lnOfs = File.WriteChars(File.out, ln, lnOfs, LEN(ln) - lnOfs))
-   & File.Flush(File.out)
+   Write(ln, lnOfs, LEN(ln) - lnOfs)
  END Ln;
 
  (* TODO *)
@@ -184,7 +188,7 @@ MODULE Out;
      DEC(i);
      s[i] := " "
    END;
-   success := l - i + 1 = File.WriteChars(File.out, s, i, l - i + 1)
+   Write(s, i, l - i + 1)
  END Real;
 
  PROCEDURE LongReal*(x: REAL; n: INTEGER);
@@ -193,12 +197,19 @@ MODULE Out;
  END LongReal;
 
  PROCEDURE Open*;
+ VAR o: Stream.POut;
  BEGIN
-   success := TRUE
+   o := IO.OpenOut();
+   success := o # NIL;
+   IF o # NIL THEN
+     Stream.CloseOut(out);
+     out := o
+   END
  END Open;
 
 BEGIN
    ln[0] := 0DX;
    ln[1] := 0AX;
-   lnOfs := ORD(Platform.Posix)
+   lnOfs := ORD(Platform.Posix);
+   out   := IO.OpenOut()
 END Out.

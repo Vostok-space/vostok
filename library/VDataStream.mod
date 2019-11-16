@@ -1,5 +1,6 @@
-(*  Abstract interfaces for data input and output
- *  Copyright (C) 2016-2019 ComdivByZero
+(* Abstract interfaces for data input and output
+ *
+ * Copyright (C) 2016-2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +15,9 @@
  * limitations under the License.
  *)
 MODULE VDataStream;
+
+(* TODO нужно решение для двойственности чтения и записи через байты и символы
+   либо разнести по разным модулям, либо использовать коныертеры *)
 
 IMPORT V;
 
@@ -59,9 +63,9 @@ TYPE
 	WriteCharsProc* = PROCEDURE(VAR out: V.Base;
 	                            buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
 
-	OpenIn*      = PROCEDURE(VAR opener: V.Base): PIn;
-	OpenOut*     = PROCEDURE(VAR opener: V.Base): POut;
-	CloseStream* = PROCEDURE(VAR stream: V.Base);
+	OpenInStream*  = PROCEDURE(VAR opener: V.Base): PIn;
+	OpenOutStream* = PROCEDURE(VAR opener: V.Base): POut;
+	CloseStream*   = PROCEDURE(VAR stream: V.Base);
 
 PROCEDURE EmptyClose(VAR stream: V.Base);
 BEGIN
@@ -88,6 +92,8 @@ END Close;
 PROCEDURE InitIn*(VAR in: In;
                   read: ReadProc; readChars: ReadCharsProc; close: CloseStream);
 BEGIN
+	ASSERT((read # NIL) OR (readChars # NIL));
+
 	Init(in, close);
 	in.read := read;
 	in.readChars := readChars
@@ -130,6 +136,8 @@ END ReadCharsWhole;
 PROCEDURE InitOut*(VAR out: Out;
                    write: WriteProc; writeChars: WriteCharsProc; close: CloseStream);
 BEGIN
+	ASSERT((write # NIL) OR (writeChars # NIL));
+
 	Init(out, close);
 	out.write := write;
 	out.writeChars := writeChars
@@ -161,16 +169,27 @@ BEGIN
 	RETURN w
 END WriteChars;
 
-PROCEDURE InitInOpener*(VAR opener: InOpener; open: OpenIn);
+PROCEDURE InitInOpener*(VAR opener: InOpener; open: OpenInStream);
 BEGIN
+	ASSERT(open # NIL);
 	V.Init(opener);
 	opener.open := open
 END InitInOpener;
 
-PROCEDURE InitOutOpener*(VAR opener: OutOpener; open: OpenOut);
+PROCEDURE InitOutOpener*(VAR opener: OutOpener; open: OpenOutStream);
 BEGIN
+	ASSERT(open # NIL);
 	V.Init(opener);
 	opener.open := open
 END InitOutOpener;
+
+(* TODO проработать ошибки операций *)
+PROCEDURE OpenIn*(VAR opener: InOpener): PIn;
+	RETURN opener.open(opener)
+END OpenIn;
+
+PROCEDURE OpenOut*(VAR opener: OutOpener): POut;
+	RETURN opener.open(opener)
+END OpenOut;
 
 END VDataStream.

@@ -1,5 +1,6 @@
-(*  Implementations of Data Stream interfaces by CFiles
- *  Copyright (C) 2016, 2019 ComdivByZero
+(* Implementations of Data Stream interfaces by CFiles
+ *
+ * Copyright (C) 2016, 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,80 +32,104 @@ TYPE
 		file: CFiles.File
 	END;
 
-PROCEDURE Read(VAR in: V.Base; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
-	RETURN CFiles.Read(in(RIn).file, buf, ofs, count)
+VAR
+	out*: Out;
+	in* : In;
+
+PROCEDURE Read(VAR i: V.Base; VAR buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.Read(i(RIn).file, buf, ofs, count)
 END Read;
 
-PROCEDURE ReadChars(VAR in: V.Base; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
-	RETURN CFiles.ReadChars(in(RIn).file, buf, ofs, count)
+PROCEDURE ReadChars(VAR i: V.Base; VAR buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.ReadChars(i(RIn).file, buf, ofs, count)
 END ReadChars;
 
-PROCEDURE CloseRIn(VAR in: V.Base);
+PROCEDURE CloseRIn(VAR i: V.Base);
 BEGIN
-	CFiles.Close(in(RIn).file)
+	CFiles.Close(i(RIn).file)
 END CloseRIn;
 
 PROCEDURE OpenIn*(name: ARRAY OF CHAR): In;
-VAR in: In;
+VAR i: In;
 	file: CFiles.File;
 BEGIN
-	NEW(in);
-	IF in # NIL THEN
+	NEW(i);
+	IF i # NIL THEN
 		file := CFiles.Open(name, 0, "rb");
 		IF file = NIL THEN
-			in := NIL
+			i := NIL
 		ELSE
-			Stream.InitIn(in^, Read, ReadChars, CloseRIn);
-			in.file := file
+			Stream.InitIn(i^, Read, ReadChars, CloseRIn);
+			i.file := file
 		END
 	END
-	RETURN in
+	RETURN i
 END OpenIn;
 
-PROCEDURE CloseIn*(VAR in: In);
+PROCEDURE CloseIn*(VAR i: In);
 BEGIN
-	IF in # NIL THEN
-		CFiles.Close(in.file);
-		in := NIL
+	IF i # NIL THEN
+		CFiles.Close(i.file);
+		i := NIL
 	END
 END CloseIn;
 
-PROCEDURE Write(VAR out: V.Base; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
-	RETURN CFiles.Write(out(ROut).file, buf, ofs, count)
+PROCEDURE Write(VAR o: V.Base; buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.Write(o(ROut).file, buf, ofs, count)
 END Write;
 
-PROCEDURE WriteChars(VAR out: V.Base; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
-	RETURN CFiles.WriteChars(out(ROut).file, buf, ofs, count)
+PROCEDURE WriteChars(VAR o: V.Base; buf: ARRAY OF CHAR; ofs, count: INTEGER): INTEGER;
+	RETURN CFiles.WriteChars(o(ROut).file, buf, ofs, count)
 END WriteChars;
 
-PROCEDURE CloseROut(VAR out: V.Base);
+PROCEDURE CloseROut(VAR o: V.Base);
 BEGIN
-	CFiles.Close(out(ROut).file)
+	CFiles.Close(o(ROut).file)
 END CloseROut;
 
 PROCEDURE OpenOut*(name: ARRAY OF CHAR): Out;
-VAR out: Out;
-	file: CFiles.File;
+VAR o: Out; file: CFiles.File;
 BEGIN
-	NEW(out);
-	IF out # NIL THEN
+	NEW(o);
+	IF o # NIL THEN
 		file := CFiles.Open(name, 0, "wb");
 		IF file = NIL THEN
-			out := NIL
+			o := NIL
 		ELSE
-			Stream.InitOut(out^, Write, WriteChars, CloseROut);
-			out.file := file
+			Stream.InitOut(o^, Write, WriteChars, CloseROut);
+			o.file := file
 		END
 	END
-	RETURN out
+	RETURN o
 END OpenOut;
 
-PROCEDURE CloseOut*(VAR out: Out);
+PROCEDURE CloseOut*(VAR o: Out);
 BEGIN
-	IF out # NIL THEN
-		CFiles.Close(out.file);
-		out := NIL
+	IF o # NIL THEN
+		CFiles.Close(o.file);
+		o := NIL
 	END
 END CloseOut;
 
+PROCEDURE WrapOut;
+BEGIN
+	NEW(out);
+	IF out # NIL THEN
+		Stream.InitOut(out^, Write, WriteChars, NIL);
+		out.file := CFiles.out;
+	END
+END WrapOut;
+
+PROCEDURE WrapIn;
+BEGIN
+	NEW(in);
+	IF in # NIL THEN
+		Stream.InitIn(in^, Read, ReadChars, NIL);
+		in.file := CFiles.in;
+	END
+END WrapIn;
+
+BEGIN
+	WrapOut;
+	WrapIn
 END VFileStream.

@@ -1,4 +1,5 @@
 (* Data Stream implementation under memory blocks
+ *
  * Copyright 2019 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
