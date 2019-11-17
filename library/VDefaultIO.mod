@@ -25,9 +25,6 @@ MODULE VDefaultIO;
   PROCEDURE OpenIn*(): Stream.PIn;
   VAR s: Stream.PIn;
   BEGIN
-    (* TODO исправить ошибку диагностики использования неинициализированной переменной*)
-    IF FALSE THEN NEW(in) END;
-
     IF in = NIL THEN
       s := Files.in
     ELSE
@@ -40,9 +37,6 @@ MODULE VDefaultIO;
   PROCEDURE OpenOut*(): Stream.POut;
   VAR s: Stream.POut;
   BEGIN
-    (* TODO исправить ошибку диагностики использования неинициализированной переменной*)
-    IF FALSE THEN NEW(out) END;
-
     IF out = NIL THEN
       s := Files.out
     ELSE

@@ -824,6 +824,8 @@ BEGIN
 		err := ErrNo
 	ELSE
 		err := CheckUnusedDeclarations(m)
+		(* TODO проверять наличие используемых не инициализировавшихся
+		   глобальных переменных *)
 	END
 	RETURN err
 END ModuleEnd;
@@ -1946,6 +1948,10 @@ BEGIN
 	RETURN ErrNo
 END DesignatorNew;
 
+PROCEDURE IsGlobal*(d: Declaration): BOOLEAN;
+	RETURN (d.up # NIL) & (d.up.d.up = NIL)
+END IsGlobal;
+
 PROCEDURE DesignatorUsed*(d: Designator; varParam, inLoop: BOOLEAN): INTEGER;
 VAR err: INTEGER;
     v: Var;
@@ -1973,7 +1979,7 @@ BEGIN
 		END;
 
 		IF (v.type.id = IdPointer)
-		 & (d.sel # NIL)
+		 & (d.sel # NIL) & ~IsGlobal(v)
 		 & ( ~(InitedValue IN v.state.inited)
 		   & ~(v.state.inCondition & inLoop)
 		 OR  ~v.state.inCondition
@@ -2979,10 +2985,6 @@ END ExprCallCreate;
 PROCEDURE ExprCallNew*(VAR e: ExprCall; des: Designator): INTEGER;
 	RETURN ExprCallCreate(e, des, TRUE)
 END ExprCallNew;
-
-PROCEDURE IsGlobal*(d: Declaration): BOOLEAN;
-	RETURN (d.up # NIL) & (d.up.d.up = NIL)
-END IsGlobal;
 
 PROCEDURE IsChangeable*(des: Designator): BOOLEAN;
 VAR v: Var;

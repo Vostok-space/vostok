@@ -1657,6 +1657,10 @@ extern o7_int_t Ast_DesignatorNew(struct Ast_Designator__s **d, struct Ast_RDecl
 	return Ast_ErrNo_cnst;
 }
 
+extern o7_bool Ast_IsGlobal(struct Ast_RDeclaration *d) {
+	return (O7_REF(d)->up != NULL) && (O7_REF(O7_REF(O7_REF(d)->up)->d)->_.up == NULL);
+}
+
 static void DesignatorUsed_InVarParam(struct Ast_RVar *v, struct Ast_RSelector *sel) {
 	if (sel == NULL) {
 		O7_REF(v)->inVarParam = (0 < 1);
@@ -1682,7 +1686,7 @@ extern o7_int_t Ast_DesignatorUsed(struct Ast_Designator__s *d, o7_bool varParam
 			DesignatorUsed_InVarParam(v, O7_REF(d)->sel);
 		}
 
-		if ((o7_cmp(O7_REF(O7_REF(v)->_.type)->_._.id, Ast_IdPointer_cnst) == 0) && (O7_REF(d)->sel != NULL) && (!(!!( (1u << Ast_InitedValue_cnst) & O7_REF(O7_REF(v)->state)->inited)) && !(o7_bl(O7_REF(O7_REF(v)->state)->inCondition) && inLoop) || !o7_bl(O7_REF(O7_REF(v)->state)->inCondition) && (0 != (O7_REF(O7_REF(v)->state)->inited & ((1u << Ast_InitedNo_cnst) | (1u << Ast_InitedNil_cnst)))))) {
+		if ((o7_cmp(O7_REF(O7_REF(v)->_.type)->_._.id, Ast_IdPointer_cnst) == 0) && (O7_REF(d)->sel != NULL) && !Ast_IsGlobal(&v->_) && (!(!!( (1u << Ast_InitedValue_cnst) & O7_REF(O7_REF(v)->state)->inited)) && !(o7_bl(O7_REF(O7_REF(v)->state)->inCondition) && inLoop) || !o7_bl(O7_REF(O7_REF(v)->state)->inCondition) && (0 != (O7_REF(O7_REF(v)->state)->inited & ((1u << Ast_InitedNo_cnst) | (1u << Ast_InitedNil_cnst)))))) {
 			err = Ast_ErrVarUninitialized_cnst;
 		} else if (varParam) {
 			if (!(!!( (1u << Ast_InitedValue_cnst) & O7_REF(O7_REF(v)->state)->inited))) {
@@ -2718,10 +2722,6 @@ static o7_int_t ExprCallCreate(struct Ast_ExprCall__s **e, struct Ast_Designator
 
 extern o7_int_t Ast_ExprCallNew(struct Ast_ExprCall__s **e, struct Ast_Designator__s *des) {
 	return ExprCallCreate(&(*e), des, (0 < 1));
-}
-
-extern o7_bool Ast_IsGlobal(struct Ast_RDeclaration *d) {
-	return (O7_REF(d)->up != NULL) && (O7_REF(O7_REF(O7_REF(d)->up)->d)->_.up == NULL);
 }
 
 extern o7_bool Ast_IsChangeable(struct Ast_Designator__s *des) {

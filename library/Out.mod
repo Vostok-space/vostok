@@ -26,9 +26,6 @@ MODULE Out;
 
  PROCEDURE Write(s: ARRAY OF CHAR; ofs, len: INTEGER);
  BEGIN
-   (* TODO исправить ошибку диагностики использования неинициализированной переменной*)
-   IF FALSE THEN NEW(out) END;
-
    success := len = Stream.WriteChars(out^, s, ofs, len)
  END Write;
 
