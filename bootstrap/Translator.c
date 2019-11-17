@@ -82,13 +82,10 @@ static void PrintErrors(struct ModulesStorage_RContainer *mc, struct Ast_RModule
 			Out_String(3, (o7_char *)": ");
 			Out_Ln();
 			err = O7_REF(m)->errors;
-			while (err != NULL) {
 				if (o7_cmp(O7_REF(err)->code, SkipError_cnst) != 0) {
 					i = o7_add(i, 1);
 					IndexedErrorMessage(i, o7_int(O7_REF(err)->code), &O7_REF(err)->str, o7_int(O7_REF(err)->line), o7_int(O7_REF(err)->column));
 				}
-				err = O7_REF(err)->next;
-			}
 		}
 		m = ModulesStorage_Next(&mc);
 	}
