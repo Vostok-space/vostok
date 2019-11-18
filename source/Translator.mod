@@ -1137,7 +1137,7 @@ BEGIN
 	IF ret = Cli.CmdHelp THEN
 		Help
 	ELSIF ret = Cli.CmdVersion THEN
-		Message.Text("ost 0.0.2.dev")
+		Message.Text("ost 0.0.3.dev")
 	ELSE
 		ret := Translate(ret, args, listener)
 	END

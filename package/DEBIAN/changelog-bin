@@ -1,3 +1,11 @@
+ vostok-bin (0.0.3.dev) unstable; urgency=low
+  * Fixed generation of identifiers in Java and Js
+  * Improved diagnostic of uninitialized variables usage
+  * Systematized work with 0-terminated char arrays
+  * Fixed generation on LSL, ROR, ASR
+
+ -- project Vostok <project-Vostok@yandex.ru> Sun, 18 November 2019 00:00:00 +0200
+
  vostok-bin (0.0.2.dev) unstable; urgency=low
   * Fixed generation of mixed expression("+","-") of SETs
   * Fixed generation of exported constant equal to expression of SETs
