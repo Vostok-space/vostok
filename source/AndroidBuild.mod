@@ -41,7 +41,7 @@ TYPE
 
   PROCEDURE Help*;
   BEGIN
-    Sn("Builder of simple Android applications. 2019");
+    Sn("Builder of simple Android applications. 2019 v0.0.3dev");
     Sn("Usage:");
     Sn("  1) osa run   Script            Options");
     Sn("  2) osa build Script Result.apk Options");
@@ -49,8 +49,8 @@ TYPE
     Sn("Options same as for ost, run 'ost help' to see more");
     Sn("");
     Sn("Example:");
-    Sn("  osa build 'Star.Go(5, 0.38)' result/star.apk -infr . -m example/android");
-    Sn("  osa run Rocket.Fly -infr . -m example/android")
+    Sn("  osa build 'Star.Go(5, 0.38)' result/star.apk -m example/android");
+    Sn("  osa run Rocket.Fly -m example/android")
   END Help;
 
   PROCEDURE W(f: Files.Out; str: ARRAY OF CHAR): BOOLEAN;

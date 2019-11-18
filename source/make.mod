@@ -55,7 +55,7 @@ MODULE make;
    ret
  END Execute;
 
- PROCEDURE BuildBy(ost, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
  BEGIN
    IF posix THEN
@@ -67,12 +67,13 @@ MODULE make;
        & (0 = Execute(code, "Delete old temp directory"));
    ok :=
       Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
-    & Exec.Add(code, cmd) & Exec.Add(code, "Translator.Start")
+    & Exec.Add(code, cmd) & Exec.Add(code, script)
     & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
     & ((lang = Js) & Exec.LastPart(code, ".js")
     OR windows & Exec.LastPart(code, ".exe")
     OR posix & Exec.LastPart(code, "")
       )
+    & ((script # "AndroidBuild.Go") OR Exec.AddClean(code, " -m source/blankC -m source/blankJs"))
     & ((tmp[1] = "0")
      & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
      & Exec.Add(code, "-c") & Exec.Add(code, "bootstrap/singularity")
@@ -90,8 +91,13 @@ MODULE make;
 
  PROCEDURE Build*;
  BEGIN
-   ok := BuildBy("bs-ost", "ost", "v0", "to-bin")
+   ok := ok & BuildBy("bs-ost", "Translator.Start", "ost", "v0", "to-bin")
  END Build;
+
+ PROCEDURE BuildAndroid*;
+ BEGIN
+   ok := ok & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin")
+ END BuildAndroid;
 
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
  VAR ret: BOOLEAN;
@@ -172,13 +178,13 @@ MODULE make;
    IF ok THEN
       CASE lang OF
         C:
-        ok := BuildBy("ost", "ost-v1", "v1", "to-bin")
+        ok := BuildBy("ost", "Translator.Start", "ost-v1", "v1", "to-bin")
             & TestBy("test/source", FALSE, "ost-v1", lang)
       | Java:
-        ok := BuildBy("ost", "ost-v1-java", "ost-v1-java", "to-class")
+        ok := BuildBy("ost", "Translator.Start", "ost-v1-java", "ost-v1-java", "to-class")
             & TestBy("test/source", FALSE, "ost-v1-java", lang)
       | Js:
-        ok := BuildBy("ost", "ost-v1-js", "ost-v1-js", "to-js")
+        ok := BuildBy("ost", "Translator.Start", "ost-v1-js", "ost-v1-js", "to-js")
             & TestBy("test/source", FALSE, "ost-v1-js", lang)
       END
    END
@@ -187,7 +193,7 @@ MODULE make;
  PROCEDURE SelfFull*;
  BEGIN
    ok := ok
-       & BuildBy("ost-v1", "ost-v2", "v2", "to-bin")
+       & BuildBy("ost-v1", "Translator.Start", "ost-v2", "v2", "to-bin")
        & TestBy("test/source", FALSE, "ost-v2", C)
  END SelfFull;
 
@@ -217,6 +223,11 @@ MODULE make;
  RETURN
    Copy("result/ost", FALSE, dest, "/bin/")
  END CopyBinTo;
+
+ PROCEDURE CopyAndroidTo(dest: ARRAY OF CHAR): BOOLEAN;
+ RETURN
+   Copy("result/osa", FALSE, dest, "/bin/")
+ END CopyAndroidTo;
 
  PROCEDURE InstallBinTo*(dest: ARRAY OF CHAR);
  BEGIN
@@ -370,10 +381,29 @@ MODULE make;
    END
  END DebBin;
 
+ PROCEDURE DebAndroid*;
+ BEGIN
+   IF ok THEN
+      ok := CreateDebDir("vostok-android")
+          & FS.MakeDir("result/vostok-android/usr/bin")
+          & CopyAndroidTo("result/vostok-android/usr")
+          & FS.CopyFile("package/DEBIAN/control-android", "result/vostok-android/DEBIAN/control")
+          & Gzip("package/DEBIAN/changelog-android",
+                 "result/vostok-android/usr/share/doc/vostok-android/changelog.gz")
+          & FS.CopyFile("package/DEBIAN/copyright-android",
+                      "result/vostok-android/usr/share/doc/vostok-android/copyright")
+          & HashAndPack("vostok-android");
+      IF ~ok THEN
+        Msg("Failed to pack android builder to deb")
+      END
+   END
+ END DebAndroid;
+
  PROCEDURE Deb*;
  BEGIN
    DebLib;
-   DebBin
+   DebBin;
+   DebAndroid
  END Deb;
 
  PROCEDURE Help*;
