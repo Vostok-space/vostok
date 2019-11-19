@@ -172,27 +172,28 @@ TYPE
            )
     THEN
       Sn("Error during call keytool for generating keystore")
+    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/zipalign")
+          & Exec.Add(cmd, "-f")
+          & Exec.Add(cmd, "4")
+          & Exec.Add(cmd, "raw.apk")
+          & Exec.Add(cmd, apk)
+
+          & (Exec.Ok = Exec.Do(cmd))
+           )
+    THEN
+      Sn("Error during call zipalign tool")
     ELSIF ~(Exec.Init(cmd, "apksigner")
           & Exec.Add(cmd, "sign")
           & Exec.Add(cmd, "--ks")
           & Exec.Add(cmd, "o7.keystore")
           & Exec.Add(cmd, "--ks-pass")
           & Exec.Add(cmd, "pass:oberon")
-          & Exec.Add(cmd, "raw.apk")
+          & Exec.Add(cmd, apk)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
     THEN
       Sn("Error during call apksigner tool")
-    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/zipalign")
-          & Exec.Add(cmd, "-f")
-          & Exec.Add(cmd, "4")
-          & Exec.Add(cmd, "raw.apk")
-          & Exec.Add(cmd, apk)
-          & (Exec.Ok = Exec.Do(cmd))
-           )
-    THEN
-      Sn("Error during call zipalign tool")
     ELSE
       ok := TRUE
     END
