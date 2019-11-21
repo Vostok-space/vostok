@@ -590,7 +590,9 @@ o7_int_t o7_int(o7_int_t i) {
 
 O7_CONST_INLINE
 o7_int_t o7_not_neg(o7_int_t i) {
-	assert(0 <= i);
+	if (O7_OVERFLOW) {
+		assert(0 <= i);
+	}
 	return i;
 }
 
@@ -904,9 +906,11 @@ o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
 O7_CONST_INLINE
 o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 	o7_int_t r;
-	assert(shift >= 0);
-	if (O7_ARITHMETIC_SHIFT || n >= 0) {
+	o7_not_neg(shift);
+	if (O7_ARITHMETIC_SHIFT) {
 		r = o7_int(n) >> shift;
+	} else if (n >= 0) {
+		r = n >> shift;
 	} else {
 		r = -1 - ((-1 - o7_int(n)) >> shift);
 	}
@@ -920,14 +924,13 @@ O7_CONST_INLINE
 o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 	o7_uint_t u;
 
-	assert(n >= 0);
-	assert(shift >= 0);
-
-	u = n & 0xFFFFFFFFul;
-	shift %= 32;
+	u     = o7_not_neg(n    ) & 0xFFFFFFFFul;
+	shift = o7_not_neg(shift) & 0x1F;
 	u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
 
-	assert(u < 0x80000000ul);
+	if (O7_OVERFLOW) {
+		assert(u < 0x80000000ul);
+	}
 	return u;
 }
 
