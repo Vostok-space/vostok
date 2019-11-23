@@ -41,7 +41,7 @@ TYPE
 
   PROCEDURE Help*;
   BEGIN
-    Sn("Builder of simple Android applications. 2019 v0.0.3dev");
+    Sn("Builder of simple Android applications. 2019 v0.0.4.dev");
     Sn("Usage:");
     Sn("  1) osa run   Script            Options");
     Sn("  2) osa build Script Result.apk Options");

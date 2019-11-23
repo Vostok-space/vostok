@@ -1,3 +1,9 @@
+ vostok-android (0.0.4.dev) unstable; urgency=low
+  * Simplified the deb-dependencies
+  * Fixed order of calling of apksigner and zipalign
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 20 November 2019 00:00:00 +0200
+
  vostok-android (0.0.3.dev) unstable; urgency=low
   * Public package
   * Systematized work with 0-terminated char arrays
