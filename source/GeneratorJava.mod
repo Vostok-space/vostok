@@ -68,7 +68,7 @@ TYPE
 		expectArray: BOOLEAN
 	END;
 
-	Generator* = RECORD(Text.Out)
+	Generator = RECORD(Text.Out)
 		module: Ast.Module;
 
 		localDeep: INTEGER;(* Вложенность процедур *)

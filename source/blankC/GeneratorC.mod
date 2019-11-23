@@ -62,9 +62,6 @@ TYPE
 		identEnc*  : INTEGER
 	END;
 
-	Generator* = RECORD(Text.Out)
-	END;
-
 PROCEDURE DefaultOptions*(): Options;
 BEGIN
 	ASSERT(FALSE)

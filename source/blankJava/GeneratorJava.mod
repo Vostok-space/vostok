@@ -54,9 +54,6 @@ TYPE
 		main*: BOOLEAN
 	END;
 
-	Generator* = RECORD(Text.Out)
-	END;
-
 PROCEDURE Qualifier*(VAR gen: Generator; typ: Ast.Type);
 BEGIN
 	ASSERT(FALSE)

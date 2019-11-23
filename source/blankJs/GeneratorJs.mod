@@ -53,9 +53,6 @@ TYPE
 		main*: BOOLEAN
 	END;
 
-	Generator* = RECORD(Text.Out)
-	END;
-
 PROCEDURE DefaultOptions*(): Options;
 BEGIN
 	ASSERT(FALSE)
