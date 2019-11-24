@@ -22,13 +22,13 @@ MODULE VDataStream;
 IMPORT V;
 
 TYPE
-	Stream* = POINTER TO RStream;
-	RStream* = RECORD(V.Base)
+	PStream* = POINTER TO Stream;
+	Stream* = RECORD(V.Base)
 		close: PROCEDURE(VAR stream: V.Base)
 	END;
 
 	PIn* = POINTER TO In;
-	In* = RECORD(RStream)
+	In* = RECORD(Stream)
 		read: PROCEDURE(VAR in: V.Base; VAR buf: ARRAY OF BYTE;
 		                ofs, count: INTEGER): INTEGER;
 		readChars: PROCEDURE(VAR in: V.Base; VAR buf: ARRAY OF CHAR;
@@ -42,7 +42,7 @@ TYPE
 
 	(* Запись Out также служит сообщением для отладочного вывода*)
 	POut* = POINTER TO Out;
-	Out* = RECORD(RStream)
+	Out* = RECORD(Stream)
 		write: PROCEDURE(VAR out: V.Base;
 		                 buf: ARRAY OF BYTE; ofs, count: INTEGER): INTEGER;
 		writeChars: PROCEDURE(VAR out: V.Base;
@@ -69,10 +69,10 @@ TYPE
 
 PROCEDURE EmptyClose(VAR stream: V.Base);
 BEGIN
-	ASSERT(stream IS RStream)
+	ASSERT(stream IS Stream)
 END EmptyClose;
 
-PROCEDURE Init(VAR stream: RStream; close: CloseStream);
+PROCEDURE Init(VAR stream: Stream; close: CloseStream);
 BEGIN
 	V.Init(stream);
 	IF close = NIL THEN
@@ -82,7 +82,7 @@ BEGIN
 	END
 END Init;
 
-PROCEDURE Close*(stream: Stream);
+PROCEDURE Close*(stream: PStream);
 BEGIN
 	IF stream # NIL THEN
 		stream.close(stream^);
