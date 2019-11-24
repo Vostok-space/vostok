@@ -19,15 +19,16 @@ MODULE GeneratorC;
 IMPORT
 	V,
 	Ast,
+	Utf8, Utf8Transform,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
-	Stream := VDataStream,
-	Text := TextGenerator,
-	Utf8, Utf8Transform,
-	Limits := TypesLimits,
-	TranLim := TranslatorLimits;
+	Stream    := VDataStream,
+	Text      := TextGenerator,
+	Limits    := TypesLimits,
+	TranLim   := TranslatorLimits,
+	GenOptions;
 
 CONST
 	Interface = 1;
@@ -37,17 +38,9 @@ CONST
 	IsoC99* = 1;
 	IsoC11* = 2;
 
-	VarInitUndefined*   = 0;
-	VarInitZero*        = 1;
-	VarInitNo*          = 2;
-
 	MemManagerNoFree*   = 0;
 	MemManagerCounter*  = 1;
 	MemManagerGC*       = 2;
-
-	IdentEncSame*       = 0;
-	IdentEncTranslit*   = 1;
-	IdentEncEscUnicode* = 2;
 
 	CheckableArithTypes = Ast.Numbers - {Ast.IdByte};
 	CheckableInitTypes  = CheckableArithTypes + {Ast.IdBoolean};
@@ -64,26 +57,16 @@ TYPE
 		next: PMemoryOut
 	END;
 
-	Options* = POINTER TO RECORD(V.Base)
+	Options* = POINTER TO RECORD(GenOptions.R)
 		std*: INTEGER;
 
 		gnu*, plan9*,
 		procLocal*,
-		checkIndex*,
 		vla*, vlaMark*,
-		checkArith*,
-		caseAbort*,
 		checkNil*,
-		o7Assert*,
-		skipUnusedTag*,
-		comment*,
-		generatorNote*: BOOLEAN;
+		skipUnusedTag*: BOOLEAN;
 
-		varInit*,
-		memManager*,
-		identEnc*  : INTEGER;
-
-		main: BOOLEAN;
+		memManager*: INTEGER;
 
 		index: INTEGER;
 		records, recordLast: Ast.Record; (* для генерации тэгов *)
@@ -207,7 +190,7 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
 BEGIN
 	ASSERT(Strings.GetIter(it, ident, 0));
 	i := 0;
-	IF (gen.opt.identEnc = IdentEncSame) OR (it.char < 80X) THEN
+	IF (gen.opt.identEnc = GenOptions.IdentEncSame) OR (it.char < 80X) THEN
 		REPEAT
 			buf[i] := it.char;
 			INC(i);
@@ -216,9 +199,9 @@ BEGIN
 				INC(i)
 			END
 		UNTIL ~Strings.IterNext(it)
-	ELSIF gen.opt.identEnc = IdentEncEscUnicode THEN
+	ELSIF gen.opt.identEnc = GenOptions.IdentEncEscUnicode THEN
 		Utf8Transform.Escape(buf, i, it)
-	ELSE ASSERT(gen.opt.identEnc = IdentEncTranslit);
+	ELSE ASSERT(gen.opt.identEnc = GenOptions.IdentEncTranslit);
 		Utf8Transform.Transliterate(buf, i, it)
 	END;
 	Text.Data(gen, buf, 0, i)
@@ -650,7 +633,7 @@ END Designator;
 
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression);
 BEGIN
-	IF (gen.opt.varInit = VarInitUndefined)
+	IF (gen.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
 	 & (e.type.id IN CheckableInitTypes)
 	 & IsMayNotInited(e)
@@ -715,16 +698,16 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 	END Undef;
 BEGIN
 	CASE gen.opt.varInit OF
-	  VarInitUndefined:
+	  GenOptions.VarInitUndefined:
 		Undef(gen, typ)
-	| VarInitZero:
+	| GenOptions.VarInitZero:
 		Zero(gen, typ)
 	END
 END AssignInitValue;
 
 PROCEDURE VarInit(VAR gen: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
-	IF (gen.opt.varInit = VarInitNo)
+	IF (gen.opt.varInit = GenOptions.VarInitNo)
 	OR (var.type.id IN {Ast.IdArray, Ast.IdRecord})
 	OR (~record & ~var(Ast.Var).checkInit)
 	THEN
@@ -867,7 +850,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Factor(gen, e)
 				| Ast.IdBoolean:
 					IF (e IS Ast.Designator)
-					 & (gen.opt.varInit = VarInitUndefined)
+					 & (gen.opt.varInit = GenOptions.VarInitUndefined)
 					THEN
 						Text.Str(gen, "(o7_int_t)o7_bl(");
 						Expression(gen, e);
@@ -1251,7 +1234,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Text.Str(gen, str);
 					Text.Str(gen, "0")
 				END
-			ELSIF (gen.opt.varInit = VarInitUndefined)
+			ELSIF (gen.opt.varInit = GenOptions.VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
 			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
@@ -1755,7 +1738,7 @@ BEGIN
 		Text.Str(gen, "o7_set64_t")
 	| Ast.IdBoolean:
 		IF (gen.opt.std >= IsoC99)
-		 & (gen.opt.varInit # VarInitUndefined)
+		 & (gen.opt.varInit # GenOptions.VarInitUndefined)
 		THEN	Text.Str(gen, "bool")
 		ELSE	Text.Str(gen, "o7_bool")
 		END
@@ -2251,7 +2234,7 @@ BEGIN
 				Simple(gen, "o7_set64_t ")
 			| Ast.IdBoolean:
 				IF (gen.opt.std >= IsoC99)
-				 & (gen.opt.varInit # VarInitUndefined)
+				 & (gen.opt.varInit # GenOptions.VarInitUndefined)
 				THEN	Simple(gen, "bool ")
 				ELSE	Simple(gen, "o7_bool ")
 				END
@@ -2356,7 +2339,7 @@ BEGIN
 		LinkRecord(out.opt, typ(Ast.Record));
 		IF typ.mark & ~out.opt.main THEN
 			RecordTag(out.g[Interface], typ(Ast.Record));
-			IF out.opt.varInit = VarInitUndefined THEN
+			IF out.opt.varInit = GenOptions.VarInitUndefined THEN
 				RecordUndefHeader(out.g[Interface], typ(Ast.Record), TRUE)
 			END;
 			IF out.opt.memManager = MemManagerCounter THEN
@@ -2371,7 +2354,7 @@ BEGIN
 		THEN
 			RecordTag(out.g[Implementation], typ(Ast.Record))
 		END;
-		IF out.opt.varInit = VarInitUndefined THEN
+		IF out.opt.varInit = GenOptions.VarInitUndefined THEN
 			RecordUndef(out.g[Implementation], typ(Ast.Record))
 		END;
 		IF out.opt.memManager = MemManagerCounter THEN
@@ -3132,12 +3115,12 @@ VAR arrDeep, arrTypeId: INTEGER;
 BEGIN
 	WHILE (d # NIL) & (d IS Ast.Var) DO
 		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
-			IF (gen.opt.varInit = VarInitUndefined)
+			IF (gen.opt.varInit = GenOptions.VarInitUndefined)
 			 & (d.type.id = Ast.IdRecord) & Strings.IsDefined(d.type.name)
 			 & Ast.IsGlobal(d.type)
 			THEN
 				RecordUndefCall(gen, d)
-			ELSIF (gen.opt.varInit = VarInitZero)
+			ELSIF (gen.opt.varInit = GenOptions.VarInitZero)
 			OR (d.type.id = Ast.IdRecord)
 			OR    (d.type.id = Ast.IdArray)
 			    & ~IsArrayTypeSimpleUndef(d.type, arrTypeId, arrDeep)
@@ -3148,7 +3131,7 @@ BEGIN
 				Name(gen, d);
 				Text.StrLn(gen, "));")
 			ELSE
-				ASSERT(gen.opt.varInit = VarInitUndefined);
+				ASSERT(gen.opt.varInit = GenOptions.VarInitUndefined);
 				ArraySimpleUndef(gen, arrTypeId, d, FALSE)
 			END
 		END;
@@ -3194,7 +3177,7 @@ BEGIN
 			prev := d;
 			d := d.next
 		END;
-		IF out.opt.varInit # VarInitNo THEN
+		IF out.opt.varInit # GenOptions.VarInitNo THEN
 			VarsInit(out.g[Implementation], ds.vars)
 		END;
 
@@ -3217,27 +3200,19 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 
+		GenOptions.Default(o^);
+
 		o.std           := IsoC90;
 		o.gnu           := FALSE;
 		o.plan9         := FALSE;
 		o.procLocal     := FALSE;
-		o.checkIndex    := TRUE;
 		o.vla           := FALSE & (IsoC99 <= o.std);
 		o.vlaMark       := TRUE;
-		o.checkArith    := TRUE;
-		o.caseAbort     := TRUE;
 		o.checkNil      := TRUE;
-		o.o7Assert      := TRUE;
 		o.skipUnusedTag := TRUE;
-		o.comment       := TRUE;
-		o.generatorNote := TRUE;
-		o.varInit       := VarInitUndefined;
 		o.memManager    := MemManagerNoFree;
-		o.identEnc      := IdentEncEscUnicode;
 
 		o.expectArray := FALSE;
-
-		o.main := FALSE;
 
 		o.memOuts := NIL
 	END

@@ -16,8 +16,8 @@
  *)
 MODULE CliParser;
 
-IMPORT V, CLI, Utf8, Strings := StringStore, Platform, GeneratorC, OsUtil,
-       Chars0X;
+IMPORT V, CLI, Utf8, Strings := StringStore, Platform, GeneratorC, GenOptions,
+       OsUtil, Chars0X;
 
 CONST
 	CmdHelp*       = 1;
@@ -272,11 +272,11 @@ BEGIN
 			IF ~GetParam(ret, ErrUnknownInit, opt, optLen, arg) THEN
 				;
 			ELSIF opt = "noinit" THEN
-				args.init := GeneratorC.VarInitNo
+				args.init := GenOptions.VarInitNo
 			ELSIF opt = "undef" THEN
-				args.init := GeneratorC.VarInitUndefined
+				args.init := GenOptions.VarInitUndefined
 			ELSIF opt = "zero" THEN
-				args.init := GeneratorC.VarInitZero
+				args.init := GenOptions.VarInitZero
 			ELSE
 				ret := ErrUnknownInit
 			END

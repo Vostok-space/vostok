@@ -23,7 +23,7 @@ IMPORT
 	Strings    := StringStore,
 	Stream     := VDataStream,
 	FileStream := VFileStream,
-	Text := TextGenerator;
+	GenOptions;
 
 CONST
 	VarInitUndefined*   = 0;
@@ -41,23 +41,7 @@ TYPE
 	RProviderProcTypeName* = RECORD(V.Base)
 	END;
 
-	Options* = POINTER TO RECORD(V.Base)
-		checkArith*,
-		caseAbort*,
-		o7Assert*,
-		comment*,
-		generatorNote*: BOOLEAN;
-
-		varInit*,
-		identEnc*  : INTEGER;
-
-		main*: BOOLEAN
-	END;
-
-PROCEDURE Qualifier*(VAR gen: Generator; typ: Ast.Type);
-BEGIN
-	ASSERT(FALSE)
-END Qualifier;
+	Options* = POINTER TO RECORD(GenOptions.R) END;
 
 PROCEDURE DefaultOptions*(): Options;
 BEGIN

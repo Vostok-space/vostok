@@ -34,6 +34,7 @@ IMPORT
 	GeneratorC,
 	GeneratorJava,
 	GeneratorJs,
+	GenOptions,
 	JavaStoreProcTypes,
 	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
@@ -386,11 +387,11 @@ VAR enc: INTEGER;
 BEGIN
 	CASE id OF
 	  CComp.Unknown, CComp.CompCert:
-		enc := GeneratorC.IdentEncTranslit
+		enc := GenOptions.IdentEncTranslit
 	| CComp.Clang, CComp.Tiny:
-		enc := GeneratorC.IdentEncSame
+		enc := GenOptions.IdentEncSame
 	| CComp.Gnu:
-		enc := GeneratorC.IdentEncEscUnicode
+		enc := GenOptions.IdentEncEscUnicode
 	END
 	RETURN enc
 END IdentEncoderForCompiler;
@@ -717,7 +718,7 @@ VAR opt: GeneratorJava.Options;
 				ok := JavaComp.Set(prov.javac, args.javac)
 			ELSE
 				ok := JavaComp.Search(prov.javac) & JavaComp.Debug(prov.javac);
-				opt.identEnc := GeneratorJava.IdentEncSame
+				opt.identEnc := GenOptions.IdentEncSame
 			END;
 			ok := ok & JavaComp.AddClassPath(prov.javac, args.resPath, 0);
 			prov.usejavac := TRUE;

@@ -19,25 +19,19 @@ MODULE GeneratorJava;
 IMPORT
 	V,
 	Ast, AstTransform,
+	Utf8, Utf8Transform,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
-	SpecIdent := OberonSpecIdent,
+	SpecIdent  := OberonSpecIdent,
 	Stream     := VDataStream,
 	FileStream := VFileStream,
-	Text := TextGenerator,
-	Utf8, Utf8Transform,
-	Limits := TypesLimits,
-	TranLim := TranslatorLimits;
+	Text       := TextGenerator,
+	Limits     := TypesLimits,
+	TranLim    := TranslatorLimits,
+	GenOptions;
 
 CONST
-	VarInitUndefined*   = 0;
-	VarInitZero*        = 1;
-
-	IdentEncSame*       = 0;
-	IdentEncTranslit*   = 1;
-	IdentEncEscUnicode* = 2;
-
 	ForSameType = 0;
 	ForCall     = 0;
 
@@ -50,18 +44,7 @@ TYPE
 		gen: ProvideProcTypeName
 	END;
 
-	Options* = POINTER TO RECORD(V.Base)
-		checkArith*,
-		caseAbort*,
-		o7Assert*,
-		comment*,
-		generatorNote*: BOOLEAN;
-
-		varInit*,
-		identEnc*  : INTEGER;
-
-		main*: BOOLEAN;
-
+	Options* = POINTER TO RECORD(GenOptions.R)
 		index: INTEGER;
 
 		(* TODO для более сложных случаев *)
@@ -109,15 +92,15 @@ VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
     i: INTEGER;
     it: Strings.Iterator;
 BEGIN
-	IF (gen.opt.identEnc = IdentEncSame) OR (Strings.GetChar(ident, 0) < 80X)
+	IF (gen.opt.identEnc = GenOptions.IdentEncSame) OR (Strings.GetChar(ident, 0) < 80X)
 	THEN
 		Text.String(gen, ident)
 	ELSE
 		ASSERT(Strings.GetIter(it, ident, 0));
 		i := 0;
-		IF gen.opt.identEnc = IdentEncEscUnicode THEN
+		IF gen.opt.identEnc = GenOptions.IdentEncEscUnicode THEN
 			Utf8Transform.Escape(buf, i, it)
-		ELSE ASSERT(gen.opt.identEnc = IdentEncTranslit);
+		ELSE ASSERT(gen.opt.identEnc = GenOptions.IdentEncTranslit);
 			Utf8Transform.Transliterate(buf, i, it)
 		END;
 		Text.Data(gen, buf, 0, i)
@@ -377,7 +360,7 @@ END IsMayNotInited;
 
 PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression; set: SET);
 BEGIN
-	IF (gen.opt.varInit = VarInitUndefined)
+	IF (gen.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
 	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
 	 & IsMayNotInited(e)
@@ -456,9 +439,9 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 	END Undef;
 BEGIN
 	CASE gen.opt.varInit OF
-	  VarInitUndefined:
+	  GenOptions.VarInitUndefined:
 		Undef(gen, typ)
-	| VarInitZero:
+	| GenOptions.VarInitZero:
 		Zero(gen, typ)
 	END
 END AssignInitValue;
@@ -771,7 +754,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Text.Str(gen, str);
 					Text.Str(gen, "0")
 				END
-			ELSIF (gen.opt.varInit = VarInitUndefined)
+			ELSIF (gen.opt.varInit = GenOptions.VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
 			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
@@ -1170,33 +1153,6 @@ BEGIN
 		IsExtension(gen, expr(Ast.ExprIsExtension))
 	END
 END Expression;
-
-PROCEDURE Qualifier*(VAR gen: Generator; typ: Ast.Type);
-BEGIN
-	CASE typ.id OF
-	  Ast.IdInteger:
-		Text.Str(gen, "int")
-	| Ast.IdLongInt:
-		Text.Str(gen, "long")
-	| Ast.IdSet:
-		Text.Str(gen, "int")
-	| Ast.IdLongSet:
-		Text.Str(gen, "long")
-	| Ast.IdBoolean:
-		IF gen.opt.varInit # VarInitUndefined
-		THEN	Text.Str(gen, "boolean")
-		ELSE	Text.Str(gen, "byte")
-		END
-	| Ast.IdByte, Ast.IdChar:
-		Text.Str(gen, "byte")
-	| Ast.IdReal:
-		Text.Str(gen, "double")
-	| Ast.IdReal32:
-		Text.Str(gen, "float")
-	| Ast.IdPointer, Ast.IdProcType:
-		GlobalName(gen, typ)
-	END
-END Qualifier;
 
 PROCEDURE ProcParams(VAR gen: Generator; proc: Ast.ProcType);
 VAR p: Ast.Declaration;
@@ -1613,7 +1569,7 @@ BEGIN
 			| Ast.IdLongInt, Ast.IdLongSet:
 				Text.Str(gen, "long ")
 			| Ast.IdBoolean:
-				IF gen.opt.varInit # VarInitUndefined
+				IF gen.opt.varInit # GenOptions.VarInitUndefined
 				THEN	Text.Str(gen, "boolean ")
 				ELSE	Text.Str(gen, "byte ")
 				END
@@ -1676,7 +1632,7 @@ BEGIN
 			typ.mark := typ.mark
 			         OR (typ(Ast.Record).pointer # NIL)
 			          & (typ(Ast.Record).pointer.mark);
-			IF gen.opt.varInit = VarInitUndefined THEN
+			IF gen.opt.varInit = GenOptions.VarInitUndefined THEN
 				RecordUndef(gen, typ(Ast.Record))
 			END
 		END
@@ -2269,18 +2225,9 @@ BEGIN
 	NEW(o);
 	IF o # NIL THEN
 		V.Init(o^);
-
-		o.checkArith    := TRUE & FALSE;
-		o.caseAbort     := TRUE;
-		o.o7Assert      := TRUE;
-		o.comment       := TRUE;
-		o.generatorNote := TRUE;
-		o.varInit       := VarInitZero;
-		o.identEnc      := IdentEncSame;
-
-		o.expectArray := FALSE;
-
-		o.main := FALSE
+		GenOptions.Default(o^);
+		o.varInit    := GenOptions.VarInitZero;
+		o.checkArith := TRUE & FALSE
 	END
 	RETURN o
 END DefaultOptions;

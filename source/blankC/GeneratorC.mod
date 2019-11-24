@@ -22,7 +22,8 @@ IMPORT
 	Ast,
 	Stream     := VDataStream,
 	FileStream := VFileStream,
-	Text := TextGenerator;
+	Text       := TextGenerator,
+	GenOptions;
 
 CONST
 	IsoC90* = 0;
@@ -42,24 +43,16 @@ CONST
 	IdentEncEscUnicode* = 2;
 
 TYPE
-	Options* = POINTER TO RECORD(V.Base)
+	Options* = POINTER TO RECORD(GenOptions.R)
 		std*: INTEGER;
 
 		gnu*, plan9*,
 		procLocal*,
-		checkIndex*,
 		vla*, vlaMark*,
-		checkArith*,
-		caseAbort*,
 		checkNil*,
-		o7Assert*,
-		skipUnusedTag*,
-		comment*,
-		generatorNote*: BOOLEAN;
+		skipUnusedTag*: BOOLEAN;
 
-		varInit*,
-		memManager*,
-		identEnc*  : INTEGER
+		memManager*: INTEGER
 	END;
 
 PROCEDURE DefaultOptions*(): Options;

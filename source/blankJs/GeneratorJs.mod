@@ -22,7 +22,7 @@ IMPORT
 	Ast,
 	Stream     := VDataStream,
 	FileStream := VFileStream,
-	Text := TextGenerator;
+	GenOptions;
 
 CONST
 	EcmaScript5*    = 0;
@@ -37,20 +37,8 @@ CONST
 	IdentEncEscUnicode* = 2;
 
 TYPE
-	Options* = POINTER TO RECORD(V.Base)
-		std*: INTEGER;
-
-		checkArith*,
-		checkIndex*,
-		caseAbort*,
-		o7Assert*,
-		comment*,
-		generatorNote*: BOOLEAN;
-
-		varInit*,
-		identEnc*  : INTEGER;
-
-		main*: BOOLEAN
+	Options* = POINTER TO RECORD(GenOptions.R)
+		std*: INTEGER
 	END;
 
 PROCEDURE DefaultOptions*(): Options;
