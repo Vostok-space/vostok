@@ -396,6 +396,20 @@ BEGIN
 	RETURN enc
 END IdentEncoderForCompiler;
 
+PROCEDURE SetCommonOptions(VAR opt: GenOptions.R; args: Cli.Args);
+BEGIN
+	IF 0 <= args.init THEN
+		(* TODO проверять соответствие *)
+		opt.varInit := args.init
+	END;
+	IF args.noOverflowCheck THEN
+		opt.checkArith := FALSE
+	END;
+	IF Cli.CyrillicSame <= args.cyrillic THEN
+		opt.identEnc := args.cyrillic - Cli.CyrillicSame
+	END
+END SetCommonOptions;
+
 PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
                            module: Ast.Module; call: Ast.Statement;
                            VAR listener: V.Base): INTEGER;
@@ -406,26 +420,18 @@ VAR ret: INTEGER;
 
 	PROCEDURE SetOptions(opt: GeneratorC.Options; args: Cli.Args);
 	BEGIN
-		IF 0 <= args.init THEN
-			opt.varInit := args.init
-		END;
+		SetCommonOptions(opt^, args);
 		IF 0 <= args.memng THEN
 			opt.memManager := args.memng
 		END;
 		IF args.noNilCheck THEN
 			opt.checkNil := FALSE
 		END;
-		IF args.noOverflowCheck THEN
-			opt.checkArith := FALSE
-		END;
 		IF args.noIndexCheck THEN
 			opt.checkIndex := FALSE
 		END;
 		IF 0 <= args.cStd THEN
 			opt.std := args.cStd
-		END;
-		IF Cli.CyrillicSame <= args.cyrillic THEN
-			opt.identEnc := args.cyrillic - Cli.CyrillicSame
 		END
 	END SetOptions;
 
@@ -676,20 +682,6 @@ VAR opt: GeneratorJava.Options;
     out, mainClass: ARRAY 1024 OF CHAR;
     prov: ProcNameProvider;
 
-	PROCEDURE SetOptions(opt: GeneratorJava.Options; args: Cli.Args);
-	BEGIN
-		IF 0 <= args.init THEN
-			(* TODO проверять соответствие *)
-			opt.varInit := args.init
-		END;
-		IF args.noOverflowCheck THEN
-			opt.checkArith := FALSE
-		END;
-		IF Cli.CyrillicSame <= args.cyrillic THEN
-			opt.identEnc := args.cyrillic - Cli.CyrillicSame
-		END
-	END SetOptions;
-
 	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
 	                prov: ProcNameProvider;
 	                opt: GeneratorJava.Options;
@@ -787,7 +779,7 @@ BEGIN
 
 	prov := ProviderProcTypeNameNew();
 	opt := GeneratorJava.DefaultOptions();
-	SetOptions(opt, args);
+	SetCommonOptions(opt^, args);
 	ASSERT(JavaComp.Set(javac, "javac"));
 
 	CASE res OF
@@ -952,20 +944,6 @@ VAR opt: GeneratorJs.Options;
     out: ARRAY 1024 OF CHAR;
     outLen: INTEGER;
 
-	PROCEDURE SetOptions(opt: GeneratorJs.Options; args: Cli.Args);
-	BEGIN
-		IF 0 <= args.init THEN
-			(* TODO проверять соответствие *)
-			opt.varInit := args.init
-		END;
-		IF args.noOverflowCheck THEN
-			opt.checkArith := FALSE
-		END;
-		IF Cli.CyrillicSame <= args.cyrillic THEN
-			opt.identEnc := args.cyrillic - Cli.CyrillicSame
-		END
-	END SetOptions;
-
 	PROCEDURE TempJs(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
 	                 opt: GeneratorJs.Options;
 	                 VAR out: ARRAY OF CHAR; VAR dirLen: INTEGER;
@@ -1049,7 +1027,7 @@ BEGIN
 	ASSERT(res IN Cli.ThroughJs);
 
 	opt := GeneratorJs.DefaultOptions();
-	SetOptions(opt, args);
+	SetCommonOptions(opt^, args);
 
 	CASE res OF
 	  Cli.ResultJs:
