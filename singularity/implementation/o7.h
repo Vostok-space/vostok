@@ -1033,7 +1033,7 @@ o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) 
 	return NULL != mem;
 }
 
-#if O7_INIT != O7_INIT_UNDEF
+#if O7_INIT == O7_INIT_UNDEF
 #	define O7_NEW(mem, name) \
 		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, (void (*)(void *))name##_undef)
 #else
