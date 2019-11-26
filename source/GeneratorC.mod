@@ -976,7 +976,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expression(gen, e1);
 				Text.Str(gen, ")")
 			| SpecIdent.Ord:
-				Ord(gen, e1)
+				IF e1.value = NIL THEN
+					Ord(gen, e1)
+				ELSE
+					Text.Str(gen, "((o7_int_t)");
+					Expression(gen, e1);
+					Text.Str(gen, ")");
+				END
 			| SpecIdent.Chr:
 				IF gen.opt.checkArith & (e1.value = NIL) THEN
 					Text.Str(gen, "o7_chr(");
