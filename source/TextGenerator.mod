@@ -18,7 +18,7 @@ MODULE TextGenerator;
 
 IMPORT
 	V,
-	Utf8,
+	Utf8, Hexadecimal := Hex,
 	Strings := StringStore, Chars0X,
 	Stream  := VDataStream,
 	Limits  := TypesLimits;
@@ -195,28 +195,17 @@ BEGIN
 	Str(gen, "Real not implemented")
 END Real;
 
-PROCEDURE ToHex(d: INTEGER): CHAR;
-BEGIN
-	ASSERT(d IN {0 .. 0FH});
-	IF d < 10 THEN
-		INC(d, ORD("0"))
-	ELSE
-		INC(d, ORD("A") - 10)
-	END
-	RETURN CHR(d)
-END ToHex;
-
 PROCEDURE HexSeparateHighBit*(VAR gen: Out; v: INTEGER; highBit: BOOLEAN);
 VAR buf: ARRAY 8 OF CHAR; i: INTEGER;
 BEGIN
 	ASSERT(v >= 0);
 
 	i := LEN(buf) - 1;
-	buf[i] := ToHex(v MOD 10H);
+	buf[i] := Hexadecimal.To(v MOD 10H);
 	v := v DIV 10H + ORD(highBit) * 8000000H;
 	WHILE v # 0 DO
 		DEC(i);
-		buf[i] := ToHex(v MOD 10H);
+		buf[i] := Hexadecimal.To(v MOD 10H);
 		v := v DIV 10H;
 	END;
 	gen.len := gen.len + Stream.WriteChars(gen.out^, buf, i, LEN(buf) - i)

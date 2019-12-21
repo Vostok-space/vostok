@@ -19,7 +19,7 @@ MODULE GeneratorJava;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Utf8, Utf8Transform,
+	Utf8, Utf8Transform, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
@@ -956,17 +956,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
 	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
-
-		PROCEDURE ToHex(d: INTEGER): CHAR;
-		BEGIN
-			ASSERT(d IN {0 .. 0FH});
-			IF d < 10 THEN
-				INC(d, ORD("0"))
-			ELSE
-				INC(d, ORD("A") - 10)
-			END
-			RETURN CHR(d)
-		END ToHex;
 	BEGIN
 		w := e.string;
 		IF e.asChar & ~gen.opt.expectArray THEN
@@ -981,8 +970,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Text.Str(gen, "')")
 			ELSE
 				Text.Str(gen, "((byte)0x");
-				Text.Char(gen, ToHex(e.int DIV 16));
-				Text.Char(gen, ToHex(e.int MOD 16));
+				Text.Char(gen, Hex.To(e.int DIV 16));
+				Text.Char(gen, Hex.To(e.int MOD 16));
 				Text.Str(gen, ")")
 			END
 		ELSE
@@ -1003,8 +992,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					s[2] := "u";
 					s[3] := "0";
 					s[4] := "0";
-					s[5] := ToHex(e.int DIV 16);
-					s[6] := ToHex(e.int MOD 16);
+					s[5] := Hex.To(e.int DIV 16);
+					s[6] := Hex.To(e.int MOD 16);
 					len := 8
 				END;
 				s[len - 1] := Utf8.DQuote;

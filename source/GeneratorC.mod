@@ -19,7 +19,7 @@ MODULE GeneratorC;
 IMPORT
 	V,
 	Ast,
-	Utf8, Utf8Transform,
+	Utf8, Utf8Transform, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
@@ -1521,17 +1521,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE CString(VAR gen: Generator; e: Ast.ExprString);
 	VAR s: ARRAY 6 OF CHAR; ch: CHAR; w: Strings.String;
-
-		PROCEDURE ToHex(d: INTEGER): CHAR;
-		BEGIN
-			ASSERT(d IN {0 .. 0FH});
-			IF d < 10 THEN
-				INC(d, ORD("0"))
-			ELSE
-				INC(d, ORD("A") - 10)
-			END
-			RETURN CHR(d)
-		END ToHex;
 	BEGIN
 		w := e.string;
 		IF e.asChar & ~gen.opt.expectArray THEN
@@ -1548,8 +1537,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Data(gen, s, 0, 3)
 			ELSE
 				Text.Str(gen, "0x");
-				s[0] := ToHex(e.int DIV 16);
-				s[1] := ToHex(e.int MOD 16);
+				s[0] := Hex.To(e.int DIV 16);
+				s[1] := Hex.To(e.int MOD 16);
 				s[2] := "u";
 				Text.Data(gen, s, 0, 3)
 			END
@@ -1563,8 +1552,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
 				s[2] := "x";
-				s[3] := ToHex(e.int DIV 16);
-				s[4] := ToHex(e.int MOD 16);
+				s[3] := Hex.To(e.int DIV 16);
+				s[4] := Hex.To(e.int MOD 16);
 				s[5] := Utf8.DQuote;
 				Text.Data(gen, s, 0, 6)
 			END

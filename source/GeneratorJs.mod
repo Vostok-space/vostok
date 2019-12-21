@@ -19,7 +19,7 @@ MODULE GeneratorJs;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Utf8, Utf8Transform,
+	Utf8, Utf8Transform, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
@@ -441,18 +441,6 @@ BEGIN
 	expression(gen, e, set);
 	Text.Str(gen, r)
 END ExpressionBraced;
-
-(* TODO Вынести в модуль *)
-PROCEDURE ToHex(d: INTEGER): CHAR;
-BEGIN
-	ASSERT(d IN {0 .. 0FH});
-	IF d < 10 THEN
-		INC(d, ORD("0"))
-	ELSE
-		INC(d, ORD("A") - 10)
-	END
-	RETURN CHR(d)
-END ToHex;
 
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 
@@ -945,8 +933,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		IF e.asChar & ~gen.opt.expectArray THEN
 			ch := CHR(e.int);
 			Text.Str(gen, "0x");
-			Text.Char(gen, ToHex(e.int DIV 16));
-			Text.Char(gen, ToHex(e.int MOD 16))
+			Text.Char(gen, Hex.To(e.int DIV 16));
+			Text.Char(gen, Hex.To(e.int MOD 16))
 		ELSE
 			Text.Str(gen, "o7.toUtf8(");
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
@@ -965,8 +953,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					s[2] := "u";
 					s[3] := "0";
 					s[4] := "0";
-					s[5] := ToHex(e.int DIV 16);
-					s[6] := ToHex(e.int MOD 16);
+					s[5] := Hex.To(e.int DIV 16);
+					s[6] := Hex.To(e.int MOD 16);
 					len := 8
 				END;
 				s[len - 1] := Utf8.DQuote;
@@ -1790,8 +1778,8 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 						Text.Int(gen, r.value)
 					ELSE
 						Text.Str(gen, "0x");
-						Text.Char(gen, ToHex(r.value DIV 10H));
-						Text.Char(gen, ToHex(r.value MOD 10H))
+						Text.Char(gen, Hex.To(r.value DIV 10H));
+						Text.Char(gen, Hex.To(r.value MOD 10H))
 					END;
 					ASSERT(r.right = NIL);
 					Text.StrLn(gen, ":");
