@@ -236,7 +236,8 @@ TYPE
 		reg: Register
 	END;
 
-	Node* = RECORD(V.Base)
+	PNode* = POINTER TO Node;
+	Node = RECORD(V.Base)
 		id*: INTEGER;
 		comment*: Strings.String;
 		emptyLines*: INTEGER;

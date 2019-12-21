@@ -28,7 +28,7 @@ IMPORT
 	Text      := TextGenerator,
 	Limits    := TypesLimits,
 	TranLim   := TranslatorLimits,
-	GenOptions;
+	GenOptions, GenCommon;
 
 CONST
 	Interface = 1;
@@ -184,27 +184,8 @@ BEGIN
 END MemWriteDirect;
 
 PROCEDURE Ident(VAR gen: Generator; ident: Strings.String);
-VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
-    i: INTEGER;
-    it: Strings.Iterator;
 BEGIN
-	ASSERT(Strings.GetIter(it, ident, 0));
-	i := 0;
-	IF (gen.opt.identEnc = GenOptions.IdentEncSame) OR (it.char < 80X) THEN
-		REPEAT
-			buf[i] := it.char;
-			INC(i);
-			IF it.char = "_" THEN
-				buf[i] := "_";
-				INC(i)
-			END
-		UNTIL ~Strings.IterNext(it)
-	ELSIF gen.opt.identEnc = GenOptions.IdentEncEscUnicode THEN
-		Utf8Transform.Escape(buf, i, it)
-	ELSE ASSERT(gen.opt.identEnc = GenOptions.IdentEncTranslit);
-		Utf8Transform.Transliterate(buf, i, it)
-	END;
-	Text.Data(gen, buf, 0, i)
+	GenCommon.Ident(gen, ident, gen.opt.identEnc)
 END Ident;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
@@ -2102,7 +2083,12 @@ BEGIN
 	RecordRetainRelease(gen, rec, "_retain", "O7_RETAIN_ARRAY(r->", "o7_retain(")
 END RecordRetain;
 
-PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.Declaration);
+PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
+BEGIN
+	GenCommon.CommentC(gen, gen.opt^, com)
+END Comment;
+
+PROCEDURE EmptyLines(VAR gen: Generator; d: Ast.PNode);
 BEGIN
 	IF 0 < d.emptyLines THEN
 		Text.Ln(gen)
@@ -2371,25 +2357,6 @@ BEGIN
 		END
 	END
 END Mark;
-
-PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
-VAR i: Strings.Iterator;
-	prev: CHAR;
-BEGIN
-	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
-		REPEAT
-			prev := i.char
-		UNTIL ~Strings.IterNext(i)
-		   OR (prev = "/") & (i.char = "*")
-		   OR (prev = "*") & (i.char = "/");
-
-		IF i.char = Utf8.Null THEN
-			Text.Str(gen, "/*");
-			Text.String(gen, com);
-			Text.StrLn(gen, "*/")
-		END
-	END
-END Comment;
 
 PROCEDURE Const(VAR gen: Generator; const: Ast.Const);
 BEGIN
@@ -2856,9 +2823,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END Case;
 BEGIN
 	Comment(gen, st.comment);
-	IF 0 < st.emptyLines THEN
-		Text.Ln(gen)
-	END;
+	EmptyLines(gen, st);
 	IF st IS Ast.Assign THEN
 		Assign(gen, st(Ast.Assign));
 		Text.StrLn(gen, ";")

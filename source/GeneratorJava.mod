@@ -29,7 +29,7 @@ IMPORT
 	Text       := TextGenerator,
 	Limits     := TypesLimits,
 	TranLim    := TranslatorLimits,
-	GenOptions;
+	GenOptions, GenCommon;
 
 CONST
 	ForSameType = 0;
@@ -88,23 +88,8 @@ VAR
 	pvar: PROCEDURE (VAR gen: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
 
 PROCEDURE Ident(VAR gen: Generator; ident: Strings.String);
-VAR buf: ARRAY TranLim.LenName * 6 + 2 OF CHAR;
-    i: INTEGER;
-    it: Strings.Iterator;
 BEGIN
-	IF (gen.opt.identEnc = GenOptions.IdentEncSame) OR (Strings.GetChar(ident, 0) < 80X)
-	THEN
-		Text.String(gen, ident)
-	ELSE
-		ASSERT(Strings.GetIter(it, ident, 0));
-		i := 0;
-		IF gen.opt.identEnc = GenOptions.IdentEncEscUnicode THEN
-			Utf8Transform.Escape(buf, i, it)
-		ELSE ASSERT(gen.opt.identEnc = GenOptions.IdentEncTranslit);
-			Utf8Transform.Transliterate(buf, i, it)
-		END;
-		Text.Data(gen, buf, 0, i)
-	END
+	GenCommon.Ident(gen, ident, gen.opt.identEnc)
 END Ident;
 
 PROCEDURE Name(VAR gen: Generator; decl: Ast.Declaration);
@@ -600,15 +585,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			p2 := call.params.next;
 			CASE call.designator.decl.id OF
 			  SpecIdent.Abs:
-				IF call.type.id = Ast.IdInteger THEN
-					Text.Str(gen, "java.lang.Math.abs(")
-				ELSIF call.type.id = Ast.IdLongInt THEN
-					Text.Str(gen, "java.lang.Math.abs(")
-				ELSE
-					Text.Str(gen, "java.lang.Math.abs(")
-				END;
-				Expression(gen, e1, {});
-				Text.Str(gen, ")")
+				ExpressionBraced(gen, "java.lang.Math.abs(", e1, ")", {});
 			| SpecIdent.Odd:
 				Text.Str(gen, "(");
 				Factor(gen, e1, {});
@@ -1629,22 +1606,8 @@ BEGIN
 END TypeDecl;
 
 PROCEDURE Comment(VAR gen: Generator; com: Strings.String);
-VAR i: Strings.Iterator;
-    prev: CHAR;
 BEGIN
-	IF gen.opt.comment & Strings.GetIter(i, com, 0) THEN
-		REPEAT
-			prev := i.char
-		UNTIL ~Strings.IterNext(i)
-		   OR (prev = "/") & (i.char = "*")
-		   OR (prev = "*") & (i.char = "/");
-
-		IF i.char = Utf8.Null THEN
-			Text.Str(gen, "/*");
-			Text.String(gen, com);
-			Text.StrLn(gen, "*/")
-		END
-	END
+	GenCommon.CommentC(gen, gen.opt^, com)
 END Comment;
 
 PROCEDURE Const(VAR gen: Generator; const: Ast.Const; inModule: BOOLEAN);
