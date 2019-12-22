@@ -218,6 +218,10 @@ CONST
 	Or   *  = Scanner.Or;
 	NoSign* = 0;
 
+	StrUsedAsChar*  = 0;
+	StrUsedUndef*   = 1;
+	StrUsedAsArray* = 2;
+
 TYPE
 	Module* = POINTER TO RModule;
 	ModuleBag* = POINTER TO RECORD
@@ -464,7 +468,8 @@ TYPE
 
 	ExprString* = POINTER TO RECORD(RExprInteger)
 		string*: Strings.String;
-		asChar*: BOOLEAN
+		asChar*: BOOLEAN;
+		usedAs*: INTEGER
 	END;
 
 	ExprNil* = POINTER TO RECORD(RFactor) END;
@@ -1772,19 +1777,31 @@ BEGIN
 	RETURN e
 END ExprBooleanGet;
 
-PROCEDURE ExprStringNew*(m: Module; buf: ARRAY OF CHAR; begin, end: INTEGER): ExprString;
-VAR e: ExprString; len: INTEGER;
+PROCEDURE ExprStringNewPre(s: Strings.String; typ: Array): ExprString;
+VAR e: ExprString;
 BEGIN
+	NEW(e); ValueInit(e, IdString, typ);
+	e.usedAs := StrUsedUndef;
+	e.int := -1;
+	e.asChar := FALSE;
+	e.string := s
+	RETURN e
+END ExprStringNewPre;
+
+PROCEDURE ExprStringNew*(m: Module; buf: ARRAY OF CHAR; begin, end: INTEGER): ExprString;
+VAR e: ExprString; s: Strings.String; len: INTEGER;
+BEGIN
+	ASSERT(buf[begin] = Utf8.DQuote);
 	len := end - begin;
 	(* поправка на циклический буфер *)
 	IF len < 0 THEN
 		len := len + LEN(buf) - 1
 	END;
 	DEC(len, 1);
-	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
-	e.int := -1;
-	e.asChar := FALSE;
-	PutChars(m, e.string, buf, begin, end)
+	PutChars(m, s, buf, begin, end);
+	e := ExprStringNewPre(s, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
+	ASSERT(StrUsedUndef + 1 = StrUsedAsArray);
+	e.usedAs := StrUsedUndef + ORD(len # 3)
 	RETURN e
 END ExprStringNew;
 
@@ -1793,10 +1810,48 @@ VAR e: ExprString;
 BEGIN
 	NEW(e); ValueInit(e, IdString, ArrayGet(TypeGet(IdChar), ExprIntegerNew(2)));
 	Strings.Undef(e.string);
+	e.usedAs := StrUsedUndef;
 	e.int := int;
 	e.asChar := TRUE
 	RETURN e
 END ExprCharNew;
+
+PROCEDURE ExprStringCopy(str: ExprString): ExprString;
+VAR e: ExprString;
+BEGIN
+	IF str.asChar THEN
+		e := ExprCharNew(str.int)
+	ELSE
+		e := ExprStringNewPre(str.string, str.type(Array))
+	END
+	RETURN e
+END ExprStringCopy;
+
+PROCEDURE StringUsedAs(e: ExprString; as: INTEGER);
+BEGIN
+	ASSERT(as IN {StrUsedAsChar, StrUsedAsArray});
+	ASSERT((e.usedAs = StrUsedUndef)
+	    OR (as = StrUsedAsArray) & (e.usedAs = StrUsedAsArray));
+	e.usedAs := as
+END StringUsedAs;
+
+PROCEDURE StringUsedWithType(e: ExprString; donor: Type);
+BEGIN
+	IF donor.id = IdArray THEN
+		StringUsedAs(e, StrUsedAsArray)
+	ELSE ASSERT(donor.id = IdChar);
+		StringUsedAs(e, StrUsedAsChar)
+	END
+END StringUsedWithType;
+
+PROCEDURE StringUsedWithExpr(e: ExprString; donor: Expression);
+BEGIN
+	IF donor.id # IdString THEN
+		StringUsedWithType(e, donor.type)
+	ELSIF donor(ExprString).usedAs # StrUsedUndef THEN
+		StringUsedAs(e, donor(ExprString).usedAs)
+	END
+END StringUsedWithExpr;
 
 PROCEDURE ExprNilGet*(): ExprNil;
 BEGIN
@@ -2576,7 +2631,14 @@ BEGIN
 			res := LongSet.In(v1(ExprInteger).int, v2(ExprSetValue).set)
 		END;
 		IF expr1.type.id # IdReal THEN
-			e.value := ExprBooleanGet(res)
+			e.value := ExprBooleanGet(res);
+
+			IF expr1.id = IdString THEN
+				StringUsedWithExpr(expr1(ExprString), expr2)
+			END;
+			IF expr2.id = IdString THEN
+				StringUsedWithExpr(expr2(ExprString), expr1)
+			END
 		END
 	END
 	RETURN err
@@ -3088,12 +3150,10 @@ END ProcedureEnd;
 
 PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
                         VAR currentFormalParam: FormalParam): INTEGER;
-VAR err, distance: INTEGER;
-    fp: FormalParam;
+VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 
 	PROCEDURE TypeVariation(call: ExprCall; tp: Type; fp: FormalParam): BOOLEAN;
-	VAR comp: BOOLEAN;
-		id: INTEGER;
+	VAR comp: BOOLEAN; id: INTEGER;
 	BEGIN
 		comp := call.designator.decl IS PredefinedProcedure;
 		IF comp THEN
@@ -3174,6 +3234,17 @@ BEGIN
 		 & (e # NIL) & (e IS Designator) & (e(Designator).decl.id = IdProc)
 		THEN
 			e(Designator).decl(Procedure).usedAsValue := TRUE
+		END;
+		IF e = NIL THEN
+			;
+		ELSIF e.id = IdString THEN
+			StringUsedWithType(e(ExprString), fp.type)
+		ELSIF (e.value # NIL) & (e.value.id = IdString) THEN
+			str := ExprStringCopy(e.value(ExprString));
+			StringUsedWithType(str, fp.type);
+			IF str.usedAs # e.value(ExprString).usedAs THEN
+				e.value := str
+			END
 		END
 	ELSE
 		distance := 0;
@@ -3567,6 +3638,8 @@ BEGIN
 	END;
 	IF label = NIL THEN
 		err := err + CaseLabelNew(label, IdInteger, 0) * 0
+	ELSE
+		label.qual := decl
 	END
 	RETURN err
 END CaseLabelQualNew;
