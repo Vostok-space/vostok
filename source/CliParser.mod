@@ -1,4 +1,5 @@
 (*  Command line interface for Oberon-07 translator
+ *
  *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,7 +17,8 @@
  *)
 MODULE CliParser;
 
-IMPORT V, CLI, Utf8, Strings := StringStore, Platform, GeneratorC, GenOptions,
+IMPORT V, CLI, Utf8, Strings := StringStore, Platform,
+       GenOptions, GeneratorOberon, GeneratorC,
        OsUtil, Chars0X;
 
 CONST
@@ -34,9 +36,13 @@ CONST
 	ResultJs*      = 8;
 	ResultRunJs*   = 9;
 
+	ResultMod*     = 10;
+
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultRunJava};
 	ThroughJs*   = {ResultJs, ResultRunJs};
+	ThroughMod*  = {ResultMod};
+	ForRun*      = {ResultRun, ResultRunJava, ResultRunJs};
 
 	CyrillicNo*       = 0;
 	CyrillicDefault*  = 1;
@@ -85,7 +91,7 @@ TYPE
 		modPath*, cDirs*, cc*, javaDirs*, jsDirs*, javac*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
-		init*, memng*, arg*, cStd*: INTEGER;
+		init*, memng*, arg*, cStd*, obStd*: INTEGER;
 		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
 		cyrillic*: INTEGER;
 
@@ -314,6 +320,10 @@ BEGIN
 			args.cStd := GeneratorC.IsoC99
 		ELSIF opt = "-C11" THEN
 			args.cStd := GeneratorC.IsoC11
+		ELSIF opt = "-out:O7" THEN
+			args.obStd := GeneratorOberon.StdO7
+		ELSIF opt = "-out:AO" THEN
+			args.obStd := GeneratorOberon.StdAo
 		ELSIF opt = "-multi-errors" THEN
 			args.multiErrors := TRUE
 		ELSE
@@ -360,6 +370,7 @@ BEGIN
 	args.init     := -1;
 	args.memng    := -1;
 	args.cStd     := -1;
+	args.obStd    := -1;
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;
@@ -519,7 +530,7 @@ BEGIN
 	argDest := arg;
 	INC(args.srcLen);
 
-	forRun := ret IN {ResultRun, ResultRunJava, ResultRunJs};
+	forRun := ret IN ForRun;
 	arg := arg + ORD(~forRun);
 	cpRet := Options(args, arg);
 	IF cpRet # ErrNo THEN
@@ -546,7 +557,7 @@ END ParseOptions;
 PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
 VAR arg: INTEGER;
 BEGIN
-	ASSERT(ret IN {ResultC .. ResultRunJs});
+	ASSERT(ret IN {ResultC .. ResultMod});
 
 	ArgsInit(args);
 
@@ -595,6 +606,8 @@ BEGIN
 		ret := Command(args, ResultJs)
 	ELSIF cmd = "run-js" THEN
 		ret := Command(args, ResultRunJs)
+	ELSIF cmd = "to-mod" THEN
+		ret := Command(args, ResultMod)
 	ELSE
 		ret := ErrUnknownCommand
 	END

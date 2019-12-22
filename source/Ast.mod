@@ -197,10 +197,11 @@ CONST
 	Used*         = 5;
 	Dereferenced* = 6;
 
-	Integers* = {IdByte, IdInteger, IdLongInt};
-	Reals*    = {IdReal32, IdReal};
-	Numbers*  = Integers + Reals;
-	Sets*     = {IdSet, IdLongSet};
+	Integers*   = {IdByte, IdInteger, IdLongInt};
+	Reals*      = {IdReal32, IdReal};
+	Numbers*    = Integers + Reals;
+	Sets*       = {IdSet, IdLongSet};
+	Structures* = {IdRecord, IdArray};
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)

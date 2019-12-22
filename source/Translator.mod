@@ -28,15 +28,14 @@ IMPORT
 	Strings := StringStore,
 	SpecIdentChecker,
 	Parser,
-	Scanner,
 	Ast,
 	AstTransform,
+	GeneratorOberon,
 	GeneratorC,
 	GeneratorJava,
 	GeneratorJs,
 	GenOptions,
 	JavaStoreProcTypes,
-	TranLim := TranslatorLimits,
 	Exec := PlatformExec,
 	CComp := CCompilerInterface,
 	JavaComp := JavaCompilerInterface,
@@ -48,7 +47,6 @@ IMPORT
 	Files := CFiles,
 	OsEnv,
 	FileSys := FileSystemUtil,
-	Text := TextGenerator,
 	VCopy,
 	Mem := VMemStream,
 	JsEval, MemStreamToJsEval,
@@ -224,6 +222,14 @@ PROCEDURE OpenJsOutput(VAR out: File.Out;
 	RETURN OpenSingleOutput(out, module, orName, ".js", Cli.ErrOpenJs,
 	                        dir, dirLen)
 END OpenJsOutput;
+
+PROCEDURE OpenOberonOutput(VAR out: File.Out;
+                           module: Ast.Module; ext: ARRAY OF CHAR;
+                           VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+
+	RETURN OpenSingleOutput(out, module, "", ext, Cli.ErrOpenJava,
+	                        dir, dirLen)
+END OpenOberonOutput;
 
 PROCEDURE NewProvider(VAR p: ModulesStorage.Provider; VAR opt: Parser.Options;
                       args: Cli.Args);
@@ -1052,6 +1058,49 @@ BEGIN
 	RETURN ret
 END GenerateThroughJs;
 
+PROCEDURE GenerateOberon(module: Ast.Module; opt: GeneratorOberon.Options;
+                         VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+VAR imp: Ast.Declaration; ret: INTEGER; out: File.Out;
+BEGIN
+	module.used := TRUE;
+
+	ret := ErrNo;
+	imp := module.import;
+	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+		IF ~imp.module.m.used THEN
+			ret := GenerateOberon(imp.module.m, opt, dir, dirLen)
+		END;
+		imp := imp.next
+	END;
+	IF ret = ErrNo THEN
+		ret := OpenOberonOutput(out, module, ".mod", dir, dirLen);
+		IF ret = ErrNo THEN
+			GeneratorOberon.Generate(out, module, opt);
+			File.CloseOut(out);
+		END
+	END
+	RETURN ret
+END GenerateOberon;
+
+PROCEDURE GenerateThroughOberon(VAR args: Cli.Args; module: Ast.Module;
+                                VAR listener: V.Base): INTEGER;
+VAR opt: GeneratorOberon.Options;
+    ret: INTEGER;
+BEGIN
+	opt := GeneratorOberon.DefaultOptions();
+	SetCommonOptions(opt^, args);
+	IF args.obStd >= 0 THEN
+		opt.std := args.obStd;
+		IF args.obStd # GeneratorOberon.StdO7 THEN
+			opt.multibranchWhile := FALSE
+		END
+	END;
+
+	ret := GenerateOberon(module, opt, args.resPath, args.resPathLen)
+
+	RETURN ret
+END GenerateThroughOberon;
+
 PROCEDURE Translate*(res: INTEGER; VAR args: Cli.Args; VAR listener: V.Base): INTEGER;
 VAR ret: INTEGER;
     mp: ModulesStorage.Provider;
@@ -1098,8 +1147,10 @@ BEGIN
 			ELSE ASSERT(res IN Cli.ThroughJs);
 				ret := GenerateThroughJs(res, args, module, cmd, listener)
 			END
-		ELSE ASSERT(res IN Cli.ThroughC);
+		ELSIF res IN Cli.ThroughC THEN
 			ret := GenerateThroughC(res, args, module, cmd, listener)
+		ELSE ASSERT(res = Cli.ResultMod);
+			ret := GenerateThroughOberon(args, module, listener)
 		END
 	END;
 	ModulesStorage.Unlink(mp)

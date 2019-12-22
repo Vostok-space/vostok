@@ -16,7 +16,7 @@
  *)
 MODULE OberonSpecIdent;
 
-  IMPORT Utf8;
+  IMPORT Utf8, Strings := StringStore;
 
   CONST
     Array*          = 100;
@@ -237,5 +237,11 @@ MODULE OberonSpecIdent;
   RETURN
     spec
   END IsPredefined;
+
+  PROCEDURE IsSpecName*(n: Strings.String): BOOLEAN;
+  (* TODO *)
+  RETURN
+    FALSE
+  END IsSpecName;
 
 END OberonSpecIdent.

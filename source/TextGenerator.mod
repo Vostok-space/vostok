@@ -122,6 +122,13 @@ BEGIN
 	StrLn(gen, str)
 END StrLnClose;
 
+PROCEDURE LnStrClose*(VAR gen: Out; str: ARRAY OF CHAR);
+BEGIN
+	Ln(gen);
+	IndentClose(gen);
+	Str(gen, str)
+END LnStrClose;
+
 PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0))
