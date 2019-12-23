@@ -354,7 +354,7 @@ END ParseError;
 PROCEDURE Usage*(full: BOOLEAN);
 	PROCEDURE Short;
 	BEGIN
-S("Translator from Oberon-07 to C, Java and Javascript. 2019");
+S("Translator from Oberon-07 to C, Java, Javascript, Oberon. 2019");
 S("Usage: ost command [parameter] {-option}");
 S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
@@ -365,9 +365,9 @@ S(" 5) ost to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Tem
 S(" 6) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
 S(" 7) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
 S(" 8) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
-S(" 9) ost          File.mod         [ Args ]");
-S(" A) ost .Command File.mod         [ Args ]");
-S(" B) ost .        File.mod Command [ Args ]")
+S(" A) ost          File.mod         [ Args ]");
+S(" B) ost .Command File.mod         [ Args ]");
+S(" C) ost .        File.mod Command [ Args ]")
 	END Short;
 
 	PROCEDURE Details;
@@ -380,7 +380,8 @@ S("5) to-class converts modules to .class through implicit .java files");
 S("6) run-java executes implicit class, created from Code");
 S("7) to-js    converts modules to .js files");
 S("8) run-js   executes implicit .js file, created by Code");
-S("9-B) run code of module in the file, may be used with she-bang");
+S("9) to-mod   converts to Oberon-modules");
+S("A-C) run code of module in the file, may be used with she-bang");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module [ .Procedure [ '('Parameters')' ] ] .");
@@ -418,6 +419,7 @@ S("-no-nil-check                 - turn off runtime check pointer on nil.");
 S("-no-arithmetic-overflow-check - turn off runtime check arithmetic overflow.");
 S("");
 S("-C90 | -C99 | -C11            - ISO standard of generated C-code");
+S("-out:O7 | -out:AO             - dialect of generated Oberon-code");
 S("");
 S("-cyrillic[-same|-escape|-translit] - allow russian identifiers in a source.");
 S("   by default used suitable method of name generation, specific for compiler.");
@@ -494,6 +496,9 @@ BEGIN
 		S("Can not open output .js file")
 	| Cli.ErrTooLongJsDirs:
 		S("Too long overall length of paths to .js files")
+
+	| Cli.ErrOpenOberon:
+		S("Can not open output Oberon module")
 	END
 END CliError;
 

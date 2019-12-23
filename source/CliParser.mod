@@ -80,6 +80,7 @@ CONST
 
 	ErrOpenJava*         = -40;
 	ErrOpenJs*           = -41;
+	ErrOpenOberon*       = -42;
 
 TYPE
 	Args* = RECORD(V.Base)

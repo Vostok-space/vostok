@@ -15,6 +15,7 @@ Generates code for:
   * A common subset of C and C++ compatible with gcc, clang, tcc and CompCert.
   * Java 1.7
   * JavaScript compatible with ECMAScript 5
+  * Oberon-07 and Active Oberon
 
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.
@@ -77,7 +78,7 @@ Same from project directory without installed ost:
 
     $ result/ost run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
-The parameter '-infr.' indicates the path to the infrastructure, which also
+The parameter '-infr .' indicates the path to the infrastructure, which also
 includes the path, where located library module Out.
 
 Example of executable binary build:
