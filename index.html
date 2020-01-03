@@ -3,12 +3,13 @@
 <html lang="ru">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Восток</title>
 
   <style>
     div.page {
-      width             : 800px;
+      max-width         : 720px;
       margin            : auto;
       background-color  : #F0F0F0;
       border-radius     : 10px;
@@ -17,7 +18,7 @@
   </style>
 </head>
 
-<body>
+<body style="font-family: Liberation Serif, Times New Roman, sans-serif; font-size: 18px;">
   <div class="page">
     <h3> Транслятор проекта
       <a href="https://vostok-space.github.io/"><b>Восток</b></a>
@@ -31,9 +32,19 @@
 
     Выходные языки:
     <ol>
-    <li> Общее подмножество С и С++, совместимое с gcc, clang, tcc, CompCert, MS VS.
-    <li> Java стандарта 1.7
-    <li> JavaScript стандарта ECMAScript 5
+    <li> Общее подмножество С и С++, совместимое с gcc, clang,
+      <a href="https://bellard.org/tcc/">tcc</a>,
+      <a href="http://compcert.inria.fr/">CompCert</a>, MS VS.
+
+      <ol>
+      <li> Исполнимые форматы ELF и PE
+      </ol>
+    <li> Java <a href="https://docs.oracle.com/javase/specs/jls/se7/html/index.html">стандарта 7</a>
+      <ol>
+      <li> *.class файлы
+      <li> Android *.apk приложения
+      </ol>
+    <li> JavaScript стандарта <a href="https://ecma-international.org/ecma-262/5.1/">ECMAScript 5</a>
     <li> Oberon 07 и Active Oberon
     <li> ...
     </ol>
