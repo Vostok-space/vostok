@@ -906,7 +906,7 @@ o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
 O7_CONST_INLINE
 o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 	o7_int_t r;
-	o7_not_neg(shift);
+	shift = o7_not_neg(shift);
 	if (O7_ARITHMETIC_SHIFT) {
 		r = o7_int(n) >> shift;
 	} else if (n >= 0) {

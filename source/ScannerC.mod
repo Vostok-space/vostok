@@ -1,4 +1,4 @@
-(*  Scanner of Oberon-07 lexems
+(*  Scanner of C lexems, based on Scanner for Oberon
  *  Copyright (C) 2016-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE Scanner;
+MODULE ScannerC;
 
 IMPORT
 	V,
@@ -39,7 +39,6 @@ CONST
 	Colon*          = 7;
 	Assign*         = 8;
 	Semicolon*      = 9;
-	Dereference*    = 10;
 
 	RelationFirst* = 11;
 		Equal*          = 11;
@@ -48,20 +47,18 @@ CONST
 		LessEqual*      = 14;
 		Greater*        = 15;
 		GreaterEqual*   = 16;
-		In*             = 17;
-		Is*             = 18;
 	RelationLast*  = 18;
 
 	MultFirst*      = 19;
+		(* В C не только для умножения*)
 		Asterisk*       = 19;
 		Slash*          = 20;
 		And*            = 21;
-		Div*            = 22;
+		(* % *)
 		Mod*            = 23;
 	MultLast*       = 23;
 
 	Negate*         = 24;
-	Alternative*    = 25;
 	Brace1Open*     = 26;
 	Brace1Close*    = 27;
 	Brace2Open*     = 28;
@@ -70,9 +67,36 @@ CONST
 	Brace3Close*    = 31;
 
 	Number*         = 32;
-	CharHex*        = 33;
+	Char*           = 33;
 	String*         = 34;
 	Ident*          = 35;
+
+	(* ++ *)
+	Inc* = 36;
+	(* -- *)
+	Dec* = 37;
+
+	Add*     = 38;
+	Sub*     = 39;
+	Mul*     = 40;
+	DivAsgn* = 41;
+	ModAsgn* = 42;
+
+	BitNegate*= 50;
+	BitOr*    = 51;
+	BitAnd*   = 52;
+
+	BitAndAsgn* = 53;
+	BitOrAsgn*  = 54;
+	BitXorAsgn* = 55;
+	BitXor*     = 56;
+
+	LeftShift*      = 57;
+	LeftShiftAsgn*  = 58;
+	RightShift*     = 59;
+	RightShiftAsgn* = 58;
+
+	Sharp* = 60;
 
 	ErrUnexpectChar*        = -1;
 	ErrNumberTooBig*        = -2;
@@ -83,12 +107,16 @@ CONST
 	ErrExpectDigitInScale*  = -7;
 	ErrUnclosedComment*     = -8;
 
+	ErrCharExpectChar*        = -20;
+	ErrCharExpectSingleQuote* = -21;
+	ErrExpectHexDigit*        = -22;
+	ErrDecimalDigitInOctal*   = -23;
+
 	ErrMin*                 = -100;
 
 	BlockSize = 4096 * 2;
 
-	IntMax = 07FFFFFFFH;
-	CharMax = 0FFX;
+	IntMax       = 07FFFFFFFH;
 	RealScaleMax = 512;
 
 TYPE
@@ -196,10 +224,14 @@ BEGIN
 	WHILE suit(s.buf[s.ind]) DO
 		INC(s.ind);
 		INC(s.column)
-	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
+	ELSIF s.buf[s.ind] = NewPage DO
 		FillBuf(s.buf, s.ind, s.in^)
 	END
 END ScanChars;
+
+PROCEDURE IsOctalDigit(ch: CHAR): BOOLEAN;
+	RETURN ("0" <= ch) & (ch <= "7")
+END IsOctalDigit;
 
 PROCEDURE IsDigit(ch: CHAR): BOOLEAN;
 	RETURN ("0" <= ch) & (ch <= "9")
@@ -207,7 +239,8 @@ END IsDigit;
 
 PROCEDURE IsHexDigit(ch: CHAR): BOOLEAN;
 	RETURN ("0" <= ch) & (ch <= "9")
-        OR ("A" <= ch) & (ch <= "F")
+	    OR ("A" <= ch) & (ch <= "F")
+	    OR ("a" <= ch) & (ch <= "f")
 END IsHexDigit;
 
 PROCEDURE ValDigit(ch: CHAR): INTEGER;
@@ -228,16 +261,24 @@ BEGIN
 		i := ORD(ch) - ORD("0")
 	ELSIF (ch >= "A") & (ch <= "F") THEN
 		i := 10 + ORD(ch) - ORD("A")
+	ELSIF (ch >= "a") & (ch <= "f") THEN
+		i := 10 + ORD(ch) - ORD("a")
 	ELSE
 		i := -1
 	END
 	RETURN i
 END ValHexDigit;
 
+PROCEDURE NextChar(VAR s: Scanner);
+BEGIN
+	INC(s.ind);
+	IF s.buf[s.ind] = NewPage THEN
+		FillBuf(s.buf, s.ind, s.in^)
+	END
+END NextChar;
+
 PROCEDURE SNumber(VAR s: Scanner): INTEGER;
-VAR
-	lex: INTEGER;
-	ch: CHAR;
+VAR lex, capacity: INTEGER; ch: CHAR; valDigit: SuitDigit;
 
 	PROCEDURE Val(VAR s: Scanner; VAR lex: INTEGER; capacity: INTEGER;
 	              valDigit: SuitDigit);
@@ -246,6 +287,7 @@ VAR
 		val := 0;
 		i := s.lexStart;
 		d := valDigit(s.buf[i]);
+		(*Log.Str("IntMax "); Log.Int(IntMax); Log.Ln;*)
 		WHILE d >= 0 DO
 			IF IntMax DIV capacity >= val THEN
 				val := val * capacity;
@@ -264,6 +306,7 @@ VAR
 			d := valDigit(s.buf[i])
 		END;
 		s.integer := val
+		(*Log.Str("Val integer "); Log.Int(s.integer); Log.Ln*)
 	END Val;
 
 	PROCEDURE ValReal(VAR s: Scanner; VAR lex: INTEGER); (* TODO *)
@@ -297,7 +340,7 @@ VAR
 			FillBuf(s.buf, i, s.in^);
 			d := ValDigit(s.buf[i])
 		END;
-		IF s.buf[i] = "E" THEN
+		IF (s.buf[i] = "E") OR (s.buf[i] = "e") THEN
 			INC(i);
 			INC(s.column);
 			IF s.buf[i] = NewPage THEN
@@ -347,34 +390,46 @@ VAR
 	END ValReal;
 BEGIN
 	lex := Number;
-	ScanChars(s, IsDigit);
-	ch := s.buf[s.ind];
-	s.isReal := (ch = ".") & (Lookup(s, s.ind) # ".");
-	IF s.isReal THEN
-		INC(s.ind);
-		INC(s.column);
-		ValReal(s, lex)
-	ELSIF (ch >= "A") & (ch <= "F") OR (ch = "H") OR (ch = "X") THEN
-		ScanChars(s, IsHexDigit);
+	capacity := 10;
+	valDigit := ValDigit;
+	IF s.buf[s.ind] = "0" THEN
+		NextChar(s);
 		ch := s.buf[s.ind];
-		Val(s, lex, 16, ValHexDigit);
-		IF ch = "X" THEN
-			IF s.integer <= ORD(CharMax) THEN
-				lex := String;
-				s.isChar := TRUE
+		IF (ch = "X") OR (ch = "x") THEN
+			NextChar(s);
+			IF ~IsHexDigit(ch) THEN
+				lex := ErrExpectHexDigit
 			ELSE
-				lex := ErrNumberTooBig
+				ScanChars(s, IsHexDigit);
+				capacity := 16;
+				valDigit := ValHexDigit
 			END
-		ELSIF ch # "H" THEN
-			lex := ErrExpectHOrX
-		END;
-		IF (ch = "X") OR (ch = "H") THEN
-			INC(s.column);
-			INC(s.ind)
+		ELSE
+			ScanChars(s, IsOctalDigit);
+			IF IsDigit(s.buf[s.ind]) THEN
+				ScanChars(s, IsDigit);
+				IF s.buf[s.ind] # "." THEN
+					lex := ErrDecimalDigitInOctal
+				END
+			ELSE
+				capacity := 8
+			END
 		END
 	ELSE
-		Val(s, lex, 10, ValDigit)
-	END
+		ScanChars(s, IsDigit)
+	END;
+	IF lex = Number THEN
+		ch := s.buf[s.ind];
+		s.isReal := (ch = ".") & (Lookup(s, s.ind) # ".");
+		IF s.isReal THEN
+			INC(s.ind);
+			INC(s.column);
+			ValReal(s, lex)
+		ELSE
+			Val(s, lex, capacity, valDigit)
+		END
+	END;
+	Log.Str("Number lex = "); Log.Int(lex); Log.Ln
 	RETURN lex
 END SNumber;
 
@@ -444,13 +499,14 @@ BEGIN
 END CyrWord;
 
 PROCEDURE ScanBlank(VAR s: Scanner): BOOLEAN;
-VAR i, column, comment, commentsCount: INTEGER;
+VAR i, column: INTEGER; comment, commentLine: BOOLEAN;
 BEGIN
 	i := s.ind;
+	(*Log.Str("ScanBlank ind = "); Log.Int(i); Log.Ln;*)
 	ASSERT(0 <= i);
 	column := s.column;
-	comment := 0;
-	commentsCount := 0;
+	comment := FALSE;
+	commentLine := FALSE;
 	s.emptyLines := -1;
 	WHILE s.buf[i] = " " DO
 		INC(i);
@@ -468,21 +524,21 @@ BEGIN
 		INC(i)
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
-	ELSIF (s.buf[i] = "(") & (Lookup(s, i) = "*") DO
+	ELSIF ~comment & (s.buf[i] = "/") & (Lookup(s, i) = "*") DO
 		i := (i + 2) MOD (LEN(s.buf) - 1);
 		INC(column, 2);
-		INC(comment);
-		INC(commentsCount);
-		IF commentsCount = 1 THEN
-			s.commentOfs := i
-		END
-	ELSIF (0 < comment) & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
-		IF (s.buf[i] = "*") & (Lookup(s, i) = ")") THEN
-			DEC(comment);
-			IF comment = 0 THEN
-				s.commentEnd := i;
-				s.emptyLines := -1
-			END;
+		comment := TRUE;
+		s.commentOfs := i
+	ELSIF comment & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
+		IF commentLine THEN
+			comment := s.buf[i] # Utf8.NewLine
+		ELSE
+			comment := (s.buf[i] # "*") OR (Lookup(s, i) # "/")
+		END;
+		IF ~comment THEN
+			commentLine := FALSE;
+			s.commentEnd := i;
+			s.emptyLines := -1;
 			i := (i + 2) MOD (LEN(s.buf) - 1);
 			INC(column, 2)
 		ELSE
@@ -501,28 +557,26 @@ BEGIN
 
 	s.column := column;
 	s.ind := i
-	RETURN comment <= 0
+	RETURN ~comment
 END ScanBlank;
 
 PROCEDURE ScanString(VAR s: Scanner): INTEGER;
-VAR l, i, j, count, column: INTEGER;
+VAR l, i, j, column: INTEGER;
 BEGIN
+	(* TODO *)
 	i := s.ind + 1;
 	column := s.column  + 1;
 	IF s.buf[i] = NewPage THEN
 		FillBuf(s.buf, i, s.in^)
 	END;
 	j := i;
-	count := 0;
 	WHILE (s.buf[i] # Utf8.DQuote) & (" " <= s.buf[i]) DO
 		IF (s.buf[i] < 80X) OR (s.buf[i] >= 0C0X) THEN
-			INC(column);
-			INC(count)
+			INC(column)
 		END;
 		INC(i)
-	ELSIF (s.buf[i] = Utf8.Tab) DO
+	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
-		INC(count);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
 	ELSIF s.buf[i] = NewPage DO
 		FillBuf(s.buf, i, s.in^)
@@ -530,10 +584,6 @@ BEGIN
 	s.isChar := FALSE;
 	IF s.buf[i] = Utf8.DQuote THEN
 		l := String;
-		IF count = 1 THEN
-			s.isChar := TRUE;
-			s.integer := ORD(s.buf[j])
-		END
 	ELSE
 		l := ErrExpectDQuote
 	END;
@@ -541,6 +591,52 @@ BEGIN
 	s.column := column
 	RETURN l
 END ScanString;
+
+PROCEDURE SChar(VAR s: Scanner): INTEGER;
+VAR l: INTEGER;
+BEGIN
+	(* TODO *)
+	NextChar(s);
+	s.isChar := TRUE;
+	IF (s.buf[s.ind] = "'")
+	OR (s.buf[s.ind] < " ") & (s.buf[s.ind] # Utf8.Tab)
+	THEN
+		l := ErrCharExpectChar
+	ELSE
+		s.integer := ORD(s.buf[s.ind]);
+		NextChar(s);
+		IF s.buf[s.ind] = "'" THEN
+			l := String;
+			INC(s.ind);
+			INC(s.column, 3)
+		ELSE
+			l := ErrCharExpectSingleQuote;
+			INC(s.column, 2)
+		END
+	END
+	RETURN l
+END SChar;
+
+PROCEDURE L2(VAR lex: INTEGER; VAR s: Scanner; ch: CHAR; then, else: INTEGER);
+BEGIN
+	ASSERT(then # else);
+	NextChar(s);
+	IF s.buf[s.ind] = ch THEN
+		lex := then;
+		INC(s.ind)
+	ELSE
+		lex := else
+	END
+END L2;
+
+PROCEDURE L3(VAR lex: INTEGER; VAR s: Scanner; lex0: INTEGER; ch1: CHAR; lex1: INTEGER; ch2: CHAR; lex2: INTEGER);
+BEGIN
+	L2(lex, s, ch1, lex1, lex0);
+	IF (lex = lex0) & (s.buf[s.ind] = ch2) THEN
+		lex := lex2;
+		INC(s.ind)
+	END
+END L3;
 
 PROCEDURE Next*(VAR s: Scanner): INTEGER;
 VAR lex: INTEGER;
@@ -551,26 +647,28 @@ VAR lex: INTEGER;
 		lex := l
 	END L;
 
-	PROCEDURE Li(VAR lex: INTEGER; VAR s: Scanner; ch: CHAR; then, else: INTEGER);
+	PROCEDURE L4(VAR lex: INTEGER; VAR s: Scanner;
+	             lex0: INTEGER; ch1: CHAR; lex1: INTEGER; ch2: CHAR; lex2: INTEGER; ch21: CHAR; lex21: INTEGER);
 	BEGIN
-		INC(s.ind);
-		IF s.buf[s.ind] = NewPage THEN
-			FillBuf(s.buf, s.ind, s.in^)
-		END;
-		IF s.buf[s.ind] = ch THEN
-			lex := then;
-			INC(s.ind)
-		ELSE
-			lex := else
+		L3(lex, s, lex0, ch1, lex1, ch2, lex2);
+		IF lex = lex2 THEN
+			IF s.buf[s.ind] = NewPage THEN
+				FillBuf(s.buf, s.ind, s.in^)
+			END;
+			IF s.buf[s.ind] = ch21 THEN
+				lex := lex21;
+				INC(s.ind)
+			END
 		END
-	END Li;
+	END L4;
+
 BEGIN
 	IF ~ScanBlank(s) THEN
 		lex := ErrUnclosedComment
 	ELSE
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
-		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
+		  0X..03X, 05X.." ", "$", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
 			lex := ErrUnexpectChar;
 			INC(s.ind)
 		| Utf8.TransmissionEnd:
@@ -579,28 +677,32 @@ BEGIN
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
 			lex := SWord(s)
+		| "'":
+			lex := SChar(s)
 		| 0D0X .. 0D2X:
 			IF s.opt.cyrillic & IsCurrentCyrillic(s) THEN
 				lex := CyrWord(s)
 			ELSE
 				lex := ErrUnexpectChar
 			END
-		| "+": L(lex, s, Plus)
-		| "-": L(lex, s, Minus)
-		| "*": L(lex, s, Asterisk)
-		| "/": L(lex, s, Slash)
-		| ".": Li(lex, s, ".", Range, Dot)
+		| "+": L2(lex, s, "=", Add, Plus)
+		| "-": L2(lex, s, "=", Sub, Minus)
+		| "*": L2(lex, s, "=", Mul, Asterisk)
+		| "/": L2(lex, s, "=", DivAsgn, Slash)
+		| "%": L2(lex, s, "=", ModAsgn, Mod)
+		| ".": L2(lex, s, ".", Range, Dot)
 		| ",": L(lex, s, Comma)
-		| ":": Li(lex, s, "=", Assign, Colon)
+		| ":": L(lex, s, Colon)
 		| ";": L(lex, s, Semicolon)
-		| "^": L(lex, s, Dereference)
-		| "=": L(lex, s, Equal)
-		| "#": L(lex, s, Inequal)
-		| "~": L(lex, s, Negate)
-		| "<": Li(lex, s, "=", LessEqual, Less)
-		| ">": Li(lex, s, "=", GreaterEqual, Greater)
-		| "&": L(lex, s, And)
-		| "|": L(lex, s, Alternative)
+		| "=": L2(lex, s, "=", Equal, Assign)
+		| "#": L(lex, s, Sharp)
+		| "~": L(lex, s, BitNegate)
+		| "!": L2(lex, s, "=", Inequal, Negate)
+		| "<": L4(lex, s, Less, "=", LessEqual, "<", LeftShift, "=", LeftShiftAsgn)
+		| ">": L4(lex, s, Greater, "=", GreaterEqual, ">", RightShift, "=", RightShiftAsgn)
+		| "&": L3(lex, s, BitAnd, "&", And, "=", BitAndAsgn)
+		| "|": L3(lex, s, BitOr, "|", Or, "=", BitOrAsgn)
+		| "^": L2(lex, s, "=", BitXorAsgn, BitXor)
 		| "(": L(lex, s, Brace1Open)
 		| ")": L(lex, s, Brace1Close)
 		| "[": L(lex, s, Brace2Open)
@@ -609,6 +711,9 @@ BEGIN
 		| "}": L(lex, s, Brace3Close)
 		| Utf8.DQuote: lex := ScanString(s)
 		END;
+		(*
+		Log.Str("Scan "); Log.Int(lex); Log.Ln;
+		*)
 		s.lexEnd := s.ind
 	END
 	RETURN lex
@@ -633,4 +738,4 @@ END ResetComment;
 
 BEGIN
 	ASSERT(TranLim.LenName < BlockSize)
-END Scanner.
+END ScannerC.
