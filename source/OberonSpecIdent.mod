@@ -1,5 +1,5 @@
 (*  List of Oberon-07 keywords and predefined identifers
- *  Copyright (C) 2016-2018 ComdivByZero
+ *  Copyright (C) 2016-2018, 2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -87,7 +87,9 @@ MODULE OberonSpecIdent;
   PROCEDURE Eq(str, buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
   VAR i, j: INTEGER;
   BEGIN
+    ASSERT(buf[ind] = str[0]);
     ASSERT(LEN(str) <= LEN(buf) DIV 2);
+
     j := 1;
     i := ind + 1;
     WHILE (j < LEN(str)) & (buf[i] = str[j]) DO
@@ -146,45 +148,19 @@ MODULE OberonSpecIdent;
     |"B": spec := T(kw, "BEGIN", Begin, "BY", By, buf, ind, end)
     |"C": spec := T(kw, "CASE", Case, "CONST", Const, buf, ind, end)
     |"D": spec := T(kw, "DIV", Div, "DO", Do, buf, ind, end)
-    |"E":
-      IF Eq("ELSE", buf, ind, end) THEN
-        spec := TRUE;
-        kw := Else
-      ELSE
-        spec := T(kw, "ELSIF", Elsif, "END", End, buf, ind, end)
-      END
+    |"E": spec := O(kw, "ELSE", Else, buf, ind, end)
+               OR T(kw, "ELSIF", Elsif, "END", End, buf, ind, end)
     |"F": spec := T(kw, "FALSE", False, "FOR", For, buf, ind, end)
-    |"I":
-      IF Eq("IF", buf, ind, end) THEN
-        spec := TRUE;
-        kw := If
-      ELSIF Eq("IMPORT", buf, ind, end) THEN
-        spec := TRUE;
-        kw := Import
-      ELSE
-        spec:= T(kw, "IN", In, "IS", Is, buf, ind, end)
-      END
+    |"I": spec := T(kw, "IF", If, "IMPORT", Import, buf, ind, end)
+               OR T(kw, "IN", In, "IS", Is, buf, ind, end)
     |"M": spec := T(kw, "MOD", Mod, "MODULE", Module, buf, ind, end)
     |"N": spec := O(kw, "NIL", Nil, buf, ind, end)
     |"O": spec := T(kw, "OF", Of, "OR", Or, buf, ind, end)
     |"P": spec := T(kw, "POINTER", Pointer, "PROCEDURE", Procedure, buf, ind, end)
-    |"R":
-      IF Eq("RECORD", buf, ind, end) THEN
-        spec := TRUE;
-        kw := Record
-      ELSE
-        spec := T(kw, "REPEAT", Repeat, "RETURN", Return, buf, ind, end)
-      END
-    |"T":
-      IF Eq("THEN", buf, ind, end) THEN
-        spec := TRUE;
-        kw := Then
-      ELSIF Eq("TO", buf, ind, end) THEN
-        spec := TRUE;
-        kw := To
-      ELSE
-        spec := T(kw, "TRUE", True, "TYPE", Type, buf, ind, end)
-      END
+    |"R": spec := O(kw, "RECORD", Record, buf, ind, end)
+               OR T(kw, "REPEAT", Repeat, "RETURN", Return, buf, ind, end)
+    |"T": spec := T(kw, "THEN", Then, "TO", To, buf, ind, end)
+               OR T(kw, "TRUE", True, "TYPE", Type, buf, ind, end)
     |"U": spec := O(kw, "UNTIL", Until, buf, ind, end)
     |"V": spec := O(kw, "VAR", Var, buf, ind, end)
     |"W": spec := O(kw, "WHILE", While, buf, ind, end)
@@ -204,25 +180,15 @@ MODULE OberonSpecIdent;
     save := buf[end];
     buf[end] := Utf8.BackSpace;
     CASE buf[begin] OF
-     "A":
-      IF Eq("ABS", buf, begin, end) THEN
-        spec := TRUE;
-        pd := Abs
-      ELSE
-        spec := T(pd, "ASR", Asr, "ASSERT", Assert, buf, begin, end)
-      END
+     "A": spec := O(pd, "ABS", Abs, buf, begin, end)
+               OR T(pd, "ASR", Asr, "ASSERT", Assert, buf, begin, end)
     |"B": spec := T(pd, "BOOLEAN", Boolean, "BYTE", Byte, buf, begin, end)
     |"C": spec := T(pd, "CHAR", Char, "CHR", Chr, buf, begin, end)
     |"D": spec := O(pd, "DEC", Dec, buf, begin, end)
     |"E": spec := O(pd, "EXCL", Excl, buf, begin, end)
     |"F": spec := T(pd, "FLOOR", Floor, "FLT", Flt, buf, begin, end)
-    |"I":
-      IF Eq("INC", buf, begin, end) THEN
-        spec := TRUE;
-        pd := Inc
-      ELSE
-        spec := T(pd, "INCL", Incl, "INTEGER", Integer, buf, begin, end)
-      END
+    |"I": spec := O(pd, "INC", Inc, buf, begin, end)
+               OR T(pd, "INCL", Incl, "INTEGER", Integer, buf, begin, end)
     |"L": spec := T(pd, "LEN", Len, "LSL", Lsl, buf, begin, end)
     |"N": spec := O(pd, "NEW", New, buf, begin, end)
     |"O": spec := T(pd, "ODD", Odd, "ORD", Ord, buf, begin, end)
