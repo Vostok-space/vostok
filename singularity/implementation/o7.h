@@ -918,7 +918,7 @@ o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 }
 
 #define O7_ROR(n, shift) \
-	((((n) >> ((shift) % 32)) | ((n) << (32 - (shift) % 32))) & 0xFFFFFFFFul)
+	(o7_int_t)(((((o7_uint_t)n) >> ((shift) % 32)) | (((o7_uint_t)n) << (32 - (shift) % 32))) & 0xFFFFFFFFul)
 
 O7_CONST_INLINE
 o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
@@ -1107,10 +1107,12 @@ void o7_retain_array(o7_int_t count, void *mem[O7_VLA(count)]) {
 O7_ALWAYS_INLINE
 void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void release(void *)) {
 	o7_int_t i;
-	assert(0 > 1);/* TODO */
+	char *a;
 	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		a = (char *)array;
 		for (i = 0; i < count; i += 1) {
-			o7_null((void **)array + i);
+			release((void *)a);
+			a += item_size;
 		}
 	}
 }
@@ -1257,7 +1259,7 @@ void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
                o7_int_t src_len, o7_char const src[O7_VLA(src_len)])
 {
 	assert(src_len <= dest_len);
-	memcpy(dest, dest, (size_t)src_len);
+	memcpy(dest, src, (size_t)src_len);
 }
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i);
