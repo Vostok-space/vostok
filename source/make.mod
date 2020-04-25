@@ -1,3 +1,4 @@
+#!/usr/bin/ost .
 (*  Build and test tasks for the translator
  *  Copyright (C) 2018-2019 ComdivByZero
  *
