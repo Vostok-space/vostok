@@ -94,9 +94,10 @@ CONST
 	LeftShift*      = 57;
 	LeftShiftAsgn*  = 58;
 	RightShift*     = 59;
-	RightShiftAsgn* = 58;
+	RightShiftAsgn* = 60;
 
-	Sharp* = 60;
+	Sharp*   = 70;
+	NewLine* = 71;
 
 	ErrUnexpectChar*        = -1;
 	ErrNumberTooBig*        = -2;
@@ -111,6 +112,9 @@ CONST
 	ErrCharExpectSingleQuote* = -21;
 	ErrExpectHexDigit*        = -22;
 	ErrDecimalDigitInOctal*   = -23;
+
+	ErrExpectHeaderName*      = -30;
+	ErrExpectHeaderExtension* = -31;
 
 	ErrMin*                 = -100;
 
@@ -137,6 +141,8 @@ TYPE
 			tabSize*: INTEGER
 		END;
 
+		isPreProcessor: BOOLEAN;
+
 		commentOfs, commentEnd: INTEGER
 	END;
 
@@ -161,6 +167,7 @@ BEGIN
 	s.ind := LEN(s.buf) - 1;
 	s.buf[0] := NewPage;
 	s.buf[s.ind] := NewPage;
+	s.isPreProcessor := FALSE
 END Init;
 
 PROCEDURE InitByString*(VAR s: Scanner; in: ARRAY OF CHAR): BOOLEAN;
@@ -242,6 +249,17 @@ PROCEDURE IsHexDigit(ch: CHAR): BOOLEAN;
 	    OR ("A" <= ch) & (ch <= "F")
 	    OR ("a" <= ch) & (ch <= "f")
 END IsHexDigit;
+
+PROCEDURE IsLetter(ch: CHAR): BOOLEAN;
+	RETURN (ch >= "a") & (ch <= "z")
+	    OR (ch >= "Z") & (ch <= "Z")
+END IsLetter;
+
+PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
+	RETURN (ch >= "a") & (ch <= "a")
+	    OR (ch >= "Z") & (ch <= "Z")
+	    OR (ch >= "0") & (ch <= "9")
+END IsLetterOrDigit;
 
 PROCEDURE ValDigit(ch: CHAR): INTEGER;
 VAR i: INTEGER;
@@ -433,12 +451,6 @@ BEGIN
 	RETURN lex
 END SNumber;
 
-PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
-	RETURN (ch >= "A") & (ch <= "Z")
-	    OR (ch >= "a") & (ch <= "z")
-	    OR (ch >= "0") & (ch <= "9")
-END IsLetterOrDigit;
-
 PROCEDURE SWord(VAR s: Scanner): INTEGER;
 VAR len, l: INTEGER;
 BEGIN
@@ -511,13 +523,13 @@ BEGIN
 	WHILE s.buf[i] = " " DO
 		INC(i);
 		INC(column)
-	ELSIF s.buf[i] = Utf8.CarRet DO
-		INC(i);
-		column := 0;
 	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
-	ELSIF s.buf[i] = Utf8.NewLine DO
+	ELSIF s.buf[i] = Utf8.CarRet DO
+		INC(i);
+		column := 0;
+	ELSIF (s.buf[i] = Utf8.NewLine) & ~s.isPreProcessor DO
 		INC(s.line);
 		INC(s.emptyLines);
 		column := 0;
@@ -617,6 +629,28 @@ BEGIN
 	RETURN l
 END SChar;
 
+PROCEDURE HeaderName(VAR s: Scanner; lexEnd: INTEGER): INTEGER;
+VAR first: CHAR; lex: INTEGER;
+BEGIN
+	first := s.buf[s.ind];
+	ASSERT((first = Utf8.DQuote) OR (first = "<"));
+
+	NextChar(s);
+	IF ~IsLetter(s.buf[s.ind]) THEN
+		lex := ErrExpectHeaderName
+	ELSE
+		s.lexStart := s.ind;
+		lex := SWord(s);
+		lexEnd := s.ind;
+		IF (s.buf[s.ind] = ".") & (Lookup(s, s.ind) = "h") THEN
+			NextChar(s)
+		ELSE
+			lex := ErrExpectHeaderExtension
+		END
+	END
+	RETURN lex
+END HeaderName;
+
 PROCEDURE L2(VAR lex: INTEGER; VAR s: Scanner; ch: CHAR; then, else: INTEGER);
 BEGIN
 	ASSERT(then # else);
@@ -639,7 +673,7 @@ BEGIN
 END L3;
 
 PROCEDURE Next*(VAR s: Scanner): INTEGER;
-VAR lex: INTEGER;
+VAR lex, lexEnd: INTEGER;
 
 	PROCEDURE L(VAR lex: INTEGER; VAR s: Scanner; l: INTEGER);
 	BEGIN
@@ -667,12 +701,22 @@ BEGIN
 		lex := ErrUnclosedComment
 	ELSE
 		s.lexStart := s.ind;
+		lexEnd := -1;
 		CASE s.buf[s.ind] OF
-		  0X..03X, 05X.." ", "$", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
+		  0X..3X, 5X..9X, 11X .. " ", "$", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
 			lex := ErrUnexpectChar;
 			INC(s.ind)
 		| Utf8.TransmissionEnd:
 			lex := EndOfFile
+		| Utf8.NewLine:
+			ASSERT(s.isPreProcessor);
+
+			lex := NewLine;
+			s.isPreProcessor := FALSE;
+			INC(s.ind);
+			INC(s.line);
+			s.column     := 0;
+			s.emptyLines := 0
 		| "0" .. "9":
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
@@ -695,7 +739,7 @@ BEGIN
 		| ":": L(lex, s, Colon)
 		| ";": L(lex, s, Semicolon)
 		| "=": L2(lex, s, "=", Equal, Assign)
-		| "#": L(lex, s, Sharp)
+		| "#": L(lex, s, Sharp); s.isPreProcessor := TRUE
 		| "~": L(lex, s, BitNegate)
 		| "!": L2(lex, s, "=", Inequal, Negate)
 		| "<": L4(lex, s, Less, "=", LessEqual, "<", LeftShift, "=", LeftShiftAsgn)
@@ -709,12 +753,21 @@ BEGIN
 		| "]": L(lex, s, Brace2Close)
 		| "{": L(lex, s, Brace3Open)
 		| "}": L(lex, s, Brace3Close)
-		| Utf8.DQuote: lex := ScanString(s)
+		| Utf8.DQuote:
+			IF s.isPreProcessor THEN
+				lex := HeaderName(s, lexEnd)
+			ELSE
+				lex := ScanString(s)
+			END
 		END;
 		(*
 		Log.Str("Scan "); Log.Int(lex); Log.Ln;
 		*)
-		s.lexEnd := s.ind
+		IF lexEnd < 0 THEN
+			s.lexEnd := s.ind
+		ELSE
+			s.lexEnd := lexEnd
+		END
 	END
 	RETURN lex
 END Next;
