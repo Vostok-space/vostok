@@ -2021,7 +2021,8 @@ VAR err: INTEGER;
 			WHILE sel.next # NIL DO
 				sel := sel.next
 			END;
-			IF sel IS SelRecord THEN
+			IF (sel IS SelRecord) & (sel(SelRecord).var # NIL) THEN
+				(* TODO NIL возникает при разборе ошибочной программы. Заменить NIL на заглушку *)
 				sel(SelRecord).var.inVarParam := TRUE
 			END
 		END
