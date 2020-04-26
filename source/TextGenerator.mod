@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017,2019 ComdivByZero
+ *  Copyright (C) 2017,2019-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -28,7 +28,8 @@ TYPE
 		out: Stream.POut;
 		len*: INTEGER;
 		tabs: INTEGER;
-		isNewLine: BOOLEAN
+		isNewLine: BOOLEAN;
+		defered: ARRAY 1 OF CHAR
 	END;
 
 PROCEDURE Init*(VAR g: Out; out: Stream.POut);
@@ -47,49 +48,81 @@ BEGIN
 	g.tabs := d.tabs
 END SetTabs;
 
+PROCEDURE Write(VAR gen: Out; str: ARRAY OF CHAR; ofs, size: INTEGER);
+BEGIN
+	INC(gen.len, Stream.WriteChars(gen.out^, str, ofs, size))
+END Write;
+
 PROCEDURE CharFill*(VAR gen: Out; ch: CHAR; count: INTEGER);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
 	ASSERT(0 <= count);
 	c[0] := ch;
 	WHILE count > 0 DO
-		gen.len := gen.len + Stream.WriteChars(gen.out^, c, 0, 1);
+		Write(gen, c, 0, 1);
 		DEC(count)
 	END
 END CharFill;
 
-PROCEDURE Char*(VAR gen: Out; ch: CHAR);
-VAR c: ARRAY 1 OF CHAR;
-BEGIN
-	c[0] := ch;
-	gen.len := gen.len + Stream.WriteChars(gen.out^, c, 0, 1);
-END Char;
-
-PROCEDURE NewLine(VAR gen: Out);
+PROCEDURE IndentInNewLine(VAR gen: Out);
 BEGIN
 	IF gen.isNewLine THEN
 		gen.isNewLine := FALSE;
 		CharFill(gen, Utf8.Tab, gen.tabs)
+	END
+END IndentInNewLine;
+
+PROCEDURE Char*(VAR gen: Out; ch: CHAR);
+VAR c: ARRAY 1 OF CHAR;
+BEGIN
+	IndentInNewLine(gen);
+	c[0] := ch;
+	Write(gen, c, 0, 1)
+END Char;
+
+PROCEDURE DeferChar*(VAR gen: Out; ch: CHAR);
+BEGIN
+	ASSERT(ch # Utf8.Null);
+	ASSERT(gen.defered[0] = Utf8.Null);
+
+	gen.defered[0] := ch
+END DeferChar;
+
+PROCEDURE CancelDeferedOrWriteChar*(VAR gen: Out; ch: CHAR);
+BEGIN
+	IF gen.defered[0] = Utf8.Null THEN
+		Char(gen, ch)
+	ELSE (* взаимозачёт *)
+		gen.defered[0] := Utf8.Null
+	END
+END CancelDeferedOrWriteChar;
+
+PROCEDURE NewLine(VAR gen: Out);
+BEGIN
+	IndentInNewLine(gen);
+	IF gen.defered[0] # Utf8.Null THEN
+		Write(gen, gen.defered, 0, 1);
+		gen.defered[0] := Utf8.Null
 	END
 END NewLine;
 
 PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0))
+	Write(gen, str, 0, Chars0X.CalcLen(str, 0))
 END Str;
 
 PROCEDURE StrLn*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0));
-	gen.len := gen.len + Stream.WriteChars(gen.out^, Utf8.NewLine, 0, 1);
+	Write(gen, str, 0, Chars0X.CalcLen(str, 0));
+	Write(gen, Utf8.NewLine, 0, 1);
 	gen.isNewLine := TRUE
 END StrLn;
 
 PROCEDURE Ln*(VAR gen: Out);
 BEGIN
-	gen.len := gen.len + Stream.WriteChars(gen.out^, Utf8.NewLine, 0, 1);
+	Write(gen, Utf8.NewLine, 0, 1);
 	gen.isNewLine := TRUE
 END Ln;
 
@@ -131,19 +164,19 @@ END LnStrClose;
 
 PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
 BEGIN
-	gen.len := gen.len + Stream.WriteChars(gen.out^, str, 0, Chars0X.CalcLen(str, 0))
+	Write(gen, str, 0, Chars0X.CalcLen(str, 0))
 END StrIgnoreIndent;
 
 PROCEDURE String*(VAR gen: Out; word: Strings.String);
 BEGIN
 	NewLine(gen);
-	gen.len := gen.len + Strings.Write(gen.out^, word)
+	INC(gen.len, Strings.Write(gen.out^, word))
 END String;
 
-PROCEDURE Data*(VAR g: Out; data: ARRAY OF CHAR; ofs, count: INTEGER);
+PROCEDURE Data*(VAR gen: Out; data: ARRAY OF CHAR; ofs, count: INTEGER);
 BEGIN
-	NewLine(g);
-	g.len := g.len + Stream.WriteChars(g.out^, data, ofs, count)
+	NewLine(gen);
+	Write(gen, data, ofs, count)
 END Data;
 
 PROCEDURE ScreeningString*(VAR gen: Out; str: Strings.String);
@@ -157,20 +190,20 @@ BEGIN
 	ASSERT(block.s[i] = Utf8.DQuote);
 	INC(i);
 	WHILE block.s[i] = Utf8.NewPage DO
-		gen.len := gen.len + Stream.WriteChars(gen.out^, block.s, last, i - last);
+		Write(gen, block.s, last, i - last);
 		block := block.next;
 		i := 0;
 		last := 0
 	ELSIF block.s[i] = "\" DO
-		gen.len := gen.len + Stream.WriteChars(gen.out^, block.s, last, i - last + 1);
-		gen.len := gen.len + Stream.WriteChars(gen.out^, "\", 0, 1);
+		Write(gen, block.s, last, i - last + 1);
+		Write(gen, "\", 0, 1);
 		INC(i);
 		last := i
 	ELSIF block.s[i] # Utf8.Null DO
 		INC(i)
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
-	gen.len := gen.len + Stream.WriteChars(gen.out^, block.s, last, i - last)
+	Write(gen, block.s, last, i - last)
 END ScreeningString;
 
 PROCEDURE Int*(VAR gen: Out; int: INTEGER);
@@ -193,7 +226,7 @@ BEGIN
 		DEC(i);
 		buf[i] := "-"
 	END;
-	gen.len := gen.len + Stream.WriteChars(gen.out^, buf, i, LEN(buf) - i)
+	Write(gen, buf, i, LEN(buf) - i)
 END Int;
 
 PROCEDURE Real*(VAR gen: Out; real: REAL);
@@ -215,7 +248,7 @@ BEGIN
 		buf[i] := Hexadecimal.To(v MOD 10H);
 		v := v DIV 10H;
 	END;
-	gen.len := gen.len + Stream.WriteChars(gen.out^, buf, i, LEN(buf) - i)
+	Write(gen, buf, i, LEN(buf) - i)
 END HexSeparateHighBit;
 
 PROCEDURE Hex*(VAR gen: Out; v: INTEGER);

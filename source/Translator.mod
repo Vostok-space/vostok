@@ -227,7 +227,7 @@ PROCEDURE OpenOberonOutput(VAR out: File.Out;
                            module: Ast.Module; ext: ARRAY OF CHAR;
                            VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 
-	RETURN OpenSingleOutput(out, module, "", ext, Cli.ErrOpenJava,
+	RETURN OpenSingleOutput(out, module, "", ext, Cli.ErrOpenOberon,
 	                        dir, dirLen)
 END OpenOberonOutput;
 

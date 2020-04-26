@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -73,7 +73,8 @@ TYPE
 
 		lastSelectorDereference,
 		(* TODO для более сложных случаев *)
-		expectArray: BOOLEAN;
+		expectArray,
+		castToBase: BOOLEAN;
 
 		memOuts: PMemoryOut
 	END;
@@ -102,6 +103,7 @@ TYPE
 	Selectors = RECORD
 		des: Ast.Designator;
 		decl: Ast.Declaration;
+		declSimilarToPointer: BOOLEAN;
 		list: ARRAY TranLim.Selectors OF Ast.Selector;
 		i: INTEGER
 	END;
@@ -358,12 +360,10 @@ END ArrayLen;
 
 PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
                    VAR typ: Ast.Type; desType: Ast.Type);
-VAR sel: Ast.Selector;
-	ref: BOOLEAN;
+VAR sel: Ast.Selector; ref: BOOLEAN;
 
-	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector);
-	VAR var: Ast.Declaration;
-		up: Ast.Record;
+	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector; sels: Selectors);
+	VAR var: Ast.Declaration; up: Ast.Record;
 
 		PROCEDURE Search(ds: Ast.Record; d: Ast.Declaration): BOOLEAN;
 		VAR c: Ast.Declaration;
@@ -382,7 +382,9 @@ VAR sel: Ast.Selector;
 			up := typ(Ast.Record)
 		END;
 
-		IF typ.id = Ast.IdPointer THEN
+		IF (typ.id = Ast.IdPointer)
+		OR (sels.list[0] = sel) & sels.declSimilarToPointer
+		THEN
 			Text.Str(gen, "->")
 		ELSE
 			Text.Str(gen, ".")
@@ -400,18 +402,22 @@ VAR sel: Ast.Selector;
 		typ := var.type
 	END Record;
 
-	PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration);
+	PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration; sels: Selectors);
 	BEGIN
 		IF (decl IS Ast.FormalParam)
-		   &
-		   (  (Ast.ParamOut IN decl(Ast.FormalParam).access)
-		    & (decl.type.id # Ast.IdArray)
-		   OR (decl.type.id = Ast.IdRecord)
-		   )
+		 & (decl.type.id # Ast.IdArray)
+
+		 & ((Ast.ParamOut IN decl(Ast.FormalParam).access) OR (decl.type.id = Ast.IdRecord))
+		 & ((sels.i < 0) OR (decl.type.id = Ast.IdPointer))
 		THEN
-			Text.Str(gen, "(*");
-			GlobalName(gen, decl);
-			Text.Str(gen, ")")
+			IF (sels.i < 0) & ~gen.opt.castToBase THEN
+				Text.CancelDeferedOrWriteChar(gen, "*");
+				GlobalName(gen, decl)
+			ELSE
+				Text.Str(gen, "(*");
+				GlobalName(gen, decl);
+				Text.Str(gen, ")")
+			END
 		ELSE
 			GlobalName(gen, decl)
 		END
@@ -523,12 +529,12 @@ BEGIN
 		Text.Str(gen, "O7_REF(")
 	END;
 	IF i < 0 THEN
-		Declarator(gen, sels.decl)
+		Declarator(gen, sels.decl, sels)
 	ELSE
 		DEC(i);
 		IF sel IS Ast.SelRecord THEN
 			Selector(gen, sels, i, typ, desType);
-			Record(gen, typ, sel)
+			Record(gen, typ, sel, sels)
 		ELSIF sel IS Ast.SelArray THEN
 			Selector(gen, sels, i, typ, desType);
 			Array(gen, typ, sel, sels.decl,
@@ -547,12 +553,13 @@ BEGIN
 				ASSERT(CheckStructName(gen, sel.type.type(Ast.Record)));
 				GlobalName(gen, sel.type.type)
 			ELSE
+				ASSERT(i < 0);
 				Text.Str(gen, "O7_GUARD_R(");
 				GlobalName(gen, sel.type)
 			END;
-			Text.Str(gen, ", &");
+			Text.Str(gen, ", ");
 			IF i < 0 THEN
-				Declarator(gen, sels.decl)
+				Declarator(gen, sels.decl, sels)
 			ELSE
 				Selector(gen, sels, i, typ, desType)
 			END;
@@ -606,6 +613,13 @@ BEGIN
 	Put(sels, des.sel);
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
+	sels.declSimilarToPointer :=
+	  (sels.decl IS Ast.FormalParam)
+	&
+	  (  (Ast.ParamOut IN sels.decl(Ast.FormalParam).access)
+	   OR
+	     (sels.decl.type.id IN {Ast.IdArray, Ast.IdRecord})
+	  );
 	lastSelectorDereference := (0 <= sels.i)
 	                         & (sels.list[sels.i] IS Ast.SelPointer);
 	Selector(gen, sels, sels.i, typ, des.type);
@@ -701,6 +715,14 @@ BEGIN
 		AssignInitValue(gen, var.type)
 	END
 END VarInit;
+
+PROCEDURE Swap(VAR b1, b2: BOOLEAN);
+VAR t: BOOLEAN;
+BEGIN
+	t  := b1;
+	b1 := b2;
+	b2 := t
+END Swap;
 
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
@@ -1009,7 +1031,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		                      VAR fp: Ast.Declaration);
 		VAR t: Ast.Type;
 		    i, j, dist: INTEGER;
-		    paramOut: BOOLEAN;
+		    paramOut, castToBase: BOOLEAN;
 
 			PROCEDURE ArrayDeep(t: Ast.Type): INTEGER;
 			VAR d: INTEGER;
@@ -1063,20 +1085,25 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					t := fp.type
 				END;
 				dist := p.distance;
+				castToBase := FALSE;
 				paramOut := Ast.ParamOut IN fp(Ast.FormalParam).access;
-				IF (paramOut & ~(t IS Ast.Array))
-				OR (t IS Ast.Record)
+				IF paramOut & (t.id # Ast.IdArray)
+				OR (t.id = Ast.IdRecord)
 				OR (t.id = Ast.IdPointer) & (0 < dist) & ~gen.opt.plan9
 				THEN
-					Text.Str(gen, "&")
+					castToBase := 0 < dist;
+					Text.DeferChar(gen, "&")
 				END;
 				gen.opt.lastSelectorDereference := FALSE;
 				gen.opt.expectArray := fp.type.id = Ast.IdArray;
-				IF paramOut THEN
+
+				Swap(castToBase, gen.opt.castToBase);
+				IF paramOut OR (t.id = Ast.IdRecord) THEN
 					Expression(gen, p.expr)
 				ELSE
 					CheckExpr(gen, p.expr)
 				END;
+				Swap(castToBase, gen.opt.castToBase);
 				gen.opt.expectArray := FALSE;
 
 				IF ~gen.opt.vla THEN
@@ -1147,17 +1174,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		VAR notChar0, notChar1: BOOLEAN;
 
 			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
-			VAR brace: BOOLEAN;
+			VAR brace, castToBase: BOOLEAN;
 			BEGIN
 				brace := (e.type.id IN {Ast.IdSet, Ast.IdBoolean})
 				      & ~(e IS Ast.Factor);
+				castToBase := FALSE;
 				IF brace THEN
 					Text.Str(gen, "(")
 				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9
 				THEN
+					castToBase := TRUE;
 					Text.Str(gen, "&")
 				END;
+				Swap(castToBase, gen.opt.castToBase);
 				Expression(gen, e);
+				Swap(castToBase, gen.opt.castToBase);
 				IF (dist > 0) & ~gen.opt.plan9 THEN
 					IF e.type.id = Ast.IdPointer THEN
 						DEC(dist);
@@ -3173,6 +3204,7 @@ BEGIN
 		o.memManager    := MemManagerNoFree;
 
 		o.expectArray := FALSE;
+		o.castToBase  := FALSE;
 
 		o.memOuts := NIL
 	END
@@ -3410,7 +3442,7 @@ VAR out: MOut;
 
 	PROCEDURE ModuleDone(VAR interf, impl: Generator; module: Ast.Module);
 	BEGIN
-		IF (impl.opt.memManager # MemManagerCounter) THEN
+		IF impl.opt.memManager # MemManagerCounter THEN
 			;
 		ELSIF (module.import = NIL) & (impl.opt.records = NIL) THEN
 			IF impl.opt.std >= IsoC99 THEN

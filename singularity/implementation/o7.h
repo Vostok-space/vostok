@@ -1159,13 +1159,13 @@ o7_bool o7_is(void const *strct, o7_tag_t const *ext) {
 }
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-void **o7_must(void **strct, o7_tag_t const *ext) {
-	assert(o7_is(*strct, ext));
+void *o7_must(void *strct, o7_tag_t const *ext) {
+	assert(o7_is(strct, ext));
 	return strct;
 }
 
 #define O7_GUARD(ExtType, strct) \
-	(*(struct ExtType **)o7_must((void **)strct, &ExtType##_tag))
+	((struct ExtType *)o7_must((void *)strct, &ExtType##_tag))
 
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
