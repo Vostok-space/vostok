@@ -939,7 +939,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					buf[2] := Utf8.DQuote;
 					buf[3] := Utf8.DQuote;
 					buf[4] := ")";
-					Text.Str(gen, buf)
+					Text.Data(gen, buf, 0, 5)
 				ELSE
 					Text.Str(gen, ")")
 				END
