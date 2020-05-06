@@ -12,14 +12,12 @@ static o7_cbool copyArg(
 {
 	int i;
 	i = 0;
-	while ((*ofs < len) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
 		i    += 1;
 		*ofs += 1;
 	}
-	if (*ofs < len) {
-		str[*ofs] = '\0';
-	}
+	str[*ofs] = '\0';
 	return '\0' == CLI_argv[arg][i];
 }
 

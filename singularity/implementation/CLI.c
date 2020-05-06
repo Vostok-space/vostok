@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016, 2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,12 @@ static o7_cbool copyArg(
 {
 	int i;
 	i = 0;
-	while ((*ofs < len) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < len - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
 		i    += 1;
 		*ofs += 1;
 	}
-	if (*ofs < len) {
-		str[*ofs] = '\0';
-	}
+	str[*ofs] = '\0';
 	return '\0' == CLI_argv[arg][i];
 }
 
