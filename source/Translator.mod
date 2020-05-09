@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -50,12 +50,17 @@ IMPORT
 	VCopy,
 	Mem := VMemStream,
 	JsEval, MemStreamToJsEval,
-	ModulesStorage, ModulesProvider;
+	ModulesStorage, ModulesProvider,
+	OsSelfMemInfo;
 
 CONST
 	ErrNo*             =  0;
 	ErrParse*          = -1;
 	ErrCantGenJsToMem* = -2;
+
+	OptLog*     = 0;
+	OptMemInfo* = 1;
+	OptAll*     = {0 .. 1};
 
 TYPE
 	ProcNameProvider = POINTER TO RECORD(GeneratorJava.RProviderProcTypeName)
@@ -1174,13 +1179,29 @@ BEGIN
 	RETURN 0 <= ret
 END Handle;
 
-PROCEDURE Start*;
+PROCEDURE MemInfo;
+VAR size: INTEGER;
+BEGIN
+	size := OsSelfMemInfo.Get();
+	IF size > 0 THEN
+		Out.String("Used memory: ");
+		Out.Int(size, 0);
+		Out.String(" KiB");
+		Out.Ln
+	END
+END MemInfo;
+
+PROCEDURE GoOpt*(set: SET);
 VAR ret: INTEGER;
     args: Cli.Args;
     nothing: V.Base;
 BEGIN
+	ASSERT(set + OptAll = OptAll);
+
 	Out.Open;
-	Log.Off;
+	IF ~(OptLog IN set) THEN
+		Log.Off
+	END;
 
 	V.Init(nothing);
 	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret, nothing) THEN
@@ -1188,7 +1209,22 @@ BEGIN
 		IF ret # ErrParse THEN
 			Message.CliError(ret)
 		END
+	END;
+
+	IF OptMemInfo IN set THEN
+		MemInfo
 	END
+END GoOpt;
+
+PROCEDURE Go*;
+BEGIN
+	GoOpt({})
+END Go;
+
+(* TODO удалить *)
+PROCEDURE Start*;
+BEGIN
+	Go
 END Start;
 
 END Translator.
