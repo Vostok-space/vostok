@@ -1,5 +1,5 @@
 (* Bindings of some functions from unistd.h
- * Copyright 2019 ComdivByZero
+ * Copyright 2019-2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 MODULE Unistd;
 
   IMPORT Platform;
+
+  VAR
+    pageSize*: INTEGER;
 
   PROCEDURE Len(str: ARRAY OF CHAR): INTEGER;
   VAR i: INTEGER;
@@ -35,5 +38,12 @@ MODULE Unistd;
   RETURN
     -1
   END Readlink;
+
+  PROCEDURE Sysconf*(name: INTEGER): INTEGER;
+  BEGIN
+    ASSERT(Platform.Posix);
+  RETURN
+    -1
+  END Sysconf;
 
 END Unistd.
