@@ -886,7 +886,7 @@ void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
                o7_int_t src_len, o7_char const src[O7_VLA(src_len)])
 {
 	assert(src_len <= dest_len);
-	memcpy(dest, dest, (size_t)src_len);
+	memcpy(dest, src, (size_t)src_len);
 }
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i);
