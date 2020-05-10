@@ -198,6 +198,12 @@ enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 #	define O7_GNUC_UMULL(a, b, res) (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
+#if defined(__arm__) || defined(__arm) || defined(_M_ARM)
+#	define O7_ARM 1
+#else
+#	define O7_ARM 0
+#endif
+
 typedef o7_uint_t  o7_set_t;
 typedef o7_ulong_t o7_set64_t;
 
@@ -205,8 +211,12 @@ typedef o7_ulong_t o7_set64_t;
 #define O7_MEMNG_COUNTER 1
 #define O7_MEMNG_GC      2
 
-#if !defined(O7_MEM_ALIGN)
-#	define O7_MEM_ALIGN (8u > sizeof(void *) ? 8u : sizeof(void *))
+#if defined(O7_MEM_ALIGN)
+#
+#elif O7_ARM || _WIN32
+#	define O7_MEM_ALIGN 8u
+#else
+#	define O7_MEM_ALIGN sizeof(void*)
 #endif
 
 #if defined(O7_MEMNG_MODEL)
