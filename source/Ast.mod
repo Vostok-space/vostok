@@ -974,10 +974,9 @@ BEGIN
 	RETURN err
 END CheckNameDuplicate;
 
-PROCEDURE ConstAdd*(ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGER)
-                   : INTEGER;
-VAR c: Const;
-	err: INTEGER;
+PROCEDURE ConstAdd*(ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
+                    VAR c: Const): INTEGER;
+VAR err: INTEGER;
 BEGIN
 	ASSERT(~ds.module.m.fixed);
 

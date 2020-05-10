@@ -114,7 +114,7 @@ VAR
 	type: PROCEDURE(VAR p: Parser; ds: Ast.Declarations;
 	                nameBegin, nameEnd: INTEGER): Ast.Type;
 	statements: PROCEDURE(VAR p: Parser; ds: Ast.Declarations): Ast.Statement;
-	expression: PROCEDURE(VAR p: Parser; ds: Ast.Declarations; varParm: BOOLEAN): Ast.Expression;
+	expression: PROCEDURE(VAR p: Parser; ds: Ast.Declarations; varParam: BOOLEAN): Ast.Expression;
 
 PROCEDURE AddError(VAR p: Parser; err: INTEGER);
 BEGIN
@@ -124,11 +124,13 @@ BEGIN
 		Log.Int(p.s.column); Log.Ln;
 		p.err := err > ErrAstBegin;
 
-		INC(p.errorsCount);
-		Ast.AddError(p.module, err, p.s.line, p.s.column);
-		ASSERT(p.module.errors # NIL)
+		IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
+			INC(p.errorsCount);
+			Ast.AddError(p.module, err, p.s.line, p.s.column);
+			ASSERT(p.module.errors # NIL)
+		END
 	END;
-	IF p.opt.multiErrors THEN
+	IF p.opt.multiErrors & Log.state THEN
 		p.opt.printError(err, p.module.errLast.str);
 		Log.Str(". ");
 		Log.Int(p.s.line + 1);
@@ -184,7 +186,7 @@ PROCEDURE Expect(VAR p: Parser; expect, error: INTEGER);
 BEGIN
 	IF p.l = expect THEN
 		Scan(p)
-	ELSE
+	ELSIF ~p.err THEN
 		AddError(p, error)
 	END
 END Expect;
@@ -596,8 +598,7 @@ BEGIN
 		IF ~p.err THEN
 			emptyLines := p.s.emptyLines;
 			ExpectIdent(p, begin, end, ErrExpectConstName);
-			CheckAst(p, Ast.ConstAdd(ds, p.s.buf, begin, end));
-			const := ds.end(Ast.Const);
+			CheckAst(p, Ast.ConstAdd(ds, p.s.buf, begin, end, const));
 			const.emptyLines := emptyLines;
 			Mark(p, const);
 			Expect(p, Scanner.Equal, ErrExpectEqual);
