@@ -882,11 +882,23 @@ VAR braces: BOOLEAN;
 		Expect(p, Scanner.Colon, ErrExpectColon);
 		CheckAst(p, Ast.VarListSetType(param, Type(p, ds)))
 	END Section;
+
+	PROCEDURE MissedSemicolon(VAR p: Parser): BOOLEAN;
+	VAR missed, ignore: BOOLEAN;
+	BEGIN
+		missed := ~p.err & ((p.l = Scanner.Ident) OR (p.l = SpecIdent.Var) OR (p.l = Scanner.Comma));
+		IF missed THEN
+			AddError(p, ErrExpectSemicolon);
+			p.err := FALSE;
+			ignore := ScanIfEqual(p, Scanner.Comma)
+		END
+		RETURN missed
+	END MissedSemicolon;
 BEGIN
 	braces := ScanIfEqual(p, Scanner.Brace1Open);
 	IF braces & ~ScanIfEqual(p, Scanner.Brace1Close) THEN
 		Section(p, ds, proc);
-		WHILE ScanIfEqual(p, Scanner.Semicolon) DO
+		WHILE ScanIfEqual(p, Scanner.Semicolon) OR MissedSemicolon(p) DO
 			Section(p, ds, proc)
 		END;
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
