@@ -285,8 +285,10 @@ typedef struct {
 extern o7_tag_t o7_base_tag;
 
 enum {
-	O7_MEMINFO_SIZE = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
-	                + sizeof(o7_tag_t *)
+	O7_MEMINFO_SIZE = (sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
+	                 + sizeof(o7_tag_t *)
+	                 + O7_MEM_ALIGN - 1
+	                  ) / O7_MEM_ALIGN * O7_MEM_ALIGN
 };
 
 #if O7_MEMNG == O7_MEMNG_GC
@@ -928,7 +930,9 @@ o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 }
 
 #define O7_ROR(n, shift) \
-	(o7_int_t)(((((o7_uint_t)n) >> ((shift) % 32)) | (((o7_uint_t)n) << (32 - (shift) % 32))) & 0xFFFFFFFFul)
+	(((shift) % 32 == 0) \
+	? (n)                \
+	: (o7_int_t)(((((o7_uint_t)n) >> ((shift) % 32)) | (((o7_uint_t)n) << (32 - (shift) % 32))) & 0xFFFFFFFFul))
 
 O7_CONST_INLINE
 o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
@@ -936,10 +940,11 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 
 	u     = o7_not_neg(n    ) & 0xFFFFFFFFul;
 	shift = o7_not_neg(shift) & 0x1F;
-	u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
-
-	if (O7_OVERFLOW) {
-		assert(u < 0x80000000ul);
+	if (0 != shift) {
+		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
+		if (O7_OVERFLOW) {
+			assert(u < 0x80000000ul);
+		}
 	}
 	return u;
 }

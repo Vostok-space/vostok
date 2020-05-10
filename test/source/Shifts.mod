@@ -8,7 +8,7 @@ MODULE Shifts;
 
   VAR
 
-  PROCEDURE Lsl;
+  PROCEDURE Lsl*;
   VAR i, a: INTEGER;
   BEGIN
     ASSERT(LSL(46, 5) = 46 * 32);
@@ -21,7 +21,7 @@ MODULE Shifts;
     ASSERT(LSL(1, i) = a);
   END Lsl;
 
-  PROCEDURE Asr;
+  PROCEDURE Asr*;
   VAR i, a, b, ca, cb: INTEGER;
   BEGIN
     ASSERT(ASR(-1, 0)  = -1);
@@ -42,10 +42,12 @@ MODULE Shifts;
     END
   END Asr;
 
-  PROCEDURE Ror;
+  PROCEDURE Ror*;
   VAR i, a: INTEGER;
   BEGIN
     ASSERT(ROR(55555555H, 16) = 55555555H);
+    ASSERT(ROR(28342341H, 0H) = 28342341H);
+    ASSERT(ROR(28342341H, 96) = 28342341H);
     a := 55555555H;
     FOR i := 0 TO 40 BY 2 DO
       ASSERT(ROR(55555555H, i) = 55555555H);

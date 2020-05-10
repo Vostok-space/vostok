@@ -480,6 +480,14 @@ o7_int_t o7_int(o7_int_t i) {
 	return i;
 }
 
+O7_CONST_INLINE
+o7_int_t o7_not_neg(o7_int_t i) {
+	if (O7_OVERFLOW) {
+		assert(0 <= i);
+	}
+	return i;
+}
+
 extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
 	o7_ints_undef((o7_int_t)(sizeof(array) / (sizeof(o7_int_t))), (o7_int_t *)(array))
@@ -595,27 +603,34 @@ o7_int_t o7_ind(o7_int_t len, o7_int_t ind) {
 O7_CONST_INLINE
 o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 	o7_int_t r;
-	assert(shift >= 0);
-	if (O7_ARITHMETIC_SHIFT || n >= 0) {
+	shift = o7_not_neg(shift);
+	if (O7_ARITHMETIC_SHIFT) {
 		r = o7_int(n) >> shift;
+	} else if (n >= 0) {
+		r = n >> shift;
 	} else {
 		r = -1 - ((-1 - o7_int(n)) >> shift);
 	}
 	return r;
 }
 
+#define O7_ROR(n, shift) \
+	(((shift) % 32 == 0) \
+	? (n)                \
+	: (o7_int_t)(((((o7_uint_t)n) >> ((shift) % 32)) | (((o7_uint_t)n) << (32 - (shift) % 32))) & 0xFFFFFFFFul))
+
 O7_CONST_INLINE
 o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 	o7_uint_t u;
 
-	assert(n >= 0);
-	assert(shift >= 0);
-
-	u = n & 0xFFFFFFFFul;
-	shift %= 32;
-	u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
-
-	assert(u < 0x80000000ul);
+	u     = o7_not_neg(n    ) & 0xFFFFFFFFul;
+	shift = o7_not_neg(shift) & 0x1F;
+	if (0 != shift) {
+		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
+		if (O7_OVERFLOW) {
+			assert(u < 0x80000000ul);
+		}
+	}
 	return u;
 }
 
@@ -689,13 +704,8 @@ o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) 
 	return NULL != mem;
 }
 
-#if O7_INIT != O7_INIT_UNDEF
-#	define O7_NEW(mem, name) \
-		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, (void (*)(void *))name##_undef)
-#else
-#	define O7_NEW(mem, name) \
-		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, NULL)
-#endif
+#define O7_NEW(mem, name) \
+	o7_new((void **)mem, sizeof(**(mem)), &name##_tag, NULL)
 
 #define O7_NEW2(mem, tag, undef) \
 	o7_new((void **)mem, sizeof(**(mem)), &tag, (void (*)(void *))undef)
