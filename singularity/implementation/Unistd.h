@@ -25,4 +25,5 @@ Unistd_Readlink(o7_int_t path_len, o7_char const pathname[O7_VLA(path_len)],
 extern o7_int_t Unistd_Sysconf(o7_int_t name);
 
 O7_ALWAYS_INLINE void Unistd_init(void) { ; }
+O7_ALWAYS_INLINE void Unistd_done(void) { ; }
 #endif

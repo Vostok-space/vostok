@@ -1,4 +1,4 @@
-/* Copyright 2016-2017 ComdivByZero
+/* Copyright 2016-2017,2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ extern void CFiles_Close(CFiles_File *file) {
 extern int CFiles_Read(CFiles_File file,
 	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
 {
+	assert(file->file != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(len - count >= ofs);
@@ -68,6 +69,7 @@ extern int CFiles_Read(CFiles_File file,
 extern int CFiles_Write(CFiles_File file,
 	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
 {
+	assert(file->file != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
 	assert(len - count >= ofs);
@@ -75,10 +77,12 @@ extern int CFiles_Write(CFiles_File file,
 }
 
 extern o7_bool CFiles_Flush(CFiles_File file) {
+	assert(file->file != NULL);
 	return (o7_bool)(0 == fflush(file->file));
 }
 
 extern o7_int_t CFiles_Seek(CFiles_File file, o7_int_t gibs, o7_int_t bytes) {
+	assert(file->file != NULL);
 	assert((gibs >= 0) && ((INT_MAX < LONG_MAX / CFiles_GiB_cnst)
 	                   || (gibs < LONG_MAX / CFiles_GiB_cnst)));
 	assert((bytes >= 0) && (bytes < CFiles_GiB_cnst));
@@ -87,6 +91,8 @@ extern o7_int_t CFiles_Seek(CFiles_File file, o7_int_t gibs, o7_int_t bytes) {
 
 extern o7_int_t CFiles_Tell(CFiles_File file, o7_int_t *gibs, o7_int_t *bytes) {
 	long pos;
+	assert(file->file != NULL);
+
 	pos = ftell(file->file);
 	if (pos >= 0) {
 		*gibs = pos / CFiles_GiB_cnst;
@@ -126,14 +132,18 @@ static void release(CFiles_File f) {
 }
 
 extern void CFiles_init(void) {
-	CFiles_File_tag.release = (void (*)(void *))release;
+	static char initialized = 0;
+	if (0 == initialized) {
+		initialized += 1;
+		CFiles_File_tag.release = (void (*)(void *))release;
 
-	o7_mem_info_init((void *)fin, &CFiles_File_tag);
-	CFiles_in->file = stdin;
+		o7_mem_info_init((void *)fin, &CFiles_File_tag);
+		CFiles_in->file = stdin;
 
-	o7_mem_info_init((void *)fout, &CFiles_File_tag);
-	CFiles_out->file = stdout;
+		o7_mem_info_init((void *)fout, &CFiles_File_tag);
+		CFiles_out->file = stdout;
 
-	o7_mem_info_init((void *)ferr, &CFiles_File_tag);
-	CFiles_err->file = stderr;
+		o7_mem_info_init((void *)ferr, &CFiles_File_tag);
+		CFiles_err->file = stderr;
+	}
 }

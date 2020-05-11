@@ -1,4 +1,4 @@
-/* Copyright 2016-2017 ComdivByZero
+/* Copyright 2016-2017,2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,6 @@ extern o7_int_t CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_
 extern o7_bool CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs);
 
 extern void CFiles_init(void);
-O7_ALWAYS_INLINE void CFiles_done(void) {}
+O7_ALWAYS_INLINE void CFiles_done(void) { ; }
 
 #endif
