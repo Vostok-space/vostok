@@ -98,8 +98,7 @@ BEGIN
 	Out.Ln
 END IndexedErrorMessage;
 
-PROCEDURE PrintErrors(multiErrors: BOOLEAN;
-                      mc: ModulesStorage.Container; module: Ast.Module);
+PROCEDURE PrintErrors(mc: ModulesStorage.Container; module: Ast.Module);
 CONST SkipError = Ast.ErrImportModuleWithError + Parser.ErrAstBegin;
 VAR i: INTEGER;
     err: Ast.Error;
@@ -121,11 +120,7 @@ BEGIN
 					INC(i);
 					IndexedErrorMessage(i, err.code, err.str, err.line, err.column)
 				END;
-				IF multiErrors THEN
-					err := err.next
-				ELSE
-					err := NIL
-				END
+				err := err.next
 			END
 		END;
 		m := ModulesStorage.Next(mc)
@@ -1129,7 +1124,7 @@ BEGIN
 		ret := ErrParse
 	ELSIF module.errors # NIL THEN
 		ret := ErrParse;
-		PrintErrors(args.multiErrors, ModulesStorage.Iterate(mp), module)
+		PrintErrors(ModulesStorage.Iterate(mp), module)
 	ELSE
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
 			ret := Ast.CommandGet(call, module,

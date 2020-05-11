@@ -1,6 +1,6 @@
 #!/usr/bin/ost .
 (*  Build and test tasks for the translator
- *  Copyright (C) 2018-2019 ComdivByZero
+ *  Copyright (C) 2018-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -23,7 +23,7 @@ MODULE make;
 
  VAR ok*, windows, posix: BOOLEAN;
      lang: INTEGER;
-     cc: ARRAY 256 OF CHAR;
+     cc, opt: ARRAY 256 OF CHAR;
 
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
@@ -56,6 +56,12 @@ MODULE make;
    ret
  END Execute;
 
+ PROCEDURE AddOpts(VAR code: Exec.Code): BOOLEAN;
+ RETURN
+   ((cc [0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
+ & ((opt[0] = 0X) OR Exec.AddClean(code, " ") & Exec.AddClean(code, opt))
+ END AddOpts;
+
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  VAR code: Exec.Code;
  BEGIN
@@ -83,7 +89,7 @@ MODULE make;
       )
     & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
 
-    & ((cc[0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
+    & AddOpts(code)
 
     & (0 = Execute(code, "Build"))
  RETURN
@@ -149,7 +155,7 @@ MODULE make;
              & Exec.Add(code, "-m") & Exec.Add(code, "example")
              & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
              & Exec.Add(code, "-cyrillic")
-             & ((cc[0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
+             & AddOpts(code)
            );
            IF Execute(code, n) = 0 THEN
              INC(pass)
@@ -419,6 +425,7 @@ MODULE make;
    Msg("  UseJs         turn translation through Javascript");
    Msg("  UseC          turn translation through C");
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
+   Msg("  Opt(content)  string with additional options for the ost-translator");
    Msg("  Install       install translator and libraries to /usr/local");
    Msg("  InstallTo(d)  install translator and libraries files to target directory");
    Msg("  Remove        remove installed files from /usr/local");
@@ -452,6 +459,12 @@ MODULE make;
    lang := C
  END UseCC;
 
+ PROCEDURE Opt*(content: ARRAY OF CHAR);
+ BEGIN
+   (* TODO *)
+   opt := content
+ END Opt;
+
 BEGIN
   Log.On;
   Exec.AutoCorrectDirSeparator(TRUE);
@@ -461,6 +474,8 @@ BEGIN
 
   lang := C;
 
-  cc[0] := 0X;
+  cc[0]  := 0X;
+  opt[0] := 0X;
+
   ok := TRUE
 END make.
