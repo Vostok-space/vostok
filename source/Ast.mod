@@ -3156,7 +3156,7 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 	PROCEDURE TypeVariation(call: ExprCall; tp: Type; fp: FormalParam): BOOLEAN;
 	VAR comp: BOOLEAN; id: INTEGER;
 	BEGIN
-		comp := call.designator.decl IS PredefinedProcedure;
+		comp := (call.designator.decl IS PredefinedProcedure) OR (tp.id = IdError);
 		IF comp THEN
 			id := call.designator.decl.id;
 			IF id = SpecIdent.New THEN
@@ -3166,9 +3166,10 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 				call.type := tp
 			ELSIF id = SpecIdent.Len THEN
 				comp := tp.id = IdArray
+			ELSIF id = SpecIdent.Ord THEN
+				comp := tp.id IN (Sets + {IdChar, IdBoolean})
 			ELSE
-				comp := (id = SpecIdent.Ord)
-				      & (tp.id IN (Sets + {IdChar, IdBoolean}))
+				comp := FALSE
 			END
 		END
 		RETURN comp
@@ -3178,7 +3179,7 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 	VAR id: INTEGER;
 	BEGIN
 		id := call.designator.decl.id;
-		IF id # IdError THEN
+		IF (id # IdError) & (e.type.id # IdError) THEN
 			IF (id # SpecIdent.Inc) & (id # SpecIdent.Dec)
 			OR (call.params.next # NIL)
 			THEN
