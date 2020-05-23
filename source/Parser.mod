@@ -1408,19 +1408,22 @@ END Imports;
 PROCEDURE Module(VAR p: Parser);
 VAR expectedName: BOOLEAN;
 
-	PROCEDURE SearchModule(VAR p: Parser);
-	VAR limit: INTEGER;
+	PROCEDURE SearchModule(VAR s: Scanner.Scanner): BOOLEAN;
+	VAR limit, l: INTEGER; match: BOOLEAN;
 	BEGIN
 		limit := TranLim.MaxLexemsToModule;
 		REPEAT
-			Scan(p);
+			l := Scanner.Next(s);
+			match := (l = Scanner.Ident)
+			       & SpecIdent.IsModule(s.buf, s.lexStart, s.lexEnd);
 			DEC(limit)
-		UNTIL (p.l = SpecIdent.Module) OR (p.l = Scanner.EndOfFile)
-		   OR (limit <= 0);
+		UNTIL match
+		   OR (l = Scanner.EndOfFile)
+		   OR (limit <= 0)
+		RETURN match
 	END SearchModule;
 BEGIN
-	SearchModule(p);
-	IF p.l # SpecIdent.Module THEN
+	IF ~SearchModule(p.s) THEN
 		p.module := Ast.ModuleNew("  ", 0, 0);
 		AddError(p, ErrExpectModule);
 		ASSERT((p.module = NIL) OR (p.module.errors # NIL))

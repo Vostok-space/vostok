@@ -583,7 +583,8 @@ BEGIN
 			IF s.opt.cyrillic & IsCurrentCyrillic(s) THEN
 				lex := CyrWord(s)
 			ELSE
-				lex := ErrUnexpectChar
+				lex := ErrUnexpectChar;
+				INC(s.ind)
 			END
 		| "+": L(lex, s, Plus)
 		| "-": L(lex, s, Minus)
