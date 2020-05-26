@@ -2210,6 +2210,9 @@ BEGIN
 	IF typ = NIL THEN
 		Text.Str(gen, "void ");
 		MemWriteInvert(gen.memout^)
+	ELSIF (typ.id = Ast.IdPointer) & (typ.type = Ast.genericRecord) THEN
+		Text.Str(gen, "void* ");
+		MemWriteInvert(gen.memout^)
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(typ.name) THEN
 			IF sameType THEN

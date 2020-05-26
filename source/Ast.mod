@@ -1,4 +1,4 @@
-(*  Abstract syntax tree support for Oberon-07
+Lis(*  Abstract syntax tree support for Oberon-07
  *  Copyright (C) 2016-2019 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -528,6 +528,8 @@ TYPE
 	END;
 
 	ExprCall* = POINTER TO RECORD(RFactor)
+		generic: Record;
+
 		designator*: Designator;
 		params*: Parameter
 	END;
@@ -601,6 +603,8 @@ VAR
 
 	values: Factor;
 	needTags: NeedTagList;
+
+	genericRecord*: Record;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
@@ -1245,6 +1249,7 @@ BEGIN
 		NEW(p)
 	END;
 	TypeInit(p, IdProcType);
+
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -1555,6 +1560,11 @@ BEGIN
 	RecordSetBase(r, base)
 	RETURN r
 END RecordNew;
+
+PROCEDURE RecordGenericNew*(): Record;
+BEGIN
+	RETURN genericRecord
+END RecordGenericNew;
 
 PROCEDURE RecordForwardNew*(ds: Declarations;
                             name: ARRAY OF CHAR; begin, end: INTEGER): Record;
@@ -2098,6 +2108,7 @@ PROCEDURE IsRecordExtension*(VAR distance: INTEGER; t0, t1: Record): BOOLEAN;
 VAR dist: INTEGER;
 BEGIN
 	IF (t0 # NIL) & (t1 # NIL) THEN
+	IF t0 # genericRecord THEN
 		dist := 0;
 		REPEAT
 			t1 := t1.base;
@@ -2106,6 +2117,7 @@ BEGIN
 		IF t0 = t1 THEN
 			distance := dist
 		END
+	END
 	ELSE
 		t0 := NIL; t1 := NIL
 	END
@@ -2245,7 +2257,7 @@ BEGIN
 
 	err := ErrNo;
 	IF t.id = IdPointer THEN
-		IF (t.type.id = IdRecord) & ~t.type(Record).complete THEN
+		IF (t.type # NIL) & (t.type.id = IdRecord) & ~t.type(Record).complete THEN
 			err := ErrVarOfPointerToRecordForward
 		END
 	ELSIF (t.id = IdRecordForward)
@@ -2385,13 +2397,32 @@ BEGIN
 	RETURN comp
 END EqualProcTypes;
 
-PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type; param: BOOLEAN): BOOLEAN;
+PROCEDURE IsGeneric(t1, t2: Record; param: ExprCall): BOOLEAN;
+VAR yes: BOOLEAN;
+BEGIN
+	yes := (param # NIL) & (t1 = genericRecord) & (param.designator.decl.id # SpecIdent.New);
+	IF yes THEN
+		IF param.generic = NIL THEN
+			param.generic := t2
+		ELSE
+			yes := param.generic = t2
+		END
+	END
+	RETURN yes
+END IsGeneric;
+
+PROCEDURE CompatibleTypes*(VAR distance: INTEGER; t1, t2: Type; inCall: ExprCall): BOOLEAN;
 VAR comp: BOOLEAN;
+
+	PROCEDURE IsGenericInNew(t2: Type; inCall: ExprCall): BOOLEAN;
+	RETURN (inCall # NIL) & (inCall.designator.decl.id = SpecIdent.New)
+	     & (t2.type = genericRecord)
+	END IsGenericInNew;
 BEGIN
 	distance := 0;
 	(* совместимы, если ошибка в разборе *)
 	comp := (t1 = NIL) OR (t2 = NIL);
-	IF ~comp THEN
+	IF ~comp & ~IsGenericInNew(t2, inCall) THEN
 		comp := t1 = t2;
 		IF comp THEN
 			;
@@ -2399,14 +2430,16 @@ BEGIN
 		    & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
 		THEN
 			CASE t1.id OF
-			  IdArray   : comp := ((param & (t1(Array).count = NIL))
-			                    OR (~param & (t2(Array).count = NIL)))
-			                    & CompatibleTypes(distance, t1.type, t2.type, param)
-			| IdPointer : comp := (t1.type = t2.type)
+			  IdArray   : comp := (((inCall # NIL) & (t1(Array).count = NIL))
+			                    OR ((inCall = NIL) & (t2(Array).count = NIL)))
+			                    & CompatibleTypes(distance, t1.type, t2.type, inCall)
+			| IdPointer : comp := (t1.type = t2.type) & ((inCall = NIL) OR (t2.type # genericRecord))
 			                   OR (t1.type = NIL) OR (t2.type = NIL) (* TODO *)
 			                   OR IsRecordExtension(distance, t1.type(Record),
 			                                                  t2.type(Record))
+			                   OR IsGeneric(t1.type(Record), t2.type(Record), inCall)
 			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
+			                   OR IsGeneric(t1(Record), t2(Record), inCall)
 			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 			END
 		ELSIF t1.id = IdProcType THEN
@@ -2516,8 +2549,8 @@ VAR err: INTEGER;
 				err := ErrExprInWrongTypes - 3 + ORD(t1.id # IdInteger)
 				                               + ORD(~(t2.id IN Sets)) * 2
 			END
-		ELSIF ~CompatibleTypes(dist1, t1, t2, FALSE)
-		    & ~CompatibleTypes(dist2, t2, t1, FALSE)
+		ELSIF ~CompatibleTypes(dist1, t1, t2, NIL)
+		    & ~CompatibleTypes(dist2, t2, t1, NIL)
 		    & ~(IsChars(t1) & IsChars(t2))
 		    & ~CompatibleAsStrings(t1, e2)
 		    & ~CompatibleAsStrings(t2, e1)
@@ -3042,6 +3075,7 @@ BEGIN
 	END;
 	NEW(e); ExprInit(e, IdCall, t);
 	e.designator := des;
+	e.generic := NIL;
 	e.params := NIL
 	RETURN err
 END ExprCallCreate;
@@ -3119,7 +3153,7 @@ BEGIN
 		err := ErrProcHasNoReturn
 	ELSIF e # NIL THEN
 		p.return := e;
-		IF ~CompatibleTypes(distance, p.header.type, e.type, FALSE)
+		IF ~CompatibleTypes(distance, p.header.type, e.type, NIL)
 		 & ~CompatibleAsCharAndString(p.header.type, p.return)
 		THEN
 			IF ~CompatibleAsIntAndByte(p.header.type, p.return.type) THEN
@@ -3160,7 +3194,7 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 		IF comp THEN
 			id := call.designator.decl.id;
 			IF id = SpecIdent.New THEN
-				comp := tp.id = IdPointer
+				comp := (tp.id = IdPointer) & (tp.type # genericRecord)
 			ELSIF id = SpecIdent.Abs THEN
 				comp := tp.id IN Numbers;
 				call.type := tp
@@ -3200,7 +3234,7 @@ BEGIN
 	err := ErrNo;
 	fp := currentFormalParam;
 	IF fp # NIL THEN
-		IF ~CompatibleTypes(distance, fp.type, e.type, TRUE)
+		IF ~CompatibleTypes(distance, fp.type, e.type, call)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
 		 &     ((ParamOut IN fp.access)
 		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
@@ -3217,6 +3251,8 @@ BEGIN
 			    & (fp.type # NIL)
 			    & (fp.type.type # NIL)
 			    & (e.type.type # NIL)
+
+			    & (fp.type.type # genericRecord)
 			THEN
 				err := ErrCallVarPointerTypeNotSame
 			END
@@ -3356,6 +3392,16 @@ VAR err: INTEGER;
 			call.value := v
 		END
 	END CalcPredefined;
+
+	PROCEDURE CorrectGeneric(call: ExprCall);
+	BEGIN
+		IF (call.generic # NIL)
+		 & (call.type # NIL) & (call.type.id = IdPointer)
+		 & (call.type.type = genericRecord)
+		THEN
+			call.type := call.generic.pointer
+		END
+	END CorrectGeneric;
 BEGIN
 	err := ErrNo;
 	IF currentFormalParam # NIL THEN
@@ -3384,6 +3430,8 @@ BEGIN
 	    & (call.params.expr.value # NIL)
 	THEN
 		CalcPredefined(call, call.params.expr.value, err)
+	ELSE
+		CorrectGeneric(call)
 	END
 	RETURN err
 END CallParamsEnd;
@@ -3778,6 +3826,18 @@ PROCEDURE AssignNew*(VAR a: Assign; inLoops: BOOLEAN; des: Designator;
                      expr: Expression): INTEGER;
 VAR err: INTEGER;
     var: Var;
+
+	PROCEDURE IsComatibleGeneric(type: Type; expr: Expression): BOOLEAN;
+	VAR yes: BOOLEAN;
+	BEGIN
+		yes := (type.id = IdPointer)
+		     & (expr.type.id = IdPointer) & (expr.type.type = genericRecord)
+		     & (expr.id = IdCall) & (expr(ExprCall).generic = type.type);
+		IF yes THEN
+			expr.type := type
+		END
+		RETURN yes
+	END IsComatibleGeneric;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
@@ -3813,7 +3873,8 @@ BEGIN
 		END;
 
 		IF (err = ErrNo) & (expr # NIL)
-		 & ~CompatibleTypes(a.distance, des.type, expr.type, FALSE)
+		 & ~CompatibleTypes(a.distance, des.type, expr.type, NIL)
+		 & ~IsComatibleGeneric(des.type, expr)
 		 & ~CompatibleAsCharAndString(des.type, expr)
 		 & ~CompatibleAsStrings(des.type, expr)
 		THEN
@@ -4088,5 +4149,9 @@ BEGIN
 	booleans[1] := NIL;
 	nil := NIL;
 	values := NIL;
-	needTags := NIL
+	needTags := NIL;
+
+	RecNew(genericRecord, IdRecord);
+	genericRecord.used := TRUE;
+	genericRecord.complete := TRUE
 END Ast.

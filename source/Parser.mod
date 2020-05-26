@@ -80,6 +80,8 @@ CONST
 
 	ErrMin* = ErrAstEnd;
 
+	InFormalParam = 12;
+
 TYPE
 	PrintError* = PROCEDURE(code: INTEGER; str: Strings.String);
 	Options* = RECORD(V.Base)
@@ -89,6 +91,8 @@ TYPE
 		multiErrors*,
 		cyrillic*       : BOOLEAN;
 		printError*: PrintError;
+
+		genericPointer: BOOLEAN;
 
 		provider*: Ast.Provider
 	END;
@@ -656,11 +660,14 @@ BEGIN
 	RETURN a
 END Array;
 
-PROCEDURE TypeNamed(VAR p: Parser; ds: Ast.Declarations): Ast.Type;
+PROCEDURE TypeNamed(VAR p: Parser; ds: Ast.Declarations; context: SET): Ast.Type;
 VAR d: Ast.Declaration;
 	t: Ast.Type;
 BEGIN
 	t := NIL;
+	IF p.opt.genericPointer & (InFormalParam IN context) & ScanIfEqual(p, SpecIdent.Pointer) THEN
+		t := Ast.PointerGet(Ast.RecordGenericNew())
+	ELSE
 	d := Qualident(p, ds);
 	IF d # NIL THEN
 		IF d IS Ast.Type THEN
@@ -671,6 +678,7 @@ BEGIN
 	END;
 	IF t = NIL THEN
 		t := Ast.TypeErrorNew()
+	END
 	END
 	RETURN t
 END TypeNamed;
@@ -807,6 +815,9 @@ BEGIN
 		ASSERT(t # NIL);
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
 	END;
+	IF p.opt.genericPointer & ~(ds IS Ast.Module) & (p.l # SpecIdent.To) THEN
+		CheckAst(p, Ast.PointerSetType(tp, Ast.RecordGenericNew()))
+	ELSE
 	Expect(p, SpecIdent.To, ErrExpectTo);
 	IF p.l = SpecIdent.Record THEN
 		typeDecl := Record(p, ds, tp, -1, -1);
@@ -823,10 +834,11 @@ BEGIN
 			Ast.PointerSetRecord(tp, decl(Ast.Record));
 			Scan(p)
 		ELSE
-			CheckAst(p, Ast.PointerSetType(tp, TypeNamed(p, ds)))
+			CheckAst(p, Ast.PointerSetType(tp, TypeNamed(p, ds, {})))
 		END
 	ELSE
 		AddError(p, ErrExpectRecord)
+	END
 	END
 	RETURN tp
 END Pointer;
@@ -861,7 +873,7 @@ VAR braces: BOOLEAN;
 				Expect(p, SpecIdent.Of, ErrExpectOf);
 				INC(arrs)
 			END;
-			t := TypeNamed(p, ds);
+			t := TypeNamed(p, ds, {InFormalParam});
 			WHILE (t # NIL) & (arrs > 0) DO
 				t := Ast.ArrayGet(t, NIL);
 				DEC(arrs)
@@ -908,7 +920,7 @@ BEGIN
 			AddError(p, ErrFunctionWithoutBraces);
 			p.err := FALSE
 		END;
-		CheckAst(p, Ast.ProcTypeSetReturn(proc, TypeNamed(p, ds)))
+		CheckAst(p, Ast.ProcTypeSetReturn(proc, TypeNamed(p, ds, {InFormalParam})))
 	END
 END FormalParameters;
 
@@ -941,7 +953,7 @@ BEGIN
 	ELSIF p.l = SpecIdent.Record THEN
 		t := Record(p, ds, NIL, nameBegin, nameEnd)
 	ELSIF p.l = Scanner.Ident THEN
-		t := TypeNamed(p, ds)
+		t := TypeNamed(p, ds, {})
 	ELSE
 		t := Ast.TypeErrorNew();
 		AddError(p, ErrExpectType)
@@ -1487,6 +1499,8 @@ BEGIN
 	opt.multiErrors     := TRUE;
 	opt.cyrillic        := FALSE;
 	opt.printError      := Blank;
+
+	opt.genericPointer  := TRUE;
 
 	opt.provider        := NIL
 END DefaultOptions;
