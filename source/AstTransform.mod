@@ -182,6 +182,7 @@ MODULE AstTransform;
       INC(o.anon);
     END Link;
   BEGIN
+    IF r # Ast.genericRecord THEN
     IF r.pointer # NIL THEN
       r.pointer.ext := o.mark
     END;
@@ -195,6 +196,7 @@ MODULE AstTransform;
      & ((r.pointer = NIL) OR ~Strings.IsDefined(r.pointer.name))
     THEN
       Link(r, o)
+    END
     END
   END Record;
 

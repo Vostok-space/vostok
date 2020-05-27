@@ -816,6 +816,9 @@ BEGIN
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
 	END;
 	IF p.opt.genericPointer & ~(ds IS Ast.Module) & (p.l # SpecIdent.To) THEN
+		IF ds IS Ast.Procedure THEN
+			ds(Ast.Procedure).header.generic := TRUE;
+		END;
 		CheckAst(p, Ast.PointerSetType(tp, Ast.RecordGenericNew()))
 	ELSE
 	Expect(p, SpecIdent.To, ErrExpectTo);
@@ -847,8 +850,7 @@ PROCEDURE FormalParameters(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcTy
 VAR braces: BOOLEAN;
 
 	PROCEDURE Section(VAR p: Parser; ds: Ast.Declarations; proc: Ast.ProcType);
-	VAR access: SET;
-		param: Ast.Declaration;
+	VAR access: SET; param: Ast.Declaration; isGeneric: BOOLEAN;
 
 		PROCEDURE Name(VAR p: Parser; proc: Ast.ProcType; access: SET);
 		BEGIN
@@ -864,7 +866,7 @@ VAR braces: BOOLEAN;
 			END
 		END Name;
 
-		PROCEDURE Type(VAR p: Parser; ds: Ast.Declarations): Ast.Type;
+		PROCEDURE Type(VAR p: Parser; ds: Ast.Declarations; VAR generic: BOOLEAN): Ast.Type;
 		VAR t: Ast.Type;
 			arrs: INTEGER;
 		BEGIN
@@ -874,6 +876,7 @@ VAR braces: BOOLEAN;
 				INC(arrs)
 			END;
 			t := TypeNamed(p, ds, {InFormalParam});
+			generic := (t # NIL) & (t.type = Ast.genericRecord);
 			WHILE (t # NIL) & (arrs > 0) DO
 				t := Ast.ArrayGet(t, NIL);
 				DEC(arrs)
@@ -892,7 +895,10 @@ VAR braces: BOOLEAN;
 			Name(p, proc, access)
 		END;
 		Expect(p, Scanner.Colon, ErrExpectColon);
-		CheckAst(p, Ast.VarListSetType(param, Type(p, ds)))
+		CheckAst(p, Ast.VarListSetType(param, Type(p, ds, isGeneric)));
+		IF isGeneric THEN
+			proc.generic := TRUE
+		END
 	END Section;
 
 	PROCEDURE MissedSemicolon(VAR p: Parser): BOOLEAN;

@@ -141,7 +141,9 @@ END SpecNameForTypeNamedAsModule;
 
 PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
-	IF (gen.procTypeNamer = NIL)
+	IF decl = Ast.genericRecord THEN
+		Text.Str(gen, "Pointer")
+	ELSIF (gen.procTypeNamer = NIL)
 	OR (decl.module # NIL) & (gen.module # decl.module.m)
 	THEN
 		IF ~decl.mark & (decl IS Ast.Const) THEN
@@ -1469,6 +1471,9 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			Text.StrLnClose(gen, "}")
 		END Constructor;
 	BEGIN
+		IF rec = Ast.genericRecord THEN
+			Text.Str(gen, "Pointer ");
+		ELSE
 		rec.module := gen.module.bag;
 		Text.Str(gen, "static class ");
 		IF CheckStructName(gen, rec) THEN
@@ -1500,6 +1505,7 @@ PROCEDURE Type(VAR gen: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				RecordAssign(gen, rec)
 			END;
 			Text.StrLnClose(gen, "}")
+		END
 		END
 	END Record;
 
@@ -2000,8 +2006,13 @@ END Statements;
 
 PROCEDURE ProcHeader(VAR gen: Generator; decl: Ast.Procedure);
 BEGIN
+	IF decl.header.generic THEN
+		Text.Str(gen, "<Pointer> ")
+	END;
 	IF decl.header.type = NIL THEN
 		Text.Str(gen, "void ")
+	ELSIF decl.header.type = Ast.genericRecord THEN
+		Text.Str(gen, "Pointer ")
 	ELSE
 		Type(gen, decl, decl.header.type, FALSE, FALSE)
 	END;

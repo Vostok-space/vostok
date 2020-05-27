@@ -348,6 +348,9 @@ TYPE
 	END;
 
 	RProcType = RECORD(RConstruct)
+		(* TODO список типов *)
+		generic*: BOOLEAN;
+
 		params*, end*: FormalParam
 		(* type - возвращаемый тип *)
 	END;
@@ -1249,6 +1252,8 @@ BEGIN
 		NEW(p)
 	END;
 	TypeInit(p, IdProcType);
+
+	p.generic := FALSE;
 
 	p.params := NIL;
 	p.end := NIL
