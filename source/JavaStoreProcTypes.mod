@@ -94,7 +94,7 @@ MODULE JavaStoreProcTypes;
     it := st.items.next;
     WHILE (it # NIL)
         & ~(  EqualChars(equal, it.name, name, end)
-            & (~generic OR Ast.EqualProcTypes(it.type, pt))
+            & (~generic OR Ast.EqualProcTypes(it.type, pt, NIL))
            )
     DO
       ASSERT(CorrectName(equal, rep, name, end));

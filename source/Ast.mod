@@ -2379,9 +2379,24 @@ BEGIN
 	RETURN err
 END SelGuardNew;
 
-PROCEDURE EqualProcTypes*(t1, t2: ProcType): BOOLEAN;
+PROCEDURE EqualProcTypes*(t1, t2: ProcType; inCall: ExprCall): BOOLEAN;
 VAR comp: BOOLEAN;
     fp1, fp2: Declaration;
+
+	PROCEDURE IsGeneric(t1, t2: Type; inCall: ExprCall): BOOLEAN;
+	VAR yes: BOOLEAN;
+	BEGIN
+		yes := (inCall # NIL) & (t1.type = genericRecord);
+		IF yes THEN
+			IF inCall.generic = NIL THEN
+				inCall.generic := t2.type(Record)
+			ELSE
+				yes := inCall.generic = t2.type
+			END
+		END
+		RETURN yes
+	END IsGeneric;
+
 BEGIN
 	comp := t1.type = t2.type;
 	IF comp THEN
@@ -2389,7 +2404,7 @@ BEGIN
 		fp2 := t2.params;
 		WHILE (fp1 # NIL) & (fp2 # NIL)
 		    & (fp1 IS FormalParam) & (fp2 IS FormalParam)
-		    & (fp1.type = fp2.type)
+		    & ((fp1.type = fp2.type) OR IsGeneric(fp1.type, fp2.type, inCall))
 		    & (fp1(FormalParam).access = fp2(FormalParam).access)
 		DO
 			ExchangeParamsNeedTag(fp1(FormalParam), fp2(FormalParam));
@@ -2445,7 +2460,7 @@ BEGIN
 			                   OR IsGeneric(t1.type(Record), t2.type(Record), inCall)
 			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
 			                   OR IsGeneric(t1(Record), t2(Record), inCall)
-			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
+			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType), inCall)
 			END
 		ELSIF t1.id = IdProcType THEN
 			comp := (t2.id = IdPointer) & (t2.type = NIL)
