@@ -1,34 +1,34 @@
 RESULT=result/benchmark
 
 mkdir -p $RESULT/asrt $RESULT/san
-result/o7c to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/benchmark
-result/o7c to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init noinit
+result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . -m source -m test/benchmark
+result/ost to-c "RepeatTran.Go(10)" $RESULT/san  -infr . -m source -m test/benchmark -init noinit
 
 export ASAN_OPTIONS=detect_odr_violation=0
-MAIN="gcc -Wno-logical-op-parentheses -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation singularity/implementation/*.c"
+MAIN="gcc -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation singularity/implementation/*.c"
 TRAP="-fsanitize-undefined-trap-on-error -static-libasan"
 
-$MAIN -DNDEBUG -DO7_VAR_INIT_MODEL=O7_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/o7c &
+$MAIN -DNDEBUG -DO7_INIT_MODEL=O7_INIT_NO -I$RESULT/san $RESULT/san/*.c -o $RESULT/ost &
 
-$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -o $RESULT/o7c-asrt &
+$MAIN -DO7_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -o $RESULT/ost-asrt &
 
-$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined $TRAP -o $RESULT/o7c-usan &
+$MAIN -DO7_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined $TRAP -o $RESULT/ost-usan &
 
-$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-asan &
+$MAIN -DO7_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/ost-asan &
 
-$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan
+$MAIN -DO7_INIT_MODEL=O7_INIT_NO -DNDEBUG -I$RESULT/san $RESULT/san/*.c -fsanitize=undefined -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/ost-uasan
 
-$MAIN -DO7_VAR_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -fsanitize=undefined -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/o7c-uasan-asrt
+$MAIN -DO7_INIT_MODEL=O7_INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c -fsanitize=undefined -fsanitize=address $TRAP -DO7_LSAN_LEAK_IGNORE -o $RESULT/ost-uasan-asrt
 
-strip $RESULT/o7c*
+strip $RESULT/ost*
 
-LIST="$RESULT/o7c $RESULT/o7c-asrt $RESULT/o7c-usan $RESULT/o7c-asan $RESULT/o7c-uasan $RESULT/o7c-uasan-asrt"
+LIST="$RESULT/ost $RESULT/ost-asrt $RESULT/ost-usan $RESULT/ost-asan $RESULT/ost-uasan $RESULT/ost-uasan-asrt"
 
-mkdir -p /tmp/o7c-bench
-for o7c in $LIST; do
+mkdir -p /tmp/ost-bench
+for ost in $LIST; do
 	echo
-	ls -l $o7c
+	ls -l $ost
 	for i in 0 1 2 3 4; do
-		/usr/bin/time -p $o7c to-c "RepeatTran.Go(10)" /tmp/o7c-bench -infr . -m source -m test/benchmark 2>&1 | grep real
+		/usr/bin/time -p $ost to-c "RepeatTran.Go(10)" /tmp/ost-bench -infr . -m source -m test/benchmark 2>&1 | grep real
 	done
 done
