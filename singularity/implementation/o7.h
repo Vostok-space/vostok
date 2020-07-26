@@ -335,7 +335,7 @@ enum {
 
 #if defined(O7_CHECK_ARRAY_INDEX)
 	enum { O7_ARRAY_INDEX = O7_CHECK_ARRAY_INDEX };
-#elif !defined(__BOUNDS_CHECKING_ON)
+#elif !defined(__BOUNDS_CHECKING_ON) && !(__e2k__ && __ptr128__)
 	enum { O7_ARRAY_INDEX = 1 };
 #else
 	enum { O7_ARRAY_INDEX = 0 };
