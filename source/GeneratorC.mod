@@ -3385,6 +3385,20 @@ VAR out: MOut;
 		gen.memout := NIL
 	END Init;
 
+	PROCEDURE InitModel(VAR gen: Generator);
+	BEGIN
+		IF gen.opt.varInit # GenOptions.VarInitUndefined THEN
+			Text.StrLn(gen, "#if !defined(O7_INIT_MODEL)");
+			IF gen.opt.varInit = GenOptions.VarInitNo THEN
+				Text.StrLn(gen, "#   define   O7_INIT_MODEL O7_INIT_NO")
+			ELSE ASSERT(gen.opt.varInit = GenOptions.VarInitZero);
+				Text.StrLn(gen, "#   define   O7_INIT_MODEL O7_INIT_ZERO")
+			END;
+			Text.StrLn(gen, "#endif");
+			Text.Ln(gen)
+		END
+	END InitModel;
+
 	PROCEDURE Includes(VAR gen: Generator);
 	BEGIN
 		IF gen.opt.std >= IsoC99 THEN
@@ -3517,6 +3531,8 @@ BEGIN
 	GeneratorNotify(out.g[Implementation]);
 
 	Comment(out.g[ORD(~opt.main)], module.comment);
+
+	InitModel(out.g[Implementation]);
 
 	Includes(out.g[Implementation]);
 
