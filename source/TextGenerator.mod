@@ -40,7 +40,8 @@ BEGIN
 	g.tabs := 0;
 	g.out := out;
 	g.len := 0;
-	g.isNewLine := FALSE
+	g.isNewLine := FALSE;
+	g.defered[0] := Utf8.Null
 END Init;
 
 PROCEDURE SetTabs*(VAR g: Out; d: Out);
