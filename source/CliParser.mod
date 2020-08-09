@@ -93,7 +93,7 @@ TYPE
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
-		noNilCheck*, noOverflowCheck*, noIndexCheck*: BOOLEAN;
+		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*, cE2k*: BOOLEAN;
 		cyrillic*: INTEGER;
 
 		multiErrors*: BOOLEAN
@@ -321,6 +321,10 @@ BEGIN
 			args.cStd := GeneratorC.IsoC99
 		ELSIF opt = "-C11" THEN
 			args.cStd := GeneratorC.IsoC11
+		ELSIF opt = "-plan9" THEN
+			args.cPlan9 := TRUE
+		ELSIF opt = "-e2k" THEN
+			args.cE2k := TRUE
 		ELSIF opt = "-out:O7" THEN
 			args.obStd := GeneratorOberon.StdO7
 		ELSIF opt = "-out:AO" THEN
@@ -371,6 +375,8 @@ BEGIN
 	args.init     := -1;
 	args.memng    := -1;
 	args.cStd     := -1;
+	args.cPlan9   := FALSE;
+	args.cE2k     := FALSE;
 	args.obStd    := -1;
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
