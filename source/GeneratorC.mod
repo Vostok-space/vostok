@@ -60,7 +60,7 @@ TYPE
 	Options* = POINTER TO RECORD(GenOptions.R)
 		std*: INTEGER;
 
-		gnu*, plan9*,
+		gnu*, plan9*, e2k*,
 		procLocal*,
 		vla*, vlaMark*,
 		checkNil*,
@@ -797,6 +797,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					sizeof := ~(e(Ast.Designator).decl IS Ast.Const)
 					         & ((des.decl.type.id # Ast.IdArray)
 					        OR ~(des.decl IS Ast.FormalParam)
+					        OR  gen.opt.vla & ~gen.opt.vlaMark
 					           )
 				ELSE
 					ASSERT(count # NIL);
@@ -815,6 +816,10 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					Designator(gen, des);
 					Text.Str(gen, "[0])")
 					*)
+				ELSIF gen.opt.e2k & (des.decl.type.type.id # Ast.IdArray) THEN
+					Text.Str(gen, "O7_E2K_LEN(");
+					GlobalName(gen, des.decl);
+					Text.Char(gen, ")")
 				ELSE
 					GlobalName(gen, des.decl);
 					Text.Str(gen, "_len");
@@ -1057,7 +1062,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, ")")
 			ELSE
 				j := 1;
-				IF fp.type.id # Ast.IdChar THEN
+				IF (fp.type.id # Ast.IdChar)
+				& ~(gen.opt.e2k & (fp.type.id = Ast.IdArray) & (fp.type.type.id # Ast.IdArray))
+				THEN
 					i := -1;
 					t := p.expr.type;
 					WHILE (t.id = Ast.IdArray)
@@ -1228,13 +1235,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 					notChar1 := ~notChar0 OR IsArrayAndNotChar(rel.exprs[1]);
 					IF notChar0 = notChar1 THEN
 						ASSERT(notChar0);
-						Text.Str(gen, "o7_strcmp(")
+						IF gen.opt.e2k THEN
+							Text.Str(gen, "strcmp(")
+						ELSE
+							Text.Str(gen, "o7_strcmp(")
+						END
 					ELSIF notChar1 THEN
 						Text.Str(gen, "o7_chstrcmp(")
 					ELSE ASSERT(notChar0);
 						Text.Str(gen, "o7_strchcmp(")
 					END;
-					IF notChar0 THEN
+					IF notChar0 & ~gen.opt.e2k THEN
 						Len(gen, rel.exprs[0]);
 						Text.Str(gen, ", ")
 					END;
@@ -1242,7 +1253,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 					Text.Str(gen, ", ");
 
-					IF notChar1 THEN
+					IF notChar1 & ~gen.opt.e2k THEN
 						Len(gen, rel.exprs[1]);
 						Text.Str(gen, ", ")
 					END;
@@ -1778,14 +1789,16 @@ PROCEDURE ProcHead(VAR gen: Generator; proc: Ast.ProcType);
 		BEGIN
 			i := 0;
 			t := fp.type;
-			WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
-				Text.Str(gen, "o7_int_t ");
-				Name(gen, fp);
-				Text.Str(gen, "_len");
-				Text.Int(gen, i);
-				Text.Str(gen, ", ");
-				INC(i);
-				t := t.type
+			IF ~((t.id = Ast.IdArray) & gen.opt.e2k & (t.type.id # Ast.IdArray)) THEN
+				WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
+					Text.Str(gen, "o7_int_t ");
+					Name(gen, fp);
+					Text.Str(gen, "_len");
+					Text.Int(gen, i);
+					Text.Str(gen, ", ");
+					INC(i);
+					t := t.type
+				END
 			END;
 			t := fp.type;
 			declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE);
@@ -2577,6 +2590,10 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 					ExprForSize(gen, st.expr);
 					Text.Str(gen, ")")
 				END
+			ELSIF gen.opt.e2k THEN
+				Text.Str(gen, ", O7_E2K_SIZE(");
+				GlobalName(gen, st.expr(Ast.Designator).decl);
+				Text.Str(gen, ")")
 			ELSE
 				Text.Str(gen, ", (");
 				ArrayLen(gen, st.expr);
@@ -3196,6 +3213,7 @@ BEGIN
 		o.std           := IsoC90;
 		o.gnu           := FALSE;
 		o.plan9         := FALSE;
+		o.e2k           := FALSE;
 		o.procLocal     := FALSE;
 		o.vla           := FALSE & (IsoC99 <= o.std);
 		o.vlaMark       := TRUE;
@@ -3399,6 +3417,14 @@ VAR out: MOut;
 		END
 	END InitModel;
 
+	PROCEDURE UseE2kLen(VAR gen: Generator);
+	BEGIN
+		IF gen.opt.e2k THEN
+			Text.StrLn(gen, "#define O7_USE_E2K_LEN 1");
+			Text.Ln(gen)
+		END
+	END UseE2kLen;
+
 	PROCEDURE Includes(VAR gen: Generator);
 	BEGIN
 		IF gen.opt.std >= IsoC99 THEN
@@ -3533,6 +3559,7 @@ BEGIN
 	Comment(out.g[ORD(~opt.main)], module.comment);
 
 	InitModel(out.g[Implementation]);
+	UseE2kLen(out.g[Implementation]);
 
 	Includes(out.g[Implementation]);
 

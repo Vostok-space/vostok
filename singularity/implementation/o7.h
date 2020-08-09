@@ -1,4 +1,4 @@
-/* Copyright 2016-2019 ComdivByZero
+/* Copyright 2016-2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,6 +291,11 @@ enum {
 	                  ) / O7_MEM_ALIGN * O7_MEM_ALIGN
 };
 
+typedef struct {
+	o7_ulong_t addr;
+	o7_uint_t  ofs, size;
+} o7_e2k_ptr128_t;
+
 #if O7_MEMNG == O7_MEMNG_GC
 #	include "gc.h"
 	O7_ALWAYS_INLINE void o7_gc_init(void) {
@@ -385,6 +390,14 @@ void* o7_ref(void *ptr) {
 #	endif
 #endif
 
+#if !O7_USE_BUILTIN_EXPECT
+#	define O7_EXPECT(cond) (cond)
+#elif __GNUC__ < 4
+#	error __builtin_expect is not available
+#else
+#	define O7_EXPECT(cond) __builtin_expect(cond, 1)
+#endif
+
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
 void* o7_raw_alloc(size_t size) {
 	extern char o7_memory[O7_MEMNG_NOFREE_BUFFER_SIZE];
@@ -429,11 +442,46 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 	}
 #endif
 
+#if !defined(O7_USE_E2K_LEN)
+#	define O7_USE_E2K_LEN 0
+#elif O7_USE_E2K_LEN && !(__e2k__ && __ptr128__)
+#	error Array length from Elbrus fat pointer is not available
+#endif
+
+/* FPA - Formal Parameter Array, APA - Actual Parameter Array
+ * Нужен для возможности компиляции привязок к C в защищённом режиме Эльбруса */
+#if O7_USE_E2K_LEN
+#	define O7_FPA(typeName, arrayName)  typeName arrayName[]
+#	define O7_APA(arrayName)            arrayName
+#	define O7_FPA_LEN(arrayName)        O7_E2K_LEN(arrayName)
+#else
+#	define O7_FPA(typeName, arrayName)      o7_int_t arrayName##_len, typeName arrayName[O7_VLA(arrayName##_len)]
+#	define O7_APA(arrayName)            arrayName##_len, arrayName
+#	define O7_FPA_LEN(arrayName)        arrayName##_len
+#endif
+
 #define O7_LEN(array) ((o7_int_t)(sizeof(array) / sizeof((array)[0])))
+
+#define O7_E2K_LEN(array) o7_e2k_len((void *)array, (o7_int_t)sizeof((array)[0]))
+#define O7_E2K_SIZE(array) o7_e2k_size((void *)array)
+
+O7_CONST_INLINE
+o7_int_t o7_e2k_size(void *array) {
+	o7_e2k_ptr128_t ptr;
+	O7_STATIC_ASSERT(sizeof(ptr) == 16);
+
+	memcpy(&ptr, &array, sizeof(array));
+	return ptr.size;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_e2k_len(void *array, o7_int_t itemSize) {
+	return o7_e2k_size(array) / itemSize;
+}
 
 O7_CONST_INLINE
 o7_cbool o7_bool_inited(o7_bool b) {
-	return *(o7_char *)&b < 2;
+	return O7_EXPECT(*(o7_char *)&b < 2);
 }
 
 O7_CONST_INLINE
@@ -589,7 +637,7 @@ float o7_fdivf(float n, float d) {
 
 O7_CONST_INLINE
 o7_bool o7_int_inited(o7_int_t i) {
-	return -O7_INT_MAX <= i;
+	return O7_EXPECT(-O7_INT_MAX <= i);
 }
 
 O7_CONST_INLINE
@@ -614,7 +662,7 @@ extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 
 O7_CONST_INLINE
 o7_bool o7_long_inited(o7_long_t i) {
-	return i >= -O7_LONG_MAX;
+	return O7_EXPECT(i >= -O7_LONG_MAX);
 }
 
 O7_CONST_INLINE
@@ -940,7 +988,7 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 
 	u     = o7_not_neg(n    ) & 0xFFFFFFFFul;
 	shift = o7_not_neg(shift) & 0x1F;
-	if (0 != shift) {
+	if (O7_EXPECT(0 != shift)) {
 		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
 		if (O7_OVERFLOW) {
 			assert(u < 0x80000000ul);
@@ -1037,7 +1085,7 @@ O7_ALWAYS_INLINE
 o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) {
 	void *mem;
 	mem = o7_malloc(O7_MEMINFO_SIZE + size);
-	if (NULL != mem) {
+	if (O7_EXPECT(NULL != mem)) {
 		mem = o7_mem_info_init(mem, tag);
 		if ((O7_INIT == O7_INIT_UNDEF) && (NULL != undef)) {
 			undef(mem);
