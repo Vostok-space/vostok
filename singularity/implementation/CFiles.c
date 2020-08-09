@@ -31,12 +31,12 @@ CFiles_File CFiles_in  = (CFiles_File)(fin  + O7_MEMINFO_SIZE),
             CFiles_err = (CFiles_File)(ferr + O7_MEMINFO_SIZE);
 
 extern CFiles_File CFiles_Open(
-	o7_int_t name_len, o7_char name[O7_VLA(name_len)], o7_int_t ofs,
-	o7_int_t mode_len, o7_char mode[O7_VLA(mode_len)])
+	O7_FPA(o7_char, name), o7_int_t ofs,
+	O7_FPA(o7_char, mode))
 {
 	CFiles_File file = NULL;
-	assert(0 <= name_len);
-	assert(ofs < name_len);
+	assert(0 <= O7_FPA_LEN(name));
+	assert(ofs < O7_FPA_LEN(name));
 	O7_NEW2(&file, CFiles_File_tag, NULL);
 	if (NULL != file) {
 		file->file = fopen((char *)(name + ofs), (char *)mode);
@@ -56,23 +56,19 @@ extern void CFiles_Close(CFiles_File *file) {
 	}
 }
 
-extern int CFiles_Read(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
-{
+extern int CFiles_Read(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count) {
 	assert(file->file != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(len - count >= ofs);
+	assert(O7_FPA_LEN(buf) - count >= ofs);
 	return fread(buf + ofs, 1, count, file->file);
 }
 
-extern int CFiles_Write(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
-{
+extern int CFiles_Write(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count) {
 	assert(file->file != NULL);
 	assert(ofs >= 0);
 	assert(count >= 0);
-	assert(len - count >= ofs);
+	assert(O7_FPA_LEN(buf) - count >= ofs);
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
@@ -104,18 +100,16 @@ extern o7_int_t CFiles_Tell(CFiles_File file, o7_int_t *gibs, o7_int_t *bytes) {
 	return pos >= 0;
 }
 
-extern o7_int_t
-CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
+extern o7_int_t CFiles_Remove(O7_FPA(o7_char const, name), o7_int_t ofs) {
 	assert(0 <= ofs);
-	assert(ofs < len - 1);
+	assert(ofs < O7_FPA_LEN(name) - 1);
 	return remove((char const *)name + ofs) == 0;
 }
 
-extern o7_bool
-CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
+extern o7_bool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs) {
 	FILE *file;
 	assert(0 <= ofs);
-	assert(ofs < len - 1);
+	assert(ofs < O7_FPA_LEN(name) - 1);
 	/* TODO менее ресурсоёмкий способ */
 	file = fopen((char const *)(name + ofs), "rb");
 	if (NULL != file) {

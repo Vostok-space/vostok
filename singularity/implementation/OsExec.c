@@ -1,4 +1,4 @@
-/* Copyright 2016 ComdivByZero
+/* Copyright 2016,2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include "OsExec.h"
 
-extern o7_int_t OsExec_Do(o7_int_t len, o7_char const cmd[O7_VLA(len)]) {
+extern o7_int_t OsExec_Do(O7_FPA(o7_char const, cmd)) {
 	return system((char const *)cmd);
 }
-

@@ -29,20 +29,18 @@
 
 o7_int_t Unistd_pageSize = _SC_PAGESIZE;
 
-static o7_int_t Len(o7_int_t str_len, o7_char const str[/*len0*/]) {
+static o7_int_t Len(O7_FPA(o7_char const, str)) {
 	o7_int_t i;
 
 	i = 0;
-	while ((i < str_len) && (str[i] != 0x00u)) {
+	while ((i < O7_FPA_LEN(str)) && (str[i] != 0x00u)) {
 		i += 1;
 	}
 	return i;
 }
 
-extern o7_int_t
-Unistd_Readlink(o7_int_t path_len, o7_char const pathname[O7_VLA(path_len)],
-                o7_int_t buf_len, o7_char buf[O7_VLA(buf_len)]) {
-	O7_ASSERT(Len(path_len, pathname) < path_len);
+extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char, buf)) {
+	O7_ASSERT(Len(O7_APA(pathname)) < O7_FPA_LEN(pathname));
 	return (o7_int_t)readlink((char const *)pathname, (char *)buf, (o7_uint_t)buf_len);
 }
 

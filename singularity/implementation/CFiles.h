@@ -24,26 +24,22 @@ typedef struct CFiles_Implement* CFiles_File;
 extern CFiles_File CFiles_in, CFiles_out, CFiles_err;
 
 extern CFiles_File CFiles_Open(
-	o7_int_t name_len, o7_char name[O7_VLA(name_len)], o7_int_t ofs,
-	o7_int_t mode_len, o7_char mode[O7_VLA(mode_len)]);
+	O7_FPA(o7_char, name), o7_int_t ofs,
+	O7_FPA(o7_char, mode));
 
 extern void CFiles_Close(CFiles_File *file);
 
-extern int CFiles_Read(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count);
-extern int CFiles_Write(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count);
+extern int CFiles_Read (CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count);
+extern int CFiles_Write(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count);
 
-O7_INLINE int CFiles_ReadChars(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
-{
-	return CFiles_Read(file, len, buf, ofs, count);
+O7_ALWAYS_INLINE
+int CFiles_ReadChars(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count) {
+	return CFiles_Read(file, O7_APA(buf), ofs, count);
 }
 
-O7_INLINE int CFiles_WriteChars(CFiles_File file,
-	o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t ofs, o7_int_t count)
-{
-	return CFiles_Write(file, len, buf, ofs, count);
+O7_ALWAYS_INLINE
+int CFiles_WriteChars(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t count) {
+	return CFiles_Write(file, O7_APA(buf), ofs, count);
 }
 
 extern o7_bool CFiles_Flush(CFiles_File file);
@@ -52,9 +48,9 @@ extern o7_int_t CFiles_Seek(CFiles_File file, o7_int_t gibs, o7_int_t bytes);
 
 extern o7_int_t CFiles_Tell(CFiles_File file, o7_int_t *gibs, o7_int_t *bytes);
 
-extern o7_int_t CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs);
+extern o7_int_t CFiles_Remove(O7_FPA(o7_char const, name), o7_int_t ofs);
 
-extern o7_bool CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs);
+extern o7_bool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs);
 
 extern void CFiles_init(void);
 O7_ALWAYS_INLINE void CFiles_done(void) { ; }
