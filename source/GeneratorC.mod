@@ -225,13 +225,7 @@ BEGIN
 		ASSERT(decl.module # NIL);
 		Ident(gen, decl.module.m.name);
 
-		Text.Data(gen, "__", 0,
-		    ORD(
-		        SpecIdentChecker.IsSpecModuleName(decl.module.m.name)
-		      & ~decl.module.m.spec
-		     OR SpecIdentChecker.IsO7SpecName(decl.name)
-		    ) + 1
-		);
+		Text.Data(gen, "__", 0, ORD(SpecIdentChecker.IsO7SpecName(decl.name)) + 1);
 		Ident(gen, decl.name);
 		IF decl IS Ast.Const THEN
 			Text.Str(gen, "_cnst")

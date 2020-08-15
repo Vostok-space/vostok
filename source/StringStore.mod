@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -187,17 +187,31 @@ BEGIN
 	i := w.ofs;
 	b := w.block;
 	WHILE (j < LEN(s)) & (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
-		(*Log.Char(b.s[i]); Log.Char(s[j]);*)
 		INC(i);
 		INC(j)
 	ELSIF b.s[i] = Utf8.NewPage DO
 		b := b.next;
 		i := 0
 	END
-	(*Log.Int(ORD(b.s[i])); Log.Ln;
-	Log.Int(j); Log.Ln*)
 	RETURN (b.s[i] = Utf8.Null) & ((j = LEN(s)) OR (s[j] = Utf8.Null))
 END IsEqualToString;
+
+(* TODO Учесть регистр за пределами ASCII *)
+PROCEDURE IsEqualToStringIgnoreCase*(w: String; s: ARRAY OF CHAR): BOOLEAN;
+VAR i, j: INTEGER; b: Block;
+BEGIN
+	j := 0;
+	i := w.ofs;
+	b := w.block;
+	WHILE (s[j] # Utf8.Null) & Utf8.EqualIgnoreCase(b.s[i], s[j]) DO
+		INC(i);
+		INC(j)
+	ELSIF b.s[i] = Utf8.NewPage DO
+		b := b.next;
+		i := 0
+	END
+	RETURN (b.s[i] = Utf8.Null) & (s[j] = Utf8.Null)
+END IsEqualToStringIgnoreCase;
 
 PROCEDURE Compare*(w1, w2: String): INTEGER;
 VAR i1, i2, res: INTEGER;

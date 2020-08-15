@@ -16,7 +16,7 @@
 #define O7_BOOL_UNDEFINED
 #include "o7.h"
 
-#include "Math.h"
+#include "Math_.h"
 
 #include <math.h>
 

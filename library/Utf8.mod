@@ -1,5 +1,5 @@
-(*  Some constants of Utf-8/ASC II
- *  Copyright (C) 2016 ComdivByZero
+(*  Some constants and subroutines for Utf-8/ASC II
+ *  Copyright (C) 2016,2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,5 +27,39 @@ CONST
 	Idle*            = 16X;
 	DQuote*          = 22X;
 	Delete*          = 7FX;
+
+	PROCEDURE Up*(ch: CHAR): CHAR;
+	BEGIN
+		IF ("a" <= ch) & (ch <= "z") THEN
+			ch := CHR(ORD(ch) - (ORD("a") - ORD("A")))
+		END
+	RETURN
+		ch
+	END Up;
+
+	PROCEDURE Down*(ch: CHAR): CHAR;
+	BEGIN
+		IF ("A" <= ch) & (ch <= "Z") THEN
+			ch := CHR(ORD(ch) + (ORD("a") - ORD("A")))
+		END
+	RETURN
+		ch
+	END Down;
+
+	PROCEDURE EqualIgnoreCase*(a, b: CHAR): BOOLEAN;
+	VAR equal: BOOLEAN;
+	BEGIN
+		IF a = b THEN
+			equal := TRUE
+		ELSIF ("a" <= a) & (a <= "z") THEN
+			equal := ORD("a") - ORD("A") = ORD(a) - ORD(b)
+		ELSIF ("A" <= a) & (a <= "Z") THEN
+			equal := ORD("a") - ORD("A") = ORD(b) - ORD(a)
+		ELSE
+			equal := FALSE
+		END
+	RETURN
+		equal
+	END EqualIgnoreCase;
 
 END Utf8.

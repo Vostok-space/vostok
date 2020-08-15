@@ -1,5 +1,5 @@
 (*  Checker of special identifiers
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018,2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -24,6 +24,10 @@ MODULE SpecIdentChecker;
   PROCEDURE Eq(name: Strings.String; str: ARRAY OF CHAR): BOOLEAN;
   RETURN Strings.IsEqualToString(name, str)
   END Eq;
+
+  PROCEDURE EqIc(name: Strings.String; str: ARRAY OF CHAR): BOOLEAN;
+  RETURN Strings.IsEqualToStringIgnoreCase(name, str)
+  END EqIc;
 
   PROCEDURE IsCKeyWord*(n: Strings.String): BOOLEAN;
   VAR o: BOOLEAN;
@@ -464,9 +468,40 @@ MODULE SpecIdentChecker;
   (* TODO *)
   RETURN Eq(n, "O7")
       OR Eq(n, "o7")
-      OR Eq(n, "math")
-      OR Eq(n, "limits")
+
       OR Eq(n, "ru")
+
+      OR EqIc(n, "assert")
+      OR EqIc(n, "complex")
+      OR EqIc(n, "ctype")
+      OR EqIc(n, "errno")
+      OR EqIc(n, "fenv")
+      OR EqIc(n, "float")
+      OR EqIc(n, "inttypes")
+      OR EqIc(n, "iso646")
+      OR EqIc(n, "limits")
+      OR EqIc(n, "locale")
+      OR EqIc(n, "math")
+      OR EqIc(n, "setjmp")
+      OR EqIc(n, "signal")
+      OR EqIc(n, "stdalign")
+      OR EqIc(n, "stdarg")
+      OR EqIc(n, "stdatomic")
+      OR EqIc(n, "stdbool")
+      OR EqIc(n, "stddef")
+      OR EqIc(n, "stdint")
+      OR EqIc(n, "stdio")
+      OR EqIc(n, "stdlib")
+      OR EqIc(n, "stdnoreturn")
+      OR EqIc(n, "string")
+      OR EqIc(n, "strings")
+      OR EqIc(n, "tgmath")
+      OR EqIc(n, "threads")
+      OR EqIc(n, "time")
+      OR EqIc(n, "uchar")
+      OR EqIc(n, "wchar")
+      OR EqIc(n, "wctype")
+      OR EqIc(n, "unistd")
   END IsSpecModuleName;
 
   PROCEDURE IsO7SpecName*(name: Strings.String): BOOLEAN;
