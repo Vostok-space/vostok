@@ -41,7 +41,7 @@ static o7_int_t Len(O7_FPA(o7_char const, str)) {
 
 extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char, buf)) {
 	O7_ASSERT(Len(O7_APA(pathname)) < O7_FPA_LEN(pathname));
-	return (o7_int_t)readlink((char const *)pathname, (char *)buf, (o7_uint_t)buf_len);
+	return (o7_int_t)readlink((char const *)pathname, (char *)buf, (o7_uint_t)O7_FPA_LEN(buf));
 }
 
 extern o7_int_t Unistd_Sysconf(o7_int_t name) {
