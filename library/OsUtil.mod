@@ -1,5 +1,5 @@
 (* Subroutines for work in OS like GNU/Linux or Windows
- * Copyright 2019 ComdivByZero
+ * Copyright 2019, 2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ MODULE OsUtil;
   IMPORT Platform, Unistd;
 
   PROCEDURE PathToSelfExe*(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
-  VAR l: INTEGER; str: ARRAY 64 OF CHAR;
+  VAR l: INTEGER;
   BEGIN
     IF Platform.Posix THEN
-      str := "/proc/self/exe";
-      l := Unistd.Readlink(str, path);
+      l := Unistd.Readlink("/proc/self/exe", path);
       IF l >= 0 THEN
         len := l
       ELSE

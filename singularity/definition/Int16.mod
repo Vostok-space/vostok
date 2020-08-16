@@ -1,4 +1,4 @@
-(* Copyright 2019 ComdivByZero
+(* Copyright 2019,2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,22 +29,16 @@ MODULE Int16;
  PROCEDURE FromInt*(VAR v: Type; i: INTEGER);
  BEGIN
    ASSERT((Min <= i) & (i <= Max));
-   IF i < 0 THEN
-     INC(i, 10000H)
-   END;
    v[0] := i MOD 100H;
-   v[1] := i DIV 100H
+   v[1] := i DIV 100H MOD 100H;
  END FromInt;
 
  PROCEDURE ToInt*(v: Type): INTEGER;
  VAR i: INTEGER;
  BEGIN
    i := v[0] + v[1] * 100H;
-   IF i > Max THEN
-     DEC(i, 10000H)
-   END
  RETURN
-   i
+   i - i DIV 8000H * 10000H
  END ToInt;
 
  PROCEDURE Add*(VAR sum: Type; a1, a2: Type);

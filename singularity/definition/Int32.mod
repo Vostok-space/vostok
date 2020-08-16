@@ -1,4 +1,4 @@
-(* Copyright 2016, 2018 ComdivByZero
+(* Copyright 2016, 2018, 2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,10 @@ MODULE Int32;
 
  PROCEDURE FromInt*(VAR v: Type; i: INTEGER);
  BEGIN
-   IF 0 <= i THEN
-     v[0] := i MOD 100H;
-     v[1] := i DIV 100H MOD 100H;
-     v[2] := i DIV 10000H MOD 100H;
-     v[3] := i DIV 1000000H
-   ELSE
-     i := -i;
-     v[0] := 100H - i MOD 100H;
-     v[1] := 100H - i DIV 100H MOD 100H;
-     v[2] := 100H - i DIV 10000H MOD 100H;
-     v[3] := 100H - i DIV 1000000H
-   END
+   v[0] := i              MOD 100H;
+   v[1] := i DIV 100H     MOD 100H;
+   v[2] := i DIV 10000H   MOD 100H;
+   v[3] := i DIV 1000000H MOD 100H
  END FromInt;
 
  PROCEDURE ToInt*(v: Type): INTEGER;

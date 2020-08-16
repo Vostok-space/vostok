@@ -62,7 +62,16 @@ MODULE Integers;
 
  PROCEDURE Int16;
  VAR i1, i2, i3: I16.Type;
+   PROCEDURE Conv;
+   VAR i: INTEGER; v: I16.Type;
+   BEGIN
+     FOR i := I16.Min TO I16.Max DO
+       I16.FromInt(v, i);
+       ASSERT(I16.ToInt(v) = i)
+     END
+   END Conv;
  BEGIN
+   Conv;
    I16.FromInt(i1, 127);
    I16.FromInt(i2, 63);
 
