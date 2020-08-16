@@ -22,6 +22,10 @@
 		O7_ASSERT(0>1);
 		return -1;
 	}
+	O7_ALWAYS_INLINE o7_int_t sysconf(o7_int_t name) {
+		O7_ASSERT(0>1);
+		return -1;
+	}
 #	define _SC_PAGESIZE 0
 #else
 #	include <unistd.h>
