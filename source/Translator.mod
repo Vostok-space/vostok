@@ -427,11 +427,6 @@ VAR ret: INTEGER;
 	PROCEDURE SetOptions(opt: GeneratorC.Options; args: Cli.Args);
 	BEGIN
 		opt.plan9 := args.cPlan9;
-		opt.e2k   := args.cE2k;
-		IF opt.e2k THEN
-			(* Режим 128-битных указателей в Эльбрусе имеет аппаратные проверки *)
-			opt.checkIndex := FALSE
-		END;
 		SetCommonOptions(opt^, args);
 		IF 0 <= args.memng THEN
 			opt.memManager := args.memng
