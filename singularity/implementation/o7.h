@@ -673,6 +673,10 @@ o7_long_t o7_long(o7_long_t i) {
 	return i;
 }
 
+#define O7_MUL(a, b) ((a) * (b))
+#define O7_DIV(n, d) ((0 <= n) ? ((n) / (d)) : (-1 - (-1 - (n)) / (d)))
+#define O7_MOD(n, d) ((0 <= n) ? ((n) % (d)) : ((d) - 1 - (-1 - (n)) % (d)))
+
 extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]);
 #define O7_LONGS_UNDEF(array) \
 	o7_longs_undef((o7_int_t)(sizeof(array) / (sizeof(int))), (o7_long_t *)(array))

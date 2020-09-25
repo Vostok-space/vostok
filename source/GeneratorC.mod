@@ -883,7 +883,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Text.Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
-					Text.Str(gen, "++")
+					(* TODO выяснить, где ошибка с ++ *)
+					Text.Str(gen, " += 1")
 				ELSE
 					Text.Str(gen, " += ");
 					Expression(gen, p2.expr)
@@ -905,7 +906,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Text.Str(gen, ")")
 					END
 				ELSIF p2 = NIL THEN
-					Text.Str(gen, "--")
+					Text.Str(gen, " -= 1")
 				ELSE
 					Text.Str(gen, " -= ");
 					Expression(gen, p2.expr)
@@ -1430,6 +1431,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END
 	END SumCheck;
 
+	PROCEDURE IsPresentDiv(term: Ast.ExprTerm): BOOLEAN;
+	BEGIN
+		WHILE ~(term.mult IN {Scanner.Div, Scanner.Mod})
+		    & (term.expr IS Ast.ExprTerm)
+		DO
+			term := term.expr(Ast.ExprTerm)
+		END
+		RETURN term.mult IN {Scanner.Div, Scanner.Mod}
+	END IsPresentDiv;
+
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
 	BEGIN
 		REPEAT
@@ -1460,6 +1471,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		UNTIL term = NIL
 	END Term;
 
+	(* TODO Убрать разные генерации, использовать преобразования дерева *)
 	PROCEDURE TermCheck(VAR gen: Generator; term: Ast.ExprTerm);
 	VAR arr: ARRAY TranLim.FactorsInTerm OF Ast.ExprTerm;
 		i, last: INTEGER;
@@ -1472,6 +1484,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			arr[i] := term
 		END;
 		last := i;
+		IF arr[0].value # NIL THEN
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk : Text.Str(gen, "O7_MUL(")
+				| Scanner.Div      : Text.Str(gen, "O7_DIV(")
+				| Scanner.Mod      : Text.Str(gen, "O7_MOD(")
+				END;
+				DEC(i)
+			END
+		ELSE
 		CASE term.type.id OF
 		  Ast.IdInteger:
 			WHILE i >= 0 DO
@@ -1507,6 +1529,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				END;
 				DEC(i)
 			END
+		END
 		END;
 		Expression(gen, arr[0].factor);
 		i := 0;
@@ -1699,16 +1722,18 @@ BEGIN
 	| Ast.IdRelation:
 		Relation(gen, expr(Ast.ExprRelation))
 	| Ast.IdSum:
-		IF	  gen.opt.checkArith
+		IF	gen.opt.checkArith
 			& (expr.type.id IN CheckableArithTypes)
 			& (expr.value = NIL)
 		THEN	SumCheck(gen, expr(Ast.ExprSum))
 		ELSE	Sum(gen, expr(Ast.ExprSum))
 		END
 	| Ast.IdTerm:
-		IF	  gen.opt.checkArith
+		IF    gen.opt.checkArith
 			& (expr.type.id IN CheckableArithTypes)
-			& (expr.value = NIL)
+		OR
+			  (expr.type.id IN Ast.Integers)
+			& IsPresentDiv(expr(Ast.ExprTerm))
 		THEN
 			TermCheck(gen, expr(Ast.ExprTerm))
 		ELSIF (expr.value # NIL)
