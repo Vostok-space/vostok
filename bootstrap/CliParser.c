@@ -172,8 +172,6 @@ extern o7_int_t CliParser_Options(struct CliParser_Args *args, o7_int_t *arg) {
 			(*args).noIndexCheck = (0 < 1);
 		} else if (o7_strcmp(256, opt, 14, (o7_char *)"-no-nil-check") == 0) {
 			(*args).noNilCheck = (0 < 1);
-		} else if (o7_strcmp(256, opt, 30, (o7_char *)"-no-arithmetic-overflow-check") == 0) {
-			(*args).noOverflowCheck = (0 < 1);
 		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-C90") == 0) {
 			(*args).cStd = GeneratorC_IsoC90_cnst;
 		} else if (o7_strcmp(256, opt, 5, (o7_char *)"-C99") == 0) {
