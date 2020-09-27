@@ -369,6 +369,13 @@ void* o7_ref(void *ptr) {
 #if defined(NDEBUG)
 	O7_ALWAYS_INLINE void o7_assert(o7_cbool cond) { assert(cond); }
 #	define O7_ASSERT(condition) o7_assert(condition)
+#elif defined(O7_ASSERT_NO_MESSAGE)
+	/* Уменьшает размер за счёт отсутствия текстового сообщения */
+	O7_ALWAYS_INLINE void O7_ASSERT(o7_cbool condition) {
+		if (!condition) {
+			abort();
+		}
+	}
 #else
 #	define O7_ASSERT(condition) assert(condition)
 #endif
