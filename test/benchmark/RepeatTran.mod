@@ -6,7 +6,7 @@ MODULE RepeatTran;
  VAR i: INTEGER;
  BEGIN
    FOR i := 1 TO count DO
-     Translator.Start
+     Translator.Go
    END
  END Go;
 

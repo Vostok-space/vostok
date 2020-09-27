@@ -1,3 +1,5 @@
+# Makefile is deprecated, use source/make.mod
+
 OST := result/ost
 
 SING_BS := bootstrap
@@ -22,7 +24,7 @@ TESTS := $(addprefix result/test/,$(basename $(notdir $(wildcard test/source/*.m
 
 result/ost : result/bs-ost $(SRC) Makefile
 	-rm -rf result/v0
-	$< to-bin Translator.Start $@ -i singularity/definition -c $(SING_BS)/singularity -m source -m library -t result/v0 -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
+	$< to-bin Translator.Go $@ -i singularity/definition -c $(SING_BS)/singularity -m source -m library -t result/v0 -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
 
 result/bs-ost:
 	@mkdir -p result
@@ -38,7 +40,7 @@ test : $(OST) $(TESTS)
 
 $(SELF)/ost : $(OST) $(SRC) Makefile
 	-rm -rf $(SELF)
-	$(OST) to-bin Translator.Start $@ -infr . -m source -t $(SELF) -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
+	$(OST) to-bin Translator.Go $@ -infr . -m source -t $(SELF) -cc "$(CC) $(CC_OPT) $(SANITIZE) $(LD_OPT)"
 
 self : $(SELF)/ost
 	+make test OST:=$(SELF)/ost

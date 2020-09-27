@@ -98,7 +98,7 @@ MODULE make;
 
  PROCEDURE Build*;
  BEGIN
-   ok := ok & BuildBy("bs-ost", "Translator.Start", "ost", "v0", "to-bin")
+   ok := ok & BuildBy("bs-ost", "Translator.Go", "ost", "v0", "to-bin")
  END Build;
 
  PROCEDURE BuildAndroid*;
@@ -185,13 +185,13 @@ MODULE make;
    IF ok THEN
       CASE lang OF
         C:
-        ok := BuildBy("ost", "Translator.Start", "ost-v1", "v1", "to-bin")
+        ok := BuildBy("ost", "Translator.Go", "ost-v1", "v1", "to-bin")
             & TestBy("test/source", FALSE, "ost-v1", lang)
       | Java:
-        ok := BuildBy("ost", "Translator.Start", "ost-v1-java", "ost-v1-java", "to-class")
+        ok := BuildBy("ost", "Translator.Go", "ost-v1-java", "ost-v1-java", "to-class")
             & TestBy("test/source", FALSE, "ost-v1-java", lang)
       | Js:
-        ok := BuildBy("ost", "Translator.Start", "ost-v1-js", "ost-v1-js", "to-js")
+        ok := BuildBy("ost", "Translator.Go", "ost-v1-js", "ost-v1-js", "to-js")
             & TestBy("test/source", FALSE, "ost-v1-js", lang)
       END
    END
@@ -200,7 +200,7 @@ MODULE make;
  PROCEDURE SelfFull*;
  BEGIN
    ok := ok
-       & BuildBy("ost-v1", "Translator.Start", "ost-v2", "v2", "to-bin")
+       & BuildBy("ost-v1", "Translator.Go", "ost-v2", "v2", "to-bin")
        & TestBy("test/source", FALSE, "ost-v2", C)
  END SelfFull;
 
