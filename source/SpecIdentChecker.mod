@@ -465,13 +465,15 @@ MODULE SpecIdentChecker;
   END IsSpecName;
 
   PROCEDURE IsSpecModuleName*(n: Strings.String): BOOLEAN;
-  (* TODO *)
   RETURN Eq(n, "O7")
       OR Eq(n, "o7")
 
       OR Eq(n, "ru")
+  END IsSpecModuleName;
 
-      OR EqIc(n, "assert")
+  PROCEDURE IsSpecCHeaderName*(n: Strings.String): BOOLEAN;
+  (* TODO *)
+  RETURN EqIc(n, "assert")
       OR EqIc(n, "complex")
       OR EqIc(n, "ctype")
       OR EqIc(n, "errno")
@@ -502,7 +504,7 @@ MODULE SpecIdentChecker;
       OR EqIc(n, "wchar")
       OR EqIc(n, "wctype")
       OR EqIc(n, "unistd")
-  END IsSpecModuleName;
+  END IsSpecCHeaderName;
 
   PROCEDURE IsO7SpecName*(name: Strings.String): BOOLEAN;
   RETURN Eq(name, "init")

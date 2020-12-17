@@ -62,6 +62,11 @@ CONST
 	OptMemInfo* = 1;
 	OptAll*     = {0 .. 1};
 
+	LangC   = 1;
+	Java    = 2;
+	Js      = 3;
+	Oberon  = 4;
+
 TYPE
 	ProcNameProvider = POINTER TO RECORD(GeneratorJava.RProviderProcTypeName)
 		javac   : JavaComp.Compiler;
@@ -132,9 +137,15 @@ BEGIN
 END PrintErrors;
 
 PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
-                                name: Strings.String): BOOLEAN;
+                                name: Strings.String;
+                                lang: INTEGER): BOOLEAN;
+BEGIN
+	ASSERT(lang IN {LangC, Java, Js});
+
 	RETURN Strings.CopyToChars(str, len, name)
-	     & (~SpecIdentChecker.IsSpecModuleName(name)
+	     & (~(   SpecIdentChecker.IsSpecModuleName(name)
+	          OR (lang = LangC) & SpecIdentChecker.IsSpecCHeaderName(name)
+	         )
 	     OR Chars0X.CopyChar(str, len, "_")
 	       )
 END CopyModuleNameForFile;
@@ -150,7 +161,7 @@ BEGIN
 	implementation := NIL;
 	destLen := dirLen;
 	IF ~Chars0X.CopyString   (dir, destLen, Exec.dirSep)
-	OR ~CopyModuleNameForFile(dir, destLen, module.name)
+	OR ~CopyModuleNameForFile(dir, destLen, module.name, LangC)
 	OR (destLen > LEN(dir) - 3)
 	THEN
 		ret := Cli.ErrTooLongOutName
@@ -183,14 +194,15 @@ END OpenCOutput;
 PROCEDURE OpenSingleOutput(VAR out: File.Out;
                            module: Ast.Module; orName, ext: ARRAY OF CHAR;
                            errOpen: INTEGER;
-                           VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
+                           VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
+                           lang: INTEGER): INTEGER;
 VAR destLen: INTEGER;
     ret: INTEGER;
 BEGIN
 	out := NIL;
 	destLen := dirLen;
 	IF ~Chars0X.CopyString(dir, destLen, Exec.dirSep)
-	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name)
+	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name, lang)
 	  OR (module = NIL) & Chars0X.CopyString   (dir, destLen, orName)
 	    )
 	OR ~Chars0X.CopyString(dir, destLen, ext)
@@ -212,7 +224,7 @@ PROCEDURE OpenJavaOutput(VAR out: File.Out;
                          VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 
 	RETURN OpenSingleOutput(out, module, orName, ".java", Cli.ErrOpenJava,
-	                        dir, dirLen)
+	                        dir, dirLen, Java)
 END OpenJavaOutput;
 
 PROCEDURE OpenJsOutput(VAR out: File.Out;
@@ -220,7 +232,7 @@ PROCEDURE OpenJsOutput(VAR out: File.Out;
                        VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 
 	RETURN OpenSingleOutput(out, module, orName, ".js", Cli.ErrOpenJs,
-	                        dir, dirLen)
+	                        dir, dirLen, Js)
 END OpenJsOutput;
 
 PROCEDURE OpenOberonOutput(VAR out: File.Out;
@@ -228,7 +240,7 @@ PROCEDURE OpenOberonOutput(VAR out: File.Out;
                            VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
 
 	RETURN OpenSingleOutput(out, module, "", ext, Cli.ErrOpenOberon,
-	                        dir, dirLen)
+	                        dir, dirLen, Oberon)
 END OpenOberonOutput;
 
 PROCEDURE NewProvider(VAR p: ModulesStorage.Provider; VAR opt: Parser.Options;
@@ -279,7 +291,7 @@ BEGIN
 				(* TODO *)
 				ASSERT(Chars0X.CopyChars (name, nameLen, cDirs, i, i + cDirsLen)
 				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & CopyModuleNameForFile(name, nameLen, module.name, LangC)
 				     & Chars0X.CopyString(name, nameLen, ".c")
 				);
 				IF Files.Exist(name, 0) THEN
@@ -655,7 +667,7 @@ BEGIN
 				(* TODO *)
 				ASSERT(Chars0X.CopyChars(name, nameLen, javaDirs, i, i + javaDirsLen)
 				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & CopyModuleNameForFile(name, nameLen, module.name, Java)
 				     & Chars0X.CopyString(name, nameLen, ".java")
 				);
 				IF Files.Exist(name, 0) THEN
@@ -830,7 +842,7 @@ PROCEDURE AppendModuleName(VAR name: ARRAY OF CHAR; VAR nameLen: INTEGER;
                            ): BOOLEAN;
 BEGIN
 	RETURN Chars0X.CopyString   (name, nameLen, Exec.dirSep)
-	     & CopyModuleNameForFile(name, nameLen, module.name)
+	     & CopyModuleNameForFile(name, nameLen, module.name, Js)
 	     & Chars0X.CopyString   (name, nameLen, ext)
 END AppendModuleName;
 
@@ -865,7 +877,7 @@ BEGIN
 				(* TODO *)
 				ASSERT(Chars0X.CopyChars    (name, nameLen, jsDirs, i, i + jsDirsLen)
 				     & Chars0X.CopyString   (name, nameLen, Exec.dirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name)
+				     & CopyModuleNameForFile(name, nameLen, module.name, Js)
 				     & Chars0X.CopyString   (name, nameLen, ".js")
 				);
 				IF Files.Exist(name, 0) THEN

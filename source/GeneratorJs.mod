@@ -1,5 +1,5 @@
 (*  Generator of Javascript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2020 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -96,6 +96,16 @@ BEGIN
 	END
 END Name;
 
+PROCEDURE IsSpecModuleName(name: Strings.String): BOOLEAN;
+VAR c: CHAR;
+BEGIN
+	c := name.block.s[name.ofs];
+	RETURN ("a" <= c) & (c <= "z")
+	     & (   Strings.IsEqualToString(name, "module")
+	        OR SpecIdentChecker.IsJsKeyWord(name)
+	       )
+END IsSpecModuleName;
+
 PROCEDURE GlobalName(VAR gen: Generator; decl: Ast.Declaration);
 BEGIN
 	IF (decl.module # NIL) & (gen.module # decl.module.m)
@@ -110,7 +120,7 @@ BEGIN
 			ELSE
 				Ident(gen, decl.module.m.ext(Ast.Import).name)
 			END;
-			IF SpecIdentChecker.IsSpecModuleName(decl.module.m.name)
+			IF IsSpecModuleName(decl.module.m.name)
 			 & ~decl.module.m.spec
 			THEN
 				Text.Str(gen, "_.")
@@ -1985,10 +1995,12 @@ PROCEDURE Imports(VAR gen: Generator; m: Ast.Module);
 VAR d: Ast.Declaration;
 
 	PROCEDURE Import(VAR gen: Generator; decl: Ast.Declaration);
+	VAR ofs: INTEGER;
 	BEGIN
 		Text.Str(gen, "var ");
 		Ident(gen, decl.name);
-		Text.Str(gen, " = o7.import.");
+		ofs := ORD(~IsSpecModuleName(decl.module.m.name));
+		Text.Data(gen, "_ = o7.import.", ofs, 14 - ofs);
 		Ident(gen, decl.module.m.name);
 		Text.StrLn(gen, ";");
 		ASSERT(decl.module.m.ext = NIL);
@@ -2063,9 +2075,6 @@ BEGIN
 	Text.StrLn(gen, "var module = {};");
 	Text.Str(gen, "o7.export.");
 	Name(gen, module);
-	IF SpecIdentChecker.IsSpecModuleName(module.name) & ~module.spec THEN
-		Text.Str(gen, "_")
-	END;
 	Text.StrLn(gen, " = module;");
 	Text.Ln(gen);
 

@@ -246,7 +246,7 @@ BEGIN
 		name := decl.module.m.name
 	END;
 	Text.String(gen, name);
-	i := ORD(~SpecIdentChecker.IsSpecModuleName(name));
+	i := ORD(~SpecIdentChecker.IsSpecModuleName(name) & ~SpecIdentChecker.IsSpecCHeaderName(name));
 	Text.Data(gen, "_.h",  i, 3 - i);
 	Text.StrLn(gen, Utf8.DQuote)
 END Import;
