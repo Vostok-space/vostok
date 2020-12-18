@@ -21,7 +21,7 @@ License is LGPL for translator's code and Apache for libraries, tests and
 examples.
 
 ## Install in Ubuntu 18.04:
-Add [repository](https://translate.google.com/translate?sl=ru&tl=en&u=http%3A%2F%2Fobertone.ru%2Frepo) and execute command:
+Add [repository](https://translate.google.com/translate?sl=ru&tl=en&u=https://wiki.oberon.org/repo) and execute command:
 
     $ /usr/bin/sudo apt install vostok-bin
 
@@ -106,5 +106,5 @@ Russian-speaking forums, but possible to ask in english:
 [zx.oberon2.ru](https://zx.oberon2.ru/forum/viewforum.php?f=117)
 
 ## News:
-Russian [blog](https://vostok-space.blogspot.com/) through
-[google translate](https://translate.google.com/translate?sl=ru&tl=en&u=https%3A%2F%2Fvostok-space.blogspot.com)
+[Russian blog](https://vostok-space.blogspot.com/) through
+[Google translate](https://translate.google.com/translate?sl=ru&tl=en&u=https://vostok-space.blogspot.com)

@@ -21,7 +21,7 @@
 под Apache License.
 
 ## Установка в Ubuntu 18.04:
-Добавить [репозиторий](http://obertone.ru/repo) в систему и выполнить команду:
+Добавить [репозиторий](https://wiki.oberon.org/repo) в систему и выполнить команду:
 
     $ /usr/bin/sudo apt install vostok-bin
 
