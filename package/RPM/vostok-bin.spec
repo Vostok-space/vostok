@@ -21,7 +21,7 @@ Oberon-07 translator from "Vostok"-project with defensive style of generated cod
 %build
 mkdir result
 ./init.sh && result/bs-ost run make.Build -infr . -m source
-result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s -static"
+result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s"
 
 %install
 rm -rf %{buildroot}

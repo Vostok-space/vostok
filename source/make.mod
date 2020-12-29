@@ -17,7 +17,7 @@
  *)
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, CDir, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
+ IMPORT Log, Exec := PlatformExec, Dir, CDir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
 
  CONST
    C = 0; Java = 1; Js = 2;
@@ -437,12 +437,20 @@ MODULE make;
  END RpmBuild;
 
  PROCEDURE GetRpmTarName(VAR tar: ARRAY OF CHAR; name: ARRAY OF CHAR): BOOLEAN;
- VAR ofs: INTEGER;
+ VAR ofs: INTEGER; corr: BOOLEAN;
  BEGIN
    ofs := 0;
+   corr := Env.Get(tar, ofs, "HOME")
+         & Chars0X.CopyString(tar, ofs, "/RPM");
+   IF corr & ~CFiles.Exist(tar, 0) THEN
+      ofs := 0;
+      corr := Env.Get(tar, ofs, "HOME")
+            & Chars0X.CopyString(tar, ofs, "/rpmbuild")
+            & CFiles.Exist(tar, 0)
+   END
  RETURN
-   Env.Get(tar, ofs, "HOME")
- & Chars0X.CopyString(tar, ofs, "/rpmbuild/SOURCES/")
+   corr
+ & Chars0X.CopyString(tar, ofs, "/SOURCES/")
  & Chars0X.CopyString(tar, ofs, name)
  & Chars0X.CopyString(tar, ofs, ".tar.bz2")
  END GetRpmTarName;
@@ -487,7 +495,7 @@ MODULE make;
          & RpmBuild("../package/RPM/vostok-bin.spec")
          & FS.ChangeDir("..");
      IF ~ok THEN
-       Msg("Failed to pack library to rpm")
+       Msg("Failed to pack executable binary to rpm")
      END
    END
  END RpmBin;
