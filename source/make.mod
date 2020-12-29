@@ -17,9 +17,13 @@
  *)
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, CDir, Platform, FS := FileSystemUtil, Chars0X;
+ IMPORT Log, Exec := PlatformExec, Dir, CDir, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
 
- CONST C = 0; Java = 1; Js = 2;
+ CONST
+   C = 0; Java = 1; Js = 2;
+
+   BinVer = "0.0.3.dev";
+   LibVer = "0.0.2.dev";
 
  VAR ok*, windows, posix: BOOLEAN;
      lang: INTEGER;
@@ -353,6 +357,16 @@ MODULE make;
  & (Exec.Do(cmd) = Exec.Ok)
  END Gzip;
 
+ PROCEDURE TarBz2(src, dest: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "tar")
+ & Exec.Add(cmd, "cvfj")
+ & Exec.Add(cmd, dest)
+ & Exec.Add(cmd, src)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END TarBz2;
+
  PROCEDURE DebLib*;
  BEGIN
    IF ok THEN
@@ -413,6 +427,77 @@ MODULE make;
    DebAndroid
  END Deb;
 
+ PROCEDURE RpmBuild(spec: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "rpmbuild")
+ & Exec.Add(cmd, "-ba")
+ & Exec.Add(cmd, spec)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END RpmBuild;
+
+ PROCEDURE GetRpmTarName(VAR tar: ARRAY OF CHAR; name: ARRAY OF CHAR): BOOLEAN;
+ VAR ofs: INTEGER;
+ BEGIN
+   ofs := 0;
+ RETURN
+   Env.Get(tar, ofs, "HOME")
+ & Chars0X.CopyString(tar, ofs, "/rpmbuild/SOURCES/")
+ & Chars0X.CopyString(tar, ofs, name)
+ & Chars0X.CopyString(tar, ofs, ".tar.bz2")
+ END GetRpmTarName;
+
+ PROCEDURE RpmLib*;
+ CONST Prefix = "vostok-deflib-";
+ VAR dir, tar: ARRAY 1024 OF CHAR;
+ BEGIN
+   IF ok THEN
+     ok := Concat(dir, Prefix, LibVer)
+         & MakeDir("result/", dir)
+         & Copy("library", TRUE, "result/", dir)
+         & Copy("singularity", TRUE, "result/", dir)
+         & FS.ChangeDir("result")
+         & GetRpmTarName(tar, dir)
+         & TarBz2(dir, tar)
+         & FS.RemoveDir(dir)
+         & RpmBuild("../package/RPM/vostok-deflib.spec")
+         & FS.ChangeDir("..");
+     IF ~ok THEN
+       Msg("Failed to pack library to rpm")
+     END
+   END
+ END RpmLib;
+
+ PROCEDURE RpmBin*;
+ CONST Prefix = "vostok-bin-";
+ VAR dir, tar: ARRAY 1024 OF CHAR;
+ BEGIN
+   IF ok THEN
+     ok := Concat(dir, Prefix, BinVer)
+         & MakeDir("result/", dir)
+         & Copy("library", TRUE, "result/", dir)
+         & Copy("singularity", TRUE, "result/", dir)
+         & Copy("source", TRUE, "result/", dir)
+         & Copy("bootstrap", TRUE, "result/", dir)
+         & Copy("init.sh", TRUE, "result/", dir)
+         & FS.ChangeDir("result")
+         & GetRpmTarName(tar, dir)
+         & TarBz2(dir, tar)
+         & FS.RemoveDir(dir)
+         & RpmBuild("../package/RPM/vostok-bin.spec")
+         & FS.ChangeDir("..");
+     IF ~ok THEN
+       Msg("Failed to pack library to rpm")
+     END
+   END
+ END RpmBin;
+
+ PROCEDURE Rpm*;
+ BEGIN
+   RpmLib;
+   RpmBin
+ END Rpm;
+
  PROCEDURE Help*;
  BEGIN
    Msg("Commands:");
@@ -431,6 +516,7 @@ MODULE make;
    Msg("  Remove        remove installed files from /usr/local");
    Msg("  RemoveFrom(d) remove files from target directory");
    Msg("  Deb           pack source library and translator to .deb-files");
+   Msg("  Rpm           pack source library and translator to .rpm-files");
 
    Msg(""); Msg("Examples:");
    Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
