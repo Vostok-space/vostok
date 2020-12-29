@@ -22,6 +22,8 @@ extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char,
 
 extern o7_int_t Unistd_Sysconf(o7_int_t name);
 
+extern o7_int_t Unistd_Chdir(O7_FPA(o7_char const, path));
+
 O7_ALWAYS_INLINE void Unistd_init(void) { ; }
 O7_ALWAYS_INLINE void Unistd_done(void) { ; }
 #endif

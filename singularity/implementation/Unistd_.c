@@ -51,3 +51,8 @@ extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char,
 extern o7_int_t Unistd_Sysconf(o7_int_t name) {
 	return sysconf(name);
 }
+
+extern o7_int_t Unistd_Chdir(O7_FPA(o7_char const, path)) {
+	O7_ASSERT(Len(O7_APA(path)) < O7_FPA_LEN(path));
+	return (o7_int_t)chdir((char const *)path);
+}

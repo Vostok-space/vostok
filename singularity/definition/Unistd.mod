@@ -34,7 +34,7 @@ MODULE Unistd;
   PROCEDURE Readlink*(pathname: ARRAY OF CHAR; VAR buf: ARRAY OF CHAR): INTEGER;
   BEGIN
     ASSERT(Platform.Posix);
-    ASSERT(Len(pathname) < LEN(pathname));
+    ASSERT(Len(pathname) < LEN(pathname))
   RETURN
     -1
   END Readlink;
@@ -45,5 +45,12 @@ MODULE Unistd;
   RETURN
     -1
   END Sysconf;
+
+  PROCEDURE Chdir*(name: ARRAY OF CHAR): INTEGER;
+  BEGIN
+    ASSERT(Platform.Posix)
+  RETURN
+    -1
+  END Chdir;
 
 END Unistd.
