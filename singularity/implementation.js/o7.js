@@ -214,7 +214,14 @@ var o7;
     toUtf8 = function(str) {
       var a;
       a = utf8Enc.encode(str);
-      a.push(0x0);
+      if (a.push) {
+        a.push(0x0);
+      } else {
+        b = new Uint8Array(a.length + 1);
+        b.set(a, 0);
+        b[a.length] = 0x0;
+        a = b;
+      }
       return a;
     };
 
