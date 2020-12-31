@@ -328,6 +328,13 @@ var o7;
     return utf;
   };
 
+  o7.utf8ByOfsToStr = function(bytes, ofs) {
+    if (ofs > 0) {
+      bytes = bytes.slice(ofs);
+    }
+    return o7.utf8ToStr(bytes);
+  }
+
   /* str must be correct 7bit ASCII string */
   o7.toAscii = function(str) {
     var bytes, len, i;

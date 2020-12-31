@@ -1,4 +1,4 @@
-/* Copyright 2019 ComdivByZero
+/* Copyright 2019-2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,14 @@ module.GiB = GiB;
 function File() {}
 File.prototype.assign = function(r) {}
 
+var utf8ByOfsToStr = o7.utf8ByOfsToStr;
+
 function Open(bytes_name, ofs, mode) {
 	var f, name, fd, smode, i;
 
 	f = null;
 	if (fs) {
-		name = o7.utf8ToStr1(bytes_name, ofs);
+		name = utf8ByOfsToStr(bytes_name, ofs);
 		if (name != null) {
 			smode = "r";
 			for (i = 0; i < mode.length; i += 1) {
@@ -137,7 +139,7 @@ module.Tell = Tell;
 
 function Remove(name, ofs) {
 	var str;
-	str = o7.utf8ToStr1(name, ofs);
+	str = utf8ByOfsToStr(name, ofs);
 	if (str != null) {
 		fs.unlinkSync(str);
 	}
@@ -148,7 +150,7 @@ module.Remove = Remove;
 
 function Exist(name, ofs) {
 	var str;
-	str = o7.utf8ToStr1(name, ofs);
+	str = utf8ByOfsToStr(name, ofs);
 	return str != null && fs.existsSync(str);
 }
 module.Exist = Exist;
