@@ -1,4 +1,4 @@
-/* Copyright 2018-2019 ComdivByZero
+/* Copyright 2018-2020 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,7 +198,6 @@ var o7;
 
   if (typeof Uint8Array !== 'undefined') {
     u8array = function(array) {
-      /* TODO нужен ли? */
       return new Uint8Array(array);
     }
   } else {
@@ -212,7 +211,7 @@ var o7;
     utf8Dec = new TextDecoder('utf-8');
 
     toUtf8 = function(str) {
-      var a;
+      var a, b;
       a = utf8Enc.encode(str);
       if (a.push) {
         a.push(0x0);
@@ -329,14 +328,6 @@ var o7;
     return utf;
   };
 
-  /* TODO более оптимальный код и нормальное название */
-  o7.utf8ToStr1 = function(bytes, ofs) {
-    if (ofs > 0) {
-      bytes = bytes.slice(ofs);
-    }
-    return o7.utf8ToStr(bytes);
-  }
-
   /* str must be correct 7bit ASCII string */
   o7.toAscii = function(str) {
     var bytes, len, i;
@@ -443,12 +434,7 @@ var o7;
   function strchcmp(s1, c2) {
     var c1, ret;
 
-    if (s1.length == 0) {
-      /* TODO не должно быть таких строк */
-      c1 = 0;
-    } else {
-      c1 = s1[0];
-    }
+    c1 = s1[0];
     ret = c1 - c2;
     if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
         ret = s1[1];
@@ -476,7 +462,6 @@ var o7;
   };
 
   o7.copy = function(d, s) {
-      /* TODO */
       var i, len;
       len = d.length;
       for (i = 0; i < len; i += 1) {
