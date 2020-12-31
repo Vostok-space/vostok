@@ -15,7 +15,7 @@
 var o7;
 (function(o7) { "use strict";
 
-  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache;
+  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache, utf8ToStr;
 
   utf8Cache = [];
 
@@ -206,6 +206,63 @@ var o7;
     };
   }
 
+  function arrayUtf8ToStr(bytes) {
+    var str, buf, i, len, ch, ch1, ch2, ch3, ok;
+
+    buf = [];
+    len = bytes.length;
+    i = 0;
+    ok = true;
+    while (i < len && bytes[i] != 0) {
+      ch = bytes[i];
+      i += 1;
+      if (ch < 0x0080) {
+        buf.push(String.fromCharCode(ch));
+      } else if (ch < 0x00C0) {
+        ok = false;
+      } else if (ch < 0x00E0) {
+        if (i < len) {
+          ch1 = bytes[i];
+          i += 1;
+          ok = (ch1 >> 6) == 2;
+          buf.push(String.fromCharCode(((ch & 0x001F) << 6) | (ch1 & 0x003F)));
+        } else {
+          ok = false;
+        }
+      } else if (ch < 0x00F0) {
+        if (i + 1 < len) {
+          ch1 = bytes[i];
+          i += 1;
+          ch2 = bytes[i];
+          i += 1;
+          ok = ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2);
+          buf.push(String.fromCharCode(((ch & 0x000F) << 12) | ((ch1 & 0x003F) << 6) | (ch2 & 0x003F)));
+        } else {
+          ok = false;
+        }
+      } else {
+        if (i + 2 < len) {
+          ch1 = bytes[i];
+          i += 1;
+          ch2 = bytes[i];
+          i += 1;
+          ch3 = bytes[i];
+          i += 1;
+          ok = ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2) && ((ch3 >> 6) == 2);
+          buf.push(String.fromCharCode(((ch & 0x0007) << 18) | ((ch1 & 0x003F) << 12) | ((ch2 & 0x003F) << 6) | (ch3 & 0x003F)));
+        } else {
+          ok = false;
+        }
+      }
+    }
+    if (ok) {
+      str = buf.join('');
+    } else {
+      str = null;
+    }
+    return str;
+  };
+
   if (typeof TextDecoder !== 'undefined') {
     utf8Enc = new TextEncoder('utf-8');
     utf8Dec = new TextDecoder('utf-8');
@@ -224,8 +281,14 @@ var o7;
       return a;
     };
 
-    o7.utf8ToStr = function(bytes) {
-      return utf8Dec.decode(bytes);
+    utf8ToStr = function(bytes) {
+      var str;
+      if (bytes instanceof Uint8Array) {
+        str = utf8Dec.decode(bytes);
+      } else {
+        str = arrayUtf8ToStr(bytes);
+      }
+      return str;
     };
   } else {
     /* str must be correct utf16 string */
@@ -259,64 +322,9 @@ var o7;
       return u8array(bytes);
     };
 
-    o7.utf8ToStr = function(bytes) {
-      var str, buf, i, len, ch, ch1, ch2, ch3, ok;
-
-      buf = [];
-      len = bytes.length;
-      i = 0;
-      ok = true;
-      while (i < len && bytes[i] != 0) {
-        ch = bytes[i];
-        i += 1;
-        if (ch < 0x0080) {
-          buf.push(String.fromCharCode(ch));
-        } else if (ch < 0x00C0) {
-          ok = false;
-        } else if (ch < 0x00E0) {
-          if (i < len) {
-            ch1 = bytes[i];
-            i += 1;
-            ok = (ch1 >> 6) == 2;
-            buf.push(String.fromCharCode(((ch & 0x001F) << 6) | (ch1 & 0x003F)));
-          } else {
-            ok = false;
-          }
-        } else if (ch < 0x00F0) {
-          if (i + 1 < len) {
-            ch1 = bytes[i];
-            i += 1;
-            ch2 = bytes[i];
-            i += 1;
-            ok = ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2);
-            buf.push(String.fromCharCode(((ch & 0x000F) << 12) | ((ch1 & 0x003F) << 6) | (ch2 & 0x003F)));
-          } else {
-            ok = false;
-          }
-        } else {
-          if (i + 2 < len) {
-            ch1 = bytes[i];
-            i += 1;
-            ch2 = bytes[i];
-            i += 1;
-            ch3 = bytes[i];
-            i += 1;
-            /* TODO */
-            ok = ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2) && ((ch3 >> 6) == 2);
-            buf.push(String.fromCharCode(((ch & 0x0007) << 18) | ((ch1 & 0x003F) << 12) | ((ch2 & 0x003F) << 6) | (ch3 & 0x003F)));
-          } else {
-            ok = false;
-          }
-        }
-      }
-      if (ok) {
-        str = buf.join('');
-      } else {
-        str = null;
-      }
-      return str;
-    };
+    utf8ToStr = arrayUtf8ToStr;
   }
+  o7.utf8ToStr = utf8ToStr;
 
   o7.toUtf8 = function(str) {
     var utf;
@@ -332,7 +340,7 @@ var o7;
     if (ofs > 0) {
       bytes = bytes.slice(ofs);
     }
-    return o7.utf8ToStr(bytes);
+    return utf8ToStr(bytes);
   }
 
   /* str must be correct 7bit ASCII string */
