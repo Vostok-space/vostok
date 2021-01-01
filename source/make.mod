@@ -17,7 +17,7 @@
  *)
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, CDir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
+ IMPORT Log, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
 
  CONST
    C = 0; Java = 1; Js = 2;
@@ -338,12 +338,12 @@ MODULE make;
 
  PROCEDURE HashAndPack(name: ARRAY OF CHAR): BOOLEAN;
  RETURN
-   CDir.SetCurrent("result", 0)
- & CDir.SetCurrent(name, 0)
+   FS.ChangeDir("result")
+ & FS.ChangeDir(name)
  & Md5Deep("usr", "DEBIAN/md5sums")
- & CDir.SetCurrent("..", 0)
+ & FS.ChangeDir("..")
  & DpkgDeb(name)
- & CDir.SetCurrent("..", 0)
+ & FS.ChangeDir("..")
  END HashAndPack;
 
  PROCEDURE Gzip(src, dest: ARRAY OF CHAR): BOOLEAN;
@@ -464,6 +464,7 @@ MODULE make;
          & MakeDir("result/", dir)
          & Copy("library", TRUE, "result/", dir)
          & Copy("singularity", TRUE, "result/", dir)
+         & Copy("LICENSE-APACHE.txt", TRUE, "result/", dir)
          & FS.ChangeDir("result")
          & GetRpmTarName(tar, dir)
          & TarBz2(dir, tar)
@@ -488,6 +489,8 @@ MODULE make;
          & Copy("source", TRUE, "result/", dir)
          & Copy("bootstrap", TRUE, "result/", dir)
          & Copy("init.sh", TRUE, "result/", dir)
+         & Copy("LICENSE-GPL.md", TRUE, "result/", dir)
+         & Copy("LICENSE-LGPL.md", TRUE, "result/", dir)
          & FS.ChangeDir("result")
          & GetRpmTarName(tar, dir)
          & TarBz2(dir, tar)
@@ -510,6 +513,7 @@ MODULE make;
  BEGIN
    Msg("Commands:");
    Msg("  Build         build from source ost translator by bootstrap");
+   Msg("  BuildAndroid  build simple android builder");
    Msg("  Test          build and run tests from test/source");
    Msg("  Example       build examples");
    Msg("  Self          build itself then run tests");

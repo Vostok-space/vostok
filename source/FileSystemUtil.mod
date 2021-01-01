@@ -16,7 +16,7 @@
  *)
 MODULE FileSystemUtil;
 
-  IMPORT Platform, Exec := PlatformExec, Files := CFiles, Unistd;
+  IMPORT Platform, Exec := PlatformExec, Files := CFiles, CDir;
 
   PROCEDURE MakeDir*(name: ARRAY OF CHAR): BOOLEAN;
   VAR cmd: Exec.Code;
@@ -50,8 +50,7 @@ MODULE FileSystemUtil;
 
   PROCEDURE ChangeDir*(name: ARRAY OF CHAR): BOOLEAN;
   BEGIN
-    (* TODO *)
-    RETURN Platform.Posix & (Unistd.Chdir(name) = 0)
+    RETURN CDir.SetCurrent(name, 0)
   END ChangeDir;
 
   PROCEDURE Copy*(src, dest: ARRAY OF CHAR; dir: BOOLEAN): BOOLEAN;
