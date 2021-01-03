@@ -1,4 +1,4 @@
-(*  Blank Interface of Java-code generator
+(*  Blank interface of Java-code generator
  *
  *  Copyright (C) 2019 ComdivByZero
  *
