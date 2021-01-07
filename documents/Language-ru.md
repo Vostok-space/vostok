@@ -2,7 +2,7 @@ Oberon-07
 ===========
 
 [Сообщение о языке](https://www.inf.ethz.ch/personal/wirth/Oberon/Oberon07.Report.pdf)
-от его автора и [перевод](https://modela.online/oberon.html) на
+от его автора и [перевод](https://online.oberon.org/oberon) на
 русский язык.
 
 ## Уточнения:
