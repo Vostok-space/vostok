@@ -137,6 +137,44 @@ BEGIN
 	ASSERT(r[2].j = -5)
 END OfRecord;
 
+PROCEDURE BuiltinFuncs;
+VAR ar: ARRAY 2, 2 OF INTEGER; i: INTEGER; sets: ARRAY 3 OF SET; rl: ARRAY 1 OF REAL; set: SET;
+BEGIN
+	FOR i := 0 TO 3 DO
+		ar[i DIV 2, i MOD 2] := 0
+	END;
+
+	INC(ar[1,0]);
+	ASSERT(ar[1,0] = 1);
+	DEC(ar[0,1]);
+	ASSERT(ar[0,1] = -1);
+
+	INC(ar[0,1], 100);
+	ASSERT(ar[0,1] = 99);
+	DEC(ar[1,0], 30);
+	ASSERT(ar[1,0] = -29);
+
+	set := {1, 8};
+	INCL(set, 31);
+	ASSERT(set = {1, 8, 31});
+
+	sets[2] := {};
+	INCL(sets[2], 17);
+	ASSERT({17} = sets[2]);
+
+	sets[1] := {1..23};
+	EXCL(sets[1], 13);
+	ASSERT({1..12,14..23} = sets[1]);
+
+	rl[0] := 0.5;
+	PACK(rl[0], 4);
+	ASSERT(rl[0] = 8.0);
+
+	UNPK(rl[0], ar[0, 0]);
+	ASSERT(rl[0] = 1.0);
+	ASSERT(ar[0,0] = 3)
+END BuiltinFuncs;
+
 PROCEDURE Go*;
 VAR i: INTEGER;
 BEGIN
@@ -177,7 +215,9 @@ BEGIN
 		ASSERT(bb[1][0,i] = 3 * i + 2)
 	END;
 
-	OfRecord
+	OfRecord;
+
+	BuiltinFuncs
 END Go;
 
 PROCEDURE Error*(s: INTEGER);

@@ -1,5 +1,5 @@
 (*  Ukraine messages for interface
- *  Copyright (C) 2018-2019 ComdivByZero
+ *  Copyright (C) 2018-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -352,7 +352,7 @@ END ParseError;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Транслятор Oberon-07 в C, Java, Javascript, Oberon. 2019");
+S("Транслятор Oberon-07 в C, Java, Javascript, Oberon. 2021");
 S("Використання: ");
 S(" 0) ost help     # докладна довідка");
 S(" 1) ost to-c     Код ВихТека {-m ТзМ | -i ТзІ | -infr Інфр}");

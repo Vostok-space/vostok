@@ -1,4 +1,4 @@
-/* Copyright 2019 ComdivByZero
+/* Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ module.supported = typeof Function !== 'undefined';
 var lastResult, lastException;
 
 function New(c, c_ai) {
+	c = o7.getjsa(c);
 	try {
 		c[c_ai] = new Code();
 	} catch (exc) {
@@ -42,6 +43,7 @@ module.New = New;
 function Add(c, partCode) {
 	var i, len;
 	o7.assert(c != null);
+	partCode = o7.getjsa(partCode);
 	i = 0;
 	len = partCode.length;
 	while (i < len && partCode[i] != 0x00) {
@@ -94,6 +96,7 @@ function Do(c) {
 module.Do = Do;
 
 function DoStr(str) {
+	str = o7.getjsa(str);
 	o7.assert((0xFF & str[0]) != 0x00);
 	return Run(o7.utf8ToStr(str));
 }

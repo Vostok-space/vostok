@@ -1,5 +1,5 @@
 (*  English messages for interface
- *  Copyright (C) 2017-2019 ComdivByZero
+ *  Copyright (C) 2017-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -354,7 +354,7 @@ END ParseError;
 PROCEDURE Usage*(full: BOOLEAN);
 	PROCEDURE Short;
 	BEGIN
-S("Translator from Oberon-07 to C, Java, Javascript, Oberon. 2019");
+S("Translator from Oberon-07 to C, Java, Javascript, Oberon. 2021");
 S("Usage: ost command [parameter] {-option}");
 S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");

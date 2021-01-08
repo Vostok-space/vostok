@@ -1,4 +1,4 @@
-/* Copyright 2019 ComdivByZero
+/* Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ var startCliArg;
 function copy(str, ofs, ofs_ai, argi) {
 	var arg, i, len, j, ok;
 
+	str = o7.getjsa(str);
+	ofs = o7.getjsa(ofs);
+
 	j = ofs[ofs_ai];
 	o7.assert((0 <= j) && (j < str.length));
 
 	arg = o7.toUtf8(process.argv[argi]);
+	arg = o7.getjsa(arg);
 	len = arg.length - 1;
 	ok = j < str.length - len;
 	if (ok) {

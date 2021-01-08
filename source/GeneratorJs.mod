@@ -1,5 +1,5 @@
 (*  Generator of Javascript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
- *  Copyright (C) 2016-2020 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -36,7 +36,8 @@ CONST
 	EcmaScript2015* = 1;
 
 	ForSameType = 0;
-	ForCall     = 0;
+	ForCall     = 1;
+	ForAssign   = 2;
 
 TYPE
 	Options* = POINTER TO RECORD(GenOptions.R)
@@ -206,22 +207,27 @@ VAR sel: Ast.Selector;
 
 	PROCEDURE Array(VAR gen: Generator; VAR typ: Ast.Type;
 	                VAR sel: Ast.Selector; decl: Ast.Declaration;
-	                isDesignatorArray: BOOLEAN);
+	                forAssign: BOOLEAN);
 	VAR i: INTEGER;
 	BEGIN
-		Text.Str(gen, "[");
+		IF ~forAssign OR (sel.next # NIL) THEN
+		(*Text.Str(gen, ".[");*)
+		Text.Str(gen, ".at(");
 		expression(gen, sel(Ast.SelArray).index, {});
 		typ := typ.type;
 		sel := sel.next;
 		i := 1;
-		WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
-			Text.Str(gen, "][");
+		WHILE (sel # NIL) & (sel IS Ast.SelArray) & (~forAssign OR (sel.next # NIL)) DO
+			(*Text.Str(gen, "][");*)
+			Text.Str(gen, ").at(");
 			expression(gen, sel(Ast.SelArray).index, {});
 			INC(i);
 			sel := sel.next;
 			typ := typ.type
 		END;
-		Text.Str(gen, "]")
+		(*Text.Str(gen, "]")*)
+		Text.Str(gen, ")")
+		END
 	END Array;
 BEGIN
 	IF i >= 0 THEN
@@ -237,7 +243,7 @@ BEGIN
 		ELSIF sel IS Ast.SelArray THEN
 			Selector(gen, sels, i, typ, desType, set);
 			Array(gen, typ, sel, sels.decl,
-			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
+			      ForAssign IN set)
 		ELSIF sel IS Ast.SelPointer THEN
 			Selector(gen, sels, i, typ, desType, set)
 		ELSE ASSERT(sel IS Ast.SelGuard);
@@ -333,7 +339,7 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 				typ := typ.type
 			UNTIL typ.id # Ast.IdArray;
 
-			Text.Str(gen, " = o7.array(");
+			Text.Str(gen, " = o7.sarray(");
 			(*type(gen, NIL, typ, FALSE, FALSE);*)
 			expression(gen, sizes[0], {});
 			FOR i := 1 TO l DO
@@ -410,6 +416,18 @@ BEGIN
 	END
 END VarInit;
 
+PROCEDURE FindLastSel(d: Ast.Designator): Ast.Selector;
+VAR s: Ast.Selector;
+BEGIN
+	s := d.sel;
+	IF s # NIL THEN
+		WHILE s.next # NIL DO
+			s := s.next
+		END
+	END
+	RETURN s
+END FindLastSel;
+
 PROCEDURE ExpressionBraced(VAR gen: Generator;
                            l: ARRAY OF CHAR; e: Ast.Expression; r: ARRAY OF CHAR;
                            set: SET);
@@ -452,7 +470,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					GlobalName(gen, des.decl);
 					sel := des.sel;
 					WHILE sel # NIL DO
-						Text.Str(gen, "[0]");
+						(*Text.Str(gen, "[0]");*)
+						Text.Str(gen, ".at(0)");
 						sel := sel.next
 					END;
 					Text.Str(gen, ".length")
@@ -460,11 +479,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			END Len;
 
 			PROCEDURE New(VAR gen: Generator; e: Ast.Expression);
+			VAR lastSel: Ast.Selector;
 			BEGIN
-				Designator(gen, e(Ast.Designator), {ForSameType});
-				Text.Str(gen, " = new ");
-				GlobalNamePointer(gen, e.type);
-				Text.Str(gen, "()")
+				Designator(gen, e(Ast.Designator), {ForSameType, ForAssign});
+				lastSel := FindLastSel(e(Ast.Designator));
+				IF (lastSel # NIL) & (lastSel IS Ast.SelArray) THEN
+					Text.Str(gen, ".put(");
+					expression(gen, lastSel(Ast.SelArray).index, {});
+					Text.Str(gen, ", new ");
+					GlobalNamePointer(gen, e.type);
+					Text.Str(gen, "())")
+				ELSE
+					Text.Str(gen, " = new ");
+					GlobalNamePointer(gen, e.type);
+					Text.Str(gen, "()")
+				END;
 			END New;
 
 			PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
@@ -483,44 +512,89 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			END Ord;
 
 			PROCEDURE Inc(VAR gen: Generator;
-			              e1: Ast.Designator; p2: Ast.Parameter);
+			              e1: Ast.Designator; p2: Ast.Parameter;
+			              mul: INTEGER);
+			VAR sel: Ast.Selector;
 			BEGIN
-				Designator(gen, e1, {ForSameType});
-				IF gen.opt.checkArith THEN
-					Text.Str(gen, " = o7.add(");
+				ASSERT((mul = -1) OR (mul = 1));
+
+				Designator(gen, e1, {ForSameType, ForAssign});
+				sel := FindLastSel(e1);
+				IF (sel # NIL) & (sel IS Ast.SelArray) THEN
+					ExpressionBraced(gen, ".inc(", sel(Ast.SelArray).index, ", ", {});
+					IF p2 = NIL THEN
+						IF mul = -1 THEN
+							Text.Str(gen, "-1)")
+						ELSE
+							Text.Str(gen, "1)")
+						END
+					ELSIF mul = -1 THEN
+						ExpressionBraced(gen, "-(", p2.expr, "))", {})
+					ELSE
+						ExpressionBraced(gen, "", p2.expr, ")", {})
+					END
+				ELSIF gen.opt.checkArith THEN
+					IF mul = 1 THEN
+						Text.Str(gen, " = o7.add(")
+					ELSE
+						Text.Str(gen, " = o7.sub(")
+					END;
 					Designator(gen, e1, {});
 					IF p2 = NIL THEN
 						Text.Str(gen, ", 1)")
 					ELSE
 						ExpressionBraced(gen, ", ", p2.expr, ")", {})
 					END
-				ELSIF p2 = NIL THEN
+				ELSIF p2 # NIL THEN
+					IF mul = 1 THEN
+						Text.Str(gen, " += ")
+					ELSE
+						Text.Str(gen, " -= ")
+					END;
+					Expression(gen, p2.expr, {})
+				ELSIF mul = 1 THEN
 					Text.Str(gen, "++")
 				ELSE
-					Text.Str(gen, " += ");
-					Expression(gen, p2.expr, {})
+					Text.Str(gen, "--")
 				END
 			END Inc;
 
-			PROCEDURE Dec(VAR gen: Generator;
-			              e1: Ast.Designator; p2: Ast.Parameter);
+			PROCEDURE Incl(VAR gen: Generator; e1, e2: Ast.Expression);
+			VAR sel: Ast.Selector;
 			BEGIN
-				Designator(gen, e1, {ForSameType});
-				IF gen.opt.checkArith THEN
-					Text.Str(gen, " = o7.sub(");
-					Designator(gen, e1, {});
-					IF p2 = NIL THEN
-						Text.Str(gen, ", 1)")
-					ELSE
-						ExpressionBraced(gen, ", ", p2.expr, ")", {})
-					END
-				ELSIF p2 = NIL THEN
-					Text.Str(gen, "--")
+				Expression(gen, e1, {ForSameType, ForAssign});
+
+				sel := FindLastSel(e1(Ast.Designator));
+				IF (sel # NIL) & (sel IS Ast.SelArray) THEN
+					ExpressionBraced(gen, ".incl(", sel(Ast.SelArray).index, ", ", {});
+					Expression(gen, e2, {});
+					Text.Char(gen, ")")
+				ELSIF gen.opt.checkArith THEN
+					ExpressionBraced(gen, " |= o7.incl(", e2, ")", {})
 				ELSE
-					Text.Str(gen, " -= ");
-					Expression(gen, p2.expr, {})
+					Text.Str(gen, " |= 1 << ");
+					Factor(gen, e2, {})
 				END
-			END Dec;
+			END Incl;
+
+			PROCEDURE Excl(VAR gen: Generator; e1, e2: Ast.Expression);
+			VAR sel: Ast.Selector;
+			BEGIN
+				Expression(gen, e1, {ForSameType, ForAssign});
+
+				sel := FindLastSel(e1(Ast.Designator));
+				IF (sel # NIL) & (sel IS Ast.SelArray) THEN
+					ExpressionBraced(gen, ".excl(", sel(Ast.SelArray).index, ", ", {});
+					Expression(gen, e2, {});
+					Text.Char(gen, ")")
+				ELSIF gen.opt.checkArith THEN
+					ExpressionBraced(gen, " &= o7.excl(", e2, ")", {})
+				ELSE
+					Text.Str(gen, " &= ~(1 << ");
+					Factor(gen, e2, {});
+					Text.Str(gen, ")")
+				END
+			END Excl;
 
 			PROCEDURE Assert(VAR gen: Generator; e: Ast.Expression);
 			BEGIN
@@ -533,16 +607,42 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Text.Str(gen, ")")
 			END Assert;
 
-			PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Designator);
-			VAR index: Ast.Expression;
+			PROCEDURE Pack(VAR gen: Generator; e1: Ast.Designator; e2: Ast.Expression);
+			VAR sel: Ast.Selector; arr: BOOLEAN;
 			BEGIN
-				Designator(gen, e1, {ForSameType});
-				ExpressionBraced(gen, " = o7.frexp(", e1, ", ", {});
+				Designator(gen, e1, {ForSameType, ForAssign});
+				sel := FindLastSel(e1);
+				arr := (sel # NIL) & (sel IS Ast.SelArray);
+				IF arr THEN
+					(* TODO *)
+					ExpressionBraced(gen, ".put(", sel(Ast.SelArray).index, ", o7.scalb(", {});
+					Designator(gen, e1, {});
+					Text.Str(gen, ", ");
+				ELSE
+					ExpressionBraced(gen, " = o7.scalb(", e1, ", ", {});
+				END;
+				Expression(gen, e2, {});
+				Text.Data(gen, "))", 0, 1 + ORD(arr))
+			END Pack;
+
+			PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Designator);
+			VAR index: Ast.Expression; sel: Ast.Selector; arr: BOOLEAN;
+			BEGIN
+				Designator(gen, e1, {ForSameType, ForAssign});
+				sel := FindLastSel(e1);
+				arr := (sel # NIL) & (sel IS Ast.SelArray);
+				IF arr THEN
+					ExpressionBraced(gen, ".put(", sel(Ast.SelArray).index, ", o7.frexp(", {});
+					Designator(gen, e1, {});
+					Text.Str(gen, ", ")
+				ELSE
+					ExpressionBraced(gen, " = o7.frexp(", e1, ", ", {})
+				END;
 				index := AstTransform.CutIndex(e2);
 				Expression(gen, e2, {ForSameType});
 				Text.Str(gen, ", ");
 				Expression(gen, index, {});
-				Text.Str(gen, ")")
+				Text.Data(gen, "))", 0, 1 + ORD(arr))
 			END Unpack;
 		BEGIN
 			e1 := call.params.expr;
@@ -581,27 +681,19 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Chr:
 				ExpressionBraced(gen, "o7.itc(", e1, ")", {})
 			| SpecIdent.Inc:
-				Inc(gen, e1(Ast.Designator), p2)
+				Inc(gen, e1(Ast.Designator), p2, +1)
 			| SpecIdent.Dec:
-				Dec(gen, e1(Ast.Designator), p2)
+				Inc(gen, e1(Ast.Designator), p2, -1)
 			| SpecIdent.Incl:
-				Expression(gen, e1, {ForSameType});
-				Text.Str(gen, " |= 1 << ");
-				Factor(gen, p2.expr, {})
+				Incl(gen, e1, p2.expr)
 			| SpecIdent.Excl:
-				Expression(gen, e1, {ForSameType});
-				Text.Str(gen, " &= ~(1 << ");
-				Factor(gen, p2.expr, {});
-				Text.Str(gen, ")")
+				Excl(gen, e1, p2.expr)
 			| SpecIdent.New:
 				New(gen, e1)
 			| SpecIdent.Assert:
 				Assert(gen, e1)
 			| SpecIdent.Pack:
-				Designator(gen, e1(Ast.Designator), {ForSameType});
-				ExpressionBraced(gen, " = o7.scalb(", e1, ", ", {});
-				Expression(gen, p2.expr, {});
-				Text.Str(gen, ")")
+				Pack(gen, e1(Ast.Designator), p2.expr)
 			| SpecIdent.Unpk:
 				Unpack(gen, e1(Ast.Designator), p2.expr(Ast.Designator))
 			END
@@ -1326,7 +1418,8 @@ BEGIN
 		Text.Str(gen, "this.")
 	END;
 	Name(gen, v);
-	Text.Str(gen, "[i_] = new ");
+	(*Text.Str(gen, "[i_] = new ");*)
+	Text.Str(gen, "._[i_] = new ");
 	type(gen, NIL, v.type.type, FALSE, FALSE);
 	Text.StrLn(gen, "();");
 	Text.StrLnClose(gen, "}")
@@ -1691,8 +1784,9 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 	END For;
 
 	PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
-	VAR toByte: BOOLEAN;
+	VAR toByte, forArray: BOOLEAN; lastSel: Ast.Selector;
 	BEGIN
+		forArray := FALSE;
 		toByte := (st.designator.type.id = Ast.IdByte)
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 		        & (st.expr.value = NIL);
@@ -1708,17 +1802,24 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		ELSIF st.designator.type.id = Ast.IdRecord THEN
 			Designator(gen, st.designator, {ForSameType});
 			Text.Str(gen, ".assign(")
-		ELSIF toByte THEN
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, " = o7.itb(")
 		ELSE
-			Designator(gen, st.designator, {ForSameType});
-			Text.Str(gen, " = ")
+			Designator(gen, st.designator, {ForSameType, ForAssign});
+			lastSel := FindLastSel(st.designator);
+			forArray := (lastSel # NIL) & (lastSel IS Ast.SelArray);
+			IF ~forArray THEN
+				Text.Str(gen, " = ")
+			ELSE
+				ExpressionBraced(gen, ".put(", lastSel(Ast.SelArray).index, ", ", {})
+			END;
+			IF toByte THEN
+				Text.Str(gen, "o7.itb(")
+			END
 		END;
 		CheckExpr(gen, st.expr, IsForSameType(st.designator.type, st.expr.type));
 		gen.opt.expectArray := FALSE;
 		CASE ORD(toByte)
 		   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
+		   + ORD(forArray)
 		OF
 		  0: Text.StrLn(gen, ";")
 		| 1: Text.StrLn(gen, ");")

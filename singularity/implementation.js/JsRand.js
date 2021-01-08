@@ -1,4 +1,4 @@
-/* Copyright 2019 ComdivByZero
+/* Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ module.Close = Close;
 
 function Read(buf, ofs, count) {
 	var data, i;
+
+	buf = o7.getjsa(buf);
 
 	o7.assert(0 < count);
 	o7.assert((0 <= ofs) && (ofs <= buf.length - count));

@@ -1,4 +1,4 @@
-/* Copyright 2019-2020 ComdivByZero
+/* Copyright 2019-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ var o7;
 
 var module = {};
 o7.export.CFiles = module;
+
+var getjsa = o7.getjsa;
 
 var fs;
 
@@ -40,6 +42,7 @@ function Open(bytes_name, ofs, mode) {
 		name = utf8ByOfsToStr(bytes_name, ofs);
 		if (name != null) {
 			smode = "r";
+			mode = getjsa(mode);
 			for (i = 0; i < mode.length; i += 1) {
 				if (mode[i] == 'w'.charCodeAt(0)) {
 					smode = "w+";
@@ -81,6 +84,7 @@ function bufGet(size) {
 
 function Read(file, buf, ofs, count) {
 	var data, read, i;
+	buf = getjsa(buf);
 	if (typeof buf !== 'Uint8Aarray') {
 		data = bufGet(count);
 		read = fs.readSync(file.fd, data, 0, count);
@@ -96,6 +100,7 @@ module.Read = Read;
 
 function Write(file, buf, ofs, count) {
 	var data, write, i;
+	buf = getjsa(buf);
 	if (typeof buf !== 'Uint8Aarray') {
 		data = bufGet(count);
 		for (i = 0; i < count; i += 1) {
