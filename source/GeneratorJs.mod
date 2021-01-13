@@ -610,39 +610,39 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			PROCEDURE Pack(VAR gen: Generator; e1: Ast.Designator; e2: Ast.Expression);
 			VAR sel: Ast.Selector; arr: BOOLEAN;
 			BEGIN
-				Designator(gen, e1, {ForSameType, ForAssign});
 				sel := FindLastSel(e1);
 				arr := (sel # NIL) & (sel IS Ast.SelArray);
 				IF arr THEN
-					(* TODO *)
-					ExpressionBraced(gen, ".put(", sel(Ast.SelArray).index, ", o7.scalb(", {});
-					Designator(gen, e1, {});
-					Text.Str(gen, ", ");
+					Text.Str(gen, "var _d = ");
+					Designator(gen, e1, {ForSameType, ForAssign});
+					ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
+					                 "; _d._[_i] = o7.scalb(_d.at(_i), ", {})
 				ELSE
-					ExpressionBraced(gen, " = o7.scalb(", e1, ", ", {});
+					Designator(gen, e1, {ForSameType, ForAssign});
+					ExpressionBraced(gen, " = o7.scalb(", e1, ", ", {})
 				END;
 				Expression(gen, e2, {});
-				Text.Data(gen, "))", 0, 1 + ORD(arr))
+				Text.Char(gen, ")")
 			END Pack;
 
 			PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Designator);
 			VAR index: Ast.Expression; sel: Ast.Selector; arr: BOOLEAN;
 			BEGIN
-				Designator(gen, e1, {ForSameType, ForAssign});
 				sel := FindLastSel(e1);
 				arr := (sel # NIL) & (sel IS Ast.SelArray);
 				IF arr THEN
-					ExpressionBraced(gen, ".put(", sel(Ast.SelArray).index, ", o7.frexp(", {});
-					Designator(gen, e1, {});
-					Text.Str(gen, ", ")
+					(* TODO *)
+					Text.Str(gen, "var _d = ");
+					Designator(gen, e1, {ForSameType, ForAssign});
+					ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
+					                 "; _d._[_i] = o7.frexp(_d.at(_i), ", {})
 				ELSE
+					Designator(gen, e1, {ForSameType, ForAssign});
 					ExpressionBraced(gen, " = o7.frexp(", e1, ", ", {})
 				END;
 				index := AstTransform.CutIndex(e2);
 				Expression(gen, e2, {ForSameType});
-				Text.Str(gen, ", ");
-				Expression(gen, index, {});
-				Text.Data(gen, "))", 0, 1 + ORD(arr))
+				ExpressionBraced(gen, ", ", index, ")", {})
 			END Unpack;
 		BEGIN
 			e1 := call.params.expr;

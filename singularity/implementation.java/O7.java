@@ -81,7 +81,7 @@ public static long inited(final long i) {
 }
 
 public static double inited(final double d) {
-    if (Double.doubleToRawLongBits(d) == DOUBLE_UNDEF) {
+    if (java.lang.Double.doubleToRawLongBits(d) == DOUBLE_UNDEF) {
         throw new java.lang.AssertionError("double variable is not initialized");
     }
     return d;
@@ -213,7 +213,7 @@ public static int mod(final int a, final int b) {
 public static int floor(final double d) {
     final double v;
     v = java.lang.Math.floor(inited(d));
-    if ((v <= Integer.MIN_VALUE) || (Integer.MAX_VALUE < v)) {
+    if ((v <= java.lang.Integer.MIN_VALUE) || (java.lang.Integer.MAX_VALUE < v)) {
         throw new java.lang.ArithmeticException("floor overflow");
     }
     return (int)v;
@@ -221,17 +221,21 @@ public static int floor(final double d) {
 
 public static double scalb(final double d, final int n) {
     asrt(!java.lang.Double.isNaN(d));
-    return java.lang.Math.scalb(d, n);
+    return java.lang.Math.scalb(d, inited(n));
+}
+
+public static void scalb(final double d[], final int d_i, final int n) {
+    d[d_i] = scalb(d[d_i], n);
 }
 
 public static double frexp(final double d, final int[] n, final int n_i) {
-    final long bits, mantissa;
+    final long bits, mantissa, dm;
     long       divider;
     int        exponent;
 
     asrt(!java.lang.Double.isNaN(d));
 
-    bits = Double.doubleToLongBits(d);
+    bits = java.lang.Double.doubleToLongBits(d);
 
     exponent = (int)((bits >> 52) & 0x07FFL);
 
@@ -249,6 +253,10 @@ public static double frexp(final double d, final int[] n, final int n_i) {
         divider  *= 2;
         exponent += 1;
     }
+    if (divider != mantissa) {
+        divider  /= 2;
+        exponent -= 1;
+    }
 
     if (bits < 0) {
        divider = -divider;
@@ -256,6 +264,10 @@ public static double frexp(final double d, final int[] n, final int n_i) {
 
     n[n_i] = exponent;
     return ((double)mantissa) / divider;
+}
+
+public static void frexp(final double d[], final int d_i, final int[] n, final int n_i) {
+    d[d_i] = frexp(d[d_i], n, n_i);
 }
 
 public static double flt(final int i) {
@@ -315,15 +327,10 @@ public static int strcmp(final byte[] s1, final byte[] s2) {
 public static int strcmp(final byte[] s1, final byte s2) {
     final int c1, c2;
     int ret;
-    if (s1.length == 0) {
-        /* TODO не должно быть таких строк */
-        c1 = 0;
-    } else {
-        c1 = 0xFF & s1[0];
-    }
+    c1 = 0xFF & s1[0];
     c2 = 0xFF & s2;
     ret = c1 - c2;
-    if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
+    if (ret == 0 && c1 != 0 && s1[1] != 0) {
         ret = 0xFF & s1[1];
     }
     return ret;
@@ -385,7 +392,7 @@ public static int ror(final int n, final int shift) {
     asrt(shift >= 0);
     asrt(n >= 0);
     final int r;
-    r = Integer.rotateRight(n, shift);
+    r = java.lang.Integer.rotateRight(n, shift);
     asrt(r >= 0);
     return r;
 }

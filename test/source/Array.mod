@@ -1,5 +1,7 @@
 MODULE Array;
 
+IMPORT Out;
+
 CONST
 	Len = 33;
 
@@ -10,6 +12,7 @@ VAR
 	p: PROCEDURE(a: ARRAY OF CHAR);
 	aaa: ARRAY 4, 4, 4 OF INTEGER;
 	bb: ARRAY 4, 5, 6 OF INTEGER;
+	ind: INTEGER;
 
 
 PROCEDURE B(b: ARRAY OF CHAR);
@@ -137,8 +140,44 @@ BEGIN
 	ASSERT(r[2].j = -5)
 END OfRecord;
 
-PROCEDURE BuiltinFuncs;
-VAR ar: ARRAY 2, 2 OF INTEGER; i: INTEGER; sets: ARRAY 3 OF SET; rl: ARRAY 1 OF REAL; set: SET;
+PROCEDURE IncInd(add: INTEGER): INTEGER;
+BEGIN
+	INC(ind, add)
+	RETURN ind
+END IncInd;
+
+PROCEDURE DecHalf(VAR i: INTEGER);
+BEGIN
+	DEC(i, i DIV 2)
+END DecHalf;
+
+PROCEDURE IncI(VAR i: INTEGER): INTEGER;
+BEGIN
+	INC(i, 1)
+	RETURN
+		i
+END IncI;
+
+PROCEDURE UseInc;
+VAR ia: ARRAY 4, 4 OF INTEGER;
+BEGIN
+	ind := -1;
+
+	ia[IncInd(1)][0] := 7;
+	ASSERT(ia[0][0] = 7);
+	ASSERT(ind = 0);
+
+	ia[0][IncInd(1)] := -7;
+	ASSERT(-ia[0][1] = 7);
+	ASSERT(ind = 1);
+
+	DecHalf(ia[0][IncInd(-1)]);
+	ASSERT(ia[0][0] = 4)
+
+END UseInc;
+
+PROCEDURE BuiltinProc;
+VAR ar: ARRAY 2, 2 OF INTEGER; i, j: INTEGER; sets: ARRAY 3 OF SET; rl: ARRAY 2 OF REAL; set: SET;
 BEGIN
 	FOR i := 0 TO 3 DO
 		ar[i DIV 2, i MOD 2] := 0
@@ -172,8 +211,29 @@ BEGIN
 
 	UNPK(rl[0], ar[0, 0]);
 	ASSERT(rl[0] = 1.0);
-	ASSERT(ar[0,0] = 3)
-END BuiltinFuncs;
+	ASSERT(ar[0,0] = 3);
+
+	sets[2] := {5..11} - {7};
+	ind := 1;
+	EXCL(sets[IncInd(1)], 6);
+	ASSERT(sets[2] = {5, 8..11});
+
+	ind := 0;
+	INCL(sets[IncInd(2)], 7);
+	ASSERT(sets[2] = {5, 7..11});
+
+	rl[1] := -1.5;
+	PACK(rl[IncInd(-1)], 7);
+	ASSERT(rl[1] = -192.0);
+
+	ind := -1 + ind;
+	j := 0;
+	ar[0][0] := 0;
+	UNPK(rl[IncInd(1)], ar[IncI(ar[0][0])][IncI(j)]);
+	Out.Real(rl[1], 0); Out.Ln;
+	ASSERT(rl[1] = -1.5);
+	ASSERT(ar[1][1] = 7)
+END BuiltinProc;
 
 PROCEDURE Go*;
 VAR i: INTEGER;
@@ -217,7 +277,9 @@ BEGIN
 
 	OfRecord;
 
-	BuiltinFuncs
+	BuiltinProc;
+
+	UseInc
 END Go;
 
 PROCEDURE Error*(s: INTEGER);

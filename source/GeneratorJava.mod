@@ -33,7 +33,8 @@ IMPORT
 
 CONST
 	ForSameType = 0;
-	ForCall     = 0;
+	ForCall     = 1;
+	SkipLastSel = 2;
 
 TYPE
 	ProviderProcTypeName* = POINTER TO RProviderProcTypeName;
@@ -67,7 +68,9 @@ TYPE
 	Selectors = RECORD
 		des: Ast.Designator;
 		decl: Ast.Declaration;
-		list: ARRAY TranLim.Selectors OF Ast.Selector;
+		list: ARRAY TranLim.Selectors + 1 OF Ast.Selector;
+		end: Ast.Selector;
+		typeBeforeEnd: Ast.Type;
 		i: INTEGER
 	END;
 
@@ -218,15 +221,15 @@ BEGIN
 	GlobalName(gen, t)
 END GlobalNamePointer;
 
-PROCEDURE Selector(VAR gen: Generator; sels: Selectors; i: INTEGER;
+PROCEDURE Selector(VAR gen: Generator; VAR sels: Selectors;
                    VAR typ: Ast.Type; desType: Ast.Type; set: SET);
 VAR sel: Ast.Selector;
 
-	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; VAR sel: Ast.Selector);
+	PROCEDURE Record(VAR gen: Generator; VAR typ: Ast.Type; sel: Ast.Selector);
 	VAR var: Ast.Declaration;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
-		Text.Str(gen, ".");
+		Text.Char(gen, ".");
 		Name(gen, var);
 		typ := var.type
 	END Record;
@@ -240,89 +243,117 @@ VAR sel: Ast.Selector;
 	END Declarator;
 
 	PROCEDURE Array(VAR gen: Generator; VAR typ: Ast.Type;
-	                VAR sel: Ast.Selector; decl: Ast.Declaration;
-	                isDesignatorArray: BOOLEAN);
+	                sel, end: Ast.Selector; decl: Ast.Declaration);
 	VAR i: INTEGER;
 	BEGIN
-		Text.Str(gen, "[");
+		Text.Char(gen, "[");
 		expression(gen, sel(Ast.SelArray).index, {});
 		typ := typ.type;
 		sel := sel.next;
 		i := 1;
-		WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
+		WHILE (sel # end) & (sel IS Ast.SelArray) DO
 			Text.Str(gen, "][");
 			expression(gen, sel(Ast.SelArray).index, {});
 			INC(i);
 			sel := sel.next;
 			typ := typ.type
 		END;
-		Text.Str(gen, "]")
+		Text.Char(gen, "]")
 	END Array;
 BEGIN
-	IF i >= 0 THEN
-		sel := sels.list[i]
-	END;
-	IF i < 0 THEN
-		Declarator(gen, sels.decl, set)
+	sel := sels.list[sels.i];
+	IF sel = sels.end THEN
+		IF ~(SkipLastSel IN set) THEN
+			Declarator(gen, sels.decl, set)
+		END
 	ELSE
-		DEC(i);
+		DEC(sels.i);
 		IF sel IS Ast.SelRecord THEN
-			Selector(gen, sels, i, typ, desType, set);
+			Selector(gen, sels, typ, desType, set);
 			Record(gen, typ, sel)
 		ELSIF sel IS Ast.SelArray THEN
-			Selector(gen, sels, i, typ, desType, set);
-			Array(gen, typ, sel, sels.decl,
-			      (desType.id = Ast.IdArray) & (desType(Ast.Array).count = NIL))
-		ELSIF sel IS Ast.SelPointer THEN
-			Selector(gen, sels, i, typ, desType, set)
+			Selector(gen, sels, typ, desType, set);
+			Array(gen, typ, sel, sels.end, sels.decl)
 		ELSE ASSERT(sel IS Ast.SelGuard);
 			Text.Str(gen, "((");
 			GlobalNamePointer(gen, sel.type);
-			Text.Str(gen, ")");
-			IF i < 0 THEN
-				Declarator(gen, sels.decl, set)
+			Text.Char(gen, ")");
+			IF sel = sels.end THEN
+				IF ~(SkipLastSel IN set) THEN
+					Declarator(gen, sels.decl, set)
+				END
 			ELSE
-				Selector(gen, sels, i, typ, desType, set)
+				Selector(gen, sels, typ, desType, set)
 			END;
-			Text.Str(gen, ")");
+			Text.Char(gen, ")");
 			typ := sel(Ast.SelGuard).type
 		END;
 	END
 END Selector;
 
-PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator; set: SET);
-VAR sels: Selectors;
-    typ: Ast.Type;
-
+PROCEDURE SelectorsPut(des: Ast.Designator; VAR sels: Selectors; set: SET);
 	PROCEDURE Put(VAR sels: Selectors; sel: Ast.Selector);
 	BEGIN
-		sels.i := -1;
+		sels.i := 0;
+		sels.list[0] := NIL;
 		WHILE sel # NIL DO
 			INC(sels.i);
 			sels.list[sels.i] := sel;
 			IF sel IS Ast.SelArray THEN
 				REPEAT
-					sel := sel.next
+					sel := sel.next;
+					IF sel # NIL THEN
+						sels.typeBeforeEnd := sels.typeBeforeEnd.type
+					END
 				UNTIL (sel = NIL) OR ~(sel IS Ast.SelArray)
 			ELSE
-				sel := sel.next
+				IF sel IS Ast.SelPointer THEN
+					DEC(sels.i)
+				END;
+				IF sel.next # NIL THEN
+					IF sel IS Ast.SelGuard THEN
+						sels.typeBeforeEnd := sel(Ast.SelGuard).type
+					ELSIF sel IS Ast.SelRecord THEN
+						sels.typeBeforeEnd := sel(Ast.SelRecord).var.type
+					ELSE
+						sels.typeBeforeEnd := sels.typeBeforeEnd.type
+					END
+				END;
+				sel := sel.next;
 			END
 		END
 	END Put;
-
 BEGIN
-	typ := des.decl.type;
+	sels.typeBeforeEnd := des.decl.type;
 	Put(sels, des.sel);
 	sels.des := des;
 	sels.decl := des.decl;(* TODO *)
+	IF SkipLastSel IN set THEN
+		sels.end := sels.list[1]
+	ELSE
+		sels.end := NIL
+	END
+END SelectorsPut;
 
+PROCEDURE DesignatorSels(VAR gen: Generator; des: Ast.Designator; set: SET; VAR sels: Selectors);
+VAR typ: Ast.Type;
+BEGIN
+	typ := des.decl.type;
 	IF ~(ForSameType IN set) & (des.type.id = Ast.IdByte) THEN
 		Text.Str(gen, "O7.toInt(");
-		Selector(gen, sels, sels.i, typ, des.type, set);
+		Selector(gen, sels, typ, des.type, set);
 		Text.Str(gen, ")")
 	ELSE
-		Selector(gen, sels, sels.i, typ, des.type, set);
-	END
+		Selector(gen, sels, typ, des.type, set)
+	END;
+	sels.end := NIL
+END DesignatorSels;
+
+PROCEDURE Designator(VAR gen: Generator; des: Ast.Designator; set: SET);
+VAR sels: Selectors;
+BEGIN
+	SelectorsPut(des, sels, set);
+	DesignatorSels(gen, des, set, sels)
 END Designator;
 
 PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
@@ -569,16 +600,67 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				END
 			END Assert;
 
-			PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Designator);
-			VAR index: Ast.Expression;
+			PROCEDURE Pack(VAR gen: Generator; e1: Ast.Designator; e2: Ast.Expression);
+			VAR sels: Selectors; last: Ast.Selector;
 			BEGIN
-				Designator(gen, e1, {ForSameType});
-				ExpressionBraced(gen, " = O7.frexp(", e1, ", ", {});
+				IF e1.sel = NIL THEN
+					Designator(gen, e1, {ForSameType});
+					ExpressionBraced(gen, " = O7.scalb(", e1, ", ", {});
+					Expression(gen, e2, {});
+					Text.Char(gen, ")")
+				ELSE
+					SelectorsPut(e1, sels, {SkipLastSel});
+					last := sels.end;
+					Text.Char(gen, "{");
+					type(gen, NIL, sels.typeBeforeEnd, FALSE, FALSE);
+					Text.Str(gen, " _d = ");
+					DesignatorSels(gen, e1, {ForSameType}, sels);
+					IF last IS Ast.SelArray THEN
+						ExpressionBraced(gen, "; int _i = ", last(Ast.SelArray).index,
+						                 "; _d[_i] = O7.scalb(_d[_i], ", {})
+					ELSE
+						Text.Str(gen, "; _d");
+						Selector(gen, sels, sels.typeBeforeEnd, e1.type, {SkipLastSel});
+						INC(sels.i);
+						Text.Str(gen, " = O7.scalb(_d");
+						Selector(gen, sels, sels.typeBeforeEnd, e1.type, {SkipLastSel});
+						Text.Str(gen, ", ")
+					END;
+					Expression(gen, e2, {});
+					Text.Str(gen, ");}")
+				END
+			END Pack;
+
+			PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Designator);
+			VAR index: Ast.Expression; sels: Selectors; last: Ast.Selector;
+			BEGIN
+				IF e1.sel = NIL THEN
+					Designator(gen, e1, {ForSameType});
+					ExpressionBraced(gen, " = O7.frexp(", e1, ", ", {});
+				ELSE
+					SelectorsPut(e1, sels, {SkipLastSel});
+					last := sels.end;
+					Text.Char(gen, "{");
+					type(gen, NIL, sels.typeBeforeEnd, FALSE, FALSE);
+					Text.Str(gen, " _d = ");
+					DesignatorSels(gen, e1, {ForSameType}, sels);
+					IF last IS Ast.SelArray THEN
+						ExpressionBraced(gen, "; int _i = ", last(Ast.SelArray).index,
+						                 "; _d[_i] = O7.frexp(_d[_i], ", {})
+					ELSE
+						Text.Str(gen, "; _d");
+						Selector(gen, sels, sels.typeBeforeEnd, e1.type, {SkipLastSel});
+						INC(sels.i);
+						Text.Str(gen, " = O7.frexp(_d");
+						Selector(gen, sels, sels.typeBeforeEnd, e1.type, {SkipLastSel});
+						Text.Str(gen, ", ")
+					END
+				END;
 				index := AstTransform.CutIndex(e2);
 				Expression(gen, e2, {ForSameType});
 				Text.Str(gen, ", ");
 				Expression(gen, index, {});
-				Text.Str(gen, ")")
+				Text.Data(gen, ");}", 0, 1 + ORD(e1.sel # NIL) * 2)
 			END Unpack;
 		BEGIN
 			e1 := call.params.expr;
@@ -633,10 +715,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Assert:
 				Assert(gen, e1)
 			| SpecIdent.Pack:
-				Designator(gen, e1(Ast.Designator), {ForSameType});
-				ExpressionBraced(gen, " = O7.scalb(", e1, ", ", {});
-				Expression(gen, p2.expr, {});
-				Text.Str(gen, ")")
+				Pack(gen, e1(Ast.Designator), p2.expr)
 			| SpecIdent.Unpk:
 				Unpack(gen, e1(Ast.Designator), p2.expr(Ast.Designator))
 			END
