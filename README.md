@@ -52,7 +52,7 @@ Build with direct using of [tcc](http://download.savannah.gnu.org/releases/tinyc
     > init.cmd
     > result\bs-ost run make.Build -infr . -m source -cc tcc
 
-Ofcourse, the directory with the tcc.exe must be specified in the PATH
+Of course, the directory with the tcc.exe must be specified in the PATH
 environment variable.
 
 Testing. C-compiler(gcc, clang, tcc) searched automatically:
@@ -89,7 +89,7 @@ Example of executable binary build:
 In addition to the command line parameters from the previous examples, here
 introduced the name of the final executable file - result/Dir, which is
 required for the "to-bin" command. Also indicated an additional path for
-searching modules - "-m example", becaues of ReadDir.mod located in directory
+searching modules - "-m example", because of ReadDir.mod located in directory
 "example". ReadDir module contains "Go" - exported procedure without parameters.
 It will be entry point for "result/Dir".
 
