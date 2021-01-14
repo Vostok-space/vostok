@@ -62,6 +62,39 @@ BEGIN
 	Out.Real(a, 0); Out.Ln
 END Fail;
 
+PROCEDURE FailAdd*;
+VAR a, b: REAL;
+BEGIN
+	a := 9.E+307;
+	b := 111.E+306;
+	Out.Real(a + b, 0); Out.Ln
+END FailAdd;
+
+PROCEDURE FailSub*;
+VAR b: REAL;
+BEGIN
+	b := 11.9E+307;
+	Out.Real(-7.E+307 - b, 0); Out.Ln
+END FailSub;
+
+PROCEDURE FailMul*;
+VAR a: REAL;
+BEGIN
+	IF 1 >= 0 THEN
+		a := 3.4E+170
+	END;
+	IF 0 < 111 THEN
+		Out.Real(a * 7.4E153, 0); Out.Ln
+	END
+END FailMul;
+
+PROCEDURE FailDiv*;
+VAR a: REAL;
+BEGIN
+	a := 0.E-123;
+	Out.Real(0.000000000 / a, 0); Out.Ln
+END FailDiv;
+
 PROCEDURE Go*;
 VAR a, b, c: REAL;
 BEGIN

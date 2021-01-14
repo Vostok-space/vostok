@@ -475,7 +475,7 @@ var o7;
 
   o7.mul = function(a, b) {
     var r;
-    r = a * b | 0;
+    r = a * b;
     if (-0x80000000 < r && r < 0x80000000) {
       return r;
     } else {
@@ -489,7 +489,7 @@ var o7;
       mask = a >> 31;
       return mask ^ ((mask ^ a) / b);
     } else {
-      throw new RangeError("divider can't be < 1");
+      throw new RangeError("Integer divider can't be < 1");
     }
   };
 
@@ -499,9 +499,57 @@ var o7;
       mask = a >> 31;
       return (b & mask) + (mask ^ ((mask ^ a) % b));
     } else {
-      throw new RangeError("divider can't be < 1");
+      throw new RangeError("Integer divider can't be < 1");
     }
   };
+
+  function fadd(a, b) {
+    var s;
+    s = a + b;
+    if (isFinite(s)) {
+      return s;
+    } else {
+      /* TODO */
+      throw new RangeError("Fraction out of range in " + a + " + " + b + " = " + s);
+    }
+  }
+  o7.fadd = fadd;
+
+  function fsub(a, b) {
+    var s;
+    s = a - b;
+    if (isFinite(s)) {
+      return s;
+    } else {
+      /* TODO */
+      throw new RangeError("Fraction out of range in " + a + " - " + b + " = " + s);
+    }
+  }
+  o7.fsub = fsub;
+
+  function fmul(a, b) {
+    var s;
+    s = a * b;
+    if (isFinite(s)) {
+      return s;
+    } else {
+      /* TODO */
+      throw new RangeError("Fraction out of range in " + a + " * " + b + " = " + s);
+    }
+  }
+  o7.fmul = fmul;
+
+  function fdiv(a, b) {
+    var s;
+    s = a / b;
+    if (isFinite(s)) {
+      return s;
+    } else {
+      /* TODO */
+      throw new RangeError("Fraction out of range in " + a + " / " + b + " = " + s);
+    }
+  }
+  o7.fdiv = fdiv;
 
   o7.set = function(low, high) {
     if (high > 31) {
@@ -587,18 +635,18 @@ var o7;
     for (i = 0; i < len; i += 1) {
       d[i] = s[i];
     }
-    assert(i == len);
     assert(d[len - 1] == 0);
   };
 
   o7.copy = function(d, s) {
-      var i, len;
-      d = getjsa(d);
-      s = getjsa(s);
-      len = d.length;
-      for (i = 0; i < len; i += 1) {
-          d[i] = s[i];
-      }
+    var i, len;
+    d = getjsa(d);
+    s = getjsa(s);
+    len = d.length;
+    for (i = 0; i < len; i += 1) {
+      /* TODO вложенные массивы */
+      d[i] = s[i];
+    }
   };
 
   o7.exit_code = 0;

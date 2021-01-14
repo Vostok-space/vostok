@@ -892,10 +892,8 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			i := last;
 			WHILE i > 0 DO
 				CASE arr[i].add OF
-				  Scanner.Minus:
-					Text.Str(gen, sub)
-				| Scanner.Plus:
-					Text.Str(gen, add)
+				  Scanner.Minus: Text.Str(gen, sub)
+				| Scanner.Plus : Text.Str(gen, add)
 				END;
 				DEC(i)
 			END;
@@ -913,7 +911,11 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			arr[last] := sum;
 			sum := sum.next
 		UNTIL sum = NIL;
-		GenArrOfAddOrSub(gen, arr, last, "o7.add("  , "o7.sub(");
+		IF arr[0].type.id IN Ast.Reals THEN
+			GenArrOfAddOrSub(gen, arr, last, "o7.fadd(", "o7.fsub(")
+		ELSE
+			GenArrOfAddOrSub(gen, arr, last, "o7.add(" , "o7.sub(")
+		END;
 		i := 0;
 		WHILE i < last DO
 			INC(i);
@@ -969,14 +971,23 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			arr[i] := term
 		END;
 		last := i;
-		WHILE i >= 0 DO
-			CASE arr[i].mult OF
-			  Scanner.Asterisk : Text.Str(gen, "o7.mul(")
-			| Scanner.Div, Scanner.Slash
-			                   : Text.Str(gen, "o7.div(")
-			| Scanner.Mod      : Text.Str(gen, "o7.mod(")
-			END;
-			DEC(i)
+		IF arr[i].type.id IN Ast.Integers THEN
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk : Text.Str(gen, "o7.mul(")
+				| Scanner.Div      : Text.Str(gen, "o7.div(")
+				| Scanner.Mod      : Text.Str(gen, "o7.mod(")
+				END;
+				DEC(i)
+			END
+		ELSE
+			WHILE i >= 0 DO
+				CASE arr[i].mult OF
+				  Scanner.Asterisk : Text.Str(gen, "o7.fmul(")
+				| Scanner.Slash    : Text.Str(gen, "o7.fdiv(")
+				END;
+				DEC(i)
+			END
 		END;
 		Expression(gen, arr[0].factor, {});
 		i := 0;
@@ -2082,10 +2093,8 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 		GenOptions.Default(o^);
-		o.varInit    := GenOptions.VarInitZero;
-		o.checkArith := TRUE & FALSE;
-
-		o.std         := EcmaScript5;
+		o.varInit := GenOptions.VarInitZero;
+		o.std     := EcmaScript5;
 
 		o.expectArray := FALSE
 	END
