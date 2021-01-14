@@ -1,5 +1,5 @@
 (*  Wrapper over OS-specific execution
- *  Copyright (C) 2017-2019 ComdivByZero
+ *  Copyright (C) 2017-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -125,9 +125,31 @@ PROCEDURE AddQuote*(VAR c: Code): BOOLEAN;
 	RETURN Quote(c.buf, c.len)
 END AddQuote;
 
+PROCEDURE CheckIsNeedQuote(s: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+VAR c: CHAR;
+BEGIN
+	DEC(ofs);
+	REPEAT
+		INC(ofs);
+		c := s[ofs]
+	UNTIL ~(   ("A" <= c) & (c <= "Z")
+	        OR ("a" <= c) & (c <= "z")
+	        OR ("0" <= c) & (c <= "9")
+	        OR (c = "_") OR (c = "-") OR (c = "/") OR (c = ".")
+	       )
+	RETURN c # Utf8.Null
+END CheckIsNeedQuote;
+
 PROCEDURE FullCopy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
                    s: ARRAY OF CHAR; j: INTEGER): BOOLEAN;
-	RETURN Quote(d, i) & Copy(d, i, s, j, FALSE) & Quote(d, i)
+VAR ok: BOOLEAN;
+BEGIN
+	IF CheckIsNeedQuote(s, j) THEN
+		ok := Quote(d, i) & Copy(d, i, s, j, FALSE) & Quote(d, i)
+	ELSE
+		ok := Chars0X.Copy(d, i, s, j)
+	END
+	RETURN ok
 END FullCopy;
 
 PROCEDURE Init*(VAR c: Code; name: ARRAY OF CHAR): BOOLEAN;
