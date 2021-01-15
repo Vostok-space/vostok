@@ -68,12 +68,6 @@ TYPE
 		i: INTEGER
 	END;
 
-	RecExt = POINTER TO RECORD(V.Base)
-		anonName: Strings.String;
-		undef: BOOLEAN;
-		next: Ast.Record
-	END;
-
 VAR
 	type: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
@@ -315,10 +309,10 @@ PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression; set: SET);
 BEGIN
 	IF (gen.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
-	 & (e.type.id IN {Ast.IdBoolean, Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32})
+	 & ~(e.type.id IN (Ast.Structures + {Ast.IdPointer, Ast.IdProcType}))
 	 & IsMayNotInited(e)
 	THEN
-		Text.Str(gen, "O7.inited(");
+		Text.Str(gen, "o7.inited(");
 		expression(gen, e, set);
 		Text.Str(gen, ")")
 	ELSE
@@ -326,27 +320,33 @@ BEGIN
 	END
 END CheckExpr;
 
+PROCEDURE AssignInitValueArray(VAR gen: Generator; typ: Ast.Type);
+VAR sizes: ARRAY TranLim.ArrayDimension OF Ast.Expression;
+	i, l: INTEGER;
+BEGIN
+	l := -1;
+	REPEAT
+		INC(l);
+		sizes[l] := typ(Ast.Array).count;
+		typ := typ.type
+	UNTIL typ.id # Ast.IdArray;
+
+	Text.Str(gen, " = o7.sarray(");
+	(*type(gen, NIL, typ, FALSE, FALSE);*)
+	expression(gen, sizes[0], {});
+	FOR i := 1 TO l DO
+		Text.Str(gen, ", ");
+		expression(gen, sizes[i], {})
+	END;
+	Text.Str(gen, ")")
+END AssignInitValueArray;
+
 PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 	PROCEDURE Zero(VAR gen: Generator; typ: Ast.Type);
 		PROCEDURE Array(VAR gen: Generator; typ: Ast.Type);
-		VAR sizes: ARRAY TranLim.ArrayDimension OF Ast.Expression;
-		    i, l: INTEGER;
 		BEGIN
-			l := -1;
-			REPEAT
-				INC(l);
-				sizes[l] := typ(Ast.Array).count;
-				typ := typ.type
-			UNTIL typ.id # Ast.IdArray;
-
-			Text.Str(gen, " = o7.sarray(");
-			(*type(gen, NIL, typ, FALSE, FALSE);*)
-			expression(gen, sizes[0], {});
-			FOR i := 1 TO l DO
-				Text.Str(gen, ", ");
-				expression(gen, sizes[i], {})
-			END;
-			Text.Str(gen, ")")
+			(* TODO *)
+			AssignInitValueArray(gen, typ)
 		END Array;
 	BEGIN
 		CASE typ.id OF
@@ -370,25 +370,17 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 
 	PROCEDURE Undef(VAR gen: Generator; typ: Ast.Type);
 	BEGIN
-		CASE typ.id OF
-		  Ast.IdInteger:
-			Text.Str(gen, " = O7.INT_UNDEF")
-		| Ast.IdLongInt:
-			Text.Str(gen, " = O7.LONG_UNDEF")
-		| Ast.IdBoolean:
-			Text.Str(gen, " = O7.BOOL_UNDEF")
-		| Ast.IdByte:
-			Text.Str(gen, " = 0")
-		| Ast.IdChar:
-			Text.Str(gen, " = '\0'")
-		| Ast.IdReal:
-			Text.Str(gen, " = O7.DBL_UNDEF")
-		| Ast.IdReal32:
-			Text.Str(gen, " = O7.FLT_UNDEF")
-		| Ast.IdSet, Ast.IdLongSet:
-			Text.Str(gen, " = 0")
-		| Ast.IdPointer, Ast.IdProcType:
-			Text.Str(gen, " = null")
+		IF typ.id IN Ast.Numbers THEN
+			Text.Str(gen, " = NaN")
+		ELSIF typ.id = Ast.IdArray THEN
+			AssignInitValueArray(gen, typ)
+		ELSIF typ.id = Ast.IdRecord THEN
+			Text.Str(gen, " = new ");
+			type(gen, NIL, typ, FALSE, FALSE);
+			Text.Str(gen, "()")
+		ELSE
+			(*TODO*)
+			Text.Str(gen, " = undefined")
 		END
 	END Undef;
 BEGIN
@@ -794,11 +786,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
 			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
 			THEN
-				IF rel.exprs[0].type.id  = Ast.IdInteger THEN
-					Text.Str(gen, "O7.icmp(")
-				ELSE
-					Text.Str(gen, "O7.lcmp(")
-				END;
+				Text.Str(gen, "o7.cmp(");
 				Expr(gen, rel.exprs[0]);
 				Text.Str(gen, ", ");
 				Expr(gen, rel.exprs[1]);
@@ -1221,7 +1209,7 @@ BEGIN
 		Name(gen, decl)
 	END
 END Declarator;
-
+(* TODO Применить для массивов рода Int32Array
 PROCEDURE IsArrayTypeSimpleUndef(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 BEGIN
 	deep := 0;
@@ -1254,75 +1242,7 @@ BEGIN
 	Name(gen, d);
 	Text.Str(gen, ");")
 END ArraySimpleUndef;
-
-PROCEDURE TypeForUndef(t: Ast.Type): Ast.Type;
-BEGIN
-	IF (t.id # Ast.IdRecord) OR (t.ext = NIL) OR ~t.ext(RecExt).undef THEN
-		t := NIL
-	END
-	RETURN t
-END TypeForUndef;
-
-(* TODO Навести порядок *)
-PROCEDURE RecordUndef(VAR gen: Generator; rec: Ast.Record);
-VAR var: Ast.Declaration;
-	arrTypeId, arrDeep: INTEGER;
-	typeUndef: Ast.Type;
-
-	PROCEDURE IteratorIfNeed(VAR gen: Generator; var: Ast.Declaration);
-	VAR id, deep: INTEGER;
-	BEGIN
-		WHILE (var # NIL)
-		    & ((var.type.id # Ast.IdArray)
-		    OR IsArrayTypeSimpleUndef(var.type, id, deep)
-		    OR (TypeForUndef(var.type.type) = NIL))
-		DO
-			var := var.next
-		END;
-		IF var # NIL THEN
-			Text.StrLn(gen, "int i;")
-		END
-	END IteratorIfNeed;
-BEGIN
-	Text.StrOpen(gen, "void undef() {");
-	IteratorIfNeed(gen, rec.vars);
-	IF rec.base # NIL THEN
-		GlobalName(gen, rec.base);
-		Text.StrLn(gen, "_undef(r);")
-	END;
-	rec.ext(RecExt).undef := TRUE;
-	var := rec.vars;
-	WHILE var # NIL DO
-		IF ~(var.type.id IN {Ast.IdRecord}) THEN
-			Text.Str(gen, "r.");
-			Name(gen, var);
-			VarInit(gen, var, TRUE);
-			Text.StrLn(gen, ";");
-		ELSIF var.type.id = Ast.IdArray THEN
-			typeUndef := TypeForUndef(var.type.type);
-			IF IsArrayTypeSimpleUndef(var.type, arrTypeId, arrDeep) THEN
-				ArraySimpleUndef(gen, arrTypeId, var, TRUE)
-			ELSIF typeUndef # NIL THEN (* TODO вложенные циклы *)
-				Text.Str(gen, "for (i = 0; i < r.");
-				Name(gen, var);
-				Text.StrOpen(gen, ".length; i += 1) {");
-				GlobalName(gen, typeUndef);
-				Text.Str(gen, "_undef(r.");
-				Name(gen, var);
-				Text.StrLn(gen, " + i);");
-
-				Text.StrLnClose(gen, "}")
-			END
-		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
-			GlobalName(gen, var.type);
-			Text.Str(gen, "_undef(r.");
-			Name(gen, var);
-			Text.StrLn(gen, ");")
-		END;
-		var := var.next
-	END;
-	Text.StrLnClose(gen, "}")
-END RecordUndef;
+*)
 
 PROCEDURE RecordAssign(VAR gen: Generator; rec: Ast.Record);
 VAR var: Ast.Declaration;
@@ -1607,10 +1527,7 @@ BEGIN
 			END;
 			typ.mark := mark
 			         OR (typ(Ast.Record).pointer # NIL)
-			          & (typ(Ast.Record).pointer.mark);
-			IF gen.opt.varInit = GenOptions.VarInitUndefined THEN
-				RecordUndef(gen, typ(Ast.Record))
-			END
+			          & (typ(Ast.Record).pointer.mark)
 		END;
 		MarkWithDonor(gen, typ, donor)
 	END
@@ -1635,7 +1552,7 @@ BEGIN
 	Expression(gen, const.expr, {});
 	Text.StrLn(gen, ";");
 
-	Mark(gen, const);
+	Mark(gen, const)
 END Const;
 
 PROCEDURE Var(VAR gen: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
@@ -1644,7 +1561,7 @@ BEGIN
 	mark := var.mark & ~gen.opt.main;
 	Comment(gen, var.comment);
 	EmptyLines(gen, var);
-	IF ~mark OR (gen.opt.varInit # GenOptions.VarInitNo) & (var.type.id IN {Ast.IdRecord, Ast.IdArray}) THEN
+	IF ~mark OR (gen.opt.varInit # GenOptions.VarInitNo) & (var.type.id IN Ast.Structures) THEN
 		IF var.up = NIL THEN
 			Text.Str(gen, "this.")
 		ELSE
@@ -2093,7 +2010,6 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 		GenOptions.Default(o^);
-		o.varInit := GenOptions.VarInitZero;
 		o.std     := EcmaScript5;
 
 		o.expectArray := FALSE

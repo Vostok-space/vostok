@@ -594,6 +594,30 @@ var o7;
     return n;
   }
 
+  function inited(val) {
+    if (isFinite(val)) {
+      return val;
+    } else {
+      throw "Uninitialized value";
+    }
+  }
+  o7.inited = inited;
+
+  o7.cmp = function(a, b) {
+    var d;
+    d = a - b;
+    if (isFinite(d)) {
+      ;
+    } else if (inited(a) < inited(b)) {
+      d = -1;
+    } else if (a > b) {
+      d = 1;
+    } else {
+      d = 0;
+    }
+    return d
+  }
+
   o7.strcmp = function(s1, s2) {
     var i;
     i = 0;
@@ -616,7 +640,6 @@ var o7;
     }
     return ret;
   }
-
   o7.strchcmp = strchcmp;
 
   o7.chstrcmp = function(c1, s2) {
