@@ -143,7 +143,7 @@ enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 #		define O7_LABS(val) O7_LONG_ABS(val)
 #	endif
 #else
-#	if LONG_MAX >= 9223372036854775807l
+#	if LONG_MAX  > 2147483647l
 #		define O7_LONG_MAX  9223372036854775807l
 #		define O7_ULONG_MAX 18446744073709551615ul
 		typedef long               o7_long_t;
@@ -475,7 +475,6 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 O7_CONST_INLINE
 o7_int_t o7_e2k_size(void *array) {
 	o7_e2k_ptr128_t ptr;
-	O7_STATIC_ASSERT(sizeof(ptr) == 16);
 
 	memcpy(&ptr, &array, sizeof(array));
 	return ptr.size;
