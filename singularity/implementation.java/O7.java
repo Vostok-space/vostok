@@ -364,8 +364,45 @@ public static void strcpy(final byte[] d, final java.lang.String s) {
     d[len] = 0;
 }
 
-public static void copy(final Object d, final Object s) {
-    java.lang.System.arraycopy(s, 0, d, 0, java.lang.reflect.Array.getLength(s));
+public static void copy(java.lang.Object d, java.lang.Object s, int len) {
+    java.lang.System.arraycopy(s, 0, d, 0, len);
+}
+
+public static void copy(boolean[] d, boolean[] s) {copy(d, s, s.length);}
+public static void copy(byte   [] d, byte   [] s) {copy(d, s, s.length);}
+public static void copy(int    [] d, int    [] s) {copy(d, s, s.length);}
+public static void copy(double [] d, double [] s) {copy(d, s, s.length);}
+
+
+public static void copy(java.lang.Object d, java.lang.Object s, int ti, java.lang.String type) {
+    int len, ilen;
+    char ct;
+    java.lang.Object item;
+
+    len = java.lang.reflect.Array.getLength(s);
+    ct = type.charAt(ti + 1);
+    if (ct == '[') {
+        for (int i = 0; i < len; i += 1) {
+            /* TODO */
+            copy(java.lang.reflect.Array.get(d, i),
+                 java.lang.reflect.Array.get(s, i), ti + 1, type);
+        }
+    } else {
+        /*TODO*/
+        asrt(ct != 'L');
+
+        item = java.lang.reflect.Array.get(s, 0);
+        ilen = java.lang.reflect.Array.getLength(item);
+        copy(java.lang.reflect.Array.get(d, 0), item, ilen);
+        for (int i = 1; i < len; i += 1) {
+            copy(java.lang.reflect.Array.get(d, i),
+                 java.lang.reflect.Array.get(s, i), ilen);
+        }
+    }
+}
+
+public static void copy(java.lang.Object d, java.lang.Object s) {
+    copy(d, s, 1, s.getClass().getName());
 }
 
 public static int set(final int low, final int high) {

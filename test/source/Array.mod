@@ -1,7 +1,5 @@
 MODULE Array;
 
-IMPORT Out;
-
 CONST
 	Len = 33;
 
@@ -11,7 +9,7 @@ VAR
 	a: ARRAY Len OF CHAR;
 	p: PROCEDURE(a: ARRAY OF CHAR);
 	aaa: ARRAY 4, 4, 4 OF INTEGER;
-	bb: ARRAY 4, 5, 6 OF INTEGER;
+	bb: ARRAY 4 OF ARRAY 5, 6 OF INTEGER;
 	ind: INTEGER;
 
 
@@ -230,10 +228,39 @@ BEGIN
 	j := 0;
 	ar[0][0] := 0;
 	UNPK(rl[IncInd(1)], ar[IncI(ar[0][0])][IncI(j)]);
-	Out.Real(rl[1], 0); Out.Ln;
 	ASSERT(rl[1] = -1.5);
 	ASSERT(ar[1][1] = 7)
 END BuiltinProc;
+
+PROCEDURE Assign*;
+VAR a1, a2: ARRAY 2,2 OF ARRAY 2 OF INTEGER;
+BEGIN
+	a1[0][0][0] := 5;
+	a1[0][0, 1] := 7;
+
+	a1[0, 1] := a1[0][0];
+	ASSERT(a1[0,1,0] = 5);
+	ASSERT(a1[0,1,1] = 7);
+
+	a1[0,1,1] := -7;
+	ASSERT(-a1[0,1,1] = 7);
+	ASSERT(a1[0,0,1] = 7);
+
+	a1[1] := a1[0];
+	ASSERT(-7 = a1[1][1][1]);
+	ASSERT(5 = a1[1][1][0]);
+
+	a1[0,1,1] := 8;
+	ASSERT(a1[1,1,1] = -7);
+
+	a2 := a1;
+	ASSERT(a2[0,1,0] = 5);
+	a2[1,1,1] := 908;
+	ASSERT(a2[1,1,1] = 908);
+	ASSERT(a1[1,1,1] = -7);
+
+	(* TODO ARRAY OF RECORD *)
+END Assign;
 
 PROCEDURE Go*;
 VAR i: INTEGER;
@@ -279,7 +306,9 @@ BEGIN
 
 	BuiltinProc;
 
-	UseInc
+	UseInc;
+
+	Assign
 END Go;
 
 PROCEDURE Error*(s: INTEGER);
@@ -298,4 +327,7 @@ BEGIN
 	END
 END Error;
 
+BEGIN
+	a[32] := 11X;
+	aaa[2,1,0] := 99
 END Array.

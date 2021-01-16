@@ -598,7 +598,7 @@ var o7;
     if (isFinite(val)) {
       return val;
     } else {
-      throw "Uninitialized value";
+      throw new RangeError("Uninitialized value");
     }
   }
   o7.inited = inited;
@@ -661,16 +661,22 @@ var o7;
     assert(d[len - 1] == 0);
   };
 
-  o7.copy = function(d, s) {
+  function copy(d, s) {
     var i, len;
     d = getjsa(d);
     s = getjsa(s);
     len = d.length;
-    for (i = 0; i < len; i += 1) {
-      /* TODO вложенные массивы */
-      d[i] = s[i];
+    if ((s[0] instanceof Object) && s[0].length) {
+      for (i = 0; i < len; i += 1) {
+        copy(d[i], s[i]);
+      }
+    } else {
+      for (i = 0; i < len; i += 1) {
+        d[i] = s[i];
+      }
     }
-  };
+  }
+  o7.copy = copy;
 
   o7.exit_code = 0;
   o7.main = function(main) {
