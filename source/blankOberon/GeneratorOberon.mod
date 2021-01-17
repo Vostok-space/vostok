@@ -23,6 +23,8 @@ IMPORT
   GenOptions;
 
 CONST
+  Supported* = FALSE;
+
   StdO7* = 1;
   StdAo* = 2;
 

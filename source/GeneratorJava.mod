@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -32,6 +32,8 @@ IMPORT
 	GenOptions, GenCommon;
 
 CONST
+	Supported* = TRUE;
+
 	ForSameType = 0;
 	ForCall     = 1;
 	SkipLastSel = 2;

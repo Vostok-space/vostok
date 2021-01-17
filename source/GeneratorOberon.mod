@@ -1,6 +1,6 @@
 (*  Generator of Oberon-code by abstract syntax tree
  *
- *  Copyright (C) 2019 ComdivByZero
+ *  Copyright (C) 2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -25,6 +25,8 @@ IMPORT
   GenOptions, GenCommon;
 
 CONST
+  Supported* = TRUE;
+
   StdO7* = 1;
   StdAo* = 2;
 

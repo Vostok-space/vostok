@@ -1,4 +1,4 @@
-(*  Ukraine messages for interface
+(*  Ukrainian messages for interface
  *  Copyright (C) 2018-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -486,6 +486,15 @@ BEGIN
 
 	| Cli.ErrOpenOberon:
 		S("Не вдається відкрити вихідний Oberon модуль")
+
+	| Cli.ErrDisabledGenC:
+		S("Генерація через C виключена")
+	| Cli.ErrDisabledGenJava:
+		S("Генерація через Java виключена")
+	| Cli.ErrDisabledGenJs:
+		S("Генерація через JavaScript виключена")
+	| Cli.ErrDisabledGenOberon:
+		S("Генерація через Oberon виключена")
 	END
 END CliError;
 

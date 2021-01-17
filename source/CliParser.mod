@@ -1,6 +1,6 @@
 (*  Command line interface for Oberon-07 translator
  *
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -78,9 +78,15 @@ CONST
 	ErrTooLongJavaDirs*      = -33;
 	ErrTooLongJsDirs*        = -34;
 
+	(* TODO *)
 	ErrOpenJava*         = -40;
 	ErrOpenJs*           = -41;
 	ErrOpenOberon*       = -42;
+
+	ErrDisabledGenC*      = -50;
+	ErrDisabledGenJava*   = -51;
+	ErrDisabledGenJs*     = -52;
+	ErrDisabledGenOberon* = -53;
 
 TYPE
 	Args* = RECORD(V.Base)

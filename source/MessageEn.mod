@@ -354,7 +354,7 @@ END ParseError;
 PROCEDURE Usage*(full: BOOLEAN);
 	PROCEDURE Short;
 	BEGIN
-S("Translator from Oberon-07 to C, Java, Javascript, Oberon. 2021");
+C("Translator from Oberon-07 to C, Java, JavaScript, Oberon. 2021");
 S("Usage: ost command [parameter] {-option}");
 S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
@@ -499,6 +499,15 @@ BEGIN
 
 	| Cli.ErrOpenOberon:
 		S("Can not open output Oberon module")
+
+	| Cli.ErrDisabledGenC:
+		S("Generation through C is disabled")
+	| Cli.ErrDisabledGenJava:
+		S("Generation through Java is disabled")
+	| Cli.ErrDisabledGenJs:
+		S("Generation through JavaScript is disabled")
+	| Cli.ErrDisabledGenOberon:
+		S("Generation through Oberon is disabled")
 	END
 END CliError;
 

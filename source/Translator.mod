@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2020 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1203,6 +1203,20 @@ PROCEDURE GoOpt*(set: SET);
 VAR ret: INTEGER;
     args: Cli.Args;
     nothing: V.Base;
+
+	PROCEDURE Enabled(VAR ret: INTEGER): BOOLEAN;
+	BEGIN
+		IF    (ret IN Cli.ThroughC   ) & ~GeneratorC     .Supported THEN
+			ret := Cli.ErrDisabledGenC
+		ELSIF (ret IN Cli.ThroughJava) & ~GeneratorJava  .Supported THEN
+			ret := Cli.ErrDisabledGenJava
+		ELSIF (ret IN Cli.ThroughJs  ) & ~GeneratorJs    .Supported THEN
+			ret := Cli.ErrDisabledGenJs
+		ELSIF (ret IN Cli.ThroughMod ) & ~GeneratorOberon.Supported THEN
+			ret := Cli.ErrDisabledGenOberon
+		END
+		RETURN ret >= 0
+	END Enabled;
 BEGIN
 	ASSERT(set + OptAll = OptAll);
 
@@ -1212,7 +1226,7 @@ BEGIN
 	END;
 
 	V.Init(nothing);
-	IF ~Cli.Parse(args, ret) OR ~Handle(args, ret, nothing) THEN
+	IF ~Cli.Parse(args, ret) OR ~Enabled(ret) OR ~Handle(args, ret, nothing) THEN
 		CLI.SetExitCode(Exec.Ok + 1);
 		IF ret # ErrParse THEN
 			Message.CliError(ret)
@@ -1228,11 +1242,5 @@ PROCEDURE Go*;
 BEGIN
 	GoOpt({})
 END Go;
-
-(* TODO удалить *)
-PROCEDURE Start*;
-BEGIN
-	Go
-END Start;
 
 END Translator.

@@ -32,6 +32,8 @@ IMPORT
 	GenOptions, GenCommon;
 
 CONST
+	Supported* = TRUE;
+
 	EcmaScript5*    = 0;
 	EcmaScript2015* = 1;
 

@@ -498,6 +498,15 @@ BEGIN
 
 	| Cli.ErrOpenOberon:
 		S("Не получается открыть выходной Oberon модуль")
+
+	| Cli.ErrDisabledGenC:
+		S("Генерация через C выключена")
+	| Cli.ErrDisabledGenJava:
+		S("Генерация через Java выключена")
+	| Cli.ErrDisabledGenJs:
+		S("Генерация через JavaScript выключена")
+	| Cli.ErrDisabledGenOberon:
+		S("Генерация через Oberon выключена")
 	END
 END CliError;
 
