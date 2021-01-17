@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var o7;
-(function(o7) { 'use strict';
+(function() { 'use strict';
 
 var module = {};
 o7.export.JsEval = module;
@@ -103,5 +102,5 @@ function DoStr(str) {
 module.DoStr = DoStr;
 
 return module;
-})(o7 || (o7 = {}));
+})();
 

@@ -2095,8 +2095,7 @@ BEGIN
 
 	Comment(gen, module.comment);
 
-	Text.StrLn(gen, "var o7;");
-	Text.StrLn(gen, "(function(o7) { 'use strict';");
+	Text.StrLn(gen, "(function() { 'use strict';");
 
 	Imports(gen, module);
 
@@ -2115,7 +2114,7 @@ BEGIN
 	END;
 
 	Text.StrLn(gen, "return module;");
-	Text.StrLn(gen, "})(o7 || (o7 = {}));");
+	Text.StrLn(gen, "})();");
 
 	UnlinkImports(gen, module)
 END Generate;
