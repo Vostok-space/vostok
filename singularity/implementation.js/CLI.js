@@ -84,7 +84,7 @@ if (typeof start_cli_arg !== 'undefined') {
 	startCliArg = 0;
 }
 startCliArg += nameInd + 1;
-module.count = args.length - 1 - startCliArg;
+module.count = args.length - startCliArg;
 
 return module;
 })();

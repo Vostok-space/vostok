@@ -2,18 +2,16 @@ MODULE CmdLine;
 
 IMPORT CLI, Out;
 
-CONST
-
-TYPE
-
 VAR
-	buf: ARRAY 1024 * 1024 OF CHAR;
+	buf: ARRAY CLI.MaxLen + 1 OF CHAR;
 	ret: BOOLEAN;
 	ofs, i: INTEGER;
-	(* v: Out.INTEGER; *)
 
 PROCEDURE Go*;
 BEGIN
+	ofs := 0;
+	ret := CLI.GetName(buf, ofs);
+	Out.String(buf); Out.String(":"); Out.Ln;
 	FOR i := 0 TO CLI.count - 1 DO
 		ofs := 0;
 		ret := CLI.Get(buf, ofs, i);

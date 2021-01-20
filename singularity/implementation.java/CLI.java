@@ -18,6 +18,8 @@ import o7.O7;
 
 public final class CLI {
 
+public  static final int MaxLen = 4096;
+
 public  static int      count;
 private static byte[][] args;
 
