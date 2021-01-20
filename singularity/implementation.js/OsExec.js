@@ -24,6 +24,7 @@ module.Ok = Ok;
 
 function Do(cmd) {
 	var ret, out;
+	cmd = o7.getjsa(cmd);
 	o7.assert((0xFF & cmd[0]) != 0x00);
 
 	if (child_process != null) {
@@ -44,7 +45,7 @@ function Do(cmd) {
 }
 module.Do = Do;
 
-if (require) {
+if (typeof require !== 'undefined') {
 	child_process = require("child_process");
 } else {
 	child_process = null;
