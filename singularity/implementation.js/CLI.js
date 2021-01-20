@@ -79,11 +79,11 @@ if (typeof process !== 'undefined') {
 }
 
 if (typeof start_cli_arg !== 'undefined') {
-	startCliArg  = start_cli_arg;
+	startCliArg = start_cli_arg;
 } else {
-	startCliArg  = 0;
+	startCliArg = 0;
 }
-startCliArg += nameInd;
+startCliArg += nameInd + 1;
 module.count = args.length - 1 - startCliArg;
 
 return module;
