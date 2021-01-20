@@ -26,7 +26,7 @@ module.Code = Code;
 
 module.supported = typeof Function !== 'undefined';
 
-var lastResult, lastException;
+var lastResult, lastException, args;
 
 function New(c, c_ai) {
 	c = o7.getjsa(c);
@@ -55,13 +55,21 @@ function Add(c, partCode) {
 module.Add = Add;
 module.AddBytes = Add;
 
+if (typeof process !== 'undefined') {
+	args = process.argv;
+} else if (typeof scriptArgs !== 'undefined') {
+	args = scriptArgs;
+} else {
+	args = [" "];
+}
+
 function End(c, startCliArg) {
 	var code;
 	o7.assert(c != null);
 	if (typeof start_cli_arg !== 'undefined') {
 		startCliArg += start_cli_arg;
 	}
-	o7.assert(0 <= startCliArg && startCliArg <= process.argv.length - 1);
+	o7.assert(0 <= startCliArg && startCliArg <= args.length - 1);
 	o7.assert(!c.end);
 	c.end = true;
 	code = o7.utf8ToStr(c.code);

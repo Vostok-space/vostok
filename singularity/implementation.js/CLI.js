@@ -20,7 +20,7 @@ o7.export.CLI = module;
 var MaxLen = 4096;
 module.MaxLen = MaxLen;
 
-var startCliArg;
+var startCliArg, args, nameInd;
 
 function copy(str, ofs, ofs_ai, argi) {
 	var arg, i, len, j, ok;
@@ -31,7 +31,7 @@ function copy(str, ofs, ofs_ai, argi) {
 	j = ofs[ofs_ai];
 	o7.assert((0 <= j) && (j < str.length));
 
-	arg = o7.toUtf8(process.argv[argi]);
+	arg = o7.toUtf8(args[argi]);
 	arg = o7.getjsa(arg);
 	len = arg.length - 1;
 	ok = j < str.length - len;
@@ -53,13 +53,13 @@ function copy(str, ofs, ofs_ai, argi) {
 }
 
 function GetName(str, ofs, ofs_ai) {
-	return copy(str, ofs, ofs_ai, 1);
+	return copy(str, ofs, ofs_ai, nameInd);
 }
 module.GetName = GetName;
 
 function Get(str, ofs, ofs_ai, argi) {
 	o7.assert((0 <= argi) && (argi < module.count));
-	return copy(str, ofs, ofs_ai, argi + 2 + startCliArg);
+	return copy(str, ofs, ofs_ai, argi + startCliArg);
 }
 module.Get = Get;
 
@@ -68,14 +68,23 @@ function SetExitCode(code) {
 }
 module.SetExitCode = SetExitCode;
 
+nameInd = 0;
+if (typeof process !== 'undefined') {
+	args = process.argv;
+	nameInd = 1;
+} else if (typeof scriptArgs !== 'undefined') {
+	args = scriptArgs;
+} else {
+	args = [" "];
+}
+
 if (typeof start_cli_arg !== 'undefined') {
-	module.count = process.argv.length - 2 - start_cli_arg;
 	startCliArg  = start_cli_arg;
 } else {
-	module.count = process.argv.length - 2;
 	startCliArg  = 0;
 }
+startCliArg += nameInd;
+module.count = args.length - 1 - startCliArg;
 
 return module;
 })();
-

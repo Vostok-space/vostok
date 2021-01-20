@@ -17,9 +17,7 @@
 var module = {};
 o7.export.CFiles = module;
 
-var getjsa = o7.getjsa;
-
-var fs;
+var getjsa, utf8ByOfsToStr, fs, proc;
 
 var KiB = 1024;
 module.KiB = KiB;
@@ -31,13 +29,31 @@ module.GiB = GiB;
 function File() {}
 File.prototype.assign = function(r) {}
 
-var utf8ByOfsToStr = o7.utf8ByOfsToStr;
+getjsa = o7.getjsa;
+utf8ByOfsToStr = o7.utf8ByOfsToStr;
 
-function Open(bytes_name, ofs, mode) {
-	var f, name, fd, smode, i;
+if (typeof require !== 'undefined' && typeof process !== 'undefined') {
+	fs = require('fs');
+} else {
+	fs = null;
+}
 
-	f = null;
-	if (fs) {
+if (fs != null) {
+	function wrapFile(file) {
+		var f;
+		f = new File();
+		f.fd = file.fd;
+		f.notsync = true;
+		return f;
+	}
+	module.in_ = wrapFile(process.stdin);
+	module.out = wrapFile(process.stdout);
+	module.err = wrapFile(process.stderr);
+
+	module.Open = function(bytes_name, ofs, mode) {
+		var f, name, fd, smode, i;
+
+		f = null;
 		name = utf8ByOfsToStr(bytes_name, ofs);
 		if (name != null) {
 			smode = "r";
@@ -57,120 +73,194 @@ function Open(bytes_name, ofs, mode) {
 				f.fd = fd;
 			}
 		}
+		return f;
 	}
-	return f;
-}
-module.Open = Open;
 
-function Close(file, file_ai) {
-	if (file[file_ai]) {
-		fs.closeSync(file[file_ai].fd);
-		file[file_ai] = null;
-	}
-}
-module.Close = Close;
-
-/* TODO сохранение буфера до Сlose */
-function bufGet(size) {
-	var data;
-	if (Buffer.allocUnsafe) {
-		data = Buffer.allocUnsafe(size);
-	} else {
-		data = new Buffer(size);
-	}
-	return data;
-}
-
-function Read(file, buf, ofs, count) {
-	var data, read, i;
-	buf = getjsa(buf);
-	if (typeof buf !== 'Uint8Aarray') {
-		data = bufGet(count);
-		read = fs.readSync(file.fd, data, 0, count);
-		for (i = 0; i < read; i += 1) {
-			buf[i + ofs] = data[i];
+	module.Close = function(file, file_ai) {
+		if (file[file_ai]) {
+			fs.closeSync(file[file_ai].fd);
+			file[file_ai] = null;
 		}
-	} else {
-		read = fs.readSync(file.fd, buf, ofs, count);
 	}
-	return read;
-}
-module.Read = Read;
 
-function Write(file, buf, ofs, count) {
-	var data, write, i;
-	buf = getjsa(buf);
-	if (typeof buf !== 'Uint8Aarray') {
-		data = bufGet(count);
+	/* TODO сохранение буфера до Сlose */
+	function bufGet(size) {
+		var data;
+		if (Buffer.allocUnsafe) {
+			data = Buffer.allocUnsafe(size);
+		} else {
+			data = new Buffer(size);
+		}
+		return data;
+	}
+
+	module.Read = function(file, buf, ofs, count) {
+		var data, read, i;
+		buf = getjsa(buf);
+		if (typeof buf !== 'Uint8Array') {
+			data = bufGet(count);
+			read = fs.readSync(file.fd, data, 0, count);
+			for (i = 0; i < read; i += 1) {
+				buf[i + ofs] = data[i];
+			}
+		} else {
+			read = fs.readSync(file.fd, buf, ofs, count);
+		}
+		return read;
+	}
+
+	module.Write = function(file, buf, ofs, count) {
+		var data, write, i;
+		buf = getjsa(buf);
+		if (typeof buf !== 'Uint8Array') {
+			data = bufGet(count);
+			for (i = 0; i < count; i += 1) {
+				data[i] = buf[i + ofs];
+			}
+			write = fs.writeSync(file.fd, data, 0, count);
+		} else {
+			write = fs.writeSync(file.fd, buf, ofs, count);
+		}
+		return write;
+	}
+
+	module.Flush = function(file) {
+		return file.notsync || 0 === fs.fdatasyncSync(file.fd);
+	}
+
+	module.Remove = function(name, ofs) {
+		var str;
+		str = utf8ByOfsToStr(name, ofs);
+		if (str != null) {
+			fs.unlinkSync(str);
+		}
+		/* TODO недостаточное условие */
+		return str != null;
+	}
+
+	module.Exist = function(name, ofs) {
+		var str;
+		str = utf8ByOfsToStr(name, ofs);
+		return str != null && fs.existsSync(str);
+	}
+
+} else if (typeof std !== 'undefined') {
+	function wrapFile(file) {
+		var f;
+		f = new File();
+		f.f = file;
+		return f;
+	}
+	module.in_ = wrapFile(std.in);
+	module.out = wrapFile(std.out);
+	module.err = wrapFile(std.err);
+
+	module.Open = function(bytes_name, ofs, mode) {
+		var f, name, file, smode;
+
+		f = null;
+		name = utf8ByOfsToStr(bytes_name, ofs);
+		smode = utf8ByOfsToStr(mode, 0);
+		if (name != null && smode != null) {
+			file = std.open(name, smode);
+			if (file != null) {
+				f = new File();
+				f.f = file;
+			}
+		}
+		return f;
+	}
+
+	module.Close = function(file, file_ai) {
+		if (file[file_ai]) {
+			file[file_ai].close();
+			file[file_ai] = null;
+		}
+	}
+
+	module.Read = function(file, buf, ofs, count) {
+		var data, read, i;
+		buf = getjsa(buf);
+		data = new ArrayBuffer(count);
+		read = file.f.read(data, 0, count);
+		if (read > 0) {
+			data = new Uint8Array(data);
+			for (i = 0; i < read; i += 1) {
+				buf[i + ofs] = data[i];
+			}
+		}
+		return read;
+	}
+
+	module.Write = function(file, buf, ofs, count) {
+		var ab, data, i;
+		buf = getjsa(buf);
+		ab = new ArrayBuffer(count);
+		data = new Uint8Array(ab);
 		for (i = 0; i < count; i += 1) {
 			data[i] = buf[i + ofs];
 		}
-		write = fs.writeSync(file.fd, data, 0, count);
-	} else {
-		write = fs.writeSync(file.fd, buf, ofs, count);
+		return file.f.write(ab, 0, count);
 	}
-	return write;
-}
-module.Write = Write;
 
-function ReadChars(file, buf, ofs, count) {
-	return Read(file, buf, ofs, count);
-}
-module.ReadChars = ReadChars;
+	module.Flush = function(file) { return file.flush() == 0; }
 
-function WriteChars(file, buf, ofs, count) {
-	return Write(file, buf, ofs, count);
-}
-module.WriteChars = WriteChars;
-
-function Flush(file) {
-	return file.notsync || 0 === fs.fdatasyncSync(file.fd);
-}
-module.Flush = Flush;
-
-/* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
-function Seek(file, gibs, bytes) {
-	/* нет в node*/
-	return false;
-}
-module.Seek = Seek;
-
-function Tell(file, gibs, gibs_ai, bytes, bytes_ai) {
-	/* нет в node*/
-	return false;
-}
-module.Tell = Tell;
-
-function Remove(name, ofs) {
-	var str;
-	str = utf8ByOfsToStr(name, ofs);
-	if (str != null) {
-		fs.unlinkSync(str);
+	module.Remove = function(name, ofs) {
+		var str;
+		str = utf8ByOfsToStr(name, ofs);
+		return (str != null) && (os.remove(str) == 0);
 	}
-	/* TODO недостаточное условие */
-	return str != null;
-}
-module.Remove = Remove;
 
-function Exist(name, ofs) {
-	var str;
-	str = utf8ByOfsToStr(name, ofs);
-	return str != null && fs.existsSync(str);
-}
-module.Exist = Exist;
+	module.Exist = function(name, ofs) {
+		var str;
+		str = utf8ByOfsToStr(name, ofs);
+		return str != null && false/*TODO*/;
+	}
 
-function wrapFile(file) {
-	var f;
-	f = new File();
-	f.fd = file.fd;
-	f.notsync = true;
-	return f;
+	module.Seek = function(file, gibs, bytes) {
+		/* нет в node*/
+		return false;
+	}
+	module.Tell = function(file, gibs, gibs_ai, bytes, bytes_ai) {
+		/* нет в node*/
+		return false;
+	}
+
+} else {
+	module.in_ = new File();
+	module.out = new File();
+	module.err = new File();
+
+	module.Open = function(bytes_name, ofs, mode) { return null; }
+	module.Close = function(file, file_ai) {}
+	module.Read = function(file, buf, ofs, count) { return 0; }
+	module.Write = function(file, buf, ofs, count) { return 0; }
+	module.Flush = function(file) { return false; }
+	module.Remove = function(name, ofs)  { return false; }
+	module.Exist = function(name, ofs) { return false; }
 }
 
-fs = require('fs');
-module.in_ = wrapFile(process.stdin);
-module.out = wrapFile(process.stdout);
-module.err = wrapFile(process.stderr);
+module.ReadChars = function(file, buf, ofs, count) {
+	return module.Read(file, buf, ofs, count);
+}
+module.WriteChars = function(file, buf, ofs, count) {
+	return module.Write(file, buf, ofs, count);
+}
+
+if (!module.Seek) {
+	/* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
+	function Seek(file, gibs, bytes) {
+		/* нет в node*/
+		return false;
+	}
+	function Tell(file, gibs, gibs_ai, bytes, bytes_ai) {
+		/* нет в node*/
+		return false;
+	}
+
+	module.Seek = Seek;
+	module.Tell = Tell;
+}
 
 return module;
 })();

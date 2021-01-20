@@ -14,13 +14,19 @@
  */
 (function() { 'use strict';
 
-var platform;
+var nos, platform;
 
 var module = {};
 o7.export.Platform = module;
 
 if (typeof require !== 'undefined') {
-    platform = require("os").platform();
+    nos = require("os");
+    if (nos) {
+        platform = nos.platform();
+        nos = undefined;
+    }
+} else if (typeof os !== 'undefined') {
+    platform = os.platform;
 }
 
 module.Posix      = platform == 'linux' || platform == 'darwin'

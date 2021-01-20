@@ -15,12 +15,18 @@
 var o7;
 (function(o7) { "use strict";
 
-  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache, utf8ToStr;
+  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache, utf8ToStr, proc;
 
   utf8Cache = [];
 
   o7.export = {};
   o7.import = o7.export;
+
+  if (typeof process === 'undefined' || !process.exit) {
+    proc = {exit : function(code) { if (code != 0) throw code; }};
+  } else {
+    proc = process;
+  }
 
   function assert(check, msg) {
     if (check) {
@@ -681,8 +687,8 @@ var o7;
   o7.exit_code = 0;
   o7.main = function(main) {
     main();
-    if (o7.exit_code != 0 && typeof process !== 'undefined') {
-      process.exit(o7.exit_code);
+    if (o7.exit_code != 0) {
+      proc.exit(o7.exit_code);
     }
   };
 
