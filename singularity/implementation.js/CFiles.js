@@ -212,9 +212,16 @@ if (fs != null) {
 	}
 
 	module.Exist = function(name, ofs) {
-		var str;
-		str = utf8ByOfsToStr(name, ofs);
-		return str != null && false/*TODO*/;
+		var name, f;
+		name = utf8ByOfsToStr(name, ofs);
+		f = null;
+		if (name != null) {
+			f = std.open(name, "rb");
+			if (f != null) {
+				f.close();
+			}
+		}
+		return f != null;
 	}
 
 	module.Seek = function(file, gibs, bytes) {
