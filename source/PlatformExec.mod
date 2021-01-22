@@ -39,7 +39,7 @@ TYPE
 
 VAR
 	autoCorrectDirSeparator: BOOLEAN;
-	dirSep*: ARRAY 1 OF CHAR;
+	dirSep*: ARRAY 2 OF CHAR;
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
                s: ARRAY OF CHAR; j: INTEGER;
@@ -263,9 +263,9 @@ BEGIN
 	autoCorrectDirSeparator := FALSE;
 
 	IF Platform.Posix THEN
-		dirSep[0] := "/"
+		dirSep := "/"
 	ELSE ASSERT(Platform.Windows);
-		dirSep[0] := "\"
+		dirSep := "\"
 	END
 END PlatformExec.
 

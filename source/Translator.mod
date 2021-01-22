@@ -266,7 +266,7 @@ PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Statement;
                     cDirs: ARRAY OF CHAR;
                     VAR ccomp: CComp.Compiler; usecc: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, cDirsLen, nameLen: INTEGER;
+    ret, i, nameLen: INTEGER;
     name: ARRAY 512 OF CHAR;
     iface, impl: File.Out;
     sing: BOOLEAN;
@@ -287,21 +287,20 @@ BEGIN
 			i := 0;
 			WHILE ~sing & (cDirs[i] # Utf8.Null) DO
 				nameLen := 0;
-				cDirsLen := Chars0X.CalcLen(cDirs, i);
 				(* TODO *)
-				ASSERT(Chars0X.CopyChars (name, nameLen, cDirs, i, i + cDirsLen)
+				ASSERT(Chars0X.Copy      (name, nameLen, cDirs, i)
 				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, LangC)
 				     & Chars0X.CopyString(name, nameLen, ".c")
 				);
+				INC(i);
 				IF Files.Exist(name, 0) THEN
 					sing := TRUE;
 					ASSERT(~usecc OR CComp.AddC(ccomp, name, 0))
 				ELSE
 					name[nameLen - 1] := "h";
 					sing := Files.Exist(name, 0) OR sing
-				END;
-				i := i + cDirsLen + 1
+				END
 			END
 		END;
 		IF ~sing THEN
@@ -640,7 +639,7 @@ PROCEDURE GenerateJava(module: Ast.Module; cmd: Ast.Statement;
                        javaDirs: ARRAY OF CHAR;
                        VAR javac: JavaComp.Compiler; usejavac: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, javaDirsLen, nameLen: INTEGER;
+    ret, i, nameLen: INTEGER;
     name: ARRAY 512 OF CHAR;
     fileName: ARRAY 1024 OF CHAR;
     out: File.Out;
@@ -663,20 +662,18 @@ BEGIN
 			i := 0;
 			WHILE ~sing & (javaDirs[i] # Utf8.Null) DO
 				nameLen := 0;
-				javaDirsLen := Chars0X.CalcLen(javaDirs, i);
 				(* TODO *)
-				ASSERT(Chars0X.CopyChars(name, nameLen, javaDirs, i, i + javaDirsLen)
+				ASSERT(Chars0X.Copy      (name, nameLen, javaDirs, i)
 				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, Java)
 				     & Chars0X.CopyString(name, nameLen, ".java")
 				);
+				INC(i);
 				IF Files.Exist(name, 0) THEN
 					sing := TRUE;
 					ASSERT(~usejavac OR JavaComp.AddJava(javac, name, 0))
-				END;
-				i := i + javaDirsLen + 1
+				END
 			END
-			(* TODO проверка ошибки ненайденного файла *)
 		END;
 		IF ~sing & (ret = ErrNo) THEN
 			ret := OpenJavaOutput(out, module, "", dir, dirLen);
@@ -825,17 +822,17 @@ BEGIN
 	RETURN ret
 END GenerateThroughJava;
 
-PROCEDURE CopyFileToOut(inName: ARRAY OF CHAR; out: Stream.POut): BOOLEAN;
-VAR in: File.In; ok: BOOLEAN;
+PROCEDURE CopyFileToOutIfExist(inName: ARRAY OF CHAR; out: Stream.POut; VAR opened: BOOLEAN): BOOLEAN;
+VAR in: File.In;
 BEGIN
 	in := File.OpenIn(inName);
-	ok := in # NIL;
-	IF ok THEN
+	opened := in # NIL;
+	IF opened THEN
 		VCopy.UntilEnd(in^, out^);
 		File.CloseIn(in)
 	END
-	RETURN ok
-END CopyFileToOut;
+	RETURN TRUE(*TODO*)
+END CopyFileToOutIfExist;
 
 PROCEDURE AppendModuleName(VAR name: ARRAY OF CHAR; VAR nameLen: INTEGER;
                            module: Ast.Module; ext: ARRAY OF CHAR
@@ -852,7 +849,7 @@ PROCEDURE GenerateJs1(module: Ast.Module; cmd: Ast.Statement;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                       jsDirs: ARRAY OF CHAR): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, jsDirsLen, nameLen: INTEGER;
+    ret, i, nameLen: INTEGER;
     name: ARRAY 512 OF CHAR;
     sing: BOOLEAN;
     out: File.Out;
@@ -873,23 +870,20 @@ BEGIN
 			i := 0;
 			WHILE ~sing & (jsDirs[i] # Utf8.Null) DO
 				nameLen := 0;
-				jsDirsLen := Chars0X.CalcLen(jsDirs, i);
 				(* TODO *)
-				ASSERT(Chars0X.CopyChars    (name, nameLen, jsDirs, i, i + jsDirsLen)
+				ASSERT(Chars0X.Copy         (name, nameLen, jsDirs, i)
 				     & Chars0X.CopyString   (name, nameLen, Exec.dirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, Js)
 				     & Chars0X.CopyString   (name, nameLen, ".js")
 				);
-				IF Files.Exist(name, 0) THEN
-					sing := TRUE;
-					IF outSingle # NIL THEN
-						(* TODO *)
-						ASSERT(CopyFileToOut(name, outSingle))
-					END
-				END;
-				i := i + jsDirsLen + 1
+				INC(i);
+				IF outSingle # NIL THEN
+					(* TODO *)
+					ASSERT(CopyFileToOutIfExist(name, outSingle, sing))
+				ELSE
+					sing := Files.Exist(name, 0)
+				END
 			END
-			(* TODO проверка ошибки ненайденного файла *)
 		END;
 		IF ~sing & (ret = ErrNo) THEN
 			IF outSingle = NIL THEN
@@ -900,31 +894,30 @@ BEGIN
 				END
 			ELSE
 				GeneratorJs.Generate(outSingle, module, cmd, opt)
-			END;
+			END
 		END
 	END
 	RETURN ret
 END GenerateJs1;
 
 PROCEDURE CopyO7js(jsDirs: ARRAY OF CHAR; out: Stream.POut);
-VAR i: INTEGER; name: ARRAY 1024 OF CHAR;
+VAR i: INTEGER; name: ARRAY 1024 OF CHAR; ignore: BOOLEAN;
 
 	PROCEDURE Name(VAR name: ARRAY OF CHAR; dir: ARRAY OF CHAR; VAR ofs: INTEGER): BOOLEAN;
-	VAR nameLen, dirLen: INTEGER; ok: BOOLEAN;
+	VAR len: INTEGER; ok: BOOLEAN;
 	BEGIN
-		nameLen := 0;
-		dirLen := Chars0X.CalcLen(dir, ofs);
-		ok := Chars0X.CopyChars (name, nameLen, dir, ofs, ofs + dirLen)
-		    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
-		    & Chars0X.CopyString(name, nameLen, "o7.js");
-		INC(ofs, dirLen + 1)
+		len := 0;
+		ok := Chars0X.Copy      (name, len, dir, ofs)
+		    & Chars0X.CopyString(name, len, Exec.dirSep)
+		    & Chars0X.CopyString(name, len, "o7.js");
+		INC(ofs)
 		RETURN ok
 	END Name;
 BEGIN
 	i := 0;
 	WHILE (jsDirs[i] # Utf8.Null)
 	    & Name(name, jsDirs, i)
-	    & (~Files.Exist(name, 0) OR CopyFileToOut(name, out))
+	    & CopyFileToOutIfExist(name, out, ignore)
 	DO
 		;
 	END
