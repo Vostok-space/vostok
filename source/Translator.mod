@@ -460,7 +460,7 @@ VAR ret: INTEGER;
 	              VAR listener: V.Base): INTEGER;
 	VAR outCLen: INTEGER;
 	    ret: INTEGER;
-	    i, nameLen, cDirsLen, ccEnd: INTEGER;
+	    i, nameLen, ccEnd: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
 	BEGIN
@@ -491,15 +491,14 @@ VAR ret: INTEGER;
 				i := 0;
 				WHILE ok & (cDirs[i] # Utf8.Null) DO
 					nameLen := 0;
-					cDirsLen := Chars0X.CalcLen(cDirs, i);
 					ok := CComp.AddInclude(cmd, cDirs, i)
 
-					    & Chars0X.CopyChars (name, nameLen, cDirs, i, i + cDirsLen)
+					    & Chars0X.Copy      (name, nameLen, cDirs, i)
 					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
 					    & Chars0X.CopyString(name, nameLen, "o7.c")
 
 					    & (~Files.Exist(name, 0) OR CComp.AddC(cmd, name, 0));
-					i := i + cDirsLen + 1
+					INC(i)
 				END;
 				ok := ok
 				& (  (opt.memManager # GeneratorC.MemManagerCounter)
@@ -704,7 +703,7 @@ VAR opt: GeneratorJava.Options;
 	                VAR outJava, mainClass: ARRAY OF CHAR;
 	                VAR listener: V.Base): INTEGER;
 	VAR ret: INTEGER;
-	    i, nameLen, dirsLen, outJavaLen: INTEGER;
+	    i, nameLen, outJavaLen: INTEGER;
 	    ok: BOOLEAN;
 	    name: ARRAY 512 OF CHAR;
 	BEGIN
@@ -744,15 +743,14 @@ VAR opt: GeneratorJava.Options;
 				i := 0;
 				WHILE ok & (args.javaDirs[i] # Utf8.Null) DO
 					nameLen := 0;
-					dirsLen := Chars0X.CalcLen(args.javaDirs, i);
-					ok := Chars0X.CopyChars (name, nameLen, args.javaDirs, i, i + dirsLen)
+					ok := Chars0X.Copy      (name, nameLen, args.javaDirs, i)
 					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
 					    & Chars0X.CopyString(name, nameLen, "O7.java")
 
 					    & ( ~Files.Exist(name, 0)
 					     OR JavaComp.AddJava(prov.javac, name, 0)
 					      );
-					i := i + dirsLen + 1
+					INC(i)
 				END;
 				(* TODO *)
 				ASSERT(ok);

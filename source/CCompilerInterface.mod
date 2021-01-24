@@ -42,7 +42,7 @@ MODULE CCompilerInterface;
     Exec.AddClean(c.cmd, cmd)
   END Set;
 
-  PROCEDURE Search*(VAR c: Compiler; forRun: BOOLEAN): BOOLEAN;
+  PROCEDURE Search*(VAR c: Compiler; lightweight: BOOLEAN): BOOLEAN;
 
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
@@ -63,21 +63,21 @@ MODULE CCompilerInterface;
   BEGIN
     V.Init(c)
   RETURN
-      forRun
+      lightweight
     & Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
 
    OR (
       Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
    OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
 
-   OR ~forRun
+   OR ~lightweight
     & Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g")
 
    OR Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
 
    OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
    OR Platform.Windows & Test(c, Msvc, "cl.exe",  "")
-      ) & (~forRun OR Exec.AddClean(c.cmd, " -w"))
+      ) & (~lightweight OR Exec.AddClean(c.cmd, " -w"))
   END Search;
 
   PROCEDURE AddOutputExe*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
