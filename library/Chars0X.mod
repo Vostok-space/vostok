@@ -1,5 +1,5 @@
 (* Operations with arrays of chars, which represent 0-terminated strings
- * Copyright 2018-2019 ComdivByZero
+ * Copyright 2018-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  *)
 
 (* Модуль для работы с цепочками литер, имитирующих строки.
- * Конец строки определяется по концу массива или по положению 0-го символа с
+ * Конец строки определяется по положению 0-го символа с
  * наименьшим индексом
  *)
 MODULE Chars0X;
@@ -147,8 +147,7 @@ MODULE Chars0X;
   BEGIN
     i := 0
   RETURN
-    (* После поправки с оканчивающимся 0 заменить на Copy *)
-    CopyAtMost(dest, ofs, src, i, LEN(src))
+    Copy(dest, ofs, src, i)
   END CopyString;
 
   PROCEDURE CopyChar*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
