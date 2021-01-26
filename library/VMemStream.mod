@@ -1,6 +1,6 @@
 (* Data Stream implementation under memory blocks
  *
- * Copyright 2019 ComdivByZero
+ * Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ MODULE VMemStream;
     ok
   END AddBlock;
 
-  PROCEDURE WriteFrom(VAR out: ROut; dir: SET;
+  PROCEDURE WriteFrom(VAR out: ROut; dir: INTEGER;
                       bytes: ARRAY OF BYTE; chars: ARRAY OF CHAR;
                       ofs, count: INTEGER)
                       : INTEGER;
@@ -160,7 +160,7 @@ MODULE VMemStream;
     END
   END IncOfs;
 
-  PROCEDURE ReadTo(VAR in: RIn; dir: SET;
+  PROCEDURE ReadTo(VAR in: RIn; dir: INTEGER;
                    VAR buf: ARRAY OF BYTE; VAR chars: ARRAY OF CHAR;
                    ofs, count: INTEGER)
                    : INTEGER;

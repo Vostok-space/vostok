@@ -1,6 +1,6 @@
 (* Copying arrays of chars and bytes in any direction
  *
- * Copyright 2019 ComdivByZero
+ * Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 MODULE ArrayCopy;
 
   CONST
-    FromChars* = {0};
-    FromBytes* = {1};
-    ToChars*   = {2};
-    ToBytes*   = {3};
+    FromChars* = 0;
+    FromBytes* = 1;
+    ToChars*   = 0;
+    ToBytes*   = 2;
 
     FromCharsToChars* = FromChars + ToChars;
     FromCharsToBytes* = FromChars + ToBytes;
@@ -119,22 +119,18 @@ MODULE ArrayCopy;
     END
   END BytesToChars;
 
-  PROCEDURE Data*(direction: SET;
+  PROCEDURE Data*(direction: INTEGER;
                   VAR destBytes: ARRAY OF BYTE; VAR destChars: ARRAY OF CHAR;
                   destOfs: INTEGER;
                   srcBytes: ARRAY OF BYTE; srcChars: ARRAY OF CHAR;
-                  srcOfs, count: INTEGER);
-  CONST CC = ORD(FromCharsToChars);
-        CB = ORD(FromCharsToBytes);
-        BC = ORD(FromBytesToChars);
-        BB = ORD(FromBytesToBytes);
-  VAR
+                  srcOfs: INTEGER;
+                  count: INTEGER);
   BEGIN
-    CASE ORD(direction) OF
-      CC: Chars       (destChars, destOfs, srcChars, srcOfs, count)
-    | CB: CharsToBytes(destBytes, destOfs, srcChars, srcOfs, count)
-    | BC: BytesToChars(destChars, destOfs, srcBytes, srcOfs, count)
-    | BB: Bytes       (destBytes, destOfs, srcBytes, srcOfs, count)
+    CASE direction OF
+      FromCharsToChars: Chars       (destChars, destOfs, srcChars, srcOfs, count)
+    | FromCharsToBytes: CharsToBytes(destBytes, destOfs, srcChars, srcOfs, count)
+    | FromBytesToChars: BytesToChars(destChars, destOfs, srcBytes, srcOfs, count)
+    | FromBytesToBytes: Bytes       (destBytes, destOfs, srcBytes, srcOfs, count)
     END
   END Data;
 
