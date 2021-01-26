@@ -18,11 +18,9 @@
 MODULE GeneratorJava;
 
 IMPORT
-	V,
 	Ast,
 	Strings    := StringStore,
 	Stream     := VDataStream,
-	FileStream := VFileStream,
 	GenOptions;
 
 CONST
@@ -39,9 +37,8 @@ TYPE
 	ProviderProcTypeName* = POINTER TO RProviderProcTypeName;
 	ProvideProcTypeName* =
 		PROCEDURE(prov: ProviderProcTypeName; typ: Ast.ProcType;
-		          VAR name: Strings.String): FileStream.Out;
-	RProviderProcTypeName* = RECORD(V.Base)
-	END;
+		          VAR name: Strings.String): Stream.POut;
+	RProviderProcTypeName* = RECORD END;
 
 	Options* = POINTER TO RECORD(GenOptions.R) END;
 

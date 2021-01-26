@@ -1,5 +1,5 @@
 (*  Provider of modules through file system. Extracted from Translator
- *  Copyright (C) 2019 ComdivByZero
+ *  Copyright (C) 2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -49,16 +49,14 @@ MODULE ModulesProvider;
       ext: ARRAY 5, 6 OF CHAR;
 
     PROCEDURE Search(p: Provider;
-                     name: ARRAY OF CHAR; ofs, end: INTEGER;
-                     ext: ARRAY OF CHAR;
+                     name: ARRAY OF CHAR; ext: ARRAY OF CHAR;
                      VAR pathInd: INTEGER): Ast.Module;
     VAR pathOfs: INTEGER;
         source: File.In;
         m: Ast.Module;
 
       PROCEDURE Open(p: Provider; VAR pathOfs: INTEGER;
-                     name: ARRAY OF CHAR; ofs, end: INTEGER;
-                     ext: ARRAY OF CHAR): File.In;
+                     name: ARRAY OF CHAR; ext: ARRAY OF CHAR): File.In;
       VAR n: ARRAY 1024 OF CHAR;
           l: INTEGER;
           in: File.In;
@@ -66,7 +64,7 @@ MODULE ModulesProvider;
         l := 0;
         IF Chars0X.Copy      (n, l, p.path, pathOfs)
          & Chars0X.CopyString(n, l, Exec.dirSep)
-         & Chars0X.CopyAtMost(n, l, name, ofs, end - ofs)
+         & Chars0X.CopyString(n, l, name)
          & Chars0X.CopyString(n, l, ext)
         THEN
           Log.Str("Open "); Log.StrLn(n);
@@ -82,7 +80,7 @@ MODULE ModulesProvider;
       pathInd := -1;
       pathOfs := 0;
       REPEAT
-        source := Open(p, pathOfs, name, ofs, end, ext);
+        source := Open(p, pathOfs, name, ext);
         IF source # NIL THEN
           m := Parser.Parse(source, p.opt);
           File.CloseIn(source);
@@ -109,7 +107,7 @@ MODULE ModulesProvider;
     ext[4] := ".obn";
     i := 0;
     REPEAT
-      m := Search(mp, name, ofs, end, ext[i], pathInd);
+      m := Search(mp, mp.expectName, ext[i], pathInd);
       INC(i)
     UNTIL (m # NIL) OR (i >= LEN(ext));
     IF m # NIL THEN

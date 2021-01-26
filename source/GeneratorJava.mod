@@ -42,7 +42,7 @@ TYPE
 	ProviderProcTypeName* = POINTER TO RProviderProcTypeName;
 	ProvideProcTypeName* =
 		PROCEDURE(prov: ProviderProcTypeName; typ: Ast.ProcType;
-		          VAR name: Strings.String): FileStream.Out;
+		          VAR name: Strings.String): Stream.POut;
 	RProviderProcTypeName* = RECORD(V.Base)
 		gen: ProvideProcTypeName
 	END;
@@ -1465,7 +1465,7 @@ END ClassForProcType;
 
 PROCEDURE ProcTypeNameGenAndArray(VAR gen: Generator; VAR name: Strings.String;
                                   proc: Ast.ProcType);
-VAR out: FileStream.Out;
+VAR out: Stream.POut;
     ng: Generator;
 BEGIN
 	out := gen.procTypeNamer.gen(gen.procTypeNamer, proc, name);
@@ -1475,7 +1475,7 @@ BEGIN
 	IF out # NIL THEN
 		GenInit(ng, out, gen.module, NIL, gen.opt);
 		ClassForProcType(ng, name, proc);
-		FileStream.CloseOut(out)
+		Stream.CloseOut(out)
 	END
 END ProcTypeNameGenAndArray;
 

@@ -18,11 +18,8 @@
 MODULE GeneratorC;
 
 IMPORT
-	V,
 	Ast,
 	Stream     := VDataStream,
-	FileStream := VFileStream,
-	Text       := TextGenerator,
 	GenOptions;
 
 CONST

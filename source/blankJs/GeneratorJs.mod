@@ -18,10 +18,8 @@
 MODULE GeneratorJs;
 
 IMPORT
-	V,
 	Ast,
 	Stream     := VDataStream,
-	FileStream := VFileStream,
 	GenOptions;
 
 CONST

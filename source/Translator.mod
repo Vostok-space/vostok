@@ -600,7 +600,7 @@ END GenerateProcType;
 (* TODO *)
 PROCEDURE ProvideProcTypeName(prov: GeneratorJava.ProviderProcTypeName;
                               proc: Ast.ProcType;
-                              VAR name: Strings.String): File.Out;
+                              VAR name: Strings.String): Stream.POut;
 
 	PROCEDURE Generate(VAR name: Strings.String;
 	                   proc: Ast.ProcType; prov: ProcNameProvider): File.Out;
@@ -1122,7 +1122,7 @@ BEGIN
 	IF args.script THEN
 		module := Parser.Script(args.src, opt)
 	ELSE
-		module := ModulesStorage.GetModule(mp, NIL, args.src, 0, args.srcNameEnd)
+		module := Ast.ProvideModule(mp, NIL, args.src, 0, args.srcNameEnd)
 	END;
 	IF module = NIL THEN
 		ret := ErrParse

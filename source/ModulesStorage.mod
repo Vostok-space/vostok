@@ -1,5 +1,5 @@
 (*  Servo provider of modules which stores already recieved modules. Extracted from Translator
- *  Copyright (C) 2019 ComdivByZero
+ *  Copyright (C) 2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -87,9 +87,8 @@ MODULE ModulesStorage;
     mp.last := mc
   END Add;
 
-  (* TODO убрать экспорт *)
-  PROCEDURE GetModule*(p: Ast.Provider; host: Ast.Module;
-                       name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
+  PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
+                      name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
   VAR m: Ast.Module;
       mp: Provider;
   BEGIN
