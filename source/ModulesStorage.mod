@@ -59,14 +59,13 @@ MODULE ModulesStorage;
     END
   END Unlink;
 
-  PROCEDURE SearchModule(mp: Provider;
-                         name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
+  PROCEDURE SearchModule(mp: Provider; name: ARRAY OF CHAR): Ast.Module;
   VAR first, mc: Container;
   BEGIN
     first := mp.first;
     mc := first.next;
     Log.StrLn("Search");
-    WHILE (mc # first) & ~Strings.IsEqualToChars(mc.m.name, name, ofs, end) DO
+    WHILE (mc # first) & ~Strings.IsEqualToString(mc.m.name, name) DO
       Log.Str(mc.m.name.block.s); Log.Str(" : "); Log.StrLn(name);
       mc := mc.next
     END;
@@ -87,15 +86,14 @@ MODULE ModulesStorage;
     mp.last := mc
   END Add;
 
-  PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
-                      name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
+  PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module; name: ARRAY OF CHAR): Ast.Module;
   VAR m: Ast.Module;
       mp: Provider;
   BEGIN
     mp := p(Provider);
-    m := SearchModule(mp, name, ofs, end);
+    m := SearchModule(mp, name);
     IF m = NIL THEN
-      m := Ast.ProvideModule(mp.provider, host, name, ofs, end)
+      m := Ast.ProvideModule(mp.provider, host, name)
     ELSE
       Log.Str("Найден уже разобранный модуль "); Log.StrLn(m.name.block.s)
     END

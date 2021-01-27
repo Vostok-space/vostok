@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2020 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -22,6 +22,7 @@ IMPORT
 	Utf8,
 	TranLim := TranslatorLimits,
 	Chars0X,
+	ArrayCopy,
 	Log;
 
 CONST
@@ -631,6 +632,21 @@ PROCEDURE ResetComment*(VAR s: Scanner);
 BEGIN
 	s.commentOfs := -1
 END ResetComment;
+
+PROCEDURE CopyCurrent*(s: Scanner; VAR buf: ARRAY OF CHAR);
+VAR len: INTEGER;
+BEGIN
+	IF s.lexStart < s.lexEnd THEN
+		len := s.lexEnd - s.lexStart;
+		ArrayCopy.Chars(buf, 0, s.buf, s.lexStart, len)
+	ELSE
+		len := LEN(s.buf) - 1 - s.lexStart;
+		ArrayCopy.Chars(buf, 0, s.buf, s.lexStart, len);
+		ArrayCopy.Chars(buf, len, s.buf, 0, s.lexEnd);
+		INC(len, s.lexEnd)
+	END;
+	buf[len] := Utf8.Null
+END CopyCurrent;
 
 BEGIN
 	ASSERT(TranLim.LenName < BlockSize)

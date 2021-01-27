@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -231,8 +231,7 @@ TYPE
 
 	Provider* = POINTER TO RProvider;
 
-	Provide* = PROCEDURE(p: Provider; host: Module;
-	                     name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
+	Provide* = PROCEDURE(p: Provider; host: Module; name: ARRAY OF CHAR): Module;
 
 	Register* = PROCEDURE(p: Provider; m: Module): BOOLEAN;
 
@@ -665,7 +664,7 @@ PROCEDURE DeclConnect(d: Declaration; ds: Declarations;
 VAR p: Declaration;
 BEGIN
 	ASSERT(d # NIL);
-	ASSERT(name[0] # 0X);
+	ASSERT(name # "");
 	ASSERT(~(d IS Module));
 	ASSERT((ds.start = NIL) OR ~(ds.start IS Module));
 
@@ -732,7 +731,7 @@ PROCEDURE DeclarationsConnect(d, up: Declarations;
                               name: ARRAY OF CHAR; start, end: INTEGER);
 BEGIN
 	DeclarationsInit(d, up);
-	IF name[0] # 0X THEN
+	IF name # "" THEN
 		DeclConnect(d, up, name, start, end)
 	ELSE
 		(* Record *)
@@ -741,7 +740,7 @@ BEGIN
 	d.up := up.dag
 END DeclarationsConnect;
 
-PROCEDURE ModuleNew*(name: ARRAY OF CHAR; begin, end: INTEGER): Module;
+PROCEDURE ModuleNew*(name: ARRAY OF CHAR): Module;
 VAR m: Module;
 BEGIN
 	NEW(m);
@@ -755,7 +754,7 @@ BEGIN
 	m.errors := NIL; m.errLast := NIL;
 	Strings.StoreInit(m.store);
 
-	PutChars(m, m.name, name, begin, end);
+	PutChars(m, m.name, name, 0, Chars0X.CalcLen(name, 0));
 	m.module := m.bag;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
@@ -766,25 +765,25 @@ END ModuleNew;
 PROCEDURE ScriptNew*(): Module;
 VAR m: Module;
 BEGIN
-	m := ModuleNew("script  ", 0, 6);
+	m := ModuleNew("script");
 	m.script := TRUE
 	RETURN m
 END ScriptNew;
 
 PROCEDURE ProvideModule*(prov: Provider; host: Module;
-                         name: ARRAY OF CHAR; ofs, end: INTEGER): Module;
+                         name: ARRAY OF CHAR): Module;
 BEGIN
 	ASSERT(prov # NIL);
-	ASSERT((0 <= ofs) & (ofs <= end) & (end < LEN(name)))
+	(* TODO *)
+	ASSERT(name # "")
 
-	RETURN prov.get(prov, host, name, ofs, end)
+	RETURN prov.get(prov, host, name)
 END ProvideModule;
 
-PROCEDURE GetModuleByName*(prov: Provider; host: Module;
-                           name: ARRAY OF CHAR; ofs, end: INTEGER): ModuleBag;
+PROCEDURE GetModuleByName*(prov: Provider; host: Module; name: ARRAY OF CHAR): ModuleBag;
 VAR m: Module; b: ModuleBag;
 BEGIN
-	m := ProvideModule(prov, host, name, ofs, end);
+	m := ProvideModule(prov, host, name);
 	IF m # NIL THEN
 		b := m.bag
 	ELSE
@@ -863,12 +862,13 @@ VAR imp: Import;
 
 	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module;
 	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
-	VAR err: INTEGER;
-	    m: Module;
+	VAR err, i: INTEGER; m: Module; name: ARRAY TranLim.LenName + 1 OF CHAR;
 	BEGIN
-		res := GetModuleByName(prov, host, buf, realOfs, realEnd);
+		i := 0;
+		ASSERT(Chars0X.CopyChars(name, i, buf, realOfs, realEnd));
+		res := GetModuleByName(prov, host, name);
 		IF res = NIL THEN
-			m := ModuleNew(buf, realOfs, realEnd);
+			m := ModuleNew(name);
 			res := m.bag;
 			err := ErrImportModuleNotFound
 		ELSIF res.m.errors # NIL THEN
@@ -929,14 +929,6 @@ BEGIN
 			ASSERT(~(d IS Module));
 			d := d.next
 		END
-	END;
-	IF (d # NIL) & FALSE THEN
-		Log.Str("Найдено объявление ");
-		WHILE begin # end DO
-			Log.Char(buf[begin]);
-			begin := (begin + 1) MOD (LEN(buf) - 1)
-		END;
-		Log.Str(" id = "); Log.Int(d.id); Log.Ln
 	END
 	RETURN d
 END SearchName;

@@ -359,7 +359,7 @@ BEGIN
 				ok := Chars0X.CopyString(tmp, i, dirOut);
 				saveTemp := V.Do(listener, tmpCreated);
 				IF ~saveTemp THEN
-					tmp[0] := Utf8.Null
+					tmp := ""
 				END
 			END
 		END
@@ -711,7 +711,7 @@ VAR opt: GeneratorJava.Options;
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
-			IF args.resPath[0] = Utf8.Null THEN
+			IF args.resPath = "" THEN
 				args.resPathLen := 0;
 				ASSERT(Chars0X.CopyChars(args.resPath, args.resPathLen,
 				                         outJava, 0, outJavaLen))
@@ -721,7 +721,7 @@ VAR opt: GeneratorJava.Options;
 			                         outJava, 0, outJavaLen));
 
 			ASSERT(GetMainClass(mainClass, m.name));
-			IF args.javac[0] # Utf8.Null THEN
+			IF args.javac # "" THEN
 				ok := JavaComp.Set(prov.javac, args.javac)
 			ELSE
 				ok := JavaComp.Search(prov.javac) & JavaComp.Debug(prov.javac);
@@ -966,7 +966,7 @@ VAR opt: GeneratorJs.Options;
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
-			IF args.resPath[0] = Utf8.Null THEN
+			IF args.resPath = "" THEN
 				args.resPathLen := 0;
 				ASSERT(Chars0X.CopyChars(args.resPath, args.resPathLen,
 				                         out, 0, dirLen))
@@ -1114,6 +1114,7 @@ VAR ret: INTEGER;
     tranOpt: AstTransform.Options;
     opt: Parser.Options;
     str: Strings.String;
+    save: CHAR;
 BEGIN
 	NewProvider(mp, opt, args);
 
@@ -1122,7 +1123,10 @@ BEGIN
 	IF args.script THEN
 		module := Parser.Script(args.src, opt)
 	ELSE
-		module := Ast.ProvideModule(mp, NIL, args.src, 0, args.srcNameEnd)
+		save := args.src[args.srcNameEnd];
+		args.src[args.srcNameEnd] := Utf8.Null;
+		module := Ast.ProvideModule(mp, NIL, args.src);
+		args.src[args.srcNameEnd] := save
 	END;
 	IF module = NIL THEN
 		ret := ErrParse

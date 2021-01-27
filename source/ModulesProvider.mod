@@ -41,8 +41,7 @@ MODULE ModulesProvider;
       firstNotOk: BOOLEAN
     END;
 
-  PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module;
-                      name: ARRAY OF CHAR; ofs, end: INTEGER): Ast.Module;
+  PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module; name: ARRAY OF CHAR): Ast.Module;
   VAR m: Ast.Module;
       mp: Provider;
       pathInd, i: INTEGER;
@@ -98,7 +97,7 @@ MODULE ModulesProvider;
   BEGIN
     mp := p(Provider);
     mp.nameLen := 0;
-    ASSERT(Chars0X.CopyChars(mp.expectName, mp.nameLen, name, ofs, end));
+    ASSERT(Chars0X.CopyString(mp.expectName, mp.nameLen, name));
 
     ext[0] := ".mod";
     ext[1] := ".Mod";

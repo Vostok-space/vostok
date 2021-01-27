@@ -370,11 +370,11 @@ BEGIN
 	V.Init(args);
 
 	args.srcLen   := 0;
-	args.cDirs[0] := Utf8.Null;
-	args.tmp[0]   := Utf8.Null;
-	args.cc[0]    := Utf8.Null;
+	args.cDirs    := "";
+	args.tmp      := "";
+	args.cc       := "";
 	args.cc[1]    := Utf8.Null;
-	args.javac[0] := Utf8.Null;
+	args.javac    := "";
 	args.sing     := {};
 	args.init     := -1;
 	args.memng    := -1;
@@ -443,7 +443,7 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 		args.srcNameEnd := 0;
 		ASSERT(Chars0X.CopyChars(args.src, args.srcNameEnd, file, i, dot));
 		args.srcLen := args.srcNameEnd;
-		IF method[0] # Utf8.Null THEN
+		IF method # "" THEN
 			ASSERT(Chars0X.CopyString(args.src, args.srcLen, method));
 			INC(args.srcLen)
 		END;

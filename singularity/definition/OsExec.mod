@@ -19,7 +19,7 @@ CONST
 
 PROCEDURE Do*(cmd: ARRAY OF CHAR): INTEGER;
 BEGIN
-	ASSERT(cmd[0] # 0X)
+	ASSERT(cmd # "")
 RETURN
 	-1
 END Do;

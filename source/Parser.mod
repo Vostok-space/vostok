@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2019 ComdivByZero
+ *  Copyright (C) 2016-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1406,7 +1406,7 @@ BEGIN
 END Imports;
 
 PROCEDURE Module(VAR p: Parser);
-VAR expectedName: BOOLEAN;
+VAR expectedName: BOOLEAN; moduleName: ARRAY TranLim.LenName + 1 OF CHAR;
 
 	PROCEDURE SearchModule(VAR s: Scanner.Scanner): BOOLEAN;
 	VAR limit, l: INTEGER; match: BOOLEAN;
@@ -1424,17 +1424,18 @@ VAR expectedName: BOOLEAN;
 	END SearchModule;
 BEGIN
 	IF ~SearchModule(p.s) THEN
-		p.module := Ast.ModuleNew("  ", 0, 0);
+		p.module := Ast.ModuleNew("#ERR");
 		AddError(p, ErrExpectModule);
 		ASSERT((p.module = NIL) OR (p.module.errors # NIL))
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
-			p.module := Ast.ModuleNew("  ", 0, 0);
+			p.module := Ast.ModuleNew("#ERR");
 			AddError(p, ErrExpectIdent);
 			expectedName := TRUE
 		ELSE
-			p.module := Ast.ModuleNew(p.s.buf, p.s.lexStart, p.s.lexEnd);
+			Scanner.CopyCurrent(p.s, moduleName);
+			p.module := Ast.ModuleNew(moduleName);
 			expectedName := Ast.RegModule(p.opt.provider, p.module);
 			IF expectedName THEN
 				IF TakeComment(p) THEN

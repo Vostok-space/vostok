@@ -1,5 +1,5 @@
 (*  Read Eval Print Loop for Oberon commands
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,7 +16,7 @@
  *)
 MODULE Repl;
 
-  IMPORT V, Out, Cli := CliParser, EditLine, Message, Translator, Utf8;
+  IMPORT V, Out, Cli := CliParser, EditLine, Message, Translator;
 
   PROCEDURE Loop(VAR args: Cli.Args);
   VAR err: INTEGER; nothing: V.Base;
@@ -24,7 +24,7 @@ MODULE Repl;
     args.script := TRUE;
     V.Init(nothing);
     WHILE EditLine.Read("O7: ", args.src) DO
-      IF args.src[0] # Utf8.Null THEN
+      IF args.src # "" THEN
         err := Translator.Translate(Cli.ResultRun, args, nothing);
         IF (err # Translator.ErrNo) & (err # Translator.ErrParse) THEN
           Message.CliError(err)
