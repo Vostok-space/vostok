@@ -2120,11 +2120,11 @@ BEGIN
 	type.used := TRUE;
 	IF type IS Pointer THEN
 		err := ErrNo;
-		type := type.type;
-		sel.type := type
+		type := type.type
 	ELSE
 		err := ErrDerefToNotPointer
-	END
+	END;
+	sel.type := type
 	RETURN err
 END SelPointerNew;
 
