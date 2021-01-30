@@ -323,6 +323,7 @@ TYPE
 
 		needTag*,
 		inAssign*,
+		hasExt*,
 		complete: BOOLEAN
 	END;
 
@@ -1523,7 +1524,10 @@ PROCEDURE RecordSetBase*(r, base: Record);
 BEGIN
 	ASSERT(r.base = NIL);
 	ASSERT(r.vars = NIL);
-	r.base := base
+	IF base # NIL THEN
+		base.hasExt := TRUE;
+		r.base := base
+	END
 END RecordSetBase;
 
 PROCEDURE RecNew(VAR r: Record; id: INTEGER);
@@ -1537,6 +1541,7 @@ BEGIN
 	r.needTag  := FALSE;
 	(* TODO *)
 	r.inAssign := TRUE;
+	r.hasExt := FALSE;
 	r.complete := FALSE
 END RecNew;
 
@@ -3077,6 +3082,13 @@ RETURN (e IS Designator)
      & (e(Designator).sel = NIL)
      & (e(Designator).decl IS FormalParam)
 END IsFormalParam;
+
+PROCEDURE IsConstOrLocalVar*(e: Expression): BOOLEAN;
+RETURN (e.value # NIL)
+    OR   (e IS Designator)
+       & (e(Designator).sel = NIL)
+       & ~IsGlobal(e(Designator).decl)
+END IsConstOrLocalVar;
 
 PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
