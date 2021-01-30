@@ -1,4 +1,4 @@
-(*  Provider of modules through file system. Extracted from Translator
+(*  Provider of modules through file system
  *  Copyright (C) 2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,74 +23,50 @@ MODULE ModulesProvider;
     ArrayCopy,
     Parser,
     TranLim := TranslatorLimits,
-    File := VFileStream,
+    File := VFileStream, Stream := VDataStream,
     Exec := PlatformExec,
     Utf8,
-    Message;
+    Message,
+    FileProvider, InputProvider;
 
   TYPE
     Provider* = POINTER TO RECORD(Ast.RProvider)
       opt: Parser.Options;
 
-      path: ARRAY 4096 OF CHAR;
-      sing: SET;
+      in: InputProvider.P;
 
       expectName: ARRAY TranLim.LenName + 1 OF CHAR;
       nameLen   : INTEGER;
+
       nameOk,
       firstNotOk: BOOLEAN
     END;
 
   PROCEDURE GetModule(p: Ast.Provider; host: Ast.Module; name: ARRAY OF CHAR): Ast.Module;
-  VAR m: Ast.Module;
-      mp: Provider;
-      pathInd, i: INTEGER;
-      ext: ARRAY 5, 6 OF CHAR;
+  VAR m: Ast.Module; mp: Provider;
 
-    PROCEDURE Search(p: Provider;
-                     name: ARRAY OF CHAR; ext: ARRAY OF CHAR;
-                     VAR pathInd: INTEGER): Ast.Module;
-    VAR pathOfs: INTEGER;
-        source: File.In;
+    PROCEDURE Search(p: Provider): Ast.Module;
+    VAR source: Stream.PIn;
         m: Ast.Module;
-
-      PROCEDURE Open(p: Provider; VAR pathOfs: INTEGER;
-                     name: ARRAY OF CHAR; ext: ARRAY OF CHAR): File.In;
-      VAR n: ARRAY 1024 OF CHAR;
-          l: INTEGER;
-          in: File.In;
-      BEGIN
-        l := 0;
-        IF Chars0X.Copy      (n, l, p.path, pathOfs)
-         & Chars0X.CopyString(n, l, Exec.dirSep)
-         & Chars0X.CopyString(n, l, name)
-         & Chars0X.CopyString(n, l, ext)
-        THEN
-          Log.Str("Open "); Log.StrLn(n);
-          in := File.OpenIn(n)
-        ELSE
-          in := NIL
-        END;
-        INC(pathOfs)
-      RETURN
-        in
-      END Open;
+        decl: BOOLEAN;
+        it: InputProvider.PIter;
     BEGIN
-      pathInd := -1;
-      pathOfs := 0;
-      REPEAT
-        source := Open(p, pathOfs, name, ext);
-        IF source # NIL THEN
-          m := Parser.Parse(source, p.opt);
-          File.CloseIn(source);
-          IF (m # NIL) & (m.errors = NIL) & ~p.nameOk THEN
-            m := NIL
+      m := NIL;
+      IF InputProvider.Get(p.in, it, p.expectName) THEN
+        REPEAT
+          IF InputProvider.Next(it, source, decl) THEN
+            m := Parser.Parse(source, p.opt);
+            Stream.CloseIn(source);
+            IF (m # NIL) & (m.errors = NIL) & ~p.nameOk THEN
+              m := NIL
+            ELSIF m # NIL THEN
+              Log.Str(m.name.block.s); Log.Str(" : "); Log.Bool(decl); Log.Ln;
+              (*TODO*)
+              m.mark := decl
+            END
           END
-        ELSE
-          m := NIL
-        END;
-        INC(pathInd)
-      UNTIL (m # NIL) OR (p.path[pathOfs] = Utf8.Null)
+        UNTIL (m # NIL) OR (it = NIL)
+      END
     RETURN
       m
     END Search;
@@ -99,21 +75,8 @@ MODULE ModulesProvider;
     mp.nameLen := 0;
     ASSERT(Chars0X.CopyString(mp.expectName, mp.nameLen, name));
 
-    ext[0] := ".mod";
-    ext[1] := ".Mod";
-    ext[2] := ".ob07";
-    ext[3] := ".ob";
-    ext[4] := ".obn";
-    i := 0;
-    REPEAT
-      m := Search(mp, mp.expectName, ext[i], pathInd);
-      INC(i)
-    UNTIL (m # NIL) OR (i >= LEN(ext));
-    IF m # NIL THEN
-      IF pathInd IN mp.sing THEN
-        m.mark := TRUE
-      END
-    ELSIF mp.firstNotOk THEN
+    m := Search(mp);
+    IF (m = NIL) & mp.firstNotOk THEN
       mp.firstNotOk := FALSE;
       (* TODO *)
       Message.Text("Can not found or open file of module ");
@@ -139,14 +102,13 @@ MODULE ModulesProvider;
 
   PROCEDURE New*(VAR mp: Provider; searchPath: ARRAY OF CHAR; pathLen: INTEGER;
                  definitionsInSearch: SET);
-  VAR len: INTEGER;
+  VAR len: INTEGER; ok: BOOLEAN;
   BEGIN
     NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
 
+    ok := FileProvider.New(mp.in, searchPath, pathLen, definitionsInSearch);
     mp.firstNotOk := TRUE;
-    len := 0;
-    ArrayCopy.Chars(mp.path, len, searchPath, 0, pathLen);
-    mp.sing := definitionsInSearch
+    len := 0
   END New;
 
   PROCEDURE SetParserOptions*(p: Provider; o: Parser.Options);
