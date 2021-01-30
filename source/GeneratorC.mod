@@ -255,7 +255,7 @@ END Import;
 
 PROCEDURE Factor(VAR gen: Generator; expr: Ast.Expression);
 BEGIN
-	IF expr IS Ast.Factor THEN
+	IF (expr IS Ast.Factor) & ~(expr.type.id = Ast.IdArray) THEN
 		(* TODO *)
 		expression(gen, expr)
 	ELSE
