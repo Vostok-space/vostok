@@ -16,11 +16,6 @@
 (* база всего сущего, авось пригодится для чего-нибудь эдакого *)
 MODULE V;
 
-CONST
-	ContentPassOpen*  = 0;
-	ContentPassNext*  = 1;
-	ContentPassClose* = 2;
-
 TYPE
 	Message* = RECORD END;
 	PMessage* = POINTER TO Message;
@@ -42,9 +37,6 @@ TYPE
 	                  END;
 	MsgLinks*       = RECORD(Base)
 	                      diff*, count*: INTEGER
-	                  END;
-	MsgContentPass* = RECORD(Base)
-	                      id*: INTEGER
 	                  END;
 	MsgHash*        = RECORD(Base)
 	                      hash*: INTEGER
