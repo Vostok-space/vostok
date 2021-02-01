@@ -141,6 +141,28 @@ MODULE Chars0X;
     ok
   END CopyChars;
 
+  PROCEDURE CopyCharsUntil*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                            src: ARRAY OF CHAR; VAR srcOfs: INTEGER; until: CHAR): BOOLEAN;
+  VAR s, d: INTEGER;
+  BEGIN
+    s := srcOfs;
+    d := destOfs;
+    ASSERT((0 <= s) & (s < LEN(src)));
+    ASSERT((0 <= d) & (d <= LEN(dest)));
+
+    WHILE (src[s] # until) & (d < LEN(dest) - 1) DO
+      ASSERT(src[s] # Utf8.Null);
+      dest[d] := src[s];
+      INC(d);
+      INC(s)
+    END;
+    dest[d] := Utf8.Null;
+    destOfs := d;
+    srcOfs  := s
+  RETURN
+    src[s] = until
+  END CopyCharsUntil;
+
   PROCEDURE CopyString*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
                         src: ARRAY OF CHAR): BOOLEAN;
   VAR i: INTEGER;
