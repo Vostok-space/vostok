@@ -27,7 +27,7 @@ MODULE ModulesProvider;
     Exec := PlatformExec,
     Utf8,
     Message,
-    FileProvider, InputProvider;
+    InputProvider;
 
   TYPE
     Provider* = POINTER TO RECORD(Ast.RProvider)
@@ -100,15 +100,19 @@ MODULE ModulesProvider;
     Reg(p(Provider), m)
   END RegModule;
 
-  PROCEDURE New*(VAR mp: Provider; searchPath: ARRAY OF CHAR; pathLen: INTEGER;
-                 definitionsInSearch: SET);
-  VAR len: INTEGER; ok: BOOLEAN;
+  PROCEDURE New*(VAR mp: Provider; inp: InputProvider.P): BOOLEAN;
   BEGIN
-    NEW(mp); Ast.ProviderInit(mp, GetModule, RegModule);
+    ASSERT(inp # NIL);
 
-    ok := FileProvider.New(mp.in, searchPath, pathLen, definitionsInSearch);
-    mp.firstNotOk := TRUE;
-    len := 0
+    NEW(mp);
+    IF mp # NIL THEN
+      Ast.ProviderInit(mp, GetModule, RegModule);
+
+      mp.in := inp;
+      mp.firstNotOk := TRUE;
+    END
+  RETURN
+    mp # NIL
   END New;
 
   PROCEDURE SetParserOptions*(p: Provider; o: Parser.Options);

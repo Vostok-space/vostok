@@ -50,7 +50,7 @@ IMPORT
 	VCopy,
 	Mem := VMemStream,
 	JsEval, MemStreamToJsEval,
-	ModulesStorage, ModulesProvider,
+	ModulesStorage, ModulesProvider, InputProvider, FileProvider,
 	OsSelfMemInfo;
 
 CONST
@@ -245,18 +245,22 @@ END OpenOberonOutput;
 
 PROCEDURE NewProvider(VAR p: ModulesStorage.Provider; VAR opt: Parser.Options;
                       args: Cli.Args);
-VAR m: ModulesProvider.Provider;
+VAR inp: InputProvider.P; m: ModulesProvider.Provider;
 BEGIN
-	ModulesProvider.New(m, args.modPath, args.modPathLen, args.sing);
-	ModulesStorage.New(p, m);
+	IF FileProvider.New(inp, args.modPath, args.modPathLen, args.sing)
+	 & ModulesProvider.New(m, inp)
+	THEN
+		ModulesStorage.New(p, m);
 
-	Parser.DefaultOptions(opt);
-	opt.printError  := ErrorMessage;
-	opt.cyrillic    := args.cyrillic # Cli.CyrillicNo;
-	opt.provider    := p;
-	opt.multiErrors := args.multiErrors;
-
-	ModulesProvider.SetParserOptions(m, opt)
+		Parser.DefaultOptions(opt);
+		opt.printError  := ErrorMessage;
+		opt.cyrillic    := args.cyrillic # Cli.CyrillicNo;
+		opt.multiErrors := args.multiErrors;
+		opt.provider    := p;
+		ModulesProvider.SetParserOptions(m, opt)
+	ELSE
+		(* TODO *)
+	END
 END NewProvider;
 
 (* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
