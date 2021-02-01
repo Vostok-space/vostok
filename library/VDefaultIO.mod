@@ -28,7 +28,7 @@ MODULE VDefaultIO;
     IF in = NIL THEN
       s := Files.in
     ELSE
-      s := Stream.OpenIn(in^)
+      s := Stream.OpenIn(in)
     END
   RETURN
     s
@@ -40,7 +40,7 @@ MODULE VDefaultIO;
     IF out = NIL THEN
       s := Files.out
     ELSE
-      s := Stream.OpenOut(out^)
+      s := Stream.OpenOut(out)
     END
   RETURN
     s
