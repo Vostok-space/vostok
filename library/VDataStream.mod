@@ -169,27 +169,27 @@ BEGIN
 	RETURN w
 END WriteChars;
 
-PROCEDURE InitInOpener*(VAR opener: InOpener; open: OpenInStream);
+PROCEDURE InitInOpener*(opener: PInOpener; open: OpenInStream);
 BEGIN
 	ASSERT(open # NIL);
-	V.Init(opener);
+	V.Init(opener^);
 	opener.open := open
 END InitInOpener;
 
-PROCEDURE InitOutOpener*(VAR opener: OutOpener; open: OpenOutStream);
+PROCEDURE InitOutOpener*(opener: POutOpener; open: OpenOutStream);
 BEGIN
 	ASSERT(open # NIL);
-	V.Init(opener);
+	V.Init(opener^);
 	opener.open := open
 END InitOutOpener;
 
 (* TODO проработать ошибки операций *)
-PROCEDURE OpenIn*(VAR opener: InOpener): PIn;
-	RETURN opener.open(opener)
+PROCEDURE OpenIn*(opener: PInOpener): PIn;
+	RETURN opener.open(opener^)
 END OpenIn;
 
-PROCEDURE OpenOut*(VAR opener: OutOpener): POut;
-	RETURN opener.open(opener)
+PROCEDURE OpenOut*(opener: POutOpener): POut;
+	RETURN opener.open(opener^)
 END OpenOut;
 
 END VDataStream.
