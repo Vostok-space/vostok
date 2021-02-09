@@ -1,5 +1,5 @@
 (*  Stub for russian messages for interface
- *  Copyright (C) 2020 ComdivByZero
+ *  Copyright (C) 2020-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,17 +16,7 @@
  *)
 MODULE MessageRu;
 
-IMPORT Out, MessageEn;
-
-PROCEDURE AstError*(code: INTEGER);
-BEGIN
-	MessageEn.AstError(code)
-END AstError;
-
-PROCEDURE ParseError*(code: INTEGER);
-BEGIN
-	MessageEn.ParseError(code)
-END ParseError;
+IMPORT MessageEn;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
@@ -40,7 +30,7 @@ END CliError;
 
 PROCEDURE Text*(str: ARRAY OF CHAR);
 BEGIN
-	Out.String(str)
+	MessageEn.Text(str)
 END Text;
 
 END MessageRu.

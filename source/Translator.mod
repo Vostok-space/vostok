@@ -42,6 +42,9 @@ IMPORT
 	JavaExec := JavaExecInterface,
 	JsExec := JavascriptExecInterface,
 	Message,
+	MessageErrOberon,
+	InterfaceLang,
+	PlatformMessagesLang,
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
@@ -84,9 +87,9 @@ TYPE
 PROCEDURE ErrorMessage(code: INTEGER; str: Strings.String);
 BEGIN
 	IF code <= Parser.ErrAstBegin THEN
-		Message.AstError(code - Parser.ErrAstBegin, str)
+		MessageErrOberon.Ast(code - Parser.ErrAstBegin, str)
 	ELSE
-		Message.ParseError(code)
+		MessageErrOberon.Syntax(code)
 	END
 END ErrorMessage;
 
@@ -1148,7 +1151,7 @@ BEGIN
 		END;
 		IF ret # Ast.ErrNo THEN
 			Strings.Undef(str);
-			Message.AstError(ret, str); Message.Ln;
+			MessageErrOberon.Ast(ret, str); MessageErrOberon.Ln;
 			ret := ErrParse
 		ELSIF res IN Cli.ThroughJava + Cli.ThroughJs THEN
 			Ast.ModuleReopen(module);
@@ -1199,7 +1202,7 @@ BEGIN
 END MemInfo;
 
 PROCEDURE GoOpt*(set: SET);
-VAR ret: INTEGER;
+VAR ret, lang: INTEGER;
     args: Cli.Args;
     nothing: V.Base;
 
@@ -1222,6 +1225,10 @@ BEGIN
 	Out.Open;
 	IF ~(OptLog IN set) THEN
 		Log.Off
+	END;
+
+	IF PlatformMessagesLang.Get(lang) THEN
+		InterfaceLang.Set(lang)
 	END;
 
 	V.Init(nothing);

@@ -18,50 +18,17 @@ MODULE Message;
 
 IMPORT Env := OsEnv, Platform, LocaleParser,
        Strings := StringStore,
+       InterfaceLang,
        MessageUa, MessageRu, MessageEn, Out;
 
 CONST
-	En = 0;
-	Ru = 1;
-	Ua = 2;
-
-VAR lang: INTEGER;
-
-PROCEDURE Str(s: Strings.String);
-VAR i: INTEGER; buf: ARRAY 256 OF CHAR;
-BEGIN
-	i := 0;
-	IF Strings.CopyToChars(buf, i, s) THEN
-		Out.String(buf)
-	ELSE
-		Out.String("...")
-	END
-END Str;
-
-PROCEDURE AstError*(code: INTEGER; str: Strings.String);
-BEGIN
-	CASE lang OF
-	  En: MessageEn.AstError(code)
-	| Ru: MessageRu.AstError(code)
-	| Ua: MessageUa.AstError(code)
-	END;
-	IF Strings.IsDefined(str) THEN
-		Str(str)
-	END
-END AstError;
-
-PROCEDURE ParseError*(code: INTEGER);
-BEGIN
-	CASE lang OF
-	  En: MessageEn.ParseError(code)
-	| Ru: MessageRu.ParseError(code)
-	| Ua: MessageUa.ParseError(code)
-	END
-END ParseError;
+	En = InterfaceLang.En;
+	Ru = InterfaceLang.Ru;
+	Ua = InterfaceLang.Ua;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-	CASE lang OF
+	CASE InterfaceLang.lang OF
 	  En: MessageEn.Usage(full)
 	| Ru: MessageRu.Usage(full)
 	| Ua: MessageUa.Usage(full)
@@ -70,7 +37,7 @@ END Usage;
 
 PROCEDURE CliError*(err: INTEGER);
 BEGIN
-	CASE lang OF
+	CASE InterfaceLang.lang OF
 	  En: MessageEn.CliError(err)
 	| Ru: MessageRu.CliError(err)
 	| Ua: MessageUa.CliError(err)
@@ -79,38 +46,11 @@ END CliError;
 
 PROCEDURE Text*(str: ARRAY OF CHAR);
 BEGIN
-	CASE lang OF
+	CASE InterfaceLang.lang OF
 	  En: MessageEn.Text(str)
 	| Ru: MessageRu.Text(str)
 	| Ua: MessageUa.Text(str)
 	END
 END Text;
 
-PROCEDURE InitLang;
-VAR env: ARRAY 16 OF CHAR;
-    ofs: INTEGER;
-    lng, state: ARRAY 3 OF CHAR;
-    enc: ARRAY 6 OF CHAR;
-BEGIN
-	ofs := 0;
-	IF ~(  Platform.Posix & Env.Get(env, ofs, "LANG")
-	     & LocaleParser.Parse(env, lng, state, enc) & (enc = "UTF-8")  )
-	THEN
-		lang := En
-	ELSIF lng = "ru" THEN
-		lang := Ru
-	ELSIF lng = "uk" THEN
-		lang := Ua
-	ELSE
-		lang := En
-	END
-END InitLang;
-
-PROCEDURE Ln*;
-BEGIN
-  Out.Ln
-END Ln;
-
-BEGIN
-	InitLang
 END Message.
