@@ -1,4 +1,4 @@
-/*  HTTP server for translator demonstration
+/*  HTTP server and Telegram-bot for translator demonstration
  *  Copyright (C) 2017-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -46,8 +46,9 @@ type (
     Txt  string   `json:"text"`
   }
   teleUpdate struct {
-    Id  int         `json:"update_id"`;
-    Msg teleMessage `json:"message"`
+    Id     int         `json:"update_id"`;
+    Msg    teleMessage `json:"message"`;
+    Edited teleMessage `json:"edited_message"`
   }
   teleUpdates struct {
     Ok bool              `json:"ok"`;
@@ -212,6 +213,28 @@ func teleSend(api, text string, chat int) (err error) {
   return
 }
 
+func teleGetSrc(upd teleUpdate) (src string, chat int) {
+  src = upd.Msg.Txt;
+  if src == "" {
+    src  = upd.Edited.Txt;
+    chat = upd.Edited.Chat.Id
+  } else {
+    chat = upd.Msg.Chat.Id
+  }
+  if src == "" {
+
+  } else if src[0] == '/' {
+    if strings.HasPrefix(src, "/O7:") {
+      src = src[4:]
+    } else if strings.HasPrefix(src, "/MODULE") {
+      src = src[1:]
+    } else {
+      src = ""
+    }
+  }
+  return
+}
+
 func teleBot(token, cc string, timeout int) (err error) {
   const (
     help = `/O7: Out.String("Script mode")` +
@@ -220,7 +243,7 @@ func teleBot(token, cc string, timeout int) (err error) {
   var (
     api, src string;
     upds []teleUpdate;
-    lastUpdate int;
+    lastUpdate, chat int;
     output []byte;
   )
   api = teleApi + token + "/";
@@ -230,21 +253,12 @@ func teleBot(token, cc string, timeout int) (err error) {
     upds, err = teleGetUpdates(api, lastUpdate + 1);
     if err == nil {
       for _, upd := range upds {
-        src = upd.Msg.Txt;
-        if src[0] == '/' {
-          if strings.HasPrefix(src, "/O7:") {
-            src = src[4:]
-          } else if strings.HasPrefix(src, "/MODULE") {
-            src = src[1:]
-          } else {
-            src = ""
-          }
-        }
+        src, chat = teleGetSrc(upd);
         if src != "" {
           output, err = run(src, "", cc, timeout);
-          err = teleSend(api, string(output), upd.Msg.Chat.Id)
+          err = teleSend(api, string(output), chat)
         } else if (upd.Msg.Txt == "/start") {
-          err = teleSend(api, help, upd.Msg.Chat.Id)
+          err = teleSend(api, help, chat)
         }
         lastUpdate = upd.Id
       }
