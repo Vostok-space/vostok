@@ -26,7 +26,7 @@ MODULE ModulesProvider;
     File := VFileStream, Stream := VDataStream,
     Exec := PlatformExec,
     Utf8,
-    Message,
+    MessageErrOberon,
     InputProvider;
 
   TYPE
@@ -73,15 +73,20 @@ MODULE ModulesProvider;
   BEGIN
     mp := p(Provider);
     mp.nameLen := 0;
-    ASSERT(Chars0X.CopyString(mp.expectName, mp.nameLen, name));
-
-    m := Search(mp);
-    IF (m = NIL) & mp.firstNotOk THEN
-      mp.firstNotOk := FALSE;
-      (* TODO *)
-      Message.Text("Can not found or open file of module ");
-      Out.String(mp.expectName);
-      Out.Ln
+    IF ~Chars0X.CopyString(mp.expectName, mp.nameLen, name) THEN
+      m := NIL;
+      MessageErrOberon.Text("Name of potential module is too large - ");
+      Out.String(name);
+      MessageErrOberon.Ln
+    ELSE
+      m := Search(mp);
+      IF (m = NIL) & mp.firstNotOk THEN
+        mp.firstNotOk := FALSE;
+        (* TODO *)
+        MessageErrOberon.Text("Can not found or open file of module - ");
+        Out.String(mp.expectName);
+        MessageErrOberon.Ln
+      END
     END
   RETURN
     m
