@@ -37,6 +37,13 @@ const (
   teleApi = "https://api.telegram.org/bot"
 )
 
+var (
+  moduleDirs = [] string {
+    "vostok/library",
+    "vostok/singularity/definition",
+  }
+)
+
 type (
   teleChat struct {
     Id int `json:"id"`
@@ -144,6 +151,79 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
   return
 }
 
+func listModules() (list string) {
+  var (
+    files []os.FileInfo;
+    err error;
+    path string
+  )
+  list = "";
+  for _, path = range moduleDirs {
+    files, err = ioutil.ReadDir(path);
+    if err == nil {
+      for _, f := range files {
+        if strings.HasSuffix(f.Name(), ".mod") {
+          list = list + strings.TrimSuffix(f.Name(), ".mod") + " "
+        }
+      }
+      list += "\n\n"
+    }
+  }
+  return
+}
+
+func exportList(module string) (list string) {
+  var (
+    i, j, k int
+  )
+
+  list = "";
+  i = strings.Index(module, "PROCEDURE ");
+  for i > 0 {
+    module = module[i:];
+    j = strings.IndexAny(module, "*(;");
+    if j > 0 && module[j] == '*' {
+      k = strings.IndexAny(module[j + 1:], "(;") + j + 1;
+      if k > 0 && module[k] == '(' {
+        k = strings.Index(module[k + 1:], ")") + k + 1;
+        if k > 0 {
+          k = strings.Index(module[k + 1:], ";") + k + 1;
+        }
+      }
+      if k > 0 {
+        list = list + module[:k + 1] + "\n"
+      }
+    } else {
+      j = 8
+    }
+    module = module[j:];
+    i = strings.Index(module, "PROCEDURE ")
+  }
+  return
+}
+
+func infoModule(name string) (info string) {
+  var (
+    path string;
+    data []byte;
+    err error;
+    i int
+  )
+  data = nil;
+  i = 0;
+  for data == nil && i < len(moduleDirs) {
+    path = moduleDirs[i] + "/" + name + ".mod";
+    data, err = ioutil.ReadFile(path);
+    i += 1
+  }
+  if data != nil {
+    info = exportList(string(data))
+  } else {
+    info = err.Error()
+  }
+  return
+}
+
 func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
   var (
     m, s string
@@ -221,16 +301,12 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
   } else {
     chat = upd.Msg.Chat.Id
   }
-  if src == "" {
-
-  } else if src[0] == '/' {
-    if strings.HasPrefix(src, "/O7:") {
-      src = src[4:]
-    } else if strings.HasPrefix(src, "/MODULE") {
-      src = src[1:]
-    } else {
-      src = ""
-    }
+  if strings.HasPrefix(src, "/O7:") {
+    src = src[4:]
+  } else if strings.HasPrefix(src, "/MODULE") {
+    src = src[1:]
+  } else if strings.HasPrefix(src, "/") {
+    src = ""
   }
   return
 }
@@ -238,13 +314,15 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
 func teleBot(token, cc string, timeout int) (err error) {
   const (
     help = `/O7: Out.String("Script mode")` +
-           "\n/MODULE ModuleMode; END ModuleMode.\n"
+           "\n/MODULE ModuleMode; END ModuleMode.\n" +
+           "/LIST - list available modules\n" +
+           "/INFO ModuleName"
   )
   var (
     api, src string;
     upds []teleUpdate;
     lastUpdate, chat int;
-    output []byte;
+    output []byte
   )
   api = teleApi + token + "/";
   err = nil;
@@ -257,8 +335,12 @@ func teleBot(token, cc string, timeout int) (err error) {
         if src != "" {
           output, err = run(src, "", cc, timeout);
           err = teleSend(api, string(output), chat)
-        } else if (upd.Msg.Txt == "/start") {
+        } else if upd.Msg.Txt == "/start" {
           err = teleSend(api, help, chat)
+        } else if upd.Msg.Txt == "/LIST" {
+          err = teleSend(api, listModules(), chat)
+        } else if strings.HasPrefix(upd.Msg.Txt, "/INFO ") {
+          err = teleSend(api, infoModule(upd.Msg.Txt[6:]), chat)
         }
         lastUpdate = upd.Id
       }
