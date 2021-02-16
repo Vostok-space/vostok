@@ -148,7 +148,7 @@ BEGIN
 	| AST.ErrArrayLenLess1:
 		C("Array's length must be > 0")
 	| AST.ErrArrayLenTooBig:
-		C("Overall length of array too big")
+		C("Overall length of array too large")
 	| AST.ErrArrayItemToNotArray:
 		C("[ index ] applicable only to array")
 	| AST.ErrArrayIndexNotInt:
@@ -254,11 +254,11 @@ BEGIN
 	  Scanner.ErrUnexpectChar:
 		C("Unexpected char in text")
 	| Scanner.ErrNumberTooBig:
-		C("Value of constant is too big")
+		C("Value of constant is too large")
 	| Scanner.ErrRealScaleTooBig:
-		C("Scale of real value is too big")
+		C("Scale of real value is too large")
 	| Scanner.ErrWordLenTooBig:
-		C("Length of word too big")
+		C("Length of word too large")
 	| Scanner.ErrExpectHOrX:
 		C("In end of hexadecimal number expected 'H' for number or 'X' for char")
 	| Scanner.ErrExpectDQuote:
@@ -350,5 +350,10 @@ BEGIN
 		C("Unexpected content at the start of the code")
 	END
 END Syntax;
+
+PROCEDURE Text*(str: ARRAY OF CHAR);
+BEGIN
+	C(str)
+END Text;
 
 END MessageErrOberonEn.

@@ -18,11 +18,6 @@ MODULE MessageUa;
 
 IMPORT Cli := CliParser, Out, Utf8;
 
-PROCEDURE C(s: ARRAY OF CHAR);
-BEGIN
-	Out.String(s)
-END C;
-
 PROCEDURE S(s: ARRAY OF CHAR);
 BEGIN
 	Out.String(s);
@@ -176,16 +171,5 @@ BEGIN
 		S("Генерація через Oberon виключена")
 	END
 END CliError;
-
-PROCEDURE Text*(str: ARRAY OF CHAR);
-BEGIN
-	IF str = "Found errors in the module " THEN
-		C("Знайдені помилки у модулі ")
-	ELSIF str = "Can not found or open file of module " THEN
-		C("Не вдається знайти або відкрити файл модулю ")
-	ELSE
-		C(str)
-	END
-END Text;
 
 END MessageUa.

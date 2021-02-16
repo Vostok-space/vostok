@@ -56,6 +56,15 @@ BEGIN
 	END
 END Syntax;
 
+PROCEDURE Text*(str: ARRAY OF CHAR);
+BEGIN
+	CASE InterfaceLang.lang OF
+	  InterfaceLang.En: En.Text(str)
+	| InterfaceLang.Ru: Ru.Text(str)
+	| InterfaceLang.Ua: Ua.Text(str)
+	END
+END Text;
+
 PROCEDURE Ln*;
 BEGIN
 	Out.Ln

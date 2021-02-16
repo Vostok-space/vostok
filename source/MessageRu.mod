@@ -18,11 +18,6 @@ MODULE MessageRu;
 
 IMPORT Cli := CliParser, Out, Utf8;
 
-PROCEDURE C(s: ARRAY OF CHAR);
-BEGIN
-	Out.String(s)
-END C;
-
 PROCEDURE S(s: ARRAY OF CHAR);
 BEGIN
 	Out.String(s);
@@ -188,16 +183,5 @@ BEGIN
 		S("Генерация через Oberon выключена")
 	END
 END CliError;
-
-PROCEDURE Text*(str: ARRAY OF CHAR);
-BEGIN
-	IF str = "Found errors in the module " THEN
-		C("Найдены ошибки в модуле ")
-	ELSIF str = "Can not found or open file of module " THEN
-		C("Не получается найти или открыть файл модуля ")
-	ELSE
-		C(str)
-	END
-END Text;
 
 END MessageRu.

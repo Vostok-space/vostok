@@ -120,7 +120,8 @@ BEGIN
 			err := err.next
 		END;
 		IF err # NIL THEN
-			Message.Text("Found errors in the module ");
+			MessageErrOberon.Text("Found errors in the module ");
+			(*TODO*)
 			Out.String(m.name.block.s); Out.String(": "); Out.Ln;
 			err := m.errors;
 			WHILE err # NIL DO
@@ -1182,7 +1183,7 @@ BEGIN
 	IF ret = Cli.CmdHelp THEN
 		Help
 	ELSIF ret = Cli.CmdVersion THEN
-		Message.Text("ost 0.0.3.dev")
+		MessageErrOberon.Text("ost 0.0.3.dev")
 	ELSE
 		ret := Translate(ret, args, listener)
 	END

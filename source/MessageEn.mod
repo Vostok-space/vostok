@@ -18,11 +18,6 @@ MODULE MessageEn;
 
 IMPORT Cli := CliParser, Out, Utf8;
 
-PROCEDURE C(s: ARRAY OF CHAR);
-BEGIN
-	Out.String(s)
-END C;
-
 PROCEDURE S(s: ARRAY OF CHAR);
 BEGIN
 	Out.String(s);
@@ -32,7 +27,7 @@ END S;
 PROCEDURE Usage*(full: BOOLEAN);
 	PROCEDURE Short;
 	BEGIN
-C("Translator from Oberon-07 to C, Java, JavaScript, Oberon. 2021");
+S("Translator from Oberon-07 to C, Java, JavaScript, Oberon. 2021");
 S("Usage: ost command [parameter] {-option}");
 S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
@@ -188,10 +183,5 @@ BEGIN
 		S("Generation through Oberon is disabled")
 	END
 END CliError;
-
-PROCEDURE Text*(str: ARRAY OF CHAR);
-BEGIN
-	C(str)
-END Text;
 
 END MessageEn.

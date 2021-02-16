@@ -344,4 +344,17 @@ BEGIN
 	END
 END Syntax;
 
+PROCEDURE Text*(str: ARRAY OF CHAR);
+BEGIN
+	IF str = "Found errors in the module " THEN
+		C("Найдены ошибки в модуле ")
+	ELSIF str = "Can not found or open file of module - " THEN
+		C("Не получается найти или открыть файл модуля - ")
+	ELSIF str = "Name of potential module is too large - " THEN
+		C("Имя потенциального модуля слишком велико - ")
+	ELSE
+		C(str)
+	END
+END Text;
+
 END MessageErrOberonRu.
