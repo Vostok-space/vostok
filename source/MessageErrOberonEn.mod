@@ -58,10 +58,14 @@ BEGIN
 		C("Set can contain only integers")
 	| AST.ErrSetElemOutOfRange:
 		C("Item's value of set is out of range - [0 .. 31]")
+	| AST.ErrSetElemOutOfLongRange:
+		C("Item's value of set is out of range - [0 .. 63]")
 	| AST.ErrSetLeftElemBiggerRightElem:
 		C("Left item of range is bigger then right item")
 	| AST.ErrSetElemMaxNotConvertToInt:
-		C("Set, which contain 31 can not be converted to integer")
+		C("Set, which contain >=31 can not be converted to integer")
+	| AST.ErrSetFromLongSet:
+		C("Can not store the value of long set in the usual set")
 	| AST.ErrAddExprDifferenTypes:
 		C("Subexpressions types in sum are incompatible")
 	| AST.ErrNotNumberAndNotSetInMult:

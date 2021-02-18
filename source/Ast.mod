@@ -43,8 +43,10 @@ CONST
 	ErrNotRealTypeForRealDiv*       = -11;
 	ErrNotIntSetElem*               = -12;
 	ErrSetElemOutOfRange*           = -13;
+	ErrSetElemOutOfLongRange*       = -106;(*TODO*)
 	ErrSetLeftElemBiggerRightElem*  = -14;
 	ErrSetElemMaxNotConvertToInt*   = -15;
+	ErrSetFromLongSet*                = -107;(*TODO*)
 	ErrAddExprDifferenTypes*        = -16;
 	ErrNotNumberAndNotSetInMult*    = -17;
 	ErrNotNumberAndNotSetInAdd*     = -18;
@@ -61,7 +63,7 @@ CONST
 	ErrConstDeclExprNotConst*       = -29;
 	ErrAssignIncompatibleType*      = -30;
 	ErrAssignExpectVarParam*        = -31;
-	ErrAssignStringToNotEnoughArray*= -111;(* TODO *)
+	ErrAssignStringToNotEnoughArray*= -108;(* TODO *)
 	ErrCallNotProc*                 = -32;
 	ErrCallExprWithoutReturn*       = -33;
 	ErrCallIgnoredReturn*           = ErrCallExprWithoutReturn - 1;
@@ -143,6 +145,7 @@ CONST
 	ErrProcNestedTooDeep*           = -104;
 
 	ErrExpectProcNameWithoutParams* = -105;
+	                                (*-106-108*)
 
 	ErrMin*                         = -200;
 
@@ -1930,7 +1933,7 @@ BEGIN
 			IF ~LongSet.InRange(left)
 			OR (expr2 # NIL) & ~LongSet.InRange(right)
 			THEN
-				err := ErrSetElemOutOfRange
+				err := ErrSetElemOutOfLongRange
 			ELSIF expr2 = NIL THEN
 				IF left <= Limits.SetMax THEN
 					set[0] := {left};
@@ -3135,6 +3138,13 @@ BEGIN
 				err := ErrValueOutOfRangeOfByte
 			END
 		END;
+		IF (err = ErrNo)
+		 & (e.value # NIL)
+		 & (p.return.type.id = IdSet)
+		 & (e.value(ExprSetValue).set[1] # {})
+		THEN
+			err := ErrSetFromLongSet
+		END;
 		IF err = ErrNo THEN
 			err := CheckUnusedDeclarations(p)
 		END
@@ -3251,7 +3261,15 @@ BEGIN
 			IF str.usedAs # e.value(ExprString).usedAs THEN
 				e.value := str
 			END
-		END
+		END;
+		IF (err = ErrNo)
+		 & (e # NIL)
+		 & (e.value # NIL)
+		 & (fp.type.id = IdSet)
+		 & (e.value(ExprSetValue).set[1] # {})
+		THEN
+			err := ErrSetFromLongSet
+		END;
 	ELSE
 		distance := 0;
 		ParamsVariation(call, e, err)
@@ -3834,13 +3852,21 @@ BEGIN
 			END
 		END;
 
-		IF (err = ErrNo)
-		 & (expr.value # NIL) & (expr.value IS ExprString)
-		 & (des.type.id = IdArray) & (des.type(Array).count # NIL)
-		 & (   des.type(Array).count(ExprInteger).int
-		    < expr.value.type(Array).count(ExprInteger).int)
-		THEN
-			err := ErrAssignStringToNotEnoughArray
+		IF ~((err = ErrNo) & (expr.value # NIL)) THEN
+			;
+		ELSIF expr.value IS ExprString THEN
+			IF (des.type.id = IdArray) & (des.type(Array).count # NIL)
+			 & (   des.type(Array).count(ExprInteger).int
+				 < expr.value.type(Array).count(ExprInteger).int)
+			THEN
+				err := ErrAssignStringToNotEnoughArray
+			END
+		ELSIF expr.value.type.id = IdSet THEN
+			IF (expr.value(ExprSetValue).set[1] # {})
+			 & (des.type.id = IdSet)
+			THEN
+				err := ErrSetFromLongSet
+			END
 		END;
 
 		IF (des.type.id = IdProcType) & (err = ErrNo)

@@ -52,10 +52,14 @@ BEGIN
 		C("В якості елементів множини дозволені тільки цілі числа")
 	| AST.ErrSetElemOutOfRange:
 		C("Елемент множини вдається за межі можливих значень - 0 .. 31")
+	| AST.ErrSetElemOutOfLongRange:
+		C("Елемент множини вдається за межі можливих значень - 0 .. 63")
 	| AST.ErrSetLeftElemBiggerRightElem:
 		C("Лівий елемент діапазону більший за правий")
 	| AST.ErrSetElemMaxNotConvertToInt:
-		C("Множина, що вміщає 31 не може бути перетворена у ціле")
+		C("Множина, що вміщає >=31 не може бути перетворена у ціле")
+	| AST.ErrSetFromLongSet:
+		C("Неможливо зберегти значення великої множини в звичайній")
 	| AST.ErrAddExprDifferenTypes:
 		C("Типи підвиразів у додаванні несумісні")
 	| AST.ErrNotNumberAndNotSetInMult:

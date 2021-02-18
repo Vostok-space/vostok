@@ -52,10 +52,14 @@ BEGIN
 		C("В качестве элементов множества допустимы только целые числа")
 	| AST.ErrSetElemOutOfRange:
 		C("Элемент множества выходит за границы возможных значений - 0 .. 31")
+	| AST.ErrSetElemOutOfLongRange:
+		C("Элемент множества выходит за границы возможных значений - 0 .. 63")
 	| AST.ErrSetLeftElemBiggerRightElem:
 		C("Левый элемент диапазона больше правого")
 	| AST.ErrSetElemMaxNotConvertToInt:
-		C("Множество, содержащее 31 не может быть преобразовано в целое")
+		C("Множество, содержащее >=31 не может быть преобразовано в целое")
+	| AST.ErrSetFromLongSet:
+		C("Нельзя сохранить значение длинного множества в обычном")
 	| AST.ErrAddExprDifferenTypes:
 		C("Типы подвыражений в сложении несовместимы")
 	| AST.ErrNotNumberAndNotSetInMult:
