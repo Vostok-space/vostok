@@ -35,6 +35,15 @@ import (
 const (
   kwModule = "MODULE";
   teleApi = "https://api.telegram.org/bot"
+
+  webHelp =
+    "/INFO - show this help\n" +
+    "/LIST - list available modules\n" +
+    "/INFO ModuleName - show info about module\n"
+
+  teleHelp = webHelp +
+    `/O7: log.s("Script mode")` +
+    "\n/MODULE ModuleMode; END ModuleMode.\n"
 )
 
 var (
@@ -151,22 +160,27 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
   return
 }
 
-func listModules() (list string) {
+func listModules(sep1, sep2 string) (list string) {
   var (
     files []os.FileInfo;
     err error;
-    path string
+    path, add string;
+    i int
   )
   list = "";
-  for _, path = range moduleDirs {
+  for i, path = range moduleDirs {
     files, err = ioutil.ReadDir(path);
     if err == nil {
+      add = "";
       for _, f := range files {
         if strings.HasSuffix(f.Name(), ".mod") {
-          list = list + strings.TrimSuffix(f.Name(), ".mod") + " "
+          list += add + strings.TrimSuffix(f.Name(), ".mod");
+          add = sep1
         }
       }
-      list += "\n\n"
+      if i != len(moduleDirs) - 1 {
+        list += sep2
+      }
     }
   }
   return
@@ -224,18 +238,41 @@ func infoModule(name string) (info string) {
   return
 }
 
+func command(cmd, help string) (res string) {
+  if cmd == "INFO" || cmd == "HELP" {
+    res = help
+  } else if cmd == "LIST" {
+    res = listModules("\n", "\n\n")
+  } else if strings.HasPrefix(cmd, "INFO ") || strings.HasPrefix(cmd, "HELP ") {
+    res = infoModule(cmd[5:])
+  } else {
+    res = "Wrong command, use /INFO for help"
+  }
+  return
+}
+
+func handleInput(script, module, help, cc string, timeout int) (res []byte, err error) {
+  script = strings.Trim(script, " \t\n\r");
+  err = nil;
+  if script == "" {
+    res = []byte{}
+  } else if strings.HasPrefix(script, "/") || strings.HasPrefix(script, ":") {
+    res = []byte(command(script[1:], help))
+  } else {
+    res, err = run(module, script, cc, timeout)
+  }
+  return
+}
+
 func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
   var (
-    m, s string
     out []byte
     err error
   )
   if r.Method != "POST" {
     http.NotFound(w, r)
   } else {
-    m = r.FormValue("module");
-    s = r.FormValue("script");
-    out, err = run(m, s, cc, timeout);
+    out, err = handleInput(r.FormValue("script"), r.FormValue("module"), webHelp, cc, timeout)
     if err == nil {
       w.Write(out)
     } else {
@@ -303,7 +340,7 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
   }
   if strings.HasPrefix(src, "/O7:") {
     src = src[4:]
-  } else if strings.HasPrefix(src, "/MODULE") {
+  } else if strings.HasPrefix(src, "/MODULE ") {
     src = src[1:]
   } else if strings.HasPrefix(src, "/") {
     src = ""
@@ -311,13 +348,20 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
   return
 }
 
+func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
+  if code == "/start" || code == "/INFO" || code == "/HELP" {
+    err = teleSend(api, teleHelp, chat)
+  } else if code == "/LIST" {
+    err = teleSend(api, listModules(" ", "\n\n"), chat)
+  } else if strings.HasPrefix(code, "/INFO ") {
+    err = teleSend(api, infoModule(code[6:]), chat)
+  } else {
+    err = nil
+  }
+  return
+}
+
 func teleBot(token, cc string, timeout int) (err error) {
-  const (
-    help = `/O7: Out.String("Script mode")` +
-           "\n/MODULE ModuleMode; END ModuleMode.\n" +
-           "/LIST - list available modules\n" +
-           "/INFO ModuleName"
-  )
   var (
     api, src string;
     upds []teleUpdate;
@@ -335,12 +379,8 @@ func teleBot(token, cc string, timeout int) (err error) {
         if src != "" {
           output, err = run(src, "", cc, timeout);
           err = teleSend(api, string(output), chat)
-        } else if upd.Msg.Txt == "/start" {
-          err = teleSend(api, help, chat)
-        } else if upd.Msg.Txt == "/LIST" {
-          err = teleSend(api, listModules(), chat)
-        } else if strings.HasPrefix(upd.Msg.Txt, "/INFO ") {
-          err = teleSend(api, infoModule(upd.Msg.Txt[6:]), chat)
+        } else {
+          handleIfCommand(api, strings.Trim(upd.Msg.Txt, " \t\r\n"), cc, timeout, chat)
         }
         lastUpdate = upd.Id
       }
