@@ -514,7 +514,9 @@ BEGIN
 	WHILE (src[i] # Utf8.Null) & (src[i] # ".") DO
 		INC(i)
 	END;
-	IF src[i] = "." THEN
+	IF i = 0 THEN
+		script := TRUE
+	ELSIF src[i] = "." THEN
 		j := i + 1;
 		Empty(src, j);
 		WHILE ("a" <= src[j]) & (src[j] <= "z")
