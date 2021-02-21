@@ -1,20 +1,21 @@
 #!/usr/bin/ost .
-(*  Build and test tasks for the translator
- *  Copyright (C) 2018-2020 ComdivByZero
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published
- *  by the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *)
+
+Build and test tasks for the translator
+Copyright (C) 2018-2021 ComdivByZero
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 MODULE make;
 
  IMPORT Log, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
@@ -62,11 +63,12 @@ MODULE make;
 
  PROCEDURE AddOpts(VAR code: Exec.Code): BOOLEAN;
  RETURN
-   ((cc [0] = 0X) OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
- & ((opt[0] = 0X) OR Exec.AddClean(code, " ") & Exec.AddClean(code, opt))
+   ((cc  = "") OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
+ & ((opt = "") OR Exec.AddClean(code, " ") & Exec.AddClean(code, opt))
  END AddOpts;
 
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
+ CONST BlankAllExceptJava = " -m source/blankC -m source/blankJs -m source/blankOberon";
  VAR code: Exec.Code;
  BEGIN
    IF posix THEN
@@ -84,7 +86,7 @@ MODULE make;
     OR windows & Exec.LastPart(code, ".exe")
     OR posix & Exec.LastPart(code, "")
       )
-    & ((script # "AndroidBuild.Go") OR Exec.AddClean(code, " -m source/blankC -m source/blankJs"))
+    & ((script # "AndroidBuild.Go") OR Exec.AddClean(code, BlankAllExceptJava))
     & ((tmp[1] = "0")
      & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
      & Exec.Add(code, "-c") & Exec.Add(code, "bootstrap/singularity")
@@ -336,13 +338,48 @@ MODULE make;
  & MakeDir(name, pname)
  END CreateDebDir;
 
+ PROCEDURE ChangeFilesMode(path, type, name, mode: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "find")
+ & Exec.Add(cmd, path)
+ & ((type = "") OR Exec.Add(cmd, "-type") & Exec.Add(cmd, type))
+ & ((name = "") OR Exec.Add(cmd, "-name") & Exec.Add(cmd, name))
+ & Exec.Add(cmd, "-exec")
+ & Exec.Add(cmd, "chmod")
+ & Exec.Add(cmd, mode)
+ & Exec.Add(cmd, "{}")
+ & Exec.Add(cmd, ";")
+ & (Exec.Do(cmd) = Exec.Ok)
+ END ChangeFilesMode;
+
+ PROCEDURE FixFilesMode(path: ARRAY OF CHAR): BOOLEAN;
+ VAR bin: ARRAY 4096 OF CHAR;
+ RETURN
+   ChangeFilesMode(path, "d", "", "755")
+ & ChangeFilesMode(path, "f", "", "644")
+ & Concat(bin, path, "/usr/bin")
+ & (~CFiles.Exist(bin, 0) OR ChangeFilesMode(bin, "f", "", "755"))
+ END FixFilesMode;
+
+ PROCEDURE Lintian(name: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code; deb: ARRAY 4096 OF CHAR;
+ RETURN
+   Exec.Init(cmd, "lintian")
+ & Concat(deb, name, ".deb")
+ & Exec.Add(cmd, deb)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END Lintian;
+
  PROCEDURE HashAndPack(name: ARRAY OF CHAR): BOOLEAN;
  RETURN
    FS.ChangeDir("result")
  & FS.ChangeDir(name)
  & Md5Deep("usr", "DEBIAN/md5sums")
  & FS.ChangeDir("..")
+ & FixFilesMode(name)
  & DpkgDeb(name)
+ & Lintian(name)
  & FS.ChangeDir("..")
  END HashAndPack;
 
@@ -376,7 +413,7 @@ MODULE make;
           & Gzip("package/DEBIAN/changelog-deflib",
                  "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-deflib",
-                      "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
+                        "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
           & HashAndPack("vostok-deflib");
       IF ~ok THEN
         Msg("Failed to pack library to deb")
@@ -394,7 +431,7 @@ MODULE make;
           & Gzip("package/DEBIAN/changelog-bin",
                  "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-bin",
-                      "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
+                        "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
           & HashAndPack("vostok-bin");
       IF ~ok THEN
         Msg("Failed to pack executable binary to deb")
@@ -412,7 +449,7 @@ MODULE make;
           & Gzip("package/DEBIAN/changelog-android",
                  "result/vostok-android/usr/share/doc/vostok-android/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-android",
-                      "result/vostok-android/usr/share/doc/vostok-android/copyright")
+                        "result/vostok-android/usr/share/doc/vostok-android/copyright")
           & HashAndPack("vostok-android");
       IF ~ok THEN
         Msg("Failed to pack android builder to deb")
