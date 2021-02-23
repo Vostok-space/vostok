@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv;
+ IMPORT Log, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv,
+        Utf8;
 
  CONST
    C = 0; Java = 1; Js = 2;
@@ -29,6 +30,8 @@ MODULE make;
  VAR ok*, windows, posix: BOOLEAN;
      lang: INTEGER;
      cc, opt: ARRAY 256 OF CHAR;
+     arch: ARRAY 16 OF CHAR;
+     awkScript: ARRAY 128 OF CHAR;
 
  PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
@@ -404,12 +407,59 @@ MODULE make;
  & (Exec.Do(cmd) = Exec.Ok)
  END TarBz2;
 
+ PROCEDURE Awk(script, src, dest: ARRAY OF CHAR): BOOLEAN;
+ VAR cmd: Exec.Code;
+ RETURN
+   Exec.Init(cmd, "awk")
+ & Exec.Add(cmd, script)
+ & Exec.Add(cmd, src)
+ & Exec.AddClean(cmd, " > ")
+ & Exec.Add(cmd, dest)
+ & (Exec.Do(cmd) = Exec.Ok)
+ END Awk;
+
+ PROCEDURE AwkScript(VAR res: ARRAY OF CHAR);
+ VAR len: INTEGER;
+   PROCEDURE Sub(VAR res: ARRAY OF CHAR; VAR len: INTEGER; from, to: ARRAY OF CHAR): BOOLEAN;
+   RETURN
+     Chars0X.CopyString(res, len, "sub(")
+   & Chars0X.CopyChar(res, len, Utf8.DQuote)
+   & Chars0X.CopyString(res, len, from)
+   & Chars0X.CopyChar(res, len, Utf8.DQuote)
+   & Chars0X.CopyString(res, len, ", ")
+   & Chars0X.CopyChar(res, len, Utf8.DQuote)
+   & Chars0X.CopyString(res, len, to)
+   & Chars0X.CopyChar(res, len, Utf8.DQuote)
+   & Chars0X.CopyString(res, len, "); ")
+   END Sub;
+ BEGIN
+   len := 0;
+   ASSERT(Chars0X.CopyString(res, len, "{ ")
+        & Sub(res, len, "cpu-arch", arch)
+        & Sub(res, len, "bin-version", BinVer)
+        & Sub(res, len, "lib-version", LibVer)
+        & Chars0X.CopyString(res, len, "print $0 }")
+   )
+ END AwkScript;
+
+ PROCEDURE Arch*(ar: ARRAY OF CHAR);
+ BEGIN
+   arch := ar;
+   AwkScript(awkScript)
+ END Arch;
+
+ PROCEDURE InjectValues(srcFile, destFile: ARRAY OF CHAR): BOOLEAN;
+ RETURN
+   Awk(awkScript, srcFile, destFile)
+ END InjectValues;
+
+
  PROCEDURE DebLib*;
  BEGIN
    IF ok THEN
       ok := CreateDebDir("vostok-deflib")
           & CopyLibTo("result/vostok-deflib/usr")
-          & FS.CopyFile("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
+          & InjectValues("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
           & Gzip("package/DEBIAN/changelog-deflib",
                  "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-deflib",
@@ -421,13 +471,27 @@ MODULE make;
    END
  END DebLib;
 
+ PROCEDURE BuildForPackage*;
+ BEGIN
+   IF ok THEN
+      ok := BuildBy("bs-ost", "Translator.Go", "ost-v0", "v0", "to-bin");
+      IF cc = "" THEN
+         cc := "cc -s -O2 -flto"
+      END;
+      ok := ok
+          & BuildBy("ost-v0", "Translator.Go", "ost", "v1", "to-bin")
+          & TestBy("test/source", FALSE, "ost", C)
+          & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin");
+   END
+ END BuildForPackage;
+
  PROCEDURE DebBin*;
  BEGIN
    IF ok THEN
       ok := CreateDebDir("vostok-bin")
           & FS.MakeDir("result/vostok-bin/usr/bin")
           & CopyBinTo("result/vostok-bin/usr")
-          & FS.CopyFile("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
+          & InjectValues("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
           & Gzip("package/DEBIAN/changelog-bin",
                  "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-bin",
@@ -445,7 +509,7 @@ MODULE make;
       ok := CreateDebDir("vostok-android")
           & FS.MakeDir("result/vostok-android/usr/bin")
           & CopyAndroidTo("result/vostok-android/usr")
-          & FS.CopyFile("package/DEBIAN/control-android", "result/vostok-android/DEBIAN/control")
+          & InjectValues("package/DEBIAN/control-android", "result/vostok-android/DEBIAN/control")
           & Gzip("package/DEBIAN/changelog-android",
                  "result/vostok-android/usr/share/doc/vostok-android/changelog.gz")
           & FS.CopyFile("package/DEBIAN/copyright-android",
@@ -459,6 +523,7 @@ MODULE make;
 
  PROCEDURE Deb*;
  BEGIN
+   BuildForPackage;
    DebLib;
    DebBin;
    DebAndroid
@@ -506,7 +571,8 @@ MODULE make;
          & GetRpmTarName(tar, dir)
          & TarBz2(dir, tar)
          & FS.RemoveDir(dir)
-         & RpmBuild("../package/RPM/vostok-deflib.spec")
+         & InjectValues("../package/RPM/vostok-deflib.spec", "vostok-deflib.spec")
+         & RpmBuild("vostok-deflib.spec")
          & FS.ChangeDir("..");
      IF ~ok THEN
        Msg("Failed to pack library to rpm")
@@ -525,6 +591,8 @@ MODULE make;
          & Copy("singularity", TRUE, "result/", dir)
          & Copy("source", TRUE, "result/", dir)
          & Copy("bootstrap", TRUE, "result/", dir)
+         & Copy("test", TRUE, "result/", dir)
+         & Copy("example", TRUE, "result/", dir)
          & Copy("init.sh", TRUE, "result/", dir)
          & Copy("LICENSE-GPL.md", TRUE, "result/", dir)
          & Copy("LICENSE-LGPL.md", TRUE, "result/", dir)
@@ -532,7 +600,8 @@ MODULE make;
          & GetRpmTarName(tar, dir)
          & TarBz2(dir, tar)
          & FS.RemoveDir(dir)
-         & RpmBuild("../package/RPM/vostok-bin.spec")
+         & InjectValues("../package/RPM/vostok-bin.spec", "vostok-bin.spec")
+         & RpmBuild("vostok-bin.spec")
          & FS.ChangeDir("..");
      IF ~ok THEN
        Msg("Failed to pack executable binary to rpm")
@@ -609,8 +678,11 @@ BEGIN
 
   lang := C;
 
-  cc[0]  := 0X;
-  opt[0] := 0X;
+  cc  := "";
+  opt := "";
+  arch:= "amd64";
+
+  AwkScript(awkScript);
 
   ok := TRUE
 END make.

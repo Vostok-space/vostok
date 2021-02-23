@@ -1,10 +1,10 @@
 Package:      vostok-bin
-Version:      0.0.3.dev
+Version:      bin-version
 Maintainer:   Vostok <project-Vostok@yandex.ru>
 Section:      devel
-Architecture: i386
+Architecture: cpu-arch
 Priority:     optional
-Depends:      vostok-deflib (>= 0.0.2.dev)
-Suggests:     tcc
+Depends:      libc6
+Recommends:   vostok-deflib (= lib-version), tcc
 Description:  Oberon translator to C, Js, Java
  Oberon-07 compiler from "Vostok"-project with defensive style of generated code
