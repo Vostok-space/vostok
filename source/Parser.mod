@@ -90,6 +90,7 @@ TYPE
 		cyrillic*       : BOOLEAN;
 		printError*: PrintError;
 
+		(* TODO удалить *)
 		provider*: Ast.Provider
 	END;
 	Parser = RECORD(V.Base) (* короткие названия из-за частого использования *)
@@ -350,8 +351,6 @@ BEGIN
 						IF val < 0 THEN
 							str := des.value(Ast.ExprString).string;
 							val := ORD(Strings.GetChar(str, ind + 1))
-						ELSE
-							ASSERT(ind = 0)
 						END;
 						des.value := Ast.ExprCharNew(val)
 					ELSE
