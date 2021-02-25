@@ -517,11 +517,11 @@ BEGIN
 	count := 0;
 	WHILE (s.buf[i] # Utf8.DQuote) & (" " <= s.buf[i]) DO
 		IF (s.buf[i] < 80X) OR (s.buf[i] >= 0C0X) THEN
-			INC(column);
-			INC(count)
+			INC(column)
 		END;
+		INC(count);
 		INC(i)
-	ELSIF (s.buf[i] = Utf8.Tab) DO
+	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
 		INC(count);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
