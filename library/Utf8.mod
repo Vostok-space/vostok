@@ -1,5 +1,5 @@
 (*  Some constants and subroutines for Utf-8/ASC II
- *  Copyright (C) 2016,2020 ComdivByZero
+ *  Copyright (C) 2016,2020-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  *)
 MODULE Utf8;
 
+IMPORT TypesLimits;
+
 CONST
 	Null*            = 00X;
 	TransmissionEnd* = 04X;
@@ -27,6 +29,11 @@ CONST
 	Idle*            = 16X;
 	DQuote*          = 22X;
 	Delete*          = 7FX;
+
+TYPE
+	R* = RECORD
+		val*, len*: INTEGER
+	END;
 
 	PROCEDURE Up*(ch: CHAR): CHAR;
 	BEGIN
@@ -61,5 +68,68 @@ CONST
 	RETURN
 		equal
 	END EqualIgnoreCase;
+
+	PROCEDURE DecodeFirst(first: CHAR; VAR rest: INTEGER): INTEGER;
+	VAR v, b, l: INTEGER;
+	BEGIN
+		v := ORD(first);
+		IF v < 80H THEN
+			l := 1;
+			rest := v
+		ELSIF v >= 0C0H THEN
+			DEC(v, 0C0H);
+			l := 2;
+			b := 20H;
+			WHILE v > b DO
+				DEC(v, b);
+				INC(l);
+				b := b DIV 2
+			END;
+			IF v = b THEN
+				INC(l);
+				DEC(v, b)
+			END;
+			rest := v
+		ELSE
+			l := 0;
+			rest := -1
+		END
+	RETURN
+		l
+	END DecodeFirst;
+
+	PROCEDURE Len*(first: CHAR): INTEGER;
+	VAR rest: INTEGER;
+	RETURN
+		DecodeFirst(first, rest)
+	END Len;
+
+	PROCEDURE Begin*(VAR state: R; first: CHAR): BOOLEAN;
+	BEGIN
+		state.len := DecodeFirst(first, state.val) - 1;
+	RETURN
+		state.len > 0
+	END Begin;
+
+	PROCEDURE Next*(VAR state: R; src: CHAR): BOOLEAN;
+	VAR v: INTEGER;
+	BEGIN
+		ASSERT(state.len > 0);
+		v := ORD(src);
+		IF (v DIV 40H = 2) & (state.val <= TypesLimits.IntegerMax DIV 40H) THEN
+			state.val := state.val * 40H + v MOD 40H;
+			DEC(state.len)
+		ELSE
+			state.len := -state.len;
+			state.val := -1 - state.val
+		END
+	RETURN
+		state.len > 0
+	END Next;
+
+	PROCEDURE IsBegin*(ch: CHAR): BOOLEAN;
+	RETURN
+		ORD(ch) DIV 40H # 2
+	END IsBegin;
 
 END Utf8.
