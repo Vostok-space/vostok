@@ -3251,7 +3251,7 @@ BEGIN
 		THEN
 			e(Designator).decl(Procedure).usedAsValue := TRUE
 		END;
-		IF e = NIL THEN
+		IF (e = NIL) OR (err # ErrNo) THEN
 			;
 		ELSIF e.id = IdString THEN
 			StringUsedWithType(e(ExprString), fp.type)
