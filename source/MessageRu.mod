@@ -37,7 +37,7 @@ S(" 5) ost to-class Код ВыхКат {-m ПМ|-i ПИ|-infr И|-jv ПJ|-javac
 S(" 6) ost run-java Код {-m ПкМ|-i ПкИ|-jv ПJ|-t ВремКат} [-- Пар-ры]");
 S(" 7) ost to-js    Код Вых {-m ПкМ | -i ПкИ | -infr Инфр}");
 S(" 8) ost run-js   Код {-m ПкМ|-i ПкИ|-js ПJs|-t ВремКат} [-- Пар-ры]");
-S(" 9) ost to-mod   Мод ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр | -std:(O7|AO)}");
+S(" 9) ost to-mod   Мод ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр | -std:(O7|AO|CP)}");
 S(" A) ost          Файл.mod         [ Пар-ры ]");
 S(" B) ost .Команда Файл.mod         [ Пар-ры ]");
 S(" C) ost .        Файл.mod Команда [ Пар-ры ]");

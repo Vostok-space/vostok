@@ -29,6 +29,7 @@ CONST
 
   StdO7* = 1;
   StdAo* = 2;
+  StdCp* = 3;
 
 TYPE
   Options* = POINTER TO RECORD(GenOptions.R)
@@ -339,6 +340,7 @@ VAR
           CASE g.opt.std OF
             StdO7: Text.Str(g, "LSL(")
           | StdAo: Text.Str(g, "LSH(")
+          | StdCp: Text.Str(g, "ASH(")
           END;
           Expression(g, x);
           ExpressionBraced(g, ", ", n, ")")
@@ -347,17 +349,21 @@ VAR
         PROCEDURE Asr(VAR g: Generator; x, n: Ast.Expression);
         BEGIN
           CASE g.opt.std OF
-            StdO7: Text.Str(g, "ASR(")
-          | StdAo: Text.Str(g, "ASH(")
+            StdO7: Text.Str(g, "ASR(");
+            Expression(g, x);
+            ExpressionBraced(g, ", ", n, ")")
+          | StdAo,
+            StdCp: Text.Str(g, "ASH(");
+            Expression(g, x);
+            ExpressionBraced(g, ", -(", n, "))")
           END;
-          Expression(g, x);
-          ExpressionBraced(g, ", ", n, ")")
         END Asr;
 
         PROCEDURE Len(VAR g: Generator; arr: Ast.Expression);
         BEGIN
           CASE g.opt.std OF
-            StdO7: ExpressionBraced(g, "LEN(", arr, ")")
+            StdO7,
+            StdCp: ExpressionBraced(g, "LEN(", arr, ")")
           | StdAo: ExpressionBraced(g, "INTEGER(LEN(", arr, "))")
           END
         END Len;
@@ -366,7 +372,8 @@ VAR
         BEGIN
           CASE g.opt.std OF
             StdO7: ExpressionBraced(g, "FLT(", int, ")")
-          | StdAo: ExpressionBraced(g, "REAL(", int, ")")
+          | StdAo,
+            StdCp: ExpressionBraced(g, "REAL(", int, ")")
           END
         END Flt;
 
@@ -575,7 +582,8 @@ VAR
       END Val;
     BEGIN
       CASE gen.opt.std OF
-        StdO7: Val(gen, set)
+        StdO7,
+        StdCp: Val(gen, set)
       | StdAo: Text.Str(gen, "SET32("); Val(gen, set); Text.Str(gen, ")")
       END
     END Set;
@@ -762,6 +770,9 @@ VAR
 
     PROCEDURE Record(VAR gen: Generator; rec: Ast.Record);
     BEGIN
+      IF (gen.opt.std = StdCp) & rec.hasExt THEN
+        Text.Str(gen, "EXTENSIBLE ")
+      END;
       IF rec.base = NIL THEN
         Text.StrOpen(gen, "RECORD")
       ELSE
@@ -785,7 +796,8 @@ VAR
         Text.Str(gen, "INTEGER")
       | Ast.IdSet:
         CASE gen.opt.std OF
-          StdO7: Text.Str(gen, "SET")
+          StdO7,
+          StdCp: Text.Str(gen, "SET")
         | StdAo: Text.Str(gen, "SET32")
         END
       | Ast.IdLongInt:
@@ -798,11 +810,16 @@ VAR
         Text.Str(gen, "BOOLEAN")
       | Ast.IdByte:
         CASE gen.opt.std OF
-          StdO7: Text.Str(gen, "BYTE")
+          StdO7,
+          StdCp: Text.Str(gen, "BYTE")
         | StdAo: Text.Str(gen, "UNSIGNED8")
         END
       | Ast.IdChar:
-        Text.Str(gen, "CHAR")
+        CASE gen.opt.std OF
+          StdO7,
+          StdAo: Text.Str(gen, "CHAR")
+        | StdCp: Text.Str(gen, "SHORTCHAR")
+        END
       | Ast.IdReal:
         Text.Str(gen, "REAL")
       | Ast.IdReal32:

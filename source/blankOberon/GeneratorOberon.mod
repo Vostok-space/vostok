@@ -27,6 +27,7 @@ CONST
 
   StdO7* = 1;
   StdAo* = 2;
+  StdCp* = 3;
 
 TYPE
   Options* = POINTER TO RECORD(GenOptions.R)

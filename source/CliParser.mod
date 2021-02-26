@@ -333,6 +333,8 @@ BEGIN
 			args.obStd := GeneratorOberon.StdO7
 		ELSIF opt = "-out:AO" THEN
 			args.obStd := GeneratorOberon.StdAo
+		ELSIF opt = "-out:CP" THEN
+			args.obStd := GeneratorOberon.StdCp
 		ELSIF opt = "-multi-errors" THEN
 			args.multiErrors := TRUE
 		ELSE

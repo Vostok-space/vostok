@@ -144,7 +144,7 @@ PROCEDURE CopyModuleNameForFile(VAR str: ARRAY OF CHAR; VAR len: INTEGER;
                                 name: Strings.String;
                                 lang: INTEGER): BOOLEAN;
 BEGIN
-	ASSERT(lang IN {LangC, Java, Js});
+	ASSERT(lang IN {LangC, Java, Js, Oberon});
 
 	RETURN Strings.CopyToChars(str, len, name)
 	     & (~(   SpecIdentChecker.IsSpecModuleName(name)

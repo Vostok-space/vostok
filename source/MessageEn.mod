@@ -38,6 +38,7 @@ S(" 5) ost to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Tem
 S(" 6) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
 S(" 7) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
 S(" 8) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
+S(" 9) ost to-mod   Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
 S(" A) ost          File.mod         [ Args ]");
 S(" B) ost .Command File.mod         [ Args ]");
 S(" C) ost .        File.mod Command [ Args ]")
