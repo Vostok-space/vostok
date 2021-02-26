@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE log;
 
-  IMPORT Out;
+  IMPORT Out, Hex;
 
   PROCEDURE s*(str: ARRAY OF CHAR);
   BEGIN
@@ -37,6 +37,38 @@ MODULE log;
   BEGIN
     Out.Int(int, 0); Out.Ln
   END in;
+
+  PROCEDURE h*(int: INTEGER);
+  VAR buf: ARRAY 9 OF CHAR; j, k: INTEGER;
+  BEGIN
+    j := LEN(buf) - 2;
+    buf[j] := Hex.To(int MOD 10H);
+    int := int DIV 10H + ORD(int < 0) * 8000000H;
+    WHILE int # 0 DO
+      DEC(j);
+      buf[j] := Hex.To(int MOD 10H);
+      int := int DIV 10H
+    END;
+
+    IF j > 0 THEN
+      k := 0;
+      WHILE j < LEN(buf) - 1 DO
+        buf[k] := buf[j];
+        INC(k);
+        INC(j)
+      END;
+      buf[k] := 0X
+    ELSE
+      buf[LEN(buf) - 1] := 0X
+    END;
+
+    Out.String(buf)
+  END h;
+
+  PROCEDURE hn*(int: INTEGER);
+  BEGIN
+    h(int); Out.Ln
+  END hn;
 
   PROCEDURE r*(frac: REAL);
   BEGIN
