@@ -52,8 +52,10 @@ BEGIN
 END Init;
 
 PROCEDURE SetDo*(VAR base: Base; do: Handle);
+VAR nothing: Handle;
 BEGIN
-	ASSERT(base.do = Nothing);
+	nothing := Nothing;
+	ASSERT(base.do = nothing);
 	base.do := do
 END SetDo;
 
