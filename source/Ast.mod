@@ -46,7 +46,7 @@ CONST
 	ErrSetElemOutOfLongRange*       = -106;(*TODO*)
 	ErrSetLeftElemBiggerRightElem*  = -14;
 	ErrSetElemMaxNotConvertToInt*   = -15;
-	ErrSetFromLongSet*                = -107;(*TODO*)
+	ErrSetFromLongSet*              = -107;(*TODO*)
 	ErrAddExprDifferenTypes*        = -16;
 	ErrNotNumberAndNotSetInMult*    = -17;
 	ErrNotNumberAndNotSetInAdd*     = -18;
@@ -56,6 +56,7 @@ CONST
 	ErrExprInRightNotSet*           = ErrExprInWrongTypes - 1;
 	ErrExprInLeftNotInteger*        = ErrExprInWrongTypes - 2;
 	ErrRelIncompatibleType*         = -24;
+	ErrIsEqualProc*                 = -109;(*TODO*)
 	ErrIsExtTypeNotRecord*          = -25;
 	ErrIsExtVarNotRecord*           = -26;
 	ErrIsExtMeshupPtrAndRecord*     = -27;
@@ -145,7 +146,7 @@ CONST
 	ErrProcNestedTooDeep*           = -104;
 
 	ErrExpectProcNameWithoutParams* = -105;
-	                                (*-106-108*)
+	                                (*-106-109*)
 
 	ErrMin*                         = -200;
 
@@ -225,6 +226,8 @@ CONST
 	StrUsedAsChar*  = 0;
 	StrUsedUndef*   = 1;
 	StrUsedAsArray* = 2;
+
+	IsAllowCmpProc = FALSE;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -2527,7 +2530,7 @@ VAR err: INTEGER;
 		THEN
 			err := ErrRelationExprDifferenTypes;
 			continue := FALSE
-		ELSIF (t1.id IN {IdInteger, IdByte, IdReal, IdChar})
+		ELSIF (t1.id IN (Numbers + {IdChar}))
 		   OR (t1.id = IdArray) & (t1.type.id = IdChar)
 		THEN
 			continue := TRUE
@@ -2544,6 +2547,20 @@ VAR err: INTEGER;
 		distance := dist1 - dist2
 		RETURN continue
 	END CheckType;
+
+	PROCEDURE IsNotProc(e1, e2: Expression; VAR err: INTEGER): BOOLEAN;
+		PROCEDURE IsProc(e: Expression): BOOLEAN;
+			RETURN (e IS Designator) & (e(Designator).decl IS GeneralProcedure)
+		END IsProc;
+	BEGIN
+		ASSERT(err = ErrNo);
+		IF (e1.type.id = IdProcType)
+		 & (IsProc(e1) OR IsProc(e2))
+		THEN
+			err := ErrIsEqualProc
+		END
+		RETURN err = ErrNo
+	END IsNotProc;
 
 	PROCEDURE IsEqualChars(v1, v2: ExprInteger): BOOLEAN;
 	BEGIN
@@ -2573,6 +2590,7 @@ BEGIN
 	err := ErrNo;
 	IF (expr1 # NIL) & (expr2 # NIL)
 	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
+	 & (IsAllowCmpProc OR IsNotProc(expr1, expr2, err))
 	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Scanner.Is)
 	THEN
 		v1 := e.exprs[0].value;

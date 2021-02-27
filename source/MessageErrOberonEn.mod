@@ -93,6 +93,8 @@ BEGIN
 		C("Type of left part of IS expression must be same kind that right type")
 	| AST.ErrIsExtExpectRecordExt:
 		C("In right part of IS expected extended record")
+	| AST.ErrIsEqualProc:
+		C("Direct subroutines comparison is disallowed")
 	| AST.ErrConstDeclExprNotConst:
 		C("Constant declaration matched to not constant expression")
 	| AST.ErrAssignIncompatibleType:
