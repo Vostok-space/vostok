@@ -28,9 +28,4 @@ BEGIN
 	MessageEn.CliError(err)
 END CliError;
 
-PROCEDURE Text*(str: ARRAY OF CHAR);
-BEGIN
-	MessageEn.Text(str)
-END Text;
-
 END MessageUa.
