@@ -1,93 +1,60 @@
+#if !defined(O7_INIT_MODEL)
+#   define   O7_INIT_MODEL O7_INIT_ZERO
+#endif
+
 #include <o7.h>
 
 #include "ModulesProvider.h"
 
 o7_tag_t ModulesProvider_Provider__s_tag;
-extern void ModulesProvider_Provider__s_undef(struct ModulesProvider_Provider__s *r) {
-	Ast_RProvider_undef(&r->_);
-	Parser_Options_undef(&r->opt);
-	memset(&r->path, 0, sizeof(r->path));
-	r->sing = 0u;
-	memset(&r->expectName, 0, sizeof(r->expectName));
-	r->nameLen = O7_INT_UNDEF;
-	r->nameOk = O7_BOOL_UNDEF;
-	r->firstNotOk = O7_BOOL_UNDEF;
-}
 
-static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end);
-static struct Ast_RModule *GetModule_Search(struct ModulesProvider_Provider__s *p, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end, o7_int_t ext_len0, o7_char ext[/*len0*/], o7_int_t *pathInd);
-static struct VFileStream_RIn *GetModule_Search_Open(struct ModulesProvider_Provider__s *p, o7_int_t *pathOfs, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end, o7_int_t ext_len0, o7_char ext[/*len0*/]) {
-	o7_char n[1024];
-	o7_int_t l;
-	struct VFileStream_RIn *in_;
-	memset(&n, 0, sizeof(n));
-
-	l = 0;
-	if (Chars0X_Copy(1024, n, &l, 4096, O7_REF(p)->path, &(*pathOfs)) && Chars0X_CopyString(1024, n, &l, 1, PlatformExec_dirSep) && Chars0X_CopyAtMost(1024, n, &l, name_len0, name, &ofs, o7_sub(end, ofs)) && Chars0X_CopyString(1024, n, &l, ext_len0, ext)) {
-		Log_Str(6, (o7_char *)"Open ");
-		Log_StrLn(1024, n);
-		in_ = VFileStream_OpenIn(1024, n);
-	} else {
-		in_ = NULL;
-	}
-	(*pathOfs) = o7_add((*pathOfs), 1);
-	return in_;
-}
-
-static struct Ast_RModule *GetModule_Search(struct ModulesProvider_Provider__s *p, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end, o7_int_t ext_len0, o7_char ext[/*len0*/], o7_int_t *pathInd) {
-	o7_int_t pathOfs;
-	struct VFileStream_RIn *source;
+static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7_int_t name_len0, o7_char name[/*len0*/]);
+static struct Ast_RModule *GetModule_Search(struct ModulesProvider_Provider__s *p) {
+	struct VDataStream_In *source = NULL;
 	struct Ast_RModule *m;
+	o7_bool decl = 0 > 1;
+	struct InputProvider_Iter *it = NULL;
 
-	(*pathInd) =  - 1;
-	pathOfs = 0;
-	do {
-		source = GetModule_Search_Open(p, &pathOfs, name_len0, name, ofs, end, ext_len0, ext);
-		if (source != NULL) {
-			m = Parser_Parse(&source->_, &O7_REF(p)->opt);
-			VFileStream_CloseIn(&source);
-			if ((m != NULL) && (O7_REF(m)->errors == NULL) && !o7_bl(O7_REF(p)->nameOk)) {
-				m = NULL;
+	m = NULL;
+	if (InputProvider_Get(p->in_, &it, TranslatorLimits_LenName_cnst + 1, p->expectName)) {
+		do {
+			if (InputProvider_Next(&it, &source, &decl)) {
+				m = Parser_Parse(source, &p->opt);
+				VDataStream_CloseIn(&source);
+				if ((m != NULL) && (m->errors == NULL) && !p->nameOk) {
+					m = NULL;
+				} else if (m != NULL) {
+					Log_Str(StringStore_BlockSize_cnst + 1, m->_._.name.block->s);
+					Log_Str(4, (o7_char *)" : ");
+					Log_Bool(decl);
+					Log_Ln();
+					m->_._.mark = decl;
+				}
 			}
-		} else {
-			m = NULL;
-		}
-		(*pathInd) = o7_add((*pathInd), 1);
-	} while (!((m != NULL) || (O7_REF(p)->path[o7_ind(4096, pathOfs)] == 0x00u)));
+		} while (!((m != NULL) || (it == NULL)));
+	}
 	return m;
 }
 
-static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7_int_t name_len0, o7_char name[/*len0*/], o7_int_t ofs, o7_int_t end) {
+static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule *host, o7_int_t name_len0, o7_char name[/*len0*/]) {
 	struct Ast_RModule *m;
 	struct ModulesProvider_Provider__s *mp;
-	o7_int_t pathInd = O7_INT_UNDEF, i;
-	o7_char ext[5][6];
-	memset(&ext, 0, sizeof(ext));
 
-	mp = O7_GUARD(ModulesProvider_Provider__s, &p);
-	O7_REF(mp)->nameLen = 0;
-	O7_ASSERT(Chars0X_CopyChars(TranslatorLimits_LenName_cnst + 1, O7_REF(mp)->expectName, &O7_REF(mp)->nameLen, name_len0, name, ofs, end));
-
-	memcpy(ext[0], (o7_char *)".mod", sizeof(".mod"));
-	memcpy(ext[1], (o7_char *)".Mod", sizeof(".Mod"));
-	memcpy(ext[2], (o7_char *)".ob07", sizeof(".ob07"));
-	memcpy(ext[3], (o7_char *)".ob", sizeof(".ob"));
-	memcpy(ext[4], (o7_char *)".obn", sizeof(".obn"));
-	i = 0;
-	do {
-		m = GetModule_Search(mp, name_len0, name, ofs, end, 6, ext[o7_ind(5, i)], &pathInd);
-		i = o7_add(i, 1);
-	} while (!((m != NULL) || (i >= O7_LEN(ext))));
-	if (m != NULL) {
-		if (o7_in(pathInd, O7_REF(mp)->sing)) {
-			O7_REF(m)->_._.mark = (0 < 1);
+	mp = O7_GUARD(ModulesProvider_Provider__s, p);
+	mp->nameLen = 0;
+	if (!Chars0X_CopyString(TranslatorLimits_LenName_cnst + 1, mp->expectName, &mp->nameLen, name_len0, name)) {
+		m = NULL;
+		MessageErrOberon_Text(41, (o7_char *)"Name of potential module is too large - ");
+		Out_String(name_len0, name);
+		MessageErrOberon_Ln();
+	} else {
+		m = GetModule_Search(mp);
+		if ((m == NULL) && mp->firstNotOk) {
+			mp->firstNotOk = (0 > 1);
+			MessageErrOberon_Text(40, (o7_char *)"Can not found or open file of module - ");
+			Out_String(TranslatorLimits_LenName_cnst + 1, mp->expectName);
+			MessageErrOberon_Ln();
 		}
-	} else if (o7_bl(O7_REF(mp)->firstNotOk)) {
-		O7_REF(mp)->firstNotOk = (0 > 1);
-		/* TODO */
-		Message_Text(38, (o7_char *)"Can not found or open file of module ");
-		Out_String(TranslatorLimits_LenName_cnst + 1, O7_REF(mp)->expectName);
-		Out_Ln();
 	}
 	return m;
 }
@@ -95,31 +62,32 @@ static struct Ast_RModule *GetModule(struct Ast_RProvider *p, struct Ast_RModule
 static o7_bool RegModule(struct Ast_RProvider *p, struct Ast_RModule *m);
 static o7_bool RegModule_Reg(struct ModulesProvider_Provider__s *p, struct Ast_RModule *m) {
 	Log_Str(11, (o7_char *)"RegModule ");
-	Log_Str(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(m)->_._.name.block)->s);
+	Log_Str(StringStore_BlockSize_cnst + 1, m->_._.name.block->s);
 	Log_Str(4, (o7_char *)" : ");
-	Log_StrLn(TranslatorLimits_LenName_cnst + 1, O7_REF(p)->expectName);
-	O7_REF(p)->nameOk = o7_strcmp(StringStore_BlockSize_cnst + 1, O7_REF(O7_REF(m)->_._.name.block)->s, TranslatorLimits_LenName_cnst + 1, O7_REF(p)->expectName) == 0;
-	return o7_bl(O7_REF(p)->nameOk);
+	Log_StrLn(TranslatorLimits_LenName_cnst + 1, p->expectName);
+	p->nameOk = o7_strcmp(StringStore_BlockSize_cnst + 1, m->_._.name.block->s, TranslatorLimits_LenName_cnst + 1, p->expectName) == 0;
+	return p->nameOk;
 }
 
 static o7_bool RegModule(struct Ast_RProvider *p, struct Ast_RModule *m) {
-	return RegModule_Reg(O7_GUARD(ModulesProvider_Provider__s, &p), m);
+	return RegModule_Reg(O7_GUARD(ModulesProvider_Provider__s, p), m);
 }
 
-extern void ModulesProvider_New(struct ModulesProvider_Provider__s **mp, o7_int_t searchPath_len0, o7_char searchPath[/*len0*/], o7_int_t pathLen, o7_set_t definitionsInSearch) {
-	o7_int_t len;
+extern o7_bool ModulesProvider_New(struct ModulesProvider_Provider__s **mp, struct InputProvider_R *inp) {
+	O7_ASSERT(inp != NULL);
 
-	O7_NEW(&(*mp), ModulesProvider_Provider__s);
-	Ast_ProviderInit(&(*mp)->_, GetModule, RegModule);
+	O7_NEW(&*mp, ModulesProvider_Provider__s);
+	if (*mp != NULL) {
+		Ast_ProviderInit(&(*mp)->_, GetModule, RegModule);
 
-	O7_REF((*mp))->firstNotOk = (0 < 1);
-	len = 0;
-	ArrayCopy_Chars(4096, O7_REF((*mp))->path, len, searchPath_len0, searchPath, 0, pathLen);
-	O7_REF((*mp))->sing = definitionsInSearch;
+		(*mp)->in_ = inp;
+		(*mp)->firstNotOk = (0 < 1);
+	}
+	return *mp != NULL;
 }
 
 extern void ModulesProvider_SetParserOptions(struct ModulesProvider_Provider__s *p, struct Parser_Options *o) {
-	O7_REF(p)->opt = (*o);
+	p->opt = *o;
 }
 
 extern void ModulesProvider_init(void) {
@@ -131,11 +99,12 @@ extern void ModulesProvider_init(void) {
 		StringStore_init();
 		Parser_init();
 		VFileStream_init();
+		VDataStream_init();
 		PlatformExec_init();
-		Message_init();
+		MessageErrOberon_init();
+		InputProvider_init();
 
 		O7_TAG_INIT(ModulesProvider_Provider__s, Ast_RProvider);
 	}
 	++initialized;
 }
-

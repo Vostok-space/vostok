@@ -6,6 +6,7 @@
 #include "Utf8.h"
 #include "TranslatorLimits.h"
 #include "Chars0X.h"
+#include "ArrayCopy.h"
 #include "Log.h"
 
 
@@ -74,7 +75,7 @@ typedef struct Scanner_Scanner {
 	struct VDataStream_In *in_;
 	o7_int_t line;
 	o7_int_t column;
-	o7_char buf[Scanner_BlockSize_cnst * 2 + 1];
+	o7_char buf[O7_MUL(Scanner_BlockSize_cnst, 2) + 1];
 	o7_int_t ind;
 
 	o7_int_t lexStart;
@@ -96,7 +97,6 @@ typedef struct Scanner_Scanner {
 } Scanner_Scanner;
 #define Scanner_Scanner_tag V_Base_tag
 
-extern void Scanner_Scanner_undef(struct Scanner_Scanner *r);
 
 extern void Scanner_Init(struct Scanner_Scanner *s, struct VDataStream_In *in_);
 
@@ -107,6 +107,8 @@ extern o7_int_t Scanner_Next(struct Scanner_Scanner *s);
 extern o7_bool Scanner_TakeCommentPos(struct Scanner_Scanner *s, o7_int_t *ofs, o7_int_t *end);
 
 extern void Scanner_ResetComment(struct Scanner_Scanner *s);
+
+extern void Scanner_CopyCurrent(struct Scanner_Scanner *s, o7_int_t buf_len0, o7_char buf[/*len0*/]);
 
 extern void Scanner_init(void);
 #endif

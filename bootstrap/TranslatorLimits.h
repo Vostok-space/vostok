@@ -1,6 +1,7 @@
 #if !defined HEADER_GUARD_TranslatorLimits
 #    define  HEADER_GUARD_TranslatorLimits 1
 
+
 #define TranslatorLimits_LenName_cnst 63
 #define TranslatorLimits_LenString_cnst 255
 #define TranslatorLimits_LenNumber_cnst 63

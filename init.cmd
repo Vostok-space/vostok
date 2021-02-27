@@ -1,5 +1,5 @@
 @MKDIR result\v0 result\v1 2>NUL
-@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c LongSet.c Chars0X.c ArrayCopy.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c
+@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c LongSet.c Chars0X.c ArrayCopy.c FileProvider.c GenCommon.c GenOptions.c Hex.c InputProvider.c MessageErrOberon.c Utf8.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c
 
 
 @SET CC=tcc

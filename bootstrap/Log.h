@@ -19,6 +19,8 @@ extern void Log_Real(double x);
 
 extern void Log_Bool(o7_bool b);
 
+extern void Log_Set(o7_set_t s);
+
 extern void Log_Turn(o7_bool st);
 
 extern void Log_On(void);

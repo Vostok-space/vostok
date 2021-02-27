@@ -2,6 +2,7 @@
 #    define  HEADER_GUARD_OberonSpecIdent 1
 
 #include "Utf8.h"
+#include "StringStore.h"
 
 #define OberonSpecIdent_Array_cnst 100
 #define OberonSpecIdent_Begin_cnst 101
@@ -66,8 +67,13 @@
 #define OberonSpecIdent_Unpk_cnst 226
 #define OberonSpecIdent_PredefinedLast_cnst 226
 
+extern o7_bool OberonSpecIdent_IsModule(o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ind, o7_int_t end);
+
 extern o7_bool OberonSpecIdent_IsKeyWord(o7_int_t *kw, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t ind, o7_int_t end);
 
 extern o7_bool OberonSpecIdent_IsPredefined(o7_int_t *pd, o7_int_t buf_len0, o7_char buf[/*len0*/], o7_int_t begin, o7_int_t end);
 
+extern o7_bool OberonSpecIdent_IsSpecName(struct StringStore_String *n);
+
+extern void OberonSpecIdent_init(void);
 #endif

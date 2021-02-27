@@ -22,9 +22,10 @@ typedef struct PlatformExec_Code {
 } PlatformExec_Code;
 #define PlatformExec_Code_tag V_Base_tag
 
-extern void PlatformExec_Code_undef(struct PlatformExec_Code *r);
 
-extern o7_char PlatformExec_dirSep[1];
+extern o7_char PlatformExec_dirSep[2];
+
+extern o7_bool PlatformExec_AddQuote(struct PlatformExec_Code *c);
 
 extern o7_bool PlatformExec_Init(struct PlatformExec_Code *c, o7_int_t name_len0, o7_char name[/*len0*/]);
 

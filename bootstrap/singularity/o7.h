@@ -40,7 +40,11 @@
 #define O7_INIT_NO    2
 
 #if defined(O7_INIT_MODEL)
-#	define O7_INIT O7_INIT_MODEL
+#	if (O7_INIT_UNDEF <= O7_INIT_MODEL) && (O7_INIT_MODEL <= O7_INIT_NO)
+#		define O7_INIT O7_INIT_MODEL
+#	else
+#		error Wrong value of O7_INIT_MODEL
+#	endif
 #else
 #	define O7_INIT O7_INIT_UNDEF
 #endif
@@ -96,11 +100,15 @@ typedef char unsigned o7_char;
 #	endif
 #endif
 
+#define O7_INT_BITS  (sizeof(o7_int_t ) * CHAR_BIT)
+
 #if defined(__GNUC__) || defined(__TINYC__) || defined(__COMPCERT__)
 	enum { O7_ARITHMETIC_SHIFT = 1 };
 #else
 	enum { O7_ARITHMETIC_SHIFT = 0 };
 #endif
+
+enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 
 #if !defined(O7_INT_MAX) || !defined(O7_UINT_MAX)
 #	error
@@ -115,7 +123,7 @@ typedef char unsigned o7_char;
 #		define O7_LABS(val) O7_LONG_ABS(val)
 #	endif
 #else
-#	if LONG_MAX >= 9223372036854775807l
+#	if LONG_MAX  > 2147483647l
 #		define O7_LONG_MAX  9223372036854775807l
 #		define O7_ULONG_MAX 18446744073709551615ul
 		typedef long               o7_long_t;
@@ -142,14 +150,24 @@ typedef char unsigned o7_char;
 #	define O7_GNUC_SMUL(a, b, res)  (0 < sizeof(*(res) = (a)*(b)))
 #endif
 
-typedef o7_uint_t o7_set_t;
+#if defined(__arm__) || defined(__arm) || defined(_M_ARM)
+#	define O7_ARM 1
+#else
+#	define O7_ARM 0
+#endif
+
+typedef o7_uint_t  o7_set_t;
 
 #define O7_MEMNG_NOFREE  0
 #define O7_MEMNG_COUNTER 1
 #define O7_MEMNG_GC      2
 
-#if !defined(O7_MEM_ALIGN)
-#	define O7_MEM_ALIGN (8u > sizeof(void *) ? 8u : sizeof(void *))
+#if defined(O7_MEM_ALIGN)
+#
+#elif O7_ARM || _WIN32
+#	define O7_MEM_ALIGN 8u
+#else
+#	define O7_MEM_ALIGN sizeof(void*)
 #endif
 
 #if defined(O7_MEMNG_MODEL)
@@ -218,8 +236,10 @@ typedef struct {
 extern o7_tag_t o7_base_tag;
 
 enum {
-	O7_MEMINFO_SIZE = sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
-	                + sizeof(o7_tag_t *)
+	O7_MEMINFO_SIZE = (sizeof(o7_mmc_t) * (int)(O7_MEMNG == O7_MEMNG_COUNTER)
+	                 + sizeof(o7_tag_t *)
+	                 + O7_MEM_ALIGN - 1
+	                  ) / O7_MEM_ALIGN * O7_MEM_ALIGN
 };
 
 #if O7_MEMNG == O7_MEMNG_GC
@@ -295,6 +315,12 @@ void* o7_ref(void *ptr) {
 #if defined(NDEBUG)
 	O7_ALWAYS_INLINE void o7_assert(o7_cbool cond) { assert(cond); }
 #	define O7_ASSERT(condition) o7_assert(condition)
+#elif defined(O7_ASSERT_NO_MESSAGE)
+	O7_ALWAYS_INLINE void O7_ASSERT(o7_cbool condition) {
+		if (!condition) {
+			abort();
+		}
+	}
 #else
 #	define O7_ASSERT(condition) assert(condition)
 #endif
@@ -314,6 +340,14 @@ void* o7_ref(void *ptr) {
 #	else
 #		define O7_NORETURN
 #	endif
+#endif
+
+#if !O7_USE_BUILTIN_EXPECT
+#	define O7_EXPECT(cond) (cond)
+#elif __GNUC__ < 4
+#	error __builtin_expect is not available
+#else
+#	define O7_EXPECT(cond) __builtin_expect(cond, 1)
 #endif
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
@@ -360,11 +394,15 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 	}
 #endif
 
+#	define O7_FPA(typeName, arrayName)      o7_int_t arrayName##_len, typeName arrayName[O7_VLA(arrayName##_len)]
+#	define O7_APA(arrayName)            arrayName##_len, arrayName
+#	define O7_FPA_LEN(arrayName)        arrayName##_len
+
 #define O7_LEN(array) ((o7_int_t)(sizeof(array) / sizeof((array)[0])))
 
 O7_CONST_INLINE
 o7_cbool o7_bool_inited(o7_bool b) {
-	return *(o7_char *)&b < 2;
+	return O7_EXPECT(*(o7_char *)&b < 2);
 }
 
 O7_CONST_INLINE
@@ -469,7 +507,7 @@ double o7_fdiv(double n, double d) {
 
 O7_CONST_INLINE
 o7_bool o7_int_inited(o7_int_t i) {
-	return -O7_INT_MAX <= i;
+	return O7_EXPECT(-O7_INT_MAX <= i);
 }
 
 O7_CONST_INLINE
@@ -491,6 +529,10 @@ o7_int_t o7_not_neg(o7_int_t i) {
 extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
 	o7_ints_undef((o7_int_t)(sizeof(array) / (sizeof(o7_int_t))), (o7_int_t *)(array))
+
+#define O7_MUL(a, b) ((a) * (b))
+#define O7_DIV(n, d) ((0 <= n) ? ((n) / (d)) : (-1 - (-1 - (n)) / (d)))
+#define O7_MOD(n, d) ((0 <= n) ? ((n) % (d)) : ((d) - 1 - (-1 - (n)) % (d)))
 
 O7_CONST_INLINE
 o7_int_t o7_add(o7_int_t a1, o7_int_t a2) {
@@ -568,33 +610,71 @@ o7_int_t o7_divisor(o7_int_t d) {
 }
 
 O7_CONST_INLINE
-o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+o7_int_t o7_div_general(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
 	if (0 <= n) {
-		r = n / o7_divisor(d);
+		r = n / d;
 	} else {
-		r = -1 - (-1 - o7_int(n)) / o7_divisor(d);
+		r = -1 - (-1 - o7_int(n)) / d;
 	}
 	return  r;
 }
 
 O7_CONST_INLINE
-o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
+o7_int_t o7_div_specific(o7_int_t n, o7_int_t d) {
+	o7_int_t mask;
+	mask = n >> (O7_INT_BITS - 1);
+	return mask ^ ((mask ^ o7_int(n)) / d);
+}
+
+O7_CONST_INLINE
+o7_int_t o7_div_nat(o7_int_t n, o7_int_t d) {
 	o7_int_t r;
-	if (0 <= n) {
-		r = n % o7_divisor(d);
+	if (O7_DIV_BRANCHLESS) {
+		r = o7_div_specific(n, d);
 	} else {
-		r = d + (-1 - (-1 - o7_int(n)) % o7_divisor(d));
+		r = o7_div_general(n, d);
 	}
 	return r;
 }
 
 O7_CONST_INLINE
-o7_int_t o7_ind(o7_int_t len, o7_int_t ind) {
-	if (O7_ARRAY_INDEX) {
-		assert((o7_uint_t)ind < (o7_uint_t)len);
+o7_int_t o7_div(o7_int_t n, o7_int_t d) {
+	return o7_div_nat(n, o7_divisor(d));
+}
+
+O7_CONST_INLINE
+o7_int_t o7_mod_general(o7_int_t n, o7_int_t d) {
+	o7_int_t r;
+	if (0 <= n) {
+		r = n % d;
+	} else {
+		r = d + (-1 - (-1 - o7_int(n)) % d);
 	}
-	return ind;
+	return r;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_mod_specific(o7_int_t n, o7_int_t d) {
+	o7_int_t mask;
+	mask = n >> (O7_INT_BITS - 1);
+	return (d & mask) + (mask ^ ((mask ^ o7_int(n)) % d));
+}
+
+O7_CONST_INLINE
+o7_int_t o7_mod_nat(o7_int_t n, o7_int_t d) {
+	o7_int_t r;
+	if (O7_DIV_BRANCHLESS) {
+		r = o7_mod_specific(n, d);
+	} else {
+		r = o7_mod_general(n, d);
+	}
+	return r;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
+	return o7_mod_nat(n, o7_divisor(d));
 }
 
 #define O7_ASR(n, shift) \
@@ -625,13 +705,21 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 
 	u     = o7_not_neg(n    ) & 0xFFFFFFFFul;
 	shift = o7_not_neg(shift) & 0x1F;
-	if (0 != shift) {
+	if (O7_EXPECT(0 != shift)) {
 		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
 		if (O7_OVERFLOW) {
 			assert(u < 0x80000000ul);
 		}
 	}
 	return u;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_ind(o7_int_t len, o7_int_t ind) {
+	if (O7_ARRAY_INDEX) {
+		assert((o7_uint_t)ind < (o7_uint_t)len);
+	}
+	return ind;
 }
 
 O7_CONST_INLINE
@@ -693,7 +781,7 @@ O7_ALWAYS_INLINE
 o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) {
 	void *mem;
 	mem = o7_malloc(O7_MEMINFO_SIZE + size);
-	if (NULL != mem) {
+	if (O7_EXPECT(NULL != mem)) {
 		mem = o7_mem_info_init(mem, tag);
 		if ((O7_INIT == O7_INIT_UNDEF) && (NULL != undef)) {
 			undef(mem);
@@ -704,8 +792,13 @@ o7_cbool o7_new(void **pmem, int size, o7_tag_t const *tag, void undef(void *)) 
 	return NULL != mem;
 }
 
-#define O7_NEW(mem, name) \
-	o7_new((void **)mem, sizeof(**(mem)), &name##_tag, NULL)
+#if O7_INIT == O7_INIT_UNDEF
+#	define O7_NEW(mem, name) \
+		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, (void (*)(void *))name##_undef)
+#else
+#	define O7_NEW(mem, name) \
+		o7_new((void **)mem, sizeof(**(mem)), &name##_tag, NULL)
+#endif
 
 #define O7_NEW2(mem, tag, undef) \
 	o7_new((void **)mem, sizeof(**(mem)), &tag, (void (*)(void *))undef)
@@ -773,10 +866,12 @@ void o7_retain_array(o7_int_t count, void *mem[O7_VLA(count)]) {
 O7_ALWAYS_INLINE
 void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void release(void *)) {
 	o7_int_t i;
-	assert(0 > 1);/* TODO */
+	char *a;
 	if (O7_MEMNG == O7_MEMNG_COUNTER) {
+		a = (char *)array;
 		for (i = 0; i < count; i += 1) {
-			o7_null((void **)array + i);
+			release((void *)a);
+			a += item_size;
 		}
 	}
 }
@@ -823,13 +918,13 @@ o7_bool o7_is(void const *strct, o7_tag_t const *ext) {
 }
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
-void **o7_must(void **strct, o7_tag_t const *ext) {
-	assert(o7_is(*strct, ext));
+void *o7_must(void *strct, o7_tag_t const *ext) {
+	assert(o7_is(strct, ext));
 	return strct;
 }
 
 #define O7_GUARD(ExtType, strct) \
-	(*(struct ExtType **)o7_must((void **)strct, &ExtType##_tag))
+	((struct ExtType *)o7_must((void *)strct, &ExtType##_tag))
 
 
 O7_ATTR_PURE O7_ALWAYS_INLINE
@@ -848,14 +943,14 @@ o7_uint_t o7_set(o7_int_t low, o7_int_t high) {
 	return (~(o7_uint_t)0 << low) & (~(o7_uint_t)0 >> (31 - high));
 }
 
-#define O7_SET(low, high) (((o7_uint_t)-1 << low) & ((o7_uint_t)-1 >> (31 - high)))
+#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
 
 O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_uint_t set) {
-	return (n >= 0) && (n <= 31) && (0 != (set & ((o7_uint_t)1 << n)));
+o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
+	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
 }
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != ((set) & ((o7_uint_t)1u << (n)))))
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
 
 O7_CONST_INLINE
 o7_int_t o7_sti(o7_uint_t v) {
@@ -877,7 +972,6 @@ double o7_flt(o7_int_t v) {
 O7_ALWAYS_INLINE
 void o7_ldexp(double *f, o7_int_t n) {
 	extern double o7_raw_ldexp(double f, int n);
-
 	*f = o7_dbl_finite(o7_raw_ldexp(o7_dbl_finite(*f), o7_int(n)));
 }
 
@@ -890,6 +984,25 @@ void o7_frexp(double *f, o7_int_t *n) {
 extern O7_ATTR_PURE
 int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
               o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]);
+
+O7_PURE_INLINE
+int o7_strchcmp(o7_int_t len, o7_char const s[O7_VLA(len)], o7_char c) {
+	int ret;
+	if (len == 0) {
+		ret = -(int)c;
+	} else {
+		ret = (int)s[0] - c;
+		if (ret == 0 && len > 1 && c != '\0' && s[1] != '\0') {
+			ret = -1;
+		}
+	}
+	return ret;
+}
+
+O7_PURE_INLINE
+int o7_chstrcmp(o7_char c, o7_int_t len, o7_char const s[O7_VLA(len)]) {
+	return -o7_strchcmp(len, s, c);
+}
 
 O7_ALWAYS_INLINE
 void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],

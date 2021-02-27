@@ -13,6 +13,8 @@ extern o7_bool Chars0X_Copy(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t
 
 extern o7_bool Chars0X_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t srcOfs, o7_int_t srcEnd);
 
+extern o7_bool Chars0X_CopyCharsUntil(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t *srcOfs, o7_char until);
+
 extern o7_bool Chars0X_CopyString(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *ofs, o7_int_t src_len0, o7_char src[/*len0*/]);
 
 extern o7_bool Chars0X_CopyChar(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *ofs, o7_char ch);

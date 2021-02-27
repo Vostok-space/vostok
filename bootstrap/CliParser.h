@@ -6,15 +6,36 @@
 #include "Utf8.h"
 #include "StringStore.h"
 #include "Platform.h"
+#include "GenOptions.h"
 #include "GeneratorC.h"
 #include "Chars0X.h"
 
 #define CliParser_CmdHelp_cnst 1
+#define CliParser_CmdVersion_cnst 11
 #define CliParser_ResultC_cnst 2
 #define CliParser_ResultBin_cnst 3
 #define CliParser_ResultRun_cnst 4
 
-#define CliParser_ThroughC_cnst ((1u << CliParser_ResultC_cnst) | (1u << CliParser_ResultBin_cnst) | (1u << CliParser_ResultRun_cnst))
+#define CliParser_ResultJava_cnst 5
+#define CliParser_ResultClass_cnst 6
+#define CliParser_ResultRunJava_cnst 7
+
+#define CliParser_ResultJs_cnst 8
+#define CliParser_ResultRunJs_cnst 9
+
+#define CliParser_ResultMod_cnst 10
+
+#define CliParser_ThroughC_cnst 0x1Cu
+#define CliParser_ThroughJava_cnst 0xE0u
+#define CliParser_ThroughJs_cnst 0x300u
+#define CliParser_ThroughMod_cnst 0x400u
+#define CliParser_ForRun_cnst 0x290u
+
+#define CliParser_CyrillicNo_cnst 0
+#define CliParser_CyrillicDefault_cnst 1
+#define CliParser_CyrillicSame_cnst 2
+#define CliParser_CyrillicTranslit_cnst 3
+#define CliParser_CyrillicEscape_cnst 4
 
 #define CliParser_ErrNo_cnst 0
 
@@ -43,9 +64,14 @@
 #define CliParser_ErrCantFoundJavaCompiler_cnst (-32)
 #define CliParser_ErrTooLongJavaDirs_cnst (-33)
 #define CliParser_ErrTooLongJsDirs_cnst (-34)
-
 #define CliParser_ErrOpenJava_cnst (-40)
 #define CliParser_ErrOpenJs_cnst (-41)
+#define CliParser_ErrOpenOberon_cnst (-42)
+
+#define CliParser_ErrDisabledGenC_cnst (-50)
+#define CliParser_ErrDisabledGenJava_cnst (-51)
+#define CliParser_ErrDisabledGenJs_cnst (-52)
+#define CliParser_ErrDisabledGenOberon_cnst (-53)
 
 typedef struct CliParser_Args {
 	V_Base _;
@@ -60,20 +86,26 @@ typedef struct CliParser_Args {
 	o7_char modPath[4096];
 	o7_char cDirs[4096];
 	o7_char cc[4096];
+	o7_char javaDirs[4096];
+	o7_char jsDirs[4096];
+	o7_char javac[4096];
 	o7_int_t modPathLen;
 	o7_set_t sing;
 	o7_int_t init;
 	o7_int_t memng;
 	o7_int_t arg;
 	o7_int_t cStd;
+	o7_int_t obStd;
 	o7_bool noNilCheck;
 	o7_bool noOverflowCheck;
 	o7_bool noIndexCheck;
+	o7_bool cPlan9;
 	o7_int_t cyrillic;
+
+	o7_bool multiErrors;
 } CliParser_Args;
 #define CliParser_Args_tag V_Base_tag
 
-extern void CliParser_Args_undef(struct CliParser_Args *r);
 
 extern o7_bool CliParser_GetParam(o7_int_t *err, o7_int_t errTooLong, o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t *i, o7_int_t *arg);
 
@@ -81,7 +113,9 @@ extern o7_int_t CliParser_Options(struct CliParser_Args *args, o7_int_t *arg);
 
 extern void CliParser_ArgsInit(struct CliParser_Args *args);
 
-extern o7_int_t CliParser_ParseCommand(o7_int_t src_len0, o7_char src[/*len0*/], o7_bool *script);
+extern o7_bool CliParser_ArgsForRunFile(struct CliParser_Args *args, o7_int_t *ret);
+
+extern o7_int_t CliParser_ParseCommand(o7_bool cyr, o7_int_t src_len0, o7_char src[/*len0*/], o7_bool *script);
 
 extern o7_bool CliParser_Parse(struct CliParser_Args *args, o7_int_t *ret);
 

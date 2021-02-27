@@ -7,12 +7,10 @@ int CLI_count;
 
 static char **CLI_argv;
 
-static o7_cbool copyArg(
-	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs, o7_int_t arg)
-{
+static o7_cbool copyArg(O7_FPA(char unsigned, str), o7_int_t *ofs, o7_int_t arg) {
 	int i;
 	i = 0;
-	while ((*ofs < len - 1) && ('\0' != CLI_argv[arg][i])) {
+	while ((*ofs < O7_FPA_LEN(str) - 1) && ('\0' != CLI_argv[arg][i])) {
 		str[*ofs] = CLI_argv[arg][i];
 		i    += 1;
 		*ofs += 1;
@@ -21,17 +19,13 @@ static o7_cbool copyArg(
 	return '\0' == CLI_argv[arg][i];
 }
 
-extern o7_cbool CLI_GetName(
-	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs)
-{
-	return copyArg(len, str, ofs, -1);
+extern o7_cbool CLI_GetName(O7_FPA(char unsigned, str), o7_int_t *ofs) {
+	return copyArg(O7_APA(str), ofs, -1);
 }
 
-extern o7_cbool CLI_Get(
-	o7_int_t len, char unsigned str[O7_VLA(len)], o7_int_t *ofs, o7_int_t arg)
-{
+extern o7_cbool CLI_Get(O7_FPA(char unsigned, str), o7_int_t *ofs, o7_int_t arg) {
 	assert((0 <= arg) && (arg < CLI_count));
-	return copyArg(len, str, ofs, arg);
+	return copyArg(O7_APA(str), ofs, arg);
 }
 
 extern void CLI_SetExitCode(int code) {

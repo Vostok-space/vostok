@@ -1,3 +1,7 @@
+#if !defined(O7_INIT_MODEL)
+#   define   O7_INIT_MODEL O7_INIT_ZERO
+#endif
+
 #include <o7.h>
 
 #include "Chars0X.h"
@@ -17,17 +21,17 @@ extern o7_bool Chars0X_Fill(o7_char ch, o7_int_t count, o7_int_t dest_len0, o7_c
 	o7_int_t i, end;
 
 	O7_ASSERT(ch != 0x00u);
-	O7_ASSERT((0 <= (*ofs)) && ((*ofs) < dest_len0));
+	O7_ASSERT((0 <= *ofs) && (*ofs < dest_len0));
 
-	ok = count < o7_sub(dest_len0, (*ofs));
-	i = (*ofs);
+	ok = count < o7_sub(dest_len0, *ofs);
+	i = *ofs;
 	if (ok) {
 		end = o7_add(i, count);
 		while (i < end) {
 			dest[o7_ind(dest_len0, i)] = ch;
 			i = o7_add(i, 1);
 		}
-		(*ofs) = i;
+		*ofs = i;
 	}
 	dest[o7_ind(dest_len0, i)] = 0x00u;
 	return ok;
@@ -37,8 +41,8 @@ extern o7_bool Chars0X_CopyAtMost(o7_int_t dest_len0, o7_char dest[/*len0*/], o7
 	o7_bool ok;
 	o7_int_t s, d, lim;
 
-	s = (*srcOfs);
-	d = (*destOfs);
+	s = *srcOfs;
+	d = *destOfs;
 	O7_ASSERT((0 <= s) && (s <= src_len0));
 	O7_ASSERT((0 <= d) && (d <= dest_len0));
 	O7_ASSERT(0 <= atMost);
@@ -54,21 +58,21 @@ extern o7_bool Chars0X_CopyAtMost(o7_int_t dest_len0, o7_char dest[/*len0*/], o7
 		s = o7_add(s, 1);
 	}
 
-	ok = (d == o7_add((*destOfs), atMost)) || (src[o7_ind(src_len0, s)] == 0x00u);
+	ok = (d == o7_add(*destOfs, atMost)) || (src[o7_ind(src_len0, s)] == 0x00u);
 
 	dest[o7_ind(dest_len0, d)] = 0x00u;
-	(*srcOfs) = s;
-	(*destOfs) = d;
+	*srcOfs = s;
+	*destOfs = d;
 
-	O7_ASSERT(((*destOfs) == dest_len0) || (dest[o7_ind(dest_len0, (*destOfs))] == 0x00u));
+	O7_ASSERT((*destOfs == dest_len0) || (dest[o7_ind(dest_len0, *destOfs)] == 0x00u));
 	return ok;
 }
 
 extern o7_bool Chars0X_Copy(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t *srcOfs) {
 	o7_int_t s, d;
 
-	s = (*srcOfs);
-	d = (*destOfs);
+	s = *srcOfs;
+	d = *destOfs;
 	O7_ASSERT((0 <= s) && (s <= src_len0));
 	O7_ASSERT((0 <= d) && (d <= dest_len0));
 
@@ -79,10 +83,10 @@ extern o7_bool Chars0X_Copy(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t
 	}
 
 	dest[o7_ind(dest_len0, d)] = 0x00u;
-	(*srcOfs) = s;
-	(*destOfs) = d;
+	*srcOfs = s;
+	*destOfs = d;
 
-	O7_ASSERT(dest[o7_ind(dest_len0, (*destOfs))] == 0x00u);
+	O7_ASSERT(dest[o7_ind(dest_len0, *destOfs)] == 0x00u);
 	return src[o7_ind(src_len0, s)] == 0x00u;
 }
 
@@ -91,7 +95,7 @@ extern o7_bool Chars0X_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_
 	o7_bool ok;
 
 	s = srcOfs;
-	d = (*destOfs);
+	d = *destOfs;
 	O7_ASSERT((0 <= s) && (s <= src_len0));
 	O7_ASSERT((0 <= d) && (d <= dest_len0));
 	O7_ASSERT(s <= srcEnd);
@@ -107,22 +111,42 @@ extern o7_bool Chars0X_CopyChars(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_
 		s = o7_add(s, 1);
 	}
 	dest[o7_ind(dest_len0, d)] = 0x00u;
-	(*destOfs) = d;
+	*destOfs = d;
 	return ok;
+}
+
+extern o7_bool Chars0X_CopyCharsUntil(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *destOfs, o7_int_t src_len0, o7_char src[/*len0*/], o7_int_t *srcOfs, o7_char until) {
+	o7_int_t s, d;
+
+	s = *srcOfs;
+	d = *destOfs;
+	O7_ASSERT((0 <= s) && (s < src_len0));
+	O7_ASSERT((0 <= d) && (d <= dest_len0));
+
+	while ((src[o7_ind(src_len0, s)] != until) && (d < o7_sub(dest_len0, 1))) {
+		O7_ASSERT(src[o7_ind(src_len0, s)] != 0x00u);
+		dest[o7_ind(dest_len0, d)] = src[o7_ind(src_len0, s)];
+		d = o7_add(d, 1);
+		s = o7_add(s, 1);
+	}
+	dest[o7_ind(dest_len0, d)] = 0x00u;
+	*destOfs = d;
+	*srcOfs = s;
+	return src[o7_ind(src_len0, s)] == until;
 }
 
 extern o7_bool Chars0X_CopyString(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *ofs, o7_int_t src_len0, o7_char src[/*len0*/]) {
 	o7_int_t i;
 
 	i = 0;
-	return Chars0X_CopyAtMost(dest_len0, dest, &(*ofs), src_len0, src, &i, src_len0);
+	return Chars0X_Copy(dest_len0, dest, ofs, src_len0, src, &i);
 }
 
 extern o7_bool Chars0X_CopyChar(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_int_t *ofs, o7_char ch) {
 	o7_bool ok;
 	o7_int_t i;
 
-	i = (*ofs);
+	i = *ofs;
 	O7_ASSERT(ch != 0x00u);
 	O7_ASSERT((0 <= i) && (i < dest_len0));
 	ok = i < o7_sub(dest_len0, 1);
@@ -131,20 +155,20 @@ extern o7_bool Chars0X_CopyChar(o7_int_t dest_len0, o7_char dest[/*len0*/], o7_i
 		i = o7_add(i, 1);
 	}
 	dest[o7_ind(dest_len0, i)] = 0x00u;
-	(*ofs) = i;
+	*ofs = i;
 	return ok;
 }
 
 extern o7_bool Chars0X_SearchChar(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t *pos, o7_char c) {
 	o7_int_t i;
 
-	i = (*pos);
+	i = *pos;
 	O7_ASSERT((0 <= i) && (i < str_len0));
 
 	while ((str[o7_ind(str_len0, i)] != c) && (str[o7_ind(str_len0, i)] != 0x00u)) {
 		i = o7_add(i, 1);
 	}
-	(*pos) = i;
+	*pos = i;
 	return str[o7_ind(str_len0, i)] == c;
 }
 
@@ -171,4 +195,3 @@ extern o7_int_t Chars0X_Trim(o7_int_t str_len0, o7_char str[/*len0*/], o7_int_t 
 	str[o7_ind(str_len0, j)] = 0x00u;
 	return o7_sub(j, ofs);
 }
-

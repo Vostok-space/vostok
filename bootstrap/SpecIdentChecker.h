@@ -23,6 +23,8 @@ extern o7_bool SpecIdentChecker_IsSpecName(struct StringStore_String *n, o7_set_
 
 extern o7_bool SpecIdentChecker_IsSpecModuleName(struct StringStore_String *n);
 
+extern o7_bool SpecIdentChecker_IsSpecCHeaderName(struct StringStore_String *n);
+
 extern o7_bool SpecIdentChecker_IsO7SpecName(struct StringStore_String *name);
 
 extern void SpecIdentChecker_init(void);

@@ -3,7 +3,6 @@
 
 #include "OsExec.h"
 
-extern o7_int_t OsExec_Do(o7_int_t len, o7_char const cmd[O7_VLA(len)]) {
+extern o7_int_t OsExec_Do(O7_FPA(o7_char const, cmd)) {
 	return system((char const *)cmd);
 }
-

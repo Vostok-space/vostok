@@ -10,6 +10,7 @@
 #define CCompilerInterface_Gnu_cnst 2
 #define CCompilerInterface_Clang_cnst 3
 #define CCompilerInterface_CompCert_cnst 4
+#define CCompilerInterface_Msvc_cnst 5
 
 typedef struct CCompilerInterface_Compiler {
 	V_Base _;
@@ -18,11 +19,10 @@ typedef struct CCompilerInterface_Compiler {
 } CCompilerInterface_Compiler;
 #define CCompilerInterface_Compiler_tag V_Base_tag
 
-extern void CCompilerInterface_Compiler_undef(struct CCompilerInterface_Compiler *r);
 
 extern o7_bool CCompilerInterface_Set(struct CCompilerInterface_Compiler *c, o7_int_t cmd_len0, o7_char cmd[/*len0*/]);
 
-extern o7_bool CCompilerInterface_Search(struct CCompilerInterface_Compiler *c, o7_bool forRun);
+extern o7_bool CCompilerInterface_Search(struct CCompilerInterface_Compiler *c, o7_bool lightweight);
 
 extern o7_bool CCompilerInterface_AddOutputExe(struct CCompilerInterface_Compiler *c, o7_int_t o_len0, o7_char o[/*len0*/]);
 

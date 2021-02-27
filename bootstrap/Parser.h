@@ -71,12 +71,10 @@ typedef struct Parser_Options {
 	o7_bool multiErrors;
 	o7_bool cyrillic;
 	Parser_PrintError printError;
-
 	struct Ast_RProvider *provider;
 } Parser_Options;
 #define Parser_Options_tag V_Base_tag
 
-extern void Parser_Options_undef(struct Parser_Options *r);
 
 extern void Parser_DefaultOptions(struct Parser_Options *opt);
 

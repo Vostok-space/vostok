@@ -1,6 +1,7 @@
 #include <o7.h>
 
 #include "Out.h"
+#include "CFiles.h"
 
 #include <stdio.h>
 
@@ -51,7 +52,6 @@ extern void Out_init(void) {
 	static unsigned initialized = 0;
 	if (0 == initialized) {
 		CFiles_init();
-		Platform_init();
 
 		ln[0] = 0x0Du;
 		ln[1] = 0x0Au;
@@ -59,4 +59,3 @@ extern void Out_init(void) {
 	}
 	++initialized;
 }
-

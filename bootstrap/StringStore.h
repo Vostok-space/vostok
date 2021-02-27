@@ -17,7 +17,6 @@ typedef struct StringStore_RBlock {
 } StringStore_RBlock;
 #define StringStore_RBlock_tag V_Base_tag
 
-extern void StringStore_RBlock_undef(struct StringStore_RBlock *r);
 
 typedef struct StringStore_String {
 	V_Base _;
@@ -26,7 +25,6 @@ typedef struct StringStore_String {
 } StringStore_String;
 #define StringStore_String_tag V_Base_tag
 
-extern void StringStore_String_undef(struct StringStore_String *r);
 
 typedef struct StringStore_Iterator {
 	V_Base _;
@@ -36,7 +34,6 @@ typedef struct StringStore_Iterator {
 } StringStore_Iterator;
 #define StringStore_Iterator_tag V_Base_tag
 
-extern void StringStore_Iterator_undef(struct StringStore_Iterator *r);
 
 typedef struct StringStore_Store {
 	V_Base _;
@@ -46,7 +43,6 @@ typedef struct StringStore_Store {
 } StringStore_Store;
 #define StringStore_Store_tag V_Base_tag
 
-extern void StringStore_Store_undef(struct StringStore_Store *r);
 
 extern void StringStore_Undef(struct StringStore_String *s);
 
@@ -63,6 +59,8 @@ extern o7_char StringStore_GetChar(struct StringStore_String *s, o7_int_t i);
 extern o7_bool StringStore_IsEqualToChars(struct StringStore_String *w, o7_int_t s_len0, o7_char s[/*len0*/], o7_int_t j, o7_int_t end);
 
 extern o7_bool StringStore_IsEqualToString(struct StringStore_String *w, o7_int_t s_len0, o7_char s[/*len0*/]);
+
+extern o7_bool StringStore_IsEqualToStringIgnoreCase(struct StringStore_String *w, o7_int_t s_len0, o7_char s[/*len0*/]);
 
 extern o7_int_t StringStore_Compare(struct StringStore_String *w1, struct StringStore_String *w2);
 
