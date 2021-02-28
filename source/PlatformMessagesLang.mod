@@ -41,7 +41,7 @@ MODULE PlatformMessagesLang;
     ELSIF lng = "ru" THEN
       lang := Lang.Ru
     ELSIF lng = "uk" THEN
-      lang := Lang.Ua
+      lang := Lang.Uk
     ELSIF lng = "en" THEN
       lang := Lang.En
     ELSE

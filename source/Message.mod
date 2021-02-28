@@ -19,19 +19,19 @@ MODULE Message;
 IMPORT Env := OsEnv, Platform, LocaleParser,
        Strings := StringStore,
        InterfaceLang,
-       MessageUa, MessageRu, MessageEn, Out;
+       MessageUk, MessageRu, MessageEn, Out;
 
 CONST
 	En = InterfaceLang.En;
 	Ru = InterfaceLang.Ru;
-	Ua = InterfaceLang.Ua;
+	Uk = InterfaceLang.Uk;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
 	CASE InterfaceLang.lang OF
 	  En: MessageEn.Usage(full)
 	| Ru: MessageRu.Usage(full)
-	| Ua: MessageUa.Usage(full)
+	| Uk: MessageUk.Usage(full)
 	END
 END Usage;
 
@@ -40,7 +40,7 @@ BEGIN
 	CASE InterfaceLang.lang OF
 	  En: MessageEn.CliError(err)
 	| Ru: MessageRu.CliError(err)
-	| Ua: MessageUa.CliError(err)
+	| Uk: MessageUk.CliError(err)
 	END
 END CliError;
 

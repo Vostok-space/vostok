@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE MessageUa;
+MODULE MessageUk;
 
 IMPORT Cli := CliParser, Out, Utf8;
 
@@ -172,4 +172,4 @@ BEGIN
 	END
 END CliError;
 
-END MessageUa.
+END MessageUk.

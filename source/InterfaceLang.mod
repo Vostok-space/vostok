@@ -20,7 +20,7 @@ MODULE InterfaceLang;
   CONST
     En* = 0;
     Ru* = 1;
-    Ua* = 2;
+    Uk* = 2;
 
     Default* = En;
 
@@ -29,7 +29,7 @@ MODULE InterfaceLang;
 
   PROCEDURE Set*(lng: INTEGER);
   BEGIN
-    ASSERT(lng IN {En, Ru, Ua});
+    ASSERT(lng IN {En, Ru, Uk});
     lang := lng
   END Set;
 

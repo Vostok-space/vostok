@@ -20,7 +20,7 @@ MODULE MessageErrOberon;
 
 IMPORT
 	InterfaceLang, Out, Strings := StringStore,
-	Ua := MessageErrOberonUa,
+	Uk := MessageErrOberonUk,
 	Ru := MessageErrOberonRu,
 	En := MessageErrOberonEn;
 
@@ -40,7 +40,7 @@ BEGIN
 	CASE InterfaceLang.lang OF
 	  InterfaceLang.En: En.Ast(code)
 	| InterfaceLang.Ru: Ru.Ast(code)
-	| InterfaceLang.Ua: Ua.Ast(code)
+	| InterfaceLang.Uk: Uk.Ast(code)
 	END;
 	IF Strings.IsDefined(str) THEN
 		Str(str)
@@ -52,7 +52,7 @@ BEGIN
 	CASE InterfaceLang.lang OF
 	  InterfaceLang.En: En.Syntax(code)
 	| InterfaceLang.Ru: Ru.Syntax(code)
-	| InterfaceLang.Ua: Ua.Syntax(code)
+	| InterfaceLang.Uk: Uk.Syntax(code)
 	END
 END Syntax;
 
@@ -61,7 +61,7 @@ BEGIN
 	CASE InterfaceLang.lang OF
 	  InterfaceLang.En: En.Text(str)
 	| InterfaceLang.Ru: Ru.Text(str)
-	| InterfaceLang.Ua: Ua.Text(str)
+	| InterfaceLang.Uk: Uk.Text(str)
 	END
 END Text;
 

@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE MessageErrOberonUa;
+MODULE MessageErrOberonUk;
 
 IMPORT AST := Ast, Parser, Cli := CliParser, Scanner, Out, Utf8;
 
@@ -363,4 +363,4 @@ BEGIN
 	END
 END Text;
 
-END MessageErrOberonUa.
+END MessageErrOberonUk.
