@@ -16,7 +16,7 @@
  *)
 MODULE JavaCompilerInterface;
 
-  IMPORT Exec := PlatformExec, Platform, V, Log;
+  IMPORT Exec := PlatformExec, Platform, V, Log := DLog;
 
   CONST
     Unknown*  = 0;

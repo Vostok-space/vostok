@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log, Out,
+	Log := DLog, Out,
 	Utf8,
 	Limits := TypesLimits,
 	V,

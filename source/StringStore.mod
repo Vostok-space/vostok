@@ -17,7 +17,7 @@
 MODULE StringStore;
 
 IMPORT
-	Log,
+	Log := DLog,
 	Utf8,
 	V,
 	Stream := VDataStream;

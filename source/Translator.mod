@@ -18,7 +18,7 @@ MODULE Translator;
 
 IMPORT
 	V,
-	Log,
+	Log := DLog,
 	Out,
 	CLI,
 	Stream := VDataStream,

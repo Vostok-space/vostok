@@ -20,7 +20,7 @@ IMPORT
 	V,
 	Utf8,
 	OsExec,
-	log := Log,
+	DLog,
 	Platform,
 	Chars0X;
 
@@ -245,7 +245,7 @@ END LastPart;
 
 PROCEDURE Log*(c: Code);
 BEGIN
-	log.StrLn(c.buf)
+	DLog.StrLn(c.buf)
 END Log;
 
 PROCEDURE Do*(c: Code): INTEGER;

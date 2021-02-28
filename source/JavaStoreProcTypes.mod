@@ -16,7 +16,7 @@
  *)
 MODULE JavaStoreProcTypes;
 
-  IMPORT V, Ast, Strings := StringStore, Chars0X, Log;
+  IMPORT V, Ast, Strings := StringStore, Chars0X, Log := DLog;
 
   CONST
 

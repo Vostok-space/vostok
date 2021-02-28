@@ -18,7 +18,7 @@ MODULE Parser;
 
 IMPORT
 	V,
-	Log,
+	Log := DLog,
 	Utf8,
 	Scanner,
 	SpecIdent := OberonSpecIdent,

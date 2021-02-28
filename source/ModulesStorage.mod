@@ -16,7 +16,7 @@
  *)
 MODULE ModulesStorage;
 
-  IMPORT Log, Ast, Strings := StringStore;
+  IMPORT Log := DLog, Ast, Strings := StringStore;
 
   TYPE
     Container* = POINTER TO RContainer;

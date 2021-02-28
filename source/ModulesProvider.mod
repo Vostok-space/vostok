@@ -17,7 +17,7 @@
 MODULE ModulesProvider;
 
   IMPORT
-    Log, Out,
+    Log := DLog, Out,
     Ast,
     Strings := StringStore, Chars0X,
     ArrayCopy,

@@ -26,7 +26,7 @@ MODULE FileProvider;
     File := VFileStream,
     Chars0X,
     ArrayCopy,
-    Log;
+    Log := DLog;
 
   CONST
     PathesMaxLen* = 4096;

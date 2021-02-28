@@ -19,7 +19,7 @@ MODULE GeneratorOberon;
 
 IMPORT
   V, LongSet, Ast,
-  Log, Stream := VDataStream,
+  Log := DLog, Stream := VDataStream,
   Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
   SpecIdent := OberonSpecIdent, Scanner, Hex,
   GenOptions, GenCommon;

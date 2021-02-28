@@ -23,7 +23,7 @@ IMPORT
 	TranLim := TranslatorLimits,
 	Chars0X,
 	ArrayCopy,
-	Log;
+	Log := DLog;
 
 CONST
 	NewPage = Utf8.NewPage;

@@ -18,8 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE make;
 
- IMPORT Log, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X, Env := OsEnv,
-        Utf8;
+ IMPORT Log := DLog, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X,
+        Env := OsEnv, Utf8;
 
  CONST
    C = 0; Java = 1; Js = 2;
