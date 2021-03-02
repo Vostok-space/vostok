@@ -96,6 +96,7 @@ CONST
 	ErrArrayIndexNotInt*            = -60;
 	ErrArrayIndexNegative*          = -61;
 	ErrArrayIndexOutOfRange*        = -62;
+	ErrStringIndexing*              = -110; (* TODO *)
 	ErrGuardExpectRecordExt*        = -63;
 	ErrGuardExpectPointerExt*       = -64;
 	ErrGuardedTypeNotExtensible*    = -65;
@@ -146,7 +147,7 @@ CONST
 	ErrProcNestedTooDeep*           = -104;
 
 	ErrExpectProcNameWithoutParams* = -105;
-	                                (*-106-109*)
+	                                (*-106-110*)
 
 	ErrMin*                         = -200;
 
@@ -228,6 +229,7 @@ CONST
 	StrUsedAsArray* = 2;
 
 	IsAllowCmpProc = FALSE;
+	IsAllowStrIndex = FALSE;
 
 TYPE
 	Module* = POINTER TO RModule;
@@ -2140,7 +2142,7 @@ BEGIN
 	RETURN err
 END SelPointerNew;
 
-PROCEDURE SelArrayNew*(VAR sel: Selector; VAR type: Type; index: Expression)
+PROCEDURE SelArrayNew*(VAR sel: Selector; VAR type: Type; value, index: Expression)
                       : INTEGER;
 VAR sa: SelArray;
 	err: INTEGER;
@@ -2159,6 +2161,8 @@ BEGIN
 	    & (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
 	THEN
 		err := ErrArrayIndexOutOfRange
+	ELSIF ~IsAllowStrIndex & (value # NIL) & (value IS ExprString) THEN
+		err := ErrStringIndexing
 	ELSE
 		err := ErrNo
 	END;

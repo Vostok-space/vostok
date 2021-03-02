@@ -4,7 +4,6 @@ IMPORT Out;
 
 CONST
 	baba* = 101;
-	str = "babababa";
 	real = 1.0E23;
 
 (* Comment *)
@@ -161,7 +160,6 @@ VAR p: PoToRe;
     aop: ArOfPoToAr;
 BEGIN
 	NEW(p);
-	i := ORD(str[0]);
 	Doo(p);
 	variable1 := 0;
 	proc1 := Irma;
@@ -176,7 +174,6 @@ BEGIN
 		i := A(i, bfd, b);
 		aaaa[0,0,0] := 3;
 		aop[0] := NIL;
-		i := LEN(str);
 		aor[0] := real
 	END
 END Go;

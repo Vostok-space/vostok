@@ -163,6 +163,8 @@ BEGIN
 		C("Negative array index")
 	| AST.ErrArrayIndexOutOfRange:
 		C("Array index out of range")
+	| AST.ErrStringIndexing:
+		C("A string literal indexing is disallowed")
 	| AST.ErrGuardExpectRecordExt:
 		C("In type's guard expected extended record")
 	| AST.ErrGuardExpectPointerExt:

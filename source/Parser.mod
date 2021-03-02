@@ -340,7 +340,7 @@ BEGIN
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
 					Scan(p);
-					CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds, FALSE)));
+					CheckAst(p, Ast.SelArrayNew(sel, des.type, des.value, expression(p, ds, FALSE)));
 					IF des.value = NIL THEN
 						;
 					ELSIF (des.value IS Ast.ExprString)
@@ -358,7 +358,8 @@ BEGIN
 					END;
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
 						SetSel(prev, sel, des);
-						CheckAst(p, Ast.SelArrayNew(sel, des.type, expression(p, ds, FALSE)))
+						CheckAst(p,
+							Ast.SelArrayNew(sel, des.type, des.value, expression(p, ds, FALSE)))
 					END;
 					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
 				ELSIF p.l = Scanner.Dereference THEN

@@ -31,7 +31,7 @@ MODULE FileProvider;
   CONST
     PathesMaxLen* = 4096;
 
-    Ext = "mod;Mod;ob07;ob;obn;";
+    Exts = "mod;Mod;ob07;ob;obn;";
 
   TYPE
     Provider = POINTER TO RECORD(InputProvider.R)
@@ -42,6 +42,7 @@ MODULE FileProvider;
     Iter = RECORD(InputProvider.Iter)
       p: Provider;
       name: ARRAY TranLim.LenName + 1 OF CHAR;
+      exts: ARRAY 32 OF CHAR;
       pathInd, pathOfs, extOfs: INTEGER
     END;
 
@@ -61,7 +62,7 @@ MODULE FileProvider;
          & Chars0X.CopyString    (n, l, Exec.dirSep)
          & Chars0X.CopyString    (n, l, it.name)
          & Chars0X.CopyChar      (n, l, ".")
-         & Chars0X.CopyCharsUntil(n, l, Ext, ofs, ";")
+         & Chars0X.CopyCharsUntil(n, l, Exts, ofs, ";")
         THEN
           Log.Str("Open "); Log.StrLn(n);
           in := File.OpenIn(n);
@@ -82,7 +83,7 @@ MODULE FileProvider;
 
     BEGIN
       in := NIL;
-      WHILE (in = NIL) & (Ext[it.extOfs] # 0X) DO
+      WHILE (in = NIL) & (it.exts[it.extOfs] # 0X) DO
         in := Open(it, declaration)
       END
     RETURN
@@ -100,6 +101,7 @@ MODULE FileProvider;
       InputProvider.InitIter(it, Next);
       it.p    := p(Provider);
       it.name := name;
+      it.exts := Exts;
       it.pathInd := 0;
       it.pathOfs := 0;
       it.extOfs  := 0

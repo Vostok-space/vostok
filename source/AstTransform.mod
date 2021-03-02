@@ -109,7 +109,7 @@ MODULE AstTransform;
       VAR dst, src: Ast.Designator; a: Ast.Assign;
       BEGIN
         AstOk(Ast.DesignatorNew(dst, var));
-        AstOk(Ast.SelArrayNew(dst.sel, dst.type, Ast.ExprIntegerNew(0)));
+        AstOk(Ast.SelArrayNew(dst.sel, dst.type, dst.value, Ast.ExprIntegerNew(0)));
         AstOk(Ast.DesignatorNew(src, fp));
         AstOk(Ast.AssignNew(a, FALSE, dst, src));
         a.next := ds.stats;
@@ -282,7 +282,7 @@ MODULE AstTransform;
       index := IsChangedParam(v, mark);
       IF index # NIL THEN
         t := v.type;
-        AstOk(Ast.SelArrayNew(ns, t, index));
+        AstOk(Ast.SelArrayNew(ns, t, NIL, index));
         (*
         ASSERT(d.type = ns.type);
         *)

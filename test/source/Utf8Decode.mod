@@ -2,7 +2,7 @@ MODULE Utf8Decode;
 
   IMPORT Utf8;
 
-  CONST A = "¢"; B = "한"; S = "𐍈";
+  VAR A, B, S: ARRAY 5 OF CHAR;
 
   PROCEDURE Correct*;
   VAR r: Utf8.R;
@@ -72,4 +72,8 @@ MODULE Utf8Decode;
     Incorrect
   END Go;
 
+BEGIN
+  A := "¢";
+  B := "한";
+  S := "𐍈"
 END Utf8Decode.

@@ -539,6 +539,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			BEGIN
 				CASE e.type.id OF
 				  Ast.IdChar, Ast.IdArray:
+					gen.opt.expectArray := FALSE;
 					IF e.id = Ast.IdDesignator THEN
 						ExpressionBraced(gen, "O7.toInt(", e, ")", {});
 					ELSE

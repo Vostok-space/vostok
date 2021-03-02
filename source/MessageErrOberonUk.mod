@@ -156,6 +156,8 @@ BEGIN
 		C("Від'ємний індекс масиву")
 	| AST.ErrArrayIndexOutOfRange:
 		C("Індекс масиву виходить за його межі")
+	| AST.ErrStringIndexing:
+		C("Індексація строкового літералу не дозволена")
 	| AST.ErrGuardExpectRecordExt:
 		C("У захисті типу очікується розширений запис")
 	| AST.ErrGuardExpectPointerExt:

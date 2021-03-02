@@ -850,6 +850,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			BEGIN
 				CASE e.type.id OF
 				  Ast.IdChar, Ast.IdArray:
+					gen.opt.expectArray := FALSE;
 					Text.Str(gen, "(o7_int_t)");
 					Factor(gen, e)
 				| Ast.IdBoolean:

@@ -120,13 +120,8 @@ BEGIN
 	i := LEN(S1);
 	ASSERT(2 = i);
 
-	s1[0] := S[0];
+	s1[0] := "0";
 	ASSERT(s1[0] = "0");
-
-	ASSERT(S[4 - 1] = "3");
-	ASSERT(S1[0] = "0");
-
-	ASSERT(S1 = S1[0]);
 
 	ASSERT(Eq(S1, "0"));
 

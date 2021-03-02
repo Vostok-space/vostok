@@ -156,6 +156,8 @@ BEGIN
 		C("Отрицательный индекс массива")
 	| AST.ErrArrayIndexOutOfRange:
 		C("Индекс массива выходит за его границы")
+	| AST.ErrStringIndexing:
+		C("Индексация строкового литерала не разрешена")
 	| AST.ErrGuardExpectRecordExt:
 		C("В защите типа ожидается расширенная запись")
 	| AST.ErrGuardExpectPointerExt:

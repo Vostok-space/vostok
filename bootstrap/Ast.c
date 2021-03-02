@@ -1855,7 +1855,7 @@ static o7_bool CompatibleAsIntAndByte(struct Ast_RType *t1, struct Ast_RType *t2
 }
 
 static o7_bool CompatibleAsStrings(struct Ast_RType *t, struct Ast_RExpression *e) {
-	return (t->_._.id == Ast_IdArray_cnst) && (t->_.type->_._.id == Ast_IdChar_cnst) && (o7_is(e, &Ast_ExprString__s_tag));
+	return (t->_._.id == Ast_IdArray_cnst) && (t->_.type->_._.id == Ast_IdChar_cnst) && (e->value_ != NULL) && (o7_is(e->value_, &Ast_ExprString__s_tag));
 }
 
 static o7_bool IsChars(struct Ast_RType *t) {
