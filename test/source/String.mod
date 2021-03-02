@@ -64,6 +64,7 @@ END Fail;
 PROCEDURE Go*;
 VAR s1, s2: ARRAY 11 OF CHAR;
     s3, s4: ARRAY 2, 11 OF CHAR;
+    s0: ARRAY 5 OF CHAR;
     i: INTEGER;
 BEGIN
 	s1 := "0123456789";
@@ -138,7 +139,11 @@ BEGIN
 	ASSERT(~(S3 = S1));
 
 	ASSERT(Eq2(S1));
-	ASSERT(~Eq2(S3))
+	ASSERT(~Eq2(S3));
+
+	s0 := S;
+	ASSERT(Eq(s0, S));
+	ASSERT(Eq(S, s0));
 END Go;
 
 END String.

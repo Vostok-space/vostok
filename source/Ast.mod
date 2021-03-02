@@ -1999,7 +1999,8 @@ BEGIN
 	ELSE
 		d.inited := {InitedValue};
 		IF decl IS Const THEN
-			d.value := decl(Const).expr.value
+			d.value := decl(Const).expr.value;
+			ASSERT(d.value # NIL)
 		ELSIF decl IS GeneralProcedure THEN
 			d.type := decl(GeneralProcedure).header
 		END
@@ -2486,8 +2487,7 @@ PROCEDURE CompatibleAsIntAndByte(t1, t2: Type): BOOLEAN;
 END CompatibleAsIntAndByte;
 
 PROCEDURE CompatibleAsStrings(t: Type; e: Expression): BOOLEAN;
-BEGIN
-	RETURN (t.id = IdArray) & (t.type.id = IdChar) & (e IS ExprString)
+	RETURN (t.id = IdArray) & (t.type.id = IdChar) & (e.value # NIL) & (e.value IS ExprString)
 END CompatibleAsStrings;
 
 PROCEDURE IsChars(t: Type): BOOLEAN;
