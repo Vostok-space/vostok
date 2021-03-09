@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2020 ComdivByZero
+ *  Copyright (C) 2016-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -38,10 +38,18 @@ TYPE
 		ofs*: INTEGER
 	END;
 
-	Iterator* = RECORD(V.Base)
-		char*: CHAR;
+	Iter = RECORD(V.Base)
 		b: Block;
+
 		i: INTEGER
+	END;
+
+	Iterator* = RECORD(Iter)
+		char*: CHAR
+	END;
+
+	UtfIterator* = RECORD(Iter)
+		code*: INTEGER
 	END;
 
 	Store* = RECORD(V.Base)
@@ -111,13 +119,20 @@ BEGIN
 	store.ofs := i
 END Put;
 
-PROCEDURE GetIter*(VAR iter: Iterator; s: String; ofs: INTEGER): BOOLEAN;
+PROCEDURE IterInit(VAR it: Iter; s: String; VAR ofs: INTEGER): BOOLEAN;
 BEGIN
 	ASSERT(0 <= ofs);
 	IF s.block # NIL THEN
-		V.Init(iter);
-		iter.b := s.block;
-		iter.i := s.ofs;
+		V.Init(it);
+		it.b := s.block;
+		it.i := s.ofs
+	END
+	RETURN s.block # NIL
+END IterInit;
+
+PROCEDURE GetIter*(VAR iter: Iterator; s: String; ofs: INTEGER): BOOLEAN;
+BEGIN
+	IF IterInit(iter, s, ofs) THEN
 		WHILE iter.b.s[iter.i] = Utf8.NewPage DO
 			iter.b := iter.b.next;
 			iter.i := 0
@@ -142,6 +157,38 @@ BEGIN
 	END
 	RETURN iter.char # Utf8.Null
 END IterNext;
+
+PROCEDURE NextUtf*(VAR it: UtfIterator): BOOLEAN;
+VAR st: INTEGER; r: Utf8.R;
+BEGIN
+	st := 0;
+	r.val := 0;
+	WHILE it.b.s[it.i] = Utf8.NewPage DO
+		it.b := it.b.next;
+		it.i := 0
+	ELSIF (st = 0) & Utf8.Begin(r, it.b.s[it.i]) DO
+		INC(it.i);
+		st := 1
+	ELSIF (st = 1) & Utf8.Next(r, it.b.s[it.i]) DO
+		INC(it.i)
+	END;
+	INC(it.i);
+	ASSERT((st = 0) OR (r.len = 0));
+	it.code := r.val
+	RETURN r.val # 0
+END NextUtf;
+
+PROCEDURE BeginUtf*(VAR it: UtfIterator; s: String; ofs: INTEGER): BOOLEAN;
+BEGIN
+	IF IterInit(it, s, ofs) THEN
+		WHILE NextUtf(it) & (ofs > 0) DO
+			DEC(ofs)
+		END
+	ELSE
+		it.code := 0
+	END
+	RETURN it.code # 0
+END BeginUtf;
 
 PROCEDURE GetChar*(s: String; i: INTEGER): CHAR;
 VAR ofs: INTEGER;
@@ -323,5 +370,32 @@ BEGIN
 	len := Stream.WriteChars(out, block.s, ofs, i - ofs)
 	RETURN len
 END Write;
+
+PROCEDURE IsAscii7*(str: String): BOOLEAN;
+VAR b: Block; i: INTEGER;
+BEGIN
+	b := str.block;
+	i := str.ofs;
+	WHILE b.s[i] = Utf8.NewPage DO
+		b := b.next;
+		i := 0
+	ELSIF (b.s[i] < 80X) & (b.s[i] # Utf8.Null) DO
+		INC(i)
+	END
+	RETURN b.s[i] < 80X
+END IsAscii7;
+
+PROCEDURE IsUtfLess*(str: String; code: INTEGER): BOOLEAN;
+VAR it: UtfIterator;
+	PROCEDURE AllLess(VAR it: UtfIterator; code: INTEGER): BOOLEAN;
+	BEGIN
+		WHILE (it.code < code) & NextUtf(it) DO
+			;
+		END
+		RETURN it.code = 0
+	END AllLess;
+BEGIN
+	RETURN ~BeginUtf(it, str, 0) OR AllLess(it, code)
+END IsUtfLess;
 
 END StringStore.

@@ -99,6 +99,9 @@ VAR
   BEGIN
     ASSERT(m # NIL);
 
+    IF opt.std IN {StdCp, StdAo} THEN
+      opt.caseAbort := FALSE
+    END;
     Text.Init(gen, out);
 
     gen.module := m;
@@ -135,10 +138,10 @@ VAR
       END
     END Import;
   BEGIN
-    IF gen.opt.std = StdAo THEN
-      Text.StrOpen(gen, "IMPORT O_7, SYSTEM,")
-    ELSE
-      Text.StrOpen(gen, "IMPORT")
+    CASE gen.opt.std OF
+      StdO7: Text.StrOpen(gen, "IMPORT")
+    | StdAo,
+      StdCp: Text.StrOpen(gen, "IMPORT O_7, SYSTEM,")
     END;
 
     Import(gen, d);
@@ -225,7 +228,7 @@ VAR
   VAR s: ARRAY 4 OF CHAR;
   BEGIN
     ASSERT((0 <= code) & (code < 100H));
-    IF (code < 20H) OR (code >= 80H)
+    IF (code < 20H) OR (code >= 7FH)
     OR (code = ORD(Utf8.DQuote)) & (gen.opt.std = StdO7)
     THEN
       s[0] := "0";
@@ -253,6 +256,22 @@ VAR
     END
   END Char;
 
+  PROCEDURE AssignExpr(VAR g: Generator; desType: Ast.Type; expr: Ast.Expression);
+  VAR toByte: BOOLEAN;
+  BEGIN
+    toByte := (g.opt.std # StdO7)
+            & (desType.id = Ast.IdByte)
+            & (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
+    IF toByte THEN
+      CASE g.opt.std OF
+        StdAo: ExpressionBraced(g, "UNSIGNED8(", expr, ")")
+      | StdCp: ExpressionBraced(g, "O_7.Byte(", expr, ")")
+      END
+    ELSE
+      expression(g, expr)
+    END
+  END AssignExpr;
+
   PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
     PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
@@ -263,7 +282,7 @@ VAR
 
         PROCEDURE Ord(VAR gen: Generator; e: Ast.Expression);
         BEGIN
-          IF (gen.opt.std # StdAo) OR ~(e.type.id IN {Ast.IdSet, Ast.IdBoolean}) THEN
+          IF (gen.opt.std = StdO7) OR ~(e.type.id IN {Ast.IdSet, Ast.IdBoolean}) THEN
             (* TODO *)
             ExpressionBraced(gen, "ORD(", e, ")")
           ELSIF e.type.id = Ast.IdSet THEN
@@ -294,18 +313,24 @@ VAR
 
         PROCEDURE Pack(VAR gen: Generator; e1, e2: Ast.Expression);
         BEGIN
-          (* TODO *)
-          ExpressionBraced(gen, "PACK(", e1, ", ");
-          Expression(gen, e2);
-          Text.Char(gen, ")")
+          CASE gen.opt.std OF
+            StdO7: Text.Str(gen, "PACK(")
+          | StdAo,
+            StdCp: Text.Str(gen, "O_7.Pack(")
+          END;
+          Expression(gen, e1);
+          ExpressionBraced(gen, ", ", e2, ")")
         END Pack;
 
         PROCEDURE Unpack(VAR gen: Generator; e1, e2: Ast.Expression);
         BEGIN
-          (* TODO *)
-          ExpressionBraced(gen, "UNPK(", e1, ", ");
-          Expression(gen, e2);
-          Text.Char(gen, ")")
+          CASE gen.opt.std OF
+            StdO7: Text.Str(gen, "UNPK(")
+          | StdAo,
+            StdCp: Text.Str(gen, "O_7.Unpk(")
+          END;
+          Expression(gen, e1);
+          ExpressionBraced(gen, ", ", e2, ")")
         END Unpack;
 
         PROCEDURE One(VAR gen: Generator; name: ARRAY OF CHAR; e: Ast.Expression);
@@ -372,10 +397,39 @@ VAR
         BEGIN
           CASE g.opt.std OF
             StdO7: ExpressionBraced(g, "FLT(", int, ")")
-          | StdAo,
-            StdCp: ExpressionBraced(g, "REAL(", int, ")")
+          | StdAo: ExpressionBraced(g, "REAL(", int, ")")
+          | StdCp: ExpressionBraced(g, "(0.0 + ", int, ")")
           END
         END Flt;
+
+        PROCEDURE Chr(VAR g: Generator; int: Ast.Expression);
+        BEGIN
+          CASE g.opt.std OF
+            StdO7,
+            StdAo: ExpressionBraced(g, "CHR(", int, ")")
+          | StdCp: ExpressionBraced(g, "SHORT(CHR(", int, "))")
+          END
+        END Chr;
+
+        PROCEDURE Floor(VAR g: Generator; r: Ast.Expression);
+        BEGIN
+          CASE g.opt.std OF
+            StdO7,
+            StdAo: ExpressionBraced(g, "FLOOR(", r, ")")
+          | StdCp: ExpressionBraced(g, "SHORT(ENTIER(", r, "))")
+          END
+        END Floor;
+
+        PROCEDURE Ror(VAR g: Generator; v, n: Ast.Expression);
+        BEGIN
+          CASE g.opt.std OF
+            StdO7,
+            StdAo: Text.Str(g, "ROR(")
+          | StdCp: Text.Str(g, "O_7.Ror(")
+          END;
+          Expression(g, v);
+          ExpressionBraced(g, ", ", n, ")")
+        END Ror;
 
       BEGIN
         e1 := call.params.expr;
@@ -386,11 +440,11 @@ VAR
         | SpecIdent.Len  : Len(gen, e1)
         | SpecIdent.Lsl  : Lsl(gen, e1, p2.expr)
         | SpecIdent.Asr  : Asr(gen, e1, p2.expr)
-        | SpecIdent.Ror  : Two(gen, "ROR", e1, p2.expr)
-        | SpecIdent.Floor: One(gen, "FLOOR", e1)
+        | SpecIdent.Ror  : Ror(gen, e1, p2.expr)
+        | SpecIdent.Floor: Floor(gen, e1)
         | SpecIdent.Flt  : Flt(gen, e1)
         | SpecIdent.Ord  : Ord(gen, e1)
-        | SpecIdent.Chr  : One(gen, "CHR", e1)
+        | SpecIdent.Chr  : Chr(gen, e1)
         | SpecIdent.Inc  : MayTwo(gen, "INC", e1, p2)
         | SpecIdent.Dec  : MayTwo(gen, "DEC", e1, p2)
         | SpecIdent.Incl : Two(gen, "INCL", e1, p2.expr)
@@ -405,7 +459,7 @@ VAR
       PROCEDURE ActualParam(VAR gen: Generator; VAR p: Ast.Parameter;
                             VAR fp: Ast.Declaration);
       BEGIN
-        Expression(gen, p.expr);
+        AssignExpr(gen, fp.type, p.expr);
         p  := p.next;
         fp := fp.next
       END ActualParam;
@@ -497,39 +551,20 @@ VAR
     END Boolean;
 
     PROCEDURE String(VAR gen: Generator; e: Ast.ExprString);
-    VAR w: Strings.String; s: ARRAY 4 OF CHAR;
+    VAR w: Strings.String;
     BEGIN
       w := e.string;
       IF Strings.IsDefined(w) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
-        Text.String(gen, w)
-      ELSE
-        ASSERT((0 <= e.int) & (e.int < 100H));
-        IF (e.int < 20H) OR (e.int >= 80H)
-        OR (e.int = ORD(Utf8.DQuote)) & (gen.opt.std = StdO7)
-        THEN
-          s[0] := "0";
-          s[1] := Hex.To(e.int DIV 10H);
-          s[2] := Hex.To(e.int MOD 10H);
-          IF (gen.opt.std = StdO7) OR (e.usedAs # Ast.StrUsedAsArray) THEN
-            s[3] := "X";
-            Text.Data(gen, s, 0, 4)
-          ELSE
-            s[3] := "H";
-            Text.Str(gen, "O_7.ch[");
-            Text.Data(gen, s, 0, 4);
-            Text.Char(gen, "]")
-          END
+        IF (gen.opt.std # StdCp) OR Strings.IsUtfLess(w, 100H) THEN
+          Text.String(gen, w)
         ELSE
-          IF e.int = ORD(Utf8.DQuote) THEN
-            s[0] := "'";
-            s[2] := "'"
-          ELSE
-            s[0] := Utf8.DQuote;
-            s[2] := Utf8.DQuote
-          END;
-          s[1] := CHR(e.int);
-          Text.Data(gen, s, 0, 3)
+          (* TODO трансформация в UTF-8 *)
+          Text.Str(gen, "SHORT(");
+          Text.String(gen, w);
+          Text.Char(gen, ")")
         END
+      ELSE
+        Char(gen, e.int, e.usedAs)
       END
     END String;
 
@@ -682,8 +717,12 @@ VAR
       BEGIN
         IF Ast.ParamOut IN fp.access THEN
           Text.Str(gen, "VAR ")
-        ELSIF (gen.opt.std = StdAo) & (fp.type.id IN Ast.Structures) THEN
-          Text.Str(gen, "CONST ")
+        ELSIF fp.type.id IN Ast.Structures THEN
+          CASE gen.opt.std OF
+            StdO7: ;
+          | StdAo: Text.Str(gen, "CONST ")
+          | StdCp: Text.Str(gen, "IN ")
+          END
         END
       END Access;
 
@@ -726,20 +765,29 @@ VAR
     END
   END ProcParams;
 
-  PROCEDURE Var(VAR gen: Generator; v: Ast.Var);
-  BEGIN
-    MarkedName(gen, v, ": ");
-    type(gen, v.type)
-  END Var;
-
   PROCEDURE VarList(VAR gen: Generator; v: Ast.Declaration);
+
+    PROCEDURE ListSameType(VAR gen: Generator; VAR v: Ast.Declaration);
+    VAR p: Ast.Declaration;
+    BEGIN
+      MarkedName(gen, v, "");
+      p := v;
+      v := v.next;
+      WHILE (v # NIL) & (p.type = v.type) & (v IS Ast.Var) DO
+        Text.Str(gen, ", ");
+        MarkedName(gen, v, "");
+        p := v;
+        v := v.next
+      END;
+      Text.Str(gen, ": ");
+      type(gen, p.type)
+    END ListSameType;
+
   BEGIN
-    Var(gen, v(Ast.Var));
-    v := v.next;
+    ListSameType(gen, v);
     WHILE (v # NIL) & (v IS Ast.Var) DO
       Text.StrLn(gen, ";");
-      Var(gen, v(Ast.Var));
-      v := v.next
+      ListSameType(gen, v)
     END
   END VarList;
 
@@ -933,28 +981,26 @@ VAR
     END For;
 
     PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
-    VAR toByte: BOOLEAN;
-
     BEGIN
-      IF (gen.opt.std = StdAo)
+      IF (gen.opt.std IN {StdAo, StdCp})
        & (st.expr.type.id = Ast.IdArray) & (st.expr.type(Ast.Array).count = NIL)
       THEN
-        Text.Str(gen, "SYSTEM.MOVE(SYSTEM.ADR(");
+        ExpressionBraced(gen, "ASSERT(LEN(", st.expr, ") <= LEN(");
         Designator(gen, st.designator);
-        ExpressionBraced(gen, "), SYSTEM.ADR(", st.expr, "), SIZEOF(");
+        Text.StrLn(gen, "));");
+
+        ExpressionBraced(gen, "SYSTEM.MOVE(SYSTEM.ADR(", st.expr, "), SYSTEM.ADR(");
+        Designator(gen, st.designator);
+        CASE gen.opt.std OF
+          StdAo: Text.Str(gen, "), SIZEOF(")
+        | StdCp: Text.Str(gen, "), SIZE(")
+        END;
         Type(gen, st.expr.type.type, FALSE);
-        ExpressionBraced(gen, ") * LEN(", st.expr, "))")
+        Text.Str(gen, "))")
       ELSE
         Designator(gen, st.designator);
-        toByte := (gen.opt.std # StdO7)
-                & (st.designator.type.id = Ast.IdByte)
-                & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-        IF toByte THEN
-          ExpressionBraced(gen, " := UNSIGNED8(", st.expr, ")")
-        ELSE
-          Text.Str(gen, " := ");
-          Expression(gen, st.expr)
-        END
+        Text.Str(gen, " := ");
+        AssignExpr(gen, st.designator.type, st.expr)
       END
     END Assign;
 
@@ -1111,8 +1157,8 @@ VAR
 
     IF module.import # NIL THEN
       Imports(gen, module.import)
-    ELSIF gen.opt.std = StdAo THEN
-      Text.StrLn(gen, "IMPORT O_7;")
+    ELSIF gen.opt.std IN {StdAo, StdCp} THEN
+      Text.StrLn(gen, "IMPORT O_7, SYSTEM;")
     END;
     Declarations(gen, module);
     IF module.stats # NIL THEN

@@ -39,6 +39,18 @@ VAR
     i
   END Bti;
 
+  PROCEDURE Pack(VAR x: REAL; n: INTEGER);
+  BEGIN
+    (*TODO*)
+    HALT(1)
+  END Pack;
+
+  PROCEDURE Unpk(VAR x: REAL; n: INTEGER);
+  BEGIN
+    (*TODO*)
+    HALT(1)
+  END Unpk;
+
   PROCEDURE InitCh;
   VAR i: INTEGER;
   BEGIN

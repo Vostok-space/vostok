@@ -93,7 +93,7 @@ S("-no-nil-check                 - turn off runtime check pointer on nil.");
 S("-no-arithmetic-overflow-check - turn off runtime check arithmetic overflow.");
 S("");
 S("-C90 | -C99 | -C11            - ISO standard of generated C-code");
-S("-out:O7 | -out:AO             - dialect of generated Oberon-code");
+S("-out:O7|-out:AO|-out:CP       - dialect of generated Oberon-code");
 S("");
 S("-cyrillic[-same|-escape|-translit] - allow russian identifiers in a source.");
 S("   by default used suitable method of name generation, specific for compiler.");

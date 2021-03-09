@@ -19,7 +19,13 @@ BEGIN
 	ASSERT(255 = ORD(c));
 	ASSERT(249 < ORD(c) - 5);
 	ASSERT(" " < c);
-	ASSERT(" " <= c)
+	ASSERT(" " <= c);
+
+	ASSERT(7FX = CHR(7FH));
+	c := 7FX;
+	CASE c OF
+	7FX: ;
+	END
 END Go;
 
 END Char.
