@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 MODULE make;
 
  IMPORT Log := DLog, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X,
-        Env := OsEnv, Utf8;
+        Env := OsEnv, Utf8, CLI;
 
  CONST
    C = 0; Java = 1; Js = 2;
@@ -27,13 +27,13 @@ MODULE make;
    BinVer = "0.0.3.dev";
    LibVer = "0.0.2.dev";
 
- VAR ok*, windows, posix: BOOLEAN;
+ VAR ok*, windows, posix, testStrict: BOOLEAN;
      lang: INTEGER;
      cc, opt: ARRAY 256 OF CHAR;
      arch: ARRAY 16 OF CHAR;
      awkScript: ARRAY 128 OF CHAR;
 
- PROCEDURE CopyFileName*(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
+ PROCEDURE CopyFileName(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
  VAR i: INTEGER;
  BEGIN
    i := 0;
@@ -69,6 +69,15 @@ MODULE make;
    ((cc  = "") OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
  & ((opt = "") OR Exec.AddClean(code, " ") & Exec.AddClean(code, opt))
  END AddOpts;
+
+ PROCEDURE Ok(b: BOOLEAN);
+ BEGIN
+   ASSERT(ok OR ~b);
+   ok := b;
+   IF ~ok THEN
+     CLI.SetExitCode(1)
+   END
+ END Ok;
 
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  CONST BlankAllExceptJava = " -m source/blankC -m source/blankJs -m source/blankOberon";
@@ -107,12 +116,12 @@ MODULE make;
 
  PROCEDURE Build*;
  BEGIN
-   ok := ok & BuildBy("bs-ost", "Translator.Go", "ost", "v0", "to-bin")
+   Ok(ok & BuildBy("bs-ost", "Translator.Go", "ost", "v0", "to-bin"))
  END Build;
 
  PROCEDURE BuildAndroid*;
  BEGIN
-   ok := ok & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin")
+   Ok(ok & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin"))
  END BuildAndroid;
 
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
@@ -174,10 +183,16 @@ MODULE make;
          END
        END
      END;
-     ok := fail <= pass DIV 8;
+     IF testStrict THEN
+       Ok(fail = 0)
+     ELSE
+       Ok(fail <= pass DIV 8)
+     END;
      Log.Ln;
      Log.Str("Passed: "); Log.Int(pass); Log.Ln;
-     Log.Str("Failed: "); Log.Int(fail); Log.Ln;
+     IF fail > 0 THEN
+      Log.Str("Failed: "); Log.Int(fail); Log.Ln
+     END;
      ASSERT(Dir.Close(dir))
    END
  RETURN
@@ -186,7 +201,7 @@ MODULE make;
 
  PROCEDURE Test*;
  BEGIN
-   ok := ok & TestBy("test/source", FALSE, "ost", C)
+   Ok(ok & TestBy("test/source", FALSE, "ost", C))
  END Test;
 
  PROCEDURE Self*;
@@ -194,28 +209,29 @@ MODULE make;
    IF ok THEN
       CASE lang OF
         C:
-        ok := BuildBy("ost", "Translator.Go", "ost-v1", "v1", "to-bin")
-            & TestBy("test/source", FALSE, "ost-v1", lang)
+        Ok(BuildBy("ost", "Translator.Go", "ost-v1", "v1", "to-bin")
+         & TestBy("test/source", FALSE, "ost-v1", lang))
       | Java:
-        ok := BuildBy("ost", "Translator.Go", "ost-v1-java", "ost-v1-java", "to-class")
-            & TestBy("test/source", FALSE, "ost-v1-java", lang)
+        Ok(BuildBy("ost", "Translator.Go", "ost-v1-java", "ost-v1-java", "to-class")
+         & TestBy("test/source", FALSE, "ost-v1-java", lang))
       | Js:
-        ok := BuildBy("ost", "Translator.Go", "ost-v1-js", "ost-v1-js", "to-js")
-            & TestBy("test/source", FALSE, "ost-v1-js", lang)
+        Ok(BuildBy("ost", "Translator.Go", "ost-v1-js", "ost-v1-js", "to-js")
+         & TestBy("test/source", FALSE, "ost-v1-js", lang))
       END
    END
  END Self;
 
  PROCEDURE SelfFull*;
  BEGIN
-   ok := ok
-       & BuildBy("ost-v1", "Translator.Go", "ost-v2", "v2", "to-bin")
-       & TestBy("test/source", FALSE, "ost-v2", C)
+   Ok(ok
+    & BuildBy("ost-v1", "Translator.Go", "ost-v2", "v2", "to-bin")
+    & TestBy("test/source", FALSE, "ost-v2", C)
+     )
  END SelfFull;
 
  PROCEDURE Example*;
  BEGIN
-   ok := ok & TestBy("example", TRUE, "ost", C)
+   Ok(ok & TestBy("example", TRUE, "ost", C))
  END Example;
 
  PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
@@ -247,7 +263,7 @@ MODULE make;
 
  PROCEDURE InstallBinTo*(dest: ARRAY OF CHAR);
  BEGIN
-   ok := Copy("result/ost", FALSE, dest, "/bin/");
+   Ok(Copy("result/ost", FALSE, dest, "/bin/"));
    IF ~ok THEN
      Msg("Failed to install the binary")
    END
@@ -269,7 +285,7 @@ MODULE make;
 
  PROCEDURE InstallLibTo*(dest: ARRAY OF CHAR);
  BEGIN
-   ok := CopyLibTo(dest);
+   Ok(CopyLibTo(dest));
    IF ~ok THEN
      Msg("Failed to install the library")
    END
@@ -277,7 +293,7 @@ MODULE make;
 
  PROCEDURE InstallTo*(dest: ARRAY OF CHAR);
  BEGIN
-   ok := CopyBinTo(dest) & CopyLibTo(dest);
+   Ok(CopyBinTo(dest) & CopyLibTo(dest));
    IF ~ok THEN
      Msg("Installation is failed")
    END
@@ -291,10 +307,11 @@ MODULE make;
  PROCEDURE RemoveFrom*(base: ARRAY OF CHAR);
  VAR dest: ARRAY 1024 OF CHAR;
  BEGIN
-   ok := Concat(dest, base, "/share/vostok")
-       & FS.RemoveDir(dest)
-       & Concat(dest, base, "/bin/ost")
-       & FS.RemoveFile(dest);
+   Ok(Concat(dest, base, "/share/vostok")
+    & FS.RemoveDir(dest)
+    & Concat(dest, base, "/bin/ost")
+    & FS.RemoveFile(dest)
+   );
    IF ~ok THEN
      Msg("Uninstallation is failed")
    END
@@ -457,14 +474,15 @@ MODULE make;
  PROCEDURE DebLib*;
  BEGIN
    IF ok THEN
-      ok := CreateDebDir("vostok-deflib")
-          & CopyLibTo("result/vostok-deflib/usr")
-          & InjectValues("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
-          & Gzip("package/DEBIAN/changelog-deflib",
-                 "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
-          & FS.CopyFile("package/DEBIAN/copyright-deflib",
-                        "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
-          & HashAndPack("vostok-deflib");
+      Ok(CreateDebDir("vostok-deflib")
+       & CopyLibTo("result/vostok-deflib/usr")
+       & InjectValues("package/DEBIAN/control-deflib", "result/vostok-deflib/DEBIAN/control")
+       & Gzip("package/DEBIAN/changelog-deflib",
+              "result/vostok-deflib/usr/share/doc/vostok-deflib/changelog.gz")
+       & FS.CopyFile("package/DEBIAN/copyright-deflib",
+                     "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
+       & HashAndPack("vostok-deflib")
+      );
       IF ~ok THEN
         Msg("Failed to pack library to deb")
       END
@@ -478,25 +496,27 @@ MODULE make;
       IF cc = "" THEN
          cc := "cc -s -O2 -flto"
       END;
-      ok := ok
-          & BuildBy("ost-v0", "Translator.Go", "ost", "v1", "to-bin")
-          & TestBy("test/source", FALSE, "ost", C)
-          & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin");
+      Ok(ok
+       & BuildBy("ost-v0", "Translator.Go", "ost", "v1", "to-bin")
+       & TestBy("test/source", FALSE, "ost", C)
+       & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin")
+        );
    END
  END BuildForPackage;
 
  PROCEDURE DebBin*;
  BEGIN
    IF ok THEN
-      ok := CreateDebDir("vostok-bin")
-          & FS.MakeDir("result/vostok-bin/usr/bin")
-          & CopyBinTo("result/vostok-bin/usr")
-          & InjectValues("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
-          & Gzip("package/DEBIAN/changelog-bin",
-                 "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
-          & FS.CopyFile("package/DEBIAN/copyright-bin",
-                        "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
-          & HashAndPack("vostok-bin");
+      Ok(CreateDebDir("vostok-bin")
+       & FS.MakeDir("result/vostok-bin/usr/bin")
+       & CopyBinTo("result/vostok-bin/usr")
+       & InjectValues("package/DEBIAN/control-bin", "result/vostok-bin/DEBIAN/control")
+       & Gzip("package/DEBIAN/changelog-bin",
+              "result/vostok-bin/usr/share/doc/vostok-bin/changelog.gz")
+       & FS.CopyFile("package/DEBIAN/copyright-bin",
+                     "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
+       & HashAndPack("vostok-bin")
+      );
       IF ~ok THEN
         Msg("Failed to pack executable binary to deb")
       END
@@ -506,15 +526,16 @@ MODULE make;
  PROCEDURE DebAndroid*;
  BEGIN
    IF ok THEN
-      ok := CreateDebDir("vostok-android")
-          & FS.MakeDir("result/vostok-android/usr/bin")
-          & CopyAndroidTo("result/vostok-android/usr")
-          & InjectValues("package/DEBIAN/control-android", "result/vostok-android/DEBIAN/control")
-          & Gzip("package/DEBIAN/changelog-android",
-                 "result/vostok-android/usr/share/doc/vostok-android/changelog.gz")
-          & FS.CopyFile("package/DEBIAN/copyright-android",
-                        "result/vostok-android/usr/share/doc/vostok-android/copyright")
-          & HashAndPack("vostok-android");
+      Ok(CreateDebDir("vostok-android")
+       & FS.MakeDir("result/vostok-android/usr/bin")
+       & CopyAndroidTo("result/vostok-android/usr")
+       & InjectValues("package/DEBIAN/control-android", "result/vostok-android/DEBIAN/control")
+       & Gzip("package/DEBIAN/changelog-android",
+              "result/vostok-android/usr/share/doc/vostok-android/changelog.gz")
+       & FS.CopyFile("package/DEBIAN/copyright-android",
+                     "result/vostok-android/usr/share/doc/vostok-android/copyright")
+       & HashAndPack("vostok-android")
+      );
       IF ~ok THEN
         Msg("Failed to pack android builder to deb")
       END
@@ -562,18 +583,19 @@ MODULE make;
  VAR dir, tar: ARRAY 1024 OF CHAR;
  BEGIN
    IF ok THEN
-     ok := Concat(dir, Prefix, LibVer)
-         & MakeDir("result/", dir)
-         & Copy("library", TRUE, "result/", dir)
-         & Copy("singularity", TRUE, "result/", dir)
-         & Copy("LICENSE-APACHE.txt", TRUE, "result/", dir)
-         & FS.ChangeDir("result")
-         & GetRpmTarName(tar, dir)
-         & TarBz2(dir, tar)
-         & FS.RemoveDir(dir)
-         & InjectValues("../package/RPM/vostok-deflib.spec", "vostok-deflib.spec")
-         & RpmBuild("vostok-deflib.spec")
-         & FS.ChangeDir("..");
+     Ok(Concat(dir, Prefix, LibVer)
+      & MakeDir("result/", dir)
+      & Copy("library", TRUE, "result/", dir)
+      & Copy("singularity", TRUE, "result/", dir)
+      & Copy("LICENSE-APACHE.txt", TRUE, "result/", dir)
+      & FS.ChangeDir("result")
+      & GetRpmTarName(tar, dir)
+      & TarBz2(dir, tar)
+      & FS.RemoveDir(dir)
+      & InjectValues("../package/RPM/vostok-deflib.spec", "vostok-deflib.spec")
+      & RpmBuild("vostok-deflib.spec")
+      & FS.ChangeDir("..")
+     );
      IF ~ok THEN
        Msg("Failed to pack library to rpm")
      END
@@ -585,24 +607,25 @@ MODULE make;
  VAR dir, tar: ARRAY 1024 OF CHAR;
  BEGIN
    IF ok THEN
-     ok := Concat(dir, Prefix, BinVer)
-         & MakeDir("result/", dir)
-         & Copy("library", TRUE, "result/", dir)
-         & Copy("singularity", TRUE, "result/", dir)
-         & Copy("source", TRUE, "result/", dir)
-         & Copy("bootstrap", TRUE, "result/", dir)
-         & Copy("test", TRUE, "result/", dir)
-         & Copy("example", TRUE, "result/", dir)
-         & Copy("init.sh", TRUE, "result/", dir)
-         & Copy("LICENSE-GPL.md", TRUE, "result/", dir)
-         & Copy("LICENSE-LGPL.md", TRUE, "result/", dir)
-         & FS.ChangeDir("result")
-         & GetRpmTarName(tar, dir)
-         & TarBz2(dir, tar)
-         & FS.RemoveDir(dir)
-         & InjectValues("../package/RPM/vostok-bin.spec", "vostok-bin.spec")
-         & RpmBuild("vostok-bin.spec")
-         & FS.ChangeDir("..");
+     Ok(Concat(dir, Prefix, BinVer)
+      & MakeDir("result/", dir)
+      & Copy("library", TRUE, "result/", dir)
+      & Copy("singularity", TRUE, "result/", dir)
+      & Copy("source", TRUE, "result/", dir)
+      & Copy("bootstrap", TRUE, "result/", dir)
+      & Copy("test", TRUE, "result/", dir)
+      & Copy("example", TRUE, "result/", dir)
+      & Copy("init.sh", TRUE, "result/", dir)
+      & Copy("LICENSE-GPL.md", TRUE, "result/", dir)
+      & Copy("LICENSE-LGPL.md", TRUE, "result/", dir)
+      & FS.ChangeDir("result")
+      & GetRpmTarName(tar, dir)
+      & TarBz2(dir, tar)
+      & FS.RemoveDir(dir)
+      & InjectValues("../package/RPM/vostok-bin.spec", "vostok-bin.spec")
+      & RpmBuild("vostok-bin.spec")
+      & FS.ChangeDir("..")
+     );
      IF ~ok THEN
        Msg("Failed to pack executable binary to rpm")
      END
@@ -629,6 +652,7 @@ MODULE make;
    Msg("  UseC          turn translation through C");
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
    Msg("  Opt(content)  string with additional options for the ost-translator");
+   Msg("  TestStrict(b) boolean setting for more strict tests checking");
    Msg("  Install       install translator and libraries to /usr/local");
    Msg("  InstallTo(d)  install translator and libraries files to target directory");
    Msg("  Remove        remove installed files from /usr/local");
@@ -669,12 +693,19 @@ MODULE make;
    opt := content
  END Opt;
 
+ PROCEDURE TestStrict*(strict: BOOLEAN);
+ BEGIN
+   testStrict := strict
+ END TestStrict;
+
 BEGIN
   Log.On;
   Exec.AutoCorrectDirSeparator(TRUE);
 
   windows := Platform.Windows;
   posix   := Platform.Posix;
+
+  testStrict := FALSE;
 
   lang := C;
 

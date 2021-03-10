@@ -29,7 +29,7 @@ mkdir -p %{buildroot}%{_bindir}
 install result/ost %{buildroot}%{_bindir}/ost
 
 %check
-%{buildroot}%{_bindir}/ost run make.Test -infr . -m source
+%{buildroot}%{_bindir}/ost run 'make.TestStrict(TRUE); make.Test' -infr . -m source
 
 %clean
 rm -rf %{buildroot}
