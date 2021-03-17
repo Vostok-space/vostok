@@ -14,8 +14,6 @@
  *)
 MODULE Uint32;
 
- IMPORT Out;
-
  CONST
    Size = 4;
 
