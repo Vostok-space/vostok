@@ -328,7 +328,7 @@ var o7;
           ch1 = bytes[i];
           ch2 = bytes[i + 1];
           i += 2;
-          if ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2)) {
+          if (((ch1 >> 6) == 2) && ((ch2 >> 6) == 2)) {
             buf.push(String.fromCharCode(((ch & 0xF) << 12) | ((ch1 & 0x3F) << 6) | (ch2 & 0x3F)));
           } else {
             ok = false;
@@ -342,7 +342,7 @@ var o7;
           ch2 = bytes[i + 1];
           ch3 = bytes[i + 2];
           i += 3;
-          if ((ch1 >> 6) == 2) && ((ch2 >> 6) == 2) && ((ch3 >> 6) == 2)) {
+          if (((ch1 >> 6) == 2) && ((ch2 >> 6) == 2) && ((ch3 >> 6) == 2)) {
             buf.push(String.fromCodePoint(((ch & 0x7) << 18) | ((ch1 & 0x3F) << 12) | ((ch2 & 0x3F) << 6) | (ch3 & 0x3F)));
           } else {
             ok = false;
