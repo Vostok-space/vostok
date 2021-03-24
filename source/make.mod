@@ -79,25 +79,37 @@ MODULE make;
    END
  END Ok;
 
+ PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
+ VAR i, j, k: INTEGER;
+ BEGIN
+   i := 0; j := 0; k := 0;
+ RETURN
+   Chars0X.Copy(dest, i, a, j)
+ & Chars0X.Copy(dest, i, b, k)
+ END Concat;
+
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
  CONST BlankAllExceptJava = " -m source/blankC -m source/blankJs -m source/blankOberon";
- VAR code: Exec.Code;
+ VAR code: Exec.Code; restmp, result: ARRAY 1024 OF CHAR;
  BEGIN
    IF posix THEN
      ok := Exec.Init(code, "rm") & Exec.Add(code, "-rf");
    ELSE ASSERT(windows);
      ok := Exec.Init(code, "rmdir") & Exec.AddClean(code, " /s/q");
    END;
-   ok := ok & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
+   ok := ok & Concat(restmp, "result/", tmp) & Exec.Add(code, restmp)
        & (0 = Execute(code, "Delete old temp directory"));
    ok :=
-      Exec.Init(code, "") & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
+      Concat(result, "result/", ost) & Exec.Init(code, result)
     & Exec.Add(code, cmd) & Exec.Add(code, script)
-    & Exec.FirstPart(code, "result/") & Exec.AddPart(code, res)
-    & ((lang = Js) & Exec.LastPart(code, ".js")
-    OR windows & Exec.LastPart(code, ".exe")
-    OR posix & Exec.LastPart(code, "")
+
+    & Concat(result, "result/", res)
+    & ((lang = Js) & Concat(result, result, ".js")
+    OR windows & Concat(result, result, ".exe")
+    OR posix
       )
+    & Exec.Add(code, result)
+
     & ((script # "AndroidBuild.Go") OR Exec.AddClean(code, BlankAllExceptJava))
     & ((tmp[1] = "0")
      & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
@@ -105,7 +117,7 @@ MODULE make;
      & Exec.AddClean(code, " -m source -m library -t")
     OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source -t")
       )
-    & Exec.FirstPart(code, "result/") & Exec.LastPart(code, tmp)
+    & Exec.Add(code, restmp)
 
     & AddOpts(code)
 
@@ -147,8 +159,11 @@ MODULE make;
      n, c: ARRAY 64 OF CHAR;
      l, j: INTEGER;
      pass, fail: INTEGER;
+     resost, cmd: ARRAY 256 OF CHAR;
  BEGIN
-   IF Dir.Open(dir, srcDir, 0) THEN
+   IF Concat(resost, "result/", ost)
+    & Dir.Open(dir, srcDir, 0)
+   THEN
      pass := 0;
      fail := 0;
      WHILE Dir.Read(file, dir) DO
@@ -161,13 +176,13 @@ MODULE make;
              OR (runLang = Js) & Exec.Init(code, "node")
              OR (runLang = C) & Exec.Init(code, "")
             )
-           & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
+           & Exec.Add(code, resost)
            & AddRun(code, runLang = Java)
          );
          IF CopyFileName(c, n) THEN
            ASSERT(
              ( example & Exec.Add(code, c)
-            OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
+            OR ~example & Concat(cmd, c, ".Go") & Exec.Add(code, cmd)
              )
              & Exec.Add(code, "-infr") & Exec.Add(code, ".")
              & Exec.Add(code, "-m") & Exec.Add(code, "example")
@@ -233,15 +248,6 @@ MODULE make;
  BEGIN
    Ok(ok & TestBy("example", TRUE, "ost", C))
  END Example;
-
- PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
- VAR i, j, k: INTEGER;
- BEGIN
-   i := 0; j := 0; k := 0;
- RETURN
-   Chars0X.Copy(dest, i, a, j)
- & Chars0X.Copy(dest, i, b, k)
- END Concat;
 
  PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
                 baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
@@ -705,7 +711,7 @@ BEGIN
   windows := Platform.Windows;
   posix   := Platform.Posix;
 
-  testStrict := FALSE;
+  testStrict := TRUE;
 
   lang := C;
 
