@@ -1,19 +1,26 @@
  vostok-android (0.0.4.dev) unstable; urgency=low
   * Simplified the deb-dependencies
+  * Fixed assigning of strings through designator
+  * Fixed crashing when appears mistake in the parameter
+  * Fixed parsing of the constant selector of string
+  * Fixed generation of PACK,UNPK
   * Fixed order of calling of apksigner and zipalign
 
- -- project Vostok <project-Vostok@yandex.ru> Wed, 20 November 2019 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 27 March 2021 00:00:00 +0200
 
  vostok-android (0.0.3.dev) unstable; urgency=low
   * Public package
+  * Improved diagnostic of uninitialized variables usage
   * Systematized work with 0-terminated char arrays
+  * Fixed generation of identifiers in Java
+  * Fixed generation on LSL, ROR, ASR
 
  -- project Vostok <project-Vostok@yandex.ru> Sun, 18 November 2019 00:00:00 +0200
 
  vostok-android (0.0.2.dev) unstable; urgency=low
+  * Improved dynamic diagnostic of usage uninitialized values
   * Fixed generation of mixed expression("+","-") of SETs
   * Fixed generation of exported constant equal to expression of SETs
-  * Improved dynamic diagnostic of usage uninitialized values
 
  -- project Vostok <project-Vostok@yandex.ru> Wed, 4 September 2019 00:00:00 +0200
 

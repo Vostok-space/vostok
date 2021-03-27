@@ -24,8 +24,8 @@ MODULE make;
  CONST
    C = 0; Java = 1; Js = 2;
 
-   BinVer = "0.0.3.dev";
-   LibVer = "0.0.2.dev";
+   BinVer = "0.0.4.dev";
+   LibVer = "0.0.3.dev";
 
  VAR ok*, windows, posix, testStrict: BOOLEAN;
      lang: INTEGER;
@@ -80,12 +80,12 @@ MODULE make;
  END Ok;
 
  PROCEDURE Concat*(VAR dest: ARRAY OF CHAR; a, b: ARRAY OF CHAR): BOOLEAN;
- VAR i, j, k: INTEGER;
+ VAR i: INTEGER;
  BEGIN
-   i := 0; j := 0; k := 0;
+   i := 0
  RETURN
-   Chars0X.Copy(dest, i, a, j)
- & Chars0X.Copy(dest, i, b, k)
+   Chars0X.CopyString(dest, i, a)
+ & Chars0X.CopyString(dest, i, b)
  END Concat;
 
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
@@ -476,6 +476,26 @@ MODULE make;
    Awk(awkScript, srcFile, destFile)
  END InjectValues;
 
+ PROCEDURE GetDebName(VAR full: ARRAY OF CHAR; name, version, platform: ARRAY OF CHAR): BOOLEAN;
+ VAR i: INTEGER;
+ BEGIN
+   i := 0
+ RETURN
+   Chars0X.CopyString(full, i, name)
+ & Chars0X.CopyChar  (full, i, "_")
+ & Chars0X.CopyString(full, i, version)
+ & Chars0X.CopyChar  (full, i, "_")
+ & Chars0X.CopyString(full, i, platform)
+ & Chars0X.CopyString(full, i, ".deb")
+ END GetDebName;
+
+ PROCEDURE DebRename(name, version, platform: ARRAY OF CHAR): BOOLEAN;
+ VAR src, dest: ARRAY 256 OF CHAR;
+ RETURN
+   Concat(src, name, ".deb")
+ & GetDebName(dest, name, version, platform)
+ & FS.Rename(src, dest)
+ END DebRename;
 
  PROCEDURE DebLib*;
  BEGIN
@@ -488,6 +508,7 @@ MODULE make;
        & FS.CopyFile("package/DEBIAN/copyright-deflib",
                      "result/vostok-deflib/usr/share/doc/vostok-deflib/copyright")
        & HashAndPack("vostok-deflib")
+       & DebRename("result/vostok-deflib", LibVer, "all")
       );
       IF ~ok THEN
         Msg("Failed to pack library to deb")
@@ -522,6 +543,8 @@ MODULE make;
        & FS.CopyFile("package/DEBIAN/copyright-bin",
                      "result/vostok-bin/usr/share/doc/vostok-bin/copyright")
        & HashAndPack("vostok-bin")
+
+       & DebRename("result/vostok-bin", BinVer, arch)
       );
       IF ~ok THEN
         Msg("Failed to pack executable binary to deb")
@@ -541,6 +564,8 @@ MODULE make;
        & FS.CopyFile("package/DEBIAN/copyright-android",
                      "result/vostok-android/usr/share/doc/vostok-android/copyright")
        & HashAndPack("vostok-android")
+
+       & DebRename("result/vostok-android", BinVer, arch)
       );
       IF ~ok THEN
         Msg("Failed to pack android builder to deb")

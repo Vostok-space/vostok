@@ -78,4 +78,18 @@ MODULE FileSystemUtil;
     RETURN Files.Remove(src, 0)
   END RemoveFile;
 
+  PROCEDURE Rename*(src, dest: ARRAY OF CHAR): BOOLEAN;
+  VAR cmd: Exec.Code;
+  BEGIN
+    IF Platform.Posix THEN
+      ASSERT(Exec.Init(cmd, "mv")
+           & Exec.Add(cmd, src)
+           & Exec.Add(cmd, dest))
+    ELSE
+      (* TODO *)
+      ASSERT(FALSE)
+    END
+    RETURN Exec.Do(cmd) = Exec.Ok
+  END Rename;
+
 END FileSystemUtil.

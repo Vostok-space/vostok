@@ -1,3 +1,26 @@
+ vostok-deflib (0.0.3.dev) unstable; urgency=low
+  * Java and JavaScript implementation of interface modules for integers
+  * Extended Utf8 by enconding procedures
+  * Added module "log" with short names
+  * Chars0X.CopyString requires 0 at the string end
+  * Adapted for QuickJS
+  * Added checks of initialization and arithmetics in JavaScript
+  * Added wrappers for chdir, sysconf and PAGESIZE
+  * Added modules OsSelfMemInfo, Hex
+  * Renames V.Stream->V.PStream,V.RStream->V.Stream
+  * Reduced pointers align
+  * Removed useless V.MsgContentPass
+  * Removed incorrect "var o7;function(o7){...}(o7 || (o7 = {}))" from JavaScript modules
+  * Fixed UTF-8 -> String transformation for codes >= 0x10000 in JavaScript
+  * Fixed absence of CLI.MaxLen in Java and C
+  * Fixed crashing because of TextEncoder/TextDecoder in newer version on Node.js
+  * Fixed building CDir under Windows
+  * Fixed excess releasing files in CFiles when used "-memng counter"
+  * Fixed undefined behavior in o7_ror and O7_ROR
+  * Fixed absence of 0-terminal after CLI.Get when size is not enough
+
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 27 March 2021 00:00:00 +0200
+
  vostok-deflib (0.0.2.dev) unstable; urgency=low
   * Added default input and output streams. Out redirected to standard output
   * Improved functions for support LSL, ASR, ROR

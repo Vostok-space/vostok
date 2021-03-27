@@ -1,15 +1,40 @@
+ vostok-bin (0.0.4.dev) unstable; urgency=low
+  * Disallowed by default direct procedures comparison
+  * Added checks of initialization, arithmetics, and array bounds in JavaScript
+  * Added generator of Oberon-code(Oberon-07, Active Oberon, Component Pascal)
+  * Added -plan9 CLI option for Plan 9 OS C dialect
+  * Improved mistakes diagnosting
+  * Reduced count of dereferencing in generated C code
+  * Extended help
+  * Removed generating incorrect "var o7;function(o7){...}(o7 || (o7 = {}))" in JavaScript
+  * Checks for array bounds in JavaScript
+  * Fixed assigning of strings through designator
+  * Fixed crashing when appears mistake in the parameter
+  * Fixed parsing of the constant selector of string
+  * Corrected module names checks for JavaScript
+  * Fixed generation of PACK,UNPK for Java and JavaScript
+  * Fixed generation of string constants declaration for C
+  * Fixed generation for C when "checkArith" is false
+  * Avoided conflict of module names with standard C-headers
+  * Fixed generation to C when used -noinit
+  * Fixed searching of module begin when appears unknown chars
+  * Fixed crashing when used -C11
+  * Fixed ORD generation in C
+
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 27 March 2021 00:00:00 +0200
+
  vostok-bin (0.0.3.dev) unstable; urgency=low
-  * Fixed generation of identifiers in Java and Js
   * Improved diagnostic of uninitialized variables usage
   * Systematized work with 0-terminated char arrays
+  * Fixed generation of identifiers in Java and Js
   * Fixed generation on LSL, ROR, ASR
 
  -- project Vostok <project-Vostok@yandex.ru> Sun, 18 November 2019 00:00:00 +0200
 
  vostok-bin (0.0.2.dev) unstable; urgency=low
+  * Improved dynamic diagnostic of usage uninitialized values
   * Fixed generation of mixed expression("+","-") of SETs
   * Fixed generation of exported constant equal to expression of SETs
-  * Improved dynamic diagnostic of usage uninitialized values
 
  -- project Vostok <project-Vostok@yandex.ru> Wed, 4 September 2019 00:00:00 +0200
 
