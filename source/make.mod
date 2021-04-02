@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 MODULE make;
 
  IMPORT Log := DLog, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X,
-        Env := OsEnv, Utf8, CLI;
+        Env := OsEnv, Utf8, CLI, TranslatorVersion;
 
  CONST
    C = 0; Java = 1; Js = 2;
 
-   BinVer = "0.0.4.dev";
+   BinVer = TranslatorVersion.Val;
    LibVer = "0.0.3.dev";
 
  VAR ok*, windows, posix, testStrict: BOOLEAN;
@@ -527,7 +527,7 @@ MODULE make;
        & BuildBy("ost-v0", "Translator.Go", "ost", "v1", "to-bin")
        & TestBy("test/source", FALSE, "ost", C)
        & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin")
-        );
+        )
    END
  END BuildForPackage;
 

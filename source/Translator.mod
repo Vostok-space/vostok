@@ -54,7 +54,8 @@ IMPORT
 	Mem := VMemStream,
 	JsEval, MemStreamToJsEval,
 	ModulesStorage, ModulesProvider, InputProvider, FileProvider,
-	OsSelfMemInfo;
+	OsSelfMemInfo,
+	TranslatorVersion;
 
 CONST
 	ErrNo*             =  0;
@@ -1178,12 +1179,19 @@ BEGIN
 	Message.Usage(TRUE)
 END Help;
 
+PROCEDURE Version*;
+BEGIN
+	MessageErrOberon.Text("ost ");
+	MessageErrOberon.Text(TranslatorVersion.Val);
+	MessageErrOberon.Ln
+END Version;
+
 PROCEDURE Handle(VAR args: Cli.Args; VAR ret: INTEGER; VAR listener: V.Base): BOOLEAN;
 BEGIN
 	IF ret = Cli.CmdHelp THEN
 		Help
 	ELSIF ret = Cli.CmdVersion THEN
-		MessageErrOberon.Text("ost 0.0.3.dev")
+		Version
 	ELSE
 		ret := Translate(ret, args, listener)
 	END
