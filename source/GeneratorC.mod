@@ -659,7 +659,7 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 			Text.Str(gen, " = 0 > 1")
 		| Ast.IdChar:
 			Text.Str(gen, " = '\0'")
-		| Ast.IdPointer, Ast.IdProcType:
+		| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
 			Text.Str(gen, " = NULL")
 		END
 	END Zero;
@@ -683,7 +683,7 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 			Text.Str(gen, " = O7_FLT_UNDEF")
 		| Ast.IdSet, Ast.IdLongSet:
 			Text.Str(gen, " = 0u")
-		| Ast.IdPointer, Ast.IdProcType:
+		| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
 			Text.Str(gen, " = NULL")
 		END
 	END Undef;
@@ -1790,7 +1790,7 @@ BEGIN
 		Text.Str(gen, "double")
 	| Ast.IdReal32:
 		Text.Str(gen, "float")
-	| Ast.IdPointer, Ast.IdProcType:
+	| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
 		GlobalName(gen, typ)
 	END
 END Qualifier;
@@ -2268,7 +2268,7 @@ BEGIN
 					MemWriteInvert(gen.memout^)
 				END
 			END
-		ELSIF ~sameType OR (typ.id IN {Ast.IdPointer, Ast.IdArray, Ast.IdProcType})
+		ELSIF ~sameType OR (typ.id IN (Ast.Pointers + {Ast.IdArray}))
 		THEN
 			CASE typ.id OF
 			  Ast.IdInteger:
@@ -2302,7 +2302,7 @@ BEGIN
 				Array(gen, decl, typ(Ast.Array), sameType)
 			| Ast.IdRecord:
 				Record(gen, typ(Ast.Record))
-			| Ast.IdProcType:
+			| Ast.IdProcType, Ast.IdFuncType:
 				Text.Str(gen, "(*");
 				MemWriteInvert(gen.memout^);
 				Text.Str(gen, ")");

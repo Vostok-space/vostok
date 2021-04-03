@@ -148,6 +148,7 @@ CONST
 
 	ErrExpectProcNameWithoutParams* = -105;
 	                                (*-106-110*)
+	ErrParamOutInFunc*              = -111;
 
 	ErrMin*                         = -200;
 
@@ -171,6 +172,7 @@ CONST
 	IdRecord*           = 11;
 	IdRecordForward*    = 12;
 	IdProcType*         = 13;
+	IdFuncType*         = 28;(*TODO*)
 	IdNamed*            = 14;
 	IdString*           = 15;
 
@@ -207,6 +209,8 @@ CONST
 	Numbers*    = Integers + Reals;
 	Sets*       = {IdSet, IdLongSet};
 	Structures* = {IdRecord, IdArray};
+	ProcTypes*  = {IdProcType, IdFuncType};
+	Pointers*   = {IdPointer} + ProcTypes;
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)
@@ -1235,17 +1239,18 @@ BEGIN
 	t.array := NIL
 END TypeInit;
 
-PROCEDURE ProcTypeNew*(forType: BOOLEAN): ProcType;
+PROCEDURE ProcTypeNew*(forType: BOOLEAN; id: INTEGER): ProcType;
 VAR p: ProcType;
     fp: FormalProcType;
 BEGIN
+	ASSERT(id IN ProcTypes);
 	IF forType THEN
 		NEW(fp);
 		p := fp
 	ELSE
 		NEW(p)
 	END;
-	TypeInit(p, IdProcType);
+	TypeInit(p, id);
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -1255,6 +1260,7 @@ PROCEDURE ParamAddPredefined(proc: ProcType; type: Type; access: SET);
 VAR v: FormalParam;
 BEGIN
 	ASSERT({} = access - {ParamIn, ParamOut});
+	ASSERT((proc.id = IdProcType) OR ~(ParamOut IN access));
 
 	NEW(v); NodeInit(v^, IdVar);
 	IF proc.end = NIL THEN
@@ -1304,6 +1310,9 @@ BEGIN
 	    & SpecIdent.IsPredefined(err, buf, begin, end)
 	THEN
 		err := ErrPredefinedNameHide
+	ELSIF (proc.id = IdFuncType) & (ParamOut IN access) THEN
+		err := ErrParamOutInFunc;
+		proc.id := IdProcType
 	ELSE
 		err := ErrNo
 	END;
@@ -2404,7 +2413,7 @@ BEGIN
 		IF comp THEN
 			;
 		ELSIF (t1.id = t2.id)
-		    & (t1.id IN {IdArray, IdPointer, IdRecord, IdProcType})
+		    & (t1.id IN (Structures + Pointers))
 		THEN
 			CASE t1.id OF
 			  IdArray   : comp := ((param & (t1(Array).count = NIL))
@@ -2415,11 +2424,12 @@ BEGIN
 			                   OR IsRecordExtension(distance, t1.type(Record),
 			                                                  t2.type(Record))
 			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
-			| IdProcType: comp := EqualProcTypes(t1(ProcType), t2(ProcType))
+			| IdProcType, IdFuncType
+			            : comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 			END
-		ELSIF t1.id = IdProcType THEN
+		ELSIF t1.id IN ProcTypes THEN
 			comp := (t2.id = IdPointer) & (t2.type = NIL)
-		ELSIF t2.id = IdProcType THEN
+		ELSIF t2.id IN ProcTypes THEN
 			comp := (t1.id = IdPointer) & (t1.type = NIL)
 		END
 	END
@@ -2558,7 +2568,7 @@ VAR err: INTEGER;
 		END IsProc;
 	BEGIN
 		ASSERT(err = ErrNo);
-		IF (e1.type.id = IdProcType)
+		IF (e1.type.id IN ProcTypes)
 		 & (IsProc(e1) OR IsProc(e2))
 		THEN
 			err := ErrIsEqualProc
@@ -2613,7 +2623,8 @@ BEGIN
 			| IdPointer  : ASSERT(v1 = v2); res := TRUE
 			| IdArray    :
 				res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
-			| IdProcType : (* TODO *) res := FALSE
+			| IdProcType, IdFuncType
+			             : (* TODO *) res := FALSE
 			END
 		| Scanner.Inequal:
 			CASE expr1.type.id OF
@@ -2624,7 +2635,8 @@ BEGIN
 			| IdSet, IdLongSet  : res := ~LongSet.Equal(v1(ExprSetValue).set, v2(ExprSetValue).set)
 			| IdPointer         : ASSERT(v1 = v2); res := FALSE
 			| IdArray           : res := ~IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
-			| IdProcType        : (* TODO *) res := FALSE
+			| IdProcType, IdFuncType
+			                    : (* TODO *) res := FALSE
 			END
 		| Scanner.Less:
 			CASE expr1.type.id OF
@@ -3045,14 +3057,14 @@ BEGIN
 	err := ErrNo;
 	IF des # NIL THEN
 		IF des.decl.id = IdError THEN
-			pt := ProcTypeNew(FALSE);
+			pt := ProcTypeNew(FALSE, IdProcType);
 			des.decl.type := pt;
 			des.type := pt
 		ELSIF des.type # NIL THEN
 			IF des.type IS ProcType THEN
 				t := des.type.type;
 				IF (t # NIL) # func THEN
-					err := ErrCallIgnoredReturn + ORD(func);
+					err := ErrCallIgnoredReturn + ORD(func)
 				END
 			ELSE
 				err := ErrCallNotProc
@@ -3115,14 +3127,14 @@ RETURN (e.value # NIL)
        & ~IsGlobal(e(Designator).decl)
 END IsConstOrLocalVar;
 
-PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure;
+PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure; typeId: INTEGER;
                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	err := CheckNameDuplicate(ds, buf, begin, end);
 	NEW(p); NodeInit(p^, IdProc);
 	DeclarationsConnect(p, ds, buf, begin, end);
-	p.header := ProcTypeNew(FALSE);
+	p.header := ProcTypeNew(FALSE, typeId);
 	p.return := NIL;
 	p.usedAsValue := FALSE;
 	IF ds.up = NIL THEN
@@ -3268,7 +3280,7 @@ BEGIN
 		ELSE
 			currentFormalParam := NIL
 		END;
-		IF (err = ErrNo) & (fp.type.id = IdProcType)
+		IF (err = ErrNo) & (fp.type.id IN ProcTypes)
 		 & (e # NIL) & (e IS Designator) & (e(Designator).decl.id = IdProc)
 		THEN
 			e(Designator).decl(Procedure).usedAsValue := TRUE
@@ -3891,7 +3903,7 @@ BEGIN
 			END
 		END;
 
-		IF (des.type.id = IdProcType) & (err = ErrNo)
+		IF (des.type.id IN ProcTypes) & (err = ErrNo)
 		 & (expr # nil) & (expr(Designator).decl.id = IdProc)
 		THEN
 			expr(Designator).decl(Procedure).usedAsValue := TRUE
@@ -3907,6 +3919,19 @@ BEGIN
 	RETURN s
 END StatementErrorNew;
 
+PROCEDURE PredefinedProcNew(s, t, procId: INTEGER): ProcType;
+VAR td: PredefinedProcedure;
+BEGIN
+	NEW(td); NodeInit(td^, s); DeclInit(td, NIL);
+	predefined[s - SpecIdent.PredefinedFirst] := td;
+	td.header := ProcTypeNew(FALSE, procId);
+	td.type := td.header;
+	IF NoId < t THEN
+		td.header.type := TypeGet(t)
+	END
+	RETURN td.header
+END PredefinedProcNew;
+
 PROCEDURE PredefinedDeclarationsInit;
 VAR tp: ProcType;
 	typeInt, typeReal: Type;
@@ -3921,17 +3946,12 @@ VAR tp: ProcType;
 	END TypeNew;
 
 	PROCEDURE ProcNew(s, t: INTEGER): ProcType;
-	VAR td: PredefinedProcedure;
-	BEGIN
-		NEW(td); NodeInit(td^, s); DeclInit(td, NIL);
-		predefined[s - SpecIdent.PredefinedFirst] := td;
-		td.header := ProcTypeNew(FALSE);
-		td.type := td.header;
-		IF NoId < t THEN
-			td.header.type := TypeGet(t)
-		END
-		RETURN td.header
+		RETURN PredefinedProcNew(s, t, IdProcType)
 	END ProcNew;
+
+	PROCEDURE FuncNew(s, t: INTEGER): ProcType;
+		RETURN PredefinedProcNew(s, t, IdFuncType)
+	END FuncNew;
 BEGIN
 	TypeNew(SpecIdent.Byte, IdByte);
 	TypeNew(SpecIdent.Integer, IdInteger);
@@ -3946,17 +3966,17 @@ BEGIN
 	DeclInit(types[IdPointer], NIL);
 
 	typeInt := TypeGet(IdInteger);
-	tp := ProcNew(SpecIdent.Abs, IdInteger);
+	tp := FuncNew(SpecIdent.Abs, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(SpecIdent.Asr, IdInteger);
+	tp := FuncNew(SpecIdent.Asr, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(SpecIdent.Assert, NoId);
 	ParamAddPredefined(tp, TypeGet(IdBoolean), {ParamIn});
 
-	tp := ProcNew(SpecIdent.Chr, IdChar);
+	tp := FuncNew(SpecIdent.Chr, IdChar);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(SpecIdent.Dec, NoId);
@@ -3967,10 +3987,10 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	typeReal := TypeGet(IdReal);
-	tp := ProcNew(SpecIdent.Floor, IdInteger);
+	tp := FuncNew(SpecIdent.Floor, IdInteger);
 	ParamAddPredefined(tp, typeReal, {ParamIn});
 
-	tp := ProcNew(SpecIdent.Flt, IdReal);
+	tp := FuncNew(SpecIdent.Flt, IdReal);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(SpecIdent.Inc, NoId);
@@ -3980,27 +4000,27 @@ BEGIN
 	ParamAddPredefined(tp, TypeGet(IdSet), {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(SpecIdent.Len, IdInteger);
+	tp := FuncNew(SpecIdent.Len, IdInteger);
 	ParamAddPredefined(tp, ArrayGet(typeInt, NIL), {ParamIn});
 
-	tp := ProcNew(SpecIdent.Lsl, IdInteger);
+	tp := FuncNew(SpecIdent.Lsl, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(SpecIdent.New, NoId);
 	ParamAddPredefined(tp, TypeGet(IdPointer), {ParamIn, ParamOut});
 
-	tp := ProcNew(SpecIdent.Odd, IdBoolean);
+	tp := FuncNew(SpecIdent.Odd, IdBoolean);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(SpecIdent.Ord, IdInteger);
+	tp := FuncNew(SpecIdent.Ord, IdInteger);
 	ParamAddPredefined(tp, TypeGet(IdChar), {ParamIn});
 
 	tp := ProcNew(SpecIdent.Pack, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
-	tp := ProcNew(SpecIdent.Ror, IdInteger);
+	tp := FuncNew(SpecIdent.Ror, IdInteger);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
@@ -4082,7 +4102,7 @@ BEGIN
 			UnlinkRecord(p(Record));
 		| IdArray:
 			p(Array).count := NIL
-		| IdProcType, IdImport, IdError: ;
+		| IdProcType, IdFuncType, IdImport, IdError: ;
 		| IdConst: p(Const).expr := NIL
 		| IdProc:
 			p(Procedure).header := NIL;

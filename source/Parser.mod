@@ -913,13 +913,14 @@ BEGIN
 END FormalParameters;
 
 PROCEDURE TypeProcedure(VAR p: Parser; ds: Ast.Declarations;
-                        nameBegin, nameEnd: INTEGER): Ast.ProcType;
+                        nameBegin, nameEnd: INTEGER;
+                        typeId: INTEGER): Ast.ProcType;
 VAR proc: Ast.ProcType;
 	t: Ast.Type;
 BEGIN
 	ASSERT(p.l = SpecIdent.Procedure);
 	Scan(p);
-	proc := Ast.ProcTypeNew(TRUE);
+	proc := Ast.ProcTypeNew(TRUE, typeId);
 	IF 0 <= nameBegin THEN
 		t := proc;
 		CheckAst(p, Ast.TypeAdd(ds, p.s.buf, nameBegin, nameEnd, t))
@@ -937,7 +938,7 @@ BEGIN
 	ELSIF p.l = SpecIdent.Pointer THEN
 		t := Pointer(p, ds, nameBegin, nameEnd)
 	ELSIF p.l = SpecIdent.Procedure THEN
-		t := TypeProcedure(p, ds, nameBegin, nameEnd)
+		t := TypeProcedure(p, ds, nameBegin, nameEnd, Ast.IdProcType)
 	ELSIF p.l = SpecIdent.Record THEN
 		t := Record(p, ds, NIL, nameBegin, nameEnd)
 	ELSIF p.l = Scanner.Ident THEN
@@ -1348,7 +1349,7 @@ BEGIN
 	ASSERT(p.l = SpecIdent.Procedure);
 	Scan(p);
 	ExpectIdent(p, nameStart, nameEnd, ErrExpectIdent);
-	CheckAst(p, Ast.ProcedureAdd(ds, proc, p.s.buf, nameStart, nameEnd));
+	CheckAst(p, Ast.ProcedureAdd(ds, proc, Ast.IdProcType, p.s.buf, nameStart, nameEnd));
 	Mark(p, proc);
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);

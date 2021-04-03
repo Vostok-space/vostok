@@ -125,7 +125,7 @@ MODULE JavaStoreProcTypes;
   PROCEDURE GenerateName*(VAR store: Store; proc: Ast.ProcType;
                           VAR name: Strings.String): BOOLEAN;
   CONST
-    GenericTypes = {Ast.IdRecord, Ast.IdPointer, Ast.IdArray, Ast.IdProcType};
+    GenericTypes = Ast.Structures + Ast.Pointers;
   VAR p: Ast.Declaration;
       i: INTEGER;
       ok, generic: BOOLEAN;
@@ -148,7 +148,8 @@ MODULE JavaStoreProcTypes;
 
       | Ast.IdArray    : ok := Chars0X.CopyChar(name, i, "A")
       | Ast.IdRecord   : ok := Chars0X.CopyChar(name, i, "R")
-      | Ast.IdProcType : ok := Chars0X.CopyChar(name, i, "P")
+      | Ast.IdProcType, Ast.IdFuncType
+                       : ok := Chars0X.CopyChar(name, i, "P")
       END
     RETURN
       ok

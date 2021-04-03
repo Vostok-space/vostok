@@ -311,7 +311,7 @@ PROCEDURE CheckExpr(VAR gen: Generator; e: Ast.Expression; set: SET);
 BEGIN
 	IF (gen.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
-	 & ~(e.type.id IN (Ast.Structures + {Ast.IdPointer, Ast.IdProcType}))
+	 & ~(e.type.id IN (Ast.Structures + Ast.Pointers))
 	 & IsMayNotInited(e)
 	THEN
 		Text.Str(gen, "o7.inited(");
@@ -359,7 +359,7 @@ PROCEDURE AssignInitValue(VAR gen: Generator; typ: Ast.Type);
 			Text.Str(gen, " = false")
 		| Ast.IdChar:
 			Text.Str(gen, " = '\0'")
-		| Ast.IdPointer, Ast.IdProcType:
+		| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
 			Text.Str(gen, " = null")
 		| Ast.IdArray:
 			Array(gen, typ)
@@ -1463,7 +1463,7 @@ BEGIN
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(typ.name) & (typ.id # Ast.IdArray) THEN
 			IF ~sameType THEN
-				IF typ.id = Ast.IdProcType THEN
+				IF typ.id IN Ast.ProcTypes THEN
 					;
 				ELSIF (typ.id = Ast.IdPointer) & Strings.IsDefined(typ.type.name) THEN
 					GlobalName(gen, typ.type)
@@ -1498,7 +1498,7 @@ BEGIN
 				Array(gen, decl, typ(Ast.Array), sameType)
 			| Ast.IdRecord:
 				Record(gen, typ(Ast.Record))
-			| Ast.IdProcType:
+			| Ast.IdProcType, Ast.IdFuncType:
 				(* TODO *)
 				ASSERT(~typeDecl);
 			END
@@ -1516,7 +1516,7 @@ VAR mark: BOOLEAN; donor: Ast.Type;
 		(*Text.StrLn(gen, ";")*)
 	END Typedef;
 BEGIN
-	IF ~(typ.id IN {Ast.IdProcType, Ast.IdArray})
+	IF ~(typ.id IN (Ast.ProcTypes + {Ast.IdArray}))
 	 & ((typ.id # Ast.IdPointer) OR ~Strings.IsDefined(typ.type.name))
 	THEN
 		Typedef(gen, typ);

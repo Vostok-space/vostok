@@ -215,7 +215,8 @@ MODULE AstTransform;
       CASE t.id OF
         Ast.IdRecord  : Record(t(Ast.Record), o)
       | Ast.IdPointer : Record(t.type(Ast.Record), o)
-      | Ast.IdProcType: ProcType(t(Ast.ProcType), NIL, o)
+      | Ast.IdProcType, Ast.IdFuncType
+                      : ProcType(t(Ast.ProcType), NIL, o)
       | Ast.IdArray   : Array(t, o)
 
       | Ast.IdInteger .. Ast.IdLongSet

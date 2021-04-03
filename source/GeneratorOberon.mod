@@ -874,7 +874,7 @@ VAR
         Text.Str(gen, "SHORTREAL")
       | Ast.IdRecord:
         Record(gen, typ(Ast.Record))
-      | Ast.IdProcType:
+      | Ast.IdProcType, Ast.IdFuncType:
         Text.Str(gen, "PROCEDURE ");
         ProcParams(gen, typ(Ast.ProcType))
       | Ast.IdPointer:

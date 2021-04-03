@@ -246,6 +246,8 @@ BEGIN
 		C("Слишком глубокая вложенность подпрограмм")
 	| AST.ErrExpectProcNameWithoutParams:
 		C("Ожидалось имя команды - подпрограммы без параметров")
+	| AST.ErrParamOutInFunc:
+		C("Функция не может быть с выходным параметром")
 	END
 END Ast;
 

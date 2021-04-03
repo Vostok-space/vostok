@@ -253,6 +253,8 @@ BEGIN
 		C("Too deep nesting of subroutines")
 	| AST.ErrExpectProcNameWithoutParams:
 		C("Expect command name - subroutine without parameters")
+	| AST.ErrParamOutInFunc:
+		C("Function can not have an output parameter")
 	END
 END Ast;
 

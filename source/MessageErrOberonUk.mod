@@ -246,6 +246,8 @@ BEGIN
 		C("Занадто велика вкладеність підпрограм")
 	| AST.ErrExpectProcNameWithoutParams:
 		C("Очікувалось ім'я команди - підпрограми без параметрів")
+	| AST.ErrParamOutInFunc:
+		C("Функція не може мати вихідного параметру")
 	END
 END Ast;
 
