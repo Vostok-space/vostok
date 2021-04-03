@@ -12,7 +12,7 @@
   * Общем подмножестве С и С++, совместимом с gcc, clang, tcc, CompCert, MS VS.
   * Java стандарта 1.7
   * JavaScript стандарта ECMAScript 5
-  * Oberon-07 и Active Oberon
+  * Oberon-07, Active Oberon и Component Pascal
 
 Основной код транслятора написан на его входном языке - Обероне.
 Привязки к библиотекам - на соответствующих выходных языках.

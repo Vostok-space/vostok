@@ -15,7 +15,7 @@ Generates code for:
   * A common subset of C and C++ compatible with gcc, clang, tcc and CompCert.
   * Java 1.7
   * JavaScript compatible with ECMAScript 5
-  * Oberon-07 and Active Oberon
+  * Oberon-07, Active Oberon and Component Pascal
 
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.
