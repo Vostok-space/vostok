@@ -1,5 +1,5 @@
 (* Subroutines for work in OS like GNU/Linux or Windows
- * Copyright 2019, 2020 ComdivByZero
+ * Copyright 2019-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,46 @@
  *)
 MODULE OsUtil;
 
-  IMPORT Platform, Unistd;
+  IMPORT Platform, Unistd, Libloader := Wlibloaderapi;
 
   PROCEDURE PathToSelfExe*(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
-  VAR l: INTEGER;
+  VAR ok: BOOLEAN;
+
+    PROCEDURE Posix(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
+    VAR l: INTEGER; ok: BOOLEAN;
+    BEGIN
+      l := Unistd.Readlink("/proc/self/exe", path);
+      ok := l >= 0;
+      IF ok THEN
+        len := l;
+        IF LEN(path) <= l THEN
+          l := LEN(path) - 1;
+          ok := FALSE
+        END
+      ELSE
+        l := 0;
+        len := 0
+      END;
+      path[l] := 0X
+    RETURN
+      ok
+    END Posix;
+
+    PROCEDURE Windows(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
+    BEGIN
+      len := Libloader.GetModuleFileNameA(NIL, path);
+    RETURN
+      (0 < len) & (len < LEN(path))
+    END Windows;
+
   BEGIN
     IF Platform.Posix THEN
-      l := Unistd.Readlink("/proc/self/exe", path);
-      IF l >= 0 THEN
-        len := l
-      ELSE
-        len := 0
-      END
-    ELSE
-      (* TODO *)
-      ASSERT(FALSE)
+      ok := Posix(path, len)
+    ELSE ASSERT(Platform.Windows);
+      ok := Windows(path, len)
     END
   RETURN
-    l >= 0
+    ok
   END PathToSelfExe;
 
 END OsUtil.
