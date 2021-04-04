@@ -26,7 +26,7 @@ END S;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Транслятор Oberon-07 в C, Java, Javascript, Oberon. 2021");
+S("Транслятор Oberon-07 в C, Java, JavaScript, Oberon. 2021");
 S("Использование: ");
 S(" 0) ost help     # подробная справка");
 S(" 1) ost to-c     Код ВыхКат {-m ПкМ | -i ПкИ | -infr Инфр}");

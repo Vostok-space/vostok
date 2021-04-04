@@ -27,7 +27,7 @@ function Open() {
 		ok = typeof require !== 'undefined';
 		if (ok) {
 			crypto = require("crypto");
-			ok = typeof crypto !== 'undefined';
+			ok = crypto != null;
 		}
 	}
 	return ok;
