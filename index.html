@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="ru">
+<html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,51 +12,124 @@
     div.page {
       max-width         : 720px;
       margin            : auto;
-      background-color  : #F0F0F0;
-      border-radius     : 10px;
-      padding           : 10px;
+      background-color  : #EEE;
+      padding           : 5px;
+    }
+    header {
+      max-width         : 720px;
+      margin            : auto;
+      background-color  : #DDD;
+      padding           : 5px;
     }
     body {
       font-family: Liberation Serif, Times New Roman, sans-serif;
       font-size  : 18px;
     }
   </style>
+
+  <script>
+    const Languages = ["en", "ru"];
+
+    function switchLang(lang) {
+      function setDisplay(lang, value) {
+        var els, i;
+        els = document.querySelectorAll('[lang="' + lang + '"]');
+        for (i = 0; i < els.length; i += 1) {
+          els[i].style.display = value;
+        }
+      }
+
+      var i;
+      for (i = 0; i < Languages.length; i += 1) {
+        setDisplay(Languages[i], "none");
+      }
+      if (Languages.indexOf(lang) == -1) {
+        lang = Languages[0];
+      }
+      setDisplay(lang, "");
+    }
+
+    function switchLangToPreferable() {
+      switchLang(window.navigator.language.slice(0, 2));
+    }
+  </script>
 </head>
 
 <body>
+  <header>
+    <button onclick="switchLang('en')">Eng</button>
+    <button onclick="switchLang('ru')">Рус</button>
+  </header>
+
   <div class="page">
-    <h3> Транслятор проекта
+    <h3 lang="ru"> Транслятор проекта
       <a href="https://vostok-space.github.io/"><b>Восток</b></a>
     </h3>
+    <h3 lang="en"> Translator of
+      <a href="https://vostok-space.github.io/"><b>Vostok</b></a>
+      project
+    </h3>
 
-    Входные языки:
+    <span lang="ru">Входные языки:</span>
+    <span lang="en">Source languages:</span>
+
     <ol>
     <li> <a href="https://online.oberon.org/oberon">Oberon 07</a>
     <li> ...
     </ol>
 
-    Выходные языки:
+    <span lang="ru">Выходные языки и форматы</span>
+    <span lang="en">Output languages and formats</span>:
     <ol>
-    <li> Общее подмножество С и С++, совместимое с gcc, clang,
+    <li>
+      <span lang="ru">Общее подмножество С и С++, совместимое с</span>
+      <span lang="en">Common subset of С and С++, which is compatible with</span>
+         gcc, clang,
       <a href="https://bellard.org/tcc/">tcc</a>,
       <a href="http://compcert.inria.fr/">CompCert</a>, MS VS.
 
       <ol>
-      <li> Исполнимые форматы ELF и PE
+      <li>
+        <span lang="ru">Исполнимые форматы</span>
+        <span lang="en">Executable formats</span>
+          ELF, PE
       </ol>
-    <li> Java <a href="https://docs.oracle.com/javase/specs/jls/se7/html/index.html">стандарта 7</a>
+    </li>
+    <li> Java
+      <a href="https://docs.oracle.com/javase/specs/jls/se7/html/index.html">
+        <span lang="ru">стандарта 7</span>
+        <span lang="en">7 standard</span>
+      </a>
       <ol>
-      <li> *.class файлы
-      <li> Android *.apk приложения
+      <li> *.class
+        <span lang="ru">файлы</span>
+        <span lang="en">files</span>
+
+      <li> Android *.apk
+        <span lang="ru">приложения</span>
+        <span lang="en">applications</span>
       </ol>
-    <li> JavaScript стандарта <a href="https://ecma-international.org/ecma-262/5.1/">ECMAScript 5</a>
-    <li> Oberon 07, Active Oberon и Component Pascal
+    <li> JavaScript <span lang="ru">стандарта</span><span lang="en">of</span>
+      <a href="https://ecma-international.org/ecma-262/5.1/">ECMAScript 5</a>
+      <span lang="en">standard</span>
+    <li> Oberon 07, Active Oberon, Component Pascal
     <li> ...
     </ol>
 
-    Репозиторий исходного кода -
+    <span lang="ru">Репозиторий исходного кода</span>
+    <span lang="en">Source code repository</span>
+    -
     <a href="https://github.com/Vostok-space/vostok">https://github.com/Vostok-space/vostok</a>
+
+    <span lang="ru">Блог проекта</span>
+    <span lang="en">Project blog</span>
+    <a href="https://vostok-space.blogspot.com/">https://vostok-space.blogspot.com/</a>
   </div>
+
+  <script>
+    switchLangToPreferable();
+  </script>
+
 </body>
 
 </html>
