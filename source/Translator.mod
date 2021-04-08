@@ -1170,7 +1170,9 @@ BEGIN
 			ret := GenerateThroughOberon(args, module, listener)
 		END
 	END;
+	(*
 	ModulesStorage.Unlink(mp)
+	*)
 	RETURN ret
 END Translate;
 

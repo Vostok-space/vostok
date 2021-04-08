@@ -4125,6 +4125,7 @@ BEGIN
 	END
 END DeclarationsUnlink;
 
+(* Отцепляет лишнее в предопределениях *)
 PROCEDURE Unlinks*(m: Module);
 VAR fp: FormalParam;
 BEGIN
