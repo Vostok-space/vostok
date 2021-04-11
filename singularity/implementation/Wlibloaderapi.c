@@ -34,5 +34,5 @@ extern o7_int_t Wlibloaderapi_GetModuleFileNameA(
 	o7_int_t lpFilename_len, o7_char lpFilename[/*len*/])
 {
 	O7_ASSERT(lpFilename_len > 1);
-	return (o7_int_t)GetModuleFileNameA((HMODULE)hmodule, lpFilename, lpFilename_len);
+	return (o7_int_t)GetModuleFileNameA((HMODULE)hmodule, (char *)lpFilename, (unsigned)lpFilename_len);
 }

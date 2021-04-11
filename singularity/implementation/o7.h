@@ -367,6 +367,7 @@ void* o7_ref(void *ptr) {
 #endif
 
 #if defined(NDEBUG)
+	/* Предотвращает удаление кода из ASSERT */
 	O7_ALWAYS_INLINE void o7_assert(o7_cbool cond) { assert(cond); }
 #	define O7_ASSERT(condition) o7_assert(condition)
 #elif defined(O7_ASSERT_NO_MESSAGE)

@@ -34,7 +34,7 @@
 extern o7_cbool
 CDir_SetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t ofs) {
 	O7_ASSERT((0 <= ofs) && (ofs < len));
-	return 0 == changeDir(path + ofs);
+	return 0 == changeDir((char *)path + ofs);
 }
 
 extern o7_cbool
@@ -43,9 +43,9 @@ CDir_GetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t *pofs) {
 	o7_cbool ok;
 	ofs = *pofs;
 	O7_ASSERT((0 <= ofs) && (ofs < len));
-	ok = NULL != getCurrentDir(path + ofs, len - ofs);
+	ok = NULL != getCurrentDir((char *)path + ofs, len - ofs);
 	if (ok) {
-		*pofs = ofs + strlen(path + ofs);
+		*pofs = ofs + strlen((char *)path + ofs);
 	}
 	return ok;
 }
