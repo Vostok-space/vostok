@@ -2579,8 +2579,7 @@ PROCEDURE Assign(VAR gen: Generator; st: Ast.Assign);
 				Text.Str(gen, "O7_ASSIGN(&");
 				Designator(gen, st.designator);
 				Text.Str(gen, ", ")
-			ELSIF (st.designator.type.id = Ast.IdArray)
-			THEN
+			ELSIF st.designator.type.id = Ast.IdArray THEN
 				AssertArraySize(gen, st.designator, st.expr);
 				Text.Str(gen, "memcpy(");
 				Designator(gen, st.designator);
