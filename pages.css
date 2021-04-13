@@ -1,0 +1,29 @@
+article {
+  margin            : auto;
+  background-color  : #EEE;
+  padding           : 5px;
+}
+
+div.page {
+  margin            : auto;
+  max-width         : 720px;
+  padding           : 0;
+}
+
+header {
+  background-color  : #DDD;
+  padding           : 5px;
+}
+
+body {
+  font-family: Liberation Serif, Times New Roman, sans-serif;
+  font-size  : 18px;
+}
+
+nav {
+  float: left;
+}
+
+nav.lang {
+  float:right;
+}

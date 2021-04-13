@@ -3,65 +3,32 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="google-site-verification" content="XHHNHoYsy61jmPZ36NiFoeC4hVHy6zs64pSt_CWXDXw" />
 
-  <title>Восток</title>
+  <title lang="en">Vostok</title>
 
-  <style>
-    div.page {
-      max-width         : 720px;
-      margin            : auto;
-      background-color  : #EEE;
-      padding           : 5px;
-    }
-    header {
-      max-width         : 720px;
-      margin            : auto;
-      background-color  : #DDD;
-      padding           : 5px;
-    }
-    body {
-      font-family: Liberation Serif, Times New Roman, sans-serif;
-      font-size  : 18px;
-    }
-  </style>
-
-  <script>
-    const Languages = ["en", "ru"];
-
-    function switchLang(lang) {
-      function setDisplay(lang, value) {
-        var els, i;
-        els = document.querySelectorAll('[lang="' + lang + '"]');
-        for (i = 0; i < els.length; i += 1) {
-          els[i].style.display = value;
-        }
-      }
-
-      var i;
-      for (i = 0; i < Languages.length; i += 1) {
-        setDisplay(Languages[i], "none");
-      }
-      if (Languages.indexOf(lang) == -1) {
-        lang = Languages[0];
-      }
-      setDisplay(lang, "");
-    }
-
-    function switchLangToPreferable() {
-      switchLang(window.navigator.language.slice(0, 2));
-    }
-  </script>
+  <link rel='stylesheet' type='text/css' href='pages.css'/>
+  <script src='langselect.js' type='text/javascript' charset='utf-8'></script>
 </head>
 
 <body>
+
+<div class="page">
   <header>
-    <button onclick="switchLang('en')">Eng</button>
-    <button onclick="switchLang('ru')">Рус</button>
+    &nbsp;
+    <nav>
+      <a lang="ru" href="examples.html">Примеры</a>
+      <a lang="en" href="examples.html">Examples</a>
+    </nav>
+    <nav class="lang">
+      <button onclick="switchLang('en')">Eng</button>
+      <button onclick="switchLang('ru')">Рус</button>
+    </nav>
   </header>
 
-  <div class="page">
+  <article>
+
     <h3 lang="ru"> Транслятор проекта
       <a href="https://vostok-space.github.io/"><b>Восток</b></a>
     </h3>
@@ -70,16 +37,25 @@
       project
     </h3>
 
+    <p lang="ru"> Нацелен на преобразование кода из некоторых диалектов Oberon
+    в читаемый и устойчивый к ошибкам код для ряда промышленных языков
+    программирования, а также в машинный код и промежуточные представления.
+    </p>
+    <p lang="en"> Aims at converting the code of some Oberon dialects into
+    readable and error-resistant code for a range of industrial programming
+    languages, as well as machine code and intermediate representations.
+    </p>
+
     <span lang="ru">Входные языки:</span>
     <span lang="en">Source languages:</span>
 
     <ol>
-    <li> <a href="https://online.oberon.org/oberon">Oberon 07</a>
-    <li> ...
+    <li> <a href="https://online.oberon.org/oberon">Oberon 07</a> </li>
+    <li> ... </li>
     </ol>
 
     <span lang="ru">Выходные языки и форматы</span>
-    <span lang="en">Output languages and formats</span>:
+    <span lang="en">Output languages and formats</span> :
     <ol>
     <li>
       <span lang="ru">Общее подмножество С и С++, совместимое с</span>
@@ -93,6 +69,7 @@
         <span lang="ru">Исполнимые форматы</span>
         <span lang="en">Executable formats</span>
           ELF, PE
+      </li>
       </ol>
     </li>
     <li> Java
@@ -104,32 +81,34 @@
       <li> *.class
         <span lang="ru">файлы</span>
         <span lang="en">files</span>
-
+      </li>
       <li> Android *.apk
         <span lang="ru">приложения</span>
         <span lang="en">applications</span>
+      </li>
       </ol>
+    </li>
     <li> JavaScript <span lang="ru">стандарта</span><span lang="en">of</span>
       <a href="https://ecma-international.org/ecma-262/5.1/">ECMAScript 5</a>
       <span lang="en">standard</span>
-    <li> Oberon 07, Active Oberon, Component Pascal
-    <li> ...
+    </li>
+    <li> Oberon 07, Active Oberon, Component Pascal </li>
+    <li> ... </li>
     </ol>
 
     <span lang="ru">Репозиторий исходного кода</span>
-    <span lang="en">Source code repository</span>-
+    <span lang="en">Source code repository</span> -
     <a href="https://github.com/Vostok-space/vostok">https://github.com/Vostok-space/vostok</a>
 
     <br/>
 
     <span lang="ru">Блог проекта</span>
-    <span lang="en">Project blog</span>-
+    <span lang="en">Project blog</span> -
     <a href="https://vostok-space.blogspot.com/">https://vostok-space.blogspot.com/</a>
-  </div>
+  </article>
+</div>
 
-  <script>
-    switchLangToPreferable();
-  </script>
+<script> switchLangToPreferable(); </script>
 
 </body>
 

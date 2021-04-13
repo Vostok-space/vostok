@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'/>
+<title>Vostok translator</title>
+
+<link rel='stylesheet' type='text/css' href='vostokbox.css'/>
+<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'
+        type='text/javascript' charset='utf-8'>
+</script>
+<script src='vostokbox.js'></script>
+</head>
+
+<body>
+
+<div style='width:1200px'>
+  <div id='vostokbox-editor'>MODULE Hello;
+
+  IMPORT Out;
+
+  PROCEDURE Come*;
+  BEGIN
+    Out.String("Добро пожаловать."); Out.Ln
+  END Come;
+
+  PROCEDURE Gone*;
+  BEGIN
+    Out.String("До скорой встречи."); Out.Ln
+  END Gone;
+
+END Hello.
+</div>
+
+  <div id='vostokbox-log'></div>
+
+</div>
+
+<div id='vostokbox-runners'></div>
+
+<script>
+  var box;
+
+  box = VostokBox.createByDefaultIdentifiers(document, ace);
+  VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
+  VostokBox.addRunner(box, 'Hello.Come');
+  VostokBox.addRunner(box, 'Hello.Gone');
+</script>
+
+</body>
+</html>

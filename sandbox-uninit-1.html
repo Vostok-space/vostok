@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Vostok translator</title>
+
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'
+        type='text/javascript' charset='utf-8'>
+</script>
+<script src='vostokbox.js'></script>
+</head>
+
+<body>
+
+<div style='width:1200px'>
+  <div id='vostokbox-editor'>MODULE Uninit;
+
+  IMPORT Out;
+
+  PROCEDURE Go*(init: BOOLEAN);
+  VAR i: INTEGER;
+  BEGIN
+    IF init THEN
+      i := 99
+    END;
+    Out.Int(i, 0); Out.Ln
+  END Go;
+
+END Uninit.
+</div>
+
+  <div id='vostokbox-log'></div>
+
+</div>
+
+<div id='vostokbox-runners'></div>
+
+<script>
+  var box;
+
+  box = VostokBox.createByDefaultIdentifiers(document, ace);
+  VostokBox.addRootRunner(box, 'Uninit.Go(TRUE)');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="google-site-verification" content="XHHNHoYsy61jmPZ36NiFoeC4hVHy6zs64pSt_CWXDXw" />
+
+  <title lang="en">Vostok</title>
+
+  <link rel='stylesheet' type='text/css' href='pages.css'/>
+  <script src='langselect.js' type='text/javascript' charset='utf-8'></script>
+</head>
+
+<body>
+
+<div class="page">
+  <header>
+    &nbsp;
+    <nav>
+      <a lang="ru" href="index.html">Главная</a>
+      <a lang="en" href="index.html">Main</a>
+    </nav>
+    <nav class="lang">
+      <button onclick="switchLang('en')">Eng</button>
+      <button onclick="switchLang('ru')">Рус</button>
+    </nav>
+  </header>
+
+  <article>
+
+    <h3 lang="ru"> Примеры кода в песочнице </h3>
+    <h3 lang="en"> Examples in the sandbox </h3>
+
+    <p>
+     <a lang="ru" href="sandbox-hello.html">Приветствие.</a>
+     <a lang="en" href="sandbox-hello.html">Hello, World!</a>
+    </p>
+
+    <p lang="ru">
+      <a href="sandbox-uninit-1.html">Cтатическое</a> и
+      <a href="sandbox-uninit-2.html">динамическое</a>
+      выявление неинициализированности переменной.
+    </p>
+    <p lang="en">
+      <a href="sandbox-uninit-1.html"> Static </a> and
+      <a href="sandbox-uninit-2.html"> dynamic </a>
+      checking of uninitialized variable.
+    </p>
+
+  </article>
+</div>
+
+<script> switchLangToPreferable(); </script>
+
+</body>
+
+</html>
