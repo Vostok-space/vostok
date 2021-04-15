@@ -9,7 +9,26 @@
   <title lang="en">Vostok</title>
 
   <link rel='stylesheet' type='text/css' href='pages.css'/>
-  <script src='langselect.js' type='text/javascript' charset='utf-8'></script>
+  <script src='langselect.js'></script>
+
+  <style>
+    .warn {
+      color   : red;
+    }
+  </style>
+  <script>
+    function disableWarningIfNeed() {
+      var els, i;
+      console.log(window.location.protocol);
+      if (window.location.protocol !== 'https:') {
+        els = document.getElementsByClassName("warn");
+        console.log(els);
+        for (i = 0; i < els.length; i+=1) {
+          els[i].style.display = "none";
+        }
+      }
+    }
+  </script>
 </head>
 
 <body>
@@ -28,9 +47,15 @@
   </header>
 
   <article>
-
     <h3 lang="ru"> Примеры кода в песочнице </h3>
     <h3 lang="en"> Examples in the sandbox </h3>
+
+    <p lang="ru" class="warn">
+      Для запуска примеров замените https:// на http:// в адресной строке
+    </p>
+    <p lang="en" class="warn">
+      To executing examples replace https:// with http:// in the address bar
+    </p>
 
     <p>
      <a lang="ru" href="sandbox-hello.html">Приветствие.</a>
@@ -51,7 +76,7 @@
   </article>
 </div>
 
-<script> switchLangToPreferable(); </script>
+<script> enableWarningIfNeed(); switchLangToPreferable(); </script>
 
 </body>
 
