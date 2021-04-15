@@ -19,12 +19,10 @@
   <script>
     function disableWarningIfNeed() {
       var els, i;
-      console.log(window.location.protocol);
       if (window.location.protocol !== 'https:') {
         els = document.getElementsByClassName("warn");
-        console.log(els);
         for (i = 0; i < els.length; i+=1) {
-          els[i].style.display = "none";
+          els[i].parentNode.removeChild(els[i]);
         }
       }
     }
@@ -76,7 +74,7 @@
   </article>
 </div>
 
-<script> enableWarningIfNeed(); switchLangToPreferable(); </script>
+<script> disableWarningIfNeed(); switchLangToPreferable(); </script>
 
 </body>
 
