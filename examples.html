@@ -21,8 +21,9 @@
       var els, i;
       if (window.location.protocol !== 'https:') {
         els = document.getElementsByClassName("warn");
-        for (i = 0; i < els.length; i+=1) {
-          els[i].parentNode.removeChild(els[i]);
+        while (els.length > 0) {
+          els[0].parentNode.removeChild(els[0]);
+          els = document.getElementsByClassName("warn");
         }
       }
     }
