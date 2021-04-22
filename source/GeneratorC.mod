@@ -720,6 +720,15 @@ BEGIN
 	b2 := t
 END Swap;
 
+PROCEDURE CastedPointer(VAR g: Generator; expr: Ast.Expression; t: Ast.Type);
+BEGIN
+	Text.Str(g, "((");
+	GlobalName(g, t.type);
+	Text.Str(g, " *)");
+	expression(g, expr);
+	Text.Char(g, ")")
+END CastedPointer;
+
 PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE Call(VAR gen: Generator; call: Ast.ExprCall);
@@ -1094,7 +1103,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				paramOut := Ast.ParamOut IN fp(Ast.FormalParam).access;
 				IF paramOut & (t.id # Ast.IdArray)
 				OR (t.id = Ast.IdRecord)
-				OR (t.id = Ast.IdPointer) & (0 < dist) & ~gen.opt.plan9
 				THEN
 					castToBase := 0 < dist;
 					Text.DeferChar(gen, "&")
@@ -1105,6 +1113,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Swap(castToBase, gen.opt.castToBase);
 				IF paramOut OR (t.id = Ast.IdRecord) THEN
 					Expression(gen, p.expr)
+				ELSIF (t.id = Ast.IdPointer) & (dist > 0) THEN
+					CastedPointer(gen, p.expr, t);
+					dist := 0
 				ELSE
 					CheckExpr(gen, p.expr)
 				END;
@@ -1178,34 +1189,22 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		                 str: ARRAY OF CHAR);
 		VAR notChar0, notChar1: BOOLEAN;
 
-			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER);
+			PROCEDURE Expr(VAR gen: Generator; e: Ast.Expression; dist: INTEGER; t: Ast.Type);
 			VAR brace, castToBase: BOOLEAN;
 			BEGIN
 				brace := (e.type.id IN {Ast.IdSet, Ast.IdBoolean})
 				      & ~(e IS Ast.Factor);
-				castToBase := FALSE;
 				IF brace THEN
-					Text.Str(gen, "(")
-				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9
-				THEN
-					castToBase := TRUE;
-					Text.Str(gen, "&")
-				END;
-				Swap(castToBase, gen.opt.castToBase);
-				Expression(gen, e);
-				Swap(castToBase, gen.opt.castToBase);
-				IF (dist > 0) & ~gen.opt.plan9 THEN
-					IF e.type.id = Ast.IdPointer THEN
-						DEC(dist);
-						Text.Str(gen, "->_")
-					END;
-					WHILE dist > 0 DO
-						DEC(dist);
-						Text.Str(gen, "._")
-					END
-				END;
-				IF brace THEN
-					Text.Str(gen, ")")
+					Text.Char(gen, "(");
+					Expression(gen, e);
+					Text.Char(gen, ")")
+				ELSIF (dist > 0) & (e.type.id = Ast.IdPointer) & ~gen.opt.plan9 THEN
+					CastedPointer(gen, e, t);
+				ELSE
+					castToBase := FALSE;
+					Swap(castToBase, gen.opt.castToBase);
+					Expression(gen, e);
+					Swap(castToBase, gen.opt.castToBase)
 				END
 			END Expr;
 
@@ -1247,7 +1246,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Len(gen, rel.exprs[0]);
 						Text.Str(gen, ", ")
 					END;
-					Expr(gen, rel.exprs[0], -rel.distance);
+					Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type);
 
 					Text.Str(gen, ", ");
 
@@ -1255,7 +1254,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 						Len(gen, rel.exprs[1]);
 						Text.Str(gen, ", ")
 					END;
-					Expr(gen, rel.exprs[1], rel.distance);
+					Expr(gen, rel.exprs[1], rel.distance, rel.exprs[0].type);
 
 					Text.Str(gen, ")");
 					Text.Str(gen, str);
@@ -1271,16 +1270,16 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				ELSE
 					Text.Str(gen, "o7_lcmp(")
 				END;
-				Expr(gen, rel.exprs[0], -rel.distance);
+				Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type);
 				Text.Str(gen, ", ");
-				Expr(gen, rel.exprs[1], rel.distance);
+				Expr(gen, rel.exprs[1], rel.distance, rel.exprs[0].type);
 				Text.Str(gen, ")");
 				Text.Str(gen, str);
 				Text.Str(gen, "0")
 			ELSE
-				Expr(gen, rel.exprs[0], -rel.distance);
+				Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type);
 				Text.Str(gen, str);
-				Expr(gen, rel.exprs[1], rel.distance)
+				Expr(gen, rel.exprs[1], rel.distance, rel.exprs[0].type)
 			END
 		END Simple;
 
@@ -2500,7 +2499,9 @@ PROCEDURE ExprSameType(VAR gen: Generator;
 VAR reref, brace: BOOLEAN;
     base, extend: Ast.Record;
 BEGIN
-	base := NIL;
+	base   := NIL;
+	extend := NIL;
+
 	reref := (expr.type.id = Ast.IdPointer)
 	       & (expr.type.type # expectType.type)
 	       & (expr.id # Ast.IdPointer);
@@ -2508,20 +2509,17 @@ BEGIN
 	IF ~reref THEN
 		CheckExpr(gen, expr);
 		IF expr.type.id = Ast.IdRecord THEN
-			base := expectType(Ast.Record);
+			base   := expectType(Ast.Record);
 			extend := expr.type(Ast.Record)
 		END
 	ELSIF gen.opt.plan9 THEN
 		CheckExpr(gen, expr);
 		brace := FALSE
 	ELSE
-		base := expectType.type(Ast.Record);
-		extend := expr.type.type(Ast.Record).base;
-		Text.Str(gen, "(&(");
-		Expression(gen, expr);
-		Text.Str(gen, ")->_")
+		CastedPointer(gen, expr, expectType);
+		brace := FALSE
 	END;
-	IF (base # NIL) & (extend # base) THEN
+	IF extend # base THEN
 		(*ASSERT(expectType.id = Ast.IdRecord);*)
 		IF gen.opt.plan9 THEN
 			Text.Str(gen, ".");
