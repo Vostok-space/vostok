@@ -1277,7 +1277,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, str);
 				Text.Str(gen, "0")
 			ELSE
-				Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type);
+				IF rel.exprs[0].id # Ast.IdNegate THEN
+					Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type)
+				ELSE
+					(* Предотвращение предупреждения *)
+					Text.Char(gen, "(");
+					Expr(gen, rel.exprs[0], -rel.distance, rel.exprs[1].type);
+					Text.Char(gen, ")")
+				END;
 				Text.Str(gen, str);
 				Expr(gen, rel.exprs[1], rel.distance, rel.exprs[0].type)
 			END

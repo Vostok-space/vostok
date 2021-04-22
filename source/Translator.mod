@@ -414,7 +414,7 @@ BEGIN
 	CASE id OF
 	  CComp.Unknown, CComp.CompCert:
 		enc := GenOptions.IdentEncTranslit
-	| CComp.Clang, CComp.Tiny:
+	| CComp.Zig, CComp.Clang, CComp.Tiny:
 		enc := GenOptions.IdentEncSame
 	| CComp.Gnu:
 		enc := GenOptions.IdentEncEscUnicode

@@ -1,5 +1,6 @@
 (*  Wrapper for CLI of C Compilers
- *  Copyright (C) 2018 ComdivByZero
+ *
+ *  Copyright (C) 2018-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -25,6 +26,7 @@ MODULE CCompilerInterface;
     Clang*    = 3;
     CompCert* = 4;
     Msvc*     = 5;
+    Zig*      = 6;
 
   TYPE
     Compiler* = RECORD(V.Base)
@@ -64,17 +66,23 @@ MODULE CCompilerInterface;
     V.Init(c)
   RETURN
       lightweight
-    & Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
-
-   OR (
-      Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
-   OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
+    & (
+      Test(c, Zig, "zig",     "version")      & Exec.AddClean(c.cmd, " cc -g -w")
+   OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+   OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+      )
 
    OR ~lightweight
-    & Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g")
+    & (
+      Test(c, Zig, "zig",     "version")      & Exec.AddClean(c.cmd, " cc -g -O1")
+   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
+   OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
+   OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g")
+      )
 
-   OR Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
-
+   OR (
+      Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
    OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
    OR Platform.Windows & Test(c, Msvc, "cl.exe",  "")
       ) & (~lightweight OR Exec.AddClean(c.cmd, " -w"))
