@@ -1341,6 +1341,17 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			END
 			RETURN i
 		END CountSignChanges;
+
+		PROCEDURE BoolTerm(VAR g: Generator; term: Ast.Expression);
+		BEGIN
+			IF term.id # Ast.IdTerm THEN
+				CheckExpr(g, term)
+			ELSE
+				Text.Char(g, "(");
+				CheckExpr(g, term);
+				Text.Char(g, ")");
+			END
+		END BoolTerm;
 	BEGIN
 		IF sum.type.id IN Ast.Sets THEN
 			i := CountSignChanges(sum.next);
@@ -1364,13 +1375,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				sum := sum.next
 			END;
 		ELSIF sum.type.id = Ast.IdBoolean THEN
-			CheckExpr(gen, sum.term);
+			BoolTerm(gen, sum.term);
 			sum := sum.next;
 			WHILE sum # NIL DO
 				ASSERT(sum.type.id = Ast.IdBoolean);
 				Text.Str(gen, " || ");
-				CheckExpr(gen, sum.term);
-				sum := sum.next;
+				BoolTerm(gen, sum.term);
+				sum := sum.next
 			END;
 		ELSE
 			IF sum.add = Ast.Minus THEN
