@@ -1373,16 +1373,22 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				sum := sum.next;
 			END;
 		ELSE
-			REPEAT
-				ASSERT(sum.type.id IN {Ast.IdInteger, Ast.IdLongInt, Ast.IdReal, Ast.IdReal32});
-				IF sum.add = Ast.Minus THEN
-					Text.Str(gen, " - ")
-				ELSIF sum.add = Ast.Plus THEN
-					Text.Str(gen, " + ")
+			IF sum.add = Ast.Minus THEN
+				Text.Char(gen, "-")
+			ELSIF sum.add = Ast.Plus THEN
+				Text.Char(gen, "+")
+			END;
+			CheckExpr(gen, sum.term);
+			sum := sum.next;
+			WHILE sum # NIL DO
+				ASSERT(sum.type.id IN Ast.Numbers);
+				CASE sum.add OF
+				  Ast.Minus: Text.Str(gen, " - ")
+				| Ast.Plus:  Text.Str(gen, " + ")
 				END;
 				CheckExpr(gen, sum.term);
-				sum := sum.next;
-			UNTIL sum = NIL
+				sum := sum.next
+			END
 		END
 	END Sum;
 

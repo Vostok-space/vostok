@@ -17,7 +17,11 @@ BEGIN
 	ASSERT(a - b - c = -4);
 
 	v := MAX;
-	ASSERT(v + 0 > 0)
+	ASSERT(v + 0 > 0);
+
+	ASSERT(+a - b = 1);
+	ASSERT(-c + a = -2);
+	ASSERT(-2 - (-3) = +1)
 END Go;
 
 PROCEDURE Add*(a, b: INTEGER);
