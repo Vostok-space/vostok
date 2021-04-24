@@ -67,15 +67,20 @@ MODULE CCompilerInterface;
   RETURN
       lightweight
     & (
-      Test(c, Zig, "zig",     "version")      & Exec.AddClean(c.cmd, " cc -g -w")
-   OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+      Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+
+   OR Test(c, Zig, "zig",     "version")
+    & Exec.AddClean(c.cmd, " cc -g -w -UNDEBUG -DO7_DISABLE_ATTR_CONST=1")
+
    OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
    OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
       )
 
    OR ~lightweight
     & (
-      Test(c, Zig, "zig",     "version")      & Exec.AddClean(c.cmd, " cc -g -O1")
+      Test(c, Zig, "zig",     "version")
+    & Exec.AddClean(c.cmd, " cc -g -UNDEBUG -DO7_DISABLE_ATTR_CONST=1 -O1")
+
    OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
    OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
    OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g")
