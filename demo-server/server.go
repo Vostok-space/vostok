@@ -264,7 +264,7 @@ func handleInput(script, module, help, cc string, timeout int) (res []byte, err 
   return
 }
 
-func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
+func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow string) {
   var (
     out []byte
     err error
@@ -272,6 +272,9 @@ func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
   if r.Method != "POST" {
     http.NotFound(w, r)
   } else {
+    if allow != "" {
+      w.Header().Set("Access-Control-Allow-Origin", allow)
+    }
     out, err = handleInput(r.FormValue("script"), r.FormValue("module"), webHelp, cc, timeout)
     if err == nil {
       w.Write(out)
@@ -281,12 +284,12 @@ func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int) {
   }
 }
 
-func webServer(port, timeout int, cc string) (err error) {
+func webServer(port, timeout int, cc, allow string) (err error) {
   http.Handle("/", http.FileServer(http.Dir(".")));
   http.HandleFunc(
     "/run",
     func(w http.ResponseWriter, r *http.Request) {
-      handler(w, r, cc, timeout)
+      handler(w, r, cc, timeout, allow)
     });
   return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
@@ -307,7 +310,7 @@ func teleGetUpdates(api string, ofs int) (upd []teleUpdate, err error) {
       upd = teleUpd.Result
     }
   } else {
-    data = nil
+    upd = nil
   }
   return
 }
@@ -394,9 +397,10 @@ func main() {
     port, timeout *int;
     cc *string;
     err error;
-    telegram *string
+    telegram, access *string
   )
   port     = flag.Int("port", 8080, "tcp/ip");
+  access   = flag.String("access", "", "web server's allowed clients mask");
   timeout  = flag.Int("timeout", 5, "in seconds");
   cc       = flag.String("cc", "tcc", "c compiler");
   telegram = flag.String("telegram", "", "telegram bot's token");
@@ -405,7 +409,7 @@ func main() {
   if *telegram != "" {
     err = teleBot(*telegram, *cc, *timeout)
   } else {
-    err = webServer(*port, *timeout, *cc)
+    err = webServer(*port, *timeout, *cc, *access)
   }
   if err != nil {
     fmt.Println(err);
