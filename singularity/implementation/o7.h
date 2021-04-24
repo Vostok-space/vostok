@@ -250,8 +250,14 @@ typedef o7_ulong_t o7_set64_t;
 
 #define O7_ALWAYS_INLINE O7_ATTR_ALWAYS_INLINE O7_INLINE
 
-#define O7_CONST_INLINE O7_ATTR_CONST O7_ALWAYS_INLINE
-#define O7_PURE_INLINE O7_ATTR_PURE O7_ALWAYS_INLINE
+#if O7_DISABLE_ATTR_CONST
+    /* Помогает от выключения проверок в компиляторах, наподобие zig cc */
+#	define O7_CONST_INLINE O7_ALWAYS_INLINE
+#	define O7_PURE_INLINE  O7_ALWAYS_INLINE
+#else
+#	define O7_CONST_INLINE O7_ATTR_CONST O7_ALWAYS_INLINE
+#	define O7_PURE_INLINE  O7_ATTR_PURE  O7_ALWAYS_INLINE
+#endif
 
 #if defined(O7_MEMNG_COUNTER_TYPE)
 	typedef O7_MEMNG_COUNTER_TYPE
@@ -352,33 +358,30 @@ typedef struct {
 	enum { O7_CHECK_NIL = 1 };
 #endif
 
-O7_CONST_INLINE
-void* o7_ref(void *ptr) {
-	if (O7_CHECK_NIL) {
-		assert(NULL != ptr);
-	}
-	return ptr;
-}
-
-#if (__GNUC__ >= 2) || defined(__TINYC__)
-#	define O7_REF(ptr) ((__typeof__(ptr))o7_ref(ptr))
+#if (__GNUC__ < 4) || defined(O7_USE_BUILTIN_EXPECT) && !O7_USE_BUILTIN_EXPECT
+#	define O7_EXPECT(cond) (cond)
+#elif __GNUC__ < 4
+#	error __builtin_expect is not available
 #else
-#	define O7_REF(ptr) ptr
+#	define O7_EXPECT(cond) __builtin_expect(cond, 1)
 #endif
 
-#if defined(NDEBUG)
-	/* Предотвращает удаление кода из ASSERT */
-	O7_ALWAYS_INLINE void o7_assert(o7_cbool cond) { assert(cond); }
-#	define O7_ASSERT(condition) o7_assert(condition)
-#elif defined(O7_ASSERT_NO_MESSAGE)
+#if O7_ASSERT_NO_MESSAGE
 	/* Уменьшает размер за счёт отсутствия текстового сообщения */
 	O7_ALWAYS_INLINE void O7_ASSERT(o7_cbool condition) {
-		if (!condition) {
+		if (!O7_EXPECT(condition)) {
 			abort();
 		}
 	}
+#	define o7_assert(condition) O7_ASSERT(condition)
 #else
-#	define O7_ASSERT(condition) assert(condition)
+#	if defined(NDEBUG)
+		/* Предотвращает удаление кода из ASSERT */
+		O7_ALWAYS_INLINE void O7_ASSERT(o7_cbool cond) { assert(cond); }
+#	else
+#		define O7_ASSERT(condition) assert(condition)
+#	endif
+#	define o7_assert(condition) assert(condition)
 #endif
 
 #if __STDC_VERSION__ >= 201112L
@@ -398,12 +401,18 @@ void* o7_ref(void *ptr) {
 #	endif
 #endif
 
-#if !O7_USE_BUILTIN_EXPECT
-#	define O7_EXPECT(cond) (cond)
-#elif __GNUC__ < 4
-#	error __builtin_expect is not available
+O7_CONST_INLINE
+void* o7_ref(void *ptr) {
+	if (O7_CHECK_NIL) {
+		o7_assert(NULL != ptr);
+	}
+	return ptr;
+}
+
+#if (__GNUC__ >= 2) || defined(__TINYC__)
+#	define O7_REF(ptr) ((__typeof__(ptr))o7_ref(ptr))
 #else
-#	define O7_EXPECT(cond) __builtin_expect(cond, 1)
+#	define O7_REF(ptr) ptr
 #endif
 
 O7_ATTR_MALLOC O7_ALWAYS_INLINE
@@ -494,7 +503,7 @@ o7_cbool o7_bool_inited(o7_bool b) {
 O7_CONST_INLINE
 o7_bool o7_bl(o7_bool b) {
 	if ((sizeof(b) == sizeof(o7_char)) && O7_UNDEF) {
-		assert(o7_bool_inited(b));
+		o7_assert(o7_bool_inited(b));
 	}
 	return b;
 }
@@ -525,11 +534,11 @@ double o7_dbl(double d) {
 	} else if (sizeof(unsigned) == sizeof(double) / 2) {
 		unsigned u;
 		memcpy(&u, (unsigned *)&d + 1, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
+		o7_assert(u != 0x7FFFFFFFul);
 	} else {
 		unsigned long u;
 		memcpy(&u, (unsigned long *)&d + 1, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
+		o7_assert(u != 0x7FFFFFFFul);
 	}
 	return d;
 }
@@ -555,30 +564,30 @@ float o7_fl(float d) {
 	} else if (sizeof(unsigned) == sizeof(double) / 2) {
 		unsigned u;
 		memcpy(&u, &d, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
+		o7_assert(u != 0x7FFFFFFFul);
 	} else {
 		unsigned long u;
 		memcpy(&u, &d, sizeof(u));
-		assert(u != 0x7FFFFFFFul);
+		o7_assert(u != 0x7FFFFFFFul);
 	}
 	return d;
 }
 
 O7_CONST_INLINE
 char unsigned o7_byte(int v) {
-	assert((unsigned)v <= 255);
+	o7_assert((unsigned)v <= 0x100);
 	return (char unsigned)v;
 }
 
 O7_CONST_INLINE
 char unsigned o7_lbyte(o7_long_t v) {
-	assert((o7_ulong_t)v <= 255);
+	o7_assert((o7_ulong_t)v <= 0x100);
 	return (char unsigned)v;
 }
 
 O7_CONST_INLINE
 char unsigned o7_chr(int v) {
-	assert((unsigned)v <= 255);
+	o7_assert((unsigned)v <= 0x100);
 	return (char unsigned)v;
 }
 
@@ -586,13 +595,13 @@ char unsigned o7_chr(int v) {
  * компиляторов и платформ */
 O7_CONST_INLINE
 double o7_dbl_finite(double v) {
-	assert((v == v) && (-DBL_MAX <= v) && (v <= DBL_MAX));
+	o7_assert((-DBL_MAX <= v) && (v <= DBL_MAX));
 	return v;
 }
 
 O7_CONST_INLINE
 float o7_flt_finite(float v) {
-	assert((v == v) && (-FLT_MAX <= v) && (v <= FLT_MAX));
+	o7_assert((-FLT_MAX <= v) && (v <= FLT_MAX));
 	return v;
 }
 
@@ -614,7 +623,7 @@ double o7_fmul(double m1, double m2) {
 O7_CONST_INLINE
 double o7_fdiv(double n, double d) {
 	if (O7_FLOAT_DIV_ZERO) {
-		assert(d != 0.0);
+		o7_assert(d != 0.0);
 	}
 	return o7_dbl_finite(n / d);
 }
@@ -637,7 +646,7 @@ float o7_fmulf(float m1, float m2) {
 O7_CONST_INLINE
 float o7_fdivf(float n, float d) {
 	if (O7_FLOAT_DIV_ZERO) {
-		assert(d != 0.0f);
+		o7_assert(d != 0.0f);
 	}
 	return o7_flt_finite(n / d);
 }
@@ -650,7 +659,7 @@ o7_bool o7_int_inited(o7_int_t i) {
 O7_CONST_INLINE
 o7_int_t o7_int(o7_int_t i) {
 	if (O7_UNDEF) {
-		assert(o7_int_inited(i));
+		o7_assert(o7_int_inited(i));
 	}
 	return i;
 }
@@ -658,7 +667,7 @@ o7_int_t o7_int(o7_int_t i) {
 O7_CONST_INLINE
 o7_int_t o7_not_neg(o7_int_t i) {
 	if (O7_OVERFLOW) {
-		assert(0 <= i);
+		o7_assert(0 <= i);
 	}
 	return i;
 }
@@ -675,7 +684,7 @@ o7_bool o7_long_inited(o7_long_t i) {
 O7_CONST_INLINE
 o7_long_t o7_long(o7_long_t i) {
 	if (O7_UNDEF) {
-		assert(o7_long_inited(i));
+		o7_assert(o7_long_inited(i));
 	}
 	return i;
 }
@@ -694,17 +703,17 @@ o7_int_t o7_add(o7_int_t a1, o7_int_t a2) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADD(o7_int(a1), o7_int(a2), &s) || (-O7_INT_MAX > s);
-		assert(!overflow);
+		o7_assert(!overflow);
 	} else {
 		if (!O7_OVERFLOW) {
 			if (O7_UNDEF) {
-				assert(o7_int_inited(a1));
-				assert(o7_int_inited(a2));
+				o7_assert(o7_int_inited(a1));
+				o7_assert(o7_int_inited(a2));
 			}
 		} else if (0 <= a2) {
-			assert(o7_int(a1) <= O7_INT_MAX - a2);
+			o7_assert(o7_int(a1) <= O7_INT_MAX - a2);
 		} else {
-			assert(-O7_INT_MAX - o7_int(a2) <= a1);
+			o7_assert(-O7_INT_MAX - o7_int(a2) <= a1);
 		}
 		s = a1 + a2;
 	}
@@ -717,17 +726,17 @@ o7_int_t o7_sub(o7_int_t m, o7_int_t s) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUB(o7_int(m), o7_int(s), &d) || (-O7_INT_MAX > d);
-		assert(!overflow);
+		o7_assert(!overflow);
 	} else {
 		if (!O7_OVERFLOW) {
 			if (O7_UNDEF) {
-				assert(o7_int_inited(m));
-				assert(o7_int_inited(s));
+				o7_assert(o7_int_inited(m));
+				o7_assert(o7_int_inited(s));
 			}
 		} else if (0 <= s) {
-			assert(-O7_INT_MAX + s <= m);
+			o7_assert(-O7_INT_MAX + s <= m);
 		} else {
-			assert(o7_int(m) <= INT_MAX + o7_int(s));
+			o7_assert(o7_int(m) <= INT_MAX + o7_int(s));
 		}
 		d = m - s;
 	}
@@ -740,10 +749,10 @@ o7_int_t o7_mul(o7_int_t m1, o7_int_t m2) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMUL(o7_int(m1), o7_int(m2), &p) || (-O7_INT_MAX > p);
-		assert(!overflow);
+		o7_assert(!overflow);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
-			assert(abs(m1) <= O7_INT_MAX / abs(m2));
+			o7_assert(abs(m1) <= O7_INT_MAX / abs(m2));
 		}
 		p = o7_int(m1) * o7_int(m2);
 	}
@@ -753,10 +762,10 @@ o7_int_t o7_mul(o7_int_t m1, o7_int_t m2) {
 O7_CONST_INLINE
 o7_int_t o7_divisor(o7_int_t d) {
 	if (O7_NATURAL_DIVISOR) {
-		assert(0 < d);
+		o7_assert(0 < d);
 	} else {
 		if (O7_OVERFLOW && O7_DIV_ZERO) {
-			assert(d != 0);
+			o7_assert(d != 0);
 		}
 		d = o7_int(d);
 	}
@@ -837,17 +846,17 @@ o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s);
-		assert(!overflow && s >= -O7_LONG_MAX);
+		o7_assert(!overflow && s >= -O7_LONG_MAX);
 	} else {
 		if (!O7_OVERFLOW) {
 			if (O7_UNDEF) {
-				assert(o7_long_inited(a1));
-				assert(o7_long_inited(a2));
+				o7_assert(o7_long_inited(a1));
+				o7_assert(o7_long_inited(a2));
 			}
 		} else if (a2 >= 0) {
-			assert(o7_long(a1) <=  O7_LONG_MAX - a2);
+			o7_assert(o7_long(a1) <=  O7_LONG_MAX - a2);
 		} else {
-			assert(a1 >= -O7_LONG_MAX - o7_long(a2));
+			o7_assert(a1 >= -O7_LONG_MAX - o7_long(a2));
 		}
 		s = a1 + a2;
 	}
@@ -862,12 +871,12 @@ o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
 		d = o7_long(m) - o7_long(s);
 	} else if (O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUBL(o7_long(m), o7_long(s), &d);
-		assert(!overflow && d >= -O7_LONG_MAX);
+		o7_assert(!overflow && d >= -O7_LONG_MAX);
 	} else {
 		if (s >= 0) {
-			assert(m >= s - O7_LONG_MAX);
+			o7_assert(m >= s - O7_LONG_MAX);
 		} else {
-			assert(o7_long(m) <= O7_LONG_MAX + o7_long(s));
+			o7_assert(o7_long(m) <= O7_LONG_MAX + o7_long(s));
 		}
 		d = m - s;
 	}
@@ -880,10 +889,10 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMULL(o7_long(m1), o7_long(m2), &p);
-		assert(!overflow && p >= -O7_LONG_MAX);
+		o7_assert(!overflow && p >= -O7_LONG_MAX);
 	} else {
 		if (O7_OVERFLOW && (0 != m2)) {
-			assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
+			o7_assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
 		}
 		p = o7_long(m1) * o7_long(m2);
 	}
@@ -893,10 +902,10 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 O7_CONST_INLINE
 o7_long_t o7_ldivisor(o7_long_t d) {
 	if (O7_NATURAL_DIVISOR) {
-		assert(0 < d);
+		o7_assert(0 < d);
 	} else {
 		if (O7_OVERFLOW && O7_DIV_ZERO) {
-			assert(d != 0);
+			o7_assert(d != 0);
 		}
 		d = o7_long(d);
 	}
@@ -1002,7 +1011,7 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 	if (O7_EXPECT(0 != shift)) {
 		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
 		if (O7_OVERFLOW) {
-			assert(u < 0x80000000ul);
+			o7_assert(u < 0x80000000ul);
 		}
 	}
 	return u;
@@ -1011,7 +1020,7 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 O7_CONST_INLINE
 o7_int_t o7_ind(o7_int_t len, o7_int_t ind) {
 	if (O7_ARRAY_INDEX) {
-		assert((o7_uint_t)ind < (o7_uint_t)len);
+		o7_assert((o7_uint_t)ind < (o7_uint_t)len);
 	}
 	return ind;
 }
@@ -1021,12 +1030,12 @@ int o7_cmp(o7_int_t a, o7_int_t b) {
 	int cmp;
 	if (a < b) {
 		if (O7_UNDEF) {
-			assert(o7_int_inited(a));
+			o7_assert(o7_int_inited(a));
 		}
 		cmp = -1;
 	} else {
 		if (O7_UNDEF) {
-			assert(o7_int_inited(b));
+			o7_assert(o7_int_inited(b));
 		}
 		if (a == b) {
 			cmp = 0;
@@ -1042,12 +1051,12 @@ int o7_lcmp(o7_long_t a, o7_long_t b) {
 	int cmp;
 	if (a < b) {
 		if (O7_UNDEF) {
-			assert(o7_long_inited(a));
+			o7_assert(o7_long_inited(a));
 		}
 		cmp = -1;
 	} else {
 		if (O7_UNDEF) {
-			assert(o7_long_inited(b));
+			o7_assert(o7_long_inited(b));
 		}
 		if (a == b) {
 			cmp = 0;
@@ -1072,7 +1081,7 @@ void o7_release(void *mem) {
 		if (1 < count) {
 			*counter = count - 1;
 		} else {
-			assert(1 == count);/* TODO remove */
+			o7_assert(1 == count);/* TODO remove */
 			(*tag)->release(mem);
 			free(counter);
 		}
@@ -1136,7 +1145,7 @@ void* o7_unhold(void *mem) {
 	{
 		counter = (o7_mmc_t *)((o7_tag_t **)mem - 1) - 1;
 		count = *counter;
-		assert(0 < count);/* TODO remove */
+		o7_assert(0 < count);/* TODO remove */
 		*counter = count - 1;
 	}
 	return mem;
@@ -1193,7 +1202,7 @@ void o7_release_records(o7_int_t count, o7_int_t item_size, void *array, void re
 
 O7_ALWAYS_INLINE
 void o7_assign(void **m1, void *m2) {
-	assert(NULL != m1);/* TODO remove */
+	o7_assert(NULL != m1);/* TODO remove */
 	o7_retain(m2);
 	o7_release(*m1);
 	*m1 = m2;
@@ -1211,13 +1220,13 @@ extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *
 		o7_tag_init(&ExtType##_tag, &BaseType##_tag, NULL)
 #endif
 
-O7_ATTR_PURE O7_ALWAYS_INLINE
+O7_PURE_INLINE
 o7_tag_t const * o7_dynamic_tag(void const *mem) {
-	assert(NULL != mem);
+	o7_assert(NULL != mem);
 	return *((o7_tag_t const **)mem - 1);
 }
 
-O7_ATTR_PURE O7_ALWAYS_INLINE
+O7_PURE_INLINE
 o7_bool o7_is_r(o7_tag_t const *base, void const *strct, o7_tag_t const *ext) {
 	if (NULL == base) {
 		base = o7_dynamic_tag(strct);
@@ -1225,16 +1234,16 @@ o7_bool o7_is_r(o7_tag_t const *base, void const *strct, o7_tag_t const *ext) {
 	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
-O7_ATTR_PURE O7_ALWAYS_INLINE
+O7_PURE_INLINE
 o7_bool o7_is(void const *strct, o7_tag_t const *ext) {
 	o7_tag_t const *base;
 	base = o7_dynamic_tag(strct);
 	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
-O7_ATTR_PURE O7_ALWAYS_INLINE
+O7_PURE_INLINE
 void *o7_must(void *strct, o7_tag_t const *ext) {
-	assert(o7_is(strct, ext));
+	o7_assert(o7_is(strct, ext));
 	return strct;
 }
 
@@ -1242,9 +1251,9 @@ void *o7_must(void *strct, o7_tag_t const *ext) {
 	((struct ExtType *)o7_must((void *)strct, &ExtType##_tag))
 
 
-O7_ATTR_PURE O7_ALWAYS_INLINE
+O7_PURE_INLINE
 void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
-	assert(o7_is_r(base, strct, ext));
+	o7_assert(o7_is_r(base, strct, ext));
 	return strct;
 }
 
@@ -1253,15 +1262,15 @@ void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
 
 O7_CONST_INLINE
 o7_uint_t o7_set(o7_int_t low, o7_int_t high) {
-	assert(high <= 31);
-	assert(0 <= low && low <= high);
+	o7_assert(high <= 31);
+	o7_assert(0 <= low && low <= high);
 	return (~(o7_uint_t)0 << low) & (~(o7_uint_t)0 >> (31 - high));
 }
 
 O7_CONST_INLINE
 o7_ulong_t o7_lset(o7_int_t low, o7_int_t high) {
-	assert(high <= 63);
-	assert(0 <= low && low <= high);
+	o7_assert(high <= 63);
+	o7_assert(0 <= low && low <= high);
 	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
 }
 
@@ -1276,13 +1285,13 @@ o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
 
 O7_CONST_INLINE
 o7_int_t o7_sti(o7_uint_t v) {
-	assert(v <= (o7_uint_t)O7_INT_MAX);
+	o7_assert(v <= (o7_uint_t)O7_INT_MAX);
 	return (o7_int_t)v;
 }
 
 O7_CONST_INLINE
 o7_int_t o7_floor(double v) {
-	assert((double)(-O7_INT_MAX) <= v && v <= (double)O7_INT_MAX);
+	o7_assert((double)(-O7_INT_MAX) <= v && v <= (double)O7_INT_MAX);
 	return (o7_int_t)v;
 }
 
@@ -1332,7 +1341,7 @@ O7_ALWAYS_INLINE
 void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
                o7_int_t src_len, o7_char const src[O7_VLA(src_len)])
 {
-	assert(src_len <= dest_len);
+	o7_assert(src_len <= dest_len);
 	memcpy(dest, src, (size_t)src_len);
 }
 
