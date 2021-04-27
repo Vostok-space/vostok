@@ -5,11 +5,14 @@ GCDA=$RESULT/gcda
 
 generate() {
 	rm -rf $RESULT
-	mkdir -p $RESULT/asrt $RESULT/san
+	mkdir -p $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
 	SOURCE="-m source/blankJava -m source/blankOberon -m source/blankJs -m source/en-only -m source"
 	NOCHECK="-init noinit -no-array-index-check -no-nil-check -no-arithmetic-overflow-check"
 	result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . $SOURCE -m test/benchmark
 	result/ost to-c "RepeatTran.Go(10)" $RESULT/san  -infr . $SOURCE -m test/benchmark $NOCHECK
+
+	result/ost to-class "RepeatTran.Go(10)" $RESULT/java -infr . $SOURCE -m test/benchmark
+	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost.js -infr . $SOURCE -m test/benchmark
 }
 
 export ASAN_OPTIONS=detect_odr_violation=0
@@ -79,7 +82,7 @@ compile() {
 	| xargs -d , -n 1 -P $NPROC sh -c
 }
 
-run() {
+runc() {
 	for ost in $LIST_OST; do
 		if [ -f $RESULT/$ost ]; then
 			echo
@@ -87,14 +90,35 @@ run() {
 			mkdir -p /tmp/ost-bench-$ost
 			for i in $@; do
 				LLVM_PROFILE_FILE="$RESULT/$ost.profraw" \
-				/usr/bin/time -f "%e sec  %M KiB" \
-					$RESULT/$ost to-c "RepeatTran.Go(10)" \
-						/tmp/ost-bench-$ost -infr . -m source -m test/benchmark
+				/usr/bin/time -f '%e sec  %M KiB' \
+					$RESULT/$ost to-c "Translator.Go" /tmp/ost-bench-$ost -infr . -m source
 			done
 			crc32 <(cat /tmp/ost-bench-$ost/*)
 			rm -r /tmp/ost-bench-$ost
 		fi
 	done
+}
+
+runj() {
+	mkdir -p /tmp/ost-bench-js /tmp/ost-bench-java
+
+	echo
+	ls -l $RESULT/ost.js
+	/usr/bin/time -f '%e sec  %M KiB' \
+		node $RESULT/ost.js to-c "Translator.Go" /tmp/ost-bench-js -infr . -m source
+	crc32 <(cat /tmp/ost-bench-js/*)
+
+	echo
+	echo java classes
+	for i in $@; do
+		/usr/bin/time -f '%e sec  %M KiB' \
+			java -cp result/benchmark/java \
+				o7.script to-c "Translator.Go" /tmp/ost-bench-java -infr . -m source
+	done
+	crc32 <(cat /tmp/ost-bench-java/*)
+
+	rm -r /tmp/ost-bench-js /tmp/ost-bench-java
+	echo $TIME
 }
 
 compile_with_profile() {
@@ -103,7 +127,7 @@ compile_with_profile() {
 
 	echo Compiles and runs for profiling
 	compile -fprofile-generate
-	run 0
+	runc 0
 
 	echo Compiles using profiling
 	compile -fprofile-use
@@ -111,4 +135,5 @@ compile_with_profile() {
 
 generate
 compile_with_profile
-run 0 1 2 3 4
+runc 0 1 2 3 4
+runj 0 1 2 3 4
