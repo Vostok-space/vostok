@@ -16,7 +16,7 @@
  *)
 MODULE Message;
 
-IMPORT Env := OsEnv, Platform, LocaleParser,
+IMPORT Env := OsEnv, Platform,
        Strings := StringStore,
        InterfaceLang,
        MessageUk, MessageRu, MessageEn, Out;

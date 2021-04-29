@@ -35,7 +35,7 @@ MODULE PlatformMessagesLang;
     ok := Platform.Posix
         & GetEnv(env)
         & LocaleParser.Parse(env, lng, state, enc)
-        & (enc = "UTF-8");
+        & ((enc = "UTF-8") OR (enc = "UTF8") OR (enc = "utf8") OR (enc = "utf-8"));
     IF ~ok THEN
       ;
     ELSIF lng = "ru" THEN

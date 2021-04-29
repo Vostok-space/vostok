@@ -1231,7 +1231,7 @@ VAR ret, lang: INTEGER;
 		RETURN ret >= 0
 	END Enabled;
 BEGIN
-	ASSERT(set + OptAll = OptAll);
+	ASSERT(set - OptAll = {});
 
 	Out.Open;
 	IF ~(OptLog IN set) THEN
