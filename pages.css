@@ -25,5 +25,14 @@ nav {
 }
 
 nav.lang {
-  float:right;
+  float: right;
+}
+
+pre {
+  background-color  : #DDD;
+}
+
+code {
+  font-size         : 13px;
+  background-color  : #DDD;
 }

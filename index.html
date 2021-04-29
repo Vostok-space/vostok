@@ -46,16 +46,22 @@
     languages, as well as machine code and intermediate representations.
     </p>
 
+<dl>
+  <dt>
     <span lang="ru">Входные языки:</span>
     <span lang="en">Source languages:</span>
-
+  </dt>
+  <dd>
     <ol>
     <li> <a href="https://online.oberon.org/oberon">Oberon 07</a> </li>
     <li> ... </li>
     </ol>
-
-    <span lang="ru">Выходные языки и форматы</span>
-    <span lang="en">Output languages and formats</span> :
+  </dd>
+  <dt>
+    <span lang="ru">Выходные языки и форматы:</span>
+    <span lang="en">Output languages and formats:</span>
+  </dt>
+  <dd>
     <ol>
     <li>
       <span lang="ru">Общее подмножество С и С++, совместимое с</span>
@@ -95,16 +101,102 @@
     <li> Oberon 07, Active Oberon, Component Pascal </li>
     <li> ... </li>
     </ol>
+  </dd>
 
+  <dt>
     <span lang="ru">Репозиторий исходного кода</span>
-    <span lang="en">Source code repository</span> -
-    <a href="https://github.com/Vostok-space/vostok">https://github.com/Vostok-space/vostok</a>
+    <span lang="en">Source code repository</span>
+  </dt>
+  <dd><a href="https://github.com/Vostok-space/vostok">github.com/Vostok-space/vostok</a></dd>
 
-    <br/>
-
+  <dt>
     <span lang="ru">Блог проекта</span>
-    <span lang="en">Project blog</span> -
-    <a href="https://vostok-space.blogspot.com/">https://vostok-space.blogspot.com/</a>
+    <span lang="en">Project blog</span>
+  </dt>
+  <dd><a href="https://vostok-space.blogspot.com/">vostok-space.blogspot.com</a></dd>
+</dl>
+
+    <h3 lang="ru"> Установка </h3>
+    <h3 lang="en"> Installation </h3>
+      <details>
+        <summary>
+          <span lang="ru">Для GNU/Linux дистрибутивов, основанных на Debian</span>
+          <span lang="en">For Debian based GNU/Linux distrubutions</span>
+        </summary>
+        <span lang="ru">Установка <a href="https://wiki.oberon.org/repo">deb-репозитория</a>
+          для ряда Оберон-пакетов</span>
+        <span lang="en">Installation of <a href="https://wiki.oberon.org/repo">deb repository</a>
+          for several different Oberon-based packages</span>
+
+        <pre><code>/usr/bin/sudo sh -c '\
+wget -qO- http://deb.oberon.org/deb.oberon.org.gpg.key | apt-key add - && \
+echo deb http://deb.oberon.org/linux testing main >> /etc/apt/sources.list && \
+apt update'</code></pre>
+        <span lang="ru">Установка транслятора:</span>
+        <span lang="en">Installation of the translator:</span>
+        <pre><code>/usr/bin/sudo apt install vostok-bin</code></pre>
+
+        <span lang="ru">Сборщик Android-приложений:</span>
+        <span lang="en">Android-applications builder:</span>
+        <pre><code>/usr/bin/sudo apt install vostok-android</code></pre>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="ru">Для основанных на RPM GNU/Linux дистрибутивов</span>
+          <span lang="en">For RPM based GNU/Linux distrubutions</span>
+        </summary>
+
+        <pre><code>ostinst() {
+  mkdir /tmp/ost-rpm &&
+  wget --no-verbose --directory-prefix=/tmp/ost-rpm \
+    $1-bin-$2.dev-0.src.rpm $1-deflib-$3.dev-0.src.rpm &&
+  rpmbuild --rebuild /tmp/ost-rpm/* &&
+  rm -rf /tmp/ost-rpm &&
+  /usr/bin/sudo rpm --install ~/*/RPMS/*/vostok-*.rpm
+}
+ostinst https://github.com/Vostok-space/vostok/releases/download/v0.0.4_lib-v0.0.3/vostok\
+  0.0.4 0.0.3</code></pre>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="ru">Для POSIX(UNIX-подобных) из исходного кода</span>
+          <span lang="en">Source based for POSIX(UNIX-like)</span>
+        </summary>
+        <pre><code>git clone https://github.com/Vostok-space/vostok.git &&
+cd vostok &&
+./init.sh &&
+result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
+/usr/bin/sudo result/ost run make.Install -infr . -m source</code></pre>
+
+      <p lang="ru"> Для настройки пути установки вместо <code>/usr/local/</code> по умолчанию,
+      следует использовать <code>'make.InstallTo("/path/")'</code> вместо <code>make.Install</code>.
+      </p>
+      <p lang="en"> For custom installation path instead of default <code>/usr/local/</code>,
+      need to use <code>'make.InstallTo("/path/")'</code> instead of <code>make.Install</code>.
+      </p>
+      <p><span lang="ru">Для сборки необходим один из компиляторов C:</span>
+         <span lang="en">For building need one of the C compilers:</span>
+          gcc, clang, tcc, ccomp,
+          <a href="https://andrewkelley.me/post/zig-cc-powerful-drop-in-replacement-gcc-clang.html">
+          zig</a>
+      </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="ru">Для</span>
+          <span lang="en">For</span>
+          Windows
+        </summary>
+        <p lang="ru">Сейчас доступна только сборка из исходного кода.
+          Пишите, если нужен установщик.
+        </p>
+        <p lang="en">Is not implemented. Currently available only building from the source code.
+          Contact if you need an installer.
+        </p>
+      </details>
   </article>
 </div>
 
