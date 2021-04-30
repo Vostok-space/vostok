@@ -32,8 +32,13 @@
 	}
 #	define _SC_PAGESIZE 0
 #else
+#	if defined(__COMPCERT__) && !defined(__USE_XOPEN_EXTENDED) && !defined(__USE_XOPEN2K)
+		/* to include declaration of readlink */
+#		define __USE_XOPEN2K
+#	endif
 #	include <unistd.h>
 #endif
+
 
 o7_int_t Unistd_pageSize = _SC_PAGESIZE;
 
