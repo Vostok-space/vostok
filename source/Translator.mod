@@ -433,7 +433,10 @@ BEGIN
 	END;
 	IF Cli.CyrillicSame <= args.cyrillic THEN
 		opt.identEnc := args.cyrillic - Cli.CyrillicSame
-	END
+	END;
+	IF args.noIndexCheck THEN
+		opt.checkIndex := FALSE
+	END;
 END SetCommonOptions;
 
 PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
@@ -453,9 +456,6 @@ VAR ret: INTEGER;
 		END;
 		IF args.noNilCheck THEN
 			opt.checkNil := FALSE
-		END;
-		IF args.noIndexCheck THEN
-			opt.checkIndex := FALSE
 		END;
 		IF 0 <= args.cStd THEN
 			opt.std := args.cStd
@@ -945,6 +945,7 @@ BEGIN
 		IF out = NIL THEN
 			ret := Cli.ErrOpenJs
 		ELSE
+			GeneratorJs.GenerateOptions(out, opt);
 			CopyO7js(jsDirs, out)
 		END
 	END;
@@ -1002,6 +1003,7 @@ VAR opt: GeneratorJs.Options;
 			ret := Cli.ErrOpenJs
 		ELSE
 			blankLen := 0;
+			GeneratorJs.GenerateOptions(out, opt);
 			CopyO7js(jsDirs, out);
 			ret := GenerateJs1(m, call, out, opt,
 			                   blank, blankLen,

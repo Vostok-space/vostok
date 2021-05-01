@@ -15,7 +15,7 @@
 var o7;
 (function(o7) { "use strict";
 
-  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache, utf8ToStr, proc;
+  var utf8Enc, utf8Dec, u8arrayRaw, u8array, toUtf8, utf8Cache, utf8ToStr, proc;
 
   utf8Cache = [];
 
@@ -253,11 +253,11 @@ var o7;
   };
 
   if (typeof Uint8Array !== 'undefined') {
-    u8array = function(array) {
+    u8arrayRaw = function(array) {
       return new Uint8Array(array);
     }
   } else {
-    u8array = function(array) {
+    u8arrayRaw = function(array) {
       return array;
     };
   }
@@ -692,6 +692,16 @@ var o7;
     }
   }
   o7.copy = copy;
+
+  function handleOptions(opt) {
+    if (opt) {
+      if (false == opt.checkIndex) {
+        u8array = u8arrayRaw;
+      }
+    }
+  }
+
+  handleOptions(o7.options);
 
   o7.exit_code = 0;
   o7.main = function(main) {
