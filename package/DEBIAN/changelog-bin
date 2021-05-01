@@ -1,3 +1,13 @@
+ vostok-bin (0.0.5.dev) unstable; urgency=low
+  * Added zig to list of C compilers
+  * Improved generation to C for reduce warnings
+  * Generation to C: &p->_ replaced to (Base *)p, because in modern compilers
+    &p->_ is interpreted as undefined behavior for p == NULL
+  * Fixed disabling index checking in JavaScript
+  * Fixed setup russian and ukrainian for messages when encoding is set as utf8 instead of UTF-8
+
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 1 May 2021 00:00:00 +0200
+
  vostok-bin (0.0.4.dev) unstable; urgency=low
   * Disallowed by default direct procedures comparison
   * Added checks of initialization, arithmetics, and array bounds in JavaScript
