@@ -2695,7 +2695,7 @@ VAR t: Type;
 BEGIN
 	NEW(e);
 	IF (sum # NIL) & (sum.type # NIL)
-	 & (sum.type.id IN {IdReal, IdInteger, IdByte})
+	 & (sum.type.id IN Numbers)
 	THEN
 		t := sum.type
 	ELSIF term # NIL THEN
@@ -2727,13 +2727,13 @@ BEGIN
 			ELSE
 				err := ErrSignForBool
 			END
-		ELSIF term.value # NIL THEN
+		ELSIF (term.value # NIL) & (e.type.id IN (Numbers + Sets)) THEN
 			CASE e.type.id OF
-			  IdInteger:
+			  IdInteger, IdLongInt:
 				e.value := ExprIntegerNew(
 					term.value(ExprInteger).int * LexToSign(add)
 				)
-			| IdReal:
+			| IdReal, IdReal32:
 				(* из-за отсутствия точности в вычислениях
 				e.value := ExprRealNewByValue(
 					term.value(ExprReal).real * FLT(LexToSign(add))
