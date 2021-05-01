@@ -54,4 +54,9 @@ BEGIN
 	ASSERT(FALSE)
 END Generate;
 
+PROCEDURE GenerateOptions*(out: Stream.POut; opt: Options);
+BEGIN
+	ASSERT(FALSE)
+END GenerateOptions;
+
 END GeneratorJs.
