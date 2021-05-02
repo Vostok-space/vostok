@@ -13,6 +13,8 @@ generate() {
 
 	result/ost to-class "RepeatTran.Go(10)" $RESULT/java -infr . $SOURCE -m test/benchmark
 	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost.js -infr . $SOURCE -m test/benchmark
+	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost-nai.js -infr . $SOURCE -m test/benchmark -no-array-index-check
+	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost-naiao.js -infr . $SOURCE -m test/benchmark -no-array-index-check -no-arithmetic-overflow-check
 }
 
 export ASAN_OPTIONS=detect_odr_violation=0
@@ -45,11 +47,6 @@ compile() {
 	if [[ $CC == clang* ]]; then
 		if [[ $1 == "-fprofile-generate" ]]; then
 			PROFILE=-fprofile-instr-generate
-			PROFILE_ASRT=$PROFILE
-			PROFILE_UASAN_ASRT=$PROFILE
-			PROFILE_UASAN=$PROFILE
-			PROFILE_ASAN=$PROFILE
-			PROFILE_USAN=$PROFILE
 		fi
 		if [[ $1 == "-fprofile-use" ]]; then
 			for ost in $LIST_OST; do
@@ -62,8 +59,16 @@ compile() {
 			PROFILE_ASAN=-fprofile-instr-use=$RESULT/ost-asan.profdata
 			PROFILE_USAN=-fprofile-instr-use=$RESULT/ost-usan.profdata
 		fi
+	else if [[ $CC == ccomp ]]; then
+		PROFILE=
+	fi fi
+	if [[ $PROFILE == -fprofile-instr-generate ]] || [[ $PROFILE == "" ]]; then
+		PROFILE_ASRT=$PROFILE
+		PROFILE_UASAN_ASRT=$PROFILE
+		PROFILE_UASAN=$PROFILE
+		PROFILE_ASAN=$PROFILE
+		PROFILE_USAN=$PROFILE
 	fi
-
 	ASRT_SET="$INIT_UNDEF -I$RESULT/asrt $RESULT/asrt/*.c"
 	SAN_SET="$INIT_NO -I$RESULT/san $RESULT/san/*.c"
 	# parallelize compilation
@@ -99,14 +104,22 @@ runc() {
 	done
 }
 
-runj() {
-	mkdir -p /tmp/ost-bench-js /tmp/ost-bench-java
+runjs() {
+	mkdir -p /tmp/ost-bench-js
 
 	echo
-	ls -l $RESULT/ost.js
-	/usr/bin/time -f '%e sec  %M KiB' \
-		node $RESULT/ost.js to-c "Translator.Go" /tmp/ost-bench-js -infr . -m source
-	crc32 <(cat /tmp/ost-bench-js/*)
+	for tr in ost ost-nai ost-naiao; do
+		ls -l $RESULT/$tr.js
+		/usr/bin/time -f '%e sec  %M KiB' \
+			node $RESULT/$tr.js to-c "Translator.Go" /tmp/ost-bench-js -infr . -m source
+		crc32 <(cat /tmp/ost-bench-js/*)
+	done
+
+	rm -r /tmp/ost-bench-js
+}
+
+runjava() {
+	mkdir -p /tmp/ost-bench-java
 
 	echo
 	echo java classes
@@ -117,8 +130,7 @@ runj() {
 	done
 	crc32 <(cat /tmp/ost-bench-java/*)
 
-	rm -r /tmp/ost-bench-js /tmp/ost-bench-java
-	echo $TIME
+	rm -r /tmp/ost-bench-java
 }
 
 compile_with_profile() {
@@ -136,4 +148,5 @@ compile_with_profile() {
 generate
 compile_with_profile
 runc 0 1 2 3 4
-runj 0 1 2 3 4
+runjava 0 1 2 3 4
+runjs
