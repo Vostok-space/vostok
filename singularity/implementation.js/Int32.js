@@ -30,9 +30,9 @@ Min = (1 << (Size * 8 - 2)) * -2;
 Max = -1 - Min;
 
 /* TODO */
-min = o7.sarray(Size);
+min = o7.array(Size);
 module.min = min;
-max = o7.sarray(Size);
+max = o7.array(Size);
 module.max = max;
 
 function FromInt(v, i) {

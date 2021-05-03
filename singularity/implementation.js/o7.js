@@ -63,7 +63,6 @@ var o7;
     }
     return create(0);
   }
-  o7.array = array;
 
   function sarray() {
     var lens;
@@ -120,7 +119,7 @@ var o7;
     }
     return new create(0);
   }
-  o7.sarray = sarray;
+  o7.array = sarray;
 
   o7.at = function(array, index) {
     if (0 <= index && index < array.length) {
@@ -697,6 +696,7 @@ var o7;
     if (opt) {
       if (false == opt.checkIndex) {
         u8array = u8arrayRaw;
+        o7.array = array;
       }
     }
   }

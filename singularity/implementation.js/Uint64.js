@@ -29,9 +29,9 @@ Sizen = BigInt(Size);
 Max = (1n << (Sizen * 8n)) - 1n;
 IntMax = 0x7FFFFFFF;
 
-var min = o7.sarray(Size);
+var min = o7.array(Size);
 module.min = min;
-var max = o7.sarray(Size);
+var max = o7.array(Size);
 module.max = max;
 
 function bigToInt(bi) {

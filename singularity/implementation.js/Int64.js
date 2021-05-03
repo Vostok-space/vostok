@@ -34,9 +34,9 @@ IntMax = IntMul - 1n;
 IntMin = -IntMul;
 Mod = 1n << (Sizen * 8n);
 
-min = o7.sarray(Size);
+min = o7.array(Size);
 module.min = min;
-max = o7.sarray(Size);
+max = o7.array(Size);
 module.max = max;
 
 

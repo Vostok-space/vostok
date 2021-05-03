@@ -28,9 +28,9 @@ Size = 4;
 Max = 0xFFFFFFFF;
 IntMax = 0x7FFFFFFF;
 
-min = o7.sarray(Size);
+min = o7.array(Size);
 module.min = min;
-max = o7.sarray(Size);
+max = o7.array(Size);
 module.max = max;
 
 function fromint(v, i) {

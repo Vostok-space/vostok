@@ -355,11 +355,7 @@ BEGIN
 		typ := typ.type
 	UNTIL typ.id # Ast.IdArray;
 
-	IF gen.opt.checkIndex THEN
-		Text.Str(gen, " = o7.sarray(")
-	ELSE
-		Text.Str(gen, " = o7.array(")
-	END;
+	Text.Str(gen, " = o7.array(");
 	expression(gen, sizes[0], {});
 	FOR i := 1 TO l DO
 		Text.Str(gen, ", ");
