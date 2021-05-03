@@ -172,8 +172,9 @@ if (fs != null) {
 	}
 
 	module.Close = function(file, file_ai) {
+		file = getjsa(file);
 		if (file[file_ai]) {
-			file[file_ai].close();
+			file[file_ai].f.close();
 			file[file_ai] = null;
 		}
 	}
@@ -225,12 +226,21 @@ if (fs != null) {
 	}
 
 	module.Seek = function(file, gibs, bytes) {
-		/* нет в node*/
-		return false;
+		o7.assert(gibs >= 0);
+		o7.assert(bytes >= 0 && bytes <= GiB);
+		return 0 == file.seek(BigInt(gibs) * BigInt(GiB) + BigInt(bytes), std.SEEK_SET);
 	}
+
 	module.Tell = function(file, gibs, gibs_ai, bytes, bytes_ai) {
-		/* нет в node*/
-		return false;
+		var pos;
+		gibs = getjsa(gibs);
+		bytes = getjsa(bytes);
+		pos = file.tello();
+		if (pos >= 0n) {
+			gibs[gibs_ai] = Number(pos / BigInt(GiB));
+			bytes[bytes_ai] = Number(pos % BigInt(GiB));
+		}
+		return pos >= 0n;
 	}
 
 } else {
@@ -271,4 +281,3 @@ if (!module.Seek) {
 
 return module;
 })();
-
