@@ -276,13 +276,17 @@ MODULE AstTransform;
                        actualParam: Ast.Parameter; fp: Ast.FormalParam);
   VAR sel, last: Ast.Selector; index: Ast.Expression;
 
-    PROCEDURE Item(d: Ast.Designator; VAR sel: Ast.Selector; v: Ast.Var;
+    PROCEDURE Item(d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector; v: Ast.Var;
                    mark: Ast.ExprInteger);
     VAR t: Ast.Type; index: Ast.Factor; ns: Ast.Selector;
     BEGIN
       index := IsChangedParam(v, mark);
       IF index # NIL THEN
         t := v.type;
+        IF prev # NIL THEN
+          ASSERT(prev.next = sel);
+          prev.type := t
+        END;
         AstOk(Ast.SelArrayNew(ns, t, NIL, index));
         (*
         ASSERT(d.type = ns.type);
@@ -303,7 +307,7 @@ MODULE AstTransform;
     sel := d.sel;
     ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d);
     IF (sel # NIL) & o.outParamToArray & (d.decl IS Ast.Var) THEN
-      Item(NIL, d.sel, d.decl(Ast.Var), o.mark)
+      Item(NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;
     last := NIL;
     WHILE sel # NIL DO
@@ -313,7 +317,7 @@ MODULE AstTransform;
       last := sel;
       sel := sel.next;
       IF (sel # NIL) & o.outParamToArray & (last IS Ast.SelRecord) THEN
-        Item(NIL, last.next, last(Ast.SelRecord).var, o.mark)
+        Item(NIL, last, last.next, last(Ast.SelRecord).var, o.mark)
       END
     END;
 
@@ -321,10 +325,10 @@ MODULE AstTransform;
       IF actualParam = NIL THEN
         IF last = NIL THEN
           IF d.decl IS Ast.Var THEN
-            Item(d, d.sel, d.decl(Ast.Var), o.mark)
+            Item(d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(d, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       ELSIF (fp.type.id = Ast.IdArray) & (fp.ext = o.mark) THEN
           index := CutIndex(actualParam.expr(Ast.Designator));
@@ -332,10 +336,10 @@ MODULE AstTransform;
       ELSE
         IF last = NIL THEN
           IF d.decl IS Ast.Var THEN
-            Item(d, d.sel, d.decl(Ast.Var), o.mark)
+            Item(d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(d, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       END
     END
