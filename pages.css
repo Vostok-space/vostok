@@ -36,3 +36,11 @@ code {
   font-size         : 13px;
   background-color  : #DDD;
 }
+
+ol {
+  margin: 0px;
+}
+
+dd {
+  margin-left: 20px;
+}
