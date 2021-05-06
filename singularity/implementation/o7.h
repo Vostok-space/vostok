@@ -71,8 +71,13 @@
 #		define O7_INT_UNDEF  0
 #		define O7_LONG_UNDEF 0
 #	endif
-#	define O7_DBL_UNDEF  o7_dbl_undef()
-#	define O7_FLT_UNDEF  o7_flt_undef()
+#	if O7_USE_SIGNALING_NAN
+#		define O7_DBL_UNDEF  o7_dbl_undef()
+#		define O7_FLT_UNDEF  o7_flt_undef()
+#	else
+#		define O7_DBL_UNDEF  (0. / 0.)
+#		define O7_FLT_UNDEF  (0.f / 0.f)
+#	endif
 #	define O7_BOOL_UNDEF 0xFF
 #else
 #	define O7_INT_UNDEF  0

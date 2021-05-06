@@ -55,7 +55,11 @@
 #	else
 #		define O7_INT_UNDEF  0
 #	endif
-#	define O7_DBL_UNDEF  o7_dbl_undef()
+#	if O7_USE_SIGNALING_NAN
+#		define O7_DBL_UNDEF  o7_dbl_undef()
+#	else
+#		define O7_DBL_UNDEF  (0. / 0.)
+#	endif
 #	define O7_BOOL_UNDEF 0xFF
 #else
 #	define O7_INT_UNDEF  0

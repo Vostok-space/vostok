@@ -25,8 +25,7 @@ static void nothing(void *mem) {
 }
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
-	double undefined;
-	float undefinedf;
+	double undefined, nan;
 	O7_STATIC_ASSERT(INT_MIN < -INT_MAX);
 
 	O7_STATIC_ASSERT((sizeof(int ) * 2 == sizeof(double))
@@ -37,10 +36,9 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	O7_STATIC_ASSERT((int)(0 < 1) == 1);
 	O7_STATIC_ASSERT((int)(0 > 1) == 0);
 
-	undefined = o7_dbl_undef();
-	assert(undefined != undefined);
-	undefinedf = o7_flt_undef();
-	assert(undefinedf != undefinedf);
+	undefined = O7_DBL_UNDEF;
+	nan = 0.0 / 0.0;
+	assert(undefined != undefined || (nan == nan));
 
 	assert((0 < argc) == (argv != NULL));
 
