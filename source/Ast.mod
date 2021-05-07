@@ -155,6 +155,11 @@ CONST
 	ParamIn*     = 0;
 	ParamOut*    = 1;
 
+	ParamOfPredefined*  = 2;
+	ParamOutReturnable* = 3;
+	InLoop*             = 4;
+	InBranch*           = 5;
+
 	NoId*                 =-1;
 	IdInteger*            = 0;
 	IdLongInt*            = 1;
@@ -2023,9 +2028,8 @@ PROCEDURE IsGlobal*(d: Declaration): BOOLEAN;
 	RETURN (d.up # NIL) & (d.up.d.up = NIL)
 END IsGlobal;
 
-PROCEDURE DesignatorUsed*(d: Designator; varParam, inLoop: BOOLEAN): INTEGER;
-VAR err: INTEGER;
-    v: Var;
+PROCEDURE DesignatorUsed*(d: Designator; context: SET): INTEGER;
+VAR err: INTEGER; v: Var;
 
 	PROCEDURE InVarParam(v: Var; sel: Selector);
 	BEGIN
@@ -2046,29 +2050,28 @@ BEGIN
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
 
-		IF varParam THEN
-			InVarParam(v, d.sel)
-		END;
-
-		IF (v.type.id = IdPointer)
-		 & (d.sel # NIL) & ~IsGlobal(v)
-		 & ( ~(InitedValue IN v.state.inited)
-		   & ~(v.state.inCondition & inLoop)
-		 OR  ~v.state.inCondition
-		   & ({} # (v.state.inited * {InitedNo, InitedNil}))
-		   )
-		THEN
-			err := ErrVarUninitialized (* TODO *)
-		ELSIF varParam THEN
-			IF ~(InitedValue IN v.state.inited) THEN
+		IF ParamOut IN context THEN
+			IF context # context + {ParamOutReturnable, ParamOfPredefined} THEN
+				InVarParam(v, d.sel)
+			END;
+			IF ~(ParamOfPredefined IN context) & ~(InitedValue IN v.state.inited) THEN
 				v.checkInit := TRUE;
 				INCL(v.state.inited, InitedCheck)
 			END;
 			v.state.inited := v.state.inited - {InitedNo} + {InitedValue}
+		ELSIF (v.type.id = IdPointer)
+		    & (d.sel # NIL) & ~IsGlobal(v)
+		    & ( ~(InitedValue IN v.state.inited)
+		      & ~(v.state.inCondition & (InLoop IN context))
+		    OR  ~v.state.inCondition
+		      & ({} # (v.state.inited * {InitedNo, InitedNil}))
+		      )
+		THEN
+			err := ErrVarUninitialized (* TODO *)
 		ELSIF ~(~(InitedNo IN v.state.inited)
 		    OR v.state.inCondition & ({} # v.state.inited - {InitedNo})
 		       )
-		   & ~inLoop (* TODO *)
+		   & ~(InLoop IN context) (* TODO *)
 		   & ((v.up # NIL) & (v.up.d.up # NIL) OR (v IS FormalParam))
 		THEN
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
@@ -2078,8 +2081,6 @@ BEGIN
 			v.checkInit := TRUE
 		END;
 		INCL(v.state.inited, Used)
-	ELSIF varParam & (d.decl.id = IdProc) THEN
-		d.decl(Procedure).usedAsValue := TRUE
 	END;
 	d.decl.used := TRUE
 	RETURN err
@@ -3457,7 +3458,7 @@ VAR err: INTEGER;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
 	IF err = ErrNo THEN
-		err := DesignatorUsed(des, FALSE, FALSE)
+		err := DesignatorUsed(des, {})
 	END;
 	NEW(c); StatInit(c, e)
 	RETURN err
