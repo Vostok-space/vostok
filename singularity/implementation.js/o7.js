@@ -39,8 +39,8 @@ var o7;
   }
   o7.assert = assert;
 
-  function indexOut(index, length) {
-    return new RangeError("array index - " + index + " out of bounds - 0 .. " + length);
+  function indexOut(index, array) {
+    return new RangeError("array index - " + index + " out of bounds - 0 .. " + (array.length - 1));
   }
 
   /* TODO */
@@ -64,60 +64,64 @@ var o7;
     return create(0);
   }
 
+  function SArray(len) {
+    this._ = new Array(len);
+    this.length = len;
+  }
+  SArray.prototype.at = function(index) {
+    if (0 <= index && index < this.length) {
+      return this._[index];
+    } else {
+      throw indexOut(index, this._);
+    }
+  };
+  SArray.prototype.put = function(index, val) {
+    if (0 <= index && index < this.length) {
+      this._[index] = val;
+    } else {
+      throw indexOut(index, this._);
+    }
+  };
+  SArray.prototype.inc = function(index, val) {
+    if (0 <= index && index < this.length) {
+      this._[index] = add(this._[index], val);
+    } else {
+      throw indexOut(index, this._);
+    }
+  };
+  SArray.prototype.incl = function(index, val) {
+    if (0 <= index && index < this.length) {
+      this._[index] |= incl(val);
+    } else {
+      throw indexOut(index, this._);
+    }
+  };
+  SArray.prototype.excl = function(index, val) {
+    if (0 <= index && index < this.length) {
+      this._[index] &= excl(val);
+    } else {
+      throw indexOut(index, this._);
+    }
+  };
+
   function sarray() {
     var lens;
 
     lens = arguments;
     function create(li) {
-      var array, len, i;
+      var arr;
 
-      len = lens[li];
-      array = new Array(len);
-      this._ = array;
-      this.length = len;
-      this.at = function(index) {
-        if (0 <= index && index < len) {
-          return array[index];
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.put = function(index, value) {
-        if (0 <= index && index < len) {
-          array[index] = value;
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.inc = function(index, val) {
-        if (0 <= index && index < len) {
-          array[index] = add(array[index], val);
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.incl = function(index, val) {
-        if (0 <= index && index < len) {
-          array[index] |= incl(val);
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.excl = function(index, val) {
-        if (0 <= index && index < len) {
-          array[index] &= excl(val);
-        } else {
-          throw indexOut(index, array);
-        }
-      };
+      arr = new SArray(lens[li]);
       li += 1;
       if (li < lens.length) {
-        for (i = 0; i < len; i += 1) {
-          array[i] = new create(li);
+        var i;
+        for (i = 0; i < arr.length; i += 1) {
+          arr._[i] = create(li);
         }
       }
+      return arr;
     }
-    return new create(0);
+    return create(0);
   }
   o7.array = sarray;
 
@@ -125,7 +129,7 @@ var o7;
     if (0 <= index && index < array.length) {
       return array[index];
     } else {
-      throw indexOut(index, array.length);
+      throw indexOut(index, array);
     }
   };
 
@@ -133,7 +137,7 @@ var o7;
     if (0 <= index && index < array.length) {
       array[index] = value;
     } else {
-      throw indexOut(index, array.length);
+      throw indexOut(index, array);
     }
   };
 
@@ -262,38 +266,25 @@ var o7;
   }
 
   u8array = function(array) {
-    function create() {
-      var len;
-
-      len = array.length;
-      this.length = len;
+    function U8Array(array) {
+      this.length = array.length;
       this._ = array;
-      this.at = function(index) {
-        if (0 <= index && index < len) {
-          return array[index];
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.put = function(index, val) {
-        if (0 <= index && index < len) {
-          array[index] = val;
-        } else {
-          throw indexOut(index, array);
-        }
-      };
-      this.inc = function(index, val) {
-        if (0 <= index && index < len) {
-          val += array[index];
-          if (0 <= val && val <= 0xFF) {
-            array[index] = val;
-          }
-        } else {
-          throw indexOut(index, array);
-        }
-      };
     }
-    return new create();
+    U8Array.prototype.at = function(index) {
+      if (0 <= index && index < this.length) {
+        return this._[index];
+      } else {
+        throw indexOut(index, this._);
+      }
+    };
+    U8Array.prototype.put = function(index, val) {
+      if (0 <= index && index < this.length) {
+        this._[index] = val;
+      } else {
+        throw indexOut(index, this._);
+      }
+    };
+    return new U8Array(u8arrayRaw(array));
   };
 
   function arrayUtf8ToStr(bytes) {
