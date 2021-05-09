@@ -866,7 +866,7 @@ static void Expression_Call_Predefined(struct Generator *gen, struct Ast_ExprCal
 	case 219:
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)"\x28");
 		Factor(gen, e1);
-		TextGenerator_Str(&(*gen)._, 11, (o7_char *)" % 2 == 1)");
+		TextGenerator_Str(&(*gen)._, 11, (o7_char *)" % 2 != 0)");
 		break;
 	case 214:
 		Expression_Call_Predefined_Len(gen, e1);

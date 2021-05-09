@@ -691,9 +691,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			  SpecIdent.Abs:
 				ExpressionBraced(gen, "Math.abs(", e1, ")", {})
 			| SpecIdent.Odd:
-				Text.Str(gen, "(");
+				Text.Char(gen, "(");
 				Factor(gen, e1, {});
-				Text.Str(gen, " % 2 == 1)")
+				Text.Str(gen, " % 2 != 0)")
 			| SpecIdent.Len:
 				Len(gen, e1)
 			| SpecIdent.Lsl:

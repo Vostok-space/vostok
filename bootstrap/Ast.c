@@ -2716,7 +2716,7 @@ static void CallParamsEnd_CalcPredefined(struct Ast_ExprCall__s *call, struct As
 		}
 		break;
 	case 219:
-		call->_._.value_ = (&(Ast_ExprBooleanGet((O7_GUARD(Ast_RExprInteger, v)->int_ % 2 == 1)))->_);
+		call->_._.value_ = (&(Ast_ExprBooleanGet((O7_GUARD(Ast_RExprInteger, v)->int_ % 2 != 0)))->_);
 		break;
 	case 217:
 		if (call->params->next->expr->value_ != NULL) {

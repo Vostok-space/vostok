@@ -1,0 +1,17 @@
+MODULE Odd;
+
+  PROCEDURE Go*;
+  VAR i: INTEGER;
+  BEGIN
+    ASSERT(ODD(3333));
+    ASSERT(TRUE=ODD(9999));
+    ASSERT(~ODD(100));
+    ASSERT(ODD(-8888) # TRUE);
+    ASSERT(FALSE # ODD(-8887));
+
+    FOR i := -17 TO 17 DO
+      ASSERT(ODD(i) = (i MOD 2 = 1))
+    END
+  END Go;
+
+END Odd.

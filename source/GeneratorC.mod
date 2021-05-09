@@ -971,9 +971,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Expression(gen, e1);
 				Text.Str(gen, ")")
 			| SpecIdent.Odd:
-				Text.Str(gen, "(");
+				Text.Char(gen, "(");
 				Factor(gen, e1);
-				Text.Str(gen, " % 2 == 1)")
+				Text.Str(gen, " % 2 != 0)")
 			| SpecIdent.Len:
 				Len(gen, e1)
 			| SpecIdent.Lsl:
