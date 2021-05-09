@@ -15,7 +15,7 @@
 var o7;
 (function(o7) { "use strict";
 
-  var utf8Enc, utf8Dec, u8arrayRaw, u8array, toUtf8, utf8Cache, utf8ToStr, proc;
+  var utf8Enc, utf8Dec, u8array, toUtf8, utf8Cache, utf8ToStr, proc;
 
   utf8Cache = [];
 
@@ -63,67 +63,43 @@ var o7;
     }
     return create(0);
   }
+  o7.array = array;
 
-  function SArray(len) {
-    this._ = new Array(len);
-    this.length = len;
-  }
-  SArray.prototype.at = function(index) {
+  Array.prototype.at = function(index) {
     if (0 <= index && index < this.length) {
-      return this._[index];
+      return this[index];
     } else {
-      throw indexOut(index, this._);
+      throw indexOut(index, this);
     }
   };
-  SArray.prototype.put = function(index, val) {
+  Array.prototype.put = function(index, val) {
     if (0 <= index && index < this.length) {
-      this._[index] = val;
+      this[index] = val;
     } else {
-      throw indexOut(index, this._);
+      throw indexOut(index, this);
     }
   };
-  SArray.prototype.inc = function(index, val) {
+  Array.prototype.inc = function(index, val) {
     if (0 <= index && index < this.length) {
-      this._[index] = add(this._[index], val);
+      this[index] = add(this[index], val);
     } else {
-      throw indexOut(index, this._);
+      throw indexOut(index, this);
     }
   };
-  SArray.prototype.incl = function(index, val) {
+  Array.prototype.incl = function(index, val) {
     if (0 <= index && index < this.length) {
-      this._[index] |= incl(val);
+      this[index] |= incl(val);
     } else {
-      throw indexOut(index, this._);
+      throw indexOut(index, this);
     }
   };
-  SArray.prototype.excl = function(index, val) {
+  Array.prototype.excl = function(index, val) {
     if (0 <= index && index < this.length) {
-      this._[index] &= excl(val);
+      this[index] &= excl(val);
     } else {
-      throw indexOut(index, this._);
+      throw indexOut(index, this);
     }
   };
-
-  function sarray() {
-    var lens;
-
-    lens = arguments;
-    function create(li) {
-      var arr;
-
-      arr = new SArray(lens[li]);
-      li += 1;
-      if (li < lens.length) {
-        var i;
-        for (i = 0; i < arr.length; i += 1) {
-          arr._[i] = create(li);
-        }
-      }
-      return arr;
-    }
-    return create(0);
-  }
-  o7.array = sarray;
 
   o7.at = function(array, index) {
     if (0 <= index && index < array.length) {
@@ -149,17 +125,6 @@ var o7;
     }
   }
   o7.ind = ind;
-
-  function getjsa(o7array) {
-    var ja;
-    if (o7array._) {
-      ja = o7array._;
-    } else {
-      ja = o7array;
-    }
-    return ja;
-  }
-  o7.getjsa = getjsa;
 
   o7.caseFail = function(val) {
     throw new RangeError("Unexpected value in case = " + val);
@@ -226,7 +191,6 @@ var o7;
   o7.frexp = function(d, n, n_i) {
     /* TODO */
     var abs, exp, x;
-    n = getjsa(n);
     if (d !== 0.0) {
       abs = Math.abs(d);
       exp = Math.max(-1023, Math.floor(Math.log(abs) * Math.LOG2E) + 1);
@@ -256,36 +220,16 @@ var o7;
   };
 
   if (typeof Uint8Array !== 'undefined') {
-    u8arrayRaw = function(array) {
+    Uint8Array.prototype.at = Array.prototype.at;
+    Uint8Array.prototype.put = Array.prototype.put;
+    u8array = function(array) {
       return new Uint8Array(array);
     }
   } else {
-    u8arrayRaw = function(array) {
+    u8array = function(array) {
       return array;
     };
   }
-
-  u8array = function(array) {
-    function U8Array(array) {
-      this.length = array.length;
-      this._ = array;
-    }
-    U8Array.prototype.at = function(index) {
-      if (0 <= index && index < this.length) {
-        return this._[index];
-      } else {
-        throw indexOut(index, this._);
-      }
-    };
-    U8Array.prototype.put = function(index, val) {
-      if (0 <= index && index < this.length) {
-        this._[index] = val;
-      } else {
-        throw indexOut(index, this._);
-      }
-    };
-    return new U8Array(u8arrayRaw(array));
-  };
 
   function arrayUtf8ToStr(bytes) {
     var str, buf, i, len, ch, ch1, ch2, ch3, ok;
@@ -428,7 +372,6 @@ var o7;
   };
 
   o7.utf8ByOfsToStr = function(bytes, ofs) {
-    bytes = getjsa(bytes);
     if (ofs > 0) {
       bytes = bytes.slice(ofs);
     }
@@ -626,8 +569,6 @@ var o7;
   o7.strcmp = function(s1, s2) {
     var i;
     i = 0;
-    s1 = getjsa(s1);
-    s2 = getjsa(s2);
     while ((s1[i] == s2[i]) && (s1[i] != 0)) {
       i += 1;
     }
@@ -637,7 +578,6 @@ var o7;
   function strchcmp(s1, c2) {
     var c1, ret;
 
-    s1 = getjsa(s1);
     c1 = s1[0];
     ret = c1 - c2;
     if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
@@ -655,9 +595,6 @@ var o7;
   o7.strcpy = function(d, s) {
     var len, i;
 
-    d = getjsa(d);
-    s = getjsa(s);
-
     len = s.length;
     assert(d.length >= len);
     for (i = 0; i < len; i += 1) {
@@ -668,8 +605,6 @@ var o7;
 
   function copy(d, s) {
     var i, len;
-    d = getjsa(d);
-    s = getjsa(s);
     len = d.length;
     if ((s[0] instanceof Object) && s[0].length) {
       for (i = 0; i < len; i += 1) {
@@ -682,17 +617,6 @@ var o7;
     }
   }
   o7.copy = copy;
-
-  function handleOptions(opt) {
-    if (opt) {
-      if (false == opt.checkIndex) {
-        u8array = u8arrayRaw;
-        o7.array = array;
-      }
-    }
-  }
-
-  handleOptions(o7.options);
 
   o7.exit_code = 0;
   o7.main = function(main) {

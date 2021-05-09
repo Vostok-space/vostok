@@ -24,7 +24,6 @@ module.Ok = Ok;
 
 function Do(cmd) {
 	var ret, out;
-	cmd = o7.getjsa(cmd);
 	o7.assert((0xFF & cmd[0]) != 0x00);
 
 	if (child_process != null) {

@@ -42,8 +42,6 @@ module.Close = Close;
 function Read(buf, ofs, count) {
 	var data, i;
 
-	buf = o7.getjsa(buf);
-
 	o7.assert(0 < count);
 	o7.assert((0 <= ofs) && (ofs <= buf.length - count));
 	if (buf instanceof Uint8Array) {

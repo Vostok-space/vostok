@@ -29,7 +29,6 @@ module.GiB = GiB;
 function File() {}
 File.prototype.assign = function(r) {}
 
-getjsa = o7.getjsa;
 utf8ByOfsToStr = o7.utf8ByOfsToStr;
 
 if (typeof require !== 'undefined' && typeof process !== 'undefined') {
@@ -57,7 +56,6 @@ if (fs != null) {
 		name = utf8ByOfsToStr(bytes_name, ofs);
 		if (name != null) {
 			smode = "r";
-			mode = getjsa(mode);
 			for (i = 0; i < mode.length; i += 1) {
 				if (mode[i] == 'w'.charCodeAt(0)) {
 					smode = "w+";
@@ -96,7 +94,6 @@ if (fs != null) {
 
 	module.Read = function(file, buf, ofs, count) {
 		var data, read, i;
-		buf = getjsa(buf);
 		if (typeof buf !== 'Uint8Array') {
 			data = bufGet(count);
 			read = fs.readSync(file.fd, data, 0, count);
@@ -111,7 +108,6 @@ if (fs != null) {
 
 	module.Write = function(file, buf, ofs, count) {
 		var data, write, i;
-		buf = getjsa(buf);
 		if (typeof buf !== 'Uint8Array') {
 			data = bufGet(count);
 			for (i = 0; i < count; i += 1) {
@@ -172,7 +168,6 @@ if (fs != null) {
 	}
 
 	module.Close = function(file, file_ai) {
-		file = getjsa(file);
 		if (file[file_ai]) {
 			file[file_ai].f.close();
 			file[file_ai] = null;
@@ -181,7 +176,6 @@ if (fs != null) {
 
 	module.Read = function(file, buf, ofs, count) {
 		var data, read, i;
-		buf = getjsa(buf);
 		data = new ArrayBuffer(count);
 		read = file.f.read(data, 0, count);
 		if (read > 0) {
@@ -195,7 +189,6 @@ if (fs != null) {
 
 	module.Write = function(file, buf, ofs, count) {
 		var ab, data, i;
-		buf = getjsa(buf);
 		ab = new ArrayBuffer(count);
 		data = new Uint8Array(ab);
 		for (i = 0; i < count; i += 1) {
@@ -233,8 +226,6 @@ if (fs != null) {
 
 	module.Tell = function(file, gibs, gibs_ai, bytes, bytes_ai) {
 		var pos;
-		gibs = getjsa(gibs);
-		bytes = getjsa(bytes);
 		pos = file.tello();
 		if (pos >= 0n) {
 			gibs[gibs_ai] = Number(pos / BigInt(GiB));

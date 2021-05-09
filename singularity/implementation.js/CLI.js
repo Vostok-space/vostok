@@ -25,14 +25,10 @@ var startCliArg, args, nameInd;
 function copy(str, ofs, ofs_ai, argi) {
 	var arg, i, len, j, ok;
 
-	str = o7.getjsa(str);
-	ofs = o7.getjsa(ofs);
-
 	j = ofs[ofs_ai];
 	o7.assert((0 <= j) && (j < str.length));
 
 	arg = o7.toUtf8(args[argi]);
-	arg = o7.getjsa(arg);
 	len = arg.length - 1;
 	ok = j < str.length - len;
 	if (ok) {

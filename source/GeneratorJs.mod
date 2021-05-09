@@ -225,12 +225,10 @@ VAR sel: Ast.Selector;
 
 		PROCEDURE Index(VAR g: Generator; array: Ast.Array; index: Ast.Expression);
 		BEGIN
-			IF ~g.opt.checkIndex THEN
-				ExpressionBraced(g, "[", index, "]", {})
-			ELSIF NeedCheckIndex(array, index) THEN
+			IF g.opt.checkIndex & NeedCheckIndex(array, index) THEN
 				ExpressionBraced(g, ".at(", index, ")", {})
 			ELSE
-				ExpressionBraced(g, "._[", index, "]", {})
+				ExpressionBraced(g, "[", index, "]", {})
 			END
 		END Index;
 	BEGIN
@@ -481,11 +479,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					GlobalName(gen, des.decl);
 					sel := des.sel;
 					WHILE sel # NIL DO
-						IF gen.opt.checkIndex THEN
-							Text.Str(gen, "._[0]")
-						ELSE
-							Text.Str(gen, "[0]")
-						END;
+						Text.Str(gen, "[0]");
 						sel := sel.next
 					END;
 					Text.Str(gen, ".length")
@@ -507,9 +501,6 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Text.Str(gen, "())")
 				ELSE
 					IF (lastSel # NIL) & (lastSel IS Ast.SelArray) THEN
-						IF gen.opt.checkIndex THEN
-							Text.Str(gen, "._")
-						END;
 						ExpressionBraced(gen, "[", lastSel(Ast.SelArray).index, "]", {})
 					END;
 					Text.Str(gen, " = new ");
@@ -656,7 +647,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Designator(gen, e1, {ForSameType, ForAssign});
 					IF gen.opt.checkIndex THEN
 						ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
-						                 "; _d._[_i] = o7.scalb(_d.at(_i), ", {})
+						                 "; _d[_i] = o7.scalb(_d.at(_i), ", {})
 					ELSE
 						ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
 						                 "; _d[_i] = o7.scalb(_d[_i], ", {})
@@ -680,7 +671,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Designator(gen, e1, {ForSameType, ForAssign});
 					IF gen.opt.checkIndex THEN
 						ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
-					                     "; _d._[_i] = o7.frexp(_d.at(_i), ", {})
+					                     "; _d[_i] = o7.frexp(_d.at(_i), ", {})
 					ELSE
 						ExpressionBraced(gen, ", _i = ", sel(Ast.SelArray).index,
 					                     "; _d[_i] = o7.frexp(_d[_i], ", {})
@@ -698,15 +689,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			p2 := call.params.next;
 			CASE call.designator.decl.id OF
 			  SpecIdent.Abs:
-				IF call.type.id = Ast.IdInteger THEN
-					Text.Str(gen, "Math.abs(")
-				ELSIF call.type.id = Ast.IdLongInt THEN
-					Text.Str(gen, "Math.abs(")
-				ELSE
-					Text.Str(gen, "Math.abs(")
-				END;
-				Expression(gen, e1, {});
-				Text.Str(gen, ")")
+				ExpressionBraced(gen, "Math.abs(", e1, ")", {})
 			| SpecIdent.Odd:
 				Text.Str(gen, "(");
 				Factor(gen, e1, {});
@@ -720,7 +703,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Ror:
 				ExpressionBraced(gen, "o7.ror(", e1, ", ", {});
 				Expression(gen, p2.expr, {});
-				Text.Str(gen, ")")
+				Text.Char(gen, ")")
 			| SpecIdent.Floor:
 				ExpressionBraced(gen, "o7.floor(", e1, ")", {})
 			| SpecIdent.Flt:
@@ -1406,11 +1389,7 @@ BEGIN
 		Text.Str(gen, "this.")
 	END;
 	Name(gen, v);
-	IF gen.opt.checkIndex THEN
-		Text.Str(gen, "._[i_] = new ")
-	ELSE
-		Text.Str(gen, "[i_] = new ")
-	END;
+	Text.Str(gen, "[i_] = new ");
 	type(gen, NIL, v.type.type, FALSE, FALSE);
 	Text.StrLn(gen, "();");
 	Text.StrLnClose(gen, "}")
@@ -1803,9 +1782,6 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 				INC(braces);
 				ExpressionBraced(gen, ".put(", lastSel(Ast.SelArray).index, ", ", {})
 			ELSE
-				IF gen.opt.checkIndex THEN
-					Text.Str(gen, "._")
-				END;
 				ExpressionBraced(gen, "[", lastSel(Ast.SelArray).index, "] = ", {})
 			END;
 			IF toByte THEN

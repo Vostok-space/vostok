@@ -17,11 +17,10 @@
 var module = {};
 o7.export.Int64 = module;
 
-var getjsa, assert;
+var assert;
 
 var Size, Sizen, Min, Max, IntMul, IntMax, IntMin, min, max;
 
-getjsa = o7.getjsa;
 assert = o7.assert;
 
 Size = 8;
@@ -45,7 +44,6 @@ function frombig(v, i) {
 
 	assert(Min <= i && i <= Max);
 
-	v = getjsa(v);
 	if (i < 0) {
 		i += Mod;
 	}
@@ -67,7 +65,6 @@ function frombig(v, i) {
 
 function tobig(v) {
 	var b;
-	v = getjsa(v);
 	b =  BigInt(v[0] + (v[1] | (v[2] << 8) | (v[3] << 16)) * 0x100)
 	  | (BigInt(v[4] + (v[5] | (v[6] << 8) | (v[7] << 16)) * 0x100) << 32n);
 	if (b > Max) {
@@ -125,8 +122,6 @@ module.DivMod = DivMod;
 function Cmp(l, r) {
 	var i, cmp, li, ri;
 
-	l = getjsa(l);
-	r = getjsa(r);
 	i = Size - 1;
 	while ((0 < i) && (l[i] == r[i])) {
 		i -= 1;

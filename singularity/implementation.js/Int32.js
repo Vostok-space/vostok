@@ -17,11 +17,10 @@
 var module = {};
 o7.export.Int32 = module;
 
-var getjsa, assert;
+var assert;
 
 var Size, Min, Max, min, max;
 
-getjsa = o7.getjsa;
 assert = o7.assert;
 
 Size = 4;
@@ -36,7 +35,6 @@ max = o7.array(Size);
 module.max = max;
 
 function FromInt(v, i) {
-	v = getjsa(v);
 	v[0] = i & 0xFF;
 	v[1] = (i >> 8) & 0xFF;
 	v[2] = (i >> 16) & 0xFF;
@@ -50,7 +48,6 @@ function fromint(v, i) {
 }
 
 function toint(v) {
-	v = getjsa(v);
 	return v[0] | (v[1] << 8) | (v[2] << 16) | (v[3] << 24);
 }
 
