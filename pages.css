@@ -15,6 +15,11 @@ header {
   padding           : 5px;
 }
 
+footer {
+  background-color  : #DDD;
+  padding           : 5px;
+}
+
 body {
   font-family: Liberation Serif, Times New Roman, sans-serif;
   font-size  : 18px;
