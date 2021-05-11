@@ -20,5 +20,7 @@ function switchLang(lang) {
 }
 
 function switchLangToPreferable() {
-  switchLang(window.navigator.language.slice(0, 2));
+  var url;
+  url = new URL(window.location.href);
+  switchLang(url.searchParams.get("lang") || window.navigator.language.slice(0, 2));
 }
