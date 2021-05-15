@@ -5,9 +5,9 @@ MODULE Eline;
   PROCEDURE Go*;
   VAR line: ARRAY 256 OF CHAR;
   BEGIN
+    Out.Open;
     WHILE EditLine.Read("Example> ", line) DO
-      Out.String(line);
-      line[0] := 0X
+      Out.String(line); Out.Ln
     END
   END Go;
 

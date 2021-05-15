@@ -15,7 +15,7 @@
 #if !defined HEADER_GUARD_EditLine
 #    define  HEADER_GUARD_EditLine 1
 
-extern o7_cbool EditLine_Read(o7_int_t plen, o7_char prompt[O7_VLA(plen)],
+extern o7_cbool EditLine_Read(o7_int_t plen, o7_char const prompt[O7_VLA(plen)],
                               o7_int_t llen, o7_char line[O7_VLA(llen)]);
 
 static inline void EditLine_init(void) { ; }
