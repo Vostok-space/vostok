@@ -22,6 +22,7 @@
 #include "CCompilerInterface.h"
 #include "Message.h"
 #include "MessageErrOberon.h"
+#include "DirForTemp.h"
 #include "CliParser.h"
 #include "Platform.h"
 #include "CFiles.h"
@@ -219,14 +220,9 @@ static o7_bool GetTempOut(o7_int_t dirOut_len0, o7_char dirOut[/*len0*/], o7_int
 
 	*len = 0;
 	if (o7_strcmp(tmp_len0, tmp, 1, (o7_char *)"") != 0) {
-		ok = (0 < 1);
-		O7_ASSERT(Chars0X_CopyString(dirOut_len0, dirOut, len, tmp_len0, tmp));
-	} else if (Platform_Posix) {
-		ok = (0 < 1);
-		O7_ASSERT(Chars0X_CopyString(dirOut_len0, dirOut, len, 10, (o7_char *)"/tmp/ost-") && StringStore_CopyToChars(dirOut_len0, dirOut, len, name));
+		ok = Chars0X_CopyString(dirOut_len0, dirOut, len, tmp_len0, tmp);
 	} else {
-		O7_ASSERT(Platform_Windows);
-		ok = OsEnv_Get(dirOut_len0, dirOut, len, 5, (o7_char *)"temp") && Chars0X_CopyString(dirOut_len0, dirOut, len, 6, (o7_char *)"\\ost-") && StringStore_CopyToChars(dirOut_len0, dirOut, len, name);
+		ok = DirForTemp_Get(dirOut_len0, dirOut, len) && Chars0X_CopyString(dirOut_len0, dirOut, len, 5, (o7_char *)"ost-") && StringStore_CopyToChars(dirOut_len0, dirOut, len, name);
 	}
 
 	if (ok) {
