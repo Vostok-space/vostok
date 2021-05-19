@@ -1,4 +1,4 @@
-/* Copyright 2018-2019 ComdivByZero
+/* Copyright 2018-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,17 @@ public static final boolean Posix,
 
 
 static {
-    Posix      = true;
-    Linux      = true;
+    java.lang.String OS;
+    OS = java.lang.System.getProperty("os.name");
+
+    Linux      = OS.startsWith("Linux");
     Bsd        = false;
     Mingw      = false;
     Dos        = false;
-    Windows    = false;
-    Darwin     = false;
+    Windows    = OS.startsWith("Windows");
+    Darwin     = OS.startsWith("Mac");
+
+    Posix      = Linux || Bsd || Darwin;
 
     C          = false;
     Java       = true;
