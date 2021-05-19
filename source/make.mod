@@ -679,7 +679,7 @@ MODULE make;
    Msg("  Self          build itself then run tests");
    Msg("  SelfFull      build translator by 2nd generation translator then tests");
    Msg("  UseJava       turn translation through Java");
-   Msg("  UseJs         turn translation through Javascript");
+   Msg("  UseJs         turn translation through JavaScript");
    Msg("  UseC          turn translation through C");
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
    Msg("  Opt(content)  string with additional options for the ost-translator");

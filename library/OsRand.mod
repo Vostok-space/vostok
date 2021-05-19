@@ -1,4 +1,4 @@
-(* Copyright 2017-2018 ComdivByZero
+(* Copyright 2017-2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ MODULE OsRand;
        ;
      ELSIF Platform.Java THEN
        init := JavaRand.Open()
-     ELSIF Platform.Javascript THEN
+     ELSIF Platform.JavaScript THEN
        init := JsRand.Open()
      ELSE
        init := WindowsRand.Open()
@@ -50,7 +50,7 @@ MODULE OsRand;
      File.Close(file)
    ELSIF Platform.Java THEN
      JavaRand.Close
-   ELSIF Platform.Javascript THEN
+   ELSIF Platform.JavaScript THEN
      JsRand.Close
    ELSE
      WindowsRand.Close
@@ -67,7 +67,7 @@ MODULE OsRand;
    ELSE
      IF Platform.Java THEN
        ok := JavaRand.Read(buf, ofs, count)
-     ELSIF Platform.Javascript THEN
+     ELSIF Platform.JavaScript THEN
        ok := JsRand.Read(buf, ofs, count)
      ELSE
        ok := WindowsRand.Read(buf, ofs, count)

@@ -28,7 +28,8 @@ public static final boolean Posix,
 
                             C,
                             Java,
-                            Javascript;
+                            JavaScript;
+
 
 static {
     Posix      = true;
@@ -41,7 +42,7 @@ static {
 
     C          = false;
     Java       = true;
-    Javascript = false;
+    JavaScript = false;
 }
 
 }

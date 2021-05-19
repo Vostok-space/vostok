@@ -1,4 +1,4 @@
-(* Copyright 2017-2019 ComdivByZero
+(* Copyright 2017-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ MODULE Platform;
 
    C*,
    Java*,
-   Javascript*: BOOLEAN;
+   JavaScript*: BOOLEAN;
 
 BEGIN
   Posix      := FALSE;
@@ -37,5 +37,5 @@ BEGIN
 
   C          := FALSE;
   Java       := FALSE;
-  Javascript := FALSE;
+  JavaScript := FALSE;
 END Platform.

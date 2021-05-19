@@ -1,5 +1,6 @@
-(*  Executor of Javascript files
- *  Copyright (C) 2018 ComdivByZero
+(*  Executor of JavaScript files
+ *
+ *  Copyright (C) 2018,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -14,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
-MODULE JavascriptExecInterface;
+MODULE JavaScriptExecInterface;
 
   IMPORT V, Exec := PlatformExec;
 
@@ -29,4 +30,4 @@ MODULE JavascriptExecInterface;
     Exec.AddByOfs(e, path, ofs)
   END File;
 
-END JavascriptExecInterface.
+END JavaScriptExecInterface.

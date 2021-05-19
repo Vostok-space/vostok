@@ -40,7 +40,6 @@ IMPORT
 	CComp := CCompilerInterface,
 	JavaComp := JavaCompilerInterface,
 	JavaExec := JavaExecInterface,
-	JsExec := JavascriptExecInterface,
 	Message,
 	MessageErrOberon,
 	InterfaceLang,
@@ -52,7 +51,7 @@ IMPORT
 	FileSys := FileSystemUtil,
 	VCopy,
 	Mem := VMemStream,
-	JsEval, MemStreamToJsEval,
+	JsExec := JavaScriptExecInterface, JsEval, MemStreamToJsEval,
 	ModulesStorage, ModulesProvider, InputProvider, FileProvider,
 	OsSelfMemInfo,
 	TranslatorVersion;

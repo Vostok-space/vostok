@@ -1,4 +1,4 @@
-(*  Generator of Javascript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
+(*  Generator of JavaScript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
  *
  *  Copyright (C) 2016-2021 ComdivByZero
  *

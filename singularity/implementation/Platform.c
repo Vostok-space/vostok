@@ -1,4 +1,4 @@
-/* Copyright 2017-2019 ComdivByZero
+/* Copyright 2017-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,4 +72,4 @@
 
 o7_cbool const Platform_C          = 0 < 1;
 o7_cbool const Platform_Java       = 0 > 1;
-o7_cbool const Platform_Javascript = 0 > 1;
+o7_cbool const Platform_JavaScript = 0 > 1;

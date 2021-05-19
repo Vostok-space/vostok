@@ -1,4 +1,4 @@
-(*  Blank interface of Javascript-code generator
+(*  Blank interface of JavaScript-code generator
  *
  *  Copyright (C) 2019,2021 ComdivByZero
  *

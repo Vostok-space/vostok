@@ -1,4 +1,4 @@
-/* Copyright 2017-2018 ComdivByZero
+/* Copyright 2017-2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ extern o7_cbool const
   Platform_Haiku,
   Platform_C,
   Platform_Java,
-  Platform_Javascript;
+  Platform_JavaScript;
 
 O7_ALWAYS_INLINE void Platform_init(void) {}
 O7_ALWAYS_INLINE void Platform_done(void) {}

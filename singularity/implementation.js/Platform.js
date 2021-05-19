@@ -40,7 +40,7 @@ module.Darwin     = platform == 'darwin';
 
 module.C          = false;
 module.Java       = false;
-module.Javascript = true;
+module.JavaScript = true;
 
 return module;
 })();
