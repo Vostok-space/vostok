@@ -29,14 +29,13 @@ if (typeof require !== 'undefined') {
     platform = os.platform;
 }
 
-module.Posix      = platform == 'linux' || platform == 'darwin'
-                 || platform == 'openbsd' || platform == 'freebsd'
-                 || platform == 'sunos';
-module.Linux      = platform == 'linux';
-module.Bsd        = platform == 'freebsd';
+module.Linux      = platform == 'linux' || platform == 'android';
+module.Bsd        = platform == 'openbsd' || platform == 'freebsd';
 module.Dos        = false;
 module.Windows    = platform == 'win32';
 module.Darwin     = platform == 'darwin';
+
+module.Posix      = module.Linux || module.Bsd || module.Darwin || platform == 'sunos';
 
 module.C          = false;
 module.Java       = false;
