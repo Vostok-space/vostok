@@ -31,15 +31,16 @@ CONST
 
 	ResultJava*    = 5;
 	ResultClass*   = 6;
-	ResultRunJava* = 7;
+	ResultJar*     = 7;
+	ResultRunJava* = 8;
 
-	ResultJs*      = 8;
-	ResultRunJs*   = 9;
+	ResultJs*      = 9;
+	ResultRunJs*   = 10;
 
-	ResultMod*     = 10;
+	ResultMod*     = 11;
 
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
-	ThroughJava* = {ResultJava, ResultClass, ResultRunJava};
+	ThroughJava* = {ResultJava, ResultClass, ResultJar, ResultRunJava};
 	ThroughJs*   = {ResultJs, ResultRunJs};
 	ThroughMod*  = {ResultMod};
 	ForRun*      = {ResultRun, ResultRunJava, ResultRunJs};
@@ -77,6 +78,7 @@ CONST
 	ErrCantFoundJavaCompiler*= -32;
 	ErrTooLongJavaDirs*      = -33;
 	ErrTooLongJsDirs*        = -34;
+	ErrTooLongJarArgs*       = -35;
 
 	(* TODO *)
 	ErrOpenJava*         = -40;
@@ -554,7 +556,7 @@ BEGIN
 			ParseCommand(args.cyrillic # CyrillicNo, args.src, args.script);
 
 		args.resPathLen := 0;
-		args.resPath[0] := Utf8.Null;
+		args.resPath := "";
 		IF forRun THEN
 			;
 		ELSIF GetParam(cpRet, ErrTooLongOutName,
@@ -614,6 +616,8 @@ BEGIN
 		ret := Command(args, ResultJava)
 	ELSIF cmd = "to-class" THEN
 		ret := Command(args, ResultClass)
+	ELSIF cmd = "to-jar" THEN
+		ret := Command(args, ResultJar)
 	ELSIF cmd = "run-java" THEN
 		ret := Command(args, ResultRunJava)
 	ELSIF cmd = "to-js" THEN

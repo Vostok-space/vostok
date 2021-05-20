@@ -1,4 +1,5 @@
 (*  English messages for interface
+ *
  *  Copyright (C) 2017-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -35,13 +36,14 @@ S(" 2) ost to-bin   Code OutBin {-m PM|-i PI|-infr I|-c PHC|-cc CComp|-t Temp}")
 S(" 3) ost run      Code {-m PM|-i PI|-c PHC|-cc CComp|-t Temp} [-- Args]");
 S(" 4) ost to-java  Code OutDir {-m PM | -i PI | -infr Infr}");
 S(" 5) ost to-class Code OutDir {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Temp}");
-S(" 6) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
-S(" 7) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
-S(" 8) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
-S(" 9) ost to-mod   Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
-S(" A) ost          File.mod         [ Args ]");
-S(" B) ost .Command File.mod         [ Args ]");
-S(" C) ost .        File.mod Command [ Args ]")
+S(" 6) ost to-jar   Code OutJar {-m PM|-i PI|-infr I|-jv PJv|-javac JComp|-t Temp}");
+S(" 7) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
+S(" 8) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
+S(" 9) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
+S(" A) ost to-mod   Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
+S(" B) ost          File.mod         [ Args ]");
+S(" C) ost .Command File.mod         [ Args ]");
+S(" D) ost .        File.mod Command [ Args ]")
 	END Short;
 
 	PROCEDURE Details;
@@ -51,11 +53,12 @@ S("2) to-bin   converts modules to executable through implicit .c files");
 S("3) run      executes implicit executable file");
 S("4) to-java  converts modules to .java files");
 S("5) to-class converts modules to .class through implicit .java files");
-S("6) run-java executes implicit class, created from Code");
-S("7) to-js    converts modules to .js files");
-S("8) run-js   executes implicit .js file, created by Code");
-S("9) to-mod   converts to Oberon-modules");
-S("A-C) run code of module in the file, may be used with she-bang");
+S("6) to-jar   converts modules to .jar through implicit .java files");
+S("7) run-java executes implicit class, created from Code");
+S("8) to-js    converts modules to .js files");
+S("9) run-js   executes implicit .js file, created by Code");
+S("A) to-mod   converts to Oberon-modules");
+S("B-D) run code of module in the file, may be used with she-bang");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module [ .Procedure [ '('Parameters')' ] ] .");

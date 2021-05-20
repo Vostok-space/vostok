@@ -22,7 +22,8 @@ IMPORT
 	OsExec,
 	DLog,
 	Platform,
-	Chars0X;
+	Chars0X,
+	CDir;
 
 CONST
 	CodeSize* = 8192;
@@ -206,6 +207,33 @@ BEGIN
 	END
 	RETURN ok
 END AddDirSep;
+
+PROCEDURE IsFullPath(p: ARRAY OF CHAR): BOOLEAN;
+VAR full: BOOLEAN;
+BEGIN
+	IF Platform.Posix THEN
+		full := p[0] = "/"
+	ELSE ASSERT(Platform.Windows);
+	full := (LEN(p) > 1) & (p[1] = ":")
+	END
+	RETURN full
+END IsFullPath;
+
+PROCEDURE AddFullPath*(VAR c: Code; path: ARRAY OF CHAR): BOOLEAN;
+VAR ok: BOOLEAN; p: ARRAY (*TODO*)1024 OF CHAR; l: INTEGER;
+BEGIN
+	IF IsFullPath(path) THEN
+		ok := Add(c, path)
+	ELSE
+		l := 0;
+		ok := CDir.GetCurrent(p, l)
+		    & Chars0X.CopyString(p, l, dirSep)
+		    & Chars0X.CopyString(p, l, path)
+
+		    & Add(c, p)
+	END
+	RETURN ok
+END AddFullPath;
 
 PROCEDURE FirstPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 VAR ok: BOOLEAN;

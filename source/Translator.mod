@@ -40,6 +40,7 @@ IMPORT
 	CComp := CCompilerInterface,
 	JavaComp := JavaCompilerInterface,
 	JavaExec := JavaExecInterface,
+	Jar := JarInterface,
 	Message,
 	MessageErrOberon,
 	InterfaceLang,
@@ -701,7 +702,7 @@ VAR opt: GeneratorJava.Options;
     out, mainClass: ARRAY 1024 OF CHAR;
     prov: ProcNameProvider;
 
-	PROCEDURE Class(m: Ast.Module; VAR args: Cli.Args; call: Ast.Statement;
+	PROCEDURE Class(m: Ast.Module; res: INTEGER; VAR args: Cli.Args; call: Ast.Statement;
 	                prov: ProcNameProvider;
 	                opt: GeneratorJava.Options;
 	                VAR outJava, mainClass: ARRAY OF CHAR;
@@ -742,7 +743,11 @@ VAR opt: GeneratorJava.Options;
 			END;
 			outJava[outJavaLen] := Utf8.Null;
 			IF ret = ErrNo THEN
-				ok := JavaComp.AddDestinationDir(prov.javac, args.resPath);
+				IF res = Cli.ResultJar THEN
+					ok := JavaComp.AddDestinationDir(prov.javac, outJava)
+				ELSE
+					ok := JavaComp.AddDestinationDir(prov.javac, args.resPath)
+				END;
 
 				i := 0;
 				WHILE ok & (args.javaDirs[i] # Utf8.Null) DO
@@ -765,6 +770,21 @@ VAR opt: GeneratorJava.Options;
 		END
 		RETURN ret
 	END Class;
+
+	PROCEDURE ToJar(out, mainClass, res: ARRAY OF CHAR): INTEGER;
+	VAR jar: Jar.T; ret: INTEGER;
+	BEGIN
+		Jar.Init(jar);
+		IF Jar.Create(jar, res)
+		 & Jar.MainClass(jar, mainClass)
+		 & Jar.Clean(jar, " o7/*.class ")
+		THEN
+			ret := Jar.Do(jar, out)
+		ELSE
+			ret := Cli.ErrTooLongJarArgs
+		END
+		RETURN ret
+	END ToJar;
 
 	PROCEDURE Run(outClass, mainClass: ARRAY OF CHAR; arg: INTEGER): INTEGER;
 	VAR cmd: Exec.Code;
@@ -800,8 +820,7 @@ BEGIN
 	SetCommonOptions(opt^, args);
 	ASSERT(JavaComp.Set(javac, "javac"));
 
-	CASE res OF
-	  Cli.ResultJava:
+	IF res = Cli.ResultJava THEN
 		prov.dirLen := 0;
 		ASSERT(Chars0X.CopyChars(prov.dir, prov.dirLen,
 		                         args.resPath, 0, args.resPathLen));
@@ -810,17 +829,20 @@ BEGIN
 		                    prov, opt,
 		                    args.resPath, args.resPathLen, args.javaDirs,
 		                    javac, FALSE)
-	| Cli.ResultClass, Cli.ResultRunJava:
-		ret := Class(module, args, call, prov, opt, out, mainClass, listener);
-		IF (res = Cli.ResultRunJava) & (ret = ErrNo) THEN
+	ELSE
+		ret := Class(module, res, args, call, prov, opt, out, mainClass, listener);
+
+		IF ret # ErrNo THEN
+			;
+		ELSIF res = Cli.ResultRunJava THEN
 			ret := Run(out, mainClass, args.arg)
+		ELSIF res = Cli.ResultJar THEN
+			ret := ToJar(out, mainClass, args.resPath)
 		END;
-		IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo)
-		THEN
+		IF (args.tmp = "") & ~FileSys.RemoveDir(out) & (ret = ErrNo) THEN
 			ret := Cli.ErrCantRemoveOutDir
 		END
 	END
-
 	RETURN ret
 END GenerateThroughJava;
 
