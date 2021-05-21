@@ -167,6 +167,16 @@ BEGIN
 		S("Не получается найти компилятор Java")
 	| Cli.ErrTooLongJavaDirs:
 		S("Общая длина путей с .java-файлами слишком велика")
+	| Cli.ErrTooLongJarArgs:
+		S("Общая длина параметров для jar слишком велика")
+	| Cli.ErrJarExec:
+		S("Ошибка при вызове jar")
+	| Cli.ErrJarGetCurrentDir:
+		S("Ошибка выяснения текущего каталога для настройки вызова jar")
+	| Cli.ErrJarSetDirBefore:
+		S("Ошибка установки текущего каталога для настройки вызова jar")
+	| Cli.ErrJarSetDirAfter:
+		S("Ошибка восстановления текущего каталога после вызова jar")
 
 	| Cli.ErrOpenJs:
 		S("Не получается открыть выходной .js файл")

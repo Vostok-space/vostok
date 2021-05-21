@@ -168,6 +168,16 @@ BEGIN
 		S("Can not found Java compiler")
 	| Cli.ErrTooLongJavaDirs:
 		S("Too long overall length of paths to .java files")
+	| Cli.ErrTooLongJarArgs:
+		S("Too long overall length of arguments for jar-tool")
+	| Cli.ErrJarExec:
+		S("Error during jar-tool call")
+	| Cli.ErrJarGetCurrentDir:
+		S("Can not get current dir for correct setup jar-tool call")
+	| Cli.ErrJarSetDirBefore:
+		S("Can not change current dir for correct setup jar-tool call")
+	| Cli.ErrJarSetDirAfter:
+		S("Can not restore current dir after jar-tool call")
 
 	| Cli.ErrOpenJs:
 		S("Can not open output .js file")

@@ -155,6 +155,16 @@ BEGIN
 		S("Не вдалося знайти компілятор Java")
 	| Cli.ErrTooLongJavaDirs:
 		S("Загальна довжина тек з .java-файлами завелика")
+	| Cli.ErrTooLongJarArgs:
+		S("Загальна довжина параметрів для jar завелика")
+	| Cli.ErrJarExec:
+		S("Помилка при виклику jar")
+	| Cli.ErrJarGetCurrentDir:
+		S("Помилка з'ясування поточної теки для налаштування виклику jar")
+	| Cli.ErrJarSetDirBefore:
+		S("Помилка встановлення поточної теки для налаштування виклику jar")
+	| Cli.ErrJarSetDirAfter:
+		S("Помилка відновлення поточної теки після виклику jar")
 
 	| Cli.ErrOpenJs:
 		S("Не вдається відкрити вихідний .js файл")

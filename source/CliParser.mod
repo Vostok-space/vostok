@@ -79,6 +79,10 @@ CONST
 	ErrTooLongJavaDirs*      = -33;
 	ErrTooLongJsDirs*        = -34;
 	ErrTooLongJarArgs*       = -35;
+	ErrJarExec*              = -36;
+	ErrJarGetCurrentDir*     = -37;
+	ErrJarSetDirBefore*      = -38;
+	ErrJarSetDirAfter*       = -39;
 
 	(* TODO *)
 	ErrOpenJava*         = -40;

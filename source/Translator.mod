@@ -779,7 +779,15 @@ VAR opt: GeneratorJava.Options;
 		 & Jar.MainClass(jar, mainClass)
 		 & Jar.Clean(jar, " o7/*.class ")
 		THEN
-			ret := Jar.Do(jar, out)
+			ret := Jar.Do(jar, out);
+			IF ret # Jar.ErrNo THEN
+				IF ret > 0 THEN
+					ret := Cli.ErrJarExec
+				ELSE
+					ASSERT(Cli.ErrJarSetDirBefore - Cli.ErrJarGetCurrentDir = Jar.ErrGetCurrentDir);
+					INC(ret, Cli.ErrJarGetCurrentDir + 1)
+				END
+			END
 		ELSE
 			ret := Cli.ErrTooLongJarArgs
 		END
