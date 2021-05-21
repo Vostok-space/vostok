@@ -8,6 +8,8 @@ CONST S  = "0123";
 
       S3 = "01";
 
+      S4 = "русскийAтекстFцифра7";
+
 PROCEDURE Err*;
 VAR s1, s2: ARRAY 12 OF CHAR;
 	i: INTEGER;
@@ -65,6 +67,7 @@ PROCEDURE Go*;
 VAR s1, s2: ARRAY 11 OF CHAR;
     s3, s4: ARRAY 2, 11 OF CHAR;
     s0: ARRAY 5 OF CHAR;
+    s5: ARRAY 44 OF CHAR;
     i: INTEGER;
 BEGIN
 	s1 := "0123456789";
@@ -139,6 +142,13 @@ BEGIN
 	s0 := S;
 	ASSERT(Eq(s0, S));
 	ASSERT(Eq(S, s0));
+
+	s5 := S4;
+	ASSERT(s5[14] = "A");
+	ASSERT("F" = s5[25]);
+	ASSERT("7" = s5[36]);
+	ASSERT("7" <= s5[36]);
+	ASSERT("7" >= s5[36])
 END Go;
 
 END String.

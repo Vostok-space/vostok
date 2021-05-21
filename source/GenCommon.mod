@@ -38,7 +38,7 @@ IMPORT
         END
       UNTIL ~Strings.IterNext(it)
     ELSIF identEnc = GenOptions.IdentEncEscUnicode THEN
-      Utf8Transform.Escape(buf, i, it)
+      Utf8Transform.EscapeCyrillic(buf, i, it)
     ELSE ASSERT(identEnc = GenOptions.IdentEncTranslit);
       Utf8Transform.Transliterate(buf, i, it)
     END;

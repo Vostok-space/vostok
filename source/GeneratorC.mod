@@ -19,7 +19,7 @@ MODULE GeneratorC;
 IMPORT
 	V,
 	Ast,
-	Utf8, Utf8Transform, Hex,
+	Utf8, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
@@ -66,7 +66,8 @@ TYPE
 		procLocal*,
 		vla*, vlaMark*,
 		checkNil*,
-		skipUnusedTag*: BOOLEAN;
+		skipUnusedTag*,
+		escapeHighChars*: BOOLEAN;
 
 		memManager*: INTEGER;
 
@@ -1613,7 +1614,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 				Text.Str(gen, "(o7_char *)")
 			END;
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
-				Text.ScreeningString(gen, w)
+				Text.ScreeningString(gen, w, gen.opt.escapeHighChars)
 			ELSE
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
@@ -3267,6 +3268,8 @@ BEGIN
 		o.vlaMark       := TRUE;
 		o.checkNil      := TRUE;
 		o.skipUnusedTag := TRUE;
+		o.escapeHighChars
+		                := o.std < IsoC99;
 		o.memManager    := MemManagerNoFree;
 
 		o.expectArray := FALSE;
@@ -3276,7 +3279,6 @@ BEGIN
 	END
 	RETURN o
 END DefaultOptions;
-
 
 PROCEDURE MarkExpression(e: Ast.Expression);
 BEGIN

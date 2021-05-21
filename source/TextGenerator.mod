@@ -180,8 +180,16 @@ BEGIN
 	Write(gen, data, ofs, count)
 END Data;
 
-PROCEDURE ScreeningString*(VAR gen: Out; str: Strings.String);
-VAR i, last: INTEGER;
+PROCEDURE EscapeHighChar(VAR buf: ARRAY OF CHAR; c: CHAR);
+BEGIN
+	buf[0] := "\";
+	buf[1] := "x";
+	buf[2] := Hexadecimal.To(ORD(c) DIV 10H);
+	buf[3] := Hexadecimal.To(ORD(c) MOD 10H)
+END EscapeHighChar;
+
+PROCEDURE ScreeningString*(VAR gen: Out; str: Strings.String; escapeHighChars: BOOLEAN);
+VAR i, last: INTEGER; buf: ARRAY 4 OF CHAR; lastEscaped: BOOLEAN;
 	block: Strings.Block;
 BEGIN
 	NewLine(gen);
@@ -190,6 +198,7 @@ BEGIN
 	last := i;
 	ASSERT(block.s[i] = Utf8.DQuote);
 	INC(i);
+	lastEscaped := FALSE;
 	WHILE block.s[i] = Utf8.NewPage DO
 		Write(gen, block.s, last, i - last);
 		block := block.next;
@@ -199,9 +208,22 @@ BEGIN
 		Write(gen, block.s, last, i - last + 1);
 		Write(gen, "\", 0, 1);
 		INC(i);
-		last := i
+		last := i;
+		lastEscaped := FALSE
+	ELSIF escapeHighChars
+	   & (   (block.s[i] >= 80X)
+	      OR lastEscaped & Hexadecimal.InRangeWithLowCase(block.s[i])
+	     )
+	DO
+		Write(gen, block.s, last, i - last);
+		EscapeHighChar(buf, block.s[i]);
+		Write(gen, buf, 0, 4);
+		INC(i);
+		last := i;
+		lastEscaped := TRUE
 	ELSIF block.s[i] # Utf8.Null DO
-		INC(i)
+		INC(i);
+		lastEscaped := FALSE
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
 	Write(gen, block.s, last, i - last)

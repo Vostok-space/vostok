@@ -19,7 +19,7 @@ MODULE GeneratorJava;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Utf8, Utf8Transform, Hex,
+	Utf8, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
 	Scanner,
@@ -1036,7 +1036,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		ELSE
 			Text.Str(gen, "O7.bytes(");
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
-				Text.ScreeningString(gen, w)
+				Text.ScreeningString(gen, w, FALSE)
 			ELSE
 				s[0] := Utf8.DQuote;
 				s[1] := "\";

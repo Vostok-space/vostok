@@ -1,5 +1,6 @@
 (*  Transformations from cyrillic Utf-8 to ASC II
- *  Copyright (C) 2016, 2019 ComdivByZero
+ *
+ *  Copyright (C) 2016,2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,28 +17,18 @@
  *)
 MODULE Utf8Transform;
 
-  IMPORT Strings := StringStore, Chars0X;
+  IMPORT Strings := StringStore, Chars0X, Hex;
 
   PROCEDURE Puts(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; str: ARRAY OF CHAR);
   BEGIN
     ASSERT(Chars0X.CopyString(buf, i, str))
   END Puts;
 
-  PROCEDURE Escape*(VAR buf: ARRAY OF CHAR; VAR i: INTEGER;
-                    VAR it: Strings.Iterator);
-  VAR u: INTEGER;
-    PROCEDURE Hex(d: INTEGER): CHAR;
-    VAR c: INTEGER;
-    BEGIN
-      IF d < 10 THEN
-        ASSERT(0 <= d);
-        c := ORD("0") + d
-      ELSE ASSERT(d <= 0FH);
-        c := ORD("A") + d - 0AH
-      END
-      RETURN CHR(c)
-    END Hex;
+  PROCEDURE EscapeCyrillic*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER;
+                            VAR it: Strings.Iterator);
+  VAR u, i: INTEGER;
   BEGIN
+    i := ofs;
     REPEAT
       CASE it.char OF
         "0" .. "9":
@@ -52,13 +43,39 @@ MODULE Utf8Transform;
         ASSERT(Strings.IterNext(it));
         u := u * 64 + ORD(it.char) MOD 64;
         Puts(buf, i, "\u0");
-        buf[i    ] := Hex(u DIV 100H);
-        buf[i + 1] := Hex(u DIV 10H MOD 10H);
-        buf[i + 2] := Hex(u MOD 10H);
+        buf[i    ] := Hex.To(u DIV 100H);
+        buf[i + 1] := Hex.To(u DIV 10H MOD 10H);
+        buf[i + 2] := Hex.To(u MOD 10H);
         INC(i, 3)
       END
     UNTIL ~Strings.IterNext(it);
-  END Escape;
+    ofs := i
+  END EscapeCyrillic;
+
+  PROCEDURE EscapeForC90*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER;
+                          VAR it: Strings.Iterator);
+  VAR i: INTEGER; lastEscaped: BOOLEAN;
+  BEGIN
+    i := ofs;
+    lastEscaped := FALSE;
+    REPEAT
+      IF (it.char < 80X)
+      & ~(lastEscaped & Hex.InRangeWithLowCase(it.char))
+      THEN
+        buf[i] := it.char;
+        INC(i);
+        lastEscaped := FALSE
+      ELSE
+        buf[i] := "\";
+        buf[i + 1] := "x";
+        buf[i + 2] := Hex.To(ORD(it.char) DIV 10H);
+        buf[i + 3] := Hex.To(ORD(it.char) MOD 10H);
+        INC(i, 4);
+        lastEscaped := FALSE
+      END
+    UNTIL ~Strings.IterNext(it);
+    ofs := i
+  END EscapeForC90;
 
   PROCEDURE Transliterate*(VAR buf: ARRAY OF CHAR; VAR i: INTEGER;
                            VAR it: Strings.Iterator);
