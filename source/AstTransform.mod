@@ -1,5 +1,6 @@
 (*  Transformations of abstract syntax tree to simplify generation
- *  Copyright (C) 2018-2019 ComdivByZero
+ *
+ *  Copyright (C) 2018-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -88,10 +89,10 @@ MODULE AstTransform;
   PROCEDURE NameAppend(VAR new: ARRAY OF CHAR; VAR len: INTEGER;
                        name: Strings.String; append: ARRAY OF CHAR);
   BEGIN
-      len := 0;
-      ASSERT(Strings.CopyToChars(new, len, name)
-           & Chars0X.CopyString (new, len, append)
-      )
+    len := 0;
+    ASSERT(Strings.CopyToChars(new, len, name)
+         & Chars0X.CopyString (new, len, append)
+    )
   END NameAppend;
 
   PROCEDURE AstOk(err: INTEGER);

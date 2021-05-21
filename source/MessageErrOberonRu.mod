@@ -344,7 +344,7 @@ BEGIN
 	| Parser.ErrExpectIntOrStrOrQualident:
 		C("Ожидалось число или строка")
 	| Parser.ErrMaybeAssignInsteadEqual:
-		C("Неуместный '='. Возможно, имелcя ввиду ':=' для присваивания")
+		C("Неуместный '='. Возможно, имелся ввиду ':=' для присваивания")
 	| Parser.ErrUnexpectStringInCaseLabel:
 		C("В качестве метки CASE недопустимы не односимвольные строки")
 	| Parser.ErrExpectAnotherModuleName:

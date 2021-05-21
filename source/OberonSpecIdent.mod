@@ -1,5 +1,6 @@
 (*  List of Oberon-07 keywords and predefined identifers
- *  Copyright (C) 2016-2018, 2020 ComdivByZero
+ *
+ *  Copyright (C) 2016-2018, 2020-2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -92,13 +93,13 @@ MODULE OberonSpecIdent;
 
     j := 1;
     i := ind + 1;
-    WHILE (j < LEN(str)) & (buf[i] = str[j]) DO
+    WHILE buf[i] = str[j] DO
       INC(i); INC(j)
     ELSIF buf[i] = Utf8.NewPage DO
       i := 0
     END
   RETURN
-    (buf[i] = Utf8.BackSpace) & ((j = LEN(str)) OR (str[j] = Utf8.Null))
+    (buf[i] = Utf8.BackSpace) & (str[j] = Utf8.Null)
   END Eq;
 
   PROCEDURE O(VAR lex: INTEGER; str: ARRAY OF CHAR; l: INTEGER;
