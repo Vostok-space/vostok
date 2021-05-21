@@ -172,6 +172,7 @@ extern o7_int_t* o7_ints_undef(o7_int_t len, int array[O7_VLA(len)]) {
 	return array;
 }
 
+#if O7_LONG_SUPPORT
 extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]) {
 	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
@@ -179,6 +180,7 @@ extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]) {
 	}
 	return array;
 }
+#endif
 
 extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
                      o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]) {
@@ -207,16 +209,18 @@ extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
 }
 
 extern double o7_raw_unpk(double x, o7_int_t *exp) {
-#	define D 0x0010000000000000ULL
+/*	define D  0x0010000000000000ULL*/
+#	define DH 0x00100000UL
+#	define D32 4294967296.0
 
-	o7_ulong_t u;
+	o7_uint_t u[2];
 	o7_int_t e;
 	double m;
 
-	memcpy(&u, &x, sizeof(u));
+	memcpy(u, &x, sizeof(u));
 
-	e = u / D;
-	m = u % D / (double)D + 1.0;
+	e = u[1] / DH;
+	m = (u[1] % DH * D32 + u[0]) / (DH * D32) + 1.0;
 	if (e >= 0x800) {
 		e -= 0xBFF;
 		m = -m;
@@ -226,11 +230,14 @@ extern double o7_raw_unpk(double x, o7_int_t *exp) {
 	*exp = e;
 	return m;
 
-#	undef D
+#	undef DH
+#	undef D32
 }
 
 extern double o7_raw_ldexp(double x, int n) {
-#	define D 0x8000000000000000ULL
+/*	define D   0x8000000000000000ULL*/
+#	define DF  9223372036854775808.0
+#	define D32 4294967296.0
 
 	o7_int_t e;
 
@@ -240,20 +247,29 @@ extern double o7_raw_ldexp(double x, int n) {
 	if (n > 0) {
 		assert(n < DBL_MAX_EXP);
 		while (n > 63) {
-			x *= D;
+			x *= DF;
 			n -= 63;
 		}
-		x *= 1ULL << n;
+		if (n > 31) {
+			x *= D32;
+			n -= 32;
+		}
+		x *= 1UL << n;
 	} else if (n < DBL_MIN_EXP - DBL_MANT_DIG) {
 		x = 0.0;
 	} else {
 		while (n < -63) {
-			x *= 1.0 / D;
+			x *= 1 / DF;
 			n += 63;
 		}
-		x /= 1ULL << -n;
+		if (n < -31) {
+			x *= 1 / D32;
+			n += 32;
+		}
+		x /= 1UL << -n;
 	}
 	return x;
 
-#	undef D
+#	undef DF
+#	undef D32
 }

@@ -1,4 +1,4 @@
-/* Copyright 2017,2020 ComdivByZero
+/* Copyright 2017,2020-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,18 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdbool.h>
-
-#define O7_BOOL_UNDEFINED
 #include <o7.h>
 
 #include "OsEnv.h"
 
-extern o7_bool OsEnv_Exist(O7_FPA(o7_char const, name)) {
+extern o7_cbool OsEnv_Exist(O7_FPA(o7_char const, name)) {
 	return NULL != getenv((char *)name);
 }
 
-extern o7_bool OsEnv_Get(O7_FPA(o7_char, val), o7_int_t *ofs, O7_FPA(o7_char const, name)) {
+extern o7_cbool OsEnv_Get(O7_FPA(o7_char, val), o7_int_t *ofs, O7_FPA(o7_char const, name)) {
 	char *env;
 	o7_int_t i, j;
 	assert((0 <= *ofs) && (*ofs < O7_FPA_LEN(val) - 1));

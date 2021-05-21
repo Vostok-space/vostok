@@ -1,5 +1,6 @@
 /* Bindings of some functions from unistd.h
- * Copyright 2019-2020 ComdivByZero
+ *
+ * Copyright 2019-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +38,14 @@
 #		define __USE_XOPEN2K
 #	endif
 #	include <unistd.h>
+#endif
+
+#if defined(_SC_PAGESIZE)
+#
+#elif defined(__TenDRA__)
+#	define _SC_PAGESIZE 0x30
+#else
+#	error
 #endif
 
 

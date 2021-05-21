@@ -1,4 +1,4 @@
-/* Copyright 2016-2020 ComdivByZero
+/* Copyright 2016-2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,22 @@
 #	define O7_INIT O7_INIT_UNDEF
 #endif
 
-#if O7_INIT == O7_INIT_UNDEF
-#	if INT_MIN < -INT_MAX
+#if defined(__TenDRA__)
+#	define O7_TWOS_COMPLEMENT     1
+#	define O7_INT_ENOUGH_FOR_32   1
+#	define O7_INT_ENOUGH_FOR_SIZE 1
+#	define O7_LONG_SUPPORT        0
+#	define O7_LONG_ENOUGH_FOR_64  0
+#else
+#	define O7_TWOS_COMPLEMENT (INT_MIN < -INT_MAX)
+#	define O7_INT_ENOUGH_FOR_32 (INT_MAX >= 2147483647)
+#	define O7_LONG_ENOUGH_FOR_64 (LONG_MAX > 2147483647l)
+#	define O7_LONG_SUPPORT (0 < 1)
+#	define O7_INT_ENOUGH_FOR_SIZE (((size_t)-1) == O7_UINT_MAX)
+#endif
+
+#if (O7_INIT == O7_INIT_UNDEF)
+#	if O7_TWOS_COMPLEMENT
 #		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
 #		define O7_LONG_UNDEF (-1 - O7_LONG_MAX)
 #	else
@@ -109,7 +123,7 @@ typedef char unsigned o7_char;
 	typedef O7_INT_T  o7_int_t;
 	typedef O7_UINT_T o7_uint_t;
 #else
-#	if INT_MAX >= 2147483647
+#	if O7_INT_ENOUGH_FOR_32
 #		define O7_INT_MAX 2147483647
 #		define O7_UINT_MAX 4294967295u
 		typedef int           o7_int_t;
@@ -147,22 +161,22 @@ enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 #	else
 #		define O7_LABS(val) O7_LONG_ABS(val)
 #	endif
+#elif !O7_LONG_SUPPORT
+#
+#elif O7_LONG_ENOUGH_FOR_64
+#	define O7_LONG_MAX  9223372036854775807l
+#	define O7_ULONG_MAX 18446744073709551615ul
+	typedef long               o7_long_t;
+	typedef long unsigned      o7_ulong_t;
+#	define O7_LABS(val)        labs(val)
+#elif LLONG_MAX >= 9223372036854775807ll
+#	define O7_LONG_MAX  9223372036854775807ll
+#	define O7_ULONG_MAX 18446744073709551615ull
+	typedef long long          o7_long_t;
+	typedef long long unsigned o7_ulong_t;
+#	define O7_LABS(val)        llabs(val)
 #else
-#	if LONG_MAX  > 2147483647l
-#		define O7_LONG_MAX  9223372036854775807l
-#		define O7_ULONG_MAX 18446744073709551615ul
-		typedef long               o7_long_t;
-		typedef long unsigned      o7_ulong_t;
-#		define O7_LABS(val)        labs(val)
-#	elif LLONG_MAX >= 9223372036854775807ll
-#		define O7_LONG_MAX  9223372036854775807ll
-#		define O7_ULONG_MAX 18446744073709551615ull
-		typedef long long          o7_long_t;
-		typedef long long unsigned o7_ulong_t;
-#		define O7_LABS(val)        llabs(val)
-#	else
-#		error
-#	endif
+#	error
 #endif
 
 #if O7_GNUC_BUILTIN_OVERFLOW
@@ -210,7 +224,9 @@ enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 #endif
 
 typedef o7_uint_t  o7_set_t;
-typedef o7_ulong_t o7_set64_t;
+#if O7_LONG_SUPPORT
+	typedef o7_ulong_t o7_set64_t;
+#endif
 
 #define O7_MEMNG_NOFREE  0
 #define O7_MEMNG_COUNTER 1
@@ -232,7 +248,7 @@ typedef o7_ulong_t o7_set64_t;
 
 #if defined(O7_MEMNG_NOFREE_BUFFER_SIZE)
 #elif O7_MEMNG == O7_MEMNG_NOFREE
-#	define O7_MEMNG_NOFREE_BUFFER_SIZE (256lu * 1024 * 1024)
+#	define O7_MEMNG_NOFREE_BUFFER_SIZE (128lu * 1024 * 1024)
 #else
 #	define O7_MEMNG_NOFREE_BUFFER_SIZE 1lu
 #endif
@@ -271,7 +287,7 @@ typedef o7_ulong_t o7_set64_t;
 	typedef int       o7_mmc_t;
 #elif defined(__clang__) && (__SIZEOF_POINTER__ == __SIZEOF_LONG__)
 	typedef long      o7_mmc_t;
-#elif ((size_t)-1) == O7_UINT_MAX
+#elif O7_INT_ENOUGH_FOR_SIZE
 	typedef o7_int_t  o7_mmc_t;
 #elif ((size_t)-1) == O7_ULONG_MAX
 	typedef o7_long_t o7_mmc_t;
@@ -303,7 +319,7 @@ enum {
 };
 
 typedef struct {
-	o7_ulong_t addr;
+	o7_uint_t addr[2];
 	o7_uint_t  ofs, size;
 } o7_e2k_ptr128_t;
 
@@ -585,12 +601,6 @@ char unsigned o7_byte(int v) {
 }
 
 O7_CONST_INLINE
-char unsigned o7_lbyte(o7_long_t v) {
-	o7_assert((o7_ulong_t)v <= 0x100);
-	return (char unsigned)v;
-}
-
-O7_CONST_INLINE
 char unsigned o7_chr(int v) {
 	o7_assert((unsigned)v <= 0x100);
 	return (char unsigned)v;
@@ -600,7 +610,7 @@ char unsigned o7_chr(int v) {
  * компиляторов и платформ */
 O7_CONST_INLINE
 double o7_dbl_finite(double v) {
-	o7_assert((-DBL_MAX <= v) && (v <= DBL_MAX));
+	o7_assert(((-1.0/0.0) < v) && (v < (1.0/0.0)));
 	return v;
 }
 
@@ -681,26 +691,9 @@ extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]);
 #define O7_INTS_UNDEF(array) \
 	o7_ints_undef((o7_int_t)(sizeof(array) / (sizeof(o7_int_t))), (o7_int_t *)(array))
 
-O7_CONST_INLINE
-o7_bool o7_long_inited(o7_long_t i) {
-	return O7_EXPECT(i >= -O7_LONG_MAX);
-}
-
-O7_CONST_INLINE
-o7_long_t o7_long(o7_long_t i) {
-	if (O7_UNDEF) {
-		o7_assert(o7_long_inited(i));
-	}
-	return i;
-}
-
 #define O7_MUL(a, b) ((a) * (b))
 #define O7_DIV(n, d) ((0 <= n) ? ((n) / (d)) : (-1 - (-1 - (n)) / (d)))
 #define O7_MOD(n, d) ((0 <= n) ? ((n) % (d)) : ((d) - 1 - (-1 - (n)) % (d)))
-
-extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]);
-#define O7_LONGS_UNDEF(array) \
-	o7_longs_undef((o7_int_t)(sizeof(array) / (sizeof(int))), (o7_long_t *)(array))
 
 O7_CONST_INLINE
 o7_int_t o7_add(o7_int_t a1, o7_int_t a2) {
@@ -845,6 +838,25 @@ o7_int_t o7_mod(o7_int_t n, o7_int_t d) {
 	return o7_mod_nat(n, o7_divisor(d));
 }
 
+#if O7_LONG_SUPPORT
+
+O7_CONST_INLINE
+o7_bool o7_long_inited(o7_long_t i) {
+	return O7_EXPECT(i >= -O7_LONG_MAX);
+}
+
+O7_CONST_INLINE
+o7_long_t o7_long(o7_long_t i) {
+	if (O7_UNDEF) {
+		o7_assert(o7_long_inited(i));
+	}
+	return i;
+}
+
+extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]);
+#define O7_LONGS_UNDEF(array) \
+	o7_longs_undef((o7_int_t)(sizeof(array) / (sizeof(int))), (o7_long_t *)(array))
+
 O7_CONST_INLINE
 o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
 	o7_long_t s;
@@ -985,6 +997,62 @@ o7_long_t o7_lmod(o7_long_t n, o7_long_t d) {
 	return o7_lmod_nat(n, o7_ldivisor(d));
 }
 
+O7_CONST_INLINE
+char unsigned o7_lbyte(o7_long_t v) {
+	o7_assert((o7_ulong_t)v <= 0x100);
+	return (char unsigned)v;
+}
+
+O7_CONST_INLINE
+int o7_lcmp(o7_long_t a, o7_long_t b) {
+	int cmp;
+	if (a < b) {
+		if (O7_UNDEF) {
+			o7_assert(o7_long_inited(a));
+		}
+		cmp = -1;
+	} else {
+		if (O7_UNDEF) {
+			o7_assert(o7_long_inited(b));
+		}
+		if (a == b) {
+			cmp = 0;
+		} else {
+			cmp = 1;
+		}
+	}
+	return cmp;
+}
+
+O7_CONST_INLINE
+o7_ulong_t o7_lset(o7_int_t low, o7_int_t high) {
+	o7_assert(high <= 63);
+	o7_assert(0 <= low && low <= high);
+	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
+}
+
+#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
+
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
+
+O7_CONST_INLINE
+o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
+	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
+}
+
+#else /* O7_LONG_SUPPORT */
+
+#define O7_SET(low, high) (((o7_uint_t)-1 << low) & ((o7_uint_t)-1 >> (31 - high)))
+
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != ((set) & ((o7_uint_t)1u << (n)))))
+
+O7_CONST_INLINE
+o7_bool o7_in(o7_int_t n, o7_uint_t set) {
+	return (n >= 0) && (n <= 31) && (0 != (set & ((o7_uint_t)1 << n)));
+}
+
+#endif /* O7_LONG_SUPPORT */
+
 #define O7_ASR(n, shift) \
 	((O7_ARITHMETIC_SHIFT || (n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift)))
 
@@ -1041,27 +1109,6 @@ int o7_cmp(o7_int_t a, o7_int_t b) {
 	} else {
 		if (O7_UNDEF) {
 			o7_assert(o7_int_inited(b));
-		}
-		if (a == b) {
-			cmp = 0;
-		} else {
-			cmp = 1;
-		}
-	}
-	return cmp;
-}
-
-O7_CONST_INLINE
-int o7_lcmp(o7_long_t a, o7_long_t b) {
-	int cmp;
-	if (a < b) {
-		if (O7_UNDEF) {
-			o7_assert(o7_long_inited(a));
-		}
-		cmp = -1;
-	} else {
-		if (O7_UNDEF) {
-			o7_assert(o7_long_inited(b));
 		}
 		if (a == b) {
 			cmp = 0;
@@ -1272,21 +1319,6 @@ o7_uint_t o7_set(o7_int_t low, o7_int_t high) {
 	return (~(o7_uint_t)0 << low) & (~(o7_uint_t)0 >> (31 - high));
 }
 
-O7_CONST_INLINE
-o7_ulong_t o7_lset(o7_int_t low, o7_int_t high) {
-	o7_assert(high <= 63);
-	o7_assert(0 <= low && low <= high);
-	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
-}
-
-#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
-
-O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
-	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
-}
-
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
 
 O7_CONST_INLINE
 o7_int_t o7_sti(o7_uint_t v) {
