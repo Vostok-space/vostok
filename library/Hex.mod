@@ -1,6 +1,6 @@
 (* Converter of hexadecimal in char to integer and vise versa
  *
- * Copyright 2019 ComdivByZero
+ * Copyright 2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,24 +32,46 @@ CONST
   END To;
 
   PROCEDURE InRange*(ch: CHAR): BOOLEAN;
-  BEGIN
   RETURN
       ("0" <= ch) & (ch <= "9")
    OR ("A" <= ch) & (ch <= "F")
   END InRange;
+
+  PROCEDURE InRangeWithLowCase*(ch: CHAR): BOOLEAN;
+  RETURN
+      ("0" <= ch) & (ch <= "9")
+   OR ("A" <= ch) & (ch <= "F")
+   OR ("a" <= ch) & (ch <= "f")
+  END InRangeWithLowCase;
 
   PROCEDURE From*(d: CHAR): INTEGER;
   VAR i: INTEGER;
   BEGIN
     ASSERT(InRange(d));
 
-    IF (d >= "0") & (d <= "9") THEN
+    IF ("0" <= d) & (d <= "9") THEN
       i := ORD(d) - ORD("0")
-    ELSE ASSERT((d >= "A") & (d <= "F"));
+    ELSE ASSERT(("A" <= d) & (d <= "F"));
       i := 10 + ORD(d) - ORD("A")
     END;
   RETURN
     i
   END From;
+
+  PROCEDURE FromWithLowCase*(d: CHAR): INTEGER;
+  VAR i: INTEGER;
+  BEGIN
+    ASSERT(InRangeWithLowCase(d));
+
+    IF ("0" <= d) & (d <= "9") THEN
+      i := ORD(d) - ORD("0")
+    ELSIF ("A" <= d) & (d <= "F") THEN
+      i := 10 + ORD(d) - ORD("A")
+    ELSE
+      i := 10 + ORD(d) - ORD("a")
+    END;
+  RETURN
+    i
+  END FromWithLowCase;
 
 END Hex.
