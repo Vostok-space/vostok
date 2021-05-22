@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ public static int Do(final byte[] cmd) {
         ret = p.waitFor();
         print(p.getInputStream(), buf, java.lang.System.out);
         print(p.getErrorStream(), buf, java.lang.System.err);
-    } catch (java.lang.InterruptedException | java.io.IOException e) {
+    } catch (java.lang.InterruptedException e) {
+        ret = -1;
+    } catch (java.io.IOException e) {
         ret = -1;
     }
     return ret;

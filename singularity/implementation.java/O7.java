@@ -25,7 +25,7 @@ public static ArgsReceiver argsReceiver = null;
 public static final byte BOOL_UNDEF   = (byte)0xFF;
 public static final int  INT_UNDEF    = Integer.MIN_VALUE;
 public static final long LONG_UNDEF   = Long.MIN_VALUE;
-public static final long DOUBLE_UNDEF = 0x7FFF_FFFF_0000_0000L;
+public static final long DOUBLE_UNDEF = 0x7FFFFFFF00000000L;
 
 public static final java.nio.charset.Charset UTF_8
                   = java.nio.charset.Charset.forName("UTF-8");
@@ -35,7 +35,7 @@ static byte[][] args      = new byte[][]{};
 
 private static
     java.lang.ref.SoftReference<java.util.HashMap<java.lang.String, byte[]>>
-    stringsCache = new java.lang.ref.SoftReference<>(null);
+    stringsCache = new java.lang.ref.SoftReference<java.util.HashMap<java.lang.String, byte[]>>(null);
 
 public static void exit() {
     if (0 != exitCode) {
@@ -229,7 +229,7 @@ public static void scalb(final double d[], final int d_i, final int n) {
 }
 
 public static double frexp(final double d, final int[] n, final int n_i) {
-    final long bits, mantissa, dm;
+    final long bits, mantissa;
     long       divider;
     int        exponent;
 
@@ -241,9 +241,9 @@ public static double frexp(final double d, final int[] n, final int n_i) {
 
     if (exponent == 0) {
         exponent =  1;
-        mantissa =  bits & 0x000F_FFFF_FFFF_FFFFL;
+        mantissa =  bits & 0x000FFFFFFFFFFFFFL;
     } else {
-        mantissa = (bits & 0x000F_FFFF_FFFF_FFFFL) | (1L << 52);
+        mantissa = (bits & 0x000FFFFFFFFFFFFFL) | (1L << 52);
     }
 
     exponent -= 1075;
@@ -282,8 +282,9 @@ public static byte[] bytes(final java.lang.String s) {
 
     cache = stringsCache.get();
     if (cache == null) {
-        cache = new java.util.HashMap<>();
-        stringsCache = new java.lang.ref.SoftReference<>(cache);
+        cache = new java.util.HashMap<java.lang.String, byte[]>();
+        stringsCache =
+            new java.lang.ref.SoftReference<java.util.HashMap<java.lang.String, byte[]>>(cache);
         ba = null;
     } else {
         ba = cache.get(s);
