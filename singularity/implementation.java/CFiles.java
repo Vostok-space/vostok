@@ -1,4 +1,4 @@
-/* Copyright 2018-2019 ComdivByZero
+/* Copyright 2018-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,18 @@ public static final int KiB = 1024,
                         GiB = 1024 * MiB;
 
 public static class File {
-    java.nio.channels.FileChannel fc;
-    java.io.InputStream           is;
-    java.io.OutputStream          os;
+    java.io.RandomAccessFile fc;
+    java.io.InputStream      is;
+    java.io.OutputStream     os;
 }
 
 public static File in_ = null,
                    out = null,
                    err = null;
 
-public static final File Open(final byte[] name, final int ofs, final byte[] mode) {
+public static final File Open(byte[] name, int ofs, byte[] mode) {
     File f;
-    java.nio.channels.FileChannel fc;
+    java.io.RandomAccessFile fc;
     java.lang.String smode;
 
     smode = "r";
@@ -44,7 +44,7 @@ public static final File Open(final byte[] name, final int ofs, final byte[] mod
                 smode = "rw";
             }
         }
-        fc = new java.io.RandomAccessFile(O7.string(name), smode).getChannel();
+        fc = new java.io.RandomAccessFile(O7.string(name), smode);
         f = new File();
         f.fc = fc;
     } catch (java.lang.Exception e) {
@@ -53,7 +53,7 @@ public static final File Open(final byte[] name, final int ofs, final byte[] mod
     return f;
 }
 
-public static final void Close(final File[] file, final int file_i) {
+public static final void Close(File[] file, int file_i) {
     File f;
     f = file[file_i];
     try {
@@ -71,14 +71,11 @@ public static final void Close(final File[] file, final int file_i) {
     file[file_i] = null;
 }
 
-public static final int
-Read(final File file, final byte[] buf, final int ofs, final int count) {
-    java.nio.ByteBuffer bb;
+public static final int Read(File file, byte[] buf, int ofs, int count) {
     int read;
     try {
         if (file.fc != null) {
-            bb = java.nio.ByteBuffer.wrap(buf, ofs, count);
-            read = file.fc.read(bb);
+            read = file.fc.read(buf, ofs, count);
             if (read == -1) {
                 read = 0;
             }
@@ -95,13 +92,12 @@ Read(final File file, final byte[] buf, final int ofs, final int count) {
 }
 
 public static final int
-Write(final File file, final byte[] buf, final int ofs, final int count) {
-    java.nio.ByteBuffer bb;
+Write(File file, byte[] buf, int ofs, int count) {
     int write;
     try {
         if (file.fc != null) {
-            bb = java.nio.ByteBuffer.wrap(buf, ofs, count);
-            write = file.fc.write(bb);
+            file.fc.write(buf, ofs, count);
+            write = count;
         } else if (file.os != null) {
             file.os.write(buf, ofs, count);
             write = count;
@@ -114,17 +110,15 @@ Write(final File file, final byte[] buf, final int ofs, final int count) {
     return write;
 }
 
-public static final int
-ReadChars(final File file, final byte[] buf, final int ofs, final int count) {
+public static final int ReadChars(File file, byte[] buf, int ofs, int count) {
     return Read(file, buf, ofs, count);
 }
 
-public static final int
-WriteChars(final File file, final byte[] buf, final int ofs, final int count) {
+public static final int WriteChars(File file, byte[] buf, int ofs, int count) {
     return Write(file, buf, ofs, count);
 }
 
-public static final boolean Flush(final File file) {
+public static final boolean Flush(File file) {
     return false;
 }
 
