@@ -1,7 +1,7 @@
 #!/bin/sh
 
 BS=bootstrap
-SING=$BS/singularity
+SING=singularity/implementation
 
 O7_OPT="-DO7_MEMNG_MODEL=O7_MEMNG_NOFREE"
 WARN="-Wall -Wno-parentheses"
@@ -27,7 +27,8 @@ search_cc() {
 
 build() {
     mkdir -p result
-    $CC $CC_OPT -I$BS -I$SING $BS/*.c $SING/*.c -o result/bs-ost
+    SING_C="$SING/CFiles.c $SING/CLI.c $SING/OsEnv.c $SING/OsExec.c $SING/Platform.c $SING/o7.c"
+    $CC $CC_OPT -I$BS -I$SING $BS/*.c $SING_C -o result/bs-ost
 }
 
 info() {

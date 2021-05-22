@@ -1,5 +1,6 @@
 @MKDIR result\v0 result\v1 2>NUL
-@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c LongSet.c Chars0X.c ArrayCopy.c FileProvider.c GenCommon.c GenOptions.c Hex.c InputProvider.c MessageErrOberon.c Utf8.c DirForTemp.c singularity\CFiles.c singularity\CLI.c singularity\o7.c singularity\OsExec.c singularity\Platform.c singularity\OsEnv.c
+@SET SING=..\singularity\implementation
+@SET SRC=CheckIntArithmetic.c Scanner.c Ast.c StringStore.c GeneratorC.c TextGenerator.c TypesLimits.c Translator.c Log.c Message.c V.c Out.c VDataStream.c Parser.c VFileStream.c PlatformExec.c CliParser.c OberonSpecIdent.c SpecIdentChecker.c ModulesStorage.c CCompilerInterface.c ModulesProvider.c FileSystemUtil.c LongSet.c Chars0X.c ArrayCopy.c FileProvider.c GenCommon.c GenOptions.c Hex.c InputProvider.c MessageErrOberon.c Utf8.c DirForTemp.c %SING%\CFiles.c %SING%\CLI.c %SING%\o7.c %SING%\OsExec.c %SING%\Platform.c %SING%\OsEnv.c
 
 
 @SET CC=tcc
@@ -26,7 +27,7 @@
 @ECHO Compiler is %CC%
 
 @CD bootstrap
-@%CC% %SRC%  -I . -I singularity -o ..\result\bs-ost.exe
+@%CC% %SRC%  -I . -I %SING% -o ..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
 @CD ..
 @EXIT
@@ -37,7 +38,7 @@
 
 @CD bootstrap
 :: @cl /TP - Режим C++
-@cl %SRC% /I. /Isingularity /Fe:..\result\bs-ost.exe
+@cl %SRC% /I. /I%SING% /Fe:..\result\bs-ost.exe
 @IF %ERRORLEVEL%==0 GOTO SUCCESS
 @CD ..
 @EXIT
@@ -48,3 +49,5 @@
 @ECHO:
 @ECHO Bootstrap version of translator was built. Info about next steps:
 @ECHO   result\bs-ost run make.Help -infr . -m source
+@ECHO To build and test run:
+@ECHO   result\bs-ost run 'make.Build; make.Test' -infr . -m source
