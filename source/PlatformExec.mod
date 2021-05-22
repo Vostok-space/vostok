@@ -1,4 +1,5 @@
 (*  Wrapper over OS-specific execution
+ *
  *  Copyright (C) 2017-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -214,13 +215,13 @@ BEGIN
 	IF Platform.Posix THEN
 		full := p[0] = "/"
 	ELSE ASSERT(Platform.Windows);
-	full := (LEN(p) > 1) & (p[1] = ":")
+		full := (LEN(p) > 1) & (p[1] = ":")
 	END
 	RETURN full
 END IsFullPath;
 
 PROCEDURE AddFullPath*(VAR c: Code; path: ARRAY OF CHAR): BOOLEAN;
-VAR ok: BOOLEAN; p: ARRAY (*TODO*)1024 OF CHAR; l: INTEGER;
+VAR ok: BOOLEAN; p: ARRAY (*TODO*)1000H OF CHAR; l: INTEGER;
 BEGIN
 	IF IsFullPath(path) THEN
 		ok := Add(c, path)
