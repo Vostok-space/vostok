@@ -465,9 +465,33 @@ VAR ret: INTEGER;
 	              VAR listener: V.Base): INTEGER;
 	VAR outCLen: INTEGER;
 	    ret: INTEGER;
-	    i, nameLen, ccEnd: INTEGER;
+	    ccEnd: INTEGER;
 	    ok: BOOLEAN;
-	    name: ARRAY 512 OF CHAR;
+
+	    PROCEDURE IncludeCdirsAndAddO7c(VAR cmd: CComp.Compiler; cDirs: ARRAY OF CHAR): BOOLEAN;
+	    VAR ok, o7c: BOOLEAN; i, nameLen: INTEGER; name: ARRAY 512 OF CHAR;
+		BEGIN
+			i := 0;
+			o7c := FALSE;
+			ok := TRUE;
+			WHILE ok & (cDirs[i] # Utf8.Null) DO
+				nameLen := 0;
+				ok := CComp.AddInclude(cmd, cDirs, i);
+				IF ~o7c & ok THEN
+					ok := Chars0X.Copy      (name, nameLen, cDirs, i)
+					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
+					    & Chars0X.CopyString(name, nameLen, "o7.c");
+					o7c := ok & Files.Exist(name, 0);
+					IF o7c THEN
+						ok := CComp.AddC(cmd, name, 0)
+					END;
+					INC(i)
+				ELSE
+					INC(i, Chars0X.CalcLen(cDirs, i) + 1)
+				END
+			END
+			RETURN ok
+		END IncludeCdirsAndAddO7c;
 	BEGIN
 		ok := GetTempOutC(outC, outCLen, bin, module.name, tmp, listener);
 		IF ~ok THEN
@@ -492,28 +516,16 @@ VAR ret: INTEGER;
 			IF ret = ErrNo THEN
 				ok := ok
 				    & CComp.AddOutputExe(cmd, bin)
-				    & CComp.AddInclude(cmd, outC, 0);
-				i := 0;
-				WHILE ok & (cDirs[i] # Utf8.Null) DO
-					nameLen := 0;
-					ok := CComp.AddInclude(cmd, cDirs, i)
-
-					    & Chars0X.Copy      (name, nameLen, cDirs, i)
-					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
-					    & Chars0X.CopyString(name, nameLen, "o7.c")
-
-					    & (~Files.Exist(name, 0) OR CComp.AddC(cmd, name, 0));
-					INC(i)
-				END;
-				ok := ok
-				& (  (opt.memManager # GeneratorC.MemManagerCounter)
-				  OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")
-				  )
-				& (  (opt.memManager # GeneratorC.MemManagerGC)
-				  OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_GC")
-				   & CComp.AddOpt(cmd, "-lgc")
-				  )
-				& (~Platform.Posix OR CComp.AddOpt(cmd, "-lm"));
+				    & CComp.AddInclude(cmd, outC, 0)
+				    & IncludeCdirsAndAddO7c(cmd, cDirs)
+				    & (  (opt.memManager # GeneratorC.MemManagerCounter)
+				      OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")
+				      )
+				    & (  (opt.memManager # GeneratorC.MemManagerGC)
+				      OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_GC")
+				       & CComp.AddOpt(cmd, "-lgc")
+				      )
+				    & (~Platform.Posix OR CComp.AddOpt(cmd, "-lm"));
 
 				IF ok & (ccEnd < LEN(cc) - 1) & (cc[ccEnd + 1] # Utf8.Null)
 				THEN

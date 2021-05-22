@@ -326,11 +326,36 @@ static void GenerateThroughC_SetOptions(struct GeneratorC_Options__s *opt, struc
 	}
 }
 
-static o7_int_t GenerateThroughC_Bin(o7_int_t res, struct CliParser_Args *args, struct Ast_RModule *module_, struct Ast_RStatement *call, struct GeneratorC_Options__s *opt, o7_int_t cDirs_len0, o7_char cDirs[/*len0*/], o7_int_t cc_len0, o7_char cc[/*len0*/], o7_int_t outC_len0, o7_char outC[/*len0*/], o7_int_t bin_len0, o7_char bin[/*len0*/], struct CCompilerInterface_Compiler *cmd, o7_int_t tmp_len0, o7_char tmp[/*len0*/], struct V_Base *listener) {
-	o7_int_t outCLen = 0, ret, i, nameLen, ccEnd;
-	o7_bool ok;
+static o7_bool GenerateThroughC_Bin_IncludeCdirsAndAddO7c(struct CCompilerInterface_Compiler *cmd, o7_int_t cDirs_len0, o7_char cDirs[/*len0*/]) {
+	o7_bool ok, o7c;
+	o7_int_t i, nameLen;
 	o7_char name[512];
 	memset(&name, 0, sizeof(name));
+
+	i = 0;
+	o7c = (0 > 1);
+	ok = (0 < 1);
+	while (ok && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
+		nameLen = 0;
+		ok = CCompilerInterface_AddInclude(cmd, cDirs_len0, cDirs, i);
+		if (!o7c && ok) {
+			ok = Chars0X_Copy(512, name, &nameLen, cDirs_len0, cDirs, &i) && Chars0X_CopyString(512, name, &nameLen, 2, PlatformExec_dirSep) && Chars0X_CopyString(512, name, &nameLen, 5, (o7_char *)"o7.c");
+			o7c = ok && CFiles_Exist(512, name, 0);
+			if (o7c) {
+				ok = CCompilerInterface_AddC(cmd, 512, name, 0);
+			}
+			i = o7_add(i, 1);
+		} else {
+			i = o7_add(i, o7_add(Chars0X_CalcLen(cDirs_len0, cDirs, i), 1));
+		}
+	}
+	return ok;
+}
+
+
+static o7_int_t GenerateThroughC_Bin(o7_int_t res, struct CliParser_Args *args, struct Ast_RModule *module_, struct Ast_RStatement *call, struct GeneratorC_Options__s *opt, o7_int_t cDirs_len0, o7_char cDirs[/*len0*/], o7_int_t cc_len0, o7_char cc[/*len0*/], o7_int_t outC_len0, o7_char outC[/*len0*/], o7_int_t bin_len0, o7_char bin[/*len0*/], struct CCompilerInterface_Compiler *cmd, o7_int_t tmp_len0, o7_char tmp[/*len0*/], struct V_Base *listener) {
+	o7_int_t outCLen = 0, ret, ccEnd;
+	o7_bool ok;
 
 	ok = GetTempOutC(outC_len0, outC, &outCLen, bin_len0, bin, &module_->_._.name, tmp_len0, tmp, listener);
 	if (!ok) {
@@ -353,13 +378,8 @@ static o7_int_t GenerateThroughC_Bin(o7_int_t res, struct CliParser_Args *args, 
 		}
 		outC[o7_ind(outC_len0, outCLen)] = 0x00u;
 		if (ret == Translator_ErrNo_cnst) {
-			ok = ok && CCompilerInterface_AddOutputExe(cmd, bin_len0, bin) && CCompilerInterface_AddInclude(cmd, outC_len0, outC, 0);
-			i = 0;
-			while (ok && (cDirs[o7_ind(cDirs_len0, i)] != 0x00u)) {
-				nameLen = 0;
-				ok = CCompilerInterface_AddInclude(cmd, cDirs_len0, cDirs, i) && Chars0X_Copy(512, name, &nameLen, cDirs_len0, cDirs, &i) && Chars0X_CopyString(512, name, &nameLen, 2, PlatformExec_dirSep) && Chars0X_CopyString(512, name, &nameLen, 5, (o7_char *)"o7.c") && (!CFiles_Exist(512, name, 0) || CCompilerInterface_AddC(cmd, 512, name, 0));
-				i = o7_add(i, 1);
-			}
+			ok = ok && CCompilerInterface_AddOutputExe(cmd, bin_len0, bin) && CCompilerInterface_AddInclude(cmd, outC_len0, outC, 0)
+                    && GenerateThroughC_Bin_IncludeCdirsAndAddO7c(cmd, cDirs_len0, cDirs);
 			ok = ok && ((opt->memManager != GeneratorC_MemManagerCounter_cnst) || CCompilerInterface_AddOpt(cmd, 34, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")) && ((opt->memManager != GeneratorC_MemManagerGC_cnst) || CCompilerInterface_AddOpt(cmd, 29, (o7_char *)"-DO7_MEMNG_MODEL=O7_MEMNG_GC") && CCompilerInterface_AddOpt(cmd, 5, (o7_char *)"-lgc")) && (!Platform_Posix || CCompilerInterface_AddOpt(cmd, 4, (o7_char *)"-lm"));
 
 			if (ok && (ccEnd < o7_sub(cc_len0, 1)) && (cc[o7_ind(cc_len0, o7_add(ccEnd, 1))] != 0x00u)) {
