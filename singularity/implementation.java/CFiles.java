@@ -124,18 +124,38 @@ public static final boolean Flush(File file) {
 
 /* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
 public static final boolean Seek(File file, int gibs, int bytes) {
-    O7.asrt(false);
-    return false;
+    boolean ok;
+    O7.asrt((gibs >= 0) && (bytes >= 0) && (bytes < GiB));
+    try {
+        file.fc.seek((long)gibs * GiB + bytes);
+        ok = true;
+    } catch (java.io.IOException e) {
+        ok = false;
+    }
+    return ok;
 }
 
-public static final boolean Tell(File file, int gibs, int bytes) {
-    O7.asrt(false);
-    return false;
+public static final boolean Tell(File file, int[] gibs, int gibs_i, int[] bytes, int bytes_i) {
+    boolean ok; long fp;
+    try {
+        fp = file.fc.getFilePointer();
+        gibs[gibs_i] = (int)(fp / GiB);
+        bytes[bytes_i] = (int)(fp % GiB);
+        ok = true;
+    } catch (java.io.IOException e) {
+        ok = false;
+    }
+    return ok;
 }
 
 public static final boolean Remove(byte[] name, int ofs) {
-    O7.asrt(false);
-    return false;
+    boolean ok;
+    try {
+        ok = new java.io.File(O7.string(name, ofs)).delete();
+    } catch (java.lang.SecurityException e) {
+        ok = false;
+    }
+    return ok;
 }
 
 public static final boolean Exist(byte[] name, int ofs) {
