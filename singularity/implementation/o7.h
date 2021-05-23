@@ -77,6 +77,19 @@
 #	define O7_INT_ENOUGH_FOR_SIZE (((size_t)-1) == O7_UINT_MAX)
 #endif
 
+#define O7_ORDER_LE 0
+#define O7_ORDER_BE 1
+
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__)
+#	define O7_BYTE_ORDER (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__)
+#elif __LITTLE_ENDIAN__
+#	define O7_BYTE_ORDER O7_ORDER_LE
+#elif __BIG_ENDIAN__
+#	define O7_BYTE_ORDER O7_ORDER_BE
+#else
+#	define O7_BYTE_ORDER O7_ORDER_LE
+#endif
+
 #if (O7_INIT == O7_INIT_UNDEF)
 #	if O7_TWOS_COMPLEMENT
 #		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
@@ -539,8 +552,7 @@ double o7_dbl_undef(void) {
 	double signaling_nan;
 
 	signaling_nan = 0.0;
-	/* TODO check correctness for big endian */
-	memcpy((o7_uint_t *)&signaling_nan + 1, &u, sizeof(u));
+	memcpy((o7_uint_t *)&signaling_nan + (1 - O7_BYTE_ORDER), &u, sizeof(u));
 	return signaling_nan;
 }
 

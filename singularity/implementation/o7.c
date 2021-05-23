@@ -1,4 +1,4 @@
-/* Copyright 2016-2018 ComdivByZero
+/* Copyright 2016-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,8 +219,8 @@ extern double o7_raw_unpk(double x, o7_int_t *exp) {
 
 	memcpy(u, &x, sizeof(u));
 
-	e = u[1] / DH;
-	m = (u[1] % DH * D32 + u[0]) / (DH * D32) + 1.0;
+	e = u[1 - O7_BYTE_ORDER] / DH;
+	m = (u[1 - O7_BYTE_ORDER] % DH * D32 + u[O7_BYTE_ORDER]) / (DH * D32) + 1.0;
 	if (e >= 0x800) {
 		e -= 0xBFF;
 		m = -m;
