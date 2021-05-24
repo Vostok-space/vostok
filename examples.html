@@ -18,13 +18,19 @@
   </style>
   <script>
     function disableWarningIfNeed() {
-      var els, i;
+      var els, i, a, href;
       if (window.location.protocol !== 'https:') {
         els = document.getElementsByClassName("warn");
         while (els.length > 0) {
           els[0].parentNode.removeChild(els[0]);
           els = document.getElementsByClassName("warn");
         }
+      } else {
+        a = document.getElementById("http-example");
+        href = "http" + window.location.href.slice(4);
+        a.setAttribute("href", href);
+        a.innerText = href;
+        window.location.replace(href);
       }
     }
   </script>
@@ -51,11 +57,11 @@
     <h3 lang="ru"> Примеры кода в песочнице </h3>
     <h3 lang="en"> Examples in the sandbox </h3>
 
-    <p lang="ru" class="warn">
-      Для запуска примеров замените https:// на http:// в адресной строке
-    </p>
-    <p lang="en" class="warn">
-      To executing examples replace https:// with http:// in the address bar
+    <p class="warn">
+      <span lang="ru">Для запуска примеров перейдите с https:// на</span>
+      <span lang="en">To executing examples replace https:// by</span>
+      http:// -
+      <a id="http-example" href="examples.html">examples.html</a>
     </p>
 
     <p>
