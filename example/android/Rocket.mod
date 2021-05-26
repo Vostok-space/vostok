@@ -66,9 +66,12 @@ MODULE Rocket;
               x0, y0 + size / 3.0, size / 20.0, size / 53.0, 0.0)
   END Draw;
 
-  PROCEDURE Sky(cnv: Canvas.T; paint: Paint.T; stars: Stars);
+  PROCEDURE Sky(cnv: Canvas.T; paint: Paint.T; w, h: INTEGER; stars: Stars);
   VAR i, j, wide: INTEGER;
   BEGIN
+    Paint.SetColor(paint, 0);
+    Canvas.Rect(cnv, 0.0, 0.0, FLT(w), FLT(h), paint);
+
     Paint.SetColor(paint, 0FFFFFFH);
     FOR i := 0 TO LEN(stars) - 1 DO
       wide := ORD(stars[i].wide);
@@ -128,7 +131,7 @@ MODULE Rocket;
     IF (i + 1) MOD 2 = 0 THEN
       ctx.fr := 0.0 - ctx.fr
     END;
-    Sky(cnv, ctx.paint, ctx.stars);
+    Sky(cnv, ctx.paint, w, h, ctx.stars);
     IF (ctx.paint # NIL) & Rand.Int(df) THEN
       Draw(cnv, ctx.paint, ctx.path,
            FLT(w DIV 2) + r, 20.0, FLT(h) * 0.6, 0.0, ctx.fr,
