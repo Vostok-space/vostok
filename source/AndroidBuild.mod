@@ -82,7 +82,8 @@ VAR
   BEGIN
     ASSERT(str[LEN(str) - 1] = 0X)
   RETURN
-    LEN(str) - 1 = Stream.WriteChars(f^, str, 0, LEN(str) - 1)
+    (LEN(str) - 1 = Stream.WriteChars(f^, str, 0, LEN(str) - 1))
+  & (1 = Stream.WriteChars(f^, Utf8.NewLine, 0, 1))
   END W;
 
   PROCEDURE GenerateManifest(): BOOLEAN;
@@ -90,15 +91,16 @@ VAR
   BEGIN
     f  := Files.OpenOut("AndroidManifest.xml");
     ok := (f # NIL)
-        & W(f, "<?xml version='1.0'?>")
-        & W(f, "<manifest xmlns:a='http://schemas.android.com/apk/res/android'")
+        & W(f, "<?xml version='1.0' encoding='utf-8'?>")
+        & W(f, "<manifest xmlns:android='http://schemas.android.com/apk/res/android'")
         & W(f, " package='o7.android'")
-        & W(f, " a:versionCode='0' a:versionName='0'>")
-        & W(f, "<application a:label=''>")
-        & W(f, "<activity a:name='o7.android.Activity'>")
+        & W(f, " android:versionCode='1' android:versionName='1.0'>")
+        & W(f, "<uses-sdk android:minSdkVersion='9' android:targetSdkVersion='26'/>")
+        & W(f, "<application android:label=''>")
+        & W(f, "<activity android:name='o7.android.Activity'>")
         & W(f, "<intent-filter>")
-        & W(f, "<category a:name='android.intent.category.LAUNCHER'/>")
-        & W(f, "<action a:name='android.intent.action.MAIN'/>")
+        & W(f, "<category android:name='android.intent.category.LAUNCHER'/>")
+        & W(f, "<action android:name='android.intent.action.MAIN'/>")
         & W(f, "</intent-filter>")
         & W(f, "</activity>")
         & W(f, "</application>")
