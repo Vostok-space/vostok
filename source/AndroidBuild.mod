@@ -1,5 +1,6 @@
 (*  Builder of simple Android applications from Oberon-07
- *  Copyright (C) 2018-2019 ComdivByZero
+ *
+ *  Copyright (C) 2018-2019,2021 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -26,13 +27,27 @@ IMPORT
   Exec := PlatformExec,
   Files := VFileStream, Stream := VDataStream,
   Dir := CDir,
-  Chars0X;
+  Utf8,
+  Chars0X,
+  TranslatorVersion;
+
+CONST
+  BuildTools = 11;
 
 TYPE
   Listener = RECORD(V.Base)
     args: Cli.Args;
-    act: ARRAY 1024 OF CHAR
+
+    act: ARRAY 1024 OF CHAR;
+    sdk: ARRAY 128 OF CHAR;
+    platform: ARRAY 3 OF CHAR;
+    tools: ARRAY 63 OF CHAR
   END;
+
+VAR
+  sdkDefault: ARRAY 128 OF CHAR;
+  platformDefault: ARRAY 3 OF CHAR;
+  toolsDefault: ARRAY 63 OF CHAR;
 
   PROCEDURE Sn(str: ARRAY OF CHAR);
   BEGIN
@@ -40,13 +55,23 @@ TYPE
   END Sn;
 
   PROCEDURE Help*;
+    PROCEDURE S(str: ARRAY OF CHAR);
+    BEGIN
+      Out.String(str)
+    END S;
   BEGIN
-    Sn("Builder of simple Android applications. 2019 v0.0.4.dev");
+    S("Builder of simple Android applications. 2021 "); Sn(TranslatorVersion.Val);
     Sn("Usage:");
-    Sn("  1) osa run   Script            Options");
-    Sn("  2) osa build Script Result.apk Options");
+    Sn("  1) osa run   Script            [options] [ost options]");
+    Sn("  2) osa build Script Result.apk [options] [ost options]");
     Sn("  3) osa install-tools");
-    Sn("Options same as for ost, run 'ost help' to see more");
+    Sn("");
+    Sn("Specific options, that must be specified first:");
+    S("  -sdk      path    path to Android SDK base directory("); S(sdkDefault); Sn(")");
+    S("  -platform num     number of android platform("); S(platformDefault); Sn(")");
+    S("  -tools    version of build-tools in SDK("); S(toolsDefault); Sn(")");
+    Sn("");
+    Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
     Sn("Example:");
     Sn("  osa build 'Star.Go(5, 0.38)' result/star.apk -m example/android");
@@ -107,27 +132,40 @@ TYPE
     ok
   END GenerateActivity;
 
-  PROCEDURE Android(args: Cli.Args; apk: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE InitWithSdk(VAR cmd: Exec.Code; args: Listener; opt: SET; name: ARRAY OF CHAR): BOOLEAN;
+  BEGIN
+    ASSERT(opt - {BuildTools} = {})
+  RETURN
+    Exec.Init(cmd, "")
+  & Exec.FirstPart(cmd, args.sdk)
+  & (   ~(BuildTools IN opt)
+     OR Exec.AddPart(cmd, "/build-tools/")
+      & Exec.AddPart(cmd, args.tools)
+    )
+  & Exec.LastPart(cmd, name)
+  END InitWithSdk;
+
+  PROCEDURE Android(args: Listener; apk: ARRAY OF CHAR): BOOLEAN;
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
     ok := FALSE;
-    IF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/dx")
+    IF ~(InitWithSdk(cmd, args, {BuildTools}, "/dx")
        & Exec.Add(cmd, "--dex")
 
        & Exec.AddClean(cmd, " --output=")
-       & Exec.AddClean(cmd, args.tmp)
+       & Exec.AddClean(cmd, args.args.tmp)
        & Exec.AddClean(cmd, "/classes.dex")
 
-       & Exec.Add(cmd, args.tmp)
+       & Exec.Add(cmd, args.args.tmp)
        & (Exec.Ok = Exec.Do(cmd))
         )
     THEN
       Sn("Error during call dx tool")
-    ELSIF ~Dir.SetCurrent(args.tmp, 0) THEN
+    ELSIF ~Dir.SetCurrent(args.args.tmp, 0) THEN
       Sn("Error during change current directory")
     ELSIF ~GenerateManifest() THEN
       Sn("Error when create AndroidManifest.xml")
-    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/aapt")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/aapt")
           & Exec.Add(cmd, "package")
           & Exec.Add(cmd, "-f")
           & Exec.Add(cmd, "-m")
@@ -136,13 +174,17 @@ TYPE
           & Exec.Add(cmd, "-M")
           & Exec.Add(cmd, "AndroidManifest.xml")
           & Exec.Add(cmd, "-I")
-          & Exec.Add(cmd, "/usr/lib/android-sdk/platforms/android-9/android.jar")
+
+          & Exec.FirstPart(cmd, args.sdk)
+          & Exec.AddPart(cmd, "/platforms/android-")
+          & Exec.AddPart(cmd, args.platform)
+          & Exec.LastPart(cmd, "/android.jar")
 
           & (Exec.Ok = Exec.Do(cmd))
            )
     THEN
       Sn("Error during call aapt tool for package")
-    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/aapt")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/aapt")
           & Exec.Add(cmd, "add")
           & Exec.Add(cmd, "raw.apk")
           & Exec.Add(cmd, "classes.dex")
@@ -172,7 +214,7 @@ TYPE
            )
     THEN
       Sn("Error during call keytool for generating keystore")
-    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/build-tools/debian/zipalign")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/zipalign")
           & Exec.Add(cmd, "-f")
           & Exec.Add(cmd, "4")
           & Exec.Add(cmd, "raw.apk")
@@ -201,15 +243,15 @@ TYPE
     ok
   END Android;
 
-  PROCEDURE RunApp(apk: ARRAY OF CHAR);
+  PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR);
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
-    ok := Exec.Init(cmd, "/usr/lib/android-sdk/platform-tools/adb")
+    ok := InitWithSdk(cmd, args, {}, "/platform-tools/adb")
         & Exec.Add(cmd, "uninstall")
         & Exec.Add(cmd, "o7.android")
 
         & (Exec.Ok = Exec.Do(cmd));
-    IF ~(Exec.Init(cmd, "/usr/lib/android-sdk/platform-tools/adb")
+    IF ~(InitWithSdk(cmd, args, {}, "/platform-tools/adb")
        & Exec.Add(cmd, "install")
        & Exec.Add(cmd, apk)
 
@@ -217,7 +259,7 @@ TYPE
         )
     THEN
       Sn("Can not install application")
-    ELSIF ~(Exec.Init(cmd, "/usr/lib/android-sdk/platform-tools/adb")
+    ELSIF ~(InitWithSdk(cmd, args, {}, "/platform-tools/adb")
           & Exec.Add(cmd, "shell")
           & Exec.Add(cmd, "am")
           & Exec.Add(cmd, "start")
@@ -231,8 +273,7 @@ TYPE
     END
   END RunApp;
 
-  PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR)
-                : BOOLEAN;
+  PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR): BOOLEAN;
   RETURN
     Chars0X.CopyString(dest, i, src)
   END Copy;
@@ -286,30 +327,54 @@ TYPE
     Cli.ArgsInit(l.args)
   END ListenerInit;
 
-  PROCEDURE PrepareCliArgs(VAR args: Cli.Args; VAR res: ARRAY OF CHAR;
-                           arg: INTEGER; run: BOOLEAN)
-                          : BOOLEAN;
-  VAR ok: BOOLEAN; len: INTEGER;
+  PROCEDURE AnOpt(VAR args: Listener; VAR arg: INTEGER): BOOLEAN;
+  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len: INTEGER;
   BEGIN
-    ok := FALSE;
+    ok := TRUE;
+    cont := TRUE;
     len := 0;
-    args.arg := arg + 1 + ORD(~run);
-    IF CLI.count < args.arg THEN
-      Help
-    ELSIF ~CLI.Get(args.src, args.srcLen, arg)
-       OR ~run & ~CLI.Get(res, len, arg + 1)
-    THEN
-      Help
-    ELSE
-      args.script := TRUE;
-      IF Cli.Options(args, args.arg) # Cli.ErrNo THEN
-        Help
+    WHILE cont & (arg + 1 < CLI.count) & CLI.Get(opt, len, arg) DO
+      len := 0;
+      IF opt = "-sdk" THEN
+        ok := CLI.Get(args.sdk, len, arg + 1);
+        INC(arg, 2)
+      ELSIF opt = "-platform" THEN
+        ok := CLI.Get(args.platform, len, arg + 1);
+        INC(arg, 2);
+      ELSIF opt = "-tools" THEN
+        ok := CLI.Get(args.tools, len, arg + 1);
+        INC(arg, 2)
       ELSE
-        ok := TRUE
-      END
+        cont := FALSE
+      END;
+      len := 0
     END
   RETURN
     ok
+  END AnOpt;
+
+  PROCEDURE PrepareCliArgs(VAR args: Listener; VAR res: ARRAY OF CHAR;
+                           arg: INTEGER; run: BOOLEAN)
+                          : BOOLEAN;
+  VAR len: INTEGER;
+  BEGIN
+    len := 0;
+
+    ASSERT(Chars0X.Set(args.sdk, sdkDefault)
+         & Chars0X.Set(args.platform, platformDefault)
+         & Chars0X.Set(args.tools, toolsDefault));
+
+    args.args.arg := arg + 1 + ORD(~run);
+    args.args.script := TRUE
+  RETURN
+    (CLI.count >= args.args.arg)
+  &
+    CLI.Get(args.args.src, args.args.srcLen, arg)
+  & (run OR CLI.Get(res, len, arg + 1))
+
+  & AnOpt(args, args.args.arg)
+
+  & (Cli.ErrNo = Cli.Options(args.args, args.args.arg))
   END PrepareCliArgs;
 
   PROCEDURE Build*(run: BOOLEAN; arg: INTEGER);
@@ -319,7 +384,9 @@ TYPE
       delTmp, ok: BOOLEAN;
   BEGIN
     ListenerInit(listener);
-    IF PrepareCliArgs(listener.args, res, arg, run) THEN
+    IF ~PrepareCliArgs(listener, res, arg, run) THEN
+      Help
+    ELSE
       len := 0;
       delTmp := listener.args.tmp[0] = 0X;
       err := Translator.Translate(Cli.ResultClass, listener.args, listener);
@@ -329,17 +396,17 @@ TYPE
           Message.CliError(err)
         END
       ELSIF run THEN
-        IF Android(listener.args, "oberon.apk") THEN
-          RunApp("oberon.apk")
+        IF Android(listener, "oberon.apk") THEN
+          RunApp(listener, "oberon.apk")
         END
       ELSIF res[0] = "/" THEN
-        ok := Android(listener.args, res)
+        ok := Android(listener, res)
       ELSIF ~Dir.GetCurrent(apk, len) THEN
         Sn("Can not get current directory")
       ELSIF ~(Copy(apk, len, "/") & Copy(apk, len, res)) THEN
         Sn("Full path to result is too long")
       ELSE
-        ok := Android(listener.args, apk)
+        ok := Android(listener, apk)
       END;
       IF delTmp & ~FileSys.RemoveDir(listener.args.tmp) THEN
         Sn("Error when deleting temporary directory")
@@ -383,4 +450,8 @@ TYPE
     END
   END Go;
 
+BEGIN
+  sdkDefault := "/usr/lib/android-sdk";
+  platformDefault := "9";
+  toolsDefault := "debian"
 END AndroidBuild.
