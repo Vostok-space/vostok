@@ -296,7 +296,7 @@ VAR
   VAR i: INTEGER;
   BEGIN
     i := 0;
-    ASSERT(Copy(javac, i, "javac -source 1.7 -target 1.7 -bootclasspath ")
+    ASSERT(Copy(javac, i, "javac -source 1.8 -target 1.8 -bootclasspath ")
          & Copy(javac, i, "/usr/lib/android-sdk/platforms/android-9/android.jar ")
          & Copy(javac, i, act)
     )
