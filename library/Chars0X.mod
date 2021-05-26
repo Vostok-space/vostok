@@ -172,6 +172,15 @@ MODULE Chars0X;
     Copy(dest, ofs, src, i)
   END CopyString;
 
+  PROCEDURE Set*(VAR dest: ARRAY OF CHAR; src: ARRAY OF CHAR): BOOLEAN;
+  VAR i, j: INTEGER;
+  BEGIN
+    i := 0;
+    j := 0;
+  RETURN
+    Copy(dest, i, src, j)
+  END Set;
+
   PROCEDURE CopyChar*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
                       ch: CHAR): BOOLEAN;
   VAR ok: BOOLEAN; i: INTEGER;
