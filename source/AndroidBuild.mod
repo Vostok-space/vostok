@@ -22,14 +22,15 @@ IMPORT
   FileSys := FileSystemUtil,
   Out,
   Cli := CliParser, CLI,
-  Translator,
+  Translator, TranslatorVersion,
   Message,
   Exec := PlatformExec,
   Files := VFileStream, Stream := VDataStream,
+  CFiles,
   Dir := CDir,
   Utf8,
   Chars0X,
-  TranslatorVersion;
+  Env := OsEnv;
 
 CONST
   BuildTools = 11;
@@ -41,7 +42,11 @@ TYPE
     act: ARRAY 1024 OF CHAR;
     sdk: ARRAY 128 OF CHAR;
     platform: ARRAY 3 OF CHAR;
-    tools: ARRAY 63 OF CHAR
+    tools: ARRAY 63 OF CHAR;
+
+    ksGen: BOOLEAN;
+    keystore: ARRAY 128 OF CHAR;
+    ksPass  : ARRAY 64 OF CHAR
   END;
 
 VAR
@@ -195,12 +200,13 @@ VAR
            )
     THEN
       Sn("Error during call aapt tool for adding classes")
-    ELSIF ~(Exec.Init(cmd, "keytool")
+    ELSIF args.ksGen
+        & ~(Exec.Init(cmd, "keytool")
           & Exec.Add(cmd, "-genkeypair")
           & Exec.Add(cmd, "-validity")
           & Exec.Add(cmd, "32")
           & Exec.Add(cmd, "-keystore")
-          & Exec.Add(cmd, "o7.keystore")
+          & Exec.Add(cmd, args.keystore)
           & Exec.Add(cmd, "-keyalg")
           & Exec.Add(cmd, "RSA")
           & Exec.Add(cmd, "-keysize")
@@ -208,9 +214,9 @@ VAR
           & Exec.Add(cmd, "-dname")
           & Exec.Add(cmd, "cn=Developer, ou=Earth, o=Universe, c=SU")
           & Exec.Add(cmd, "-storepass")
-          & Exec.Add(cmd, "oberon")
+          & Exec.Add(cmd, args.ksPass)
           & Exec.Add(cmd, "-keypass")
-          & Exec.Add(cmd, "oberon")
+          & Exec.Add(cmd, args.ksPass)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
@@ -228,10 +234,14 @@ VAR
       Sn("Error during call zipalign tool")
     ELSIF ~(Exec.Init(cmd, "apksigner")
           & Exec.Add(cmd, "sign")
+
           & Exec.Add(cmd, "--ks")
-          & Exec.Add(cmd, "o7.keystore")
+          & Exec.Add(cmd, args.keystore)
+
           & Exec.Add(cmd, "--ks-pass")
-          & Exec.Add(cmd, "pass:oberon")
+          & Exec.FirstPart(cmd, "pass:")
+          & Exec.LastPart(cmd, args.ksPass)
+
           & Exec.Add(cmd, apk)
 
           & (Exec.Ok = Exec.Do(cmd))
@@ -358,7 +368,19 @@ VAR
   PROCEDURE PrepareCliArgs(VAR args: Listener; VAR res: ARRAY OF CHAR;
                            arg: INTEGER; run: BOOLEAN)
                           : BOOLEAN;
-  VAR len: INTEGER;
+  VAR len: INTEGER; ok: BOOLEAN;
+
+    PROCEDURE IsDebugKeystoreExist(VAR ks: ARRAY OF CHAR): BOOLEAN;
+    VAR i: INTEGER;
+    BEGIN
+      i := 0
+    RETURN
+      (*TODO*)
+      Env.Get(ks, i, "HOME")
+    & Chars0X.CopyString(ks, i, "/.android/debug.keystore")
+
+    & CFiles.Exist(ks, 0)
+    END IsDebugKeystoreExist;
   BEGIN
     len := 0;
 
@@ -367,16 +389,25 @@ VAR
          & Chars0X.Set(args.tools, toolsDefault));
 
     args.args.arg := arg + 1 + ORD(~run);
-    args.args.script := TRUE
+    args.args.script := TRUE;
+
+    ok := (CLI.count >= args.args.arg)
+        &
+          CLI.Get(args.args.src, args.args.srcLen, arg)
+        & (run OR CLI.Get(res, len, arg + 1))
+
+        & AnOpt(args, args.args.arg)
+
+        & (Cli.ErrNo = Cli.Options(args.args, args.args.arg));
+
+    args.ksGen := ok & (args.ksPass = "")
+                & ~(IsDebugKeystoreExist(args.keystore) & Chars0X.Set(args.ksPass, "android"));
+    IF args.ksGen THEN
+      ok := Chars0X.Set(args.keystore, "o7.keystore")
+          & Chars0X.Set(args.ksPass, "oberon")
+    END
   RETURN
-    (CLI.count >= args.args.arg)
-  &
-    CLI.Get(args.args.src, args.args.srcLen, arg)
-  & (run OR CLI.Get(res, len, arg + 1))
-
-  & AnOpt(args, args.args.arg)
-
-  & (Cli.ErrNo = Cli.Options(args.args, args.args.arg))
+    ok
   END PrepareCliArgs;
 
   PROCEDURE Build*(run: BOOLEAN; arg: INTEGER);
