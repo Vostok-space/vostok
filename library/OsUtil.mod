@@ -15,7 +15,7 @@
  *)
 MODULE OsUtil;
 
-  IMPORT Platform, Unistd, Libloader := Wlibloaderapi;
+  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld;
 
   PROCEDURE PathToSelfExe*(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN;
@@ -48,7 +48,10 @@ MODULE OsUtil;
     END Windows;
 
   BEGIN
-    IF Platform.Posix THEN
+	IF Platform.Darwin THEN
+	  len := MachObjDyld.NSGetExecutablePath(path);
+	  ok := len < LEN(path)
+    ELSIF Platform.Posix THEN
       ok := Posix(path, len)
     ELSE ASSERT(Platform.Windows);
       ok := Windows(path, len)
