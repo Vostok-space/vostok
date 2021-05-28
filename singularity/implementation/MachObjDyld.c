@@ -18,13 +18,18 @@
 
 #include "MachObjDyld.h"
 
-#include <mach-o/dyld.h>
-
-#include <stdio.h>
+#if defined(__APPLE__)
+#	include <mach-o/dyld.h>
+#else
+	O7_ALWAYS_INLINE int _NSGetExecutablePath(char* buf, o7_uint_t * bufsize) {
+		abort();
+		return -1;
+	}
+#endif
 
 extern o7_int_t MachObjDyld_NSGetExecutablePath(o7_int_t path_len, o7_char path[/*len*/]) {
 	o7_int_t res;
-	unsigned len;
+	o7_uint_t len;
 	O7_ASSERT(path_len > 1);
 	len = path_len;
 	res = _NSGetExecutablePath((char *)path, &len);
