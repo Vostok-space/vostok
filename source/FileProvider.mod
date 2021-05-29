@@ -21,7 +21,7 @@ MODULE FileProvider;
     V,
     InputProvider,
     TranLim := TranslatorLimits,
-    Exec := PlatformExec,
+    OsUtil,
     Stream := VDataStream,
     File := VFileStream,
     Chars0X,
@@ -59,7 +59,7 @@ MODULE FileProvider;
         l := 0;
         ofs := it.extOfs;
         IF Chars0X.Copy          (n, l, it.p.path, it.pathOfs)
-         & Chars0X.CopyString    (n, l, Exec.dirSep)
+         & Chars0X.CopyString    (n, l, OsUtil.DirSep)
          & Chars0X.CopyString    (n, l, it.name)
          & Chars0X.CopyChar      (n, l, ".")
          & Chars0X.CopyCharsUntil(n, l, Exts, ofs, ";")

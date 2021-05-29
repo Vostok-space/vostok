@@ -15,7 +15,10 @@
  *)
 MODULE OsUtil;
 
-  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld;
+  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld, Dir := CDir, Chars0X;
+
+  VAR
+    DirSep*: ARRAY 2 OF CHAR;
 
   PROCEDURE PathToSelfExe*(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN;
@@ -48,9 +51,9 @@ MODULE OsUtil;
     END Windows;
 
   BEGIN
-	IF Platform.Darwin THEN
-	  len := MachObjDyld.NSGetExecutablePath(path);
-	  ok := len < LEN(path)
+    IF Platform.Darwin THEN
+      len := MachObjDyld.NSGetExecutablePath(path);
+      ok := len < LEN(path)
     ELSIF Platform.Posix THEN
       ok := Posix(path, len)
     ELSE ASSERT(Platform.Windows);
@@ -60,4 +63,31 @@ MODULE OsUtil;
     ok
   END PathToSelfExe;
 
+  PROCEDURE IsFullPath*(p: ARRAY OF CHAR): BOOLEAN;
+  VAR full: BOOLEAN;
+  BEGIN
+    IF Platform.Posix THEN
+      full := p[0] = "/"
+    ELSE ASSERT(Platform.Windows);
+      full := (LEN(p) > 1) & (p[1] = ":")
+    END
+  RETURN
+    full
+  END IsFullPath;
+
+  PROCEDURE CopyFullPath*(VAR full: ARRAY OF CHAR; VAR ofs: INTEGER; path: ARRAY OF CHAR): BOOLEAN;
+  RETURN
+    (   IsFullPath(path)
+     OR Dir.GetCurrent(full, ofs)
+      & Chars0X.CopyString(full, ofs, DirSep)
+    )
+  & Chars0X.CopyString(full, ofs, path)
+  END CopyFullPath;
+
+BEGIN
+  IF Platform.Posix THEN
+    DirSep := "/"
+  ELSE ASSERT(Platform.Windows);
+    DirSep := "\"
+  END
 END OsUtil.

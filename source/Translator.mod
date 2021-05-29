@@ -49,7 +49,7 @@ IMPORT
 	Cli := CliParser,
 	Platform,
 	Files := CFiles,
-	OsEnv,
+	OsEnv, OsUtil,
 	FileSys := FileSystemUtil,
 	VCopy,
 	Mem := VMemStream,
@@ -166,7 +166,7 @@ BEGIN
 	interface := NIL;
 	implementation := NIL;
 	destLen := dirLen;
-	IF ~Chars0X.CopyString   (dir, destLen, Exec.dirSep)
+	IF ~Chars0X.CopyString   (dir, destLen, OsUtil.DirSep)
 	OR ~CopyModuleNameForFile(dir, destLen, module.name, LangC)
 	OR (destLen > LEN(dir) - 3)
 	THEN
@@ -207,7 +207,7 @@ VAR destLen: INTEGER;
 BEGIN
 	out := NIL;
 	destLen := dirLen;
-	IF ~Chars0X.CopyString(dir, destLen, Exec.dirSep)
+	IF ~Chars0X.CopyString(dir, destLen, OsUtil.DirSep)
 	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name, lang)
 	  OR (module = NIL) & Chars0X.CopyString   (dir, destLen, orName)
 	    )
@@ -299,7 +299,7 @@ BEGIN
 				nameLen := 0;
 				(* TODO *)
 				ASSERT(Chars0X.Copy      (name, nameLen, cDirs, i)
-				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
+				     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, LangC)
 				     & Chars0X.CopyString(name, nameLen, ".c")
 				);
@@ -378,7 +378,7 @@ VAR len: INTEGER;
 BEGIN
 	len := 0
 	RETURN Chars0X.CopyString(bin, len, dir)
-	     & Chars0X.CopyString(bin, len, Exec.dirSep)
+	     & Chars0X.CopyString(bin, len, OsUtil.DirSep)
 	     & Strings.CopyToChars(bin, len, name)
 	     & (~Platform.Windows OR Chars0X.CopyString(bin, len, ".exe"))
 END GetCBin;
@@ -479,7 +479,7 @@ VAR ret: INTEGER;
 				ok := CComp.AddInclude(cmd, cDirs, i);
 				IF ~o7c & ok THEN
 					ok := Chars0X.Copy      (name, nameLen, cDirs, i)
-					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
+					    & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
 					    & Chars0X.CopyString(name, nameLen, "o7.c");
 					o7c := ok & Files.Exist(name, 0);
 					IF o7c THEN
@@ -680,7 +680,7 @@ BEGIN
 				nameLen := 0;
 				(* TODO *)
 				ASSERT(Chars0X.Copy      (name, nameLen, javaDirs, i)
-				     & Chars0X.CopyString(name, nameLen, Exec.dirSep)
+				     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, Java)
 				     & Chars0X.CopyString(name, nameLen, ".java")
 				);
@@ -765,7 +765,7 @@ VAR opt: GeneratorJava.Options;
 				WHILE ok & (args.javaDirs[i] # Utf8.Null) DO
 					nameLen := 0;
 					ok := Chars0X.Copy      (name, nameLen, args.javaDirs, i)
-					    & Chars0X.CopyString(name, nameLen, Exec.dirSep)
+					    & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
 					    & Chars0X.CopyString(name, nameLen, "O7.java")
 
 					    & ( ~Files.Exist(name, 0)
@@ -882,7 +882,7 @@ PROCEDURE AppendModuleName(VAR name: ARRAY OF CHAR; VAR nameLen: INTEGER;
                            module: Ast.Module; ext: ARRAY OF CHAR
                            ): BOOLEAN;
 BEGIN
-	RETURN Chars0X.CopyString   (name, nameLen, Exec.dirSep)
+	RETURN Chars0X.CopyString   (name, nameLen, OsUtil.DirSep)
 	     & CopyModuleNameForFile(name, nameLen, module.name, Js)
 	     & Chars0X.CopyString   (name, nameLen, ext)
 END AppendModuleName;
@@ -916,7 +916,7 @@ BEGIN
 				nameLen := 0;
 				(* TODO *)
 				ASSERT(Chars0X.Copy         (name, nameLen, jsDirs, i)
-				     & Chars0X.CopyString   (name, nameLen, Exec.dirSep)
+				     & Chars0X.CopyString   (name, nameLen, OsUtil.DirSep)
 				     & CopyModuleNameForFile(name, nameLen, module.name, Js)
 				     & Chars0X.CopyString   (name, nameLen, ".js")
 				);
@@ -952,7 +952,7 @@ VAR i: INTEGER; name: ARRAY 1024 OF CHAR; ignore: BOOLEAN;
 	BEGIN
 		len := 0;
 		ok := Chars0X.Copy      (name, len, dir, ofs)
-		    & Chars0X.CopyString(name, len, Exec.dirSep)
+		    & Chars0X.CopyString(name, len, OsUtil.DirSep)
 		    & Chars0X.CopyString(name, len, "o7.js");
 		INC(ofs)
 		RETURN ok

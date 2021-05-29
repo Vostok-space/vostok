@@ -20,7 +20,7 @@ MODULE PlatformExec;
 IMPORT
 	V,
 	Utf8,
-	OsExec,
+	OsExec, OsUtil,
 	DLog,
 	Platform,
 	Chars0X,
@@ -41,7 +41,6 @@ TYPE
 
 VAR
 	autoCorrectDirSeparator: BOOLEAN;
-	dirSep*: ARRAY 2 OF CHAR;
 
 PROCEDURE Copy(VAR d: ARRAY OF CHAR; VAR i: INTEGER;
                s: ARRAY OF CHAR; j: INTEGER;
@@ -198,42 +197,16 @@ PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 END AddClean;
 
 PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;
-VAR ok: BOOLEAN;
 BEGIN
-	ok := c.len < LEN(c.buf) - 1;
-	IF ok THEN
-		c.buf[c.len] := dirSep[0];
-		INC(c.len);
-		c.buf[c.len] := Utf8.Null
-	END
-	RETURN ok
+	RETURN Chars0X.CopyString(c.buf, c.len, OsUtil.DirSep)
 END AddDirSep;
 
-PROCEDURE IsFullPath(p: ARRAY OF CHAR): BOOLEAN;
-VAR full: BOOLEAN;
-BEGIN
-	IF Platform.Posix THEN
-		full := p[0] = "/"
-	ELSE ASSERT(Platform.Windows);
-		full := (LEN(p) > 1) & (p[1] = ":")
-	END
-	RETURN full
-END IsFullPath;
-
 PROCEDURE AddFullPath*(VAR c: Code; path: ARRAY OF CHAR): BOOLEAN;
-VAR ok: BOOLEAN; p: ARRAY (*TODO*)1000H OF CHAR; l: INTEGER;
+VAR p: ARRAY (*TODO*)1000H OF CHAR; l: INTEGER;
 BEGIN
-	IF IsFullPath(path) THEN
-		ok := Add(c, path)
-	ELSE
-		l := 0;
-		ok := CDir.GetCurrent(p, l)
-		    & Chars0X.CopyString(p, l, dirSep)
-		    & Chars0X.CopyString(p, l, path)
-
-		    & Add(c, p)
-	END
-	RETURN ok
+	l := 0
+	RETURN OsUtil.CopyFullPath(p, l, path)
+	     & Add(c, p)
 END AddFullPath;
 
 PROCEDURE FirstPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
@@ -289,13 +262,7 @@ BEGIN
 END AutoCorrectDirSeparator;
 
 BEGIN
-	autoCorrectDirSeparator := FALSE;
-
-	IF Platform.Posix THEN
-		dirSep := "/"
-	ELSE ASSERT(Platform.Windows);
-		dirSep := "\"
-	END
+	autoCorrectDirSeparator := FALSE
 END PlatformExec.
 
 Init { Add | AddClean | ( FirstPart { AddPart } LastPart ) } [ Do ]
