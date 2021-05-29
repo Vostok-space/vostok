@@ -30,7 +30,7 @@ IMPORT
   Dir := CDir,
   Utf8,
   Chars0X,
-  Env := OsEnv;
+  Env := OsEnv, OsUtil;
 
 CONST
   BuildTools = 11;
@@ -72,9 +72,11 @@ VAR
     Sn("  3) osa install-tools");
     Sn("");
     Sn("Specific options, that must be specified first:");
-    S("  -sdk      path    path to Android SDK base directory("); S(sdkDefault); Sn(")");
-    S("  -platform num     number of android platform("); S(platformDefault); Sn(")");
-    S("  -tools    version of build-tools in SDK("); S(toolsDefault); Sn(")");
+    S("  -sdk      path      path to Android SDK base directory("); S(sdkDefault); Sn(")");
+    S("  -platform num       mumber of android platform("); S(platformDefault); Sn(")");
+    S("  -tools    version   of build-tools in SDK("); S(toolsDefault); Sn(")");
+    Sn("");
+    Sn("  -keystore path pass   keystore path and password for keystore and key");
     Sn("");
     Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
@@ -340,7 +342,7 @@ VAR
   END ListenerInit;
 
   PROCEDURE AnOpt(VAR args: Listener; VAR arg: INTEGER): BOOLEAN;
-  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len: INTEGER;
+  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, len2, len3: INTEGER; ks: ARRAY 1024 OF CHAR;
   BEGIN
     ok := TRUE;
     cont := TRUE;
@@ -356,6 +358,13 @@ VAR
       ELSIF opt = "-tools" THEN
         ok := CLI.Get(args.tools, len, arg + 1);
         INC(arg, 2)
+      ELSIF opt = "-keystore" THEN
+        len2 := 0;
+        len3 := 0;
+        ok := (arg + 2 < CLI.count)
+            & CLI.Get(ks, len, arg + 1) & OsUtil.CopyFullPath(args.keystore, len2, ks)
+            & CLI.Get(args.ksPass, len3, arg + 2);
+        INC(arg, 3)
       ELSE
         cont := FALSE
       END;
