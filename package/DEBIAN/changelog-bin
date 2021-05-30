@@ -1,3 +1,14 @@
+ vostok-bin (0.0.6.dev) unstable; urgency=low
+  * For compatibility with C90 added escaping for chars >= 80X ("яд" - "\xD1\x8F\xD0\xB4")
+  * Added .jar target
+  * For the to-bin command left adding the first found o7.c instead of all
+  * Reduced excessive marking variables as VAR-arguments for using with predefined subroutines
+  * Removed generating o7.sarray, which is absent in updated JavaScript support code
+  * Reduced generating unnecessary array index checks in JavaScript
+  * Fixed generating to C ODD() for negative values
+
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 1 Jun 2021 00:00:00 +0200
+
  vostok-bin (0.0.5.dev) unstable; urgency=low
   * Added zig to list of C compilers
   * Improved generation to C for reduce warnings

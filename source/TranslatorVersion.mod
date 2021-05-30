@@ -15,6 +15,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE TranslatorVersion;
 
- CONST Val* = "0.0.5.dev";
+ CONST Val* = "0.0.6.dev";
 
 END TranslatorVersion.

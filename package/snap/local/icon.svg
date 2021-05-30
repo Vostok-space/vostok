@@ -1,0 +1,4 @@
+<svg width="256" height="256" transform="rotate(90,128,128)">
+  <circle r="128" cx="128" cy="128" fill="black"/>
+  <polygon points="82,240, 80,240 128,8 178,240 176,240 128,72" fill="white"/>
+</svg>

@@ -1,7 +1,7 @@
 name: vostok
 base: core18
 version: '0.0.6'
-license: LGPL-3.0
+license: LGPL-3.0-only
 summary: Compiler from Oberon-07 to C/Java/Js/Oberon
 description: |
   Translator of Oberon-07 code into readable or error-resistant

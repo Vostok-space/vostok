@@ -1,3 +1,19 @@
+ vostok-deflib (0.0.5.dev) unstable; urgency=low
+  * Added DirForTemp module, added InRangeWithLowCase and FromWithLowCase to Hex module
+  * Platform.(Javascript -> JavaScript)
+  * In JavaScript arrays with index checks significantly optimized by memory
+  * In JavaScript, o7.sarray is combined with o7.array for work in dependency on settings
+  * Implemented CFiles(.Seek and .Tell) to work with QuickJS
+  * Implemented CFiles(.Seek, .Tell and .Remove) in Java
+  * Implemented platform recognizing in Java
+  * Decreased Java requirement to 1.5 version
+  * Fixed platform recognizing through JavaScript on Android
+  * Fixed CFiles.Close to work with QuickJS
+  * Fixed C-implementation of EditLine module
+  * Disabled by default usage of signaling NaN for uninitialized variables in C
+
+ -- project Vostok <project-Vostok@yandex.ru> Sat, 1 Jun 2021 00:00:00 +0200
+
  vostok-deflib (0.0.4.dev) unstable; urgency=low
   * Handling disabling index checking in JavaScript
   * Removed warning when compiled Unistd with ccomp
