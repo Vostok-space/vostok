@@ -5,7 +5,7 @@
   * Added CLI arguments for setup building: -sdk, -platform, -tools, -keystore
   * Reduced excessive marking variables as VAR-arguments for using with predefined subroutines
 
- -- project Vostok <project-Vostok@yandex.ru> Sat, 1 Jun 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru> Mon, 31 May 2021 00:00:00 +0200
 
  vostok-android (0.0.4.dev) unstable; urgency=low
   * Simplified the deb-dependencies

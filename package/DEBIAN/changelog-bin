@@ -7,7 +7,7 @@
   * Reduced generating unnecessary array index checks in JavaScript
   * Fixed generating to C ODD() for negative values
 
- -- project Vostok <project-Vostok@yandex.ru> Sat, 1 Jun 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru> Mon, 31 May 2021 00:00:00 +0200
 
  vostok-bin (0.0.5.dev) unstable; urgency=low
   * Added zig to list of C compilers
