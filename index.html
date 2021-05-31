@@ -38,11 +38,11 @@
     </h3>
 
     <p lang="ru"> Нацелен на преобразование кода из некоторых диалектов Oberon
-    в читаемый и устойчивый к ошибкам код для ряда промышленных языков
+    в читаемый или устойчивый к ошибкам код для ряда промышленных языков
     программирования, а также в машинный код и промежуточные представления.
     </p>
     <p lang="en"> Aims at converting the code of some Oberon dialects into
-    readable and error-resistant code for a range of industrial programming
+    readable or error-resistant code for a range of industrial programming
     languages, as well as machine code and intermediate representations.
     </p>
 
@@ -128,7 +128,7 @@
         </summary>
         <span lang="ru">В Ubuntu можно сразу выполнить:</span>
         <span lang="en">In Ubuntu you can just execute:</span>
-        <pre><code>snap install vostok --classic --edge &&
+        <pre><code>snap install vostok --classic --beta &&
 snap alias vostok ost # добавляем краткий псевдоним</code></pre>
         <p>
           <span lang="ru">Для других доступных дистрибутивов следуйте инструкциям:</span>
@@ -178,16 +178,31 @@ apt update'</code></pre>
           <span lang="en">For RPM based GNU/Linux distributions</span>
         </summary>
 
-        <pre><code>ostinst() {
+        <pre><code>vostokInstall() {
   mkdir /tmp/ost-rpm &&
+  local DOWNLOAD=https://github.com/Vostok-space/vostok/releases/download &&
+  local REL=$DOWNLOAD/lib-v$1_ost-v$2/vostok &&
   wget --no-verbose --directory-prefix=/tmp/ost-rpm \
-    $1-bin-$2.dev-0.src.rpm $1-deflib-$3.dev-0.src.rpm &&
+    $REL-deflib-$1.dev-0.src.rpm $REL-bin-$2.dev-0.src.rpm &&
   rpmbuild --rebuild /tmp/ost-rpm/* &&
   rm -rf /tmp/ost-rpm &&
-  /usr/bin/sudo rpm --install ~/*/RPMS/*/vostok-*.rpm
+  /usr/bin/sudo rpm --upgrade \
+    ~/*/RPMS/*/vostok-deflib-$1.*.rpm ~/*/RPMS/*/vostok-bin-$2.*.rpm
 }
-ostinst https://github.com/Vostok-space/vostok/releases/download/v0.0.5_lib-v0.0.4/vostok\
-  0.0.5 0.0.4</code></pre>
+vostokInstall 0.0.5 0.0.6</code></pre>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="ru">Для macOS через</span>
+          <span lang="en">For macOS through</span>
+          <a href="https://brew.sh/">Homebrew</a>
+        </summary>
+        <span lang="ru">Установка репозитория, а затем пакета из него.</span>
+        <span lang="en">Repository installation and then package installation.</span>
+        <pre><code>brew tap vostok-space/oberon &&
+brew install vostok
+</code></pre>
       </details>
 
       <details>
