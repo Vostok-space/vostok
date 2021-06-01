@@ -10,6 +10,17 @@
 
   <link rel='stylesheet' type='text/css' href='pages.css'/>
   <script src='langselect.js'></script>
+  <script>
+    function setHrefHttp(a) {
+      var i;
+      for (i = 0; i < a.length; i += 1) {
+        if (a[0].href.startsWith('https:')) {
+          a[0].setAttribute("href", "http" + a[0].href.slice(5));
+        }
+      }
+      console.log(a)
+    }
+  </script>
 </head>
 
 <body>
@@ -18,8 +29,8 @@
   <header>
     &nbsp;
     <nav>
-      <a lang="ru" href="examples.html?lang=ru">Примеры</a>
-      <a lang="en" href="examples.html?lang=en">Examples</a>
+      <a lang="ru" class="a-examples" href="examples.html?lang=ru">Примеры</a>
+      <a lang="en" class="a-examples" href="examples.html?lang=en">Examples</a>
     </nav>
     <nav class="lang">
       <button onclick="switchLang('en')">Eng</button>
@@ -252,7 +263,10 @@ result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
   </footer>
 </div>
 
-<script> switchLangToPreferable(); </script>
+<script>
+  switchLangToPreferable();
+  setHrefHttp(document.getElementsByClassName("a-examples"));
+</script>
 
 </body>
 
