@@ -1,4 +1,4 @@
-#!/usr/bin/ost .
+#!/usr/bin/env -S ost .
 
 Build and test tasks for the translator
 Copyright (C) 2018-2021 ComdivByZero
