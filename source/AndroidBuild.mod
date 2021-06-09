@@ -33,7 +33,8 @@ IMPORT
   Env := OsEnv, OsUtil;
 
 CONST
-  BuildTools = 11;
+  BuildTools    = 11;
+  PlatformTools = 12;
 
 TYPE
   Listener = RECORD(V.Base)
@@ -65,18 +66,19 @@ VAR
       Out.String(str)
     END S;
   BEGIN
-    S("Builder of simple Android applications. 2021 "); Sn(TranslatorVersion.Val);
+    S ("Builder of simple Android applications. 2021 "); Sn(TranslatorVersion.Val);
     Sn("Usage:");
     Sn("  1) osa run   Script            [options] [ost options]");
     Sn("  2) osa build Script Result.apk [options] [ost options]");
     Sn("  3) osa install-tools");
     Sn("");
     Sn("Specific options, that must be specified first:");
-    S("  -sdk      path      path to Android SDK base directory("); S(sdkDefault); Sn(")");
-    S("  -platform num       mumber of android platform("); S(platformDefault); Sn(")");
-    S("  -tools    version   of build-tools in SDK("); S(toolsDefault); Sn(")");
+    S ("  -sdk      path      path to Android SDK base directory("); S(sdkDefault); Sn(")");
+    Sn("  -sdk      ''        use SDK tools by name, because they are available in PATH");
+    S ("  -platform num       number of android platform("); S(platformDefault); Sn(")");
+    S ("  -tools    version   build-tools version in SDK("); S(toolsDefault); Sn(")");
     Sn("");
-    Sn("  -keystore path pass   keystore path and password for keystore and key");
+    Sn("  -keystore path pass keystore path and password for keystore and key");
     Sn("");
     Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
@@ -142,23 +144,34 @@ VAR
   END GenerateActivity;
 
   PROCEDURE InitWithSdk(VAR cmd: Exec.Code; args: Listener; opt: SET; name: ARRAY OF CHAR): BOOLEAN;
+  VAR ok: BOOLEAN;
   BEGIN
-    ASSERT(opt - {BuildTools} = {})
+    ASSERT(opt - {BuildTools, PlatformTools} = {});
+    IF args.sdk = "" THEN
+      ok := Exec.Init(cmd, name)
+    ELSE
+      ok := Exec.Init(cmd, "")
+          & Exec.FirstPart(cmd, args.sdk)
+          & Exec.AddDirSep(cmd)
+          & (   ~(BuildTools IN opt)
+             OR Exec.AddPart(cmd, "build-tools/")
+              & Exec.AddPart(cmd, args.tools)
+              & Exec.AddDirSep(cmd)
+            )
+          & (   ~(PlatformTools IN opt)
+             OR Exec.AddPart(cmd, "platform-tools/")
+            )
+          & Exec.LastPart(cmd, name)
+    END
   RETURN
-    Exec.Init(cmd, "")
-  & Exec.FirstPart(cmd, args.sdk)
-  & (   ~(BuildTools IN opt)
-     OR Exec.AddPart(cmd, "/build-tools/")
-      & Exec.AddPart(cmd, args.tools)
-    )
-  & Exec.LastPart(cmd, name)
+    ok
   END InitWithSdk;
 
   PROCEDURE Android(args: Listener; apk: ARRAY OF CHAR): BOOLEAN;
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
     ok := FALSE;
-    IF ~(InitWithSdk(cmd, args, {BuildTools}, "/dx")
+    IF ~(InitWithSdk(cmd, args, {BuildTools}, "dx")
        & Exec.Add(cmd, "--dex")
 
        & Exec.AddClean(cmd, " --output=")
@@ -174,7 +187,7 @@ VAR
       Sn("Error during change current directory")
     ELSIF ~GenerateManifest() THEN
       Sn("Error when create AndroidManifest.xml")
-    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/aapt")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "aapt")
           & Exec.Add(cmd, "package")
           & Exec.Add(cmd, "-f")
           & Exec.Add(cmd, "-m")
@@ -193,7 +206,7 @@ VAR
            )
     THEN
       Sn("Error during call aapt tool for package")
-    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/aapt")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "aapt")
           & Exec.Add(cmd, "add")
           & Exec.Add(cmd, "raw.apk")
           & Exec.Add(cmd, "classes.dex")
@@ -224,7 +237,7 @@ VAR
            )
     THEN
       Sn("Error during call keytool for generating keystore")
-    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "/zipalign")
+    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "zipalign")
           & Exec.Add(cmd, "-f")
           & Exec.Add(cmd, "4")
           & Exec.Add(cmd, "raw.apk")
@@ -260,12 +273,12 @@ VAR
   PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR);
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
-    ok := InitWithSdk(cmd, args, {}, "/platform-tools/adb")
+    ok := InitWithSdk(cmd, args, {PlatformTools}, "adb")
         & Exec.Add(cmd, "uninstall")
         & Exec.Add(cmd, "o7.android")
 
         & (Exec.Ok = Exec.Do(cmd));
-    IF ~(InitWithSdk(cmd, args, {}, "/platform-tools/adb")
+    IF ~(InitWithSdk(cmd, args, {PlatformTools}, "adb")
        & Exec.Add(cmd, "install")
        & Exec.Add(cmd, apk)
 
@@ -273,7 +286,7 @@ VAR
         )
     THEN
       Sn("Can not install application")
-    ELSIF ~(InitWithSdk(cmd, args, {}, "/platform-tools/adb")
+    ELSIF ~(InitWithSdk(cmd, args, {PlatformTools}, "adb")
           & Exec.Add(cmd, "shell")
           & Exec.Add(cmd, "am")
           & Exec.Add(cmd, "start")
