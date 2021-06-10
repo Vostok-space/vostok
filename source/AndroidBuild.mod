@@ -334,13 +334,19 @@ VAR
   & Copy(act, i, "Activity.java")
   END ActivityPath;
 
-  PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; act: ARRAY OF CHAR);
+  PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; args: Listener);
   VAR i: INTEGER;
   BEGIN
-    i := 0;
-    ASSERT(Copy(javac, i, "javac -source 1.8 -target 1.8 -bootclasspath ")
-         & Copy(javac, i, "/usr/lib/android-sdk/platforms/android-9/android.jar ")
-         & Copy(javac, i, act)
+    i := Chars0X.CalcLen(javac, 0);
+    ASSERT(((i > 0) OR Copy(javac, i, "javac"))
+         & Copy(javac, i, " -source 1.8 -target 1.8 -bootclasspath ")
+
+         & Copy(javac, i, args.sdk)
+         & Copy(javac, i, "/platforms/android-")
+         & Copy(javac, i, args.platform)
+         & Copy(javac, i, "/android.jar ")
+
+         & Copy(javac, i, args.act)
     )
   END SetJavac;
 
@@ -350,7 +356,7 @@ VAR
     PROCEDURE Do(VAR l: Listener);
     BEGIN
       IF ActivityPath(l.act, l.args.tmp) & GenerateActivity(l.act) THEN
-        SetJavac(l.args.javac, l.act)
+        SetJavac(l.args.javac, l)
       ELSE
         Sn("Can not generate Activity.java")
       END
