@@ -46,7 +46,7 @@ TYPE
     tools: ARRAY 63 OF CHAR;
 
     ksGen: BOOLEAN;
-    key, cert: ARRAY 256 OF CHAR;
+    key, cert, baseClasses: ARRAY 256 OF CHAR;
     ksPass  : ARRAY 64 OF CHAR
   END;
 
@@ -77,6 +77,7 @@ VAR
     Sn("  -sdk      ''        use SDK tools by name, because they are available in PATH");
     S ("  -platform num       number of android platform("); S(platformDefault); Sn(")");
     S ("  -tools    version   build-tools version in SDK("); S(toolsDefault); Sn(")");
+    Sn("  -basecp   jar       base Android classes in jar");
     Sn("");
     Sn("  -keystore path pass keystore path and password for keystore and key for signing");
     Sn("  -key      cert key  pathes to certificate and key for signing");
@@ -198,11 +199,7 @@ VAR
           & Exec.Add(cmd, "-M")
           & Exec.Add(cmd, "AndroidManifest.xml")
           & Exec.Add(cmd, "-I")
-
-          & Exec.FirstPart(cmd, args.sdk)
-          & Exec.AddPart(cmd, "/platforms/android-")
-          & Exec.AddPart(cmd, args.platform)
-          & Exec.LastPart(cmd, "/android.jar")
+          & Exec.Add(cmd, args.baseClasses)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
@@ -340,12 +337,8 @@ VAR
     i := Chars0X.CalcLen(javac, 0);
     ASSERT(((i > 0) OR Copy(javac, i, "javac"))
          & Copy(javac, i, " -source 1.8 -target 1.8 -bootclasspath ")
-
-         & Copy(javac, i, args.sdk)
-         & Copy(javac, i, "/platforms/android-")
-         & Copy(javac, i, args.platform)
-         & Copy(javac, i, "/android.jar ")
-
+         & Copy(javac, i, args.baseClasses)
+         & Copy(javac, i, " ")
          & Copy(javac, i, args.act)
     )
   END SetJavac;
@@ -395,6 +388,9 @@ VAR
         INC(arg, 2);
       ELSIF opt = "-tools" THEN
         ok := CLI.Get(args.tools, len, arg + 1);
+        INC(arg, 2)
+      ELSIF opt = "-basecp" THEN
+        ok := CLI.Get(path, len, arg + 1) & OsUtil.CopyFullPath(args.baseClasses, l2, path);
         INC(arg, 2)
       ELSIF opt = "-keystore" THEN
         ok := (arg + 2 < CLI.count)
@@ -447,6 +443,7 @@ VAR
          & Chars0X.Set(args.platform, platformDefault)
          & Chars0X.Set(args.tools, toolsDefault));
     args.key := "";
+    args.baseClasses := "";
 
     args.args.arg := arg + 1 + ORD(~run);
     args.args.script := TRUE;
@@ -462,6 +459,13 @@ VAR
 
     args.ksGen := ok & (args.key = "")
                 & ~(IsDebugKeystoreExist(args.key) & Chars0X.Set(args.ksPass, "android"));
+    IF ok & (args.baseClasses = "") THEN
+      len := 0;
+      ok := Copy(args.baseClasses, len, args.sdk)
+          & Copy(args.baseClasses, len, "/platforms/android-")
+          & Copy(args.baseClasses, len, args.platform)
+          & Copy(args.baseClasses, len, "/android.jar")
+    END;
     IF args.ksGen THEN
       ok := Chars0X.Set(args.key, "o7.keystore")
           & Chars0X.Set(args.ksPass, "oberon")
