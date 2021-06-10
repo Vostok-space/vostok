@@ -46,7 +46,7 @@ TYPE
     tools: ARRAY 63 OF CHAR;
 
     ksGen: BOOLEAN;
-    keystore: ARRAY 128 OF CHAR;
+    key, cert: ARRAY 256 OF CHAR;
     ksPass  : ARRAY 64 OF CHAR
   END;
 
@@ -78,7 +78,8 @@ VAR
     S ("  -platform num       number of android platform("); S(platformDefault); Sn(")");
     S ("  -tools    version   build-tools version in SDK("); S(toolsDefault); Sn(")");
     Sn("");
-    Sn("  -keystore path pass keystore path and password for keystore and key");
+    Sn("  -keystore path pass keystore path and password for keystore and key for signing");
+    Sn("  -key      cert key  pathes to certificate and key for signing");
     Sn("");
     Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
@@ -215,56 +216,70 @@ VAR
            )
     THEN
       Sn("Error during call aapt tool for adding classes")
-    ELSIF args.ksGen
-        & ~(Exec.Init(cmd, "keytool")
-          & Exec.Add(cmd, "-genkeypair")
-          & Exec.Add(cmd, "-validity")
-          & Exec.Add(cmd, "32")
-          & Exec.Add(cmd, "-keystore")
-          & Exec.Add(cmd, args.keystore)
-          & Exec.Add(cmd, "-keyalg")
-          & Exec.Add(cmd, "RSA")
-          & Exec.Add(cmd, "-keysize")
-          & Exec.Add(cmd, "2048")
-          & Exec.Add(cmd, "-dname")
-          & Exec.Add(cmd, "cn=Developer, ou=Earth, o=Universe, c=SU")
-          & Exec.Add(cmd, "-storepass")
-          & Exec.Add(cmd, args.ksPass)
-          & Exec.Add(cmd, "-keypass")
-          & Exec.Add(cmd, args.ksPass)
-
-          & (Exec.Ok = Exec.Do(cmd))
-           )
-    THEN
-      Sn("Error during call keytool for generating keystore")
-    ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "zipalign")
-          & Exec.Add(cmd, "-f")
-          & Exec.Add(cmd, "4")
-          & Exec.Add(cmd, "raw.apk")
-          & Exec.Add(cmd, apk)
-
-          & (Exec.Ok = Exec.Do(cmd))
-           )
-    THEN
-      Sn("Error during call zipalign tool")
-    ELSIF ~(Exec.Init(cmd, "apksigner")
-          & Exec.Add(cmd, "sign")
-
-          & Exec.Add(cmd, "--ks")
-          & Exec.Add(cmd, args.keystore)
-
-          & Exec.Add(cmd, "--ks-pass")
-          & Exec.FirstPart(cmd, "pass:")
-          & Exec.LastPart(cmd, args.ksPass)
-
-          & Exec.Add(cmd, apk)
-
-          & (Exec.Ok = Exec.Do(cmd))
-           )
-    THEN
-      Sn("Error during call apksigner tool")
     ELSE
-      ok := TRUE
+      IF ~(InitWithSdk(cmd, args, {BuildTools}, "zipalign")
+         & Exec.Add(cmd, "-f")
+         & Exec.Add(cmd, "4")
+         & Exec.Add(cmd, "raw.apk")
+         & Exec.Add(cmd, apk)
+
+         & (Exec.Ok = Exec.Do(cmd))
+          )
+      THEN
+        Sn("Error during call zipalign tool. Not critical.")
+      END;
+
+      IF args.ksGen
+       & ~(Exec.Init(cmd, "keytool")
+         & Exec.Add(cmd, "-genkeypair")
+         & Exec.Add(cmd, "-validity")
+         & Exec.Add(cmd, "32")
+         & Exec.Add(cmd, "-keystore")
+         & Exec.Add(cmd, args.key)
+         & Exec.Add(cmd, "-keyalg")
+         & Exec.Add(cmd, "RSA")
+         & Exec.Add(cmd, "-keysize")
+         & Exec.Add(cmd, "2048")
+         & Exec.Add(cmd, "-dname")
+         & Exec.Add(cmd, "cn=Developer, ou=Earth, o=Universe, c=SU")
+         & Exec.Add(cmd, "-storepass")
+         & Exec.Add(cmd, args.ksPass)
+         & Exec.Add(cmd, "-keypass")
+         & Exec.Add(cmd, args.ksPass)
+
+         & (Exec.Ok = Exec.Do(cmd))
+          )
+      THEN
+        Sn("Error during call keytool for generating keystore")
+      ELSIF ~(Exec.Init(cmd, "apksigner")
+            & Exec.Add(cmd, "sign")
+
+            & ( (args.ksPass = "")
+             OR Exec.Add(cmd, "--ks")
+              & Exec.Add(cmd, args.key)
+
+              & Exec.Add(cmd, "--ks-pass")
+              & Exec.FirstPart(cmd, "pass:")
+              & Exec.LastPart(cmd, args.ksPass)
+              )
+
+            & ( (args.cert = "")
+             OR Exec.Add(cmd, "--cert")
+              & Exec.Add(cmd, args.cert)
+
+              & Exec.Add(cmd, "--key")
+              & Exec.Add(cmd, args.key)
+              )
+
+            & Exec.Add(cmd, apk)
+
+            & (Exec.Ok = Exec.Do(cmd))
+            )
+      THEN
+        Sn("Error during call apksigner tool")
+      ELSE
+        ok := TRUE
+      END
     END
   RETURN
     ok
@@ -355,13 +370,15 @@ VAR
   END ListenerInit;
 
   PROCEDURE AnOpt(VAR args: Listener; VAR arg: INTEGER): BOOLEAN;
-  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, len2, len3: INTEGER; ks: ARRAY 1024 OF CHAR;
+  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, l2, l3, l4: INTEGER; path: ARRAY 1024 OF CHAR;
   BEGIN
     ok := TRUE;
     cont := TRUE;
     len := 0;
     WHILE cont & (arg + 1 < CLI.count) & CLI.Get(opt, len, arg) DO
       len := 0;
+      l2  := 0;
+      l3  := 0;
       IF opt = "-sdk" THEN
         ok := CLI.Get(args.sdk, len, arg + 1);
         INC(arg, 2)
@@ -372,11 +389,15 @@ VAR
         ok := CLI.Get(args.tools, len, arg + 1);
         INC(arg, 2)
       ELSIF opt = "-keystore" THEN
-        len2 := 0;
-        len3 := 0;
         ok := (arg + 2 < CLI.count)
-            & CLI.Get(ks, len, arg + 1) & OsUtil.CopyFullPath(args.keystore, len2, ks)
-            & CLI.Get(args.ksPass, len3, arg + 2);
+            & CLI.Get(path, len, arg + 1) & OsUtil.CopyFullPath(args.key, l2, path)
+            & CLI.Get(args.ksPass, l3, arg + 2);
+        INC(arg, 3)
+      ELSIF opt = "-key" THEN
+        l4 := 0;
+        ok := (arg + 2 < CLI.count)
+            & CLI.Get(path, len, arg + 1) & OsUtil.CopyFullPath(args.cert, l2, path)
+            & CLI.Get(path, l3,  arg + 2) & OsUtil.CopyFullPath(args.key,  l4, path);
         INC(arg, 3)
       ELSE
         cont := FALSE
@@ -409,6 +430,7 @@ VAR
     ASSERT(Chars0X.Set(args.sdk, sdkDefault)
          & Chars0X.Set(args.platform, platformDefault)
          & Chars0X.Set(args.tools, toolsDefault));
+    args.key := "";
 
     args.args.arg := arg + 1 + ORD(~run);
     args.args.script := TRUE;
@@ -422,10 +444,10 @@ VAR
 
         & (Cli.ErrNo = Cli.Options(args.args, args.args.arg));
 
-    args.ksGen := ok & (args.ksPass = "")
-                & ~(IsDebugKeystoreExist(args.keystore) & Chars0X.Set(args.ksPass, "android"));
+    args.ksGen := ok & (args.key = "")
+                & ~(IsDebugKeystoreExist(args.key) & Chars0X.Set(args.ksPass, "android"));
     IF args.ksGen THEN
-      ok := Chars0X.Set(args.keystore, "o7.keystore")
+      ok := Chars0X.Set(args.key, "o7.keystore")
           & Chars0X.Set(args.ksPass, "oberon")
     END
   RETURN
