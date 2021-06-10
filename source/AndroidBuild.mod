@@ -80,6 +80,7 @@ VAR
     Sn("");
     Sn("  -keystore path pass keystore path and password for keystore and key for signing");
     Sn("  -key      cert key  pathes to certificate and key for signing");
+    Sn("  -key      -         skip signing");
     Sn("");
     Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
@@ -251,7 +252,8 @@ VAR
           )
       THEN
         Sn("Error during call keytool for generating keystore")
-      ELSIF ~(Exec.Init(cmd, "apksigner")
+      ELSIF (args.key # "-")
+          & ~(Exec.Init(cmd, "apksigner")
             & Exec.Add(cmd, "sign")
 
             & ( (args.ksPass = "")
@@ -370,7 +372,7 @@ VAR
   END ListenerInit;
 
   PROCEDURE AnOpt(VAR args: Listener; VAR arg: INTEGER): BOOLEAN;
-  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, l2, l3, l4: INTEGER; path: ARRAY 1024 OF CHAR;
+  VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, l2, l3: INTEGER; path: ARRAY 1024 OF CHAR;
   BEGIN
     ok := TRUE;
     cont := TRUE;
@@ -394,11 +396,19 @@ VAR
             & CLI.Get(args.ksPass, l3, arg + 2);
         INC(arg, 3)
       ELSIF opt = "-key" THEN
-        l4 := 0;
-        ok := (arg + 2 < CLI.count)
-            & CLI.Get(path, len, arg + 1) & OsUtil.CopyFullPath(args.cert, l2, path)
-            & CLI.Get(path, l3,  arg + 2) & OsUtil.CopyFullPath(args.key,  l4, path);
-        INC(arg, 3)
+        ok := CLI.Get(path, len, arg + 1);
+        IF path = "-" THEN
+          args.key := "-";
+          INC(arg, 2)
+        ELSE
+          len := 0;
+          ok := ok & (arg + 2 < CLI.count)
+              & OsUtil.CopyFullPath(args.cert, len, path)
+              & CLI.Get(path, l2, arg + 2) & OsUtil.CopyFullPath(args.key, l3, path);
+          INC(arg, 3)
+        END
+      ELSIF opt = "-no-sign" THEN
+        args.key := "-"
       ELSE
         cont := FALSE
       END;
