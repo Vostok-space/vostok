@@ -284,7 +284,7 @@ VAR
     ok
   END Android;
 
-  PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR);
+  PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR): BOOLEAN;
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
     ok := InitWithSdk(cmd, args, {PlatformTools}, "adb")
@@ -292,6 +292,7 @@ VAR
         & Exec.Add(cmd, "o7.android")
 
         & (Exec.Ok = Exec.Do(cmd));
+    ok := FALSE;
     IF ~(InitWithSdk(cmd, args, {PlatformTools}, "adb")
        & Exec.Add(cmd, "install")
        & Exec.Add(cmd, apk)
@@ -311,7 +312,11 @@ VAR
            )
     THEN
       Sn("Can not run activity")
+    ELSE
+      ok := TRUE
     END
+  RETURN
+    ok
   END RunApp;
 
   PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR): BOOLEAN;
@@ -493,9 +498,8 @@ VAR
           Message.CliError(err)
         END
       ELSIF run THEN
-        IF Android(listener, "oberon.apk") THEN
-          RunApp(listener, "oberon.apk")
-        END
+        ok := Android(listener, "oberon.apk")
+            & RunApp(listener, "oberon.apk")
       ELSIF res[0] = "/" THEN
         ok := Android(listener, res)
       ELSIF ~Dir.GetCurrent(apk, len) THEN
