@@ -36,6 +36,10 @@ CONST
   BuildTools    = 11;
   PlatformTools = 12;
 
+  CmdBuild  = 0;
+  CmdRun    = 1;
+  CmdOpen   = 2;
+
 TYPE
   Listener = RECORD(V.Base)
     args: Cli.Args;
@@ -69,6 +73,7 @@ VAR
     S ("Builder of simple Android applications. 2021 "); Sn(TranslatorVersion.Val);
     Sn("Usage:");
     Sn("  1) osa run   Script            [options] [ost options]");
+    Sn("  2) osa open  Script            [options] [ost options]");
     Sn("  2) osa build Script Result.apk [options] [ost options]");
     Sn("  3) osa install-tools");
     Sn("");
@@ -319,6 +324,14 @@ VAR
     ok
   END RunApp;
 
+  PROCEDURE OpenApp(apk: ARRAY OF CHAR): BOOLEAN;
+  VAR cmd: Exec.Code;
+  RETURN
+    Exec.Init(cmd, "xdg-open")
+  & Exec.Add(cmd, apk)
+  & (Exec.Ok = Exec.Do(cmd))
+  END OpenApp;
+
   PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR): BOOLEAN;
   RETURN
     Chars0X.CopyString(dest, i, src)
@@ -479,14 +492,16 @@ VAR
     ok
   END PrepareCliArgs;
 
-  PROCEDURE Build*(run: BOOLEAN; arg: INTEGER);
+  PROCEDURE Build*(cmd: INTEGER; arg: INTEGER);
   VAR err, len: INTEGER;
       apk, res: ARRAY 1024 OF CHAR;
       listener: Listener;
       delTmp, ok: BOOLEAN;
   BEGIN
+    ASSERT(cmd IN {CmdBuild, CmdRun, CmdOpen});
+
     ListenerInit(listener);
-    IF ~PrepareCliArgs(listener, res, arg, run) THEN
+    IF ~PrepareCliArgs(listener, res, arg, cmd # CmdBuild) THEN
       Help
     ELSE
       len := 0;
@@ -497,9 +512,11 @@ VAR
         IF err # Translator.ErrParse THEN
           Message.CliError(err)
         END
-      ELSIF run THEN
+      ELSIF cmd # CmdBuild THEN
         ok := Android(listener, "oberon.apk")
-            & RunApp(listener, "oberon.apk")
+            & (  (cmd = CmdRun) & RunApp(listener, "oberon.apk")
+              OR (cmd = CmdOpen) & OpenApp("oberon.apk")
+              )
       ELSIF res[0] = "/" THEN
         ok := Android(listener, res)
       ELSIF ~Dir.GetCurrent(apk, len) THEN
@@ -509,7 +526,7 @@ VAR
       ELSE
         ok := Android(listener, apk)
       END;
-      IF delTmp & ~FileSys.RemoveDir(listener.args.tmp) THEN
+      IF delTmp & ((cmd # CmdOpen) OR ~ok) & ~FileSys.RemoveDir(listener.args.tmp) THEN
         Sn("Error when deleting temporary directory")
       END
     END
@@ -517,12 +534,17 @@ VAR
 
   PROCEDURE Run*;
   BEGIN
-    Build(TRUE, 0)
+    Build(CmdRun, 0)
   END Run;
+
+  PROCEDURE Open*;
+  BEGIN
+    Build(CmdOpen, 0)
+  END Open;
 
   PROCEDURE Apk*;
   BEGIN
-    Build(FALSE, 0)
+    Build(CmdBuild, 0)
   END Apk;
 
   PROCEDURE InstallTools*;
@@ -541,9 +563,11 @@ VAR
     ELSIF cmd = "help" THEN
       Help
     ELSIF cmd = "run" THEN
-      Build(TRUE, 1)
+      Build(CmdRun, 1)
+    ELSIF cmd = "open" THEN
+      Build(CmdOpen, 1)
     ELSIF cmd = "build" THEN
-      Build(FALSE, 1)
+      Build(CmdBuild, 1)
     ELSIF cmd = "install-tools" THEN
       InstallTools
     ELSE
