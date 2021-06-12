@@ -349,16 +349,16 @@ VAR
   & Copy(act, i, "Activity.java")
   END ActivityPath;
 
-  PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; args: Listener);
+  PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; args: Listener): BOOLEAN;
   VAR i: INTEGER;
   BEGIN
     i := Chars0X.CalcLen(javac, 0);
-    ASSERT(((i > 0) OR Copy(javac, i, "javac"))
-         & Copy(javac, i, " -source 1.8 -target 1.8 -bootclasspath ")
-         & Copy(javac, i, args.baseClasses)
-         & Copy(javac, i, " ")
-         & Copy(javac, i, args.act)
-    )
+  RETURN
+    ((i > 0) OR Copy(javac, i, "javac -source 1.7 -target 1.8"))
+  & Copy(javac, i, " -bootclasspath ")
+  & Copy(javac, i, args.baseClasses)
+  & Copy(javac, i, " ")
+  & Copy(javac, i, args.act)
   END SetJavac;
 
   PROCEDURE Temp(VAR this, mes: V.Message): BOOLEAN;
@@ -366,10 +366,10 @@ VAR
 
     PROCEDURE Do(VAR l: Listener);
     BEGIN
-      IF ActivityPath(l.act, l.args.tmp) & GenerateActivity(l.act) THEN
-        SetJavac(l.args.javac, l)
-      ELSE
+      IF ~(ActivityPath(l.act, l.args.tmp) & GenerateActivity(l.act)) THEN
         Sn("Can not generate Activity.java")
+      ELSIF ~SetJavac(l.args.javac, l) THEN
+        Sn("Too long javac string")
       END
     END Do;
   BEGIN
@@ -526,7 +526,9 @@ VAR
       ELSE
         ok := Android(listener, apk)
       END;
-      IF delTmp & ((cmd # CmdOpen) OR ~ok) & ~FileSys.RemoveDir(listener.args.tmp) THEN
+      IF delTmp & ((cmd # CmdOpen) OR ~ok)
+       & ~FileSys.RemoveDir(listener.args.tmp)
+      THEN
         Sn("Error when deleting temporary directory")
       END
     END
