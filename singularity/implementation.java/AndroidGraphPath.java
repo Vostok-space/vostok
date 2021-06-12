@@ -14,8 +14,6 @@
  */
 package o7;
 
-import o7.O7;
-
 public final class AndroidGraphPath {
 
 public static class T extends android.graphics.Path { }

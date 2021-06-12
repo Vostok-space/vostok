@@ -6,7 +6,6 @@ MODULE Rocket;
     Paint    := AndroidPaint,
     Path     := AndroidGraphPath,
     Star,
-    Math,
     Rand := OsRand;
 
   TYPE
