@@ -58,6 +58,7 @@ VAR
   sdkDefault: ARRAY 128 OF CHAR;
   platformDefault: ARRAY 3 OF CHAR;
   toolsDefault: ARRAY 63 OF CHAR;
+  keyDefault, certDefault: ARRAY 128 OF CHAR;
 
   PROCEDURE Sn(str: ARRAY OF CHAR);
   BEGIN
@@ -475,6 +476,11 @@ VAR
 
         & (Cli.ErrNo = Cli.Options(args.args, args.args.arg));
 
+    IF args.key = "" THEN
+      ASSERT(Chars0X.Set(args.key, keyDefault)
+           & Chars0X.Set(args.cert, certDefault))
+    END;
+
     args.ksGen := ok & (args.key = "")
                 & ~(IsDebugKeystoreExist(args.key) & Chars0X.Set(args.ksPass, "android"));
     IF ok & (args.baseClasses = "") THEN
@@ -577,8 +583,31 @@ VAR
     END
   END Go;
 
+  PROCEDURE SetSdkDefault*(sdk: ARRAY OF CHAR);
+  BEGIN
+    ASSERT(Chars0X.Set(sdkDefault, sdk))
+  END SetSdkDefault;
+
+  PROCEDURE SetPlatformDefault*(pl: ARRAY OF CHAR);
+  BEGIN
+    ASSERT(Chars0X.Set(platformDefault, pl))
+  END SetPlatformDefault;
+
+  PROCEDURE SetToolsDefault*(tools: ARRAY OF CHAR);
+  BEGIN
+    ASSERT(Chars0X.Set(toolsDefault, tools))
+  END SetToolsDefault;
+
+  PROCEDURE SetKeyDefault*(key, cert: ARRAY OF CHAR);
+  BEGIN
+    keyDefault := key;
+    certDefault := cert
+  END SetKeyDefault;
+
 BEGIN
   sdkDefault := "/usr/lib/android-sdk";
   platformDefault := "9";
-  toolsDefault := "debian"
+  toolsDefault := "debian";
+  keyDefault := "";
+  certDefault := ""
 END AndroidBuild.
