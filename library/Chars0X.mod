@@ -213,6 +213,24 @@ MODULE Chars0X;
     str[i] = c
   END SearchChar;
 
+  PROCEDURE SearchCharLast*(str: ARRAY OF CHAR; VAR pos: INTEGER; c: CHAR): BOOLEAN;
+  VAR i, j: INTEGER;
+  BEGIN
+    i := pos;
+    ASSERT((0 <= i) & (i < LEN(str)));
+
+    j := -1;
+    WHILE str[i] # Utf8.Null DO
+      IF str[i] = c THEN
+        j := i
+      END;
+      INC(i)
+    END;
+    pos := j
+  RETURN
+    0 <= j
+  END SearchCharLast;
+
   PROCEDURE Trim*(VAR str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
   VAR i, j: INTEGER;
   BEGIN
