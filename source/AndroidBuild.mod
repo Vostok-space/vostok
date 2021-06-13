@@ -61,11 +61,12 @@ TYPE
   END;
 
 VAR
-  sdkDefault: ARRAY 128 OF CHAR;
+  sdkDefault, baseClassPathDefault: ARRAY 128 OF CHAR;
   platformDefault: ARRAY 3 OF CHAR;
   toolsDefault: ARRAY 63 OF CHAR;
   keyDefault, certDefault: ARRAY 128 OF CHAR;
   activityDefault: ActivityName;
+  javacDefault: ARRAY 256 OF CHAR;
 
   PROCEDURE Sn(str: ARRAY OF CHAR);
   BEGIN
@@ -394,7 +395,7 @@ VAR
   BEGIN
     i := Chars0X.CalcLen(javac, 0);
   RETURN
-    ((i > 0) OR Copy(javac, i, "javac -source 1.7 -target 1.8"))
+    ((i > 0) OR Copy(javac, i, javacDefault))
   & Copy(javac, i, " -bootclasspath ")
   & Copy(javac, i, args.baseClasses)
   & Copy(javac, i, " ")
@@ -540,7 +541,11 @@ VAR
 
     args.ksGen := ok & (args.key = "")
                 & ~(IsDebugKeystoreExist(args.key) & Chars0X.Set(args.ksPass, "android"));
-    IF ok & (args.baseClasses = "") THEN
+    IF ~ok OR (args.baseClasses # "") THEN
+      ;
+    ELSIF baseClassPathDefault # "" THEN
+      ASSERT(Chars0X.Set(args.baseClasses, baseClassPathDefault))
+    ELSE
       len := 0;
       ok := Copy(args.baseClasses, len, args.sdk)
           & Copy(args.baseClasses, len, "/platforms/android-")
@@ -669,11 +674,23 @@ VAR
     ASSERT(SetActivityName(activityDefault, value))
   END SetActivityNameDefault;
 
+  PROCEDURE SetBaseClassPathDefault*(path: ARRAY OF CHAR);
+  BEGIN
+    baseClassPathDefault := path
+  END SetBaseClassPathDefault;
+
+  PROCEDURE SetJavacDefault*(javac: ARRAY OF CHAR);
+  BEGIN
+    javacDefault := javac
+  END SetJavacDefault;
+
 BEGIN
   sdkDefault := "/usr/lib/android-sdk";
   platformDefault := "9";
   toolsDefault := "debian";
   keyDefault := "";
   certDefault := "";
-  SetActivityNameDefault("Activity")
+  SetActivityNameDefault("Activity");
+  baseClassPathDefault := "";
+  javacDefault := "javac -source 1.8 -target 1.8"
 END AndroidBuild.
