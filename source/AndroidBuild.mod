@@ -41,6 +41,11 @@ CONST
   CmdOpen   = 2;
 
 TYPE
+  ActivityName = RECORD
+    val: ARRAY 256 OF CHAR;
+    name: INTEGER
+  END;
+
   Listener = RECORD(V.Base)
     args: Cli.Args;
 
@@ -51,7 +56,8 @@ TYPE
 
     ksGen: BOOLEAN;
     key, cert, baseClasses: ARRAY 256 OF CHAR;
-    ksPass  : ARRAY 64 OF CHAR
+    ksPass: ARRAY 64 OF CHAR;
+    activity: ActivityName
   END;
 
 VAR
@@ -59,6 +65,7 @@ VAR
   platformDefault: ARRAY 3 OF CHAR;
   toolsDefault: ARRAY 63 OF CHAR;
   keyDefault, certDefault: ARRAY 128 OF CHAR;
+  activityDefault: ActivityName;
 
   PROCEDURE Sn(str: ARRAY OF CHAR);
   BEGIN
@@ -89,6 +96,8 @@ VAR
     Sn("  -key      cert key  pathes to certificate and key for signing");
     Sn("  -key      -         skip signing");
     Sn("");
+    S ("  -activity name      set activity name("); S(activityDefault.val); Sn(")");
+    Sn("");
     Sn("Other options are shared with ost, run 'ost help' to see more.");
     Sn("");
     Sn("Example:");
@@ -104,18 +113,31 @@ VAR
   & (1 = Stream.WriteChars(f^, Utf8.NewLine, 0, 1))
   END W;
 
-  PROCEDURE GenerateManifest(): BOOLEAN;
+  PROCEDURE W0(f: Files.Out; str: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  VAR len: INTEGER;
+  BEGIN
+    len := Chars0X.CalcLen(str, ofs)
+  RETURN
+    len = Stream.WriteChars(f^, str, ofs, len)
+  END W0;
+
+  PROCEDURE Wn(f: Files.Out; str: ARRAY OF CHAR; ofs, n: INTEGER): BOOLEAN;
+  RETURN
+    n = Stream.WriteChars(f^, str, ofs, n)
+  END Wn;
+
+  PROCEDURE GenerateManifest(act: ActivityName): BOOLEAN;
   VAR f: Files.Out; ok: BOOLEAN;
   BEGIN
     f  := Files.OpenOut("AndroidManifest.xml");
     ok := (f # NIL)
         & W(f, "<?xml version='1.0' encoding='utf-8'?>")
         & W(f, "<manifest xmlns:android='http://schemas.android.com/apk/res/android'")
-        & W(f, " package='o7.android'")
+        & W0(f, " package='", 0) & Wn(f, act.val, 0, act.name - 1) & W(f, "'")
         & W(f, " android:versionCode='1' android:versionName='1.0'>")
         & W(f, "<uses-sdk android:minSdkVersion='9' android:targetSdkVersion='26'/>")
         & W(f, "<application android:label=''>")
-        & W(f, "<activity android:name='o7.android.Activity'>")
+        & W0(f, "<activity android:name='", 0) & W0(f, act.val, 0) & W(f, "'>")
         & W(f, "<intent-filter>")
         & W(f, "<category android:name='android.intent.category.LAUNCHER'/>")
         & W(f, "<action android:name='android.intent.action.MAIN'/>")
@@ -128,23 +150,26 @@ VAR
     ok
   END GenerateManifest;
 
-  PROCEDURE GenerateActivity*(path: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE GenerateActivity*(path: ARRAY OF CHAR; act: ActivityName): BOOLEAN;
   VAR f: Files.Out; ok: BOOLEAN;
   BEGIN
     f  := Files.OpenOut(path);
     ok := (f # NIL)
-        & W(f, "package o7.android;")
-        & W(f, "public final class Activity extends android.app.Activity {")
-        & W(f, "public static Activity act;")
+        & W0(f, "package ", 0) & Wn(f, act.val, 0, act.name - 1) & W(f, ";")
+
+        & W0(f, "public final class ", 0)
+        & W0(f, act.val, act.name)
+        & W(f, " extends android.app.Activity {")
+
         & W(f, "protected void onCreate(android.os.Bundle savedInstanceState) {")
-        & W(f, "super.onCreate(savedInstanceState);")
-        & W(f, "act = this;")
-        & W(f, "o7.script.main(new String[] {});")
+        & W(f, "  super.onCreate(savedInstanceState);")
+        & W(f, "  o7.AndroidO7Activity.act = this;")
+        & W(f, "  o7.script.main(new String[] {});")
         & W(f, "}")
         & W(f, "protected void onDestroy() {")
-        & W(f, "o7.AndroidO7Drawable.Destroy();")
-        & W(f, "act = null;")
-        & W(f, "super.onDestroy();")
+        & W(f, "  o7.AndroidO7Activity.Destroy();")
+        & W(f, "  o7.AndroidO7Activity.act = null;")
+        & W(f, "  super.onDestroy();")
         & W(f, "}")
         & W(f, "}");
     Files.CloseOut(f)
@@ -194,7 +219,7 @@ VAR
       Sn("Error during call dx tool")
     ELSIF ~Dir.SetCurrent(args.args.tmp, 0) THEN
       Sn("Error during change current directory")
-    ELSIF ~GenerateManifest() THEN
+    ELSIF ~GenerateManifest(args.activity) THEN
       Sn("Error when create AndroidManifest.xml")
     ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "aapt")
           & Exec.Add(cmd, "package")
@@ -291,8 +316,9 @@ VAR
   END Android;
 
   PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR): BOOLEAN;
-  VAR cmd: Exec.Code; ok: BOOLEAN;
+  VAR cmd: Exec.Code; ok: BOOLEAN; package: ARRAY 256 OF CHAR; i: INTEGER;
   BEGIN
+    i := 0;
     ok := InitWithSdk(cmd, args, {PlatformTools}, "adb")
         & Exec.Add(cmd, "uninstall")
         & Exec.Add(cmd, "o7.android")
@@ -312,7 +338,11 @@ VAR
           & Exec.Add(cmd, "am")
           & Exec.Add(cmd, "start")
           & Exec.Add(cmd, "-n")
-          & Exec.Add(cmd, "o7.android/.Activity")
+
+          & Chars0X.CopyChars(package, i, args.activity.val, 0, args.activity.name - 1)
+          & Exec.FirstPart(cmd, package)
+          & Exec.AddPart(cmd, "/.")
+          & Exec.LastPartByOfs(cmd, args.activity.val, args.activity.name)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
@@ -338,16 +368,25 @@ VAR
     Chars0X.CopyString(dest, i, src)
   END Copy;
 
-  PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR): BOOLEAN;
-  VAR i: INTEGER;
+  PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR; name: ActivityName): BOOLEAN;
+  VAR i, ni: INTEGER; ok: BOOLEAN;
   BEGIN
     i := 0;
+    ni := name.name;
+    IF dir = "" THEN
+      ok := Copy(act, i, "o7")
+    ELSE
+      ok := Copy(act, i, dir)
+          & Copy(act, i, "/o7")
+    END;
+    IF ok THEN
+      ok := FileSys.MakeDir(act)
+    END
   RETURN
-    ((dir[0] = 0X)
-  OR Copy(act, i, dir)
-   & Copy(act, i, "/")
-    )
-  & Copy(act, i, "Activity.java")
+    ok
+  & Copy(act, i, "/")
+  & Chars0X.Copy(act, i, name.val, ni)
+  & Copy(act, i, ".java")
   END ActivityPath;
 
   PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; args: Listener): BOOLEAN;
@@ -367,7 +406,7 @@ VAR
 
     PROCEDURE Do(VAR l: Listener);
     BEGIN
-      IF ~(ActivityPath(l.act, l.args.tmp) & GenerateActivity(l.act)) THEN
+      IF ~(ActivityPath(l.act, l.args.tmp, l.activity) & GenerateActivity(l.act, l.activity)) THEN
         Sn("Can not generate Activity.java")
       ELSIF ~SetJavac(l.args.javac, l) THEN
         Sn("Too long javac string")
@@ -388,6 +427,22 @@ VAR
     V.SetDo(l, Temp);
     Cli.ArgsInit(l.args)
   END ListenerInit;
+
+  PROCEDURE SetActivityName*(VAR act: ActivityName; value: ARRAY OF CHAR): BOOLEAN;
+  VAR i: INTEGER; ok: BOOLEAN;
+  BEGIN
+    act.name := 0;
+    IF Chars0X.SearchCharLast(value, act.name, ".") THEN
+      ok := Chars0X.Set(act.val, value)
+    ELSE
+      i := 0;
+      ok := Chars0X.CopyString(act.val, i, "o7.android.");
+      act.name := i;
+      ok := ok & Chars0X.CopyString(act.val, i, value)
+    END
+  RETURN
+    ok
+  END SetActivityName;
 
   PROCEDURE AnOpt(VAR args: Listener; VAR arg: INTEGER): BOOLEAN;
   VAR cont, ok: BOOLEAN; opt: ARRAY 12 OF CHAR; len, l2, l3: INTEGER; path: ARRAY 1024 OF CHAR;
@@ -428,8 +483,10 @@ VAR
               & CLI.Get(path, l2, arg + 2) & OsUtil.CopyFullPath(args.key, l3, path);
           INC(arg, 3)
         END
-      ELSIF opt = "-no-sign" THEN
-        args.key := "-"
+      ELSIF opt = "-activity" THEN
+        ok := CLI.Get(path, len, arg + 1)
+            & SetActivityName(args.activity, path);
+        INC(arg, 2)
       ELSE
         cont := FALSE
       END;
@@ -493,6 +550,9 @@ VAR
     IF args.ksGen THEN
       ok := Chars0X.Set(args.key, "o7.keystore")
           & Chars0X.Set(args.ksPass, "oberon")
+    END;
+    IF args.activity.val = "" THEN
+      args.activity := activityDefault
     END
   RETURN
     ok
@@ -604,10 +664,16 @@ VAR
     certDefault := cert
   END SetKeyDefault;
 
+  PROCEDURE SetActivityNameDefault*(value: ARRAY OF CHAR);
+  BEGIN
+    ASSERT(SetActivityName(activityDefault, value))
+  END SetActivityNameDefault;
+
 BEGIN
   sdkDefault := "/usr/lib/android-sdk";
   platformDefault := "9";
   toolsDefault := "debian";
   keyDefault := "";
-  certDefault := ""
+  certDefault := "";
+  SetActivityNameDefault("Activity")
 END AndroidBuild.

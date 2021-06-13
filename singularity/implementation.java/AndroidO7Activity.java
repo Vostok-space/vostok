@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package o7;
 
 public final class AndroidO7Activity {
 
+public static android.app.Activity act = null;
 private static android.widget.ImageView image_view = null;
 
 private static class Draw extends android.graphics.drawable.Drawable {
@@ -39,7 +40,7 @@ private static android.widget.ImageView newImageView() {
 	final android.widget.ImageView iv;
 	final Draw draw;
 
-	iv = new android.widget.ImageView(o7.android.Activity.act);
+	iv = new android.widget.ImageView(act);
 	draw = new Draw();
 	iv.setImageDrawable(draw);
 	draw.setCallback(new android.graphics.drawable.Drawable.Callback() {
@@ -59,10 +60,12 @@ private static android.widget.ImageView newImageView() {
 
 public static void SetDrawable() {
 	image_view = newImageView();
-	o7.android.Activity.act.setContentView(image_view);
+	act.setContentView(image_view);
 }
 
 public static void Destroy() {
+	act = null;
+	image_view = null;
 	o7.AndroidO7Drawable.Destroy();
 }
 

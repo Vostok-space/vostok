@@ -237,12 +237,16 @@ BEGIN
 	RETURN Copy(c.buf, c.len, arg, 0, c.parts)
 END AddPart;
 
-PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
+PROCEDURE LastPartByOfs*(VAR c: Code; arg: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
 BEGIN
 	ASSERT(c.parts);
 	c.parts := FALSE
 
-	RETURN Copy(c.buf, c.len, arg, 0, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
+	RETURN Copy(c.buf, c.len, arg, ofs, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
+END LastPartByOfs;
+
+PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
+	RETURN LastPartByOfs(c, arg, 0)
 END LastPart;
 
 PROCEDURE Log*(c: Code);
