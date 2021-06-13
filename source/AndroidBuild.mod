@@ -93,7 +93,7 @@ VAR
     Sn("  -basecp   jar       base Android classes in jar");
     Sn("");
     Sn("  -keystore path pass keystore path and password for keystore and key for signing");
-    Sn("  -key      cert key  pathes to certificate and key for signing");
+    Sn("  -key      key cert  pathes to key and certificate for signing");
     Sn("  -key      -         skip signing");
     Sn("");
     S ("  -activity name      set activity name("); S(activityDefault.val); Sn(")");
@@ -479,8 +479,8 @@ VAR
         ELSE
           len := 0;
           ok := ok & (arg + 2 < CLI.count)
-              & OsUtil.CopyFullPath(args.cert, len, path)
-              & CLI.Get(path, l2, arg + 2) & OsUtil.CopyFullPath(args.key, l3, path);
+              & OsUtil.CopyFullPath(args.key, len, path)
+              & CLI.Get(path, l2, arg + 2) & OsUtil.CopyFullPath(args.cert, l3, path);
           INC(arg, 3)
         END
       ELSIF opt = "-activity" THEN
