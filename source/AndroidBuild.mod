@@ -137,7 +137,7 @@ VAR
         & W0(f, " package='", 0) & Wn(f, act.val, 0, act.name - 1) & W(f, "'")
         & W(f, " android:versionCode='1' android:versionName='1.0'>")
         & W(f, "<uses-sdk android:minSdkVersion='9' android:targetSdkVersion='26'/>")
-        & W(f, "<application android:label=''>")
+        & W0(f, "<application android:label='", 0) & W0(f, act.val, act.name) & W(f, "'>")
         & W0(f, "<activity android:name='", 0) & W0(f, act.val, 0) & W(f, "'>")
         & W(f, "<intent-filter>")
         & W(f, "<category android:name='android.intent.category.LAUNCHER'/>")
@@ -434,6 +434,7 @@ VAR
   BEGIN
     act.name := 0;
     IF Chars0X.SearchCharLast(value, act.name, ".") THEN
+      INC(act.name);
       ok := Chars0X.Set(act.val, value)
     ELSE
       i := 0;
