@@ -40,14 +40,21 @@ MODULE Star;
   END Draw;
 
   PROCEDURE Drawer(ctx: Drawable.Context; cnv: Canvas.T);
-  VAR x0, y0, r: REAL; paint: Paint.T; path: Path.T;
+  VAR x0, y0, r, w, h: REAL; paint: Paint.T; path: Path.T;
   BEGIN
     paint := Paint.New();
+
+    w := FLT(Drawable.Width ());
+    h := FLT(Drawable.Height());
+
+    Paint.SetColor(paint, 0);
+    Canvas.Rect(cnv, 0.0, 0.0, w, h, paint);
+
     path  := Path.New();
     Paint.SetColor(paint, 0FF0000H);
 
-    x0 := FLT(Drawable.Width () DIV 2);
-    y0 := FLT(Drawable.Height() DIV 2);
+    x0 := w / 2.0;
+    y0 := h / 2.0;
     IF x0 < y0 THEN
       r := x0 - 10.0
     ELSE
