@@ -17,7 +17,7 @@ package o7;
 public final class AndroidO7Activity {
 
 public static android.app.Activity act = null;
-private static android.widget.ImageView image_view = null;
+private static android.view.View view = null;
 
 private static class Draw extends android.graphics.drawable.Drawable {
 	private o7.AndroidCanvas.T wrapper;
@@ -28,6 +28,7 @@ private static class Draw extends android.graphics.drawable.Drawable {
 		}
 		o7.AndroidO7Drawable.Draw(this.wrapper);
 	}
+	@SuppressWarnings("deprecation")
 	@Override
 	public int  getOpacity() { return 0; }
 	@Override
@@ -36,13 +37,13 @@ private static class Draw extends android.graphics.drawable.Drawable {
 	public void setAlpha(int alpha) {}
 }
 
-private static android.widget.ImageView newImageView() {
-	final android.widget.ImageView iv;
+private static android.view.View newView() {
+	final android.view.View iv;
 	final Draw draw;
 
-	iv = new android.widget.ImageView(act);
+	iv = new android.view.View(act);
 	draw = new Draw();
-	iv.setImageDrawable(draw);
+	iv.setForeground(draw);
 	draw.setCallback(new android.graphics.drawable.Drawable.Callback() {
 		@Override
 		public void invalidateDrawable(android.graphics.drawable.Drawable who) {
@@ -59,26 +60,26 @@ private static android.widget.ImageView newImageView() {
 }
 
 public static void SetDrawable() {
-	image_view = newImageView();
-	act.setContentView(image_view);
+	view = newView();
+	act.setContentView(view);
 }
 
 public static void Destroy() {
 	act = null;
-	image_view = null;
+	view = null;
 	o7.AndroidO7Drawable.Destroy();
 }
 
 public static void Invalidate() {
-	image_view.invalidate();
+	view.invalidate();
 }
 
 public static int GetViewWidth() {
-	return image_view.getWidth();
+	return view.getWidth();
 }
 
 public static int GetViewHeight() {
-	return image_view.getHeight();
+	return view.getHeight();
 }
 
 }
