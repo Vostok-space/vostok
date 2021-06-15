@@ -159,6 +159,7 @@ VAR
 
         & W(f, "protected void onCreate(android.os.Bundle savedInstanceState) {")
         & W(f, "  super.onCreate(savedInstanceState);")
+        & W(f, "  this.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);")
         & W(f, "  o7.AndroidO7Activity.act = this;")
         & W(f, "  o7.script.main(new String[] {});")
         & W(f, "}")
