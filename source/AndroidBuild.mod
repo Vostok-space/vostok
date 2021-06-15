@@ -122,11 +122,6 @@ VAR
     len = Stream.WriteChars(f^, str, ofs, len)
   END W0;
 
-  PROCEDURE Wn(f: Files.Out; str: ARRAY OF CHAR; ofs, n: INTEGER): BOOLEAN;
-  RETURN
-    n = Stream.WriteChars(f^, str, ofs, n)
-  END Wn;
-
   PROCEDURE GenerateManifest(act: ActivityName): BOOLEAN;
   VAR f: Files.Out; ok: BOOLEAN;
   BEGIN
@@ -134,11 +129,11 @@ VAR
     ok := (f # NIL)
         & W(f, "<?xml version='1.0' encoding='utf-8'?>")
         & W(f, "<manifest xmlns:android='http://schemas.android.com/apk/res/android'")
-        & W0(f, " package='", 0) & Wn(f, act.val, 0, act.name - 1) & W(f, "'")
+        & W0(f, " package='", 0) & W0(f, act.val, 0) & W(f, "'")
         & W(f, " android:versionCode='1' android:versionName='1.0'>")
         & W(f, "<uses-sdk android:minSdkVersion='9' android:targetSdkVersion='26'/>")
         & W0(f, "<application android:label='", 0) & W0(f, act.val, act.name) & W(f, "'>")
-        & W0(f, "<activity android:name='", 0) & W0(f, act.val, 0) & W(f, "'>")
+        & W0(f, "<activity android:name='", 0) & W0(f, act.val, act.name) & W(f, "'>")
         & W(f, "<intent-filter>")
         & W(f, "<category android:name='android.intent.category.LAUNCHER'/>")
         & W(f, "<action android:name='android.intent.action.MAIN'/>")
@@ -156,7 +151,7 @@ VAR
   BEGIN
     f  := Files.OpenOut(path);
     ok := (f # NIL)
-        & W0(f, "package ", 0) & Wn(f, act.val, 0, act.name - 1) & W(f, ";")
+        & W0(f, "package ", 0) & W0(f, act.val, 0) & W(f, ";")
 
         & W0(f, "public final class ", 0)
         & W0(f, act.val, act.name)
@@ -317,12 +312,11 @@ VAR
   END Android;
 
   PROCEDURE RunApp(args: Listener; apk: ARRAY OF CHAR): BOOLEAN;
-  VAR cmd: Exec.Code; ok: BOOLEAN; package: ARRAY 256 OF CHAR; i: INTEGER;
+  VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
-    i := 0;
     ok := InitWithSdk(cmd, args, {PlatformTools}, "adb")
         & Exec.Add(cmd, "uninstall")
-        & Exec.Add(cmd, "o7.android")
+        & Exec.Add(cmd, args.activity.val)
 
         & (Exec.Ok = Exec.Do(cmd));
     ok := FALSE;
@@ -340,8 +334,7 @@ VAR
           & Exec.Add(cmd, "start")
           & Exec.Add(cmd, "-n")
 
-          & Chars0X.CopyChars(package, i, args.activity.val, 0, args.activity.name - 1)
-          & Exec.FirstPart(cmd, package)
+          & Exec.FirstPart(cmd, args.activity.val)
           & Exec.AddPart(cmd, "/.")
           & Exec.LastPartByOfs(cmd, args.activity.val, args.activity.name)
 
