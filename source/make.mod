@@ -269,11 +269,19 @@ MODULE make;
 
  PROCEDURE InstallBinTo*(dest: ARRAY OF CHAR);
  BEGIN
-   Ok(Copy("result/ost", FALSE, dest, "/bin/"));
+   Ok(CopyBinTo(dest));
    IF ~ok THEN
-     Msg("Failed to install the binary")
+     Msg("Failed to install the translator")
    END
  END InstallBinTo;
+
+ PROCEDURE InstallAndroidTo*(dest: ARRAY OF CHAR);
+ BEGIN
+   Ok(CopyAndroidTo(dest));
+   IF ~ok THEN
+     Msg("Failed to install android builder")
+   END
+ END InstallAndroidTo;
 
  PROCEDURE MakeDir(base, add: ARRAY OF CHAR): BOOLEAN;
  VAR dest: ARRAY 1024 OF CHAR;
