@@ -53,7 +53,7 @@
     программирования, а также в машинный код и промежуточные представления.
     </p>
     <p lang="en"> Aims at converting the code of some Oberon dialects into
-    readable or error-resistant code for a range of industrial programming
+    readable or error-resistant code for a range of mainstream programming
     languages, as well as machine code and intermediate representations.
     </p>
 
@@ -221,7 +221,7 @@ brew install vostok
           <span lang="ru">Для POSIX(UNIX-подобных) из исходного кода</span>
           <span lang="en">Source based for POSIX(UNIX-like)</span>
         </summary>
-        <pre><code>git clone https://github.com/Vostok-space/vostok.git &&
+        <pre><code>git clone https://github.com/Vostok-space/vostok.git --depth 1 &&
 cd vostok &&
 ./init.sh &&
 result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
@@ -239,6 +239,39 @@ result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
           <a href="https://andrewkelley.me/post/zig-cc-powerful-drop-in-replacement-gcc-clang.html">
           zig</a>
       </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="ru">Для Android в </span>
+          <span lang="en">For Android in </span>
+          <a href="https://termux.com/">Termux</a>
+        </summary>
+
+        <span lang="ru">Сборка и установка транслятора:</span>
+        <span lang="en">Building and installation of the translator:</span>
+        <pre><code>pkg install git clang &&
+git clone https://github.com/Vostok-space/vostok.git --depth 1 &&
+cd vostok &&
+./init.sh &&
+result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
+result/ost run 'make.InstallTo("'"$PREFIX"'")' -infr . -m source</code></pre>
+
+        <span lang="ru">После сборки транслятора доступна установка сборщика APK-приложений:</span>
+        <span lang="en">After the translator can be installed builder of APK applications:</span>
+        <pre><code>pkg install ecj dx aapt apksigner &&
+mkdir -p $HOME/.android &&
+cp test/debug-key/key.pk8 $HOME/.android/debug-key.pk8 &&
+cp test/debug-key/cert.pem $HOME/.android/debug-cert.pem &&
+result/ost to-bin '
+AndroidBuild.SetKeyDefault("'$HOME'/.android/debug-key.pk8",
+                           "'$HOME'/.android/debug-cert.pem");
+AndroidBuild.SetSdkDefault("");
+AndroidBuild.SetBaseClassPathDefault("'$PREFIX'/share/java/android-24.jar");
+AndroidBuild.SetJavacDefault("ecj -nowarn");
+AndroidBuild.Go' \
+result/osa -infr . -m source/blankC -m source/blankJs -m source/blankOberon -m source &&
+result/ost run 'make.InstallAndroidTo("'"$PREFIX"'")' -infr . -m source</code></pre>
       </details>
 
       <details>
