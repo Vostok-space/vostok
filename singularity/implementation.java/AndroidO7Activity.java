@@ -19,48 +19,23 @@ public final class AndroidO7Activity {
 public static android.app.Activity act = null;
 private static android.view.View view = null;
 
-private static class Draw extends android.graphics.drawable.Drawable {
+private static final class View extends android.view.View {
 	private o7.AndroidCanvas.T wrapper;
+
+	public View(android.content.Context context) {
+		super(context);
+	}
 	@Override
-	public void draw(android.graphics.Canvas canvas) {
+	protected void onDraw(android.graphics.Canvas canvas) {
 		if ((this.wrapper == null) || (this.wrapper.c != canvas)) {
 			this.wrapper = o7.AndroidCanvas.wrap(canvas);
 		}
 		o7.AndroidO7Drawable.Draw(this.wrapper);
 	}
-	@SuppressWarnings("deprecation")
-	@Override
-	public int  getOpacity() { return 0; }
-	@Override
-	public void setColorFilter(android.graphics.ColorFilter colorFilter) {}
-	@Override
-	public void setAlpha(int alpha) {}
-}
-
-private static android.view.View newView() {
-	final android.view.View iv;
-	final Draw draw;
-
-	iv = new android.view.View(act);
-	draw = new Draw();
-	iv.setForeground(draw);
-	draw.setCallback(new android.graphics.drawable.Drawable.Callback() {
-		@Override
-		public void invalidateDrawable(android.graphics.drawable.Drawable who) {
-			iv.invalidate();
-		}
-		@Override
-		public void scheduleDrawable(android.graphics.drawable.Drawable who,
-		                             java.lang.Runnable what, long when) {}
-		@Override
-		public void unscheduleDrawable(android.graphics.drawable.Drawable who,
-		                               java.lang.Runnable what) {}
-	});
-	return iv;
 }
 
 public static void SetDrawable() {
-	view = newView();
+	view = new View(act);
 	act.setContentView(view);
 }
 
