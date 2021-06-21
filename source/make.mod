@@ -269,17 +269,21 @@ MODULE make;
 
  PROCEDURE InstallBinTo*(dest: ARRAY OF CHAR);
  BEGIN
-   Ok(CopyBinTo(dest));
-   IF ~ok THEN
-     Msg("Failed to install the translator")
+   IF ok THEN
+     Ok(CopyBinTo(dest));
+     IF ~ok THEN
+       Msg("Failed to install the translator")
+     END
    END
  END InstallBinTo;
 
  PROCEDURE InstallAndroidTo*(dest: ARRAY OF CHAR);
  BEGIN
-   Ok(CopyAndroidTo(dest));
-   IF ~ok THEN
-     Msg("Failed to install android builder")
+   IF ok THEN
+     Ok(CopyAndroidTo(dest));
+     IF ~ok THEN
+       Msg("Failed to install android builder")
+     END
    END
  END InstallAndroidTo;
 
@@ -299,17 +303,21 @@ MODULE make;
 
  PROCEDURE InstallLibTo*(dest: ARRAY OF CHAR);
  BEGIN
-   Ok(CopyLibTo(dest));
-   IF ~ok THEN
-     Msg("Failed to install the library")
+   IF ok THEN
+     Ok(CopyLibTo(dest));
+     IF ~ok THEN
+       Msg("Failed to install the library")
+     END
    END
  END InstallLibTo;
 
  PROCEDURE InstallTo*(dest: ARRAY OF CHAR);
  BEGIN
-   Ok(CopyBinTo(dest) & CopyLibTo(dest));
-   IF ~ok THEN
-     Msg("Installation is failed")
+   IF ok THEN
+     Ok(CopyBinTo(dest) & CopyLibTo(dest));
+     IF ~ok THEN
+       Msg("Installation is failed")
+     END
    END
  END InstallTo;
 
