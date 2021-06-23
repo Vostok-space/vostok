@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,12 @@ Rect(T cnv, double left, double top, double right, double bottom,
 	cnv.c.drawRect((float)left, (float)top, (float)right, (float)bottom, paint);
 }
 
-public static void Path(T cnv, o7.AndroidGraphPath.T path, o7.AndroidPaint.T paint) {
+public static void Path(T cnv, AndroidGraphPath.T path, AndroidPaint.T paint) {
 	cnv.c.drawPath(path, paint);
+}
+
+public static void Text(T cnv, byte[] text, int ofs, double x, double y, AndroidPaint.T paint) {
+	cnv.c.drawText(O7.string(text, ofs), (float)x, (float)y, paint);
 }
 
 public static int Width  (T cnv) { return cnv.c.getWidth();  }

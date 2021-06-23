@@ -1,4 +1,4 @@
-(* Copyright 2018 ComdivByZero
+(* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,12 @@ MODULE AndroidCanvas;
     ASSERT(FALSE)
   END Path;
 
+  PROCEDURE Text*(cnv: T; text: ARRAY OF CHAR; ofs: INTEGER; x, y: REAL; paint: Paint.T);
+  BEGIN
+    ASSERT((0 <= ofs) & (ofs < LEN(text)));
+    ASSERT(FALSE)
+  END Text;
+
   PROCEDURE Width*(cnv: T): INTEGER;
   BEGIN
     ASSERT(FALSE)
@@ -60,6 +66,5 @@ MODULE AndroidCanvas;
   BEGIN
     ASSERT(FALSE)
   END SetDensity;
-
 
 END AndroidCanvas.
