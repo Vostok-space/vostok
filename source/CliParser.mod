@@ -253,16 +253,12 @@ BEGIN
 				args.cDirs[dirsOfs] := Utf8.Null
 			END
 		ELSIF opt = "-jv" THEN
-			IF GetParam(ret, ErrTooLongJavaDirs,
-			            args.javaDirs, javaDirsOfs, arg)
-			THEN
+			IF GetParam(ret, ErrTooLongJavaDirs, args.javaDirs, javaDirsOfs, arg) THEN
 				INC(javaDirsOfs);
 				args.javaDirs[javaDirsOfs] := Utf8.Null
 			END
 		ELSIF opt = "-js" THEN
-			IF GetParam(ret, ErrTooLongJsDirs,
-			            args.jsDirs, jsDirsOfs, arg)
-			THEN
+			IF GetParam(ret, ErrTooLongJsDirs, args.jsDirs, jsDirsOfs, arg) THEN
 				INC(jsDirsOfs);
 				args.jsDirs[jsDirsOfs] := Utf8.Null
 			END

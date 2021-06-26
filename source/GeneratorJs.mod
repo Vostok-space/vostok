@@ -74,8 +74,6 @@ TYPE
 VAR
 	type: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
-	declarator: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration;
-	                      typeDecl, sameType, global: BOOLEAN);
 	declarations: PROCEDURE(VAR gen: Generator; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR gen: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression; set: SET);
@@ -2170,7 +2168,6 @@ END GenerateOptions;
 
 BEGIN
 	type         := Type;
-	declarator   := Declarator;
 	declarations := Declarations;
 	statements   := Statements;
 	expression   := Expression;

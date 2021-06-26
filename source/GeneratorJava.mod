@@ -85,8 +85,6 @@ TYPE
 VAR
 	type: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
-	declarator: PROCEDURE(VAR gen: Generator; decl: Ast.Declaration;
-	                      typeDecl, sameType, global: BOOLEAN);
 	declarations: PROCEDURE(VAR gen: Generator; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR gen: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR gen: Generator; expr: Ast.Expression; set: SET);
@@ -1202,12 +1200,34 @@ BEGIN
 	END
 END Expression;
 
+PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
+                     typeDecl, sameType, global: BOOLEAN);
+BEGIN
+	ASSERT(~(decl IS Ast.Procedure));
+
+	IF decl IS Ast.Type THEN
+		type(gen, decl, decl(Ast.Type), typeDecl, FALSE)
+	ELSE
+		type(gen, decl, decl.type, FALSE, sameType)
+	END;
+
+	Text.Str(gen, " ");
+
+	IF typeDecl THEN
+		;
+	ELSIF global THEN
+		GlobalName(gen, decl)
+	ELSE
+		Name(gen, decl)
+	END
+END Declarator;
+
 PROCEDURE ProcParams(VAR gen: Generator; proc: Ast.ProcType);
 VAR p: Ast.Declaration;
 
 	PROCEDURE Par(VAR gen: Generator; fp: Ast.FormalParam);
 	BEGIN
-		declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE)
+		Declarator(gen, fp, FALSE, FALSE(*TODO*), FALSE)
 	END Par;
 BEGIN
 	IF proc.params = NIL THEN
@@ -1224,26 +1244,6 @@ BEGIN
 		Text.Str(gen, ")")
 	END
 END ProcParams;
-
-PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
-                     typeDecl, sameType, global: BOOLEAN);
-BEGIN
-	ASSERT(~(decl IS Ast.Procedure));
-
-	IF decl IS Ast.Type THEN
-		type(gen, decl, decl(Ast.Type), typeDecl, FALSE)
-	ELSE
-		type(gen, decl, decl.type, FALSE, sameType)
-	END;
-
-	IF typeDecl THEN
-		;
-	ELSIF global THEN
-		GlobalName(gen, decl)
-	ELSE
-		Name(gen, decl)
-	END
-END Declarator;
 
 PROCEDURE RecordAssignHeader(VAR gen: Generator; rec: Ast.Record);
 BEGIN
@@ -1456,7 +1456,7 @@ BEGIN
 	ELSE
 		Text.Str(gen, "public abstract ");
 		type(gen, NIL, typ.type, FALSE, FALSE);
-		Text.Str(gen, "run")
+		Text.Str(gen, " run")
 	END;
 	ProcParams(gen, typ);
 	Text.StrLn(gen, ";");
@@ -1606,27 +1606,25 @@ BEGIN
 						ASSERT(CheckStructName(gen, typ(Ast.Record)))
 					END;
 					GlobalName(gen, typ)
-				END;
-				Text.Str(gen, " ")
+				END
 			END
-		ELSIF ~sameType
-		THEN
+		ELSIF ~sameType THEN
 			CASE typ.id OF
 			  Ast.IdInteger, Ast.IdSet:
-				Text.Str(gen, "int ")
+				Text.Str(gen, "int")
 			| Ast.IdLongInt, Ast.IdLongSet:
-				Text.Str(gen, "long ")
+				Text.Str(gen, "long")
 			| Ast.IdBoolean:
 				IF gen.opt.varInit # GenOptions.VarInitUndefined
-				THEN	Text.Str(gen, "boolean ")
-				ELSE	Text.Str(gen, "byte ")
+				THEN	Text.Str(gen, "boolean")
+				ELSE	Text.Str(gen, "byte")
 				END
 			| Ast.IdByte, Ast.IdChar:
-				Text.Str(gen, "byte ")
+				Text.Str(gen, "byte")
 			| Ast.IdReal:
-				Text.Str(gen, "double ")
+				Text.Str(gen, "double")
 			| Ast.IdReal32:
-				Text.Str(gen, "float ")
+				Text.Str(gen, "float")
 			| Ast.IdPointer:
 				Type(gen, decl, typ.type, FALSE, sameType)
 			| Ast.IdArray:
@@ -1737,7 +1735,7 @@ BEGIN
 			END
 		END;
 	ELSE
-		Text.Str(gen, ", ")
+		Text.Str(gen, ",")
 	END;
 	Declarator(gen, var, FALSE, same, TRUE);
 
@@ -2085,7 +2083,8 @@ BEGIN
 	IF decl.header.type = NIL THEN
 		Text.Str(gen, "void ")
 	ELSE
-		Type(gen, decl, decl.header.type, FALSE, FALSE)
+		Type(gen, decl, decl.header.type, FALSE, FALSE);
+		Text.Str(gen, " ");
 	END;
 	Name(gen, decl);
 	ProcParams(gen, decl.header)
@@ -2175,12 +2174,12 @@ PROCEDURE Procedure(VAR gen: Generator; proc: Ast.Procedure);
 		Text.String(gen, name);
 		Text.StrOpen(gen, "() {");
 		IF proc.header.type = NIL THEN
-			Text.Str(gen, "public void ")
+			Text.Str(gen, "public void")
 		ELSE
 			Text.Str(gen, "public ");
 			Type(gen, proc, proc.header.type, FALSE, FALSE)
 		END;
-		Text.Str(gen, "run");
+		Text.Str(gen, " run");
 		ProcParams(gen, proc.header);
 		Body(gen, proc);
 
@@ -2368,7 +2367,6 @@ END Generate;
 
 BEGIN
 	type         := Type;
-	declarator   := Declarator;
 	declarations := Declarations;
 	statements   := Statements;
 	expression   := Expression;
