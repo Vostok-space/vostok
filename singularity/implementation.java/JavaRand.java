@@ -29,14 +29,25 @@ public static void Close() {
 	rand = null;
 }
 
-public static boolean Read(byte []buf, int ofs, int count) {
+private static void partialRead(byte[] buf, int ofs, int count) {
+	byte[] b = new byte[16];
+	while (count > 16) {
+		rand.nextBytes(b);
+		java.lang.System.arraycopy(b, 0, buf, ofs, 16);
+		ofs   += 16;
+		count -= 16;
+	}
+	rand.nextBytes(b);
+	java.lang.System.arraycopy(b, 0, buf, ofs, count);
+}
+
+public static boolean Read(byte[] buf, int ofs, int count) {
 	O7.asrt(0 < count);
 	O7.asrt(0 <= ofs && ofs <= buf.length - count);
 	if (ofs == 0 && count == buf.length) {
 		rand.nextBytes(buf);
 	} else {
-		/* TODO */
-		O7.asrt(false);
+		partialRead(buf, ofs, count);
 	}
 	return true;
 }
