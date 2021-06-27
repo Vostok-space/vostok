@@ -266,6 +266,10 @@ public static double frexp(final double d, final int[] n, final int n_i) {
     return ((double)mantissa) / divider;
 }
 
+public static double frexp(final double d, final int[] n) {
+    return frexp(d, n, 0);
+}
+
 public static void frexp(final double d[], final int d_i, final int[] n, final int n_i) {
     d[d_i] = frexp(d[d_i], n, n_i);
 }

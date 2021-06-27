@@ -657,10 +657,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 						Text.Str(gen, ", ")
 					END
 				END;
-				index := AstTransform.CutIndex(e2);
+				index := AstTransform.CutIndex(AstTransform.OutParamToArrayAndIndex, e2);
 				Expression(gen, e2, {ForSameType});
-				Text.Str(gen, ", ");
-				Expression(gen, index, {});
+				IF (index.value = NIL) OR (index.value(Ast.ExprInteger).int # 0) THEN
+					Text.Str(gen, ", ");
+					Expression(gen, index, {});
+				END;
 				Text.Data(gen, ");}", 0, 1 + ORD(e1.sel # NIL) * 2)
 			END Unpack;
 		BEGIN

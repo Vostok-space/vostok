@@ -1,4 +1,4 @@
-/* Copyright 2018 ComdivByZero
+/* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ public final class OsEnv {
 
 public static final int MaxLen = 4096;
 
-private static java.lang.String get(byte []name) {
+private static java.lang.String get(byte[] name) {
 	java.lang.String v;
 	try {
 		v = java.lang.System.getenv(O7.string(name));
@@ -30,11 +30,11 @@ private static java.lang.String get(byte []name) {
 	return v;
 }
 
-public static boolean Exist(byte []name) {
+public static boolean Exist(byte[] name) {
 	return null != get(name);
 }
 
-public static boolean Get(byte []val, int []ofs, int ofs_ai, byte []name) {
+public static boolean Get(byte[] val, int[] ofs, int ofs_ai, byte[] name) {
 	O7.asrt((0 <= ofs[ofs_ai]) && (ofs[ofs_ai] < val.length - 1));
 
 	final java.lang.String v;
@@ -61,6 +61,10 @@ public static boolean Get(byte []val, int []ofs, int ofs_ai, byte []name) {
 		b = null;
 	}
 	return b != null;
+}
+
+public static boolean Get(byte[] val, int[] ofs, byte[] name) {
+	return Get(val, ofs, 0, name);
 }
 
 }

@@ -71,6 +71,10 @@ public static final void Close(File[] file, int file_i) {
     file[file_i] = null;
 }
 
+public static final void Close(File[] file) {
+    Close(file, 0);
+}
+
 public static final int Read(File file, byte[] buf, int ofs, int count) {
     int read;
     try {

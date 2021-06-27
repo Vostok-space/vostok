@@ -678,7 +678,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 					Designator(gen, e1, {ForSameType, ForAssign});
 					ExpressionBraced(gen, " = o7.frexp(", e1, ", ", {})
 				END;
-				index := AstTransform.CutIndex(e2);
+				index := AstTransform.CutIndex(AstTransform.OutParamToArrayAndIndex, e2);
 				Expression(gen, e2, {ForSameType});
 				ExpressionBraced(gen, ", ", index, ")", {})
 			END Unpack;

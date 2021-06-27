@@ -28,13 +28,19 @@ MODULE AstTransform;
     AnonToName*             = 1;
     AnonDeclareSameScope*   = 2;
     AnonDeclareGlobalScope* = 3;
+    AnonSet = {0..3};
+
+    OutParamUnchanged*      = 0;
+    OutParamToArray*        = 1;
+    OutParamToArrayAndIndex*= 2;
+    OutParamSet = {0..2};
 
   TYPE
     Options* = RECORD(V.Base)
-      outParamToArray*,
-      setSubBrace*    : BOOLEAN;
+      setSubBrace*: BOOLEAN;
 
-      anonRecord*: INTEGER;
+      anonRecord* ,
+      outParam    : INTEGER;
 
       (* для длины массива - 1 и маркировки прохода *)
       mark: Ast.ExprInteger;
@@ -63,9 +69,9 @@ MODULE AstTransform;
 
   PROCEDURE DefaultOptions*(VAR o: Options);
   BEGIN
-    o.outParamToArray := TRUE;
     o.setSubBrace := TRUE;
     o.anonRecord := AnonDeclareGlobalScope;
+    o.outParam := OutParamToArrayAndIndex;
 
     o.mark := Ast.ExprIntegerNew(1)
   END DefaultOptions;
@@ -79,7 +85,7 @@ MODULE AstTransform;
   PROCEDURE Var(d: Ast.Declaration; VAR o: Options);
   BEGIN
     type(d.type, o);
-    IF o.outParamToArray
+    IF (o.outParam # 0)
      & ~(d.type.id IN {Ast.IdArray, Ast.IdRecord}) & d(Ast.Var).inVarParam
     THEN
       ChangeTypeOnArray(d.type, o)
@@ -120,17 +126,19 @@ MODULE AstTransform;
 
   BEGIN
     fp := sfp(Ast.FormalParam);
-    IF ~o.outParamToArray
+    IF (o.outParam = 0)
     OR (fp.type.id IN {Ast.IdArray, Ast.IdRecord})
     THEN
       ;
     ELSIF Ast.ParamOut IN fp.access THEN
       fp.type := Ast.ArrayGet(fp.type, NIL);
       fp.ext := o.mark;
-      NameAppend(name, ofs, fp.name, "_ai");
-      AstOk(Ast.ParamInsert(np, fp, o.module, proc, name, 0, ofs,
-                            Ast.TypeGet(Ast.IdInteger), {Ast.ParamIn}));
-      sfp := np
+      IF o.outParam = OutParamToArrayAndIndex THEN
+        NameAppend(name, ofs, fp.name, "_ai");
+        AstOk(Ast.ParamInsert(np, fp, o.module, proc, name, 0, ofs,
+                              Ast.TypeGet(Ast.IdInteger), {Ast.ParamIn}));
+        sfp := np
+      END
     ELSIF (ds # NIL) & fp.inVarParam THEN
       ASSERT(fp.ext = NIL);
       NameAppend(name, ofs, fp.name, "_prm");
@@ -211,7 +219,7 @@ MODULE AstTransform;
       Type(t, o)
     END Array;
   BEGIN
-    IF o.outParamToArray & (t.ext # o.mark) THEN
+    IF (o.outParam # 0) & (t.ext # o.mark) THEN
       t.ext := o.mark;
       CASE t.id OF
         Ast.IdRecord  : Record(t(Ast.Record), o)
@@ -226,7 +234,7 @@ MODULE AstTransform;
     END
   END Type;
 
-  PROCEDURE IsChangedParam(v: Ast.Var; mark: Ast.ExprInteger): Ast.Factor;
+  PROCEDURE IsChangedParam(outParam: INTEGER; v: Ast.Var; mark: Ast.ExprInteger): Ast.Factor;
   VAR t: Ast.Type; index: Ast.Factor; d: Ast.Designator;
   BEGIN
     t := v.type;
@@ -235,8 +243,12 @@ MODULE AstTransform;
     ELSIF t(Ast.Array).count = mark THEN
       index := Ast.ExprIntegerNew(0)
     ELSIF (v IS Ast.FormalParam) & (v.ext = mark) THEN
-      AstOk(Ast.DesignatorNew(d, v(Ast.FormalParam).next));
-      index := d
+      IF outParam = OutParamToArray THEN
+        index := Ast.ExprIntegerNew(0)
+      ELSE
+        AstOk(Ast.DesignatorNew(d, v(Ast.FormalParam).next));
+        index := d
+      END
     ELSE
       index := NIL
     END
@@ -244,9 +256,11 @@ MODULE AstTransform;
     index
   END IsChangedParam;
 
-  PROCEDURE CutIndex*(e: Ast.Designator): Ast.Expression;
+  PROCEDURE CutIndex*(outParam: INTEGER; e: Ast.Designator): Ast.Expression;
   VAR i: Ast.Expression; prev, sel: Ast.Selector; di: Ast.Designator;
   BEGIN
+    ASSERT(outParam IN OutParamSet);
+
     sel  := e.sel;
     IF sel # NIL THEN
       prev := NIL;
@@ -264,7 +278,7 @@ MODULE AstTransform;
           prev.next := NIL
         END
       END
-    ELSIF e.decl IS Ast.FormalParam THEN
+    ELSIF (outParam = OutParamToArrayAndIndex) & (e.decl IS Ast.FormalParam) THEN
       AstOk(Ast.DesignatorNew(di, e.decl(Ast.FormalParam).next));
       i := di
     ELSE
@@ -277,11 +291,11 @@ MODULE AstTransform;
                        actualParam: Ast.Parameter; fp: Ast.FormalParam);
   VAR sel, last: Ast.Selector; index: Ast.Expression;
 
-    PROCEDURE Item(d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector; v: Ast.Var;
+    PROCEDURE Item(o: Options; d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector; v: Ast.Var;
                    mark: Ast.ExprInteger);
     VAR t: Ast.Type; index: Ast.Factor; ns: Ast.Selector;
     BEGIN
-      index := IsChangedParam(v, mark);
+      index := IsChangedParam(o.outParam, v, mark);
       IF index # NIL THEN
         t := v.type;
         IF prev # NIL THEN
@@ -307,8 +321,8 @@ MODULE AstTransform;
   BEGIN
     sel := d.sel;
     ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d);
-    IF (sel # NIL) & o.outParamToArray & (d.decl IS Ast.Var) THEN
-      Item(NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
+    IF (sel # NIL) & (o.outParam # 0) & (d.decl IS Ast.Var) THEN
+      Item(o, NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;
     last := NIL;
     WHILE sel # NIL DO
@@ -317,30 +331,32 @@ MODULE AstTransform;
       END;
       last := sel;
       sel := sel.next;
-      IF (sel # NIL) & o.outParamToArray & (last IS Ast.SelRecord) THEN
-        Item(NIL, last, last.next, last(Ast.SelRecord).var, o.mark)
+      IF (sel # NIL) & (o.outParam # 0) & (last IS Ast.SelRecord) THEN
+        Item(o, NIL, last, last.next, last(Ast.SelRecord).var, o.mark)
       END
     END;
 
-    IF o.outParamToArray THEN
+    IF o.outParam # 0 THEN
       IF actualParam = NIL THEN
         IF last = NIL THEN
           IF d.decl IS Ast.Var THEN
-            Item(d, NIL, d.sel, d.decl(Ast.Var), o.mark)
+            Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(d, last, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       ELSIF (fp.type.id = Ast.IdArray) & (fp.ext = o.mark) THEN
-          index := CutIndex(actualParam.expr(Ast.Designator));
-          Ast.CallParamInsert(actualParam, fp, index, actualParam)
+          index := CutIndex(o.outParam, actualParam.expr(Ast.Designator));
+          IF TRUE(*TODO*) OR (index.value = NIL) OR (index.value(Ast.ExprInteger).int # 0) THEN
+            Ast.CallParamInsert(actualParam, fp, index, actualParam)
+          END
       ELSE
         IF last = NIL THEN
           IF d.decl IS Ast.Var THEN
-            Item(d, NIL, d.sel, d.decl(Ast.Var), o.mark)
+            Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(d, last, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       END
     END
@@ -498,7 +514,7 @@ MODULE AstTransform;
 
     PROCEDURE For(for: Ast.For; o: Options);
     BEGIN
-      IF for.var.inVarParam THEN
+      IF (o.outParam # 0) & for.var.inVarParam THEN
         (* TODO заменить на WHILE *)
         ASSERT(FALSE)
       ELSE
@@ -759,6 +775,9 @@ MODULE AstTransform;
 
   PROCEDURE Do*(m: Ast.Module; VAR o: Options);
   BEGIN
+    ASSERT(o.anonRecord IN AnonSet);
+    ASSERT(o.outParam IN OutParamSet);
+
     Transform(m, o);
     Fix(m, o.mark)
   END Do;

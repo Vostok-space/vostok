@@ -1,4 +1,4 @@
-/* Copyright 2018-2019 ComdivByZero
+/* Copyright 2018-2019,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,10 @@ public static final boolean Get(byte[] str, int[] v_ofs, int v_ofs_i, int arg) {
         v_ofs[v_ofs_i] = ofs;
     }
     return ret;
+}
+
+public static final boolean Get(byte[] str, int[] v_ofs, int arg) {
+    return Get(str, v_ofs, 0, arg);
 }
 
 public static final void SetExitCode(int code) {
