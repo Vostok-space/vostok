@@ -1,5 +1,6 @@
 body {
   background-color  : #CCC;
+  margin            : 0;
 }
 
 a {
@@ -20,7 +21,6 @@ article {
 
 div.page {
   border-radius: 20px;
-  padding: 3px;
   margin            : auto;
   max-width         : 720px;
   padding           : 0;
