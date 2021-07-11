@@ -69,11 +69,6 @@ public static void SetFlags(T p, int flags) {
 	p.setFlags(flags);
 }
 
-public static void SetWordSpacing(T p, double add) {
-	O7.asrt(0.0 <= add);
-	p.setWordSpacing((float)add);
-}
-
 public static double MeasureText(T p, byte[] txt, int ofs) {
 	O7.asrt((0 <= ofs) && (ofs < txt.length));
 	return p.measureText(O7.string(txt, ofs));

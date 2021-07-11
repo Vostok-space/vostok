@@ -74,12 +74,6 @@ MODULE AndroidPaint;
     ASSERT(flags - AllFlags = {})
   END SetFlags;
 
-  PROCEDURE SetWordSpacing*(p: T; add: REAL);
-  BEGIN
-    ASSERT(p # NIL);
-    ASSERT(0.0 <= add)
-  END SetWordSpacing;
-
   PROCEDURE MeasureText*(p: T; txt: ARRAY OF CHAR; ofs: INTEGER): REAL;
   BEGIN
     ASSERT(p # NIL);
