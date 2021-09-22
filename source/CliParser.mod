@@ -23,21 +23,22 @@ IMPORT V, CLI, Utf8, Strings := StringStore, Platform,
 
 CONST
 	CmdHelp*       = 1;
-	CmdVersion*    = 11;
+	CmdVersion*    = 2;
+
 	(* TODO переименовать *)
-	ResultC*       = 2;
-	ResultBin*     = 3;
-	ResultRun*     = 4;
+	ResultC*       = 8;
+	ResultBin*     = 9;
+	ResultRun*     = 10;
 
-	ResultJava*    = 5;
-	ResultClass*   = 6;
-	ResultJar*     = 7;
-	ResultRunJava* = 8;
+	ResultJava*    = 11;
+	ResultClass*   = 12;
+	ResultJar*     = 13;
+	ResultRunJava* = 14;
 
-	ResultJs*      = 9;
-	ResultRunJs*   = 10;
+	ResultJs*      = 15;
+	ResultRunJs*   = 16;
 
-	ResultMod*     = 11;
+	ResultMod*     = 17;
 
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultJar, ResultRunJava};
