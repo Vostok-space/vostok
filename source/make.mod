@@ -92,13 +92,11 @@ MODULE make;
  CONST BlankAllExceptJava = " -m source/blankC -m source/blankJs -m source/blankOberon";
  VAR code: Exec.Code; restmp, result: ARRAY 1024 OF CHAR;
  BEGIN
-   IF posix THEN
-     ok := Exec.Init(code, "rm") & Exec.Add(code, "-rf");
-   ELSE ASSERT(windows);
-     ok := Exec.Init(code, "rmdir") & Exec.AddClean(code, " /s/q");
+   ok := Concat(restmp, "result/", tmp) & FS.RemoveDir(restmp);
+   IF ~ok THEN
+     Log.StrLn("Failed to delete old temp directory");
    END;
-   ok := ok & Concat(restmp, "result/", tmp) & Exec.Add(code, restmp)
-       & (0 = Execute(code, "Delete old temp directory"));
+
    ok :=
       Concat(result, "result/", ost) & Exec.Init(code, result)
     & Exec.Add(code, cmd) & Exec.Add(code, script)
@@ -249,7 +247,40 @@ MODULE make;
    Ok(ok & TestBy("example", TRUE, "ost", C))
  END Example;
 
- PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
+ PROCEDURE RunOst(ost, cmd, script, res, source, msg: ARRAY OF CHAR): BOOLEAN;
+ VAR code: Exec.Code;
+ RETURN
+      Exec.Init(code, ost)
+    & Exec.Add(code, cmd)
+    & Exec.Add(code, script)
+    & Exec.Add(code, res)
+    & Exec.Add(code, "-infr")
+    & Exec.Add(code, ".")
+    & Exec.Add(code, "-m")
+    & Exec.Add(code, source)
+    & (Execute(code, msg) = 0)
+ END RunOst;
+
+ PROCEDURE TestGenOberon*;
+ VAR ignore: BOOLEAN;
+ BEGIN
+   IF ok THEN
+     ignore := FS.RemoveDir("result/ost-mod");
+     ignore := FS.RemoveDir("result/ost-mod2");
+     Ok(FS.MakeDir("result/ost-mod")
+      & FS.MakeDir("result/ost-mod2")
+
+      & RunOst("result/ost", "to-mod", "Translator", "result/ost-mod", "source",
+               "translate the translator to Oberon")
+      & RunOst("result/ost", "to-bin", "Translator.Go", "result/ost-mod/ost", "result/ost-mod",
+               "translate the regenerated translator to binary")
+      & RunOst("result/ost-mod/ost", "to-mod", "Translator", "result/ost-mod2", "source",
+               "translate the translator to Oberon by regenerated translator")
+     )
+   END
+ END TestGenOberon;
+
+PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
                 baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
  VAR dest: ARRAY 1024 OF CHAR;
  RETURN
@@ -694,6 +725,7 @@ MODULE make;
    Msg("  Example       build examples");
    Msg("  Self          build itself then run tests");
    Msg("  SelfFull      build translator by 2nd generation translator then tests");
+   Msg("  TestGenOberon test of generating to Oberon");
    Msg("  UseJava       turn translation through Java");
    Msg("  UseJs         turn translation through JavaScript");
    Msg("  UseC          turn translation through C");
