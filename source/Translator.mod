@@ -1112,7 +1112,7 @@ END GenerateThroughJs;
 
 PROCEDURE GenerateOberon(module: Ast.Module; opt: GeneratorOberon.Options;
                          VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
-VAR imp: Ast.Declaration; ret: INTEGER; out: File.Out;
+VAR imp: Ast.Declaration; ret: INTEGER; out: File.Out; ext: ARRAY 5 OF CHAR;
 BEGIN
 	module.used := TRUE;
 
@@ -1125,7 +1125,12 @@ BEGIN
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		ret := OpenOberonOutput(out, module, ".mod", dir, dirLen);
+		IF opt.std = GeneratorOberon.StdAo THEN
+			ext := ".Mod"
+		ELSE
+			ext := ".mod"
+		END;
+		ret := OpenOberonOutput(out, module, ext, dir, dirLen);
 		IF ret = ErrNo THEN
 			GeneratorOberon.Generate(out, module, opt);
 			File.CloseOut(out);

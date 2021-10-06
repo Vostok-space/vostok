@@ -841,7 +841,11 @@ VAR
     ELSE
       CASE typ.id OF
         Ast.IdInteger:
-        Text.Str(gen, "INTEGER")
+        CASE gen.opt.std OF
+          StdO7,
+          StdCp: Text.Str(gen, "INTEGER")
+        | StdAo: Text.Str(gen, "SIGNED32")
+        END
       | Ast.IdSet:
         CASE gen.opt.std OF
           StdO7,
@@ -849,7 +853,10 @@ VAR
         | StdAo: Text.Str(gen, "SET32")
         END
       | Ast.IdLongInt:
-        Text.Str(gen, "LONGINT")
+        CASE gen.opt.std OF
+          StdCp: Text.Str(gen, "LONGINT")
+        | StdAo: Text.Str(gen, "SIGNED64")
+        END
       | Ast.IdLongSet:
         CASE gen.opt.std OF
           StdAo: Text.Str(gen, "SET64")
@@ -869,9 +876,16 @@ VAR
         | StdCp: Text.Str(gen, "SHORTCHAR")
         END
       | Ast.IdReal:
-        Text.Str(gen, "REAL")
+        CASE gen.opt.std OF
+          StdO7,
+          StdCp: Text.Str(gen, "REAL")
+        | StdAo: Text.Str(gen, "FLOAT64")
+        END
       | Ast.IdReal32:
-        Text.Str(gen, "SHORTREAL")
+        CASE gen.opt.std OF
+          StdCp: Text.Str(gen, "SHORTREAL")
+        | StdAo: Text.Str(gen, "FLOAT32")
+        END
       | Ast.IdRecord:
         Record(gen, typ(Ast.Record))
       | Ast.IdProcType, Ast.IdFuncType:
