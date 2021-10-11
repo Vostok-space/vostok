@@ -1,0 +1,24 @@
+app-id: org.oberon.vostok.ost
+runtime: org.freedesktop.Sdk
+runtime-version: '21.08'
+sdk: org.freedesktop.Sdk
+command: ost
+
+modules:
+  - name: ost
+    buildsystem: simple
+    build-commands:
+      - |
+        ./init.sh
+        result/bs-ost run make.Build -infr . -m source
+        result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s"
+        rm -rf /app/share
+        mkdir -p /app/bin /app/share
+        result/ost run 'make.Self; (*make.TestGenOberon;*) make.InstallTo("/app")' -infr . -m source
+    sources:
+      - type: archive
+        url: https://github.com/Vostok-space/vostok/archive/refs/tags/lib-v0.0.5_ost-v0.0.6.tar.gz
+        sha256: 5512e583dd049755eadc416f3317937807b5af82ed527e82911074a9048ee707
+
+finish-args:
+  - --filesystem=host
