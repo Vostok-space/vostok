@@ -269,6 +269,36 @@ BEGIN
 	END
 END NewProvider;
 
+PROCEDURE IsModuleInSingularity(module: Ast.Module; dirs: ARRAY OF CHAR;
+                                lang: INTEGER; ext: ARRAY OF CHAR;
+                                VAR name: ARRAY OF CHAR): BOOLEAN;
+VAR sing: BOOLEAN; nameLen, i: INTEGER;
+BEGIN
+	sing := FALSE;
+	IF module.mark THEN
+		i := 0;
+		WHILE ~sing & (dirs[i] # Utf8.Null) DO
+			nameLen := 0;
+			(* TODO *)
+			ASSERT(Chars0X.Copy      (name, nameLen, dirs, i)
+			     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
+			     & CopyModuleNameForFile(name, nameLen, module.name, lang)
+			     & Chars0X.CopyString(name, nameLen, ext)
+			);
+			INC(i);
+			IF Files.Exist(name, 0) THEN
+				sing := TRUE
+			ELSIF lang = LangC THEN
+				name[nameLen - 1] := "h";
+				sing := Files.Exist(name, 0);
+				name[0] := Utf8.Null
+				(* TODO *)
+			END
+		END
+	END
+	RETURN sing
+END IsModuleInSingularity;
+
 (* TODO Возможно, вместо сcomp и usecc лучше процедурная переменная *)
 PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Statement;
                     opt: GeneratorC.Options;
@@ -276,10 +306,9 @@ PROCEDURE GenerateC(module: Ast.Module; isMain: BOOLEAN; cmd: Ast.Statement;
                     cDirs: ARRAY OF CHAR;
                     VAR ccomp: CComp.Compiler; usecc: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, nameLen: INTEGER;
+    ret: INTEGER;
     name: ARRAY 512 OF CHAR;
     iface, impl: File.Out;
-    sing: BOOLEAN;
 BEGIN
 	module.used := TRUE;
 
@@ -292,34 +321,15 @@ BEGIN
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		sing := FALSE;
-		IF module.mark THEN
-			i := 0;
-			WHILE ~sing & (cDirs[i] # Utf8.Null) DO
-				nameLen := 0;
-				(* TODO *)
-				ASSERT(Chars0X.Copy      (name, nameLen, cDirs, i)
-				     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name, LangC)
-				     & Chars0X.CopyString(name, nameLen, ".c")
-				);
-				INC(i);
-				IF Files.Exist(name, 0) THEN
-					sing := TRUE;
-					ASSERT(~usecc OR CComp.AddC(ccomp, name, 0))
-				ELSE
-					name[nameLen - 1] := "h";
-					sing := Files.Exist(name, 0) OR sing
-				END
-			END
-		END;
-		IF ~sing THEN
+		IF ~IsModuleInSingularity(module, cDirs, LangC, ".c", name) THEN
 			ret := OpenCOutput(iface, impl, module, isMain, dir, dirLen, ccomp, usecc);
 			IF ret = ErrNo THEN
 				GeneratorC.Generate(iface, impl, module, cmd, opt);
 				File.CloseOut(iface);
 				File.CloseOut(impl)
 			END
+		ELSIF name[0] # Utf8.Null THEN
+			ASSERT(~usecc OR CComp.AddC(ccomp, name, 0))
 		END
 	END
 	RETURN ret
@@ -655,11 +665,10 @@ PROCEDURE GenerateJava(module: Ast.Module; cmd: Ast.Statement;
                        javaDirs: ARRAY OF CHAR;
                        VAR javac: JavaComp.Compiler; usejavac: BOOLEAN): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, nameLen: INTEGER;
+    ret: INTEGER;
     name: ARRAY 512 OF CHAR;
     fileName: ARRAY 1024 OF CHAR;
     out: File.Out;
-    sing: BOOLEAN;
 BEGIN
 	module.used := TRUE;
 
@@ -673,25 +682,10 @@ BEGIN
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		sing := FALSE;
-		IF module.mark THEN
-			i := 0;
-			WHILE ~sing & (javaDirs[i] # Utf8.Null) DO
-				nameLen := 0;
-				(* TODO *)
-				ASSERT(Chars0X.Copy      (name, nameLen, javaDirs, i)
-				     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name, Java)
-				     & Chars0X.CopyString(name, nameLen, ".java")
-				);
-				INC(i);
-				IF Files.Exist(name, 0) THEN
-					sing := TRUE;
-					ASSERT(~usejavac OR JavaComp.AddJava(javac, name, 0))
-				END
-			END
-		END;
-		IF ~sing & (ret = ErrNo) THEN
+		IF IsModuleInSingularity(module, javaDirs, Java, ".java", name) THEN
+			(* TODO *)
+			ASSERT(~usejavac OR JavaComp.AddJava(javac, name, 0))
+		ELSE
 			ret := OpenJavaOutput(out, module, "", dir, dirLen);
 			fileName := dir;
 			IF ret = ErrNo THEN
@@ -893,7 +887,7 @@ PROCEDURE GenerateJs1(module: Ast.Module; cmd: Ast.Statement;
                       VAR dir: ARRAY OF CHAR; dirLen: INTEGER;
                       jsDirs: ARRAY OF CHAR): INTEGER;
 VAR imp: Ast.Declaration;
-    ret, i, nameLen: INTEGER;
+    ret: INTEGER;
     name: ARRAY 512 OF CHAR;
     sing: BOOLEAN;
     out: File.Out;
@@ -909,36 +903,17 @@ BEGIN
 		imp := imp.next
 	END;
 	IF ret = ErrNo THEN
-		sing := FALSE;
-		IF module.mark THEN
-			i := 0;
-			WHILE ~sing & (jsDirs[i] # Utf8.Null) DO
-				nameLen := 0;
-				(* TODO *)
-				ASSERT(Chars0X.Copy         (name, nameLen, jsDirs, i)
-				     & Chars0X.CopyString   (name, nameLen, OsUtil.DirSep)
-				     & CopyModuleNameForFile(name, nameLen, module.name, Js)
-				     & Chars0X.CopyString   (name, nameLen, ".js")
-				);
-				INC(i);
-				IF outSingle # NIL THEN
-					(* TODO *)
-					ASSERT(CopyFileToOutIfExist(name, outSingle, sing))
-				ELSE
-					sing := Files.Exist(name, 0)
-				END
+		IF IsModuleInSingularity(module, jsDirs, Js, ".js", name) THEN
+			(* TODO *)
+			ASSERT((outSingle = NIL) OR CopyFileToOutIfExist(name, outSingle, sing))
+		ELSIF outSingle = NIL THEN
+			ret := OpenJsOutput(out, module, "", dir, dirLen);
+			IF ret = ErrNo THEN
+				GeneratorJs.Generate(out, module, cmd, opt);
+				File.CloseOut(out)
 			END
-		END;
-		IF ~sing & (ret = ErrNo) THEN
-			IF outSingle = NIL THEN
-				ret := OpenJsOutput(out, module, "", dir, dirLen);
-				IF ret = ErrNo THEN
-					GeneratorJs.Generate(out, module, cmd, opt);
-					File.CloseOut(out)
-				END
-			ELSE
-				GeneratorJs.Generate(outSingle, module, cmd, opt)
-			END
+		ELSE
+			GeneratorJs.Generate(outSingle, module, cmd, opt)
 		END
 	END
 	RETURN ret

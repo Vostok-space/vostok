@@ -102,7 +102,8 @@ TYPE
 		script*, toSingleFile*: BOOLEAN;
 		resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
-		modPath*, cDirs*, cc*, javaDirs*, jsDirs*, javac*: ARRAY 4096 OF CHAR;
+		modPath*, cDirs*, javaDirs*, jsDirs*,
+		cc*, javac*: ARRAY 4096 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
