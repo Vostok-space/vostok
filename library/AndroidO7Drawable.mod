@@ -1,4 +1,4 @@
-(* Copyright 2018 ComdivByZero
+(* Copyright 2018,2021 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,28 @@
 MODULE AndroidO7Drawable;
 
 IMPORT
-  Canvas := AndroidCanvas, Activity := AndroidO7Activity;
+  Canvas := AndroidCanvas, MotionEvent := AndroidMotionEvent, Activity := AndroidO7Activity;
 
 TYPE
   RContext*  = RECORD END;
   Context*   = POINTER TO RContext;
   Drawer*    = PROCEDURE(ctx: Context; cnv: Canvas.T);
   Destroyer* = PROCEDURE(ctx: Context);
+  Toucher*   = PROCEDURE(ctx: Context; event: MotionEvent.T): BOOLEAN;
 
   VAR drawer   : Drawer;
       destroyer: Destroyer;
+      toucher  : Toucher;
+
       context  : Context;
 
   PROCEDURE Nothing(ctx: Context; cnv: Canvas.T);
   END Nothing;
+
+  PROCEDURE NothingForTouched(ctx: Context; e: MotionEvent.T): BOOLEAN;
+  RETURN
+    FALSE
+  END NothingForTouched;
 
   PROCEDURE Draw*(cnv: Canvas.T);
   BEGIN
@@ -59,11 +67,25 @@ TYPE
     END
   END SetDrawer;
 
+  PROCEDURE SetToucher*(t: Toucher);
+  BEGIN
+    IF t = NIL THEN
+      toucher := NothingForTouched
+    ELSE
+      toucher := t
+    END
+  END SetToucher;
+
   PROCEDURE SetDestroyer*(d: Destroyer);
   BEGIN
     ASSERT((destroyer = NIL) OR (d = NIL));
     destroyer := d
   END SetDestroyer;
+
+  PROCEDURE Touched*(e: MotionEvent.T): BOOLEAN;
+  RETURN
+    toucher(context, e)
+  END Touched;
 
   PROCEDURE Width*(): INTEGER;
   RETURN
@@ -82,6 +104,7 @@ TYPE
 
 BEGIN
   drawer    := Nothing;
+  toucher   := NothingForTouched;
   destroyer := NIL;
   context   := NIL
 END AndroidO7Drawable.

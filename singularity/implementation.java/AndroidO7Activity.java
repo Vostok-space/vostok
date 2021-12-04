@@ -20,17 +20,21 @@ public static android.app.Activity act = null;
 private static android.view.View view = null;
 
 private static final class View extends android.view.View {
-	private o7.AndroidCanvas.T wrapper;
+	private o7.AndroidCanvas.T wrapper = o7.AndroidCanvas.wrap(null);
 
 	public View(android.content.Context context) {
 		super(context);
 	}
 	@Override
 	protected void onDraw(android.graphics.Canvas canvas) {
-		if ((this.wrapper == null) || (this.wrapper.c != canvas)) {
+		if (this.wrapper.c != canvas) {
 			this.wrapper = o7.AndroidCanvas.wrap(canvas);
 		}
 		o7.AndroidO7Drawable.Draw(this.wrapper);
+	}
+	@Override
+	public boolean onTouchEvent(android.view.MotionEvent event) {
+		return o7.AndroidO7Drawable.Touched(o7.AndroidMotionEvent.wrap(event));
 	}
 }
 

@@ -31,7 +31,6 @@ public static class T {
 }
 
 public static T wrap(final android.graphics.Canvas c) {
-	O7.asrt(c != null);
 	return new T(c);
 }
 
