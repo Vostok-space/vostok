@@ -141,7 +141,7 @@ MODULE IntToChars0X;
 
       REPEAT
         DEC(i);
-        str[i] := Hx.To(i MOD 10H);
+        str[i] := Hx.To(value MOD 10H);
         value := value DIV 10H
       UNTIL value = 0;
 
