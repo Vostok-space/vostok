@@ -26,7 +26,7 @@ CONST
       INC(d, ORD("0"))
     ELSE
       INC(d, ORD("A") - 10)
-    END;
+    END
   RETURN
     CHR(d)
   END To;
@@ -52,8 +52,8 @@ CONST
     IF ("0" <= d) & (d <= "9") THEN
       i := ORD(d) - ORD("0")
     ELSE ASSERT(("A" <= d) & (d <= "F"));
-      i := 10 + ORD(d) - ORD("A")
-    END;
+      i := ORD(d) - (ORD("A") - 10)
+    END
   RETURN
     i
   END From;
@@ -66,10 +66,10 @@ CONST
     IF ("0" <= d) & (d <= "9") THEN
       i := ORD(d) - ORD("0")
     ELSIF ("A" <= d) & (d <= "F") THEN
-      i := 10 + ORD(d) - ORD("A")
+      i := ORD(d) - (ORD("A") - 10)
     ELSE
-      i := 10 + ORD(d) - ORD("a")
-    END;
+      i := ORD(d) - (ORD("a") - 10)
+    END
   RETURN
     i
   END FromWithLowCase;
