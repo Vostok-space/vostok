@@ -492,15 +492,15 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR len: INTEGER;
    PROCEDURE Sub(VAR res: ARRAY OF CHAR; VAR len: INTEGER; from, to: ARRAY OF CHAR): BOOLEAN;
    RETURN
-     Chars0X.CopyString(res, len, "sub(")
-   & Chars0X.CopyChar(res, len, Utf8.DQuote)
-   & Chars0X.CopyString(res, len, from)
-   & Chars0X.CopyChar(res, len, Utf8.DQuote)
-   & Chars0X.CopyString(res, len, ", ")
-   & Chars0X.CopyChar(res, len, Utf8.DQuote)
-   & Chars0X.CopyString(res, len, to)
-   & Chars0X.CopyChar(res, len, Utf8.DQuote)
-   & Chars0X.CopyString(res, len, "); ")
+     Chars0X.CopyString (res, len, "sub(")
+   & Chars0X.PutChar    (res, len, Utf8.DQuote)
+   & Chars0X.CopyString (res, len, from)
+   & Chars0X.PutChar    (res, len, Utf8.DQuote)
+   & Chars0X.CopyString (res, len, ", ")
+   & Chars0X.PutChar    (res, len, Utf8.DQuote)
+   & Chars0X.CopyString (res, len, to)
+   & Chars0X.PutChar    (res, len, Utf8.DQuote)
+   & Chars0X.CopyString (res, len, "); ")
    END Sub;
  BEGIN
    len := 0;
@@ -529,9 +529,9 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    i := 0
  RETURN
    Chars0X.CopyString(full, i, name)
- & Chars0X.CopyChar  (full, i, "_")
+ & Chars0X.PutChar   (full, i, "_")
  & Chars0X.CopyString(full, i, version)
- & Chars0X.CopyChar  (full, i, "_")
+ & Chars0X.PutChar   (full, i, "_")
  & Chars0X.CopyString(full, i, platform)
  & Chars0X.CopyString(full, i, ".deb")
  END GetDebName;

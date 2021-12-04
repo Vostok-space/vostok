@@ -61,7 +61,7 @@ MODULE FileProvider;
         IF Chars0X.Copy          (n, l, it.p.path, it.pathOfs)
          & Chars0X.CopyString    (n, l, OsUtil.DirSep)
          & Chars0X.CopyString    (n, l, it.name)
-         & Chars0X.CopyChar      (n, l, ".")
+         & Chars0X.PutChar       (n, l, ".")
          & Chars0X.CopyCharsUntil(n, l, Exts, ofs, ";")
         THEN
           Log.Str("Open "); Log.StrLn(n);

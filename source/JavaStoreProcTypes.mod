@@ -136,20 +136,20 @@ MODULE JavaStoreProcTypes;
     BEGIN
       CASE t.id OF
         Ast.IdInteger  ,
-        Ast.IdSet      : ok := Chars0X.CopyChar(name, i, "I")
+        Ast.IdSet      : ok := Chars0X.PutChar(name, i, "I")
       | Ast.IdLongInt  ,
-        Ast.IdLongSet  : ok := Chars0X.CopyChar(name, i, "J")
-      | Ast.IdBoolean  : ok := Chars0X.CopyChar(name, i, "Z")
-      | Ast.IdByte     : ok := Chars0X.CopyChar(name, i, "B")
-      | Ast.IdChar     : ok := Chars0X.CopyChar(name, i, "C")
-      | Ast.IdReal     : ok := Chars0X.CopyChar(name, i, "D")
-      | Ast.IdReal32   : ok := Chars0X.CopyChar(name, i, "F")
-      | Ast.IdPointer  : ok := Chars0X.CopyChar(name, i, "L")
+        Ast.IdLongSet  : ok := Chars0X.PutChar(name, i, "J")
+      | Ast.IdBoolean  : ok := Chars0X.PutChar(name, i, "Z")
+      | Ast.IdByte     : ok := Chars0X.PutChar(name, i, "B")
+      | Ast.IdChar     : ok := Chars0X.PutChar(name, i, "C")
+      | Ast.IdReal     : ok := Chars0X.PutChar(name, i, "D")
+      | Ast.IdReal32   : ok := Chars0X.PutChar(name, i, "F")
+      | Ast.IdPointer  : ok := Chars0X.PutChar(name, i, "L")
 
-      | Ast.IdArray    : ok := Chars0X.CopyChar(name, i, "A")
-      | Ast.IdRecord   : ok := Chars0X.CopyChar(name, i, "R")
+      | Ast.IdArray    : ok := Chars0X.PutChar(name, i, "A")
+      | Ast.IdRecord   : ok := Chars0X.PutChar(name, i, "R")
       | Ast.IdProcType, Ast.IdFuncType
-                       : ok := Chars0X.CopyChar(name, i, "P")
+                       : ok := Chars0X.PutChar(name, i, "P")
       END
     RETURN
       ok
@@ -158,7 +158,7 @@ MODULE JavaStoreProcTypes;
   BEGIN
     i := 0;
     IF proc.type = NIL THEN
-      ok := Chars0X.CopyChar(nm, i, "V");
+      ok := Chars0X.PutChar(nm, i, "V");
       generic := FALSE
     ELSE
       ok := Type(nm, i, proc.type);

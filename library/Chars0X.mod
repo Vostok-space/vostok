@@ -20,7 +20,7 @@
  *)
 MODULE Chars0X;
 
-  IMPORT Utf8;
+  IMPORT Utf8, ArrayFill;
 
   PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
   VAR i: INTEGER;
@@ -182,22 +182,29 @@ MODULE Chars0X;
   END Set;
 
   PROCEDURE CopyChar*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
-                      ch: CHAR): BOOLEAN;
+                      ch: CHAR; n: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN; i: INTEGER;
   BEGIN
     i := ofs;
+    ASSERT(0 <= n);
     ASSERT(ch # Utf8.Null);
     ASSERT((0 <= i) & (i < LEN(dest)));
-    ok := i < LEN(dest) - 1;
+    ok := i < LEN(dest) - n;
     IF ok THEN
-      dest[i] := ch;
-      INC(i)
+      ArrayFill.Char(dest, i, ch, n);
+      INC(i, n)
     END;
     dest[i] := Utf8.Null;
     ofs := i
   RETURN
     ok
   END CopyChar;
+
+  PROCEDURE PutChar*(VAR dest: ARRAY OF CHAR; VAR ofs: INTEGER;
+                     ch: CHAR): BOOLEAN;
+  RETURN
+    CopyChar(dest, ofs, ch, 1)
+  END PutChar;
 
   PROCEDURE SearchChar*(str: ARRAY OF CHAR; VAR pos: INTEGER; c: CHAR): BOOLEAN;
   VAR i: INTEGER;

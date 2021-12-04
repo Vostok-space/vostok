@@ -579,7 +579,7 @@ MODULE AstTransform;
     REPEAT
       DEC(i)
     UNTIL ~Strings.CopyToChars(name, ofs, prs[i].name)
-       OR ~Chars0X.CopyChar(name, ofs, "_")
+       OR ~Chars0X.PutChar(name, ofs, "_")
        OR (i = 0);
 
     IF (i = 0) & Strings.CopyToChars(name, ofs, decl.name) THEN

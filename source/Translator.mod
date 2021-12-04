@@ -152,7 +152,7 @@ BEGIN
 	     & (~(   SpecIdentChecker.IsSpecModuleName(name)
 	          OR (lang = LangC) & SpecIdentChecker.IsSpecCHeaderName(name)
 	         )
-	     OR Chars0X.CopyChar(str, len, "_")
+	     OR Chars0X.PutChar(str, len, "_")
 	       )
 END CopyModuleNameForFile;
 
