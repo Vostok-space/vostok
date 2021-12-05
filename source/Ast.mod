@@ -3920,6 +3920,47 @@ BEGIN
 	RETURN s
 END StatementErrorNew;
 
+PROCEDURE StatementAdd*(VAR stats, nearLast: Statement; add: Statement);
+VAR l: Statement;
+BEGIN
+	ASSERT((add = NIL) OR (add.next = NIL));
+	ASSERT((stats # NIL) OR (nearLast = NIL));
+
+	(* Если не пустой оператор *)
+	IF add # NIL THEN
+		l := nearLast;
+		IF l = NIL THEN
+			l := stats;
+			IF l = NIL THEN
+				stats := add
+			END
+		END;
+		WHILE l.next # NIL DO
+			l := l.next
+		END;
+		l.next := add;
+		nearLast := add
+	END
+END StatementAdd;
+
+PROCEDURE StatementReplace*(VAR stats: Statement; orig, repl: Statement);
+VAR p: Statement;
+BEGIN
+	ASSERT(orig # repl);
+	ASSERT(repl.next = NIL);
+
+	p := stats;
+	IF p = orig THEN
+		stats := repl
+	ELSE
+		WHILE p.next # orig DO
+			p := p.next
+		END;
+		p.next := repl;
+		repl.next := orig.next;
+	END
+END StatementReplace;
+
 PROCEDURE PredefinedProcNew(s, t, procId: INTEGER): ProcType;
 VAR td: PredefinedProcedure;
 BEGIN

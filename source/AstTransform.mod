@@ -21,7 +21,8 @@ MODULE AstTransform;
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
          Chars0X,
-         SpecIdent := OberonSpecIdent;
+         SpecIdent := OberonSpecIdent,
+         Scanner;
 
   CONST
     AnonUnchanged*          = 0;
@@ -291,8 +292,8 @@ MODULE AstTransform;
                        actualParam: Ast.Parameter; fp: Ast.FormalParam);
   VAR sel, last: Ast.Selector; index: Ast.Expression;
 
-    PROCEDURE Item(o: Options; d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector; v: Ast.Var;
-                   mark: Ast.ExprInteger);
+    PROCEDURE Item(o: Options; d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector;
+                   v: Ast.Var; mark: Ast.ExprInteger);
     VAR t: Ast.Type; index: Ast.Factor; ns: Ast.Selector;
     BEGIN
       index := IsChangedParam(o.outParam, v, mark);
@@ -493,7 +494,8 @@ MODULE AstTransform;
     END
   END Expression;
 
-  PROCEDURE Statements(st: Ast.Statement; o: Options);
+  PROCEDURE Statements(VAR stats: Ast.Statement; o: Options);
+  VAR st: Ast.Statement;
 
     PROCEDURE WhileIf(wi: Ast.WhileIf; o: Options);
     BEGIN
@@ -512,11 +514,39 @@ MODULE AstTransform;
       Expression(r.expr, o)
     END Repeat;
 
-    PROCEDURE For(for: Ast.For; o: Options);
+    PROCEDURE For(VAR stats: Ast.Statement; for: Ast.For; o: Options);
+    VAR w: Ast.While; e: Ast.ExprRelation; var, d: Ast.Designator;
+        last: Ast.Statement; inc: Ast.Call; einc: Ast.ExprCall;
+        fp: Ast.FormalParam; par: Ast.Parameter;
+        a: Ast.Assign; rel, ident: INTEGER;
     BEGIN
       IF (o.outParam # 0) & for.var.inVarParam THEN
-        (* TODO заменить на WHILE *)
-        ASSERT(FALSE)
+        AstOk(Ast.DesignatorNew(var, for.var));
+        AstOk(Ast.SelArrayNew(var.sel, var.type, var.value, Ast.ExprIntegerNew(0)));
+        AstOk(Ast.AssignNew(a, FALSE, var, for.expr));
+        IF for.by > 0 THEN
+          rel   := Scanner.LessEqual;
+          ident := SpecIdent.Inc
+        ELSE
+          rel   := Scanner.GreaterEqual;
+          ident := SpecIdent.Dec
+        END;
+        AstOk(Ast.ExprRelationNew(e, var, rel, for.to));
+        AstOk(Ast.WhileNew(w, e, for.stats));
+        AstOk(Ast.DesignatorNew(d, Ast.PredefinedGet(ident)));
+        AstOk(Ast.CallNew(inc, d));
+        einc := inc.expr(Ast.ExprCall);
+        fp := d.type(Ast.ProcType).params;
+        AstOk(Ast.CallParamNew(einc, einc.params, var, fp));
+        IF for.by # 1 THEN
+          par := einc.params;
+          AstOk(Ast.CallParamNew(einc, par, Ast.ExprIntegerNew(ABS(for.by)), fp));
+        END;
+        last := NIL;
+        Ast.StatementAdd(w.stats, last, inc);
+        Ast.StatementReplace(stats, for, a);
+        w.next := a.next;
+        a.next := w
       ELSE
         Expression(for.expr, o);
         Expression(for.to, o);
@@ -542,6 +572,7 @@ MODULE AstTransform;
       Expression(a.expr, o)
     END Assign;
   BEGIN
+    st := stats;
     WHILE st # NIL DO
       IF st IS Ast.Assign THEN
         IF st.ext # o.mark THEN
@@ -554,7 +585,7 @@ MODULE AstTransform;
       ELSIF st IS Ast.Repeat THEN
         Repeat(st(Ast.Repeat), o)
       ELSIF st IS Ast.For THEN
-        For(st(Ast.For), o)
+        For(stats, st(Ast.For), o)
       ELSE ASSERT(st IS Ast.Case);
         Case(st(Ast.Case), o)
       END;

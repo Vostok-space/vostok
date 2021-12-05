@@ -1299,15 +1299,7 @@ BEGIN
 	last := stats;
 
 	WHILE ScanIfEqual(p, Scanner.Semicolon) DO
-		IF stats = NIL THEN
-			stats := Statement(p, ds);
-			last := stats
-		ELSE
-			last.next := Statement(p, ds);
-			IF last.next # NIL THEN
-				last := last.next
-			END
-		END
+		Ast.StatementAdd(stats, last, Statement(p, ds))
 	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
 		p.err := FALSE;
