@@ -64,17 +64,15 @@ MODULE OsRand;
    ASSERT(init);
    IF file # NIL THEN
      ok := count = File.Read(file, buf, ofs, count)
+   ELSIF Platform.Java THEN
+     ok := JavaRand.Read(buf, ofs, count)
+   ELSIF Platform.JavaScript THEN
+     ok := JsRand.Read(buf, ofs, count)
    ELSE
-     IF Platform.Java THEN
-       ok := JavaRand.Read(buf, ofs, count)
-     ELSIF Platform.JavaScript THEN
-       ok := JsRand.Read(buf, ofs, count)
-     ELSE
-       ok := WindowsRand.Read(buf, ofs, count)
-     END;
-     IF ok THEN
-       ofs := ofs + count
-     END
+     ok := WindowsRand.Read(buf, ofs, count)
+   END;
+   IF ok THEN
+     INC(ofs, count)
    END
  RETURN
    ok
