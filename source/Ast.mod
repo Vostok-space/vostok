@@ -228,10 +228,27 @@ CONST
 	   что важно при подсчёте ссылок *)
 	TypeAssigned* = 0;
 
-	Plus *  = Scanner.Plus;
-	Minus*  = Scanner.Minus;
-	Or   *  = Scanner.Or;
+	Plus *        = Scanner.Plus;
+	Minus*        = Scanner.Minus;
+	Or*           = Scanner.Or;
+	And*          = Scanner.And;
+	Equal*        = Scanner.Equal;
+	Inequal*      = Scanner.Inequal;
+	Less*         = Scanner.Less;
+	LessEqual*    = Scanner.LessEqual;
+	Greater*      = Scanner.Greater;
+	GreaterEqual* = Scanner.GreaterEqual;
+	In*           = Scanner.In;
+	Is*           = Scanner.Is;
+	Mult*         = Scanner.Asterisk;
+	Div*          = Scanner.Div;
+	Rdiv*         = Scanner.Slash;
+	Mod*          = Scanner.Mod;
 	NoSign* = 0;
+	RelationFirst = Scanner.RelationFirst;
+	RelationLast  = Scanner.RelationLast;
+	MultFirst     = Scanner.MultFirst;
+	MultLast      = Scanner.MultLast;
 
 	StrUsedAsChar*  = 0;
 	StrUsedUndef*   = 1;
@@ -2513,8 +2530,7 @@ END IsChars;
 PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
                            relation: INTEGER; expr2: Expression): INTEGER;
 CONST
-	AcceptableRelationLexems = {Scanner.RelationFirst .. Scanner.RelationLast}
-	                         - {Scanner.Is};
+	AcceptableRelations = {RelationFirst .. RelationLast} - {Is};
 VAR err: INTEGER;
 	res: BOOLEAN;
 	v1, v2: Expression;
@@ -2528,7 +2544,7 @@ VAR err: INTEGER;
 		dist2 := 0;
 		IF (t1 = NIL) OR (t2 = NIL) THEN
 			continue := FALSE
-		ELSIF relation = Scanner.In THEN
+		ELSIF relation = In THEN
 			continue := (t1.id = IdInteger) & (t2.id IN Sets);
 			IF ~continue THEN
 				err := ErrExprInWrongTypes - 3 + ORD(t1.id # IdInteger)
@@ -2553,8 +2569,8 @@ VAR err: INTEGER;
 			continue := FALSE;
 			err := ErrRelIncompatibleType
 		ELSE
-			continue := (relation = Scanner.Equal)
-			         OR (relation = Scanner.Inequal);
+			continue := (relation = Equal)
+			         OR (relation = Inequal);
 			IF ~continue THEN
 				err := ErrRelIncompatibleType
 			END
@@ -2595,7 +2611,7 @@ VAR err: INTEGER;
 		RETURN ret
 	END IsEqualStrings;
 BEGIN
-	ASSERT(relation IN AcceptableRelationLexems);
+	ASSERT(relation IN AcceptableRelations);
 
 	NEW(e); ExprInit(e, IdRelation, TypeGet(IdBoolean));
 	e.exprs[0] := expr1;
@@ -2606,12 +2622,12 @@ BEGIN
 	IF (expr1 # NIL) & (expr2 # NIL)
 	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
 	 & (IsAllowCmpProc OR IsNotProc(expr1, expr2, err))
-	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Scanner.Is)
+	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Is)
 	THEN
 		v1 := e.exprs[0].value;
 		v2 := e.exprs[1].value;
 		CASE relation OF
-		  Scanner.Equal:
+		  Equal:
 			CASE expr1.type.id OF
 			  IdInteger  : res := v1(ExprInteger).int = v2(ExprInteger).int
 			| IdChar     : res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
@@ -2627,7 +2643,7 @@ BEGIN
 			| IdProcType, IdFuncType
 			             : (* TODO *) res := FALSE
 			END
-		| Scanner.Inequal:
+		| Inequal:
 			CASE expr1.type.id OF
 			  IdInteger         : res := v1(ExprInteger).int # v2(ExprInteger).int
 			| IdChar            : res := ~IsEqualChars(v1(ExprInteger), v2(ExprInteger))
@@ -2639,31 +2655,31 @@ BEGIN
 			| IdProcType, IdFuncType
 			                    : (* TODO *) res := FALSE
 			END
-		| Scanner.Less:
+		| Less:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int < v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real < v2(ExprReal).real
 			| IdArray           : (* TODO *) res := FALSE
 			END
-		| Scanner.LessEqual:
+		| LessEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int <= v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real <= v2(ExprReal).real
 			| IdArray           : (* TODO *) res := FALSE
 			END
-		| Scanner.Greater:
+		| Greater:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int > v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real > v2(ExprReal).real
 			| IdArray           : (* TODO *) res := FALSE
 			END
-		| Scanner.GreaterEqual:
+		| GreaterEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int >= v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real >= v2(ExprReal).real
 			| IdArray           : (* TODO *) res := FALSE
 			END
-		| Scanner.In:
+		| In:
 			res := LongSet.In(v1(ExprInteger).int, v2(ExprSetValue).set)
 		END;
 		IF expr1.type.id # IdReal THEN
@@ -2769,7 +2785,7 @@ VAR e: ExprSum;
 		THEN
 			err := ErrAddExprDifferenTypes;
 			continue := FALSE
-		ELSIF add = Scanner.Or THEN
+		ELSIF add = Or THEN
 			continue := e1.type.id = IdBoolean;
 			IF ~continue THEN
 				err := ErrNotBoolInLogicExpr
@@ -2791,7 +2807,7 @@ BEGIN
 	 & CheckType(fullSum, term, add, err)
 	 & (fullSum.value # NIL) & (term.value # NIL)
 	THEN
-		IF add = Scanner.Or THEN
+		IF add = Or THEN
 			IF term.value(ExprBoolean).bool THEN
 				fullSum.value := term.value
 			END
@@ -2846,14 +2862,14 @@ VAR err: INTEGER;
 		    & ~CompatibleAsIntAndByte(e1.type, e2.type)
 		THEN
 			continue := FALSE;
-			IF mult = Scanner.And THEN
+			IF mult = And THEN
 				err := ErrNotBoolInLogicExpr
-			ELSIF mult = Scanner.Asterisk THEN
+			ELSIF mult = Mult THEN
 				err := ErrMultExprDifferentTypes
 			ELSE
 				err := ErrDivExprDifferentTypes
 			END
-		ELSIF mult = Scanner.And THEN
+		ELSIF mult = And THEN
 			continue := e1.type.id = IdBoolean;
 			IF ~continue THEN
 				err := ErrNotBoolInLogicExpr
@@ -2861,12 +2877,12 @@ VAR err: INTEGER;
 		ELSIF ~(e1.type.id IN (Numbers + Sets)) THEN
 			continue := FALSE;
 			err := ErrNotNumberAndNotSetInMult
-		ELSIF (mult = Scanner.Div) OR (mult = Scanner.Mod) THEN
+		ELSIF (mult = Div) OR (mult = Mod) THEN
 			continue := e1.type.id = IdInteger;
 			IF ~continue THEN
 				err := ErrNotIntInDivOrMod
 			END
-		ELSIF (mult = Scanner.Slash) & (e1.type.id = IdInteger) THEN
+		ELSIF (mult = Rdiv) & (e1.type.id = IdInteger) THEN
 			continue := FALSE;
 			err := ErrNotRealTypeForRealDiv
 		ELSE
@@ -2881,7 +2897,7 @@ VAR err: INTEGER;
 	BEGIN
 		i1 := res.value(ExprInteger).int;
 		i2 := b.value(ExprInteger).int;
-		IF mult = Scanner.Asterisk THEN
+		IF mult = Mult THEN
 			IF ~Arithmetic.Mul(i, i1, i2) THEN
 				err := ErrConstMultOverflow
 			END
@@ -2889,14 +2905,14 @@ VAR err: INTEGER;
 			err := ErrComDivByZero
 		ELSIF i2 < 0 THEN
 			err := ErrNegativeDivisor
-		ELSIF mult = Scanner.Div THEN
+		ELSIF mult = Div THEN
 			i := i1 DIV i2
-		ELSE ASSERT(mult = Scanner.Mod);
+		ELSE ASSERT(mult = Mod);
 			i := i1 MOD i2
 		END;
 		IF err = ErrNo THEN
 			val := ExprIntegerNew(i);
-			IF (mult IN {Scanner.Div, Scanner.Mod}) & (i1 < 0) THEN
+			IF (mult IN {Div, Mod}) & (i1 < 0) THEN
 				val.properties := {ExprIntNegativeDividentTouch}
 			ELSE
 				val.properties := {ExprIntNegativeDividentTouch}
@@ -2914,7 +2930,7 @@ VAR err: INTEGER;
 	BEGIN
 		r1 := res.value(ExprReal).real;
 		r2 := b.value(ExprReal).real;
-		IF mult = Scanner.Asterisk THEN
+		IF mult = Mult THEN
 			r := r1 * r2
 		ELSE
 			r := r1 / r2
@@ -2931,7 +2947,7 @@ VAR err: INTEGER;
 	BEGIN
 		s1 := res.value(ExprSetValue).set;
 		s2 := b.value(ExprSetValue).set;
-		IF mult = Scanner.Asterisk THEN
+		IF mult = Mult THEN
 			s[0] := s1[0] * s2[0];
 			s[1] := s1[1] * s2[1]
 		ELSE
@@ -2974,7 +2990,7 @@ BEGIN
 		END
 	ELSE
 		res.value := NIL;
-		IF ((mult - Scanner.Div) IN {0, 1})
+		IF ((mult - Div) IN {0, 1})
 		 & (b.value # NIL) & (b.value.type.id = IdInteger)
 		THEN
 			CheckDivisor(err, b.value(ExprInteger).int)
@@ -2989,7 +3005,7 @@ VAR t: Type;
     val: Factor;
     err: INTEGER;
 BEGIN
-	ASSERT((Scanner.MultFirst <= mult) & (mult <= Scanner.MultLast));
+	ASSERT((MultFirst <= mult) & (mult <= MultLast));
 
 	ASSERT((factorOrTerm.id = IdError)
 	    OR (factorOrTerm IS Factor)

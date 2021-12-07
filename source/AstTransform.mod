@@ -21,8 +21,7 @@ MODULE AstTransform;
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
          Chars0X,
-         SpecIdent := OberonSpecIdent,
-         Scanner;
+         SpecIdent := OberonSpecIdent;
 
   CONST
     AnonUnchanged*          = 0;
@@ -525,10 +524,10 @@ MODULE AstTransform;
         AstOk(Ast.SelArrayNew(var.sel, var.type, var.value, Ast.ExprIntegerNew(0)));
         AstOk(Ast.AssignNew(a, FALSE, var, for.expr));
         IF for.by > 0 THEN
-          rel   := Scanner.LessEqual;
+          rel   := Ast.LessEqual;
           ident := SpecIdent.Inc
         ELSE
-          rel   := Scanner.GreaterEqual;
+          rel   := Ast.GreaterEqual;
           ident := SpecIdent.Dec
         END;
         AstOk(Ast.ExprRelationNew(e, var, rel, for.to));

@@ -22,7 +22,6 @@ IMPORT
 	Utf8, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
-	Scanner,
 	SpecIdent := OberonSpecIdent,
 	Stream    := VDataStream,
 	Text      := TextGenerator,
@@ -1317,13 +1316,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		END In;
 	BEGIN
 		CASE rel.relation OF
-		  Scanner.Equal        : Simple(gen, rel, " == ")
-		| Scanner.Inequal      : Simple(gen, rel, " != ")
-		| Scanner.Less         : Simple(gen, rel, " < ")
-		| Scanner.LessEqual    : Simple(gen, rel, " <= ")
-		| Scanner.Greater      : Simple(gen, rel, " > ")
-		| Scanner.GreaterEqual : Simple(gen, rel, " >= ")
-		| Scanner.In           : In(gen, rel)
+		  Ast.Equal        : Simple(gen, rel, " == ")
+		| Ast.Inequal      : Simple(gen, rel, " != ")
+		| Ast.Less         : Simple(gen, rel, " < ")
+		| Ast.LessEqual    : Simple(gen, rel, " <= ")
+		| Ast.Greater      : Simple(gen, rel, " > ")
+		| Ast.GreaterEqual : Simple(gen, rel, " >= ")
+		| Ast.In           : In(gen, rel)
 		END
 	END Relation;
 
@@ -1416,14 +1415,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 			i := last;
 			WHILE i > 0 DO
 				CASE arr[i].add OF
-				  Scanner.Minus:
+				  Ast.Minus:
 					Text.Str(gen, sub)
-				| Scanner.Plus:
+				| Ast.Plus:
 					Text.Str(gen, add)
 				END;
 				DEC(i)
 			END;
-			IF arr[0].add = Scanner.Minus THEN
+			IF arr[0].add = Ast.Minus THEN
 				Text.Str(gen, sub);
 				Text.Str(gen, "0, ");
 				Expression(gen, arr[0].term);
@@ -1460,12 +1459,12 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 
 	PROCEDURE IsPresentDiv(term: Ast.ExprTerm): BOOLEAN;
 	BEGIN
-		WHILE ~(term.mult IN {Scanner.Div, Scanner.Mod})
+		WHILE ~(term.mult IN {Ast.Div, Ast.Mod})
 		    & (term.expr IS Ast.ExprTerm)
 		DO
 			term := term.expr(Ast.ExprTerm)
 		END
-		RETURN term.mult IN {Scanner.Div, Scanner.Mod}
+		RETURN term.mult IN {Ast.Div, Ast.Mod}
 	END IsPresentDiv;
 
 	PROCEDURE Term(VAR gen: Generator; term: Ast.ExprTerm);
@@ -1473,21 +1472,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		REPEAT
 			CheckExpr(gen, term.factor);
 			CASE term.mult OF
-			  Scanner.Asterisk           :
+			  Ast.Mult:
 				IF term.type.id IN Ast.Sets THEN
 					Text.Str(gen, " & ")
 				ELSE
 					Text.Str(gen, " * ")
 				END
-			| Scanner.Slash, Scanner.Div :
+			| Ast.Rdiv, Ast.Div:
 				IF term.type.id IN Ast.Sets THEN
-					ASSERT(term.mult = Scanner.Slash);
+					ASSERT(term.mult = Ast.Rdiv);
 					Text.Str(gen, " ^ ")
 				ELSE
 					Text.Str(gen, " / ")
 				END
-			| Scanner.And                : Text.Str(gen, " && ")
-			| Scanner.Mod                : Text.Str(gen, " % ")
+			| Ast.And: Text.Str(gen, " && ")
+			| Ast.Mod: Text.Str(gen, " % ")
 			END;
 			IF term.expr IS Ast.ExprTerm THEN
 				term := term.expr(Ast.ExprTerm)
@@ -1514,9 +1513,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		IF arr[0].value # NIL THEN
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Text.Str(gen, "O7_MUL(")
-				| Scanner.Div      : Text.Str(gen, "O7_DIV(")
-				| Scanner.Mod      : Text.Str(gen, "O7_MOD(")
+				  Ast.Mult : Text.Str(gen, "O7_MUL(")
+				| Ast.Div  : Text.Str(gen, "O7_DIV(")
+				| Ast.Mod  : Text.Str(gen, "O7_MOD(")
 				END;
 				DEC(i)
 			END
@@ -1525,34 +1524,34 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression);
 		  Ast.IdInteger:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Text.Str(gen, "o7_mul(")
-				| Scanner.Div      : Text.Str(gen, "o7_div(")
-				| Scanner.Mod      : Text.Str(gen, "o7_mod(")
+				  Ast.Mult : Text.Str(gen, "o7_mul(")
+				| Ast.Div  : Text.Str(gen, "o7_div(")
+				| Ast.Mod  : Text.Str(gen, "o7_mod(")
 				END;
 				DEC(i)
 			END
 		| Ast.IdLongInt:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Text.Str(gen, "o7_lmul(")
-				| Scanner.Div      : Text.Str(gen, "o7_ldiv(")
-				| Scanner.Mod      : Text.Str(gen, "o7_lmod(")
+				  Ast.Mult : Text.Str(gen, "o7_lmul(")
+				| Ast.Div  : Text.Str(gen, "o7_ldiv(")
+				| Ast.Mod  : Text.Str(gen, "o7_lmod(")
 				END;
 				DEC(i)
 			END
 		| Ast.IdReal:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Text.Str(gen, "o7_fmul(")
-				| Scanner.Slash    : Text.Str(gen, "o7_fdiv(")
+				  Ast.Mult : Text.Str(gen, "o7_fmul(")
+				| Ast.Rdiv : Text.Str(gen, "o7_fdiv(")
 				END;
 				DEC(i)
 			END
 		| Ast.IdReal32:
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Scanner.Asterisk : Text.Str(gen, "o7_fmulf(")
-				| Scanner.Slash    : Text.Str(gen, "o7_fdivf(")
+				  Ast.Mult : Text.Str(gen, "o7_fmulf(")
+				| Ast.Rdiv : Text.Str(gen, "o7_fdivf(")
 				END;
 				DEC(i)
 			END
@@ -2726,7 +2725,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
 		RETURN (sum.next # NIL)
 		     & (sum.next.next = NIL)
-		     & (sum.next.add = Scanner.Minus)
+		     & (sum.next.add = Ast.Minus)
 		     & (sum.next.term.value # NIL)
 		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
 		END IsEndMinus1;

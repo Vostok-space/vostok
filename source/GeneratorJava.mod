@@ -22,7 +22,6 @@ IMPORT
 	Utf8, Hex,
 	Strings := StringStore, Chars0X,
 	SpecIdentChecker,
-	Scanner,
 	SpecIdent  := OberonSpecIdent,
 	Stream     := VDataStream,
 	FileStream := VFileStream,
@@ -831,7 +830,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				Text.Str(gen, "0")
 			ELSIF (   (rel.exprs[0].type.id = Ast.IdChar)
 			       OR (rel.exprs[1].type.id = Ast.IdChar))
-			    & (rel.relation # Scanner.Equal)
+			    & (rel.relation # Ast.Equal)
 			THEN
 				Text.Str(gen, "(0xFF & ");
 				Expr(gen, rel.exprs[0]);
@@ -866,13 +865,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		END In;
 	BEGIN
 		CASE rel.relation OF
-		  Scanner.Equal        : Simple(gen, rel, " == ")
-		| Scanner.Inequal      : Simple(gen, rel, " != ")
-		| Scanner.Less         : Simple(gen, rel, " < ")
-		| Scanner.LessEqual    : Simple(gen, rel, " <= ")
-		| Scanner.Greater      : Simple(gen, rel, " > ")
-		| Scanner.GreaterEqual : Simple(gen, rel, " >= ")
-		| Scanner.In           : In(gen, rel)
+		  Ast.Equal        : Simple(gen, rel, " == ")
+		| Ast.Inequal      : Simple(gen, rel, " != ")
+		| Ast.Less         : Simple(gen, rel, " < ")
+		| Ast.LessEqual    : Simple(gen, rel, " <= ")
+		| Ast.Greater      : Simple(gen, rel, " > ")
+		| Ast.GreaterEqual : Simple(gen, rel, " >= ")
+		| Ast.In           : In(gen, rel)
 		END
 	END Relation;
 
@@ -881,7 +880,7 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 	BEGIN
 		first := TRUE;
 		REPEAT
-			IF sum.add = Scanner.Minus THEN
+			IF sum.add = Ast.Minus THEN
 				IF ~(sum.type.id IN Ast.Sets) THEN
 					Text.Str(gen, " - ")
 				ELSIF first THEN
@@ -889,13 +888,13 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 				ELSE
 					Text.Str(gen, " & ~")
 				END
-			ELSIF sum.add = Scanner.Plus THEN
+			ELSIF sum.add = Ast.Plus THEN
 				IF sum.type.id IN Ast.Sets THEN
 					Text.Str(gen, " | ")
 				ELSE
 					Text.Str(gen, " + ")
 				END
-			ELSIF sum.add = Scanner.Or THEN
+			ELSIF sum.add = Ast.Or THEN
 				Text.Str(gen, " || ")
 			END;
 			CheckExpr(gen, sum.term, {});
@@ -916,14 +915,14 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 			i := last;
 			WHILE i > 0 DO
 				CASE arr[i].add OF
-				  Scanner.Minus:
+				  Ast.Minus:
 					Text.Str(gen, sub)
-				| Scanner.Plus:
+				| Ast.Plus:
 					Text.Str(gen, add)
 				END;
 				DEC(i)
 			END;
-			IF arr[0].add = Scanner.Minus THEN
+			IF arr[0].add = Ast.Minus THEN
 				Text.Str(gen, sub);
 				ExpressionBraced(gen, "0, ", arr[0].term, ")", {})
 			ELSE
@@ -950,21 +949,21 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		REPEAT
 			CheckExpr(gen, term.factor, {});
 			CASE term.mult OF
-			  Scanner.Asterisk           :
+			  Ast.Mult:
 				IF term.type.id IN Ast.Sets THEN
 					Text.Str(gen, " & ")
 				ELSE
 					Text.Str(gen, " * ")
 				END
-			| Scanner.Slash, Scanner.Div :
+			| Ast.Rdiv, Ast.Div :
 				IF term.type.id IN Ast.Sets THEN
-					ASSERT(term.mult = Scanner.Slash);
+					ASSERT(term.mult = Ast.Rdiv);
 					Text.Str(gen, " ^ ")
 				ELSE
 					Text.Str(gen, " / ")
 				END
-			| Scanner.And                : Text.Str(gen, " && ")
-			| Scanner.Mod                : Text.Str(gen, " % ")
+			| Ast.And: Text.Str(gen, " && ")
+			| Ast.Mod: Text.Str(gen, " % ")
 			END;
 			IF term.expr IS Ast.ExprTerm THEN
 				term := term.expr(Ast.ExprTerm)
@@ -989,10 +988,9 @@ PROCEDURE Expression(VAR gen: Generator; expr: Ast.Expression; set: SET);
 		last := i;
 		WHILE i >= 0 DO
 			CASE arr[i].mult OF
-			  Scanner.Asterisk : Text.Str(gen, "O7.mul(")
-			| Scanner.Div, Scanner.Slash
-			                   : Text.Str(gen, "O7.div(")
-			| Scanner.Mod      : Text.Str(gen, "O7.mod(")
+			  Ast.Mult          : Text.Str(gen, "O7.mul(")
+			| Ast.Div, Ast.Rdiv : Text.Str(gen, "O7.div(")
+			| Ast.Mod           : Text.Str(gen, "O7.mod(")
 			END;
 			DEC(i)
 		END;
@@ -1835,7 +1833,7 @@ PROCEDURE Statement(VAR gen: Generator; st: Ast.Statement);
 		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
 		RETURN (sum.next # NIL)
 		     & (sum.next.next = NIL)
-		     & (sum.next.add = Scanner.Minus)
+		     & (sum.next.add = Ast.Minus)
 		     & (sum.next.term.value # NIL)
 		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
 		END IsEndMinus1;

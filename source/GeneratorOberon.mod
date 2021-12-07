@@ -21,7 +21,7 @@ IMPORT
   V, LongSet, Ast,
   Log := DLog, Stream := VDataStream,
   Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
-  SpecIdent := OberonSpecIdent, Scanner, Hex,
+  SpecIdent := OberonSpecIdent, Hex,
   GenOptions, GenCommon;
 
 CONST
@@ -490,31 +490,31 @@ VAR
       END Infix;
     BEGIN
       CASE rel.relation OF
-        Scanner.Equal        : Infix(gen, rel, " = " )
-      | Scanner.Inequal      : Infix(gen, rel, " # " )
-      | Scanner.Less         : Infix(gen, rel, " < " )
-      | Scanner.LessEqual    : Infix(gen, rel, " <= ")
-      | Scanner.Greater      : Infix(gen, rel, " > " )
-      | Scanner.GreaterEqual : Infix(gen, rel, " >= ")
-      | Scanner.In           : Infix(gen, rel, " IN ")
+        Ast.Equal        : Infix(gen, rel, " = " )
+      | Ast.Inequal      : Infix(gen, rel, " # " )
+      | Ast.Less         : Infix(gen, rel, " < " )
+      | Ast.LessEqual    : Infix(gen, rel, " <= ")
+      | Ast.Greater      : Infix(gen, rel, " > " )
+      | Ast.GreaterEqual : Infix(gen, rel, " >= ")
+      | Ast.In           : Infix(gen, rel, " IN ")
       END
     END Relation;
 
     PROCEDURE Sum(VAR gen: Generator; sum: Ast.ExprSum);
     BEGIN
-      IF sum.add = Scanner.Minus THEN
+      IF sum.add = Ast.Minus THEN
         Text.Str(gen, " -")
-      ELSIF sum.add = Scanner.Plus THEN
+      ELSIF sum.add = Ast.Plus THEN
         Text.Str(gen, " +")
       END;
       Expression(gen, sum.term);
       sum := sum.next;
       WHILE sum # NIL DO
-        IF sum.add = Scanner.Minus THEN
+        IF sum.add = Ast.Minus THEN
           Text.Str(gen, " - ")
-        ELSIF sum.add = Scanner.Plus THEN
+        ELSIF sum.add = Ast.Plus THEN
           Text.Str(gen, " + ")
-        ELSIF sum.add = Scanner.Or THEN
+        ELSIF sum.add = Ast.Or THEN
           Text.Str(gen, " OR ")
         END;
         Expression(gen, sum.term);
@@ -527,11 +527,11 @@ VAR
       REPEAT
         Expression(gen, term.factor);
         CASE term.mult OF
-          Scanner.Asterisk : Text.Str(gen, " * "  )
-        | Scanner.Slash    : Text.Str(gen, " / "  )
-        | Scanner.Div      : Text.Str(gen, " DIV ")
-        | Scanner.Mod      : Text.Str(gen, " MOD ")
-        | Scanner.And      : Text.Str(gen, " & "  )
+          Ast.Mult : Text.Str(gen, " * "  )
+        | Ast.Rdiv : Text.Str(gen, " / "  )
+        | Ast.Div  : Text.Str(gen, " DIV ")
+        | Ast.Mod  : Text.Str(gen, " MOD ")
+        | Ast.And  : Text.Str(gen, " & "  )
         END;
         IF term.expr IS Ast.ExprTerm THEN
           term := term.expr(Ast.ExprTerm);
