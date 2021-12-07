@@ -23,7 +23,7 @@ LIST_OST="ost ost-asrt ost-usan ost-asan ost-uasan ost-uasan-asrt"
 
 compile() {
 	SI=singularity/implementation
-	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/Wlibloaderapi.c"
+	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/Wlibloaderapi.c $SI/MachObjDyld.c"
 	CC=gcc
 	MAIN="$CC -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation $CFILES"
 	if [[ $CC == clang* ]]; then
@@ -96,7 +96,7 @@ runc() {
 			for i in $@; do
 				LLVM_PROFILE_FILE="$RESULT/$ost.profraw" \
 				/usr/bin/time -f '%e sec  %M KiB' \
-					$RESULT/$ost to-c "Translator.Go" /tmp/ost-bench-$ost -infr . -m source
+					$RESULT/$ost to-c "Translator.Go" /tmp/ost-bench-$ost -infr . $SOURCE
 			done
 			crc32 <(cat /tmp/ost-bench-$ost/*)
 			rm -r /tmp/ost-bench-$ost
@@ -105,13 +105,15 @@ runc() {
 }
 
 runjs() {
+	JSRUN="qjs --std"
+	JSRUN=node
 	mkdir -p /tmp/ost-bench-js
 
 	echo
 	for tr in ost ost-nai ost-naiao; do
 		ls -l $RESULT/$tr.js
 		/usr/bin/time -f '%e sec  %M KiB' \
-			node $RESULT/$tr.js to-c "Translator.Go" /tmp/ost-bench-js -infr . -m source
+			$JSRUN $RESULT/$tr.js to-c "Translator.Go" /tmp/ost-bench-js -infr . $SOURCE
 		crc32 <(cat /tmp/ost-bench-js/*)
 	done
 
@@ -121,12 +123,14 @@ runjs() {
 runjava() {
 	mkdir -p /tmp/ost-bench-java
 
+	JAVA=java
+
 	echo
 	echo java classes
 	for i in $@; do
 		/usr/bin/time -f '%e sec  %M KiB' \
-			java -cp result/benchmark/java \
-				o7.script to-c "Translator.Go" /tmp/ost-bench-java -infr . -m source
+			$JAVA -cp result/benchmark/java \
+				o7.script to-c "Translator.Go" /tmp/ost-bench-java -infr . $SOURCE
 	done
 	crc32 <(cat /tmp/ost-bench-java/*)
 
