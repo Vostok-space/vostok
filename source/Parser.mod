@@ -391,7 +391,7 @@ VAR par: Ast.Parameter;
 		IF fp # NIL THEN
 			access := fp.access
 		ELSE
-			access := {Ast.ParamIn, Ast.ParamOut}
+			access := {Ast.ParamIn}
 		END
 		RETURN access
 	END Access;

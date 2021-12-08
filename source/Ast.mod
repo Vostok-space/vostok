@@ -2067,8 +2067,8 @@ BEGIN
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
 
-		IF ParamOut IN context THEN
-			IF context # context + {ParamOutReturnable, ParamOfPredefined} THEN
+		IF (ParamOut IN context) & ({ParamOfPredefined, ParamIn} + context # context) THEN
+			IF context # (context + {ParamOutReturnable, ParamOfPredefined}) THEN
 				InVarParam(v, d.sel)
 			END;
 			IF ~(ParamOfPredefined IN context) & ~(InitedValue IN v.state.inited) THEN
@@ -4066,7 +4066,7 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamIn});
 
 	tp := ProcNew(SpecIdent.New, NoId);
-	ParamAddPredefined(tp, TypeGet(IdPointer), {ParamIn, ParamOut});
+	ParamAddPredefined(tp, TypeGet(IdPointer), {ParamOut});
 
 	tp := FuncNew(SpecIdent.Odd, IdBoolean);
 	ParamAddPredefined(tp, typeInt, {ParamIn});
@@ -4084,7 +4084,7 @@ BEGIN
 
 	tp := ProcNew(SpecIdent.Unpk, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
-	ParamAddPredefined(tp, typeInt, {ParamIn, ParamOut})
+	ParamAddPredefined(tp, typeInt, {ParamOut})
 END PredefinedDeclarationsInit;
 
 PROCEDURE HasError*(m: Module): BOOLEAN;
