@@ -1,3 +1,14 @@
+ vostok-bin (0.0.7.dev) unstable; urgency=low
+  * Fixed diagnostic of uninitialized variables in VAR-argument of predefined procedures
+  * Avoided marking of optional arguments of predefined procedures as VAR
+  * Fixed generating FOR loops to Java and JavaScript when iterator also used as VAR argument
+  * Removed excessive generating of singularity modules to Oberon
+  * Fixed command "version"
+  * Corrected generating to Active Oberon
+  * Improved formatting of generated java code
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 8 Dec 2021 00:00:00 +0200
+
  vostok-bin (0.0.6.dev) unstable; urgency=low
   * For compatibility with C90 added escaping for chars >= 80X ("яд" - "\xD1\x8F\xD0\xB4")
   * Added .jar target
