@@ -831,8 +831,7 @@ VAR
       IF rec.vars # NIL THEN
         VarList(gen, rec.vars)
       END;
-      Text.Ln(gen);
-      Text.StrClose(gen, "END")
+      Text.LnStrClose(gen, "END")
     END Record;
 
   BEGIN
@@ -1125,8 +1124,7 @@ VAR
     Text.StrOpen(gen, "BEGIN");
     Statements(gen, p.stats);
     Return(gen, p.stats # NIL, p.return);
-    Text.Ln(gen);
-    Text.StrClose(gen, "END ");
+    Text.LnStrClose(gen, "END ");
     Name(gen, p);
     Text.StrLn(gen, ";")
   END Procedure;
