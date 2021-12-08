@@ -1,6 +1,6 @@
 name: vostok
 base: core18
-version: '0.0.7'
+adopt-info: ost
 license: LGPL-3.0-only
 icon: snap/gui/icon.svg
 summary: Compiler from Oberon-07 to C/Java/Js/Oberon
@@ -19,6 +19,7 @@ parts:
       ./init.sh
       result/bs-ost run make.Build -infr . -m source
       result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s"
+      snapcraftctl set-version `result/ost version | awk '{print $2}'`
       rm -rf $SNAPCRAFT_PART_INSTALL/usr/share
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share
       result/ost run 'make.Self; make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
