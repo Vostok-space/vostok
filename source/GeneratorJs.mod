@@ -78,6 +78,14 @@ VAR
 	expression: PROCEDURE(VAR g: Generator; expr: Ast.Expression; set: SET);
 	pvar: PROCEDURE (VAR g: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
 
+PROCEDURE Str    (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.Str    (g, s) END Str;
+PROCEDURE StrLn  (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLn  (g, s) END StrLn;
+PROCEDURE StrOpen(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrOpen(g, s) END StrOpen;
+PROCEDURE Ln     (VAR g: Text.Out);                   BEGIN Text.Ln     (g)    END Ln;
+PROCEDURE Int    (VAR g: Text.Out; i: INTEGER);       BEGIN Text.Int    (g, i) END Int;
+PROCEDURE Chr    (VAR g: Text.Out; c: CHAR);          BEGIN Text.Char   (g, c) END Chr;
+PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose (g, s) END StrLnClose;
+
 PROCEDURE Ident(VAR g: Generator; ident: Strings.String);
 BEGIN
 	GenCommon.Ident(g, ident, g.opt.identEnc)
@@ -87,7 +95,7 @@ PROCEDURE Name(VAR g: Generator; decl: Ast.Declaration);
 BEGIN
 	Ident(g, decl.name);
 	IF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC}) THEN
-		Text.Char(g, "_")
+		Chr(g, "_")
 	END
 END Name;
 
@@ -111,16 +119,16 @@ BEGIN
 			expression(g, decl(Ast.Const).expr.value, {})
 		ELSE
 			IF (decl.id = Ast.IdVar) & (g.module = decl.module.m) THEN
-				Text.Str(g, "module")
+				Str(g, "module")
 			ELSE
 				Ident(g, decl.module.m.ext(Ast.Import).name)
 			END;
 			IF IsSpecModuleName(decl.module.m.name)
 			 & ~decl.module.m.spec
 			THEN
-				Text.Str(g, "_.")
+				Str(g, "_.")
 			ELSE
-				Text.Char(g, ".")
+				Chr(g, ".")
 			END;
 			Name(g, decl)
 		END
@@ -134,9 +142,9 @@ BEGIN
 	IF expr IS Ast.Factor THEN
 		expression(g, expr, set)
 	ELSE
-		Text.Str(g, "(");
+		Chr(g, "(");
 		expression(g, expr, set);
-		Text.Str(g, ")")
+		Chr(g, ")")
 	END
 END Factor;
 
@@ -185,9 +193,9 @@ PROCEDURE ExpressionBraced(VAR g: Generator;
                            l: ARRAY OF CHAR; e: Ast.Expression; r: ARRAY OF CHAR;
                            set: SET);
 BEGIN
-	Text.Str(g, l);
+	Str(g, l);
 	expression(g, e, set);
-	Text.Str(g, r)
+	Str(g, r)
 END ExpressionBraced;
 
 PROCEDURE NeedCheckIndex(array: Ast.Array; index: Ast.Expression): BOOLEAN;
@@ -205,7 +213,7 @@ VAR sel: Ast.Selector;
 	VAR var: Ast.Declaration;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
-		Text.Str(g, ".");
+		Chr(g, ".");
 		Name(g, var);
 		typ := var.type
 	END Record;
@@ -262,15 +270,15 @@ BEGIN
 		ELSE ASSERT(sel IS Ast.SelGuard);
 			Selector(g, sels, i, typ, desType, set)
 			(*
-			Text.Str(g, "((");
+			Str(g, "((");
 			GlobalNamePointer(g, sel.type);
-			Text.Str(g, ")");
+			Chr(g, ")");
 			IF i < 0 THEN
 				Declarator(g, sels.decl)
 			ELSE
 				Selector(g, sels, i, typ, desType, set)
 			END;
-			Text.Str(g, ")");
+			Chr(g, ")");
 			typ := sel(Ast.SelGuard).type
 			*)
 		END;
@@ -331,9 +339,9 @@ BEGIN
 	 & ~(e.type.id IN (Ast.Structures + Ast.Pointers))
 	 & IsMayNotInited(e)
 	THEN
-		Text.Str(g, "o7.inited(");
+		Str(g, "o7.inited(");
 		expression(g, e, set);
-		Text.Str(g, ")")
+		Chr(g, ")")
 	ELSE
 		expression(g, e, set)
 	END
@@ -350,13 +358,13 @@ BEGIN
 		typ := typ.type
 	UNTIL typ.id # Ast.IdArray;
 
-	Text.Str(g, " = o7.array(");
+	Str(g, " = o7.array(");
 	expression(g, sizes[0], {});
 	FOR i := 1 TO l DO
-		Text.Str(g, ", ");
+		Str(g, ", ");
 		expression(g, sizes[i], {})
 	END;
-	Text.Str(g, ")")
+	Chr(g, ")")
 END AssignInitValueArray;
 
 PROCEDURE AssignInitValue(VAR g: Generator; typ: Ast.Type);
@@ -370,35 +378,35 @@ PROCEDURE AssignInitValue(VAR g: Generator; typ: Ast.Type);
 		CASE typ.id OF
 		  Ast.IdInteger, Ast.IdLongInt, Ast.IdByte, Ast.IdReal, Ast.IdReal32,
 		  Ast.IdSet, Ast.IdLongSet:
-			Text.Str(g, " = 0")
+			Str(g, " = 0")
 		| Ast.IdBoolean:
-			Text.Str(g, " = false")
+			Str(g, " = false")
 		| Ast.IdChar:
-			Text.Str(g, " = '\0'")
+			Str(g, " = '\0'")
 		| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
-			Text.Str(g, " = null")
+			Str(g, " = null")
 		| Ast.IdArray:
 			Array(g, typ)
 		| Ast.IdRecord:
-			Text.Str(g, " = new ");
+			Str(g, " = new ");
 			type(g, NIL, typ, FALSE, FALSE);
-			Text.Str(g, "()")
+			Str(g, "()")
 		END
 	END Zero;
 
 	PROCEDURE Undef(VAR g: Generator; typ: Ast.Type);
 	BEGIN
 		IF typ.id IN Ast.Numbers THEN
-			Text.Str(g, " = NaN")
+			Str(g, " = NaN")
 		ELSIF typ.id = Ast.IdArray THEN
 			AssignInitValueArray(g, typ)
 		ELSIF typ.id = Ast.IdRecord THEN
-			Text.Str(g, " = new ");
+			Str(g, " = new ");
 			type(g, NIL, typ, FALSE, FALSE);
-			Text.Str(g, "()")
+			Str(g, "()")
 		ELSE
 			(*TODO*)
-			Text.Str(g, " = undefined")
+			Str(g, " = undefined")
 		END
 	END Undef;
 BEGIN
@@ -419,7 +427,7 @@ BEGIN
 	 & Ast.IsGlobal(var)
 	THEN
 		IF var.type.id = Ast.IdPointer THEN
-			Text.Str(g, " = null")
+			Str(g, " = null")
 		END
 	ELSE
 		AssignInitValue(g, var.type)
@@ -456,11 +464,11 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			PROCEDURE Shift(VAR g: Generator; shift: ARRAY OF CHAR;
 			                e1, e2: Ast.Expression);
 			BEGIN
-				Text.Str(g, "(");
+				Chr(g, "(");
 				Factor(g, e1, {});
-				Text.Str(g, shift);
+				Str(g, shift);
 				Factor(g, e2, {});
-				Text.Str(g, ")")
+				Chr(g, ")")
 			END Shift;
 
 			PROCEDURE Len(VAR g: Generator; e: Ast.Expression);
@@ -476,10 +484,10 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					GlobalName(g, des.decl);
 					sel := des.sel;
 					WHILE sel # NIL DO
-						Text.Str(g, "[0]");
+						Str(g, "[0]");
 						sel := sel.next
 					END;
-					Text.Str(g, ".length")
+					Str(g, ".length")
 				END
 			END Len;
 
@@ -491,18 +499,18 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				IF (lastSel # NIL) & (lastSel IS Ast.SelArray)
 				 & g.opt.checkIndex & NeedCheckIndex(t(Ast.Array), lastSel(Ast.SelArray).index)
 				THEN
-					Text.Str(g, ".put(");
+					Str(g, ".put(");
 					expression(g, lastSel(Ast.SelArray).index, {});
-					Text.Str(g, ", new ");
+					Str(g, ", new ");
 					GlobalNamePointer(g, e.type);
-					Text.Str(g, "())")
+					Str(g, "())")
 				ELSE
 					IF (lastSel # NIL) & (lastSel IS Ast.SelArray) THEN
 						ExpressionBraced(g, "[", lastSel(Ast.SelArray).index, "]", {})
 					END;
-					Text.Str(g, " = new ");
+					Str(g, " = new ");
 					GlobalNamePointer(g, e.type);
-					Text.Str(g, "()")
+					Str(g, "()")
 				END;
 			END New;
 
@@ -535,9 +543,9 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					ExpressionBraced(g, ".inc(", sel(Ast.SelArray).index, ", ", {});
 					IF p2 = NIL THEN
 						IF mul = -1 THEN
-							Text.Str(g, "-1)")
+							Str(g, "-1)")
 						ELSE
-							Text.Str(g, "1)")
+							Str(g, "1)")
 						END
 					ELSIF mul = -1 THEN
 						ExpressionBraced(g, "-(", p2.expr, "))", {})
@@ -550,27 +558,27 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					END;
 					IF g.opt.checkArith THEN
 						IF mul = 1 THEN
-							Text.Str(g, " = o7.add(")
+							Str(g, " = o7.add(")
 						ELSE
-							Text.Str(g, " = o7.sub(")
+							Str(g, " = o7.sub(")
 						END;
 						Designator(g, e1, {});
 						IF p2 = NIL THEN
-							Text.Str(g, ", 1)")
+							Str(g, ", 1)")
 						ELSE
 							ExpressionBraced(g, ", ", p2.expr, ")", {})
 						END
 					ELSIF p2 # NIL THEN
 						IF mul = 1 THEN
-							Text.Str(g, " += ")
+							Str(g, " += ")
 						ELSE
-							Text.Str(g, " -= ")
+							Str(g, " -= ")
 						END;
 						Expression(g, p2.expr, {})
 					ELSIF mul = 1 THEN
-						Text.Str(g, "++")
+						Str(g, "++")
 					ELSE
-						Text.Str(g, "--")
+						Str(g, "--")
 					END
 				END
 			END Inc;
@@ -584,7 +592,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				IF g.opt.checkIndex & (sel # NIL) & (sel IS Ast.SelArray) THEN
 					ExpressionBraced(g, ".incl(", sel(Ast.SelArray).index, ", ", {});
 					Expression(g, e2, {});
-					Text.Char(g, ")")
+					Chr(g, ")")
 				ELSE
 					IF ~g.opt.checkIndex & (sel # NIL) & (sel IS Ast.SelArray) THEN
 						ExpressionBraced(g, "[", sel(Ast.SelArray).index, "]", {});
@@ -592,7 +600,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					IF g.opt.checkArith THEN
 						ExpressionBraced(g, " |= o7.incl(", e2, ")", {})
 					ELSE
-						Text.Str(g, " |= 1 << ");
+						Str(g, " |= 1 << ");
 						Factor(g, e2, {})
 					END
 				END
@@ -607,7 +615,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				IF g.opt.checkIndex & (sel # NIL) & (sel IS Ast.SelArray) THEN
 					ExpressionBraced(g, ".excl(", sel(Ast.SelArray).index, ", ", {});
 					Expression(g, e2, {});
-					Text.Char(g, ")")
+					Chr(g, ")")
 				ELSE
 					IF ~g.opt.checkIndex & (sel # NIL) & (sel IS Ast.SelArray) THEN
 						ExpressionBraced(g, "[", sel(Ast.SelArray).index, "]", {});
@@ -616,9 +624,9 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					IF g.opt.checkArith THEN
 						ExpressionBraced(g, " &= o7.excl(", e2, ")", {})
 					ELSE
-						Text.Str(g, " &= ~(1 << ");
+						Str(g, " &= ~(1 << ");
 						Factor(g, e2, {});
-						Text.Str(g, ")")
+						Chr(g, ")")
 					END
 				END
 			END Excl;
@@ -626,12 +634,12 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			PROCEDURE Assert(VAR g: Generator; e: Ast.Expression);
 			BEGIN
 				IF g.opt.o7Assert THEN
-					Text.Str(g, "o7.assert(");
+					Str(g, "o7.assert(");
 				ELSE
-					Text.Str(g, "o7_assert(");
+					Str(g, "o7_assert(");
 				END;
 				CheckExpr(g, e, {});
-				Text.Str(g, ")")
+				Chr(g, ")")
 			END Assert;
 
 			PROCEDURE Pack(VAR g: Generator; e1: Ast.Designator; e2: Ast.Expression);
@@ -640,7 +648,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				sel := FindLastSel(e1, t);
 				arr := (sel # NIL) & (sel IS Ast.SelArray);
 				IF arr THEN
-					Text.Str(g, "var _d = ");
+					Str(g, "var _d = ");
 					Designator(g, e1, {ForSameType, ForAssign});
 					IF g.opt.checkIndex THEN
 						ExpressionBraced(g, ", _i = ", sel(Ast.SelArray).index,
@@ -654,7 +662,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					ExpressionBraced(g, " = o7.scalb(", e1, ", ", {})
 				END;
 				Expression(g, e2, {});
-				Text.Char(g, ")")
+				Chr(g, ")")
 			END Pack;
 
 			PROCEDURE Unpack(VAR g: Generator; e1, e2: Ast.Designator);
@@ -664,7 +672,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				arr := (sel # NIL) & (sel IS Ast.SelArray);
 				IF arr THEN
 					(* TODO *)
-					Text.Str(g, "var _d = ");
+					Str(g, "var _d = ");
 					Designator(g, e1, {ForSameType, ForAssign});
 					IF g.opt.checkIndex THEN
 						ExpressionBraced(g, ", _i = ", sel(Ast.SelArray).index,
@@ -688,9 +696,9 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			  SpecIdent.Abs:
 				ExpressionBraced(g, "Math.abs(", e1, ")", {})
 			| SpecIdent.Odd:
-				Text.Char(g, "(");
+				Chr(g, "(");
 				Factor(g, e1, {});
-				Text.Str(g, " % 2 != 0)")
+				Str(g, " % 2 != 0)")
 			| SpecIdent.Len:
 				Len(g, e1)
 			| SpecIdent.Lsl:
@@ -700,7 +708,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Ror:
 				ExpressionBraced(g, "o7.ror(", e1, ", ", {});
 				Expression(g, p2.expr, {});
-				Text.Char(g, ")")
+				Chr(g, ")")
 			| SpecIdent.Floor:
 				ExpressionBraced(g, "o7.floor(", e1, ")", {})
 			| SpecIdent.Flt:
@@ -761,17 +769,17 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			Predefined(g, call)
 		ELSE
 			Designator(g, call.designator, {ForCall});
-			Text.Str(g, "(");
+			Chr(g, "(");
 			p  := call.params;
 			fp := call.designator.type(Ast.ProcType).params;
 			IF p # NIL THEN
 				ActualParam(g, p, fp);
 				WHILE p # NIL DO
-					Text.Str(g, ", ");
+					Str(g, ", ");
 					ActualParam(g, p, fp)
 				END
 			END;
-			Text.Str(g, ")")
+			Chr(g, ")")
 		END
 	END Call;
 
@@ -805,45 +813,45 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					notChar1 := ~notChar0 OR IsArrayAndNotChar(rel.exprs[1]);
 					IF notChar0 = notChar1 THEN
 						ASSERT(notChar0);
-						Text.Str(g, "o7.strcmp(")
+						Str(g, "o7.strcmp(")
 					ELSIF notChar1 THEN
-						Text.Str(g, "o7.chstrcmp(")
+						Str(g, "o7.chstrcmp(")
 					ELSE ASSERT(notChar0);
-						Text.Str(g, "o7.strchcmp(")
+						Str(g, "o7.strchcmp(")
 					END;
 					Expr(g, rel.exprs[0]);
-					Text.Str(g, ", ");
+					Str(g, ", ");
 					Expr(g, rel.exprs[1]);
-					Text.Str(g, ")");
-					Text.Str(g, str);
-					Text.Str(g, "0")
+					Chr(g, ")");
+					Str(g, str);
+					Chr(g, "0")
 				END
 			ELSIF (g.opt.varInit = GenOptions.VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
 			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
 			THEN
-				Text.Str(g, "o7.cmp(");
+				Str(g, "o7.cmp(");
 				Expr(g, rel.exprs[0]);
-				Text.Str(g, ", ");
+				Str(g, ", ");
 				Expr(g, rel.exprs[1]);
-				Text.Str(g, ")");
-				Text.Str(g, str);
-				Text.Str(g, "0")
+				Chr(g, ")");
+				Str(g, str);
+				Chr(g, "0")
 			ELSIF (   (rel.exprs[0].type.id = Ast.IdChar)
 			       OR (rel.exprs[1].type.id = Ast.IdChar))
 			    & (rel.relation # Ast.Equal)
 			THEN
-				Text.Str(g, "(0xFF & ");
+				Str(g, "(0xFF & ");
 				Expr(g, rel.exprs[0]);
-				Text.Str(g, ")");
-				Text.Str(g, str);
-				Text.Str(g, "(0xFF & ");
+				Chr(g, ")");
+				Str(g, str);
+				Str(g, "(0xFF & ");
 				Expr(g, rel.exprs[1]);
-				Text.Str(g, ")")
+				Chr(g, ")")
 			ELSE
 				Expr(g, rel.exprs[0]);
-				Text.Str(g, str);
+				Str(g, str);
 				Expr(g, rel.exprs[1])
 			END
 		END Simple;
@@ -853,14 +861,14 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			IF (rel.exprs[0].value # NIL)
 			 & (rel.exprs[0].value(Ast.ExprInteger).int IN {0 .. Limits.SetMax})
 			THEN
-				Text.Str(g, "0 != (");
-				Text.Str(g, " (1 << ");
+				Str(g, "0 != (");
+				Str(g, " (1 << ");
 				Factor(g, rel.exprs[0], {});
-				Text.Str(g, ") & ");
+				Str(g, ") & ");
 				Factor(g, rel.exprs[1], {});
-				Text.Str(g, ")")
+				Chr(g, ")")
 			ELSE
-				Text.Str(g, "o7.in(");
+				Str(g, "o7.in(");
 				Expression(g, rel.exprs[0], {ForSameType});
 				ExpressionBraced(g, ", ", rel.exprs[1], ")", {})
 			END
@@ -884,20 +892,20 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		REPEAT
 			IF sum.add = Ast.Minus THEN
 				IF ~(sum.type.id IN Ast.Sets) THEN
-					Text.Str(g, " - ")
+					Str(g, " - ")
 				ELSIF first THEN
-					Text.Str(g, " ~")
+					Str(g, " ~")
 				ELSE
-					Text.Str(g, " & ~")
+					Str(g, " & ~")
 				END
 			ELSIF sum.add = Ast.Plus THEN
 				IF sum.type.id IN Ast.Sets THEN
-					Text.Str(g, " | ")
+					Str(g, " | ")
 				ELSE
-					Text.Str(g, " + ")
+					Str(g, " + ")
 				END
 			ELSIF sum.add = Ast.Or THEN
-				Text.Str(g, " || ")
+				Str(g, " || ")
 			END;
 			CheckExpr(g, sum.term, {});
 			sum := sum.next;
@@ -917,13 +925,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			i := last;
 			WHILE i > 0 DO
 				CASE arr[i].add OF
-				  Ast.Minus: Text.Str(g, sub)
-				| Ast.Plus : Text.Str(g, add)
+				  Ast.Minus: Str(g, sub)
+				| Ast.Plus : Str(g, add)
 				END;
 				DEC(i)
 			END;
 			IF arr[0].add = Ast.Minus THEN
-				Text.Str(g, sub);
+				Str(g, sub);
 				ExpressionBraced(g, "0, ", arr[0].term, ")", {})
 			ELSE
 				Expression(g, arr[0].term, {})
@@ -957,20 +965,20 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			CASE term.mult OF
 			  Ast.Mult:
 				IF term.type.id IN Ast.Sets THEN
-					Text.Str(g, " & ")
+					Str(g, " & ")
 				ELSE
-					Text.Str(g, " * ")
+					Str(g, " * ")
 				END
 			| Ast.Rdiv, Ast.Div:
 				IF term.type.id IN Ast.Sets THEN
 					ASSERT(term.mult = Ast.Rdiv);
-					Text.Str(g, " ^ ")
+					Str(g, " ^ ")
 				ELSE
-					Text.Str(g, " / ");
+					Str(g, " / ");
 					toInt := term.mult = Ast.Div
 				END
-			| Ast.And: Text.Str(g, " && ")
-			| Ast.Mod: Text.Str(g, " % ")
+			| Ast.And: Str(g, " && ")
+			| Ast.Mod: Str(g, " % ")
 			END;
 			IF term.expr IS Ast.ExprTerm THEN
 				term := term.expr(Ast.ExprTerm)
@@ -979,7 +987,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				term := NIL
 			END;
 			IF toInt THEN
-				Text.Str(g, " | 0")
+				Str(g, " | 0")
 			END
 		UNTIL term = NIL
 	END Term;
@@ -999,17 +1007,17 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		IF arr[i].type.id IN Ast.Integers THEN
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Ast.Mult : Text.Str(g, "o7.mul(")
-				| Ast.Div  : Text.Str(g, "o7.div(")
-				| Ast.Mod  : Text.Str(g, "o7.mod(")
+				  Ast.Mult : Str(g, "o7.mul(")
+				| Ast.Div  : Str(g, "o7.div(")
+				| Ast.Mod  : Str(g, "o7.mod(")
 				END;
 				DEC(i)
 			END
 		ELSE
 			WHILE i >= 0 DO
 				CASE arr[i].mult OF
-				  Ast.Mult : Text.Str(g, "o7.fmul(")
-				| Ast.Rdiv : Text.Str(g, "o7.fdiv(")
+				  Ast.Mult : Str(g, "o7.fmul(")
+				| Ast.Rdiv : Str(g, "o7.fdiv(")
 				END;
 				DEC(i)
 			END
@@ -1026,8 +1034,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	PROCEDURE Boolean(VAR g: Generator; e: Ast.ExprBoolean);
 	BEGIN
 		IF e.bool
-		THEN Text.Str(g, "true")
-		ELSE Text.Str(g, "false")
+		THEN Str(g, "true")
+		ELSE Str(g, "false")
 		END
 	END Boolean;
 
@@ -1037,11 +1045,11 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		w := e.string;
 		IF e.asChar & ~g.opt.expectArray THEN
 			ch := CHR(e.int);
-			Text.Str(g, "0x");
-			Text.Char(g, Hex.To(e.int DIV 16));
-			Text.Char(g, Hex.To(e.int MOD 16))
+			Str(g, "0x");
+			Chr(g, Hex.To(e.int DIV 16));
+			Chr(g, Hex.To(e.int MOD 16))
 		ELSE
-			Text.Str(g, "o7.toUtf8(");
+			Str(g, "o7.toUtf8(");
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
 				Text.ScreeningString(g, w, FALSE)
 			ELSE
@@ -1065,18 +1073,18 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				s[len - 1] := Utf8.DQuote;
 				Text.Data(g, s, 0, len)
 			END;
-			Text.Str(g, ")")
+			Chr(g, ")")
 		END
 	END CString;
 
 	PROCEDURE ExprInt(VAR g: Generator; int: INTEGER);
 	BEGIN
 		IF int >= 0 THEN
-			Text.Int(g, int)
+			Int(g, int)
 		ELSE
-			Text.Str(g, "(-");
-			Text.Int(g, -int);
-			Text.Str(g, ")")
+			Str(g, "(-");
+			Int(g, -int);
+			Chr(g, ")")
 		END
 	END ExprInt;
 
@@ -1084,48 +1092,48 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	BEGIN
 		ASSERT(FALSE);
 		IF int >= 0 THEN
-			Text.Int(g, int)
+			Int(g, int)
 		ELSE
-			Text.Str(g, "(-");
-			Text.Int(g, -int);
-			Text.Str(g, ")")
+			Str(g, "(-");
+			Int(g, -int);
+			Chr(g, ")")
 		END
 	END ExprLongInt;
 
 	PROCEDURE SetValue(VAR g: Generator; set: Ast.ExprSetValue);
 	BEGIN
-		Text.Int(g, ORD(set.set[0]));
-		Text.Char(g, "u")
+		Int(g, ORD(set.set[0]));
+		Chr(g, "u")
 	END SetValue;
 
 	PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR g: Generator; set: Ast.ExprSet);
 		BEGIN
 			IF set.exprs[0] = NIL THEN
-				Text.Str(g, "0")
+				Chr(g, "0")
 			ELSE
 				IF set.exprs[1] = NIL THEN
-					Text.Str(g, "(1 << ");
+					Str(g, "(1 << ");
 					Factor(g, set.exprs[0], {})
 				ELSE
 					ExpressionBraced(g, "o7.set(", set.exprs[0], ", ", {});
 					Expression(g, set.exprs[1], {})
 				END;
-				Text.Str(g, ")")
+				Chr(g, ")")
 			END
 		END Item;
 	BEGIN
 		IF set.next = NIL THEN
 			Item(g, set)
 		ELSE
-			Text.Str(g, "(");
+			Chr(g, "(");
 			Item(g, set);
 			REPEAT
-				Text.Str(g, " | ");
+				Str(g, " | ");
 				set := set.next;
 				Item(g, set)
 			UNTIL set.next = NIL;
-			Text.Str(g, ")")
+			Chr(g, ")")
 		END
 	END Set;
 
@@ -1142,7 +1150,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		ELSE
 			GlobalName(g, decl);
 		END;
-		Text.Str(g, " instanceof ");
+		Str(g, " instanceof ");
 		GlobalName(g, extType);
 	END IsExtension;
 BEGIN
@@ -1194,16 +1202,16 @@ BEGIN
 		END
 	| Ast.IdNegate:
 		IF expr.type.id IN Ast.Sets THEN
-			Text.Str(g, "~");
+			Chr(g, "~");
 			Expression(g, expr(Ast.ExprNegate).expr, {})
 		ELSE
-			Text.Str(g, "!");
+			Chr(g, "!");
 			CheckExpr(g, expr(Ast.ExprNegate).expr, {})
 		END
 	| Ast.IdBraces:
 		ExpressionBraced(g, "(", expr(Ast.ExprBraces).expr, ")", set)
 	| Ast.IdPointer:
-		Text.Str(g, "null")
+		Str(g, "null")
 	| Ast.IdIsExtension:
 		IsExtension(g, expr(Ast.ExprIsExtension))
 	END
@@ -1213,17 +1221,17 @@ PROCEDURE ProcParams(VAR g: Generator; proc: Ast.ProcType);
 VAR p: Ast.Declaration;
 BEGIN
 	IF proc.params = NIL THEN
-		Text.Str(g, "()")
+		Str(g, "()")
 	ELSE
-		Text.Str(g, "(");
+		Chr(g, "(");
 		p := proc.params;
 		WHILE p # proc.end DO
 			Name(g, p);
-			Text.Str(g, ", ");
+			Str(g, ", ");
 			p := p.next
 		END;
 		Name(g, p(Ast.FormalParam));
-		Text.Str(g, ")")
+		Chr(g, ")")
 	END
 END ProcParams;
 
@@ -1263,21 +1271,21 @@ PROCEDURE ArraySimpleUndef(VAR g: Generator; arrTypeId: INTEGER;
 BEGIN
 	CASE arrTypeId OF
 	  Ast.IdInteger:
-		Text.Str(g, "O7.INTS_UNDEF(")
+		Str(g, "O7.INTS_UNDEF(")
 	| Ast.IdLongInt:
-		Text.Str(g, "O7.LONGS_UNDEF(")
+		Str(g, "O7.LONGS_UNDEF(")
 	| Ast.IdReal:
-		Text.Str(g, "O7.DOUBLES_UNDEF(")
+		Str(g, "O7.DOUBLES_UNDEF(")
 	| Ast.IdReal32:
-		Text.Str(g, "O7.FLOATS_UNDEF(")
+		Str(g, "O7.FLOATS_UNDEF(")
 	| Ast.IdBoolean:
-		Text.Str(g, "O7.BOOLS_UNDEF(")
+		Str(g, "O7.BOOLS_UNDEF(")
 	END;
 	IF inRec THEN
-		Text.Str(g, "r.")
+		Str(g, "r.")
 	END;
 	Name(g, d);
-	Text.Str(g, ");")
+	Str(g, ");")
 END ArraySimpleUndef;
 *)
 
@@ -1287,7 +1295,7 @@ VAR var: Ast.Declaration;
 	PROCEDURE RecordAssignHeader(VAR g: Generator; rec: Ast.Record);
 	BEGIN
 		Name(g, rec);
-		Text.StrOpen(g, ".prototype.assign = function(r) {");
+		StrOpen(g, ".prototype.assign = function(r) {");
 	END RecordAssignHeader;
 
 	PROCEDURE IsNeedBase(rec: Ast.Record): BOOLEAN;
@@ -1301,49 +1309,49 @@ BEGIN
 	RecordAssignHeader(g, rec);
 	IF IsNeedBase(rec) THEN
 		GlobalName(g, rec.base);
-		Text.StrLn(g, ".prototype.assign.call(this, r);")
+		StrLn(g, ".prototype.assign.call(this, r);")
 	END;
 	var := rec.vars;
 	WHILE var # NIL DO
 		IF var.type.id = Ast.IdArray THEN
 			(* TODO вложенные циклы *)
-			Text.Str(g, "for (var i = 0; i < r.");
+			Str(g, "for (var i = 0; i < r.");
 			Name(g, var);
-			Text.StrOpen(g, ".length; i += 1) {");
-			Text.Str(g, "this.");
+			StrOpen(g, ".length; i += 1) {");
+			Str(g, "this.");
 			Name(g, var);
 			IF var.type.type.id # Ast.IdRecord THEN
-				Text.Str(g, "[i] = r.");
+				Str(g, "[i] = r.");
 				Name(g, var);
-				Text.StrLn(g, "[i];");
+				StrLn(g, "[i];");
 			ELSE
-				Text.Str(g, "[i].assign(r.");
+				Str(g, "[i].assign(r.");
 				Name(g, var);
-				Text.StrLn(g, "[i]);")
+				StrLn(g, "[i]);")
 			END;
-			Text.StrLnClose(g, "}")
+			StrLnClose(g, "}")
 		ELSE
-			Text.Str(g, "this.");
+			Str(g, "this.");
 			Name(g, var);
 			IF var.type.id = Ast.IdRecord THEN
-				Text.Str(g, ".assign(r.");
+				Str(g, ".assign(r.");
 				Name(g, var);
-				Text.StrLn(g, ");")
+				StrLn(g, ");")
 			ELSE
-				Text.Str(g, " = r.");
+				Str(g, " = r.");
 				Name(g, var);
-				Text.StrLn(g, ";")
+				StrLn(g, ";")
 			END
 		END;
 		var := var.next
 	END;
-	Text.StrLnClose(g, "}")
+	StrLnClose(g, "}")
 END RecordAssign;
 
 PROCEDURE EmptyLines(VAR g: Generator; d: Ast.Declaration);
 BEGIN
 	IF 0 < d.emptyLines THEN
-		Text.Ln(g)
+		Ln(g)
 	END
 END EmptyLines;
 
@@ -1363,8 +1371,8 @@ END GenInit;
 PROCEDURE GeneratorNotify(VAR g: Generator);
 BEGIN
 	IF g.opt.generatorNote THEN
-		Text.StrLn(g, "/* Generated by Vostok - Oberon-07 translator */");
-		Text.Ln(g)
+		StrLn(g, "/* Generated by Vostok - Oberon-07 translator */");
+		Ln(g)
 	END
 END GeneratorNotify;
 
@@ -1376,20 +1384,20 @@ BEGIN
 	ASSERT(v.type.type.id = Ast.IdRecord);
 
 	IF inRecord THEN
-		Text.Str(g, "for (var i_ = 0; i_ < this.")
+		Str(g, "for (var i_ = 0; i_ < this.")
 	ELSE
-		Text.Str(g, "for (var i_ = 0; i_ < ")
+		Str(g, "for (var i_ = 0; i_ < ")
 	END;
 	Name(g, v);
-	Text.StrOpen(g, ".length; i_++) {");
+	StrOpen(g, ".length; i_++) {");
 	IF inRecord THEN
-		Text.Str(g, "this.")
+		Str(g, "this.")
 	END;
 	Name(g, v);
-	Text.Str(g, "[i_] = new ");
+	Str(g, "[i_] = new ");
 	type(g, NIL, v.type.type, FALSE, FALSE);
-	Text.StrLn(g, "();");
-	Text.StrLnClose(g, "}")
+	StrLn(g, "();");
+	StrLnClose(g, "}")
 END AllocArrayOfRecord;
 
 PROCEDURE SearchArrayOfRecord(v: Ast.Declaration): Ast.Declaration;
@@ -1427,11 +1435,11 @@ END InitAllVarsWichArrayOfRecord;
 PROCEDURE MarkWithDonor(VAR g: Generator; decl, donor: Ast.Declaration);
 BEGIN
 	IF decl.mark & (donor.up # NIL) THEN
-		Text.Str(g, "module.");
+		Str(g, "module.");
 		Name(g, decl);
-		Text.Str(g, " = ");
+		Str(g, " = ");
 		Name(g, decl);
-		Text.StrLn(g, ";")
+		StrLn(g, ";")
 	END
 END MarkWithDonor;
 
@@ -1447,19 +1455,19 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 	VAR v: Ast.Declaration;
 	BEGIN
 		rec.module := g.module.bag;
-		Text.Str(g, "function ");
+		Str(g, "function ");
 		IF CheckStructName(g, rec) THEN
 			GlobalName(g, rec)
 		END;
 
 		v := rec.vars;
 		IF (v = NIL) & (rec.base = NIL) THEN
-			Text.StrLn(g, "() {}")
+			StrLn(g, "() {}")
 		ELSE
-			Text.StrOpen(g, "() {");
+			StrOpen(g, "() {");
 			IF rec.base # NIL THEN
 				GlobalName(g, rec.base);
-				Text.StrLn(g, ".call(this);")
+				StrLn(g, ".call(this);")
 			END;
 			WHILE v # NIL DO
 				EmptyLines(g, v);
@@ -1469,14 +1477,14 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 				v := v.next
 			END;
 			InitAllVarsWichArrayOfRecord(g, rec.vars, TRUE);
-			Text.StrLnClose(g, "}")
+			StrLnClose(g, "}")
 		END;
 		IF rec.base # NIL THEN
-			Text.Str(g, "o7.extend(");
+			Str(g, "o7.extend(");
 			Name(g, rec);
-			Text.Str(g, ", ");
+			Str(g, ", ");
 			GlobalName(g, rec.base);
-			Text.StrLn(g, ");")
+			StrLn(g, ");")
 		END;
 		IF rec.inAssign THEN
 			RecordAssign(g, rec)
@@ -1488,11 +1496,11 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 	                sameType: BOOLEAN);
 	BEGIN
 		Type(g, decl, arr.type, FALSE, sameType);
-		Text.Str(g, "[]")
+		Str(g, "[]")
 	END Array;
 BEGIN
 	IF typ = NIL THEN
-		Text.Str(g, "Object ")
+		Str(g, "Object ")
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(typ.name) & (typ.id # Ast.IdArray) THEN
 			IF ~sameType THEN
@@ -1506,25 +1514,25 @@ BEGIN
 					END;
 					GlobalName(g, typ)
 				END;
-				Text.Str(g, " ")
+				Chr(g, " ")
 			END
 		ELSIF ~sameType THEN
 			CASE typ.id OF
 			  Ast.IdInteger, Ast.IdSet:
-				Text.Str(g, "int ")
+				Str(g, "int ")
 			| Ast.IdLongInt, Ast.IdLongSet:
-				Text.Str(g, "long ")
+				Str(g, "long ")
 			| Ast.IdBoolean:
 				IF g.opt.varInit # GenOptions.VarInitUndefined
-				THEN	Text.Str(g, "boolean ")
-				ELSE	Text.Str(g, "byte ")
+				THEN	Str(g, "boolean ")
+				ELSE	Str(g, "byte ")
 				END
 			| Ast.IdByte, Ast.IdChar:
-				Text.Str(g, "byte ")
+				Str(g, "byte ")
 			| Ast.IdReal:
-				Text.Str(g, "double ")
+				Str(g, "double ")
 			| Ast.IdReal32:
-				Text.Str(g, "float ")
+				Str(g, "float ")
 			| Ast.IdPointer:
 				Type(g, decl, typ.type, FALSE, sameType)
 			| Ast.IdArray:
@@ -1546,7 +1554,7 @@ VAR mark: BOOLEAN; donor: Ast.Type;
 	BEGIN
 		EmptyLines(g, typ);
 		Declarator(g, typ, TRUE, FALSE, TRUE);
-		(*Text.StrLn(g, ";")*)
+		(*StrLn(g, ";")*)
 	END Typedef;
 BEGIN
 	IF ~(typ.id IN (Ast.ProcTypes + {Ast.IdArray}))
@@ -1579,14 +1587,14 @@ BEGIN
 	Comment(g, const.comment);
 	EmptyLines(g, const);
 	IF g.opt.std >= EcmaScript2015 THEN
-		Text.Str(g, "const ")
+		Str(g, "const ")
 	ELSE
-		Text.Str(g, "var ")
+		Str(g, "var ")
 	END;
 	Name(g, const);
-	Text.Str(g, " = ");
+	Str(g, " = ");
 	Expression(g, const.expr, {});
-	Text.StrLn(g, ";");
+	StrLn(g, ";");
 
 	Mark(g, const)
 END Const;
@@ -1599,9 +1607,9 @@ BEGIN
 	EmptyLines(g, var);
 	IF ~mark OR (g.opt.varInit # GenOptions.VarInitNo) & (var.type.id IN Ast.Structures) THEN
 		IF var.up = NIL THEN
-			Text.Str(g, "this.")
+			Str(g, "this.")
 		ELSE
-			Text.Str(g, "var ")
+			Str(g, "var ")
 		END;
 
 		(* TODO
@@ -1610,7 +1618,7 @@ BEGIN
 
 		VarInit(g, var, FALSE);
 
-		Text.StrLn(g, ";");
+		StrLn(g, ";");
 
 		Mark(g, var)
 	END
@@ -1619,7 +1627,7 @@ END Var;
 PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf);
 BEGIN
 	CheckExpr(g, wi.expr, {});
-	Text.StrOpen(g, ") {");
+	StrOpen(g, ") {");
 	statements(g, wi.stats);
 	wi := wi.elsif
 END ExprThenStats;
@@ -1658,31 +1666,31 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		END Elsif;
 	BEGIN
 		IF wi IS Ast.If THEN
-			Text.Str(g, "if (");
+			Str(g, "if (");
 			ExprThenStats(g, wi);
 			Elsif(g, wi);
 			IF wi # NIL THEN
 				Text.IndentClose(g);
-				Text.StrOpen(g, "} else {");
+				StrOpen(g, "} else {");
 				statements(g, wi.stats)
 			END;
-			Text.StrLnClose(g, "}")
+			StrLnClose(g, "}")
 		ELSIF wi.elsif = NIL THEN
-			Text.Str(g, "while (");
+			Str(g, "while (");
 			ExprThenStats(g, wi);
-			Text.StrLnClose(g, "}")
+			StrLnClose(g, "}")
 		ELSE
-			Text.Str(g, "while (true) if (");
+			Str(g, "while (true) if (");
 			ExprThenStats(g, wi);
 			Elsif(g, wi);
-			Text.StrLnClose(g, "} else break;")
+			StrLnClose(g, "} else break;")
 		END
 	END WhileIf;
 
 	PROCEDURE Repeat(VAR g: Generator; st: Ast.Repeat);
 	VAR e: Ast.Expression;
 	BEGIN
-		Text.StrOpen(g, "do {");
+		StrOpen(g, "do {");
 		statements(g, st.stats);
 		IF st.expr.id = Ast.IdNegate THEN
 			Text.StrClose(g, "} while (");
@@ -1691,11 +1699,11 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 				e := e(Ast.ExprBraces).expr
 			END;
 			Expression(g, e, {});
-			Text.StrLn(g, ");")
+			StrLn(g, ");")
 		ELSE
 			Text.StrClose(g, "} while (!(");
 			CheckExpr(g, st.expr, {});
-			Text.StrLn(g, "));")
+			StrLn(g, "));")
 		END
 	END Repeat;
 
@@ -1708,43 +1716,43 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
 		END IsEndMinus1;
 	BEGIN
-		Text.Str(g, "for (");
+		Str(g, "for (");
 		GlobalName(g, st.var);
 		ExpressionBraced(g, " = ", st.expr, "; ", {});
 		GlobalName(g, st.var);
 		IF st.by > 0 THEN
 			IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
-				Text.Str(g, " < ");
+				Str(g, " < ");
 				Expression(g, st.to(Ast.ExprSum).term, {})
 			ELSE
-				Text.Str(g, " <= ");
+				Str(g, " <= ");
 				Expression(g, st.to, {})
 			END;
 			IF st.by = 1 THEN
-				Text.Str(g, "; ++");
+				Str(g, "; ++");
 				GlobalName(g, st.var)
 			ELSE
-				Text.Str(g, "; ");
+				Str(g, "; ");
 				GlobalName(g, st.var);
-				Text.Str(g, " += ");
-				Text.Int(g, st.by)
+				Str(g, " += ");
+				Int(g, st.by)
 			END
 		ELSE
-			Text.Str(g, " >= ");
+			Str(g, " >= ");
 			Expression(g, st.to, {});
 			IF st.by = -1 THEN
-				Text.Str(g, "; --");
+				Str(g, "; --");
 				GlobalName(g, st.var)
 			ELSE
-				Text.Str(g, "; ");
+				Str(g, "; ");
 				GlobalName(g, st.var);
-				Text.Str(g, " -= ");
-				Text.Int(g, -st.by)
+				Str(g, " -= ");
+				Int(g, -st.by)
 			END
 		END;
-		Text.StrOpen(g, ") {");
+		StrOpen(g, ") {");
 		statements(g, st.stats);
-		Text.StrLnClose(g, "}")
+		StrLnClose(g, "}")
 	END For;
 
 	PROCEDURE Assign(VAR g: Generator; st: Ast.Assign);
@@ -1757,22 +1765,22 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		IF st.designator.type.id = Ast.IdArray THEN
 			INC(braces);
 			IF st.expr.id = Ast.IdString THEN
-				Text.Str(g, "o7.strcpy(")
+				Str(g, "o7.strcpy(")
 			ELSE
-				Text.Str(g, "o7.copy(")
+				Str(g, "o7.copy(")
 			END;
 			Designator(g, st.designator, {ForSameType});
-			Text.Str(g, ", ");
+			Str(g, ", ");
 			g.opt.expectArray := TRUE
 		ELSIF st.designator.type.id = Ast.IdRecord THEN
 			INC(braces);
 			Designator(g, st.designator, {ForSameType});
-			Text.Str(g, ".assign(")
+			Str(g, ".assign(")
 		ELSE
 			Designator(g, st.designator, {ForSameType, ForAssign});
 			lastSel := FindLastSel(st.designator, t);
 			IF (lastSel = NIL) OR ~(lastSel IS Ast.SelArray) THEN
-				Text.Str(g, " = ")
+				Str(g, " = ")
 			ELSIF g.opt.checkIndex
 			    & NeedCheckIndex(t(Ast.Array), lastSel(Ast.SelArray).index)
 			THEN
@@ -1782,15 +1790,15 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 				ExpressionBraced(g, "[", lastSel(Ast.SelArray).index, "] = ", {})
 			END;
 			IF toByte THEN
-				Text.Str(g, "o7.itb(")
+				Str(g, "o7.itb(")
 			END
 		END;
 		CheckExpr(g, st.expr, IsForSameType(st.designator.type, st.expr.type));
 		g.opt.expectArray := FALSE;
 		CASE braces OF
-		  0: Text.StrLn(g, ";")
-		| 1: Text.StrLn(g, ");")
-		| 2: Text.StrLn(g, "));")
+		  0: StrLn(g, ";")
+		| 1: StrLn(g, ");")
+		| 2: StrLn(g, "));")
 		END
 	END Assign;
 
@@ -1804,22 +1812,22 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			IF ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
 				WHILE r # NIL DO
-					Text.Str(g, "case ");
+					Str(g, "case ");
 					IF r.id = Ast.IdInteger THEN
-						Text.Int(g, r.value)
+						Int(g, r.value)
 					ELSE
-						Text.Str(g, "0x");
-						Text.Char(g, Hex.To(r.value DIV 10H));
-						Text.Char(g, Hex.To(r.value MOD 10H))
+						Str(g, "0x");
+						Chr(g, Hex.To(r.value DIV 10H));
+						Chr(g, Hex.To(r.value MOD 10H))
 					END;
 					ASSERT(r.right = NIL);
-					Text.StrLn(g, ":");
+					StrLn(g, ":");
 
 					r := r.next
 				END;
 				Text.IndentOpen(g);
 				statements(g, elem.stats);
-				Text.StrLn(g, "break;");
+				StrLn(g, "break;");
 				Text.IndentClose(g)
 			END
 		END CaseElement;
@@ -1833,37 +1841,37 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			BEGIN
 				IF r.right = NIL THEN
 					IF caseExpr = NIL THEN
-						Text.Str(g, "(o7_case_expr == ")
+						Str(g, "(o7_case_expr == ")
 					ELSE
 						ExpressionBraced(g, "(", caseExpr, " == ", {})
 					END;
-					Text.Int(g, r.value)
+					Int(g, r.value)
 				ELSE
 					ASSERT(r.value <= r.right.value);
-					Text.Str(g, "(");
-					Text.Int(g, r.value);
+					Chr(g, "(");
+					Int(g, r.value);
 					IF caseExpr = NIL THEN
-						Text.Str(g, " <= o7_case_expr && o7_case_expr <= ")
+						Str(g, " <= o7_case_expr && o7_case_expr <= ")
 					ELSE
 						ExpressionBraced(g, " <= ", caseExpr, " && ", {});
 						Expression(g, caseExpr, {});
-						Text.Str(g, " <= ")
+						Str(g, " <= ")
 					END;
-					Text.Int(g, r.right.value)
+					Int(g, r.right.value)
 				END;
-				Text.Str(g, ")")
+				Chr(g, ")")
 			END CaseRange;
 		BEGIN
-			Text.Str(g, "if (");
+			Str(g, "if (");
 			r := elem.labels;
 			ASSERT(r # NIL);
 			CaseRange(g, r, caseExpr);
 			WHILE r.next # NIL DO
 				r := r.next;
-				Text.Str(g, " || ");
+				Str(g, " || ");
 				CaseRange(g, r, caseExpr)
 			END;
-			Text.StrOpen(g, ") {");
+			StrOpen(g, ") {");
 			statements(g, elem.stats);
 			Text.StrClose(g, "}")
 		END CaseElementAsIf;
@@ -1877,29 +1885,29 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
-			Text.Str(g, "(function() { var o7_case_expr = ");
+			Str(g, "(function() { var o7_case_expr = ");
 			Expression(g, st.expr, {});
-			Text.StrOpen(g, ";");
-			Text.StrLn(g, "switch (o7_case_expr) {")
+			StrOpen(g, ";");
+			StrLn(g, "switch (o7_case_expr) {")
 		ELSE
 			caseExpr := st.expr;
-			Text.Str(g, "switch (");
+			Str(g, "switch (");
 			Expression(g, caseExpr, {});
-			Text.StrLn(g, ") {")
+			StrLn(g, ") {")
 		END;
 		elem := st.elements;
 		REPEAT
 			CaseElement(g, elem);
 			elem := elem.next
 		UNTIL elem = NIL;
-		Text.StrOpen(g, "default:");
+		StrOpen(g, "default:");
 		IF elemWithRange # NIL THEN
 			elem := elemWithRange;
 			CaseElementAsIf(g, elem, caseExpr);
 			elem := elem.next;
 			WHILE elem # NIL DO
 				IF IsCaseElementWithRange(elem) THEN
-					Text.Str(g, " else ");
+					Str(g, " else ");
 					CaseElementAsIf(g, elem, caseExpr)
 				END;
 				elem := elem.next
@@ -1907,31 +1915,31 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			IF ~g.opt.caseAbort THEN
 				;
 			ELSIF caseExpr = NIL THEN
-				Text.StrLn(g, " else o7.caseFail(o7_case_expr);")
+				StrLn(g, " else o7.caseFail(o7_case_expr);")
 			ELSE
-				Text.Str(g, " else o7.caseFail(");
+				Str(g, " else o7.caseFail(");
 				Expression(g, caseExpr, {});
-				Text.StrLn(g, ");")
+				StrLn(g, ");")
 			END
 		ELSIF ~g.opt.caseAbort THEN
 			;
 		ELSIF caseExpr = NIL THEN
-			Text.StrLn(g, "o7.caseFail(o7_case_expr);")
+			StrLn(g, "o7.caseFail(o7_case_expr);")
 		ELSE
-			Text.Str(g, "o7.caseFail(");
+			Str(g, "o7.caseFail(");
 			Expression(g, caseExpr, {});
-			Text.StrLn(g, ");")
+			StrLn(g, ");")
 		END;
-		Text.StrLn(g, "break;");
-		Text.StrLnClose(g, "}");
+		StrLn(g, "break;");
+		StrLnClose(g, "}");
 		IF caseExpr = NIL THEN
-			Text.StrLnClose(g, "})();")
+			StrLnClose(g, "})();")
 		END
 	END Case;
 BEGIN
 	Comment(g, st.comment);
 	IF 0 < st.emptyLines THEN
-		Text.Ln(g)
+		Ln(g)
 	END;
 	IF st IS Ast.Assign THEN
 		Assign(g, st(Ast.Assign))
@@ -1939,9 +1947,9 @@ BEGIN
 		g.expressionSemicolon := TRUE;
 		Expression(g, st.expr, {});
 		IF g.expressionSemicolon THEN
-			Text.StrLn(g, ";")
+			StrLn(g, ";")
 		ELSE
-			Text.Ln(g)
+			Ln(g)
 		END
 	ELSIF st IS Ast.WhileIf THEN
 		WhileIf(g, st(Ast.WhileIf))
@@ -1964,7 +1972,7 @@ END Statements;
 
 PROCEDURE ProcHeader(VAR g: Generator; decl: Ast.Procedure);
 BEGIN
-	Text.Str(g, "function ");
+	Str(g, "function ");
 	Name(g, decl);
 	ProcParams(g, decl.header)
 END ProcHeader;
@@ -1974,7 +1982,7 @@ BEGIN
 	Comment(g, proc.comment);
 
 	ProcHeader(g, proc);
-	Text.StrOpen(g, " {");
+	StrOpen(g, " {");
 
 	INC(g.localDeep);
 
@@ -1987,22 +1995,22 @@ BEGIN
 	Statements(g, proc.stats);
 
 	IF proc.return # NIL THEN
-		Text.Str(g, "return ");
+		Str(g, "return ");
 		CheckExpr(g, proc.return,
 		          IsForSameType(proc.header.type, proc.return.type));
-		Text.StrLn(g, ";")
+		StrLn(g, ";")
 	END;
 
 	DEC(g.localDeep);
-	Text.StrLnClose(g, "}");
+	StrLnClose(g, "}");
 	Mark(g, proc);
-	Text.Ln(g)
+	Ln(g)
 END Procedure;
 
 PROCEDURE LnIfWrote(VAR g: Generator);
 BEGIN
 	IF g.fixedLen # g.len THEN
-		Text.Ln(g);
+		Ln(g);
 		g.fixedLen := g.len
 	END
 END LnIfWrote;
@@ -2062,12 +2070,12 @@ VAR d: Ast.Declaration;
 	PROCEDURE Import(VAR g: Generator; decl: Ast.Declaration);
 	VAR ofs: INTEGER;
 	BEGIN
-		Text.Str(g, "var ");
+		Str(g, "var ");
 		Ident(g, decl.name);
 		ofs := ORD(~IsSpecModuleName(decl.module.m.name));
 		Text.Data(g, "_ = o7.import.", ofs, 14 - ofs);
 		Ident(g, decl.module.m.name);
-		Text.StrLn(g, ";");
+		StrLn(g, ";");
 		ASSERT(decl.module.m.ext = NIL);
 		decl.module.m.ext := decl
 	END Import;
@@ -2077,7 +2085,7 @@ BEGIN
 		Import(g, d);
 		d := d.next
 	END;
-	Text.Ln(g)
+	Ln(g)
 END Imports;
 
 PROCEDURE UnlinkImports(VAR g: Generator; m: Ast.Module);
@@ -2088,7 +2096,7 @@ BEGIN
 		d.module.m.ext := NIL;
 		d := d.next;
 	END;
-	Text.Ln(g)
+	Ln(g)
 END UnlinkImports;
 
 PROCEDURE Generate*(out: Stream.POut;
@@ -2104,17 +2112,17 @@ VAR g: Generator;
 			InitAllVarsWichArrayOfRecord(g, v, FALSE);
 			Statements(g, module.stats);
 			Statements(g, cmd);
-			Text.Ln(g)
+			Ln(g)
 		END
 	END ModuleInit;
 
 	PROCEDURE Main(VAR g: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
-		Text.StrOpen(g, "o7.main(function() {");
+		StrOpen(g, "o7.main(function() {");
 		InitAllVarsWichArrayOfRecord(g, module.vars, FALSE);
 		Statements(g, module.stats);
 		Statements(g, cmd);
-		Text.StrLnClose(g, "});")
+		StrLnClose(g, "});")
 	END Main;
 BEGIN
 	ASSERT(~Ast.HasError(module));
@@ -2132,15 +2140,15 @@ BEGIN
 
 	Comment(g, module.comment);
 
-	Text.StrLn(g, "(function() { 'use strict';");
+	StrLn(g, "(function() { 'use strict';");
 
 	Imports(g, module);
 
-	Text.StrLn(g, "var module = {};");
-	Text.Str(g, "o7.export.");
+	StrLn(g, "var module = {};");
+	Str(g, "o7.export.");
 	Name(g, module);
-	Text.StrLn(g, " = module;");
-	Text.Ln(g);
+	StrLn(g, " = module;");
+	Ln(g);
 
 	Declarations(g, module);
 
@@ -2150,8 +2158,8 @@ BEGIN
 		ModuleInit(g, module, cmd)
 	END;
 
-	Text.StrLn(g, "return module;");
-	Text.StrLn(g, "})();");
+	StrLn(g, "return module;");
+	StrLn(g, "})();");
 
 	UnlinkImports(g, module)
 END Generate;
