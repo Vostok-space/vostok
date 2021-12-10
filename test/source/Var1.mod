@@ -15,7 +15,10 @@ MODULE Var1;
       ASSERT(a = 999)
     END;
     SetA(100H);
-    ASSERT(a = 256)
+    ASSERT(a = 256);
+
+    f := FALSE;
+    a := 999
   END Go;
 
 BEGIN

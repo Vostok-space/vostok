@@ -27,7 +27,7 @@ MODULE make;
    BinVer = TranslatorVersion.Val;
    LibVer = "0.0.6.dev";
 
- VAR ok*, windows, posix, testStrict: BOOLEAN;
+ VAR ok*, windows, posix, testStrict, testTogether: BOOLEAN;
      lang: INTEGER;
      cc, opt: ARRAY 256 OF CHAR;
      arch: ARRAY 16 OF CHAR;
@@ -149,7 +149,26 @@ MODULE make;
    ret
  END AddRun;
 
- PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; ost: ARRAY OF CHAR;
+ PROCEDURE OstInit(VAR code: Exec.Code; ost: ARRAY OF CHAR; runLang: INTEGER): BOOLEAN;
+ RETURN
+   (  (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp")
+   OR (runLang = Js) & Exec.Init(code, "node")
+   OR (runLang = C) & Exec.Init(code, "")
+   )
+ & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
+ & AddRun(code, runLang = Java)
+ END OstInit;
+
+ PROCEDURE OstAddOpts(VAR code: Exec.Code): BOOLEAN;
+ RETURN
+   Exec.Add(code, "-infr") & Exec.Add(code, ".")
+ & Exec.Add(code, "-m") & Exec.Add(code, "example")
+ & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
+ & Exec.Add(code, "-cyrillic")
+ & AddOpts(code)
+ END OstAddOpts;
+
+ PROCEDURE TestAllBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; ost: ARRAY OF CHAR;
                   runLang: INTEGER): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
@@ -157,42 +176,25 @@ MODULE make;
      n, c: ARRAY 64 OF CHAR;
      l, j: INTEGER;
      pass, fail: INTEGER;
-     resost, cmd: ARRAY 256 OF CHAR;
  BEGIN
-   IF Concat(resost, "result/", ost)
-    & Dir.Open(dir, srcDir, 0)
-   THEN
+   IF Dir.Open(dir, srcDir, 0) THEN
      pass := 0;
      fail := 0;
      WHILE Dir.Read(file, dir) DO
        l := 0;
        j := 0;
        ASSERT(Dir.CopyName(n, l, file));
-       IF n[0] # "." THEN
+       IF (n[0] # ".") & OstInit(code, ost, runLang) & CopyFileName(c, n) THEN
          ASSERT(
-            (   (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp")
-             OR (runLang = Js) & Exec.Init(code, "node")
-             OR (runLang = C) & Exec.Init(code, "")
-            )
-           & Exec.Add(code, resost)
-           & AddRun(code, runLang = Java)
+           ( example & Exec.Add(code, c)
+          OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
+           )
+           & OstAddOpts(code)
          );
-         IF CopyFileName(c, n) THEN
-           ASSERT(
-             ( example & Exec.Add(code, c)
-            OR ~example & Concat(cmd, c, ".Go") & Exec.Add(code, cmd)
-             )
-             & Exec.Add(code, "-infr") & Exec.Add(code, ".")
-             & Exec.Add(code, "-m") & Exec.Add(code, "example")
-             & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
-             & Exec.Add(code, "-cyrillic")
-             & AddOpts(code)
-           );
-           IF Execute(code, n) = 0 THEN
-             INC(pass)
-           ELSE
-             INC(fail)
-           END
+         IF Execute(code, n) = 0 THEN
+           INC(pass)
+         ELSE
+           INC(fail)
          END
        END
      END;
@@ -210,6 +212,44 @@ MODULE make;
    END
  RETURN
    ok
+ END TestAllBy;
+
+ PROCEDURE TestTogetherBy(srcDir: ARRAY OF CHAR; ost: ARRAY OF CHAR; runLang: INTEGER): BOOLEAN;
+ VAR code: Exec.Code;
+     dir: Dir.Dir;
+     file: Dir.File;
+     n, c: ARRAY 64 OF CHAR;
+     l: INTEGER;
+ BEGIN
+   IF Dir.Open(dir, srcDir, 0) & OstInit(code, ost, runLang) & Exec.FirstPart(code, "") THEN
+     REPEAT
+       l := 0;
+     UNTIL ~(
+       Dir.Read(file, dir) & Dir.CopyName(n, l, file)
+     & (  (n[0] = ".")
+       OR CopyFileName(c, n) & Exec.AddPart(code, c) & Exec.AddPart(code, ".Go; ")
+       )
+     );
+     ASSERT(Dir.Close(dir) & Exec.LastPart(code, ""));
+
+     Ok(OstAddOpts(code) & (Execute(code, "Test all") = 0));
+     Log.Ln;
+   END
+ RETURN
+   ok
+ END TestTogetherBy;
+
+ PROCEDURE TestBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; ost: ARRAY OF CHAR;
+                  runLang: INTEGER): BOOLEAN;
+ VAR ret: BOOLEAN;
+ BEGIN
+   IF testTogether & ~example THEN
+     ret := TestTogetherBy(srcDir, ost, runLang)
+   ELSE
+     ret := TestAllBy(srcDir, example, ost, runLang)
+   END
+ RETURN
+   ret
  END TestBy;
 
  PROCEDURE Test*;
@@ -572,7 +612,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
       END;
       Ok(ok
        & BuildBy("ost-v0", "Translator.Go", "ost", "v1", "to-bin")
-       & TestBy("test/source", FALSE, "ost", C)
+       & TestTogetherBy("test/source", "ost", C)
        & BuildBy("ost", "AndroidBuild.Go", "osa", "va", "to-bin")
         )
    END
@@ -718,7 +758,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
 
  PROCEDURE Help*;
  BEGIN
-   Msg("Commands:");
+   Msg("Commands and options:");
    Msg("  Build         build from source ost translator by bootstrap");
    Msg("  BuildAndroid  build simple android builder");
    Msg("  Test          build and run tests from test/source");
@@ -732,6 +772,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
    Msg("  Opt(content)  string with additional options for the ost-translator");
    Msg("  TestStrict(b) boolean setting for more strict tests checking");
+   Msg("  TestTogether(b)oolean setting for combining tests into one run");
    Msg("  Install       install translator and libraries to /usr/local");
    Msg("  InstallTo(d)  install translator and libraries files to target directory");
    Msg("  Remove        remove installed files from /usr/local");
@@ -777,6 +818,11 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    testStrict := strict
  END TestStrict;
 
+ PROCEDURE TestTogether*(together: BOOLEAN);
+ BEGIN
+   testTogether := together
+ END TestTogether;
+
 BEGIN
   Log.On;
   Exec.AutoCorrectDirSeparator(TRUE);
@@ -785,6 +831,7 @@ BEGIN
   posix   := Platform.Posix;
 
   testStrict := TRUE;
+  testTogether := TRUE;
 
   lang := C;
 
