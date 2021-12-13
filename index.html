@@ -18,7 +18,6 @@
           a[0].setAttribute("href", "http" + a[0].href.slice(5));
         }
       }
-      console.log(a)
     }
   </script>
 </head>
@@ -29,9 +28,17 @@
   <header>
     &nbsp;
     <nav>
-      <a lang="ru" class="a-examples" href="examples.html?lang=ru">Примеры</a>
-      <a lang="en" class="a-examples" href="examples.html?lang=en">Examples</a>
+      [ <a class="sandbox" href="sandbox.html">Web</a>
+      <span lang="ru">-песочница-</span><span lang="en">-sandbox-</span>
+      <a class="sandbox" href="https://t.me/OberonVostokBot">Telegram</a> ]
+
     </nav>
+
+    <nav>
+      [ <a lang="ru" class="sandbox" href="examples.html?lang=ru">Примеры</a>
+      <a lang="en" class="sandbox" href="examples.html?lang=en">Examples</a>]
+    </nav>
+
     <nav class="lang">
       <button onclick="switchLang('en')">Eng</button>
       <button onclick="switchLang('ru')">Рус</button>
@@ -112,8 +119,33 @@
       <a href="https://262.ecma-international.org/5.1/">ECMAScript 5</a>
       <span lang="en">standard</span>
     </li>
-    <li> Oberon 07, Active Oberon, Component Pascal </li>
+    <li> Oberon 07, Active Oberon, Component Pascal,
+      <span lang="ru">включая декларации модулей</span>
+      <span lang="en">including module declaration</span>
+    </li>
     <li> ... </li>
+    </ol>
+  </dd>
+
+  <dt>
+    <span lang="ru">Особенности:</span>
+    <span lang="en">Specificity:</span>
+  </dt>
+  <dd>
+    <ol>
+    <li>
+      <span lang="ru">Частичный статический и динамический контроль использования
+        неинициализированных переменных</span>
+      <span lang="en">Partial static and dynamic control of using uninitialized variables</span>
+    </li>
+    <li>
+      <span lang="ru">Проверка переполнения для целых, дробей, множеств.
+        (-i) и ABS(i) всегда корректны за счёт исключения минимального целого, которое в
+        дополнительном коде по модулю больше, чем максимальное</span>
+      <span lang="en">Overflow control for integers, floating-point numbers, sets.
+        (-i) and ABS(i) are always correct because of minimal value absence, which is bigger
+        by absolute value than the maximal value in two's complement</span>
+    </li>
     </ol>
   </dd>
 
@@ -298,7 +330,7 @@ result/ost run 'make.InstallAndroidTo("'"$PREFIX"'")' -infr . -m source</code></
 
 <script>
   switchLangToPreferable();
-  setHrefHttp(document.getElementsByClassName("a-examples"));
+  setHrefHttp(document.getElementsByClassName("sandbox"));
 </script>
 
 </body>
