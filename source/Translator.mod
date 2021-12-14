@@ -1099,8 +1099,12 @@ BEGIN
 		END;
 		imp := imp.next
 	END;
-	IF (ret = ErrNo) & (~module.mark OR (opt.std # GeneratorOberon.StdO7(*TODO*))) THEN
-		IF opt.std = GeneratorOberon.StdAo THEN
+	IF (ret = ErrNo)
+	 & (~module.mark OR (opt.std # GeneratorOberon.StdO7(*TODO*)) OR opt.declaration)
+	THEN
+		IF opt.declaration THEN
+			ext := ".dfn"
+		ELSIF opt.std = GeneratorOberon.StdAo THEN
 			ext := ".Mod"
 		ELSE
 			ext := ".mod"
