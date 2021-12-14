@@ -771,8 +771,8 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    Msg("  UseC          turn translation through C");
    Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
    Msg("  Opt(content)  string with additional options for the ost-translator");
-   Msg("  TestStrict(b) boolean setting for more strict tests checking");
-   Msg("  TestTogether(b)oolean setting for combining tests into one run");
+   Msg("  Strict(b)     boolean setting for more strict tests checking");
+   Msg("  Together(b)   boolean setting for combining tests into one run");
    Msg("  Install       install translator and libraries to /usr/local");
    Msg("  InstallTo(d)  install translator and libraries files to target directory");
    Msg("  Remove        remove installed files from /usr/local");
@@ -813,15 +813,15 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    opt := content
  END Opt;
 
- PROCEDURE TestStrict*(strict: BOOLEAN);
+ PROCEDURE Strict*(strict: BOOLEAN);
  BEGIN
    testStrict := strict
- END TestStrict;
+ END Strict;
 
- PROCEDURE TestTogether*(together: BOOLEAN);
+ PROCEDURE Together*(together: BOOLEAN);
  BEGIN
    testTogether := together
- END TestTogether;
+ END Together;
 
 BEGIN
   Log.On;
