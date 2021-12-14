@@ -238,13 +238,15 @@ func infoModule(name string) (info string) {
   return
 }
 
-func command(cmd, help string) (res string) {
-  if cmd == "INFO" || cmd == "HELP" {
+func command(text, help string) (res string) {
+  var (cmd string)
+  cmd = strings.ToLower(text);
+  if cmd == "info" || cmd == "help" {
     res = help
-  } else if cmd == "LIST" {
+  } else if cmd == "list" {
     res = listModules("\n", "\n\n")
-  } else if strings.HasPrefix(cmd, "INFO ") || strings.HasPrefix(cmd, "HELP ") {
-    res = infoModule(cmd[5:])
+  } else if strings.HasPrefix(cmd, "info ") || strings.HasPrefix(cmd, "help ") {
+    res = infoModule(text[5:])
   } else {
     res = "Wrong command, use /INFO for help"
   }
@@ -352,14 +354,22 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
 }
 
 func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
-  if code == "/start" || code == "/INFO" || code == "/HELP" {
-    err = teleSend(api, teleHelp, chat)
-  } else if code == "/LIST" {
-    err = teleSend(api, listModules(" ", "\n\n"), chat)
-  } else if strings.HasPrefix(code, "/INFO ") {
-    err = teleSend(api, infoModule(code[6:]), chat)
-  } else {
-    err = nil
+  var (i int; cmd string)
+  err = nil;
+  if code[0] == '/' {
+    i = strings.Index(code, " ");
+    if i < 0 {
+      i = len(code)
+    }
+    cmd = strings.ToLower(code[1:i]);
+    if cmd == "start" || cmd == "info" || cmd == "help" {
+      err = teleSend(api, teleHelp, chat)
+    } else if cmd == "list" {
+      err = teleSend(api, listModules(" ", "\n\n"), chat)
+    } else if cmd == "info" {
+      for i < len(code) && code[i] == ' ' { i += 1 }
+      err = teleSend(api, infoModule(code[i:]), chat)
+    }
   }
   return
 }
