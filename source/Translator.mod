@@ -1114,7 +1114,8 @@ BEGIN
 	RETURN ret
 END GenerateOberon;
 
-PROCEDURE GenerateThroughOberon(VAR args: Cli.Args; module: Ast.Module;
+PROCEDURE GenerateThroughOberon(res: INTEGER;
+                                VAR args: Cli.Args; module: Ast.Module;
                                 VAR listener: V.Base): INTEGER;
 VAR opt: GeneratorOberon.Options;
     ret: INTEGER;
@@ -1125,8 +1126,9 @@ BEGIN
 		opt.std := args.obStd;
 		IF args.obStd # GeneratorOberon.StdO7 THEN
 			opt.multibranchWhile := FALSE
-		END
+		END;
 	END;
+	opt.declaration := res = Cli.ResultDecl;
 
 	ret := GenerateOberon(module, opt, args.resPath, args.resPathLen)
 
@@ -1185,8 +1187,8 @@ BEGIN
 			END
 		ELSIF res IN Cli.ThroughC THEN
 			ret := GenerateThroughC(res, args, module, cmd, listener)
-		ELSE ASSERT(res = Cli.ResultMod);
-			ret := GenerateThroughOberon(args, module, listener)
+		ELSE ASSERT(res IN Cli.ThroughMod);
+			ret := GenerateThroughOberon(res, args, module, listener)
 		END
 	END;
 	(*

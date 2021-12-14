@@ -177,9 +177,9 @@ CONST
 	IdRecord*           = 11;
 	IdRecordForward*    = 12;
 	IdProcType*         = 13;
-	IdFuncType*         = 28;(*TODO*)
-	IdNamed*            = 14;
-	IdString*           = 15;
+	IdFuncType*         = 14;
+	IdNamed*            = 15;
+	IdString*           = 16;
 
 	IdDesignator*       = 20;
 	IdRelation*         = 21;
@@ -216,6 +216,7 @@ CONST
 	Structures* = {IdRecord, IdArray};
 	ProcTypes*  = {IdProcType, IdFuncType};
 	Pointers*   = {IdPointer} + ProcTypes;
+	DeclarableTypes* = Structures + Pointers;
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
 	   быть константным в clang *)

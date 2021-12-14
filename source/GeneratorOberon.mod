@@ -22,6 +22,7 @@ IMPORT
   Log := DLog, Stream := VDataStream,
   Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
   SpecIdent := OberonSpecIdent, Hex,
+  TranLim := TranslatorLimits,
   GenOptions, GenCommon;
 
 CONST
@@ -34,7 +35,8 @@ CONST
 TYPE
   Options* = POINTER TO RECORD(GenOptions.R)
     std*: INTEGER;
-    multibranchWhile*: BOOLEAN
+    multibranchWhile*,
+    declaration*, import*: BOOLEAN
   END;
 
   Generator = RECORD(Text.Out)
@@ -86,7 +88,11 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Ident(g, imp.name);
       Chr(g, ".")
     END;
-    Name(g, decl)
+    IF decl.mark OR ~g.opt.declaration THEN
+      Name(g, decl)
+    ELSE
+      Str(g, "<*>")
+    END
   END GlobalName;
 
   PROCEDURE DefaultOptions*(): Options;
@@ -97,7 +103,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       V.Init(o^);
       GenOptions.Default(o^);
       o.std := StdO7;
-      o.multibranchWhile := o.std = StdO7
+      o.multibranchWhile := o.std = StdO7;
+      o.declaration := FALSE;
+      o.import := FALSE
     END;
   RETURN
     o
@@ -146,10 +154,12 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       END
     END Import;
   BEGIN
-    CASE g.opt.std OF
-      StdO7: StrOpen(g, "IMPORT")
-    | StdAo,
-      StdCp: StrOpen(g, "IMPORT O_7, SYSTEM,")
+    IF (g.opt.std = StdO7) OR g.opt.declaration THEN
+      Ln(g);
+      StrOpen(g, "IMPORT")
+    ELSE ASSERT(g.opt.std IN {StdAo, StdCp});
+      Ln(g);
+      StrOpen(g, "IMPORT O_7, SYSTEM,")
     END;
 
     Import(g, d);
@@ -605,7 +615,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
           IF set.exprs[1] = NIL THEN
             Expression(g, set.exprs[0])
           ELSE
-            ExpressionInfix(g, set.exprs[0], " .. ", set.exprs[1]);
+            ExpressionInfix(g, set.exprs[0], " .. ", set.exprs[1])
           END
         END Item;
       BEGIN
@@ -684,7 +694,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
   PROCEDURE Mark(VAR g: Generator; d: Ast.Declaration);
   BEGIN
-    IF d.mark THEN
+    IF d.mark & ~g.opt.declaration THEN
       Chr(g, "*")
     END
   END Mark;
@@ -695,6 +705,20 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     Mark(g, d);
     Str(g, str)
   END MarkedName;
+
+  PROCEDURE FirstMarked(VAR d: Ast.Declaration);
+  VAR id: INTEGER;
+  BEGIN
+    IF d # NIL THEN
+      id := d.id;
+      WHILE (d # NIL) & (d.id = id) & ~d.mark DO
+        d := d.next
+      END;
+      IF (d # NIL) & (d.id # id) THEN
+        d := NIL
+      END
+    END
+  END FirstMarked;
 
   PROCEDURE Consts(VAR g: Generator; d: Ast.Declaration);
     PROCEDURE Const(VAR g: Generator; c: Ast.Const);
@@ -708,8 +732,10 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END Const;
   BEGIN
     StrOpen(g, "CONST");
-    WHILE (d # NIL) & (d IS Ast.Const) DO
-      Const(g, d(Ast.Const));
+    WHILE (d # NIL) & (d.id = Ast.IdConst) DO
+      IF d.mark OR ~g.opt.declaration THEN
+        Const(g, d(Ast.Const))
+      END;
       d := d.next
     END;
     LnClose(g)
@@ -777,15 +803,23 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
     PROCEDURE ListSameType(VAR g: Generator; VAR v: Ast.Declaration);
     VAR p: Ast.Declaration;
+
+      PROCEDURE Next(g: Generator; VAR v: Ast.Declaration): BOOLEAN;
+      BEGIN
+        REPEAT
+          v := v.next
+        UNTIL (v = NIL) OR (v.id # Ast.IdVar) OR v.mark OR ~g.opt.declaration
+      RETURN
+        (v # NIL) & (v.id = Ast.IdVar)
+      END Next;
+
     BEGIN
       MarkedName(g, v, "");
       p := v;
-      v := v.next;
-      WHILE (v # NIL) & (p.type = v.type) & (v IS Ast.Var) DO
+      WHILE Next(g, v) & (p.type = v.type) DO
         Str(g, ", ");
         MarkedName(g, v, "");
-        p := v;
-        v := v.next
+        p := v
       END;
       Str(g, ": ");
       type(g, p.type)
@@ -793,7 +827,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
   BEGIN
     ListSameType(g, v);
-    WHILE (v # NIL) & (v IS Ast.Var) DO
+    WHILE (v # NIL) & (v.id = Ast.IdVar) DO
       StrLn(g, ";");
       ListSameType(g, v)
     END
@@ -825,25 +859,85 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END Array;
 
     PROCEDURE Record(VAR g: Generator; rec: Ast.Record);
+    VAR v: Ast.Declaration; base: ARRAY TranLim.RecordExt OF Ast.Record; i: INTEGER;
+
+      PROCEDURE BasesForDecl(VAR base: ARRAY OF Ast.Record): INTEGER;
+      VAR i: INTEGER;
+      BEGIN
+        i := 0;
+        WHILE (base[i] # NIL) & ~base[i].mark DO
+          INC(i);
+          base[i] := base[i - 1].base
+        END
+      RETURN
+        i
+      END BasesForDecl;
+
+      PROCEDURE ExportedFromBase(VAR g: Generator; base: ARRAY OF Ast.Record; i: INTEGER): BOOLEAN;
+      VAR v: Ast.Declaration; mark: BOOLEAN;
+      BEGIN
+        v := NIL;
+        WHILE (i > 0) & (v = NIL) DO
+          DEC(i);
+          v := base[i].vars;
+          FirstMarked(v)
+        END;
+        mark := v # NIL;
+        IF mark THEN
+          VarList(g, v);
+          WHILE i > 0 DO
+            DEC(i);
+            v := base[i].vars;
+            FirstMarked(v);
+            IF v # NIL THEN
+              StrLn(g, ";");
+              VarList(g, v)
+            END
+          END
+        END
+      RETURN
+        mark
+      END ExportedFromBase;
+
     BEGIN
-      IF (g.opt.std = StdCp) & rec.hasExt THEN
+      IF (g.opt.std = StdCp)
+       & rec.hasExt
+       & (rec.mark OR ~g.opt.declaration)
+      THEN
         Str(g, "EXTENSIBLE ")
       END;
-      IF rec.base = NIL THEN
+
+      base[0] := rec.base;
+      IF g.opt.declaration THEN
+        i := BasesForDecl(base)
+      ELSE
+        i := 0
+      END;
+      IF base[i] = NIL THEN
         StrOpen(g, "RECORD")
       ELSE
         Str(g, "RECORD(");
-        GlobalName(g, rec.base);
+        GlobalName(g, base[i]);
         StrOpen(g, ")")
       END;
-      IF rec.vars # NIL THEN
-        VarList(g, rec.vars)
+      v := rec.vars;
+      IF g.opt.declaration THEN
+        FirstMarked(v);
+        IF ExportedFromBase(g, base, i) & (v # NIL) THEN
+          StrLn(g, ";")
+        END
+      END;
+      IF v # NIL THEN
+        VarList(g, v)
       END;
       Text.LnStrClose(g, "END")
     END Record;
 
   BEGIN
-    IF ~forDecl & Strings.IsDefined(typ.name) THEN
+    IF ~forDecl
+      & Strings.IsDefined(typ.name)
+      & (typ.mark OR ~g.opt.declaration)
+    THEN
       GlobalName(g, typ)
     ELSE
       CASE typ.id OF
@@ -915,14 +1009,18 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
   PROCEDURE Types(VAR g: Generator; d: Ast.Declaration);
     PROCEDURE Decl(VAR g: Generator; t: Ast.Type);
     BEGIN
+      Comment(g, t.comment);
+      EmptyLines(g, t);
       MarkedName(g, t, " = ");
       Type(g, t, TRUE);
       StrLn(g, ";")
     END Decl;
   BEGIN
     StrOpen(g, "TYPE");
-    WHILE (d # NIL) & (d IS Ast.Type) DO
-      Decl(g, d(Ast.Type));
+    WHILE (d # NIL) & (d.id IN Ast.DeclarableTypes) DO
+      IF d.mark OR ~g.opt.declaration THEN
+        Decl(g, d(Ast.Type))
+      END;
       d := d.next
     END;
     LnClose(g)
@@ -1128,42 +1226,55 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     MarkedName(g, p, "");
     ProcParams(g, p.header);
     StrLn(g, ";");
-    declarations(g, p);
-    StrOpen(g, "BEGIN");
-    Statements(g, p.stats);
-    Return(g, p.stats # NIL, p.return);
-    Text.LnStrClose(g, "END ");
-    Name(g, p);
-    StrLn(g, ";")
+    IF ~g.opt.declaration THEN
+      declarations(g, p);
+      StrOpen(g, "BEGIN");
+      Statements(g, p.stats);
+      Return(g, p.stats # NIL, p.return);
+      Text.LnStrClose(g, "END ");
+      Name(g, p);
+      StrLn(g, ";")
+    END
   END Procedure;
 
   PROCEDURE Declarations(VAR g: Generator; ds: Ast.Declarations);
-  VAR d: Ast.Declaration;
+  VAR c, t, v, p: Ast.Declaration;
   BEGIN
-    IF ds.consts # NIL THEN
-      Consts(g, ds.consts)
+    c := ds.consts;
+    t := ds.types;
+    v := ds.vars;
+    p := ds.procedures;
+    IF g.opt.declaration THEN
+      FirstMarked(c);
+      FirstMarked(t);
+      FirstMarked(v);
+      FirstMarked(p)
     END;
 
-    IF ds.types # NIL THEN
-      Types(g, ds.types)
-    END;
-
-    IF ds.vars # NIL THEN
-      Vars(g, ds.vars)
-    END;
-
-    IF (ds.vars # NIL) & (ds.procedures # NIL) THEN
+    IF (c # NIL) OR (t # NIL) OR (v # NIL) OR (p # NIL) THEN
       Ln(g)
     END;
 
-    Text.IndentOpen(g);
-    d := ds.procedures;
-    WHILE d # NIL DO
-      Procedure(g, d(Ast.Procedure));
-      Ln(g);
-      d := d.next
+    IF c # NIL THEN
+      Consts(g, c)
     END;
-    Text.IndentClose(g)
+
+    IF t # NIL THEN
+      Types(g, t)
+    END;
+
+    IF v # NIL THEN
+      Vars(g, v)
+    END;
+
+    WHILE p # NIL DO
+      IF p.mark OR ~g.opt.declaration THEN
+        EmptyLines(g, p);
+        Comment(g, p.comment);
+        Procedure(g, p(Ast.Procedure))
+      END;
+      p := p.next
+    END;
   END Declarations;
 
   PROCEDURE Generate*(out: Stream.POut; module: Ast.Module; opt: Options);
@@ -1171,17 +1282,29 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
   BEGIN
     Init(g, out, module, opt);
 
-    Str(g, "MODULE ");
+    IF g.opt.declaration THEN
+      Str(g, "DEFINITION ")
+    ELSE
+      Str(g, "MODULE ")
+    END;
     Name(g, module);
     StrLn(g, ";");
 
-    IF module.import # NIL THEN
+    IF ~opt.declaration THEN
+      (* TODO *)
+      opt.import := TRUE
+    END;
+
+    IF ~opt.import THEN
+      ;
+    ELSIF module.import # NIL THEN
       Imports(g, module.import)
-    ELSIF g.opt.std IN {StdAo, StdCp} THEN
+    ELSIF (g.opt.std IN {StdAo, StdCp}) & ~g.opt.declaration THEN
       StrLn(g, "IMPORT O_7, SYSTEM;")
     END;
     Declarations(g, module);
-    IF module.stats # NIL THEN
+    Ln(g);
+    IF (module.stats # NIL) & ~g.opt.declaration THEN
       StrOpen(g, "BEGIN");
       Statements(g, module.stats);
       LnClose(g)

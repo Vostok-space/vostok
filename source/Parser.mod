@@ -1353,13 +1353,15 @@ END TakeComment;
 
 PROCEDURE Procedure(VAR p: Parser; ds: Ast.Declarations);
 VAR proc: Ast.Procedure;
-	nameStart, nameEnd: INTEGER;
+	nameStart, nameEnd, emptyLines: INTEGER;
 BEGIN
 	ASSERT(p.l = SpecIdent.Procedure);
+	emptyLines := p.s.emptyLines;
 	Scan(p);
 	ExpectIdent(p, nameStart, nameEnd, ErrExpectIdent);
 	CheckAst(p, Ast.ProcedureAdd(ds, proc, Ast.IdProcType, p.s.buf, nameStart, nameEnd));
 	Mark(p, proc);
+	proc.emptyLines := emptyLines;
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
 	ProcBody(p, proc)

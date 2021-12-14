@@ -39,12 +39,14 @@ CONST
 	ResultRunJs*   = 16;
 
 	ResultMod*     = 17;
+	ResultDecl*    = 18;
 
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultJar, ResultRunJava};
 	ThroughJs*   = {ResultJs, ResultRunJs};
-	ThroughMod*  = {ResultMod};
+	ThroughMod*  = {ResultMod, ResultDecl};
 	ForRun*      = {ResultRun, ResultRunJava, ResultRunJs};
+	MainCommands = {ResultC .. ResultDecl};
 
 	CyrillicNo*       = 0;
 	CyrillicDefault*  = 1;
@@ -575,7 +577,7 @@ END ParseOptions;
 PROCEDURE Command(VAR args: Args; ret: INTEGER): INTEGER;
 VAR arg: INTEGER;
 BEGIN
-	ASSERT(ret IN {ResultC .. ResultMod});
+	ASSERT(ret IN MainCommands);
 
 	ArgsInit(args);
 
@@ -628,6 +630,8 @@ BEGIN
 		ret := Command(args, ResultRunJs)
 	ELSIF cmd = "to-mod" THEN
 		ret := Command(args, ResultMod)
+	ELSIF cmd = "to-decl" THEN
+		ret := Command(args, ResultDecl)
 	ELSE
 		ret := ErrUnknownCommand
 	END
