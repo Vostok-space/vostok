@@ -1,8 +1,7 @@
 MODULE Record;
 
-(*
 IMPORT RecordExt;
-*)
+
 TYPE
 	R1 = RECORD
 		a: INTEGER
@@ -16,7 +15,7 @@ TYPE
 		r2: R2
 	END;
 
-	Record* = RECORD(*(RecordExt.Base)*)
+	Record* = RECORD(RecordExt.Base)
 		b: ARRAY 3 OF BOOLEAN
 	END;
 
@@ -63,7 +62,8 @@ VAR l: INTEGER;
 BEGIN
 	p2 := p;
 	l := LEN(p.b);
-	l := LEN(p2.b)
+	l := LEN(p2.b);
+	p.a := 232
 END Pr;
 
 PROCEDURE Assign;

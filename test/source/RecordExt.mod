@@ -4,19 +4,19 @@ IMPORT Out;
 
 TYPE
 	Base* = RECORD
-		a: INTEGER
+		a*,aa: INTEGER
 	END;
 
 	Ext1 = RECORD(Base)
-		r: REAL
+		r*: REAL
 	END;
 
 	Ext2 = RECORD(Base)
-		c: CHAR
+		c,cc*: CHAR
 	END;
 
 	Ext21 = RECORD(Ext2)
-		b: BOOLEAN
+		b*: BOOLEAN
 	END;
 
 	Pr* = POINTER TO RECORD
@@ -25,7 +25,7 @@ TYPE
 	PBase = POINTER TO Base;
 	PExt1 = POINTER TO Ext1;
 	PExt2 = POINTER TO Ext2;
-	PExt21 = POINTER TO Ext21;
+	PExt21* = POINTER TO Ext21;
 
 VAR
 	b	: Base;
