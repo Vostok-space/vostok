@@ -3908,8 +3908,8 @@ BEGIN
 			;
 		ELSIF expr.value IS ExprString THEN
 			IF (des.type.id = IdArray) & (des.type(Array).count # NIL)
-			 & (   des.type(Array).count(ExprInteger).int
-				 < expr.value.type(Array).count(ExprInteger).int)
+			 & (   des.type(Array).count.value(ExprInteger).int
+			     < expr.value.type(Array).count.value(ExprInteger).int)
 			THEN
 				err := ErrAssignStringToNotEnoughArray
 			END
