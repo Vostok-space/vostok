@@ -630,7 +630,7 @@ BEGIN
 		ret := Command(args, ResultRunJs)
 	ELSIF cmd = "to-mod" THEN
 		ret := Command(args, ResultMod)
-	ELSIF cmd = "to-decl" THEN
+	ELSIF cmd = "to-modef" THEN
 		ret := Command(args, ResultDecl)
 	ELSE
 		ret := ErrUnknownCommand

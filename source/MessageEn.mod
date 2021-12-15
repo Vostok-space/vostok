@@ -41,9 +41,10 @@ S(" 7) ost run-java Code {-m PM|-i PI|-jv PJv|-t Temp} [-- Args]");
 S(" 8) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
 S(" 9) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
 S(" A) ost to-mod   Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
+S("    ost to-modef Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
 S(" B) ost          File.mod         [ Args ]");
-S(" C) ost .Command File.mod         [ Args ]");
-S(" D) ost .        File.mod Command [ Args ]")
+S("    ost .Command File.mod         [ Args ]");
+S("    ost .        File.mod Command [ Args ]")
 	END Short;
 
 	PROCEDURE Details;
@@ -58,11 +59,13 @@ S("7) run-java executes implicit class, created from Code");
 S("8) to-js    converts modules to .js files");
 S("9) run-js   executes implicit .js file, created by Code");
 S("A) to-mod   converts to Oberon-modules");
-S("B-D) run code of module in the file, may be used with she-bang");
+S("   to-modef converts to declaration of Oberon-modules");
+S("B) run code of module in the file, may be used with she-bang");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");
 S("  Code = Call { ; Call } . Call = Module [ .Procedure [ '('Parameters')' ] ] .");
-S("OutDir - directory for saving translated .h & .c files");
+S("OutDir - directory for saving translated files,");
+S("         can be replaced by - or empty argument for standard output");
 S("OutBin - name of output executable file");
 S("");
 S("-m PM - Path to directory with Modules for search.");
