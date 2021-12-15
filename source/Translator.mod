@@ -205,6 +205,10 @@ PROCEDURE OpenSingleOutput(VAR out: File.Out;
 VAR destLen: INTEGER;
     ret: INTEGER;
 BEGIN
+	IF (dir = "") OR (dir = "-") THEN
+		out := File.out;
+		ret := ErrNo
+	ELSE
 	out := NIL;
 	destLen := dirLen;
 	IF ~Chars0X.CopyString(dir, destLen, OsUtil.DirSep)
@@ -221,6 +225,7 @@ BEGIN
 		ELSE
 			ret := ErrNo
 		END
+	END
 	END
 	RETURN ret
 END OpenSingleOutput;
@@ -1092,12 +1097,14 @@ BEGIN
 	module.used := TRUE;
 
 	ret := ErrNo;
-	imp := module.import;
-	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used THEN
-			ret := GenerateOberon(imp.module.m, opt, dir, dirLen)
-		END;
-		imp := imp.next
+	IF (dir # "") & (dir # "-") THEN
+		imp := module.import;
+		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+			IF ~imp.module.m.used THEN
+				ret := GenerateOberon(imp.module.m, opt, dir, dirLen)
+			END;
+			imp := imp.next
+		END
 	END;
 	IF (ret = ErrNo)
 	 & (~module.mark OR (opt.std # GeneratorOberon.StdO7(*TODO*)) OR opt.declaration)
