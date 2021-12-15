@@ -69,7 +69,9 @@ END OpenIn;
 PROCEDURE CloseIn*(VAR i: In);
 BEGIN
 	IF i # NIL THEN
-		CFiles.Close(i.file);
+		IF i # in THEN
+			CFiles.Close(i.file)
+		END;
 		i := NIL
 	END
 END CloseIn;
@@ -106,7 +108,9 @@ END OpenOut;
 PROCEDURE CloseOut*(VAR o: Out);
 BEGIN
 	IF o # NIL THEN
-		CFiles.Close(o.file);
+		IF o # out THEN
+			CFiles.Close(o.file)
+		END;
 		o := NIL
 	END
 END CloseOut;

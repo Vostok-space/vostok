@@ -45,7 +45,7 @@ MODULE OsUtil;
 
     PROCEDURE Windows(VAR path: ARRAY OF CHAR; VAR len: INTEGER): BOOLEAN;
     BEGIN
-      len := Libloader.GetModuleFileNameA(NIL, path);
+      len := Libloader.GetModuleFileNameA(NIL, path)
     RETURN
       (0 < len) & (len < LEN(path))
     END Windows;
