@@ -321,7 +321,7 @@ func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
       i = len(code)
     }
     cmd = strings.ToLower(code[1:i]);
-    if cmd == "start" || cmd == "info" || cmd == "help" {
+    if cmd == "start" || cmd == "help" || cmd == "info" && i == len(code) {
       err = teleSend(api, teleHelp, chat)
     } else if cmd == "list" {
       err = teleSend(api, listModules(" ", "\n\n"), chat)
