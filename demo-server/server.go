@@ -186,56 +186,15 @@ func listModules(sep1, sep2 string) (list string) {
   return
 }
 
-func exportList(module string) (list string) {
-  var (
-    i, j, k int
-  )
-
-  list = "";
-  i = strings.Index(module, "PROCEDURE ");
-  for i > 0 {
-    module = module[i:];
-    j = strings.IndexAny(module, "*(;");
-    if j > 0 && module[j] == '*' {
-      k = strings.IndexAny(module[j + 1:], "(;") + j + 1;
-      if k > 0 && module[k] == '(' {
-        k = strings.Index(module[k + 1:], ")") + k + 1;
-        if k > 0 {
-          k = strings.Index(module[k + 1:], ";") + k + 1;
-        }
-      }
-      if k > 0 {
-        list = list + module[:k + 1] + "\n"
-      }
-    } else {
-      j = 8
-    }
-    module = module[j:];
-    i = strings.Index(module, "PROCEDURE ")
-  }
-  return
-}
-
 func infoModule(name string) (info string) {
   var (
-    path string;
-    data []byte;
-    err error;
-    i int
+    cmd *exec.Cmd;
+    output []byte;
   )
-  data = nil;
-  i = 0;
-  for data == nil && i < len(moduleDirs) {
-    path = moduleDirs[i] + "/" + name + ".mod";
-    data, err = ioutil.ReadFile(path);
-    i += 1
-  }
-  if data != nil {
-    info = exportList(string(data))
-  } else {
-    info = err.Error()
-  }
-  return
+  cmd = exec.Command("vostok/result/ost", "to-decl", name, "",
+                     "-infr", "vostok", "-cyrillic", "-multi-errors");
+  output, _ = cmd.CombinedOutput();
+  return string(output)
 }
 
 func command(text, help string) (res string) {
