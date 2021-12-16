@@ -436,7 +436,7 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 		PROCEDURE Mult(VAR g: Generator;
 		               decl: Ast.Declaration; j: INTEGER; t: Ast.Type);
 		BEGIN
-			WHILE (t # NIL) & (t IS Ast.Array) DO
+			WHILE (t # NIL) & (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
 				Str(g, " * ");
 				Name(g, decl);
 				Str(g, "_len");
@@ -1050,7 +1050,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 
 		PROCEDURE ActualParam(VAR g: Generator; VAR p: Ast.Parameter;
 		                      VAR fp: Ast.Declaration);
-		VAR t: Ast.Type;
+		VAR t, fpt: Ast.Type;
 		    i, j, dist: INTEGER;
 		    paramOut, castToBase: BOOLEAN;
 
@@ -1083,14 +1083,14 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				THEN
 					i := -1;
 					t := p.expr.type;
+					fpt := fp.type;
 					WHILE (t.id = Ast.IdArray)
-					    & (fp.type(Ast.Array).count = NIL)
+					    & (fpt(Ast.Array).count = NIL)
 					DO
 						IF (i = -1) & (p.expr IS Ast.Designator) THEN
 							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
 							   - ArrayDeep(fp.type);
-							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam)
-							THEN
+							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam) THEN
 								j := ArrayDeep(p.expr(Ast.Designator).type)
 							END
 						END;
@@ -1103,7 +1103,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 						END;
 						Str(g, ", ");
 						INC(i);
-						t := t.type
+						t := t.type;
+						fpt := fpt.type
 					END;
 					t := fp.type
 				END;
@@ -2262,13 +2263,19 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 		ELSE
 			Str(g, "[/*len0");
 			i := 0;
-			WHILE t.id = Ast.IdArray DO
+			WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
 				INC(i);
 				Str(g, ", len");
 				Int(g, i);
 				t := t.type
 			END;
-			Str(g, "*/]")
+			Str(g, "*/]");
+			WHILE t.id = Ast.IdArray DO
+				Chr(g, "[");
+				Int(g, t(Ast.Array).count.value(Ast.ExprInteger).int);
+				Chr(g, "]");
+				t := t.type
+			END
 		END;
 		Invert(g);
 		Type(g, decl, t, FALSE, sameType)
