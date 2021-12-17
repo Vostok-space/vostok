@@ -191,7 +191,7 @@ func infoModule(name string) (info string) {
     cmd *exec.Cmd;
     output []byte;
   )
-  cmd = exec.Command("vostok/result/ost", "to-decl", name, "",
+  cmd = exec.Command("vostok/result/ost", "to-modef", name, "",
                      "-infr", "vostok", "-cyrillic", "-multi-errors");
   output, _ = cmd.CombinedOutput();
   return string(output)
