@@ -40,9 +40,12 @@
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
 #endif
 
-#if (__STDC_VERSION__ >= 199901L) && !defined(__STDC_NO_VLA__) \
- && !defined(__TINYC__) && !defined(__COMPCERT__)
+#if !defined(__STDC_NO_VLA__) \
+ && (defined(__TINYC__) || !defined(__COMPCERT__) || !defined(__chibicc__))
+#	define __STDC_NO_VLA__ 1
+#endif
 
+#if (__STDC_VERSION__ >= 199901L) && !defined(__STDC_NO_VLA__)
 #	define O7_VLA(len) static len
 #else
 #	define O7_VLA(len)
@@ -418,7 +421,7 @@ typedef struct {
 #	define o7_assert(condition) assert(condition)
 #endif
 
-#if __STDC_VERSION__ >= 201112L
+#if (__STDC_VERSION__ >= 201112L) && !defined(__chibicc__)
 #	if !defined(static_assert)
 		/* fixed compilation with dietlibc and in OpenBSD */
 #		define static_assert(cond, msg) _Static_assert(cond, msg)

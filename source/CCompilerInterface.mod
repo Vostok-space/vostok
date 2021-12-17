@@ -112,8 +112,8 @@ MODULE CCompilerInterface;
   PROCEDURE AddInclude*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
                        : BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, "-I")
-  & Exec.AddByOfs(c.cmd, path, ofs)
+    Exec.FirstPart(c.cmd, "-I")
+  & Exec.LastPartByOfs(c.cmd, path, ofs)
   END AddInclude;
 
   PROCEDURE AddC*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
