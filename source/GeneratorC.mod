@@ -292,12 +292,12 @@ PROCEDURE CheckStructName(VAR g: Generator; rec: Ast.Record): BOOLEAN;
 VAR anon: ARRAY TranLim.LenName * 2 + 3 OF CHAR;
 	i, j, l: INTEGER;
 BEGIN
+	rec.mark := rec.mark OR (rec.pointer # NIL) & rec.pointer.mark;
 	IF Strings.IsDefined(rec.name) THEN
 		;
 	ELSIF (rec.pointer # NIL) & Strings.IsDefined(rec.pointer.name) THEN
 		l := 0;
 		ASSERT(rec.module # NIL);
-		rec.mark := rec.pointer.mark;
 		ASSERT(Strings.CopyToChars(anon, l, rec.pointer.name));
 		anon[l] := "_";
 		anon[l + 1] := "s";
@@ -2291,8 +2291,7 @@ BEGIN
 				THEN	Chr(g, "*")
 				END
 			ELSE
-				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name)
-				THEN
+				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name) THEN
 					Str(g, "struct ");
 					GlobalName(g, typ.type); Str(g, " *")
 				ELSIF typ IS Ast.Record THEN
@@ -2307,8 +2306,7 @@ BEGIN
 					MemWriteInvert(g.memout^)
 				END
 			END
-		ELSIF ~sameType OR (typ.id IN (Ast.Pointers + {Ast.IdArray}))
-		THEN
+		ELSIF ~sameType OR (typ.id IN (Ast.Pointers + {Ast.IdArray})) THEN
 			CASE typ.id OF
 			  Ast.IdInteger:
 				Simple(g, "o7_int_t ")
@@ -2359,7 +2357,7 @@ BEGIN
 	IF (g.opt.memManager # MemManagerCounter) & (rec.base = NIL) THEN
 		Str(g, "#define ");
 		GlobalName(g, rec);
-		StrLn(g, "_tag o7_base_tag");
+		StrLn(g, "_tag o7_base_tag")
 	ELSIF (g.opt.memManager # MemManagerCounter)
 	    & ~rec.needTag & g.opt.skipUnusedTag
 	THEN
@@ -2985,7 +2983,7 @@ BEGIN
 			ELSIF var.type.id = Ast.IdPointer THEN
 				Str(g, "O7_NULL(&");
 				GlobalName(g, var);
-				StrLn(g, ");");
+				StrLn(g, ");")
 			ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
 				GlobalName(g, var.type);
 				Str(g, "_release(&");
