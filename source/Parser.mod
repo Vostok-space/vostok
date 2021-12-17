@@ -1231,6 +1231,15 @@ BEGIN
 	RETURN st
 END Call;
 
+PROCEDURE NotBeginStat(l: INTEGER): BOOLEAN;
+RETURN (l # Scanner.Ident)
+     & (l # SpecIdent.Repeat)
+     & (l # SpecIdent.While)
+     & (l # SpecIdent.Case)
+     & (l # SpecIdent.If)
+     & (l # SpecIdent.If)
+END NotBeginStat;
+
 PROCEDURE NotEnd(l: INTEGER): BOOLEAN;
 RETURN (l # SpecIdent.End)
      & (l # SpecIdent.Return)
@@ -1275,6 +1284,9 @@ VAR stats, last: Ast.Statement;
 			st := For(p, ds)
 		ELSIF p.l = SpecIdent.While   THEN
 			st := While(p, ds)
+		ELSIF NotEnd(p.l) & (p.l # Scanner.Semicolon) THEN
+			AddError(p, ErrExpectStatement);
+			st := NIL
 		ELSE
 			st := NIL
 		END;
@@ -1303,9 +1315,10 @@ BEGIN
 	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
 		p.err := FALSE;
-		WHILE (p.l # Scanner.Semicolon) & NotEnd(p.l) DO
+		WHILE (p.l # Scanner.Semicolon) & NotBeginStat(p.l) & NotEnd(p.l) DO
 			Scan(p)
-		END
+		END;
+		Ast.StatementAdd(stats, last, Statement(p, ds))
 	END
 	RETURN stats
 END Statements;
