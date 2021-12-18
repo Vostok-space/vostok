@@ -34,16 +34,12 @@ MODULE make;
      awkScript: ARRAY 128 OF CHAR;
 
  PROCEDURE CopyFileName(VAR n: ARRAY OF CHAR; nwe: ARRAY OF CHAR): BOOLEAN;
- VAR i: INTEGER;
+ VAR i, j: INTEGER;
  BEGIN
    i := 0;
-   WHILE (i < LEN(n) - 1) & (i < LEN(nwe)) & (nwe[i] # ".") DO
-     n[i] := nwe[i];
-     INC(i)
-   END;
-   n[i] := 0X
+   j := 0
  RETURN
-   nwe[i] = "."
+   Chars0X.CopyCharsUntil(n, i, nwe, j, ".")
  END CopyFileName;
 
  PROCEDURE Msg(str: ARRAY OF CHAR);

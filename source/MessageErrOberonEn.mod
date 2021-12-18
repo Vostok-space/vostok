@@ -61,7 +61,7 @@ BEGIN
 	| AST.ErrSetElemOutOfLongRange:
 		C("Item's value of set is out of range - [0 .. 63]")
 	| AST.ErrSetLeftElemBiggerRightElem:
-		C("Left item of range is bigger then right item")
+		C("Left item of range is bigger than right item")
 	| AST.ErrSetElemMaxNotConvertToInt:
 		C("Set, which contain >=31 can not be converted to integer")
 	| AST.ErrSetFromLongSet:
