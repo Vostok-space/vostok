@@ -1767,6 +1767,7 @@ BEGIN
 	| Ast.IdTerm:
 		IF    g.opt.checkArith
 			& (expr.type.id IN CheckableArithTypes)
+			& (expr.value = NIL)
 		OR
 			  (expr.type.id IN Ast.Integers)
 			& IsPresentDiv(expr(Ast.ExprTerm))
