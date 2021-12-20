@@ -27,4 +27,5 @@ extern o7_int_t Wlibloaderapi_GetModuleFileNameA(
     o7_int_t lpFilename_len, o7_char lpFilename[/*len*/]);
 
 O7_ALWAYS_INLINE void Wlibloaderapi_init(void) {}
+O7_ALWAYS_INLINE void Wlibloaderapi_done(void) {}
 #endif

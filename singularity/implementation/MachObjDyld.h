@@ -20,4 +20,5 @@
 extern o7_int_t MachObjDyld_NSGetExecutablePath(o7_int_t path_len, o7_char path[/*len*/]);
 
 O7_INLINE void MachObjDyld_init(void) { ; }
+O7_INLINE void MachObjDyld_done(void) { ; }
 #endif

@@ -22,4 +22,5 @@ extern o7_cbool
 CDir_GetCurrent(o7_int_t len, o7_char path[O7_VLA(len)], o7_int_t *ofs);
 
 O7_ALWAYS_INLINE void CDir_init(void) { ; }
+O7_ALWAYS_INLINE void CDir_done(void) { ; }
 #endif
