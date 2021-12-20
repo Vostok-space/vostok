@@ -3077,9 +3077,9 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			retainParams := NIL
 		ELSE
 			retainParams := SearchRetain(g, proc.header.params);
-			IF proc.return # NIL THEN
-				Qualifier(g, proc.return.type);
-				IF proc.return.type.id = Ast.IdPointer
+			IF proc.header.type # NIL THEN
+				Qualifier(g, proc.header.type);
+				IF proc.header.type.id = Ast.IdPointer
 				THEN	StrLn(g, " o7_return = NULL;")
 				ELSE	StrLn(g, " o7_return;")
 				END
@@ -3095,7 +3095,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			ReleaseVars(g, proc.vars);
 			ReleaseParams(g, retainParams)
 		ELSIF g.opt.memManager = MemManagerCounter THEN
-			IF proc.return.type.id = Ast.IdPointer THEN
+			IF proc.header.type.id = Ast.IdPointer THEN
 				Str(g, "O7_ASSIGN(&o7_return, ");
 				Expression(g, proc.return);
 				StrLn(g, ");")
@@ -3106,7 +3106,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			END;
 			ReleaseVars(g, proc.vars);
 			ReleaseParams(g, retainParams);
-			IF proc.return.type.id = Ast.IdPointer THEN
+			IF proc.header.type.id = Ast.IdPointer THEN
 				StrLn(g, "o7_unhold(o7_return);")
 			END;
 			StrLn(g, "return o7_return;")
