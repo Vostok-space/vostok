@@ -175,13 +175,13 @@ public static final boolean Exist(byte[] name, int ofs) {
 
 static {
     in_ = new File();
-    in_.is = System.in;
+    in_.is = java.lang.System.in;
 
     out = new File();
-    out.os = System.out;
+    out.os = java.lang.System.out;
 
     err = new File();
-    err.os = System.err;
+    err.os = java.lang.System.err;
 }
 
 }
