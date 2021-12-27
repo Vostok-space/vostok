@@ -315,7 +315,7 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
 func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
   var (i int; cmd string)
   err = nil;
-  if code[0] == '/' {
+  if len(code) > 0 && code[0] == '/' {
     i = strings.Index(code, " ");
     if i < 0 {
       i = len(code)
