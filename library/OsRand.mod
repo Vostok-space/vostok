@@ -120,6 +120,32 @@ MODULE OsRand;
    RETURN ret
  END Real;
 
+ PROCEDURE Set*(VAR s: SET): BOOLEAN;
+ VAR buf: ARRAY 4 OF BYTE; b: INTEGER;
+     ofs, i, j, v: INTEGER;
+     ret: BOOLEAN;
+     r: SET;
+ BEGIN
+   ofs := 0;
+   ret := Read(buf, ofs, LEN(buf));
+   IF ret THEN
+     r := {};
+     v := 0;
+     FOR i := 0 TO 3 DO
+       b := buf[i];
+       FOR j := 0 TO 7 DO
+         IF ODD(b) THEN
+           INCL(r, v);
+           b := b DIV 2
+         END;
+         INC(v)
+       END
+     END;
+     s := r
+   END
+   RETURN ret
+ END Set;
+
 BEGIN
   file := NIL;
   init := FALSE
