@@ -733,6 +733,20 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				Pack(g, e1(Ast.Designator), p2.expr)
 			| SpecIdent.Unpk:
 				Unpack(g, e1(Ast.Designator), p2.expr(Ast.Designator))
+
+			(* SYSTEM *)
+			| SpecIdent.Adr:
+				Str(g, "/*SYSTEM.ADR*/0")
+			| SpecIdent.Size:
+				Str(g, "/*SYSTEM.SIZE*/0x7FFFFFFF")
+			| SpecIdent.Bit:
+				Str(g, "/*SYSTEM.BIT*/o7.assert(false)")
+			| SpecIdent.Get:
+				Str(g, "/*SYSTEM.GET*/o7.assert(false)")
+			| SpecIdent.Put:
+				Str(g, "/*SYSTEM.PUT*/o7.assert(false)")
+			| SpecIdent.Copy:
+				Str(g, "/*SYSTEM.COPY*/o7.assert(false)")
 			END
 		END Predefined;
 

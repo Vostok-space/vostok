@@ -85,6 +85,7 @@ TYPE
 	Options* = RECORD(V.Base)
 		strictSemicolon*,
 		strictReturn*,
+		system*,
 		saveComments*,
 		multiErrors*,
 		cyrillic*       : BOOLEAN;
@@ -258,6 +259,7 @@ END Set;
 PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
+	d := NIL;
 	CheckAst(p, Ast.DeclarationGet(d, p.opt.provider, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
 	RETURN d
 END DeclarationGet;
@@ -266,11 +268,14 @@ PROCEDURE ExpectDecl(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	IF p.l # Scanner.Ident THEN
-		d := Ast.DeclErrorNew(ds, p.s.buf, -1, -1);
+		d := NIL;
 		AddError(p, ErrExpectIdent)
 	ELSE
 		d := DeclarationGet(ds, p);
 		Scan(p)
+	END;
+	IF d = NIL THEN
+		d := Ast.DeclErrorNew(ds, p.s.buf, -1, -1)
 	END
 	RETURN d
 END ExpectDecl;
@@ -294,7 +299,8 @@ BEGIN (*TODO*)
 	RETURN d
 END ExpectRecordExtend;
 
-PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations): Ast.Designator;
+PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations; qualident: Ast.Declaration)
+                    : Ast.Designator;
 VAR des: Ast.Designator;
 	decl, var: Ast.Declaration;
 	prev, sel: Ast.Selector;
@@ -312,8 +318,12 @@ VAR des: Ast.Designator;
 		prev := sel
 	END SetSel;
 BEGIN
-	ASSERT(p.l = Scanner.Ident);
-	decl := Qualident(p, ds);
+	IF qualident = NIL THEN
+		ASSERT(p.l = Scanner.Ident);
+		decl := Qualident(p, ds)
+	ELSE
+		decl := qualident
+	END;
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
 		IF (decl IS Ast.Var) OR (decl IS Ast.Const) THEN
@@ -407,7 +417,10 @@ BEGIN
 		par := NIL;
 		context := Access(fp);
 		IF e.designator.decl IS Ast.PredefinedProcedure THEN
-			INCL(context, Ast.ParamOfPredefined)
+			INCL(context, Ast.ParamOfPredefined);
+			IF e.designator.decl.id = SpecIdent.Adr THEN
+				INCL(context, Ast.ParamForAddress)
+			END
 		END;
 		IF e.designator.type.type = NIL THEN
 			INCL(context, Ast.ParamOutReturnable)
@@ -438,20 +451,26 @@ PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations; context: SET): Ast.Express
 VAR e: Ast.Expression;
 
 	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; context: SET; VAR e: Ast.Expression);
-	VAR des: Ast.Designator;
+	VAR des: Ast.Designator; decl: Ast.Declaration; et: Ast.ExprType;
 	BEGIN
-		des := Designator(p, ds);
-		IF p.callId # SpecIdent.Len THEN
-			IF 0 < p.inLoops THEN
-				INCL(context, Ast.InLoop)
-			END;
-			CheckAst(p, Ast.DesignatorUsed(des, context))
-		END;
-		IF p.l # Scanner.Brace1Open THEN
-			e := des
+		decl := Qualident(p, ds);
+		IF decl IS Ast.Type THEN
+			CheckAst(p, Ast.ExprTypeNew(et, decl(Ast.Type)));
+			e := et
 		ELSE
-			e := ExprCall(p, ds, des)
-		END
+			des := Designator(p, ds, decl);
+			IF p.callId # SpecIdent.Len THEN
+				IF 0 < p.inLoops THEN
+					INCL(context, Ast.InLoop)
+				END;
+				CheckAst(p, Ast.DesignatorUsed(des, context))
+			END;
+			IF p.l # Scanner.Brace1Open THEN
+				e := des
+			ELSE
+				e := ExprCall(p, ds, des)
+			END
+		END;
 	END Ident;
 
 	PROCEDURE Negate(VAR p: Parser; ds: Ast.Declarations): Ast.ExprNegate;
@@ -1237,7 +1256,6 @@ RETURN (l # Scanner.Ident)
      & (l # SpecIdent.While)
      & (l # SpecIdent.Case)
      & (l # SpecIdent.If)
-     & (l # SpecIdent.If)
 END NotBeginStat;
 
 PROCEDURE NotEnd(l: INTEGER): BOOLEAN;
@@ -1265,7 +1283,7 @@ VAR stats, last: Ast.Statement;
 		END;
 		emptyLines := p.s.emptyLines;
 		IF p.l = Scanner.Ident      THEN
-			des := Designator(p, ds);
+			des := Designator(p, ds, NIL);
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
 			ELSIF p.l = Scanner.Equal THEN
@@ -1413,7 +1431,8 @@ BEGIN
 		END;
 		IF ~p.err & (realOfs >= 0) THEN
 			CheckAst(p, Ast.ImportAdd(p.opt.provider, p.module, p.s.buf,
-			                          nameOfs, nameEnd, realOfs, realEnd)
+			                          nameOfs, nameEnd, realOfs, realEnd,
+			                          p.opt.system)
 			)
 		ELSIF p.err THEN
 			p.err := FALSE;
@@ -1509,6 +1528,7 @@ BEGIN
 
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn    := TRUE;
+	opt.system          := FALSE;
 	opt.saveComments    := TRUE;
 	opt.multiErrors     := TRUE;
 	opt.cyrillic        := FALSE;

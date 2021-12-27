@@ -71,6 +71,7 @@ CONST
 	ErrCallExcessParam*             = -35;
 	ErrCallIncompatibleParamType*   = -36;
 	ErrCallExpectVarParam*          = -37;
+	ErrCallExpectAddressableParam*  = -112;(* TODO *)
 	ErrCallParamsNotEnough*         = -38;
 	ErrCallVarPointerTypeNotSame*   = -39;
 	ErrCaseExprNotIntOrChar*        = -40;
@@ -149,7 +150,7 @@ CONST
 	ErrExpectProcNameWithoutParams* = -105;
 	                                (*-106-110*)
 	ErrParamOutInFunc*              = -111;
-
+	                                (*-112*)
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -157,8 +158,9 @@ CONST
 
 	ParamOfPredefined*  = 2;
 	ParamOutReturnable* = 3;
-	InLoop*             = 4;
-	InBranch*           = 5;
+	ParamForAddress*    = 4;
+	InLoop*             = 5;
+	InBranch*           = 6;
 
 	NoId*                 =-1;
 	IdInteger*            = 0;
@@ -172,6 +174,11 @@ CONST
 	IdLongSet*            = 8;
 	IdPointer*            = 9;
 	PredefinedTypesCount* = 10;
+
+	IdVarAny*             = 17;(*TODO*)
+	IdBasic*              = 18;
+	IdAny*                = 19;
+	IdTypeAny*            = 20;
 
 	IdArray*            = 10;
 	IdRecord*           = 11;
@@ -189,6 +196,7 @@ CONST
 	IdCall*             = 25;
 	IdBraces*           = 26;
 	IdIsExtension*      = 27;
+	IdExprType*         = 28;
 
 	IdError*            = 31;
 
@@ -216,6 +224,7 @@ CONST
 	Structures* = {IdRecord, IdArray};
 	ProcTypes*  = {IdProcType, IdFuncType};
 	Pointers*   = {IdPointer} + ProcTypes;
+	BasicTypes* = Numbers + Sets + Pointers + {IdBoolean, IdChar};
 	DeclarableTypes* = Structures + Pointers;
 
 	(* в RExpression.properties для учёта того, что сравнение с NIL не может
@@ -555,6 +564,9 @@ TYPE
 		expr*: Expression (* Factor or ExprTerm *)
 	END;
 
+	ExprType* = POINTER TO RECORD(RExpression)
+	END;
+
 	Parameter* = POINTER TO RParameter;
 	RParameter = RECORD(Node)
 		expr*: Expression;
@@ -636,6 +648,8 @@ VAR
 
 	values: Factor;
 	needTags: NeedTagList;
+
+	system: Module;
 
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
@@ -875,6 +889,7 @@ END ModuleEnd;
 PROCEDURE ModuleReopen*(m: Module);
 BEGIN
 	ASSERT(m.fixed);
+	ASSERT(m # system);
 	m.fixed := FALSE
 END ModuleReopen;
 
@@ -891,17 +906,17 @@ BEGIN
 END ImportEnd;
 
 PROCEDURE ImportAdd*(prov: Provider; m: Module; buf: ARRAY OF CHAR;
-                     nameOfs, nameEnd, realOfs, realEnd: INTEGER): INTEGER;
+                     nameOfs, nameEnd, realOfs, realEnd: INTEGER;
+                     allowSystem: BOOLEAN): INTEGER;
 VAR imp: Import;
 	i: Declaration;
-	err: INTEGER;
+	err, ofs: INTEGER;
+	name: ARRAY TranLim.LenName + 1 OF CHAR;
 
-	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module;
-	               buf: ARRAY OF CHAR; realOfs, realEnd: INTEGER): INTEGER;
-	VAR err, i: INTEGER; m: Module; name: ARRAY TranLim.LenName + 1 OF CHAR;
+	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module; name: ARRAY OF CHAR): INTEGER;
+	VAR err, i: INTEGER; m: Module;
 	BEGIN
 		i := 0;
-		ASSERT(Chars0X.CopyChars(name, i, buf, realOfs, realEnd));
 		res := GetModuleByName(prov, host, name);
 		IF res = NIL THEN
 			m := ModuleNew(name);
@@ -949,7 +964,14 @@ BEGIN
 			IF m.import = NIL THEN
 				m.import := imp
 			END;
-			err := Load(imp.module, prov, m, buf, realOfs, realEnd)
+			ofs := 0;
+			ASSERT(Chars0X.CopyChars(name, ofs, buf, realOfs, realEnd));
+			IF allowSystem & (name = "SYSTEM") THEN
+				imp.module := system.bag;
+				err := ErrNo
+			ELSE
+				err := Load(imp.module, prov, m, name)
+			END
 		END
 	END
 	RETURN err
@@ -1180,7 +1202,7 @@ PROCEDURE TurnElse*(ds: Declarations);
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var; vs: VarState;
 	BEGIN
-		WHILE (d # NIL) & (d IS Var) DO
+		WHILE (d # NIL) & (d.id = IdVar) DO
 			v := d(Var);
 			ASSERT(v.state.root.if = v.state);
 			vs := VarStateNew(v.state.root);
@@ -1191,7 +1213,7 @@ PROCEDURE TurnElse*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds IS Procedure THEN
+	IF ds.id = IdProc THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
 	END
@@ -1200,13 +1222,13 @@ END TurnElse;
 PROCEDURE TurnFail*(ds: Declarations);
 	PROCEDURE Handle(d: Declaration);
 	BEGIN
-		WHILE (d # NIL) & (d IS Var) DO
+		WHILE (d # NIL) & (d.id = IdVar) DO
 			INCL(d(Var).state.inited, InitedFail);
 			d := d.next
 		END
 	END Handle;
 BEGIN
-	IF ds IS Procedure THEN
+	IF ds.id = IdProc THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
 	END
@@ -1215,13 +1237,13 @@ END TurnFail;
 PROCEDURE BackFromBranch*(ds: Declarations);
 	PROCEDURE Handle(d: Declaration);
 	BEGIN
-		WHILE (d # NIL) & (d IS Var) DO
+		WHILE (d # NIL) & (d.id = IdVar) DO
 			VarStateUp(d(Var).state);
 			d := d.next
 		END
 	END Handle;
 BEGIN
-	IF ds IS Procedure THEN
+	IF ds.id = IdProc THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
 	END
@@ -1687,14 +1709,14 @@ BEGIN
 	RETURN d
 END DeclErrorNew;
 
-PROCEDURE DeclarationGet*(VAR d: Declaration; prov: Provider; ds: Declarations;
-                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+PROCEDURE RegularDeclGet(VAR d: Declaration; prov: Provider; ds: Declarations;
+                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
 		IF (ds.module # NIL) & ds.module.m.script THEN
-			err := ImportAdd(prov, ds.module.m, buf, begin, end, begin, end);
+			err := ImportAdd(prov, ds.module.m, buf, begin, end, begin, end, FALSE);
 			d := ds.end
 		ELSE
 			err := ErrNo
@@ -1711,6 +1733,21 @@ BEGIN
 		d(Const).finished := TRUE
 	ELSE
 		err := ErrNo
+	END
+	RETURN err
+END RegularDeclGet;
+
+PROCEDURE DeclarationGet*(VAR d: Declaration; prov: Provider; ds: Declarations;
+                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+VAR err, id: INTEGER;
+BEGIN
+	IF ds # system THEN
+		err := RegularDeclGet(d, prov, ds, buf, begin, end)
+	ELSIF SpecIdent.IsSystemProc(id, buf, begin, end) THEN
+		d := predefined[id - SpecIdent.PredefinedFirst];
+		err := ErrNo
+	ELSE
+		err := ErrDeclarationNotFound
 	END
 	RETURN err
 END DeclarationGet;
@@ -1876,7 +1913,7 @@ PROCEDURE StringUsedWithType(e: ExprString; donor: Type);
 BEGIN
 	IF donor.id = IdArray THEN
 		StringUsedAs(e, StrUsedAsArray)
-	ELSE ASSERT(donor.id = IdChar);
+	ELSE ASSERT(donor.id IN {IdChar, IdBasic});
 		StringUsedAs(e, StrUsedAsChar)
 	END
 END StringUsedWithType;
@@ -2068,7 +2105,10 @@ BEGIN
 	IF d.decl IS Var THEN
 		v := d.decl(Var);
 
-		IF (ParamOut IN context) & ({ParamOfPredefined, ParamIn} + context # context) THEN
+		IF (ParamForAddress IN context) & (v.state.inited * {InitedValue, InitedCheck} = {}) THEN
+			v.state.inited := v.state.inited - {InitedNo} + {InitedValue(*TODO remove*), InitedCheck};
+			v.checkInit := TRUE
+		ELSIF (ParamOut IN context) & ({ParamOfPredefined, ParamIn} + context # context) THEN
 			IF context # (context + {ParamOutReturnable, ParamOfPredefined}) THEN
 				InVarParam(v, d.sel)
 			END;
@@ -2426,31 +2466,30 @@ VAR comp: BOOLEAN;
 BEGIN
 	distance := 0;
 	(* совместимы, если ошибка в разборе *)
-	comp := (t1 = NIL) OR (t2 = NIL);
-	IF ~comp THEN
-		comp := t1 = t2;
-		IF comp THEN
-			;
-		ELSIF (t1.id = t2.id)
-		    & (t1.id IN (Structures + Pointers))
-		THEN
-			CASE t1.id OF
-			  IdArray   : comp := ((param & (t1(Array).count = NIL))
-			                    OR (~param & (t2(Array).count = NIL)))
-			                    & CompatibleTypes(distance, t1.type, t2.type, param)
-			| IdPointer : comp := (t1.type = t2.type)
-			                   OR (t1.type = NIL) OR (t2.type = NIL) (* TODO *)
-			                   OR IsRecordExtension(distance, t1.type(Record),
-			                                                  t2.type(Record))
-			| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
-			| IdProcType, IdFuncType
-			            : comp := EqualProcTypes(t1(ProcType), t2(ProcType))
-			END
-		ELSIF t1.id IN ProcTypes THEN
-			comp := (t2.id = IdPointer) & (t2.type = NIL)
-		ELSIF t2.id IN ProcTypes THEN
-			comp := (t1.id = IdPointer) & (t1.type = NIL)
+	comp := (t1 = t2) OR (t1 = NIL) OR (t2 = NIL);
+	IF comp THEN
+		;
+	ELSIF (t1.id = t2.id)
+		& (t1.id IN (Structures + Pointers))
+	THEN
+		CASE t1.id OF
+		  IdArray   : comp := ((param & (t1(Array).count = NIL))
+			                OR (~param & (t2(Array).count = NIL)))
+			                & CompatibleTypes(distance, t1.type, t2.type, param)
+		| IdPointer : comp := (t1.type = t2.type)
+			               OR (t1.type = NIL) OR (t2.type = NIL) (* TODO *)
+			               OR IsRecordExtension(distance, t1.type(Record),
+			                                              t2.type(Record))
+		| IdRecord  : comp := IsRecordExtension(distance, t1(Record), t2(Record))
+		| IdProcType, IdFuncType
+			        : comp := EqualProcTypes(t1(ProcType), t2(ProcType))
 		END
+	ELSIF t1.id IN ProcTypes THEN
+		comp := (t2.id = IdPointer) & (t2.type = NIL)
+	ELSIF t2.id IN ProcTypes THEN
+		comp := (t1.id = IdPointer) & (t1.type = NIL)
+	ELSIF t1.id = IdTypeAny THEN
+		comp := TRUE
 	END
 	RETURN comp
 END CompatibleTypes;
@@ -3066,6 +3105,12 @@ BEGIN
 	RETURN err
 END ExprTermAdd;
 
+PROCEDURE ExprTypeNew*(VAR e: ExprType; t: Type): INTEGER;
+BEGIN
+	NEW(e); ExprInit(e, IdExprType, t)
+	RETURN ErrNo
+END ExprTypeNew;
+
 PROCEDURE ExprCallCreate(VAR e: ExprCall; des: Designator; func: BOOLEAN): INTEGER;
 VAR err: INTEGER;
 	t: Type;
@@ -3215,15 +3260,23 @@ BEGIN
 	RETURN err
 END ProcedureEnd;
 
+PROCEDURE IsExprChar*(e: Expression): BOOLEAN;
+BEGIN
+	RETURN (e IS ExprString) & e(ExprString).asChar
+END IsExprChar;
+
 PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
                         VAR currentFormalParam: FormalParam): INTEGER;
 VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 
-	PROCEDURE TypeVariation(call: ExprCall; tp: Type; fp: FormalParam): BOOLEAN;
-	VAR comp: BOOLEAN; id: INTEGER;
+	PROCEDURE TypeVariation(call: ExprCall; e: Expression; fp: FormalParam): BOOLEAN;
+	VAR comp: BOOLEAN; id: INTEGER; tp: Type;
 	BEGIN
+		tp := e.type;
 		comp := (call.designator.decl IS PredefinedProcedure) OR (tp.id = IdError);
-		IF comp THEN
+		IF comp
+		& ~((fp.type.id = IdBasic) & ((tp.id IN BasicTypes) OR IsExprChar(e)))
+		THEN
 			id := call.designator.decl.id;
 			IF id = SpecIdent.New THEN
 				comp := tp.id = IdPointer
@@ -3235,7 +3288,7 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 			ELSIF id = SpecIdent.Ord THEN
 				comp := tp.id IN (Sets + {IdChar, IdBoolean})
 			ELSE
-				comp := FALSE
+				comp := id = SpecIdent.Adr
 			END
 		END
 		RETURN comp
@@ -3271,12 +3324,11 @@ BEGIN
 		 &     ((ParamOut IN fp.access)
 		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
 		       )
-		 & ~TypeVariation(call, e.type, fp)
+		 & ~TypeVariation(call, e, fp)
 		THEN
 			err := ErrCallIncompatibleParamType
 		ELSIF ParamOut IN fp.access THEN
-			IF ~(IsVar(e) & IsChangeable(e(Designator)))
-			THEN
+			IF ~(IsVar(e) & IsChangeable(e(Designator))) THEN
 				err := ErrCallExpectVarParam
 			ELSIF (e.type # NIL) & (e.type.id = IdPointer)
 			    & (e.type # fp.type)
@@ -3290,6 +3342,8 @@ BEGIN
 		    & (e.value # NIL) & ~Limits.InByteRange(e.value(ExprInteger).int)
 		THEN
 			err := ErrValueOutOfRangeOfByte
+		ELSIF (call.designator.decl.id = SpecIdent.Adr) & ~IsVar(e) THEN
+			err := ErrCallExpectAddressable
 		END;
 		IF (fp.next # NIL)
 		 & (fp.next IS FormalParam)
@@ -3428,6 +3482,8 @@ VAR err: INTEGER;
 				err := ErrValueOutOfRangeOfChar
 			END;
 			call.value := v
+		| SpecIdent.Size, SpecIdent.Bit, SpecIdent.Adr:
+			;
 		END
 	END CalcPredefined;
 BEGIN
@@ -3993,7 +4049,12 @@ END PredefinedProcNew;
 
 PROCEDURE PredefinedDeclarationsInit;
 VAR tp: ProcType;
-	typeInt, typeReal: Type;
+	typeInt, typeReal, typeAny, typeVarAny, typeBasic, typeTypeAny: Type;
+
+	PROCEDURE SpecTypeNew(VAR td: Type; t: INTEGER);
+	BEGIN
+		NEW(td); TypeInit(td, t)
+	END SpecTypeNew;
 
 	PROCEDURE TypeNew(s, t: INTEGER);
 	VAR td: Type;
@@ -4021,8 +4082,11 @@ BEGIN
 	TypeNew(SpecIdent.Boolean, IdBoolean);
 	TypeNew(SpecIdent.Real, IdReal);
 	TypeNew(SpecIdent.Real32, IdReal32);
-	NEW(types[IdPointer]); NodeInit(types[IdPointer]^, IdPointer);
-	DeclInit(types[IdPointer], NIL);
+	SpecTypeNew(types[IdPointer], IdPointer);
+	SpecTypeNew(typeAny, IdAny);
+	SpecTypeNew(typeBasic, IdBasic);
+	SpecTypeNew(typeVarAny, IdVarAny);
+	SpecTypeNew(typeTypeAny, IdTypeAny);
 
 	typeInt := TypeGet(IdInteger);
 	tp := FuncNew(SpecIdent.Abs, IdInteger);
@@ -4085,7 +4149,35 @@ BEGIN
 
 	tp := ProcNew(SpecIdent.Unpk, NoId);
 	ParamAddPredefined(tp, typeReal, {ParamIn, ParamOut});
-	ParamAddPredefined(tp, typeInt, {ParamOut})
+	ParamAddPredefined(tp, typeInt, {ParamOut});
+
+
+	system := ModuleNew("SYSTEM");
+	tp := ProcNew(SpecIdent.Adr, IdInteger);
+	ParamAddPredefined(tp, typeVarAny, {ParamIn});
+
+	tp := ProcNew(SpecIdent.Size, IdInteger);
+	ParamAddPredefined(tp, typeTypeAny, {ParamIn});
+
+	tp := ProcNew(SpecIdent.Bit, IdBoolean);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+
+	tp := ProcNew(SpecIdent.Get, NoId);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeBasic, {ParamOut});
+
+	tp := ProcNew(SpecIdent.Put, NoId);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeBasic, {ParamIn});
+
+	tp := ProcNew(SpecIdent.Copy, NoId);
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+	ParamAddPredefined(tp, typeInt, {ParamIn});
+
+	system.fixed := TRUE;
+	system.spec  := TRUE
 END PredefinedDeclarationsInit;
 
 PROCEDURE HasError*(m: Module): BOOLEAN;

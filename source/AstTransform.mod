@@ -478,7 +478,7 @@ MODULE AstTransform;
 
   BEGIN
     CASE e.id OF
-      Ast.IdInteger .. Ast.IdReal32, Ast.IdPointer, Ast.IdString
+      Ast.IdInteger .. Ast.IdReal32, Ast.IdPointer, Ast.IdString, Ast.IdExprType
                        : (* *)
     | Ast.IdSet, Ast.IdLongSet
                        : Set(e(Ast.ExprSet), o)
@@ -773,7 +773,7 @@ MODULE AstTransform;
   BEGIN
     imp := m.import;
     WHILE (imp # NIL) & (imp IS Ast.Import) DO
-      IF imp.module.m.ext # o.mark THEN
+      IF (imp.module.m.ext # o.mark) & ~imp.module.m.spec THEN
         imp.module.m.ext := o.mark;
         Ast.ModuleReopen(imp.module.m);
         Transform(imp.module.m, o)

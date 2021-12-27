@@ -114,7 +114,9 @@ BEGIN
 	| AST.ErrCallIncompatibleParamType:
 		C("Incompatible parameter's type")
 	| AST.ErrCallExpectVarParam:
-		C("Parameter must be variable")
+		C("The parameter must be variable")
+	| AST.ErrCallExpectAddressableParam:
+		C("The parameter must be addressable")
 	| AST.ErrCallVarPointerTypeNotSame:
 		C("For variable parameter - pointer must used argument of same type")
 	| AST.ErrCallParamsNotEnough:

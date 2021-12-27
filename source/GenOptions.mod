@@ -46,6 +46,7 @@ MODULE GenOptions;
 
     PROCEDURE Default*(VAR o: R);
     BEGIN
+      V.Init(o);
       o.checkIndex    := TRUE;
       o.checkArith    := TRUE;
       o.caseAbort     := TRUE;

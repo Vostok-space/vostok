@@ -492,6 +492,17 @@ BEGIN
 	Str(g, r)
 END ExpressionBraced;
 
+PROCEDURE TwoExprBraced(VAR g: Generator;
+                        l: ARRAY OF CHAR; e1: Ast.Expression; m: ARRAY OF CHAR;
+                        e2: Ast.Expression; r: ARRAY OF CHAR; set: SET);
+BEGIN
+	Str(g, l);
+	expression(g, e1, set);
+	Str(g, m);
+	expression(g, e2, set);
+	Str(g, r)
+END TwoExprBraced;
+
 PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 
 	PROCEDURE Call(VAR g: Generator; call: Ast.ExprCall; set: SET);
@@ -672,6 +683,28 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				END;
 				Text.Data(g, ");}", 0, 1 + ORD(e1.sel # NIL) * 2)
 			END Unpack;
+
+			PROCEDURE Size(VAR g: Generator; t: Ast.Type);
+			BEGIN
+				Chr(g, "(");
+				WHILE t.id = Ast.IdArray DO
+					Int(g, t(Ast.Array).count.value(Ast.ExprInteger).int);
+					Str(g, " * ");
+					t := t.type
+				END;
+				CASE t.id OF
+				  Ast.IdByte, Ast.IdChar, Ast.IdBoolean:
+					Str(g, "1")
+				| Ast.IdInteger, Ast.IdReal32, Ast.IdSet,
+				  Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
+					Str(g, "4")
+				| Ast.IdLongInt, Ast.IdReal, Ast.IdLongSet:
+					Str(g, "8")
+				| Ast.IdRecord:
+					Str(g, "0x7FFFFFFF")
+				END;
+				Chr(g, ")");
+			END Size;
 		BEGIN
 			e1 := call.params.expr;
 			p2 := call.params.next;
@@ -728,6 +761,20 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				Pack(g, e1(Ast.Designator), p2.expr)
 			| SpecIdent.Unpk:
 				Unpack(g, e1(Ast.Designator), p2.expr(Ast.Designator))
+
+			(* SYSTEM *)
+			| SpecIdent.Adr:
+				Str(g, "/*SYSTEM.ADR*/0")
+			| SpecIdent.Size:
+				Size(g, e1.type)
+			| SpecIdent.Bit:
+				TwoExprBraced(g, "O7.bit(", e1, ", ", p2.expr, ")", {});
+			| SpecIdent.Get:
+				Str(g, "/*SYSTEM.GET*/O7.asrt(false)")
+			| SpecIdent.Put:
+				Str(g, "/*SYSTEM.PUT*/O7.asrt(false)")
+			| SpecIdent.Copy:
+				Str(g, "/*SYSTEM.COPY*/O7.asrt(false)")
 			END
 		END Predefined;
 
@@ -2216,11 +2263,11 @@ BEGIN
 
 	d := ds.start;
 
-	WHILE (d # NIL) & (d IS Ast.Import) DO
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
 		d := d.next
 	END;
 
-	WHILE (d # NIL) & (d IS Ast.Const) DO
+	WHILE (d # NIL) & (d.id = Ast.IdConst) DO
 		Const(g, d(Ast.Const), inModule);
 		d := d.next
 	END;
@@ -2233,7 +2280,7 @@ BEGIN
 		END;
 		LnIfWrote(g);
 
-		WHILE (d # NIL) & (d IS Ast.Var) DO
+		WHILE (d # NIL) & (d.id = Ast.IdVar) DO
 			Var(g, NIL, d, TRUE);
 			d := d.next
 		END
@@ -2241,8 +2288,8 @@ BEGIN
 		d := ds.vars;
 
 		prev := NIL;
-		WHILE (d # NIL) & (d IS Ast.Var) DO
-			Var(g, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var));
+		WHILE (d # NIL) & (d.id = Ast.IdVar) DO
+			Var(g, prev, d, (d.next = NIL) OR (d.next.id # Ast.IdVar));
 			prev := d;
 			d := d.next
 		END;
@@ -2289,8 +2336,10 @@ VAR d: Ast.Declaration;
 	END Import;
 BEGIN
 	d := m.import;
-	WHILE (d # NIL) & (d IS Ast.Import) DO
-		Import(g, d);
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
+		IF ~d.module.m.spec THEN
+			Import(g, d)
+		END;
 		d := d.next
 	END;
 	Ln(g)

@@ -246,21 +246,15 @@ BEGIN
 	END
 END GlobalName;
 
-PROCEDURE Import(VAR g: Generator; decl: Ast.Declaration);
-VAR name: Strings.String;
-    i: INTEGER;
+PROCEDURE Include(VAR g: Generator; name: Strings.String);
+VAR i: INTEGER;
 BEGIN
 	Str(g, "#include "); Chr(g, Utf8.DQuote);
-	IF decl IS Ast.Module THEN
-		name := decl.name
-	ELSE ASSERT(decl IS Ast.Import);
-		name := decl.module.m.name
-	END;
 	Text.String(g, name);
 	i := ORD(~SpecIdentChecker.IsSpecModuleName(name) & ~SpecIdentChecker.IsSpecCHeaderName(name));
 	Text.Data(g, "_.h",  i, 3 - i);
 	StrLn(g, Utf8.DQuote)
-END Import;
+END Include;
 
 PROCEDURE Factor(VAR g: Generator; expr: Ast.Expression);
 BEGIN
@@ -738,6 +732,55 @@ BEGIN
 	Chr(g, ")")
 END CastedPointer;
 
+PROCEDURE Qualifier(VAR g: Generator; typ: Ast.Type);
+BEGIN
+	CASE typ.id OF
+	  Ast.IdInteger:
+		Str(g, "o7_int_t")
+	| Ast.IdLongInt:
+		Str(g, "o7_long_t")
+	| Ast.IdSet:
+		Str(g, "o7_set_t")
+	| Ast.IdLongSet:
+		Str(g, "o7_set64_t")
+	| Ast.IdBoolean:
+		IF (g.opt.std >= IsoC99)
+		 & (g.opt.varInit # GenOptions.VarInitUndefined)
+		THEN	Str(g, "bool")
+		ELSE	Str(g, "o7_bool")
+		END
+	| Ast.IdByte:
+		Str(g, "char unsigned")
+	| Ast.IdChar:
+		Str(g, "o7_char")
+	| Ast.IdReal:
+		Str(g, "double")
+	| Ast.IdReal32:
+		Str(g, "float")
+	| Ast.IdRecord, Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
+		GlobalName(g, typ)
+	END
+END Qualifier;
+
+PROCEDURE ExprBraced(VAR g: Generator;
+                     l: ARRAY OF CHAR; e: Ast.Expression; r: ARRAY OF CHAR);
+BEGIN
+	Str(g, l);
+	expression(g, e);
+	Str(g, r)
+END ExprBraced;
+
+PROCEDURE TwoExprBraced(VAR g: Generator;
+                       l: ARRAY OF CHAR; e1: Ast.Expression;
+                       m: ARRAY OF CHAR; e2: Ast.Expression; r: ARRAY OF CHAR);
+BEGIN
+	Str(g, l);
+	expression(g, e1);
+	Str(g, m);
+	expression(g, e2);
+	Str(g, r)
+END TwoExprBraced;
+
 PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 
 	PROCEDURE Call(VAR g: Generator; call: Ast.ExprCall);
@@ -965,6 +1008,31 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 					Chr(g, ")")
 				END
 			END Assert;
+
+			PROCEDURE SystemPut(VAR g: Generator; addr, val: Ast.Expression);
+			BEGIN
+				CASE val.type.id OF
+				  Ast.IdByte, Ast.IdChar, Ast.IdArray:
+					Str(g, "o7_put_char(")
+				| Ast.IdBoolean:
+					Str(g, "o7_put_bool(")
+				| Ast.IdInteger, Ast.IdSet:
+					Str(g, "o7_put_uint(")
+				| Ast.IdLongInt, Ast.IdLongSet:
+					Str(g, "o7_put_ulong(")
+				| Ast.IdReal:
+					Str(g, "o7_put_double(")
+				| Ast.IdReal32:
+					Str(g, "o7_put_float(")
+				END;
+				Expression(g, addr);
+				IF val.type.id = Ast.IdArray THEN
+					ExprBraced(g, ", ", val, ")")
+				ELSE
+					ExprBraced(g, ", ", val, ")")
+				END
+			END SystemPut;
+
 		BEGIN
 			e1 := call.params.expr;
 			p2 := call.params.next;
@@ -1044,6 +1112,22 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				Expression(g, e1);
 				Str(g, ", &");
 				Expression(g, p2.expr);
+				Chr(g, ")")
+
+			(* SYSTEM *)
+			| SpecIdent.Adr:
+				ExprBraced(g, "O7_ADR(", e1, ")")
+			| SpecIdent.Size:
+				ExprBraced(g, "O7_SIZE(", e1, ")")
+			| SpecIdent.Bit:
+				TwoExprBraced(g, "o7_bit(", e1, ", ", p2.expr, ")")
+			| SpecIdent.Get:
+				TwoExprBraced(g, "O7_GET(", e1, ", &", p2.expr, ")")
+			| SpecIdent.Put:
+				SystemPut(g, e1, p2.expr)
+			| SpecIdent.Copy:
+				TwoExprBraced(g, "o7_copy(", e1, ", ", p2.expr, ", ");
+				Expression(g, p2.next.expr);
 				Chr(g, ")")
 			END
 		END Predefined;
@@ -1796,38 +1880,10 @@ BEGIN
 		Str(g, "NULL")
 	| Ast.IdIsExtension:
 		IsExtension(g, expr(Ast.ExprIsExtension))
+	| Ast.IdExprType:
+		Qualifier(g, expr.type)
 	END
 END Expression;
-
-PROCEDURE Qualifier(VAR g: Generator; typ: Ast.Type);
-BEGIN
-	CASE typ.id OF
-	  Ast.IdInteger:
-		Str(g, "o7_int_t")
-	| Ast.IdLongInt:
-		Str(g, "o7_long_t")
-	| Ast.IdSet:
-		Str(g, "o7_set_t")
-	| Ast.IdLongSet:
-		Str(g, "o7_set64_t")
-	| Ast.IdBoolean:
-		IF (g.opt.std >= IsoC99)
-		 & (g.opt.varInit # GenOptions.VarInitUndefined)
-		THEN	Str(g, "bool")
-		ELSE	Str(g, "o7_bool")
-		END
-	| Ast.IdByte:
-		Str(g, "char unsigned")
-	| Ast.IdChar:
-		Str(g, "o7_char")
-	| Ast.IdReal:
-		Str(g, "double")
-	| Ast.IdReal32:
-		Str(g, "float")
-	| Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
-		GlobalName(g, typ)
-	END
-END Qualifier;
 
 PROCEDURE Invert(VAR g: Generator);
 BEGIN
@@ -3204,13 +3260,15 @@ BEGIN
 	d := ds.start;
 	inModule := ds IS Ast.Module;
 	ASSERT((d = NIL) OR ~(d IS Ast.Module));
-	WHILE (d # NIL) & (d IS Ast.Import) DO
-		Import(out.g[ORD(~out.opt.main)], d);
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
+		IF ~d.module.m.spec THEN
+			Include(out.g[ORD(~out.opt.main)], d.module.m.name)
+		END;
 		d := d.next
 	END;
 	LnIfWrote(out);
 
-	WHILE (d # NIL) & (d IS Ast.Const) DO
+	WHILE (d # NIL) & (d.id = Ast.IdConst) DO
 		Const(out.g[ORD(d.mark & ~out.opt.main)], d(Ast.Const));
 		d := d.next
 	END;
@@ -3223,7 +3281,7 @@ BEGIN
 		END;
 		LnIfWrote(out);
 
-		WHILE (d # NIL) & (d IS Ast.Var) DO
+		WHILE (d # NIL) & (d.id = Ast.IdVar) DO
 			Var(out, NIL, d, TRUE);
 			d := d.next
 		END
@@ -3231,8 +3289,8 @@ BEGIN
 		d := ds.vars;
 
 		prev := NIL;
-		WHILE (d # NIL) & (d IS Ast.Var) DO
-			Var(out, prev, d, (d.next = NIL) OR ~(d.next IS Ast.Var));
+		WHILE (d # NIL) & (d.id = Ast.IdVar) DO
+			Var(out, prev, d, (d.next = NIL) OR (d.next.id # Ast.IdVar));
 			prev := d;
 			d := d.next
 		END;
@@ -3339,7 +3397,7 @@ VAR imp: Ast.Declaration;
 
 	PROCEDURE Consts(c: Ast.Declaration);
 	BEGIN
-		WHILE (c # NIL) & (c IS Ast.Const) DO
+		WHILE (c # NIL) & (c.id = Ast.IdConst) DO
 			IF c.mark THEN
 				MarkExpression(c(Ast.Const).expr)
 			END;
@@ -3361,7 +3419,7 @@ VAR imp: Ast.Declaration;
 	PROCEDURE Procs(p: Ast.Declaration);
 	VAR fp: Ast.Declaration;
 	BEGIN
-		WHILE (p # NIL) & (p IS Ast.Procedure) DO
+		WHILE (p # NIL) & (p.id = Ast.IdProc) DO
 			IF p.mark THEN
 				fp := p(Ast.Procedure).header.params;
 				WHILE fp # NIL DO
@@ -3375,7 +3433,7 @@ VAR imp: Ast.Declaration;
 
 BEGIN
 	imp := m.import;
-	WHILE (imp # NIL) & (imp IS Ast.Import) DO
+	WHILE (imp # NIL) & (imp.id = Ast.IdImport) DO
 		MarkUsedInMarked(imp.module.m);
 		imp := imp.next
 	END;
@@ -3388,14 +3446,15 @@ PROCEDURE ImportInitDone(VAR g: Generator; imp: Ast.Declaration;
                          initDone: ARRAY OF CHAR);
 BEGIN
 	IF imp # NIL THEN
-		ASSERT(imp IS Ast.Import);
+		ASSERT(imp.id = Ast.IdImport);
 
 		REPEAT
-			Name(g, imp.module.m);
-			StrLn(g, initDone);
-
+			IF ~imp.module.m.spec THEN
+				Name(g, imp.module.m);
+				StrLn(g, initDone);
+			END;
 			imp := imp.next
-		UNTIL (imp = NIL) OR ~(imp IS Ast.Import);
+		UNTIL (imp = NIL) OR ~(imp.id = Ast.IdImport);
 		Ln(g)
 	END
 END ImportInitDone;
@@ -3622,7 +3681,7 @@ BEGIN
 
 	IF ~opt.main THEN
 		HeaderGuard(out.g[Interface]);
-		Import(out.g[Implementation], module)
+		Include(out.g[Implementation], module.name)
 	END;
 
 	Declarations(out, module);

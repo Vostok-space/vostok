@@ -320,7 +320,7 @@ BEGIN
 	ret := ErrNo;
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used THEN
+		IF ~imp.module.m.used & ~imp.module.m.spec THEN
 			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp, usecc)
 		END;
 		imp := imp.next
@@ -680,7 +680,7 @@ BEGIN
 	ret := ErrNo;
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used THEN
+		IF ~imp.module.m.used & ~imp.module.m.spec THEN
 			ret := GenerateJava(imp.module.m, NIL, prov, opt,
 			                    dir, dirLen, javaDirs, javac, usejavac)
 		END;
@@ -902,7 +902,7 @@ BEGIN
 	ret := ErrNo;
 	imp := module.import;
 	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used THEN
+		IF ~imp.module.m.used & ~imp.module.m.spec THEN
 			ret := GenerateJs1(imp.module.m, NIL, outSingle, opt, dir, dirLen, jsDirs)
 		END;
 		imp := imp.next
@@ -1100,7 +1100,7 @@ BEGIN
 	IF (dir # "") & (dir # "-") THEN
 		imp := module.import;
 		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-			IF ~imp.module.m.used THEN
+			IF ~imp.module.m.used & ~imp.module.m.spec THEN
 				ret := GenerateOberon(imp.module.m, opt, dir, dirLen)
 			END;
 			imp := imp.next

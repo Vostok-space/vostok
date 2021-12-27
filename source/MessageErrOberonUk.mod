@@ -108,6 +108,8 @@ BEGIN
 		C("Несумісний тип фактичного параметру")
 	| AST.ErrCallExpectVarParam:
 		C("Фактичний параметр повинен бути змінним")
+	| AST.ErrCallExpectAddressableParam:
+		C("Фактичний параметр має бути адресованим")
 	| AST.ErrCallVarPointerTypeNotSame:
 		C("Для змінного параметру - покажчика повинен використовуватись аргумент того ж типу")
 	| AST.ErrCallParamsNotEnough:

@@ -439,6 +439,94 @@ typedef struct {
 #endif
 
 O7_CONST_INLINE
+o7_int_t o7_ptr_to_int(void *ptr) {
+	o7_uint_t addr4;
+	o7_ulong_t addr8;
+
+	if (sizeof(ptr) == sizeof(addr4)) {
+		memcpy(&addr4, &ptr, sizeof(addr4));
+	} else if (sizeof(ptr) == sizeof(addr8)) {
+		memcpy(&addr8, &ptr, sizeof(addr8));
+		o7_assert(addr8 <= O7_UINT_MAX);
+		addr4 = addr8;
+	} else {
+		abort();
+	}
+	return (o7_int_t)addr4;
+}
+
+O7_CONST_INLINE
+void* o7_int_to_ptr(o7_int_t addr) {
+	o7_uint_t addr4;
+	char unsigned *ptr;
+
+	addr4 = (o7_uint_t)addr;
+	memcpy(&ptr, &addr, sizeof(addr4));
+	return ptr;
+}
+
+#define O7_ADR(var) o7_ptr_to_int((void *)&(var))
+
+O7_CONST_INLINE
+o7_int_t o7_size_to_int(size_t size) {
+	/* TODO static assert */
+	o7_assert(size <= O7_INT_MAX);
+	return (o7_int_t)size;
+}
+
+#define O7_SIZE(type) o7_size_to_int(sizeof(type))
+
+O7_ALWAYS_INLINE
+o7_cbool o7_bit(o7_int_t addr, o7_int_t bit) {
+	o7_uint_t addr4;
+	char unsigned *ptr;
+	o7_assert((0 <= bit) && (bit < 32));
+
+	addr4 = (o7_uint_t)addr;
+	memcpy(&ptr, &addr, sizeof(addr4));
+	return (ptr[bit / 8] & (1u << (bit % 8))) != 0;
+}
+
+#define O7_GET(src, dst) memcpy((void *)dst, o7_int_to_ptr(src), sizeof(*(dst)))
+
+O7_ALWAYS_INLINE
+void o7_put_bool(o7_int_t addr, o7_bool val) {
+	*(o7_bool *)o7_int_to_ptr(addr) = val;
+}
+
+O7_ALWAYS_INLINE
+void o7_put_char(o7_int_t addr, o7_char val) {
+	*(o7_char *)o7_int_to_ptr(addr) = val;
+}
+
+O7_ALWAYS_INLINE
+void o7_put_uint(o7_int_t addr, o7_uint_t val) {
+	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+}
+
+O7_ALWAYS_INLINE
+void o7_put_ulong(o7_int_t addr, o7_ulong_t val) {
+	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+}
+
+O7_ALWAYS_INLINE
+void o7_put_double(o7_int_t addr, double val) {
+	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+}
+
+O7_ALWAYS_INLINE
+void o7_put_float(o7_int_t addr, float val) {
+	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+}
+
+O7_ALWAYS_INLINE
+void o7_copy(o7_int_t src, o7_int_t dst, o7_int_t n) {
+	o7_assert(0 <= n && n <= (size_t)-1 / sizeof(o7_int_t));
+	memmove(o7_int_to_ptr(dst), o7_int_to_ptr(src), (size_t)n * sizeof(o7_int_t));
+}
+
+
+O7_CONST_INLINE
 void* o7_ref(void *ptr) {
 	if (O7_CHECK_NIL) {
 		o7_assert(NULL != ptr);

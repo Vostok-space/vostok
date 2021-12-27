@@ -449,4 +449,9 @@ public static void init(final java.lang.String[] sargs) {
     }
 }
 
+public static boolean bit(int addr, int n) {
+    asrt(false);
+    return false;
+}
+
 }

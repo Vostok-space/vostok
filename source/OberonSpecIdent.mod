@@ -83,7 +83,18 @@ MODULE OberonSpecIdent;
     Ror*        = 224;
     Set*        = 225;
     Unpk*       = 226;
-    PredefinedLast* = 226;
+
+    (*SYSTEM*)
+    SystemFirst* = 227;
+    Adr*        = 227;
+    Size*       = 228;
+    Bit*        = 229;
+    Get*        = 230;
+    Put*        = 231;
+    Copy*       = 232;
+    SystemLast*  = 232;
+
+    PredefinedLast* = 232;
 
   PROCEDURE Eq(str, buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
   VAR i, j: INTEGER;
@@ -218,6 +229,28 @@ MODULE OberonSpecIdent;
   RETURN
     spec
   END IsPredefined;
+
+  PROCEDURE IsSystemProc*(VAR pd: INTEGER;
+                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): BOOLEAN;
+  VAR save: CHAR;
+      spec: BOOLEAN;
+  BEGIN
+    save := buf[end];
+    buf[end] := Utf8.BackSpace;
+    CASE buf[begin] OF
+     "A": spec := O(pd, "ADR", Adr, buf, begin, end)
+    |"B": spec := O(pd, "BIT", Bit, buf, begin, end)
+    |"C": spec := O(pd, "COPY", Copy, buf, begin, end)
+    |"G": spec := O(pd, "GET", Get, buf, begin, end)
+    |"P": spec := O(pd, "PUT", Put, buf, begin, end)
+    |"S": spec := O(pd, "SIZE", Size, buf, begin, end)
+    |"D" .. "F", "H" .. "O", "Q", "R", "T" .. "Z", "a" .. "z", 0C0X..0FFX:
+      spec := FALSE
+    END;
+    buf[end] := save
+  RETURN
+    spec
+  END IsSystemProc;
 
   PROCEDURE IsSpecName*(n: Strings.String): BOOLEAN;
   (* TODO *)

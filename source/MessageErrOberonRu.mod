@@ -107,7 +107,9 @@ BEGIN
 	| AST.ErrCallIncompatibleParamType:
 		C("Несовместимый тип параметра")
 	| AST.ErrCallExpectVarParam:
-		C("Параметр должен быть изменяемым значением")
+		C("Параметр должен быть изменяемым")
+	| AST.ErrCallExpectAddressableParam:
+		C("Параметр должен быть адресуемым")
 	| AST.ErrCallVarPointerTypeNotSame:
 		C("Для переменного параметра - указателя должен использоваться аргумент того же типа")
 	| AST.ErrCallParamsNotEnough:
