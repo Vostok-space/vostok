@@ -1166,6 +1166,8 @@ BEGIN
 	IF vs.else # NIL THEN
 		IF InitedFail IN vs.else.inited THEN
 			vs.inited := vs.if.inited
+		ELSIF InitedFail IN vs.if.inited THEN
+			vs.inited := vs.else.inited
 		ELSE
 			vs.inited := vs.if.inited + vs.else.inited
 		END;
