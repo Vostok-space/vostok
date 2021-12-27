@@ -3345,7 +3345,7 @@ BEGIN
 		THEN
 			err := ErrValueOutOfRangeOfByte
 		ELSIF (call.designator.decl.id = SpecIdent.Adr) & ~IsVar(e) THEN
-			err := ErrCallExpectAddressable
+			err := ErrCallExpectAddressableParam
 		END;
 		IF (fp.next # NIL)
 		 & (fp.next IS FormalParam)
