@@ -101,6 +101,7 @@ TYPE
 	Args* = RECORD(V.Base)
 		src*   : ARRAY 65536 OF CHAR;
 		srcLen*: INTEGER;
+		allowSystem*: BOOLEAN;
 		script*, toSingleFile*: BOOLEAN;
 		resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
@@ -251,6 +252,8 @@ BEGIN
 				args.modPath[i] := Utf8.Null;
 				INC(count)
 			END
+		ELSIF opt = "-allow-system" THEN
+			args.allowSystem := TRUE
 		ELSIF opt = "-c" THEN
 			IF GetParam(ret, ErrTooLongCDirs, args.cDirs, dirsOfs, arg) THEN
 				INC(dirsOfs);
@@ -389,6 +392,7 @@ BEGIN
 	args.cStd     := -1;
 	args.cPlan9   := FALSE;
 	args.obStd    := -1;
+	args.allowSystem     := FALSE;
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;

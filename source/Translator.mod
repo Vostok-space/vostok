@@ -264,6 +264,7 @@ BEGIN
 		ModulesStorage.New(p, m);
 
 		Parser.DefaultOptions(opt);
+		opt.system      := args.allowSystem;
 		opt.printError  := ErrorMessage;
 		opt.cyrillic    := args.cyrillic # Cli.CyrillicNo;
 		opt.multiErrors := args.multiErrors;

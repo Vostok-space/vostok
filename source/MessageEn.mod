@@ -85,6 +85,8 @@ S("  may require some keys locates after names of .c-files.");
 S("  For example: -cc 'g++ -I/usr/include/openbabel-2.0' ... '-lopenbabel'");
 S("-- Args - command line arguments for runned code");
 S("");
+S("-allow-system  allows unsafe platform specific pseudo module");
+S("");
 S("Generator's arguments:");
 S("-init ( noinit | undef | zero )  - kind of variables auto-initializing.");
 S("  noinit -  without initialization.");

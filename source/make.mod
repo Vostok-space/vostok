@@ -160,6 +160,7 @@ MODULE make;
    Exec.Add(code, "-infr") & Exec.Add(code, ".")
  & Exec.Add(code, "-m") & Exec.Add(code, "example")
  & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
+ & Exec.Add(code, "-allow-system")
  & Exec.Add(code, "-cyrillic")
  & AddOpts(code)
  END OstAddOpts;
