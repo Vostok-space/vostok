@@ -101,7 +101,11 @@
 #		define O7_INT_UNDEF  0
 #		define O7_LONG_UNDEF 0
 #	endif
-#	if O7_USE_SIGNALING_NAN
+#	if __GNUC__ * 100 + __GNUC_MINOR__ >= 330
+#		define O7_DBL_UNDEF (__builtin_nans (""))
+#		define O7_FLT_UNDEF (__builtin_nansf (""))
+#	elif O7_USE_SIGNALING_NAN
+#		define O7_USED_SIGNALING_NAN_BY_FUNC 1
 #		define O7_DBL_UNDEF  o7_dbl_undef()
 #		define O7_FLT_UNDEF  o7_flt_undef()
 #	else
@@ -115,6 +119,13 @@
 #	define O7_DBL_UNDEF  0.0
 #	define O7_FLT_UNDEF  0.0f
 #	define O7_BOOL_UNDEF (0>1)
+#endif
+#if !defined(__TINYC__) && !O7_USED_SIGNALING_NAN_BY_FUNC
+#	define O7_DBL_UNDEF_STATIC O7_DBL_UNDEF
+#	define O7_FLT_UNDEF_STATIC O7_FLT_UNDEF
+#else
+#	define O7_DBL_UNDEF_STATIC 0.
+#	define O7_FLT_UNDEF_STATIC 0.f
 #endif
 
 typedef char unsigned o7_char;

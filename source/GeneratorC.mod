@@ -702,13 +702,22 @@ END AssignInitValue;
 PROCEDURE VarInit(VAR g: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
 	IF (g.opt.varInit = GenOptions.VarInitNo)
-	OR (var.type.id IN {Ast.IdArray, Ast.IdRecord})
+	OR (var.type.id IN Ast.Structures)
 	OR (~record & ~var(Ast.Var).checkInit)
 	THEN
 		IF (var.type.id = Ast.IdPointer)
 		 & (g.opt.memManager = MemManagerCounter)
 		THEN
 			Str(g, " = NULL")
+		END
+	ELSIF (g.opt.varInit = GenOptions.VarInitUndefined)
+	    & Ast.IsGlobal(var)
+	    & (var.type.id IN Ast.Reals)
+	THEN
+		IF var.type.id = Ast.IdReal THEN
+			Str(g, " = O7_DBL_UNDEF_STATIC")
+		ELSE
+			Str(g, " = O7_FLT_UNDEF_STATIC")
 		END
 	ELSE
 		AssignInitValue(g, var.type)
