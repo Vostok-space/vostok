@@ -1157,6 +1157,18 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				END
 				RETURN d
 			END ArrayDeep;
+
+			PROCEDURE OpenArrayDeep(t: Ast.Type): INTEGER;
+			VAR d: INTEGER;
+			BEGIN
+				d := 0;
+				WHILE (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
+					t := t.type;
+					INC(d)
+				END
+				RETURN d
+			END OpenArrayDeep;
+
 		BEGIN
 			t := fp.type;
 			IF (t.id = Ast.IdByte) & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
@@ -1183,8 +1195,9 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 						IF (i = -1) & (p.expr IS Ast.Designator) THEN
 							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
 							   - ArrayDeep(fp.type);
+							(* TODO запутано *)
 							IF ~(p.expr(Ast.Designator).decl IS Ast.FormalParam) THEN
-								j := ArrayDeep(p.expr(Ast.Designator).type)
+								j := OpenArrayDeep(fpt)
 							END
 						END;
 						IF t(Ast.Array).count # NIL THEN
