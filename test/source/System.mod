@@ -6,11 +6,14 @@ MODULE System;
 
   VAR i: INTEGER; b: BOOLEAN; bt: BYTE; c: CHAR; r: REAL; s: SET;
 
-  PROCEDURE Adr;
-  VAR a, v: INTEGER;
+  PROCEDURE Adr*;
+  VAR a, v: INTEGER; ptr: Ptr;
   BEGIN
-    a := SYSTEM.ADR(v);
+    NEW(ptr);
+    a := SYSTEM.ADR(ptr^);
+
     v := SYSTEM.SIZE(INTEGER);
+    a := SYSTEM.ADR(v);
 
     ASSERT(v >= 4)
   END Adr;
