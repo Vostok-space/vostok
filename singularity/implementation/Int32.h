@@ -31,7 +31,7 @@ O7_ALWAYS_INLINE void Int32_FromInt(Int32_Type v, o7_int_t i) {
 }
 
 O7_PURE_INLINE o7_int_t Int32_ToInt(Int32_Type v) {
-	if (O7_OVERFLOW) {
+	if (O7_OVERFLOW > 0) {
 		assert(-O7_INT_MAX <= *(Int32_t *)v);
 	}
 	return *(Int32_t *)v;
@@ -39,11 +39,11 @@ O7_PURE_INLINE o7_int_t Int32_ToInt(Int32_Type v) {
 
 O7_ALWAYS_INLINE void Int32_Add(Int32_Type sum, Int32_Type a1, Int32_Type a2) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADD(*(Int32_t *)a1, *(Int32_t *)a2, (Int32_t *)sum);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 <= *(Int32_t *)a2) {
 			assert(*(Int32_t *)a1 <= Int32_Max - *(Int32_t *)a2);
@@ -56,11 +56,11 @@ O7_ALWAYS_INLINE void Int32_Add(Int32_Type sum, Int32_Type a1, Int32_Type a2) {
 
 O7_ALWAYS_INLINE void Int32_Sub(Int32_Type diff, Int32_Type m, Int32_Type s) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUB(*(Int32_t *)m, *(Int32_t *)s, (Int32_t *)diff);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 <= *(Int32_t *)s) {
 			assert(*(Int32_t *)m >= Int32_Min + *(Int32_t *)s);
@@ -73,11 +73,11 @@ O7_ALWAYS_INLINE void Int32_Sub(Int32_Type diff, Int32_Type m, Int32_Type s) {
 
 O7_ALWAYS_INLINE void Int32_Mul(Int32_Type prod, Int32_Type m1, Int32_Type m2) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMUL(*(Int32_t *)m1, *(Int32_t *)m2, (Int32_t *)prod);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 < *(Int32_t *)m2) {
 			if (0 <= *(Int32_t *)m1) {
@@ -100,8 +100,8 @@ O7_ALWAYS_INLINE void Int32_Mul(Int32_Type prod, Int32_Type m1, Int32_Type m2) {
 }
 
 O7_ALWAYS_INLINE void Int32_CheckDiv(Int32_Type n, Int32_Type d) {
-	if (O7_OVERFLOW) {
-		if (O7_DIV_ZERO) {
+	if (O7_OVERFLOW > 0) {
+		if (O7_DIV_ZERO > 0) {
 			assert(*(Int32_t *)d != 0);
 		}
 		if (Int32_Min < -Int32_Max) {
@@ -141,7 +141,7 @@ O7_PURE_INLINE int Int32_Cmp(Int32_Type l, Int32_Type r) {
 }
 
 O7_ALWAYS_INLINE void Int32_Neg(Int32_Type neg, Int32_Type pos) {
-	if (O7_OVERFLOW) {
+	if (O7_OVERFLOW > 0) {
 		assert(-Int32_Max <= *(Int32_t *)pos);
 	}
 	*(Int32_t *)neg = -*(Int32_t *)pos;

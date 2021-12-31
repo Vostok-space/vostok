@@ -31,7 +31,7 @@ O7_ALWAYS_INLINE void Int64_FromInt(Int64_Type v, o7_int_t high, o7_int_t low) {
 }
 
 O7_PURE_INLINE o7_int_t Int64_ToInt(Int64_Type v) {
-	if (O7_OVERFLOW) {
+	if (O7_OVERFLOW > 0) {
 		assert((-O7_INT_MAX <= *(Int64_t *)v) && (*(Int64_t *)v <= O7_INT_MAX));
 	}
 	return *(Int64_t *)v;
@@ -39,11 +39,11 @@ O7_PURE_INLINE o7_int_t Int64_ToInt(Int64_Type v) {
 
 O7_ALWAYS_INLINE void Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADDL(*(Int64_t *)a1, *(Int64_t *)a2, (Int64_t *)sum);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 <= *(Int64_t *)a2) {
 			assert(*(Int64_t *)a1 <= Int64_Max - *(Int64_t *)a2);
@@ -56,11 +56,11 @@ O7_ALWAYS_INLINE void Int64_Add(Int64_Type sum, Int64_Type a1, Int64_Type a2) {
 
 O7_ALWAYS_INLINE void Int64_Sub(Int64_Type diff, Int64_Type m, Int64_Type s) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUBL(*(Int64_t *)m, *(Int64_t *)s, (Int64_t *)diff);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 <= *(Int64_t *)s) {
 			assert(*(Int64_t *)m >= Int64_Min + *(Int64_t *)s);
@@ -73,11 +73,11 @@ O7_ALWAYS_INLINE void Int64_Sub(Int64_Type diff, Int64_Type m, Int64_Type s) {
 
 O7_ALWAYS_INLINE void Int64_Mul(Int64_Type prod, Int64_Type m1, Int64_Type m2) {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMULL(*(Int64_t *)m1, *(Int64_t *)m2, (Int64_t *)prod);
 		assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			;
 		} else if (0 < *(Int64_t *)m2) {
 			if (0 <= *(Int64_t *)m1) {
@@ -100,8 +100,8 @@ O7_ALWAYS_INLINE void Int64_Mul(Int64_Type prod, Int64_Type m1, Int64_Type m2) {
 }
 
 O7_ALWAYS_INLINE void Int64_CheckDiv(Int64_Type n, Int64_Type d) {
-	if (O7_OVERFLOW) {
-		if (O7_DIV_ZERO) {
+	if (O7_OVERFLOW > 0) {
+		if (O7_DIV_ZERO > 0) {
 			assert(*(Int64_t *)d != 0);
 		}
 		if (Int64_Min < -Int64_Max) {
@@ -141,7 +141,7 @@ O7_PURE_INLINE int Int64_Cmp(Int64_Type l, Int64_Type r) {
 }
 
 O7_ALWAYS_INLINE void Int64_Neg(Int64_Type neg, Int64_Type pos) {
-	if (O7_OVERFLOW) {
+	if (O7_OVERFLOW > 0) {
 		assert(-Int64_Max <= *(Int64_t *)pos);
 	}
 	*(Int64_t *)neg = -*(Int64_t *)pos;

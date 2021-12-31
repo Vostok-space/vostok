@@ -795,7 +795,7 @@ o7_int_t o7_int(o7_int_t i) {
 
 O7_CONST_INLINE
 o7_int_t o7_not_neg(o7_int_t i) {
-	if (O7_OVERFLOW) {
+	if (O7_OVERFLOW > 0) {
 		o7_assert(0 <= i);
 	}
 	return i;
@@ -813,11 +813,11 @@ O7_CONST_INLINE
 o7_int_t o7_add(o7_int_t a1, o7_int_t a2) {
 	o7_int_t s;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADD(o7_int(a1), o7_int(a2), &s) || (-O7_INT_MAX > s);
 		o7_assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			if (O7_UNDEF) {
 				o7_assert(o7_int_inited(a1));
 				o7_assert(o7_int_inited(a2));
@@ -836,11 +836,11 @@ O7_CONST_INLINE
 o7_int_t o7_sub(o7_int_t m, o7_int_t s) {
 	o7_int_t d;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUB(o7_int(m), o7_int(s), &d) || (-O7_INT_MAX > d);
 		o7_assert(!overflow);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			if (O7_UNDEF) {
 				o7_assert(o7_int_inited(m));
 				o7_assert(o7_int_inited(s));
@@ -859,11 +859,11 @@ O7_CONST_INLINE
 o7_int_t o7_mul(o7_int_t m1, o7_int_t m2) {
 	o7_int_t p;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMUL(o7_int(m1), o7_int(m2), &p) || (-O7_INT_MAX > p);
 		o7_assert(!overflow);
 	} else {
-		if (O7_OVERFLOW && (0 != m2)) {
+		if (O7_OVERFLOW > 0 && (0 != m2)) {
 			o7_assert(abs(m1) <= O7_INT_MAX / abs(m2));
 		}
 		p = o7_int(m1) * o7_int(m2);
@@ -876,7 +876,7 @@ o7_int_t o7_divisor(o7_int_t d) {
 	if (O7_NATURAL_DIVISOR) {
 		o7_assert(0 < d);
 	} else {
-		if (O7_OVERFLOW && O7_DIV_ZERO) {
+		if (O7_OVERFLOW > 0 && O7_DIV_ZERO > 0) {
 			o7_assert(d != 0);
 		}
 		d = o7_int(d);
@@ -975,11 +975,11 @@ O7_CONST_INLINE
 o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
 	o7_long_t s;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s);
 		o7_assert(!overflow && s >= -O7_LONG_MAX);
 	} else {
-		if (!O7_OVERFLOW) {
+		if (O7_OVERFLOW < 1) {
 			if (O7_UNDEF) {
 				o7_assert(o7_long_inited(a1));
 				o7_assert(o7_long_inited(a2));
@@ -998,7 +998,7 @@ O7_CONST_INLINE
 o7_long_t o7_lsub(o7_long_t m, o7_long_t s) {
 	o7_long_t d;
 	o7_cbool overflow;
-	if (!O7_OVERFLOW) {
+	if (O7_OVERFLOW < 1) {
 		d = o7_long(m) - o7_long(s);
 	} else if (O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SSUBL(o7_long(m), o7_long(s), &d);
@@ -1018,11 +1018,11 @@ O7_CONST_INLINE
 o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 	o7_long_t p;
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_SMULL(o7_long(m1), o7_long(m2), &p);
 		o7_assert(!overflow && p >= -O7_LONG_MAX);
 	} else {
-		if (O7_OVERFLOW && (0 != m2)) {
+		if (O7_OVERFLOW > 0 && (0 != m2)) {
 			o7_assert(O7_LABS(m1) <= O7_LONG_MAX / O7_LABS(m2));
 		}
 		p = o7_long(m1) * o7_long(m2);
@@ -1032,10 +1032,10 @@ o7_long_t o7_lmul(o7_long_t m1, o7_long_t m2) {
 
 O7_CONST_INLINE
 o7_long_t o7_ldivisor(o7_long_t d) {
-	if (O7_NATURAL_DIVISOR) {
+	if (O7_NATURAL_DIVISOR > 0) {
 		o7_assert(0 < d);
 	} else {
-		if (O7_OVERFLOW && O7_DIV_ZERO) {
+		if (O7_OVERFLOW > 0 && O7_DIV_ZERO > 0) {
 			o7_assert(d != 0);
 		}
 		d = o7_long(d);
@@ -1197,7 +1197,7 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 	shift = o7_not_neg(shift) & 0x1F;
 	if (O7_EXPECT(0 != shift)) {
 		u = ((u >> shift) | (u << (32 - shift))) & 0xFFFFFFFFul;
-		if (O7_OVERFLOW) {
+		if (O7_OVERFLOW > 0) {
 			o7_assert(u < 0x80000000ul);
 		}
 	}

@@ -44,7 +44,7 @@ static o7_cbool   init     = 0 > 1;
 
 extern o7_cbool WindowsRand_Open(void) {
 	if (!init) {
-		init = CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL, 0);
+		init = CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL, (enum CNK)0);
 		if (!init && (GetLastError() == NTE_BAD_KEYSET)) {
 			init = CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET);
 		}

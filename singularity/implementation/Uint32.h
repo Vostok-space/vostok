@@ -39,11 +39,11 @@ O7_ALWAYS_INLINE void
 Uint32_Add(Uint32_Type sum, Uint32_Type a1, Uint32_Type a2)
 {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_UADD(*(Uint32_t *)a1, *(Uint32_t *)a2, (Uint32_t *)sum);
 		assert(!overflow);
 	} else {
-		if (O7_OVERFLOW) {
+		if (O7_OVERFLOW > 0) {
 			assert(*(Uint32_t *)a1 <= Uint32_Max - *(Uint32_t *)a2);
 		}
 		*(Uint32_t *)sum = *(Uint32_t *)a1 + *(Uint32_t *)a2;
@@ -54,11 +54,11 @@ O7_ALWAYS_INLINE void
 Uint32_Sub(Uint32_Type diff, Uint32_Type m, Uint32_Type s)
 {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_USUB(*(Uint32_t *)m, *(Uint32_t *)s, (Uint32_t *)diff);
 		assert(!overflow);
 	} else {
-		if (O7_OVERFLOW) {
+		if (O7_OVERFLOW > 0) {
 			assert(*(Uint32_t *)s <= *(Uint32_t *)m);
 		}
 		*(Uint32_t *)diff = *(Uint32_t *)m - *(Uint32_t *)s;
@@ -69,11 +69,11 @@ O7_ALWAYS_INLINE void
 Uint32_Mul(Uint32_Type prod, Uint32_Type m1, Uint32_Type m2)
 {
 	o7_cbool overflow;
-	if (O7_OVERFLOW && O7_GNUC_BUILTIN_OVERFLOW) {
+	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
 		overflow = O7_GNUC_UMUL(*(Uint32_t *)m1, *(Uint32_t *)m2, (Uint32_t *)prod);
 		assert(!overflow);
 	} else {
-		if (O7_OVERFLOW) {
+		if (O7_OVERFLOW > 0) {
 			assert((*(Uint32_t *)m2 == 0)
 			    || (*(Uint32_t *)m1 <= Uint32_Max / *(Uint32_t *)m2));
 		}
@@ -82,7 +82,7 @@ Uint32_Mul(Uint32_Type prod, Uint32_Type m1, Uint32_Type m2)
 }
 
 O7_ALWAYS_INLINE void Uint32_CheckDiv(Uint32_Type n, Uint32_Type d) {
-	if (O7_OVERFLOW && O7_DIV_ZERO) {
+	if (O7_OVERFLOW > 0 && O7_DIV_ZERO > 0) {
 		assert(*(Uint32_t *)d != 0);
 	}
 }
