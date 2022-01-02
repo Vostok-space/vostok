@@ -107,11 +107,12 @@ func saveModule(name, source string) (tmp string, err error) {
   return
 }
 
-func run(source, script, cc string, timeout int) (output []byte, err error) {
-  var (
-    name, tmp, bin, timeOut string;
-    cmd *exec.Cmd
-  )
+func saveSource(src, scrpt string) (tmp, name, source, script string, err error) {
+  source = src;
+  script = scrpt;
+  tmp = "";
+  name = "";
+  err = nil;
   if source != "" {
     name = getModuleName(source);
     if name == "" && script == "" {
@@ -124,6 +125,16 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
       tmp, err = saveModule(name, source)
     }
   }
+  return
+}
+
+func run(source, script, cc string, timeout int) (output []byte, err error) {
+  var (
+    name, tmp, bin, timeOut string;
+    cmd *exec.Cmd
+  )
+
+  tmp, name, source, script, err = saveSource(source, script);
   if source == "" {
     name = "script-module";
     tmp, err = ioutil.TempDir(tmp, name)
@@ -157,6 +168,7 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
   } else {
     output = nil
   }
+  os.RemoveAll(tmp);
   return
 }
 
@@ -186,28 +198,43 @@ func listModules(sep1, sep2 string) (list string) {
   return
 }
 
-func infoModule(name string) (info string) {
+func infoModule(name string) (info []byte) {
   var (
-    cmd *exec.Cmd;
-    output []byte;
+    cmd *exec.Cmd
   )
   cmd = exec.Command("vostok/result/ost", "to-modef", name, "",
                      "-infr", "vostok", "-cyrillic", "-multi-errors");
-  output, _ = cmd.CombinedOutput();
-  return string(output)
+  info, _ = cmd.CombinedOutput();
+  return
 }
 
-func command(text, help string) (res string) {
+func toLang(source, vcmd string) (translated []byte) {
+  var (
+    tmp, name string;
+    cmd *exec.Cmd;
+  )
+  tmp, name, _, source, _ = saveSource(source, "");
+  cmd = exec.Command("vostok/result/ost", vcmd, name, "-",
+                     "-m", tmp, "-infr", "vostok", "-cyrillic", "-multi-errors");
+  translated, _ = cmd.CombinedOutput();
+  os.RemoveAll(tmp);
+  return
+}
+
+func command(text, help, module string) (res []byte) {
   var (cmd string)
   cmd = strings.ToLower(text);
   if cmd == "info" || cmd == "help" {
-    res = help
+    res = []byte(help)
   } else if cmd == "list" {
-    res = listModules("\n", "\n\n")
+    res = []byte(listModules("\n", "\n\n"))
   } else if strings.HasPrefix(cmd, "info ") || strings.HasPrefix(cmd, "help ") {
     res = infoModule(text[5:])
+  } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
+            cmd == "to-mod" || cmd == "to-modef" {
+    res = toLang(module, cmd)
   } else {
-    res = "Wrong command, use /INFO for help"
+    res = []byte("Wrong command, use /INFO for help")
   }
   return
 }
@@ -218,7 +245,7 @@ func handleInput(script, module, help, cc string, timeout int) (res []byte, err 
   if script == "" {
     res = []byte{}
   } else if strings.HasPrefix(script, "/") || strings.HasPrefix(script, ":") {
-    res = []byte(command(script[1:], help))
+    res = command(script[1:], help, module)
   } else {
     res, err = run(module, script, cc, timeout)
   }
@@ -327,7 +354,7 @@ func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
       err = teleSend(api, listModules(" ", "\n\n"), chat)
     } else if cmd == "info" {
       for i < len(code) && code[i] == ' ' { i += 1 }
-      err = teleSend(api, infoModule(code[i:]), chat)
+      err = teleSend(api, string(infoModule(code[i:])), chat)
     }
   }
   return
