@@ -166,9 +166,13 @@ BEGIN
 	interface := NIL;
 	implementation := NIL;
 	destLen := dirLen;
-	IF ~Chars0X.CopyString   (dir, destLen, OsUtil.DirSep)
-	OR ~CopyModuleNameForFile(dir, destLen, module.name, LangC)
-	OR (destLen > LEN(dir) - 3)
+	IF (dir = "") OR (dir = "-") THEN
+		ASSERT(isMain);
+		implementation := File.out;
+		ret := ErrNo
+	ELSIF ~Chars0X.CopyString   (dir, destLen, OsUtil.DirSep)
+	   OR ~CopyModuleNameForFile(dir, destLen, module.name, LangC)
+	   OR (destLen > LEN(dir) - 3)
 	THEN
 		ret := Cli.ErrTooLongOutName
 	ELSE
@@ -319,12 +323,14 @@ BEGIN
 	module.used := TRUE;
 
 	ret := ErrNo;
-	imp := module.import;
-	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used & ~imp.module.m.spec THEN
-			ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp, usecc)
-		END;
-		imp := imp.next
+	IF (dir # "") & (dir # "-") THEN
+		imp := module.import;
+		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+			IF ~imp.module.m.used & ~imp.module.m.spec THEN
+				ret := GenerateC(imp.module.m, FALSE, NIL, opt, dir, dirLen, cDirs, ccomp, usecc)
+			END;
+			imp := imp.next
+		END
 	END;
 	IF ret = ErrNo THEN
 		IF ~IsModuleInSingularity(module, cDirs, LangC, ".c", name) THEN
@@ -589,7 +595,7 @@ BEGIN
 	CASE res OF
 	  Cli.ResultC:
 		ASSERT(CComp.Set(ccomp, "cc"));
-		ret := GenerateC(module, (call # NIL) OR args.script, call,
+		ret := GenerateC(module, (call # NIL) OR args.script OR (args.resPath = "-"), call,
 		                 opt, args.resPath, args.resPathLen, args.cDirs,
 		                 ccomp, FALSE)
 	| Cli.ResultBin, Cli.ResultRun:
@@ -679,13 +685,15 @@ BEGIN
 	module.used := TRUE;
 
 	ret := ErrNo;
-	imp := module.import;
-	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used & ~imp.module.m.spec THEN
-			ret := GenerateJava(imp.module.m, NIL, prov, opt,
-			                    dir, dirLen, javaDirs, javac, usejavac)
-		END;
-		imp := imp.next
+	IF (dir # "") & (dir # "-") THEN
+		imp := module.import;
+		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+			IF ~imp.module.m.used & ~imp.module.m.spec THEN
+				ret := GenerateJava(imp.module.m, NIL, prov, opt,
+				                    dir, dirLen, javaDirs, javac, usejavac)
+			END;
+			imp := imp.next
+		END
 	END;
 	IF ret = ErrNo THEN
 		IF IsModuleInSingularity(module, javaDirs, Java, ".java", name) THEN
@@ -901,12 +909,14 @@ BEGIN
 	module.used := TRUE;
 
 	ret := ErrNo;
-	imp := module.import;
-	WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
-		IF ~imp.module.m.used & ~imp.module.m.spec THEN
-			ret := GenerateJs1(imp.module.m, NIL, outSingle, opt, dir, dirLen, jsDirs)
-		END;
-		imp := imp.next
+	IF (dir # "") & (dir # "-") THEN
+		imp := module.import;
+		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+			IF ~imp.module.m.used & ~imp.module.m.spec THEN
+				ret := GenerateJs1(imp.module.m, NIL, outSingle, opt, dir, dirLen, jsDirs)
+			END;
+			imp := imp.next
+		END
 	END;
 	IF ret = ErrNo THEN
 		IF IsModuleInSingularity(module, jsDirs, Js, ".js", name) THEN
