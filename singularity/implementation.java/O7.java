@@ -55,8 +55,8 @@ public static void asrt(final boolean c, final String msg) {
     }
 }
 
-public static void caseFail(final int c) {
-    throw new java.lang.AssertionError("case fail: " + c);
+public static java.lang.AssertionError caseFail(int c) {
+    return new java.lang.AssertionError("case fail: " + c);
 }
 
 public static boolean inited(final byte b) {

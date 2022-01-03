@@ -63,7 +63,7 @@ TYPE
 		procTypeNamer: ProviderProcTypeName;
 		opt: Options;
 
-		expressionSemicolon, forAssign: BOOLEAN
+		expressionSemicolon, forAssign, unreached: BOOLEAN
 	END;
 
 	Selectors = RECORD
@@ -85,7 +85,7 @@ VAR
 	type: PROCEDURE(VAR g: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
 	declarations: PROCEDURE(VAR g: Generator; ds: Ast.Declarations);
-	statements: PROCEDURE(VAR g: Generator; stats: Ast.Statement);
+	statements: PROCEDURE(VAR g: Generator; stats: Ast.Statement): BOOLEAN;
 	expression: PROCEDURE(VAR g: Generator; expr: Ast.Expression; set: SET);
 	pvar: PROCEDURE (VAR g: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
 
@@ -464,7 +464,7 @@ BEGIN
 	CASE g.opt.varInit OF
 	  GenOptions.VarInitUndefined:
 		Undef(g, typ)
-	| GenOptions.VarInitZero:
+	| GenOptions.VarInitNo, GenOptions.VarInitZero:
 		Zero(g, typ)
 	END
 END AssignInitValue;
@@ -472,8 +472,8 @@ END AssignInitValue;
 PROCEDURE VarInit(VAR g: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
 	IF ~record & ~(var.type.id IN {Ast.IdArray, Ast.IdRecord})
-	 & ~var(Ast.Var).checkInit
-	 & Ast.IsGlobal(var)
+	 & (~var(Ast.Var).checkInit
+	 OR Ast.IsGlobal(var))
 	THEN
 		IF var.type.id = Ast.IdPointer THEN
 			Str(g, " = null")
@@ -609,13 +609,16 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 
 			PROCEDURE Assert(VAR g: Generator; e: Ast.Expression);
 			BEGIN
-				IF g.opt.o7Assert THEN
+				IF (e.value # NIL) & ~e.value(Ast.ExprBoolean).bool THEN
+					Str(g, "throw null");
+					g.unreached := TRUE
+				ELSIF g.opt.o7Assert THEN
 					Str(g, "O7.asrt(");
 					CheckExpr(g, e, {});
 					Chr(g, ")")
 				ELSE
 					Str(g, "assert ");
-					CheckExpr(g, e, {});
+					CheckExpr(g, e, {})
 				END
 			END Assert;
 
@@ -1486,6 +1489,7 @@ BEGIN
 	g.opt := opt;
 
 	g.fixedLen := g.len;
+	g.unreached := FALSE
 END GenInit;
 
 PROCEDURE GeneratorNotify(VAR g: Generator);
@@ -1801,10 +1805,11 @@ BEGIN
 END Var;
 
 PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf);
+VAR ignore: BOOLEAN;
 BEGIN
 	CheckExpr(g, wi.expr, {});
 	StrOpen(g, ") {");
-	statements(g, wi.stats);
+	ignore := statements(g, wi.stats);
 	wi := wi.elsif
 END ExprThenStats;
 
@@ -1832,6 +1837,7 @@ END IsForSameType;
 PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 
 	PROCEDURE WhileIf(VAR g: Generator; wi: Ast.WhileIf);
+	VAR ignore: BOOLEAN;
 
 		PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf);
 		BEGIN
@@ -1848,7 +1854,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			IF wi # NIL THEN
 				Text.IndentClose(g);
 				StrOpen(g, "} else {");
-				statements(g, wi.stats)
+				ignore := statements(g, wi.stats)
 			END;
 			StrLnClose(g, "}")
 		ELSIF wi.elsif = NIL THEN
@@ -1864,10 +1870,10 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	END WhileIf;
 
 	PROCEDURE Repeat(VAR g: Generator; st: Ast.Repeat);
-	VAR e: Ast.Expression;
+	VAR e: Ast.Expression; ignore: BOOLEAN;
 	BEGIN
 		StrOpen(g, "do {");
-		statements(g, st.stats);
+		ignore := statements(g, st.stats);
 		IF st.expr.id = Ast.IdNegate THEN
 			Text.StrClose(g, "} while (");
 			e := st.expr(Ast.ExprNegate).expr;
@@ -1884,6 +1890,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	END Repeat;
 
 	PROCEDURE For(VAR g: Generator; st: Ast.For);
+	VAR ignore: BOOLEAN;
 		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
 		RETURN (sum.next # NIL)
 		     & (sum.next.next = NIL)
@@ -1927,7 +1934,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			END
 		END;
 		StrOpen(g, ") {");
-		statements(g, st.stats);
+		ignore := statements(g, st.stats);
 		StrLnClose(g, "}")
 	END For;
 
@@ -1975,7 +1982,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	    caseExpr: Ast.Expression;
 
 		PROCEDURE CaseElement(VAR g: Generator; elem: Ast.CaseElement);
-		VAR r: Ast.CaseLabel;
+		VAR r: Ast.CaseLabel; ignore: BOOLEAN;
 		BEGIN
 			IF ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
@@ -1988,7 +1995,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 					r := r.next
 				END;
 				Text.IndentOpen(g);
-				statements(g, elem.stats);
+				ignore := statements(g, elem.stats);
 				StrLn(g, "break;");
 				Text.IndentClose(g)
 			END
@@ -1996,7 +2003,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 
 		PROCEDURE CaseElementAsIf(VAR g: Generator; elem: Ast.CaseElement;
 		                          caseExpr: Ast.Expression);
-		VAR r: Ast.CaseLabel;
+		VAR r: Ast.CaseLabel; ignore: BOOLEAN;
 
 			PROCEDURE CaseRange(VAR g: Generator; r: Ast.CaseLabel;
 			                    caseExpr: Ast.Expression);
@@ -2034,7 +2041,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 				CaseRange(g, r, caseExpr)
 			END;
 			StrOpen(g, ") {");
-			statements(g, elem.stats);
+			ignore := statements(g, elem.stats);
 			Text.StrClose(g, "}")
 		END CaseElementAsIf;
 	BEGIN
@@ -2077,22 +2084,21 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			IF ~g.opt.caseAbort THEN
 				;
 			ELSIF caseExpr = NIL THEN
-				StrLn(g, " else O7.caseFail(o7_case_expr);")
+				StrLn(g, " else throw O7.caseFail(o7_case_expr);")
 			ELSE
 				Str(g, " else O7.caseFail(");
 				Expression(g, caseExpr, {});
 				StrLn(g, ");")
 			END
-		ELSIF ~g.opt.caseAbort THEN
-			;
+		ELSIF ~g.opt.caseAbort & (g.opt.varInit # GenOptions.VarInitNo) THEN
+			StrLn(g, "break;")
 		ELSIF caseExpr = NIL THEN
-			StrLn(g, "O7.caseFail(o7_case_expr);")
+			StrLn(g, "throw O7.caseFail(o7_case_expr);")
 		ELSE
-			Str(g, "O7.caseFail(");
+			Str(g, "throw O7.caseFail(");
 			Expression(g, caseExpr, {});
 			StrLn(g, ");")
 		END;
-		StrLn(g, "break;");
 		StrLnClose(g, "}");
 		IF caseExpr = NIL THEN
 			StrLnClose(g, "}")
@@ -2124,12 +2130,16 @@ BEGIN
 	END
 END Statement;
 
-PROCEDURE Statements(VAR g: Generator; stats: Ast.Statement);
+PROCEDURE Statements(VAR g: Generator; stats: Ast.Statement): BOOLEAN;
+VAR continue: BOOLEAN;
 BEGIN
-	WHILE stats # NIL DO
+	WHILE (stats # NIL) & ~g.unreached DO
 		Statement(g, stats);
 		stats := stats.next
-	END
+	END;
+	continue := ~g.unreached;
+	g.unreached := FALSE
+	RETURN continue
 END Statements;
 
 PROCEDURE ProcHeader(VAR g: Generator; decl: Ast.Procedure);
@@ -2163,9 +2173,7 @@ PROCEDURE Procedure(VAR g: Generator; proc: Ast.Procedure);
 
 		InitAllVarsWhichArrayOfRecord(g, proc.vars);
 
-		Statements(g, proc.stats);
-
-		IF proc.return # NIL THEN
+		IF Statements(g, proc.stats) & (proc.return # NIL) THEN
 			Str(g, "return ");
 			CheckExpr(g, proc.return,
 			          IsForSameType(proc.header.type, proc.return.type));
@@ -2358,26 +2366,27 @@ PROCEDURE Generate*(out: Stream.POut;
 VAR g: Generator;
 
 	PROCEDURE ModuleInit(VAR g: Generator; module: Ast.Module; cmd: Ast.Statement);
-	VAR v: Ast.Declaration;
+	VAR v: Ast.Declaration; ignore: BOOLEAN;
 	BEGIN
 		v := SearchArrayOfRecord(module.vars);
 		IF (module.stats # NIL) OR (cmd # NIL) OR (v # NIL) THEN
 			StrOpen(g, "static {");
 			InitAllVarsWhichArrayOfRecord(g, v);
-			Statements(g, module.stats);
-			Statements(g, cmd);
+			ignore := Statements(g, module.stats)
+			        & Statements(g, cmd);
 			StrLnClose(g, "}");
 			Ln(g)
 		END
 	END ModuleInit;
 
 	PROCEDURE Main(VAR g: Generator; module: Ast.Module; cmd: Ast.Statement);
+	VAR ignore: BOOLEAN;
 	BEGIN
 		StrOpen(g, "public static void main(java.lang.String[] argv) {");
 		StrLn(g, "O7.init(argv);");
 		InitAllVarsWhichArrayOfRecord(g, module.vars);
-		Statements(g, module.stats);
-		Statements(g, cmd);
+		ignore := Statements(g, module.stats)
+		        & Statements(g, cmd);
 		StrLn(g, "O7.exit();");
 		StrLnClose(g, "}")
 	END Main;
@@ -2387,7 +2396,6 @@ BEGIN
 	IF opt = NIL THEN
 		opt := DefaultOptions()
 	END;
-	g.opt := opt;
 
 	opt.index := 0;
 	opt.main := (cmd # NIL) OR Strings.IsEqualToString(module.name, "script");
