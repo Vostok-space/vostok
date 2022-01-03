@@ -477,7 +477,9 @@ VAR ret: INTEGER;
 		END;
 		IF 0 <= args.cStd THEN
 			opt.std := args.cStd
-		END
+		END;
+		opt.escapeHighChars := (opt.std < GeneratorC.IsoC99)
+		                     & (opt.identEnc # GenOptions.IdentEncSame)
 	END SetOptions;
 
 	PROCEDURE Bin(res: INTEGER; args: Cli.Args;
