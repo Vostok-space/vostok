@@ -39,7 +39,8 @@ const (
   webHelp =
     "/INFO - show this help\n" +
     "/LIST - list available modules\n" +
-    "/INFO ModuleName - show info about module\n"
+    "/INFO ModuleName - show info about module\n" +
+    "/TO-(C|JS|JAVA) - convert code to appropriate language\n"
 
   teleHelp = webHelp +
     `/O7: log.s("Script mode")` +
@@ -215,7 +216,9 @@ func toLang(source, vcmd string) (translated []byte) {
   )
   tmp, name, _, source, _ = saveSource(source, "");
   cmd = exec.Command("vostok/result/ost", vcmd, name, "-",
-                     "-m", tmp, "-infr", "vostok", "-cyrillic", "-multi-errors");
+                     "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
+                     "-init", "noinit", "-no-array-index-check", "-no-nil-check",
+                     "-no-arithmetic-overflow-check");
   translated, _ = cmd.CombinedOutput();
   os.RemoveAll(tmp);
   return
