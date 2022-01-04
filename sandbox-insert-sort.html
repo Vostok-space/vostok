@@ -14,22 +14,38 @@
 <body>
 
 <div style='width:1200px'>
-  <div id='vostokbox-editor'>MODULE Hello;
+  <div id='vostokbox-editor'>MODULE InsertSort; IMPORT Out;
 
-  IMPORT log;
-
-  PROCEDURE Come*;
+  PROCEDURE Write(a: ARRAY OF INTEGER); VAR i: INTEGER;
   BEGIN
-    log.sn("Hello!")
-  END Come;
+    FOR i := 0 TO LEN(a) - 1 DO Out.Int(a[i], 0); Out.String(" ") END; Out.Ln
+  END Write;
 
-  PROCEDURE Gone*;
+  PROCEDURE Sort*(VAR arr: ARRAY OF INTEGER);
+  VAR i, j, a: INTEGER;
   BEGIN
-    log.sn("Bye!")
-  END Gone;
+    FOR i := 1 TO LEN(arr) - 1 DO
+      a := arr[i];
+      j := i - 1;
+      WHILE (j >= 0) & (a < arr[j]) DO
+        arr[j + 1] := arr[j];
+        DEC(j)
+      END;
+      arr[j + 1] := a
+    END
+  END Sort;
 
-END Hello.
-</div>
+  PROCEDURE Go*;
+  VAR i: INTEGER;
+      a: ARRAY 17 OF INTEGER;
+  BEGIN
+    FOR i := 0 TO LEN(a) - 1 DO a[i] := LEN(a) - i END;
+    Write(a);
+    Sort(a);
+    Write(a)
+  END Go;
+
+END InsertSort.</div>
 
   <div id='vostokbox-log'></div>
 
@@ -41,11 +57,7 @@ END Hello.
   var box;
 
   box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
-  VostokBox.addRunner(box, 'Hello.Come');
-  VostokBox.addRunner(box, 'Hello.Gone');
-  VostokBox.addRunner(box, ':INFO');
-  VostokBox.addRunner(box, ':INFO log');
+  VostokBox.addRootRunner(box, 'InsertSort.Go');
   VostokBox.addRunner(box, ':TO-C');
   VostokBox.addRunner(box, ':TO-JAVA');
   VostokBox.addRunner(box, ':TO-JS');

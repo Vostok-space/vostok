@@ -70,7 +70,7 @@ var VostokBox;
   }
 
   function addRunner(box, command, root) {
-    var div, inp, run, addel;
+    var div, inp, run, add, del;
     div = box.doc.createElement('div');
     inp = box.doc.createElement('input', 'type="text"');
     inp.className = 'vostokbox-command-line';
@@ -80,23 +80,29 @@ var VostokBox;
     run.onclick = function() {
       requestRun(box, inp.value);
     };
-    addel = box.doc.createElement('button');
+    add = box.doc.createElement('button');
+    box.script = inp;
+    add.innerText = 'Add';
+    add.onclick = function() {
+      addRunner(box, inp.value, false);
+    };
+    div.appendChild(inp);
+    div.appendChild(run);
+    div.appendChild(add);
+
+    del = box.doc.createElement('button');
     if (root) {
-      box.script = inp;
-      addel.innerText = 'Add';
-      addel.onclick = function() {
-        addRunner(box, inp.value, false);
+      del.innerText = 'Cln';
+      del.onclick = function() {
+        box.log.innerHTML = '';
       };
     } else {
-      addel.innerText = 'Del';
-      addel.onclick = function() {
+      del.innerText = 'Del';
+      del.onclick = function() {
         box.runners.removeChild(div);
       };
     }
-
-    div.appendChild(inp);
-    div.appendChild(run);
-    div.appendChild(addel);
+    div.appendChild(del);
 
     box.runners.appendChild(div);
   }
