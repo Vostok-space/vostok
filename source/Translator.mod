@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published

@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2019,2021 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -113,8 +113,8 @@ VAR up: Ast.Declarations;
 	     & (Strings.Compare(decl.name, decl.module.m.name) = 0)
 	END IsGlobalRecordWithSameNameAsModule;
 BEGIN
-	IF (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
-	OR (decl IS Ast.Procedure)
+	IF (decl.id = Ast.IdProc)
+	OR (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
 	THEN
 		up := decl.up.d;
 		i := 0;
@@ -471,14 +471,11 @@ END AssignInitValue;
 
 PROCEDURE VarInit(VAR g: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
-	IF ~record & ~(var.type.id IN {Ast.IdArray, Ast.IdRecord})
-	 & (~var(Ast.Var).checkInit
-	 OR Ast.IsGlobal(var))
+	IF record
+	OR (var.type.id IN Ast.Structures)
+	OR   var(Ast.Var).checkInit
+	   & (~Ast.IsGlobal(var) OR (g.opt.varInit = GenOptions.VarInitUndefined))
 	THEN
-		IF var.type.id = Ast.IdPointer THEN
-			Str(g, " = null")
-		END
-	ELSE
 		AssignInitValue(g, var.type)
 	END
 END VarInit;
@@ -1982,7 +1979,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	    caseExpr: Ast.Expression;
 
 		PROCEDURE CaseElement(VAR g: Generator; elem: Ast.CaseElement);
-		VAR r: Ast.CaseLabel; ignore: BOOLEAN;
+		VAR r: Ast.CaseLabel;
 		BEGIN
 			IF ~IsCaseElementWithRange(elem) THEN
 				r := elem.labels;
@@ -1995,8 +1992,9 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 					r := r.next
 				END;
 				Text.IndentOpen(g);
-				ignore := statements(g, elem.stats);
-				StrLn(g, "break;");
+				IF statements(g, elem.stats) THEN
+					StrLn(g, "break;")
+				END;
 				Text.IndentClose(g)
 			END
 		END CaseElement;

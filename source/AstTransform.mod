@@ -1,6 +1,6 @@
 (*  Transformations of abstract syntax tree to simplify generation
  *
- *  Copyright (C) 2018-2019,2021 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -598,13 +598,13 @@ MODULE AstTransform;
       name: ARRAY 1025 OF CHAR;
       i, ofs: INTEGER;
   BEGIN
-    up := decl.up.d;
     i  := 0;
-    WHILE up.up # NIL DO
+    up := decl.up.d;
+    REPEAT
       prs[i] := up;
       INC(i);
       up := up.up.d
-    END;
+    UNTIL up.up = NIL;
     ofs := 0;
     REPEAT
       DEC(i)

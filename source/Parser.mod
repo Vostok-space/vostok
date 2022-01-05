@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2019,2021 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1207,25 +1207,33 @@ BEGIN
 END For;
 
 PROCEDURE While(VAR p: Parser; ds: Ast.Declarations): Ast.While;
-VAR w, br: Ast.While;
-    elsif: Ast.WhileIf;
+VAR w, br: Ast.While; elsif: Ast.WhileIf; i: INTEGER;
 BEGIN
 	ASSERT(p.l = SpecIdent.While);
 	INC(p.inLoops);
 		Scan(p);
 		CheckAst(p, Ast.WhileNew(w, Expression(p, ds, {}), NIL));
+		Ast.TurnIf(ds);
 		elsif := w;
 		Expect(p, SpecIdent.Do, ErrExpectDo);
 		w.stats := statements(p, ds);
+		i := 1;
 
 		WHILE ScanIfEqual(p, SpecIdent.Elsif) DO
+			Ast.TurnElse(ds);
+			INC(i);
 			CheckAst(p, Ast.WhileNew(br, Expression(p, ds, {}), NIL));
+			Ast.TurnIf(ds);
 			elsif.elsif := br;
 			elsif := br;
 			Expect(p, SpecIdent.Do, ErrExpectDo);
 			elsif.stats := statements(p, ds)
 		END;
 		Expect(p, SpecIdent.End, ErrExpectEnd);
+		REPEAT
+			Ast.BackFromBranch(ds);
+			DEC(i)
+		UNTIL i = 0;
 	DecInLoops(p, ds)
 	RETURN w
 END While;

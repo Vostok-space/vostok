@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1175,7 +1175,7 @@ BEGIN
 	ELSE
 		vs.inited := vs.inited + vs.if.inited
 	END;
-	vs.if   := NIL
+	vs.if := NIL
 END VarStateUp;
 
 PROCEDURE TurnIf*(ds: Declarations);
@@ -1183,7 +1183,7 @@ PROCEDURE TurnIf*(ds: Declarations);
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var; vs: VarState;
 	BEGIN
-		WHILE (d # NIL) & (d IS Var) DO
+		WHILE (d # NIL) & (d.id = IdVar) DO
 			v := d(Var);
 			ASSERT(v.state.if = NIL);
 			vs := VarStateNew(v.state);
@@ -1193,7 +1193,7 @@ PROCEDURE TurnIf*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds IS Procedure THEN
+	IF ds.id = IdProc THEN
 		Handle(ds(Procedure).header.params);
 		Handle(ds.vars)
 	END
