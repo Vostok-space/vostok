@@ -447,6 +447,14 @@ BEGIN
 	RETURN e
 END ExprCall;
 
+PROCEDURE DesignatorUsed(VAR p: Parser; des: Ast.Designator; context: SET);
+BEGIN
+	IF 0 < p.inLoops THEN
+		INCL(context, Ast.InLoop)
+	END;
+	CheckAst(p, Ast.DesignatorUsed(des, context))
+END DesignatorUsed;
+
 PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations; context: SET): Ast.Expression;
 VAR e: Ast.Expression;
 
@@ -460,10 +468,7 @@ VAR e: Ast.Expression;
 		ELSE
 			des := Designator(p, ds, decl);
 			IF p.callId # SpecIdent.Len THEN
-				IF 0 < p.inLoops THEN
-					INCL(context, Ast.InLoop)
-				END;
-				CheckAst(p, Ast.DesignatorUsed(des, context))
+				DesignatorUsed(p, des, context)
 			END;
 			IF p.l # Scanner.Brace1Open THEN
 				e := des
@@ -1231,6 +1236,9 @@ VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
 	Scan(p);
+	IF (des.decl.type.id = Ast.IdPointer) & (des.sel # NIL) THEN
+		DesignatorUsed(p, des, {})
+	END;
 	CheckAst(p, Ast.AssignNew(st, 0 < p.inLoops, des, Expression(p, ds, {})))
 	RETURN st
 END Assign;
