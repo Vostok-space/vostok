@@ -76,7 +76,7 @@ VAR
 	declarations: PROCEDURE(VAR g: Generator; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR g: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR g: Generator; expr: Ast.Expression; set: SET);
-	pvar: PROCEDURE (VAR g: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
+	pvar: PROCEDURE (VAR g: Generator; prev, var: Ast.Declaration; last, record: BOOLEAN);
 
 PROCEDURE Str    (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.Str    (g, s) END Str;
 PROCEDURE StrLn  (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLn  (g, s) END StrLn;
@@ -413,23 +413,17 @@ BEGIN
 	CASE g.opt.varInit OF
 	  GenOptions.VarInitUndefined:
 		Undef(g, typ)
-	| GenOptions.VarInitZero:
+	| GenOptions.VarInitNo, GenOptions.VarInitZero:
 		Zero(g, typ)
-	| GenOptions.VarInitNo:
-		;
 	END
 END AssignInitValue;
 
 PROCEDURE VarInit(VAR g: Generator; var: Ast.Declaration; record: BOOLEAN);
 BEGIN
-	IF ~record & ~(var.type.id IN {Ast.IdArray, Ast.IdRecord})
-	 & ~var(Ast.Var).checkInit
-	 & Ast.IsGlobal(var)
+	IF record
+	OR (var.type.id IN Ast.Structures)
+	OR (g.opt.varInit # GenOptions.VarInitNo) & var(Ast.Var).checkInit
 	THEN
-		IF var.type.id = Ast.IdPointer THEN
-			Str(g, " = null")
-		END
-	ELSE
 		AssignInitValue(g, var.type)
 	END
 END VarInit;
@@ -1486,7 +1480,7 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 			WHILE v # NIL DO
 				EmptyLines(g, v);
 
-				pvar(g, NIL, v, TRUE);
+				pvar(g, NIL, v, TRUE, TRUE);
 
 				v := v.next
 			END;
@@ -1613,13 +1607,13 @@ BEGIN
 	Mark(g, const)
 END Const;
 
-PROCEDURE Var(VAR g: Generator; prev, var: Ast.Declaration; last: BOOLEAN);
+PROCEDURE Var(VAR g: Generator; prev, var: Ast.Declaration; last, record: BOOLEAN);
 VAR mark: BOOLEAN;
 BEGIN
 	mark := var.mark & ~g.opt.main;
 	Comment(g, var.comment);
 	EmptyLines(g, var);
-	IF ~mark OR (g.opt.varInit # GenOptions.VarInitNo) & (var.type.id IN Ast.Structures) THEN
+	IF ~mark OR (g.opt.varInit # GenOptions.VarInitNo) OR (var.type.id IN Ast.Structures) THEN
 		IF var.up = NIL THEN
 			Str(g, "this.")
 		ELSE
@@ -1630,7 +1624,7 @@ BEGIN
 		Declarator(g, var, FALSE, same, TRUE);
 		*) Name(g, var);
 
-		VarInit(g, var, FALSE);
+		VarInit(g, var, record);
 
 		StrLn(g, ";");
 
@@ -2053,7 +2047,7 @@ BEGIN
 	LnIfWrote(g);
 
 	WHILE (d # NIL) & (d IS Ast.Var) DO
-		Var(g, NIL, d, TRUE);
+		Var(g, NIL, d, TRUE, FALSE);
 		d := d.next
 	END;
 	LnIfWrote(g);
