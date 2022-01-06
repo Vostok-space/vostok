@@ -1159,23 +1159,37 @@ BEGIN
 END VarStateNew;
 
 PROCEDURE VarStateUp(VAR vs: VarState);
+CONST MayNotInited = {InitedNo, InitedValue};
+VAR if, else, both: SET;
 BEGIN
 	ASSERT((vs.root.if = vs) OR (vs.root.else = vs));
 
 	vs := vs.root;
+	if := vs.if.inited;
+	vs.if := NIL;
 	IF vs.else # NIL THEN
-		IF InitedFail IN vs.else.inited THEN
-			vs.inited := vs.if.inited
-		ELSIF InitedFail IN vs.if.inited THEN
-			vs.inited := vs.else.inited
-		ELSE
-			vs.inited := vs.if.inited + vs.else.inited
-		END;
+		else := vs.else.inited;
 		vs.else := NIL
 	ELSE
-		vs.inited := vs.inited + vs.if.inited
+		else := vs.inited
 	END;
-	vs.if := NIL
+	IF if * {InitedFail} = else * {InitedFail} THEN
+		;
+	ELSIF InitedFail IN if THEN
+		if := else
+	ELSE ASSERT(InitedFail IN else);
+		else := if
+	END;
+	both := if + else;
+	IF (vs.inited * MayNotInited = MayNotInited)
+	 & (   (if   * MayNotInited = {InitedValue})
+	    OR (else * MayNotInited = {InitedValue})
+	   )
+	THEN
+		vs.inited := both - {InitedNo} + {InitedCheck}
+	ELSE
+		vs.inited := both
+	END
 END VarStateUp;
 
 PROCEDURE TurnIf*(ds: Declarations);
@@ -1238,9 +1252,14 @@ END TurnFail;
 
 PROCEDURE BackFromBranch*(ds: Declarations);
 	PROCEDURE Handle(d: Declaration);
+	VAR v: Var;
 	BEGIN
 		WHILE (d # NIL) & (d.id = IdVar) DO
-			VarStateUp(d(Var).state);
+			v := d(Var);
+			VarStateUp(v.state);
+			IF InitedCheck IN v.state.inited THEN
+				v.checkInit := TRUE
+			END;
 			d := d.next
 		END
 	END Handle;
@@ -1684,10 +1703,7 @@ BEGIN
 		END
 	END;
 	IF (d # NIL) & (d IS Type) THEN
-		d.used := TRUE;
-		IF d IS Var THEN
-			INCL(d(Var).state.inited, Used)
-		END
+		d.used := TRUE
 	END
 	RETURN d
 END DeclarationSearch;

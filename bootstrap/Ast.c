@@ -539,20 +539,35 @@ static struct Ast_RVarState *VarStateNew(struct Ast_RVarState *root) {
 }
 
 static void VarStateUp(struct Ast_RVarState **vs) {
+#	define MayNotInited_cnst ((1u << Ast_InitedNo_cnst) | (1u << Ast_InitedValue_cnst))
+
+	o7_set_t if_, else_, both;
+
 	O7_ASSERT(((*vs)->root->if_ == *vs) || ((*vs)->root->else_ == *vs));
 
 	*vs = (*vs)->root;
+	if_ = (*vs)->if_->inited;
+	(*vs)->if_ = NULL;
 	if ((*vs)->else_ != NULL) {
-		if (!!( (1u << Ast_InitedFail_cnst) & (*vs)->else_->inited)) {
-			(*vs)->inited = (*vs)->if_->inited;
-		} else {
-			(*vs)->inited = (*vs)->if_->inited | (*vs)->else_->inited;
-		}
+		else_ = (*vs)->else_->inited;
 		(*vs)->else_ = NULL;
 	} else {
-		(*vs)->inited = (*vs)->inited | (*vs)->if_->inited;
+		else_ = (*vs)->inited;
 	}
-	(*vs)->if_ = NULL;
+	if ((if_ & (1u << Ast_InitedFail_cnst)) == (else_ & (1u << Ast_InitedFail_cnst))) {
+	} else if (!!( (1u << Ast_InitedFail_cnst) & if_)) {
+		if_ = else_;
+	} else {
+		O7_ASSERT(!!( (1u << Ast_InitedFail_cnst) & else_));
+		else_ = if_;
+	}
+	both = if_ | else_;
+	if ((((*vs)->inited & MayNotInited_cnst) == MayNotInited_cnst) && (((if_ & MayNotInited_cnst) == (1u << Ast_InitedValue_cnst)) || ((else_ & MayNotInited_cnst) == (1u << Ast_InitedValue_cnst)))) {
+		(*vs)->inited = (both & ~(1u << Ast_InitedNo_cnst)) | (1u << Ast_InitedCheck_cnst);
+	} else {
+		(*vs)->inited = both;
+	}
+#	undef MayNotInited_cnst
 }
 
 static void TurnIf_Handle(struct Ast_RDeclaration *d) {
@@ -613,8 +628,14 @@ extern void Ast_TurnFail(struct Ast_RDeclarations *ds) {
 }
 
 static void BackFromBranch_Handle(struct Ast_RDeclaration *d) {
-	while ((d != NULL) && (o7_is(d, &Ast_RVar_tag))) {
-		VarStateUp(&O7_GUARD(Ast_RVar, d)->state);
+	struct Ast_RVar *v;
+
+	while ((d != NULL) && (o7_cmp(d->_.id, Ast_IdVar_cnst) == 0)) {
+		v = O7_GUARD(Ast_RVar, d);
+		VarStateUp(&v->state);
+		if (!!( (1u << Ast_InitedCheck_cnst) & v->state->inited)) {
+			v->checkInit = (0 < 1);
+		}
 		d = d->next;
 	}
 }
