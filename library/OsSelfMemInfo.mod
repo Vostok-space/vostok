@@ -1,6 +1,6 @@
 (* Memory size, used by an application. Implemented through /proc/self/statm
  *
- * Copyright 2020 ComdivByZero
+ * Copyright 2020,2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,9 +61,6 @@ MODULE OsSelfMemInfo;
   PROCEDURE Get*(): INTEGER;
   VAR kb, pageSize, count: INTEGER;
   BEGIN
-    (* TODO устранить ошибочную диагностику возможности использования неинициализированной kb *)
-    kb := -2;
-
     IF ~Read(count, pageSize)
     OR (pageSize MOD 1024 # 0)
     OR ~Arithmetic.Mul(kb, count, pageSize DIV 1024)
