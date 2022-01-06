@@ -561,8 +561,9 @@ END Term;
 PROCEDURE Sum(VAR p: Parser; ds: Ast.Declarations; context: SET): Ast.Expression;
 VAR e: Ast.Expression;
 	sum: Ast.ExprSum;
-	l: INTEGER;
+	l: INTEGER; or: BOOLEAN;
 BEGIN
+	or := FALSE;
 	l := p.l;
 
 	IF l IN {Scanner.Plus, Scanner.Minus} THEN
@@ -572,13 +573,12 @@ BEGIN
 	ELSE
 		e := Term(p, ds, context);
 		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
-			IF p.l # Scanner.Or THEN
+			or := p.l = Scanner.Or;
+			IF ~or THEN
 				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
 			ELSE
 				Ast.TurnIf(ds);
-				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e));
-				(* TODO Выход в другом месте, но пока будет здесь *)
-				Ast.BackFromBranch(ds)
+				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
 			END;
 			e := sum
 		END
@@ -586,13 +586,10 @@ BEGIN
 	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
 		l := p.l;
 		Scan(p);
-		IF l # Scanner.Or THEN
-			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, {})))
-		ELSE
-			Ast.TurnIf(ds);
-			CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, {})));
-			Ast.BackFromBranch(ds)
-		END
+		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, {})))
+	END;
+	IF or THEN
+		Ast.BackFromBranch(ds)
 	END
 	RETURN e
 END Sum;
