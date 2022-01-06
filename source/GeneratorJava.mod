@@ -1266,14 +1266,13 @@ BEGIN
 		type(g, decl, decl.type, FALSE, sameType)
 	END;
 
-	Chr(g, " ");
-
-	IF typeDecl THEN
-		;
-	ELSIF global THEN
-		GlobalName(g, decl)
-	ELSE
-		Name(g, decl)
+	IF ~typeDecl THEN
+		Chr(g, " ");
+		IF global THEN
+			GlobalName(g, decl)
+		ELSE
+			Name(g, decl)
+		END
 	END
 END Declarator;
 
