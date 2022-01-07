@@ -1,5 +1,5 @@
 /*  HTTP server and Telegram-bot for translator demonstration
- *  Copyright (C) 2017-2019,2021 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -224,20 +224,39 @@ func toLang(source, vcmd string) (translated []byte) {
   return
 }
 
-func command(text, help, module string) (res []byte) {
-  var (cmd string)
-  cmd = strings.ToLower(text);
-  if cmd == "info" || cmd == "help" {
+func splitCommand(text string) (cmd, par string) {
+  var (all []string)
+
+  all = strings.SplitN(text, " ", 2);
+  cmd = strings.ToLower(all[0]);
+  if len(all) > 1 {
+    par = all[1]
+  } else {
+    par = ""
+  }
+  return
+}
+
+func command(text, help, module string) (res []byte, ok bool) {
+  var (cmd, par string)
+
+  cmd, par = splitCommand(text);
+  ok = true;
+  if par == "" && (cmd == "info" || cmd == "help") {
     res = []byte(help)
-  } else if cmd == "list" {
+  } else if par == "" && cmd == "list" {
     res = []byte(listModules("\n", "\n\n"))
-  } else if strings.HasPrefix(cmd, "info ") || strings.HasPrefix(cmd, "help ") {
-    res = infoModule(text[5:])
+  } else if cmd == "info" || cmd == "help" || cmd == "list" {
+    res = infoModule(par)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
             cmd == "to-mod" || cmd == "to-modef" {
+    if module == "" {
+      module = par
+    }
     res = toLang(module, cmd)
   } else {
-    res = []byte("Wrong command, use /INFO for help")
+    res = []byte("Wrong command, use /INFO for help");
+    ok = false
   }
   return
 }
@@ -248,7 +267,7 @@ func handleInput(script, module, help, cc string, timeout int) (res []byte, err 
   if script == "" {
     res = []byte{}
   } else if strings.HasPrefix(script, "/") || strings.HasPrefix(script, ":") {
-    res = command(script[1:], help, module)
+    res, _ = command(script[1:], help, module)
   } else {
     res, err = run(module, script, cc, timeout)
   }
@@ -342,22 +361,13 @@ func teleGetSrc(upd teleUpdate) (src string, chat int) {
   return
 }
 
-func handleIfCommand(api, code, cc string, timeout, chat int) (err error) {
-  var (i int; cmd string)
+func handleIfCommand(api, code string, chat int) (err error) {
+  var (res []byte; ok bool)
   err = nil;
   if len(code) > 0 && code[0] == '/' {
-    i = strings.Index(code, " ");
-    if i < 0 {
-      i = len(code)
-    }
-    cmd = strings.ToLower(code[1:i]);
-    if cmd == "start" || cmd == "help" || cmd == "info" && i == len(code) {
-      err = teleSend(api, teleHelp, chat)
-    } else if cmd == "list" {
-      err = teleSend(api, listModules(" ", "\n\n"), chat)
-    } else if cmd == "info" {
-      for i < len(code) && code[i] == ' ' { i += 1 }
-      err = teleSend(api, string(infoModule(code[i:])), chat)
+    res, ok = command(code[1:], teleHelp, "");
+    if ok {
+      err = teleSend(api, string(res), chat)
     }
   }
   return
@@ -382,7 +392,7 @@ func teleBot(token, cc string, timeout int) (err error) {
           output, err = run(src, "", cc, timeout);
           err = teleSend(api, string(output), chat)
         } else {
-          handleIfCommand(api, strings.Trim(upd.Msg.Txt, " \t\r\n"), cc, timeout, chat)
+          handleIfCommand(api, strings.Trim(upd.Msg.Txt, " \t\r\n"), chat)
         }
         lastUpdate = upd.Id
       }
