@@ -2300,7 +2300,7 @@ PROCEDURE RecordVarAdd*(VAR v: Var; r: Record;
 VAR err: INTEGER;
 BEGIN
 	v := RecordVarSearch(r, name, begin, end);
-	IF v = NIL
+	IF (v = NIL) OR ~v.mark & v.module.m.fixed
 	THEN err := ErrNo
 	ELSE err := ErrDeclarationNameDuplicate (* TODO *)
 	END;

@@ -36,6 +36,16 @@ VAR
 	pb1	: PBase;
 	pe1	: PExt1;
 
+PROCEDURE SetAa*(VAR r: Base; aa: INTEGER);
+BEGIN
+	r.aa := aa
+END SetAa;
+
+PROCEDURE GetAa*(r: Base): INTEGER;
+RETURN
+	r.aa
+END GetAa;
+
 PROCEDURE Print(VAR par: Base);
 VAR i: INTEGER;
 	r1: REAL;

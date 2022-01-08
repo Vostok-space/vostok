@@ -16,6 +16,7 @@ TYPE
 	END;
 
 	Record* = RECORD(RecordExt.Base)
+		aa: INTEGER;
 		b: ARRAY 3 OF BOOLEAN
 	END;
 
@@ -101,6 +102,16 @@ BEGIN
 	b := pr3.b + FLT(pr3.a)
 END Fail2;
 
+PROCEDURE SameNameInBase;
+VAR r: Record;
+BEGIN
+	r.aa := -9;
+	RecordExt.SetAa(r, 232);
+	ASSERT(r.aa = -9);
+	r.aa := 11;
+	ASSERT(RecordExt.GetAa(r) = 232)
+END SameNameInBase;
+
 PROCEDURE Go*;
 BEGIN
 	r1.a := 0;
@@ -133,7 +144,9 @@ BEGIN
 	r2.a := 7;
 	ASSERT(r3.r2.a = 4);
 
-	Assign
+	Assign;
+
+	SameNameInBase
 END Go;
 
 BEGIN

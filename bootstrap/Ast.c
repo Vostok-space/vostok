@@ -1616,7 +1616,7 @@ extern o7_int_t Ast_RecordVarAdd(struct Ast_RVar **v, struct Ast_RRecord *r, o7_
 	o7_int_t err;
 
 	*v = RecordVarSearch(r, name_len0, name, begin, end);
-	if (*v == NULL) {
+	if (*v == NULL || (!(*v)->_.mark && (*v)->_.module_->m->fixed)) {
 		err = Ast_ErrNo_cnst;
 	} else {
 		err = Ast_ErrDeclarationNameDuplicate_cnst;
