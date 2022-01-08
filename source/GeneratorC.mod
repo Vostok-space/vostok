@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -413,6 +413,7 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 				Text.CancelDeferedOrWriteChar(g, "*");
 				GlobalName(g, decl)
 			ELSE
+				(*TODO CancelDefered *)
 				Str(g, "(*");
 				GlobalName(g, decl);
 				Chr(g, ")")
@@ -617,7 +618,7 @@ BEGIN
 	&
 	  (  (Ast.ParamOut IN sels.decl(Ast.FormalParam).access)
 	   OR
-	     (sels.decl.type.id IN {Ast.IdArray, Ast.IdRecord})
+	     (sels.decl.type.id IN Ast.Structures)
 	  );
 	lastSelectorDereference := (0 <= sels.i)
 	                         & (sels.list[sels.i] IS Ast.SelPointer);
@@ -1968,14 +1969,13 @@ END ProcHead;
 
 PROCEDURE Declarator(VAR gen: Generator; decl: Ast.Declaration;
                      typeDecl, sameType, global: BOOLEAN);
-VAR g: Generator;
-	mo: PMemoryOut;
+VAR g: Generator; mo: PMemoryOut;
 BEGIN
 	mo := PMemoryOutGet(gen.opt);
 
 	Text.Init(g, mo);
 	g.memout := mo;
-	Text.SetTabs(g, gen);
+	Text.TransiteOptions(g, gen);
 	g.module := gen.module;
 	g.interface := gen.interface;
 	g.opt := gen.opt;

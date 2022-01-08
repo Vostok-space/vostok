@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017,2019-2020 ComdivByZero
+ *  Copyright (C) 2017,2019-2020,2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -21,163 +21,191 @@ IMPORT
 	Utf8, Hexadecimal := Hex,
 	Strings := StringStore, Chars0X,
 	Stream  := VDataStream,
-	Limits  := TypesLimits;
+	Limits  := TypesLimits,
+	ArrayFill;
 
 TYPE
+	Options* = RECORD(V.Base)
+		indent*: RECORD
+			char*: CHAR;
+			count*: INTEGER
+		END
+	END;
+
 	Out* = RECORD(V.Base)
 		out: Stream.POut;
+		opt: Options;
 		len*: INTEGER;
-		tabs: INTEGER;
+		indent: INTEGER;
 		isNewLine: BOOLEAN;
 		defered: ARRAY 1 OF CHAR
 	END;
+
+PROCEDURE DefaultOptions*(VAR opt: Options);
+BEGIN
+	V.Init(opt);
+	opt.indent.char := " ";
+	opt.indent.count := 4
+END DefaultOptions;
 
 PROCEDURE Init*(VAR g: Out; out: Stream.POut);
 BEGIN
 	ASSERT(out # NIL);
 
 	V.Init(g);
-	g.tabs := 0;
+	DefaultOptions(g.opt);
+	g.indent := 0;
 	g.out := out;
 	g.len := 0;
 	g.isNewLine := FALSE;
 	g.defered[0] := Utf8.Null
 END Init;
 
-PROCEDURE SetTabs*(VAR g: Out; d: Out);
+PROCEDURE SetOptions*(VAR g: Out; opt: Options);
 BEGIN
-	g.tabs := d.tabs
-END SetTabs;
+	g.opt := opt
+END SetOptions;
 
-PROCEDURE Write(VAR gen: Out; str: ARRAY OF CHAR; ofs, size: INTEGER);
+PROCEDURE TransiteOptions*(VAR g: Out; d: Out);
 BEGIN
-	INC(gen.len, Stream.WriteChars(gen.out^, str, ofs, size))
+	g.opt := d.opt;
+	g.indent := d.indent
+END TransiteOptions;
+
+PROCEDURE Write(VAR g: Out; str: ARRAY OF CHAR; ofs, size: INTEGER);
+BEGIN
+	INC(g.len, Stream.WriteChars(g.out^, str, ofs, size))
 END Write;
 
-PROCEDURE CharFill*(VAR gen: Out; ch: CHAR; count: INTEGER);
-VAR c: ARRAY 1 OF CHAR;
+PROCEDURE CharFill*(VAR g: Out; ch: CHAR; count: INTEGER);
+VAR c: ARRAY 32 OF CHAR;
 BEGIN
 	ASSERT(0 <= count);
-	c[0] := ch;
-	WHILE count > 0 DO
-		Write(gen, c, 0, 1);
-		DEC(count)
-	END
+	IF count < LEN(c) THEN
+		ArrayFill.Char(c, 0, ch, count);
+	ELSE
+		ArrayFill.Char(c, 0, ch, LEN(c));
+		WHILE count > LEN(c) DO
+			Write(g, c, 0, LEN(c));
+			DEC(count, LEN(c))
+		END
+	END;
+	Write(g, c, 0, count)
 END CharFill;
 
-PROCEDURE IndentInNewLine(VAR gen: Out);
+PROCEDURE IndentInNewLine(VAR g: Out);
 BEGIN
-	IF gen.isNewLine THEN
-		gen.isNewLine := FALSE;
-		CharFill(gen, Utf8.Tab, gen.tabs)
+	IF g.isNewLine THEN
+		g.isNewLine := FALSE;
+		CharFill(g, g.opt.indent.char, g.indent * g.opt.indent.count)
 	END
 END IndentInNewLine;
 
-PROCEDURE Char*(VAR gen: Out; ch: CHAR);
+PROCEDURE Char*(VAR g: Out; ch: CHAR);
 VAR c: ARRAY 1 OF CHAR;
 BEGIN
-	IndentInNewLine(gen);
+	IndentInNewLine(g);
 	c[0] := ch;
-	Write(gen, c, 0, 1)
+	Write(g, c, 0, 1)
 END Char;
 
-PROCEDURE DeferChar*(VAR gen: Out; ch: CHAR);
+PROCEDURE DeferChar*(VAR g: Out; ch: CHAR);
 BEGIN
 	ASSERT(ch # Utf8.Null);
-	ASSERT(gen.defered[0] = Utf8.Null);
+	ASSERT(g.defered[0] = Utf8.Null);
 
-	gen.defered[0] := ch
+	g.defered[0] := ch
 END DeferChar;
 
-PROCEDURE CancelDeferedOrWriteChar*(VAR gen: Out; ch: CHAR);
+PROCEDURE CancelDeferedOrWriteChar*(VAR g: Out; ch: CHAR);
 BEGIN
-	IF gen.defered[0] = Utf8.Null THEN
-		Char(gen, ch)
+	IF g.defered[0] = Utf8.Null THEN
+		Char(g, ch)
 	ELSE (* взаимозачёт *)
-		gen.defered[0] := Utf8.Null
+		g.defered[0] := Utf8.Null
 	END
 END CancelDeferedOrWriteChar;
 
-PROCEDURE NewLine(VAR gen: Out);
+PROCEDURE NewLine(VAR g: Out);
 BEGIN
-	IndentInNewLine(gen);
-	IF gen.defered[0] # Utf8.Null THEN
-		Write(gen, gen.defered, 0, 1);
-		gen.defered[0] := Utf8.Null
+	IndentInNewLine(g);
+	IF g.defered[0] # Utf8.Null THEN
+		Write(g, g.defered, 0, 1);
+		g.defered[0] := Utf8.Null
 	END
 END NewLine;
 
-PROCEDURE Str*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE Str*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	NewLine(gen);
-	Write(gen, str, 0, Chars0X.CalcLen(str, 0))
+	NewLine(g);
+	Write(g, str, 0, Chars0X.CalcLen(str, 0))
 END Str;
 
-PROCEDURE StrLn*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE StrLn*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	NewLine(gen);
-	Write(gen, str, 0, Chars0X.CalcLen(str, 0));
-	Write(gen, Utf8.NewLine, 0, 1);
-	gen.isNewLine := TRUE
+	NewLine(g);
+	Write(g, str, 0, Chars0X.CalcLen(str, 0));
+	Write(g, Utf8.NewLine, 0, 1);
+	g.isNewLine := TRUE
 END StrLn;
 
-PROCEDURE Ln*(VAR gen: Out);
+PROCEDURE Ln*(VAR g: Out);
 BEGIN
-	Write(gen, Utf8.NewLine, 0, 1);
-	gen.isNewLine := TRUE
+	Write(g, Utf8.NewLine, 0, 1);
+	g.isNewLine := TRUE
 END Ln;
 
-PROCEDURE StrOpen*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE StrOpen*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	StrLn(gen, str);
-	INC(gen.tabs)
+	StrLn(g, str);
+	INC(g.indent)
 END StrOpen;
 
-PROCEDURE IndentOpen*(VAR gen: Out);
+PROCEDURE IndentOpen*(VAR g: Out);
 BEGIN
-	INC(gen.tabs)
+	INC(g.indent)
 END IndentOpen;
 
-PROCEDURE IndentClose*(VAR gen: Out);
+PROCEDURE IndentClose*(VAR g: Out);
 BEGIN
-	ASSERT(0 < gen.tabs);
-	DEC(gen.tabs)
+	ASSERT(0 < g.indent);
+	DEC(g.indent)
 END IndentClose;
 
-PROCEDURE StrClose*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE StrClose*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	IndentClose(gen);
-	Str(gen, str)
+	IndentClose(g);
+	Str(g, str)
 END StrClose;
 
-PROCEDURE StrLnClose*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE StrLnClose*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	IndentClose(gen);
-	StrLn(gen, str)
+	IndentClose(g);
+	StrLn(g, str)
 END StrLnClose;
 
-PROCEDURE LnStrClose*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE LnStrClose*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	Ln(gen);
-	IndentClose(gen);
-	Str(gen, str)
+	Ln(g);
+	IndentClose(g);
+	Str(g, str)
 END LnStrClose;
 
-PROCEDURE StrIgnoreIndent*(VAR gen: Out; str: ARRAY OF CHAR);
+PROCEDURE StrIgnoreIndent*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	Write(gen, str, 0, Chars0X.CalcLen(str, 0))
+	Write(g, str, 0, Chars0X.CalcLen(str, 0))
 END StrIgnoreIndent;
 
-PROCEDURE String*(VAR gen: Out; word: Strings.String);
+PROCEDURE String*(VAR g: Out; word: Strings.String);
 BEGIN
-	NewLine(gen);
-	INC(gen.len, Strings.Write(gen.out^, word))
+	NewLine(g);
+	INC(g.len, Strings.Write(g.out^, word))
 END String;
 
-PROCEDURE Data*(VAR gen: Out; data: ARRAY OF CHAR; ofs, count: INTEGER);
+PROCEDURE Data*(VAR g: Out; data: ARRAY OF CHAR; ofs, count: INTEGER);
 BEGIN
-	NewLine(gen);
-	Write(gen, data, ofs, count)
+	NewLine(g);
+	Write(g, data, ofs, count)
 END Data;
 
 PROCEDURE EscapeHighChar(VAR buf: ARRAY OF CHAR; c: CHAR);
@@ -188,11 +216,11 @@ BEGIN
 	buf[3] := Hexadecimal.To(ORD(c) MOD 10H)
 END EscapeHighChar;
 
-PROCEDURE ScreeningString*(VAR gen: Out; str: Strings.String; escapeHighChars: BOOLEAN);
+PROCEDURE ScreeningString*(VAR g: Out; str: Strings.String; escapeHighChars: BOOLEAN);
 VAR i, last: INTEGER; buf: ARRAY 4 OF CHAR; lastEscaped: BOOLEAN;
 	block: Strings.Block;
 BEGIN
-	NewLine(gen);
+	NewLine(g);
 	block := str.block;
 	i := str.ofs;
 	last := i;
@@ -200,13 +228,13 @@ BEGIN
 	INC(i);
 	lastEscaped := FALSE;
 	WHILE block.s[i] = Utf8.NewPage DO
-		Write(gen, block.s, last, i - last);
+		Write(g, block.s, last, i - last);
 		block := block.next;
 		i := 0;
 		last := 0
 	ELSIF block.s[i] = "\" DO
-		Write(gen, block.s, last, i - last + 1);
-		Write(gen, "\", 0, 1);
+		Write(g, block.s, last, i - last + 1);
+		Write(g, "\", 0, 1);
 		INC(i);
 		last := i;
 		lastEscaped := FALSE
@@ -215,9 +243,9 @@ BEGIN
 	      OR lastEscaped & Hexadecimal.InRangeWithLowCase(block.s[i])
 	     )
 	DO
-		Write(gen, block.s, last, i - last);
+		Write(g, block.s, last, i - last);
 		EscapeHighChar(buf, block.s[i]);
-		Write(gen, buf, 0, 4);
+		Write(g, buf, 0, 4);
 		INC(i);
 		last := i;
 		lastEscaped := TRUE
@@ -226,15 +254,15 @@ BEGIN
 		lastEscaped := FALSE
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
-	Write(gen, block.s, last, i - last)
+	Write(g, block.s, last, i - last)
 END ScreeningString;
 
-PROCEDURE Int*(VAR gen: Out; int: INTEGER);
+PROCEDURE Int*(VAR g: Out; int: INTEGER);
 VAR buf: ARRAY 14 OF CHAR;
 	i: INTEGER;
 	sign: BOOLEAN;
 BEGIN
-	NewLine(gen);
+	NewLine(g);
 	sign := int < 0;
 	IF sign THEN
 		int := -int
@@ -249,16 +277,16 @@ BEGIN
 		DEC(i);
 		buf[i] := "-"
 	END;
-	Write(gen, buf, i, LEN(buf) - i)
+	Write(g, buf, i, LEN(buf) - i)
 END Int;
 
-PROCEDURE Real*(VAR gen: Out; real: REAL);
+PROCEDURE Real*(VAR g: Out; real: REAL);
 BEGIN
-	NewLine(gen);
-	Str(gen, "Real not implemented")
+	NewLine(g);
+	Str(g, "Real not implemented")
 END Real;
 
-PROCEDURE HexSeparateHighBit*(VAR gen: Out; v: INTEGER; highBit: BOOLEAN);
+PROCEDURE HexSeparateHighBit*(VAR g: Out; v: INTEGER; highBit: BOOLEAN);
 VAR buf: ARRAY 8 OF CHAR; i: INTEGER;
 BEGIN
 	ASSERT(v >= 0);
@@ -271,21 +299,21 @@ BEGIN
 		buf[i] := Hexadecimal.To(v MOD 10H);
 		v := v DIV 10H;
 	END;
-	Write(gen, buf, i, LEN(buf) - i)
+	Write(g, buf, i, LEN(buf) - i)
 END HexSeparateHighBit;
 
-PROCEDURE Hex*(VAR gen: Out; v: INTEGER);
+PROCEDURE Hex*(VAR g: Out; v: INTEGER);
 BEGIN
 	IF v < 0 THEN
-		HexSeparateHighBit(gen, v + Limits.IntegerMax + 1, TRUE)
+		HexSeparateHighBit(g, v + Limits.IntegerMax + 1, TRUE)
 	ELSE
-		HexSeparateHighBit(gen, v, FALSE)
+		HexSeparateHighBit(g, v, FALSE)
 	END
 END Hex;
 
-PROCEDURE Set*(VAR gen: Out; VAR set: SET);
+PROCEDURE Set*(VAR g: Out; VAR set: SET);
 BEGIN
-	HexSeparateHighBit(gen, ORD(set - {Limits.SetMax}), Limits.SetMax IN set)
+	HexSeparateHighBit(g, ORD(set - {Limits.SetMax}), Limits.SetMax IN set)
 END Set;
 
 END TextGenerator.

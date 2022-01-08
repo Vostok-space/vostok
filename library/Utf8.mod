@@ -1,6 +1,6 @@
 (*  Some constants and subroutines for Utf-8/ASC II
  *
- *  Copyright (C) 2016,2020-2021 ComdivByZero
+ *  Copyright (C) 2016,2020-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ CONST
 	NewPage*         = 0CX;
 	CarRet*          = 0DX;
 	Idle*            = 16X;
+	Space*           = 20X;
 	DQuote*          = 22X;
 	Delete*          = 7FX;
 

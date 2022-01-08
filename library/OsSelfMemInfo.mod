@@ -52,7 +52,6 @@ MODULE OsSelfMemInfo;
 
       pageSize := Unistd.Sysconf(Unistd.pageSize);
       ok := Parse(pagesCount, data, len)
-
     END
   RETURN
     ok
