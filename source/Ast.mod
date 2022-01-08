@@ -654,6 +654,7 @@ VAR
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
+	(*ASSERT(~m.fixed); TODO *)
 	IF 0 <= begin THEN
 		Strings.Put(m.store, w, s, begin, end)
 	ELSE
@@ -2257,7 +2258,7 @@ BEGIN
 	RETURN err
 END SelArrayNew;
 
-PROCEDURE RecordVarSearch(r: Record; name: ARRAY OF CHAR; begin, end: INTEGER): Var;
+PROCEDURE RecordVarSearch*(r: Record; name: ARRAY OF CHAR; begin, end: INTEGER): Var;
 VAR d: Declaration;
 	v: Var;
 BEGIN

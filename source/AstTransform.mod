@@ -20,7 +20,7 @@ MODULE AstTransform;
   IMPORT Out, V, Ast,
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
-         Chars0X,
+         Chars0X, Utf8,
          SpecIdent := OberonSpecIdent;
 
   CONST
@@ -37,7 +37,8 @@ MODULE AstTransform;
 
   TYPE
     Options* = RECORD(V.Base)
-      setSubBrace*: BOOLEAN;
+      setSubBrace*,
+      renameSameInRecExt*: BOOLEAN;
 
       anonRecord* ,
       outParam    : INTEGER;
@@ -70,6 +71,7 @@ MODULE AstTransform;
   PROCEDURE DefaultOptions*(VAR o: Options);
   BEGIN
     o.setSubBrace := TRUE;
+    o.renameSameInRecExt := FALSE;
     o.anonRecord := AnonDeclareGlobalScope;
     o.outParam := OutParamToArrayAndIndex;
 
@@ -86,7 +88,7 @@ MODULE AstTransform;
   BEGIN
     type(d.type, o);
     IF (o.outParam # 0)
-     & ~(d.type.id IN {Ast.IdArray, Ast.IdRecord}) & d(Ast.Var).inVarParam
+     & ~(d.type.id IN Ast.Structures) & d(Ast.Var).inVarParam
     THEN
       ChangeTypeOnArray(d.type, o)
     END
@@ -159,6 +161,16 @@ MODULE AstTransform;
     END
   END ProcType;
 
+  PROCEDURE Put4Digits(VAR str: ARRAY OF CHAR; ofs, val: INTEGER);
+  CONST Z = ORD("0");
+  BEGIN
+    ASSERT((0 <= val) & (val < 10000));
+    str[ofs + 0] := CHR(Z + val DIV 1000 MOD 10);
+    str[ofs + 1] := CHR(Z + val DIV 100  MOD 10);
+    str[ofs + 2] := CHR(Z + val DIV 10   MOD 10);
+    str[ofs + 3] := CHR(Z + val          MOD 10)
+  END Put4Digits;
+
   PROCEDURE Record(r: Ast.Record; VAR o: Options);
   VAR d: Ast.Declaration;
 
@@ -166,15 +178,10 @@ MODULE AstTransform;
     PROCEDURE Link(t: Ast.Record; VAR o: Options);
 
       PROCEDURE Name(d: Ast.Declaration; i: INTEGER);
-      CONST Z = ORD("0");
       VAR name: ARRAY 10 OF CHAR;
       BEGIN
         name    := "Anon_";
-        name[5] := CHR(Z + i DIV 1000 MOD 10);
-        name[6] := CHR(Z + i DIV 100  MOD 10);
-        name[7] := CHR(Z + i DIV 10   MOD 10);
-        name[8] := CHR(Z + i          MOD 10);
-
+        Put4Digits(name, 5, i);
         Ast.PutChars(d.module.m, d.name, name, 0, LEN(name) - 1)
       END Name;
     BEGIN
@@ -188,16 +195,47 @@ MODULE AstTransform;
       t.up := o.module.dag;
 
       Name(t, o.anon);
-      INC(o.anon);
+      INC(o.anon)
     END Link;
+
+    PROCEDURE CheckSameName(r: Ast.Record; d: Ast.Declaration);
+    VAR name: ARRAY TranLim.LenName + 1 OF CHAR; len: INTEGER; v: Ast.Var; i: INTEGER;
+    BEGIN
+      len := 0;
+      ASSERT(Strings.CopyToChars(name, len, d.name));
+      v := Ast.RecordVarSearch(r, name, 0, len);
+      IF v # NIL THEN
+        IF len > TranLim.LenName - 5 THEN
+          len := TranLim.LenName - 5;
+          WHILE ~Utf8.IsBegin(name[len]) DO
+            DEC(len)
+          END
+        END;
+        i := 0;
+        REPEAT
+          name[len] := "_";
+          Put4Digits(name, len + 1, i);
+          INC(i)
+        UNTIL NIL = Ast.RecordVarSearch(r, name, 0, len + 5);
+        Ast.PutChars(d.module.m, d.name, name, 0, len + 5);
+      END
+    END CheckSameName;
   BEGIN
     IF r.pointer # NIL THEN
       r.pointer.ext := o.mark
     END;
     d := r.vars;
-    WHILE d # NIL DO
-      Var(d, o);
-      d := d.next
+    IF o.renameSameInRecExt & (r.base # NIL) THEN
+      WHILE d # NIL DO
+        Var(d, o);
+        CheckSameName(r.base, d);
+        d := d.next
+      END
+    ELSE
+      WHILE d # NIL DO
+        Var(d, o);
+        d := d.next
+      END
     END;
 
     IF ~Strings.IsDefined(r.name)

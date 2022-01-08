@@ -1203,10 +1203,12 @@ BEGIN
 		ELSIF res IN Cli.ThroughJava + Cli.ThroughJs THEN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
-			AstTransform.Do(module, tranOpt);
 			IF res IN Cli.ThroughJava THEN
+				AstTransform.Do(module, tranOpt);
 				ret := GenerateThroughJava(res, args, module, cmd, listener)
 			ELSE ASSERT(res IN Cli.ThroughJs);
+				tranOpt.renameSameInRecExt := TRUE;
+				AstTransform.Do(module, tranOpt);
 				ret := GenerateThroughJs(res, args, module, cmd, listener)
 			END
 		ELSIF res IN Cli.ThroughC THEN
