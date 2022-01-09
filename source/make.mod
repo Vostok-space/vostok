@@ -1,7 +1,7 @@
 #!/usr/bin/env -S ost .
 
 Build and test tasks for the translator
-Copyright (C) 2018-2021 ComdivByZero
+Copyright (C) 2018-2022 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -62,8 +62,8 @@ MODULE make;
 
  PROCEDURE AddOpts(VAR code: Exec.Code): BOOLEAN;
  RETURN
-   ((cc  = "") OR Exec.Add(code, "-cc") & Exec.Add(code, cc))
- & ((opt = "") OR Exec.AddClean(code, " ") & Exec.AddClean(code, opt))
+   ((cc  = "") OR Exec.Par(code, "-cc", cc))
+ & ((opt = "") OR Exec.AddAsIs(code, " ") & Exec.AddAsIs(code, opt))
  END AddOpts;
 
  PROCEDURE Ok(b: BOOLEAN);
@@ -95,23 +95,26 @@ MODULE make;
 
    ok :=
       Concat(result, "result/", ost) & Exec.Init(code, result)
-    & Exec.Add(code, cmd) & Exec.Add(code, script)
+    & Exec.Vals(code, cmd, script)
 
     & Concat(result, "result/", res)
     & ((lang = Js) & Concat(result, result, ".js")
     OR windows & Concat(result, result, ".exe")
     OR posix
       )
-    & Exec.Add(code, result)
+    & Exec.Val(code, result)
 
-    & ((script # "AndroidBuild.Go") OR Exec.AddClean(code, BlankAllExceptJava))
+    & ((script # "AndroidBuild.Go") OR Exec.AddAsIs(code, BlankAllExceptJava))
     & ((tmp[1] = "0")
-     & Exec.Add(code, "-i") & Exec.Add(code, "singularity/definition")
-     & Exec.Add(code, "-c") & Exec.Add(code, "singularity/implementation")
-     & Exec.AddClean(code, " -m source -m library -t")
-    OR (tmp[1] # "0") & Exec.AddClean(code, " -infr . -m source -t")
+     & Exec.Par(code, "-i", "singularity/definition")
+     & Exec.Par(code, "-c", "singularity/implementation")
+     & Exec.Par(code, "-m", "source")
+     & Exec.Par(code, "-m", "library")
+    OR (tmp[1] # "0")
+     & Exec.Par(code, "-infr", ".")
+     & Exec.Par(code, "-m", "source")
       )
-    & Exec.Add(code, restmp)
+    & Exec.Par(code, "-t", restmp)
 
     & AddOpts(code)
 
@@ -133,12 +136,12 @@ MODULE make;
  PROCEDURE AddRun(VAR code: Exec.Code; class: BOOLEAN): BOOLEAN;
  VAR ret: BOOLEAN;
  BEGIN
-   ret := ~class OR Exec.Add(code, "o7.Translator");
+   ret := ~class OR Exec.Val(code, "o7.Translator");
    IF ret THEN
      CASE lang OF
-       C   : ret := Exec.Add(code, "run")
-     | Java: ret := Exec.Add(code, "run-java")
-     | Js  : ret := Exec.Add(code, "run-js")
+       C   : ret := Exec.Val(code, "run")
+     | Java: ret := Exec.Val(code, "run-java")
+     | Js  : ret := Exec.Val(code, "run-js")
      END
    END
  RETURN
@@ -147,7 +150,7 @@ MODULE make;
 
  PROCEDURE OstInit(VAR code: Exec.Code; ost: ARRAY OF CHAR; runLang: INTEGER): BOOLEAN;
  RETURN
-   (  (runLang = Java) & Exec.Init(code, "java") & Exec.Add(code, "-cp")
+   (  (runLang = Java) & Exec.Init(code, "java") & Exec.Key(code, "-cp")
    OR (runLang = Js) & Exec.Init(code, "node")
    OR (runLang = C) & Exec.Init(code, "")
    )
@@ -157,11 +160,11 @@ MODULE make;
 
  PROCEDURE OstAddOpts(VAR code: Exec.Code): BOOLEAN;
  RETURN
-   Exec.Add(code, "-infr") & Exec.Add(code, ".")
- & Exec.Add(code, "-m") & Exec.Add(code, "example")
- & Exec.Add(code, "-m") & Exec.Add(code, "test/source")
- & Exec.Add(code, "-allow-system")
- & Exec.Add(code, "-cyrillic")
+   Exec.Par(code, "-infr", ".")
+ & Exec.Par(code, "-m", "example")
+ & Exec.Par(code, "-m", "test/source")
+ & Exec.Key(code, "-allow-system")
+ & Exec.Key(code, "-cyrillic")
  & AddOpts(code)
  END OstAddOpts;
 
@@ -183,7 +186,7 @@ MODULE make;
        ASSERT(Dir.CopyName(n, l, file));
        IF (n[0] # ".") & OstInit(code, ost, runLang) & CopyFileName(c, n) THEN
          ASSERT(
-           ( example & Exec.Add(code, c)
+           ( example & Exec.Val(code, c)
           OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
            )
            & OstAddOpts(code)
@@ -288,13 +291,10 @@ MODULE make;
  VAR code: Exec.Code;
  RETURN
       Exec.Init(code, ost)
-    & Exec.Add(code, cmd)
-    & Exec.Add(code, script)
-    & Exec.Add(code, res)
-    & Exec.Add(code, "-infr")
-    & Exec.Add(code, ".")
-    & Exec.Add(code, "-m")
-    & Exec.Add(code, source)
+    & Exec.Vals(code, cmd, script)
+    & Exec.Val(code, res)
+    & Exec.Par(code, "-infr", ".")
+    & Exec.Par(code, "-m", source)
     & (Execute(code, msg) = 0)
  END RunOst;
 
@@ -416,10 +416,9 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "md5deep")
- & Exec.Add(cmd, "-rl")
- & Exec.Add(cmd, dir)
- & Exec.AddClean(cmd, " > ")
- & Exec.Add(cmd, out)
+ & Exec.Par(cmd, "-rl", dir)
+ & Exec.AddAsIs(cmd, " > ")
+ & Exec.Val(cmd, out)
  & (Exec.Do(cmd) = Exec.Ok)
  END Md5Deep;
 
@@ -427,9 +426,8 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "fakeroot")
- & Exec.Add(cmd, "dpkg-deb")
- & Exec.Add(cmd, "--build")
- & Exec.Add(cmd, dir)
+ & Exec.Val(cmd, "dpkg-deb")
+ & Exec.Par(cmd, "--build", dir)
  & (Exec.Do(cmd) = Exec.Ok)
  END DpkgDeb;
 
@@ -452,14 +450,12 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "find")
- & Exec.Add(cmd, path)
- & ((type = "") OR Exec.Add(cmd, "-type") & Exec.Add(cmd, type))
- & ((name = "") OR Exec.Add(cmd, "-name") & Exec.Add(cmd, name))
- & Exec.Add(cmd, "-exec")
- & Exec.Add(cmd, "chmod")
- & Exec.Add(cmd, mode)
- & Exec.Add(cmd, "{}")
- & Exec.Add(cmd, ";")
+ & Exec.Val(cmd, path)
+ & ((type = "") OR Exec.Par(cmd, "-type", type))
+ & ((name = "") OR Exec.Par(cmd, "-name", name))
+ & Exec.Par(cmd, "-exec", "chmod")
+ & Exec.Vals(cmd, mode, "{}")
+ & Exec.Val(cmd, ";")
  & (Exec.Do(cmd) = Exec.Ok)
  END ChangeFilesMode;
 
@@ -477,7 +473,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  RETURN
    Exec.Init(cmd, "lintian")
  & Concat(deb, name, ".deb")
- & Exec.Add(cmd, deb)
+ & Exec.Val(cmd, deb)
  & (Exec.Do(cmd) = Exec.Ok)
  END Lintian;
 
@@ -497,10 +493,9 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "gzip")
- & Exec.Add(cmd, "-9cn")
- & Exec.Add(cmd, src)
- & Exec.AddClean(cmd, " > ")
- & Exec.Add(cmd, dest)
+ & Exec.Par(cmd, "-9cn", src)
+ & Exec.AddAsIs(cmd, " > ")
+ & Exec.Val(cmd, dest)
  & (Exec.Do(cmd) = Exec.Ok)
  END Gzip;
 
@@ -508,9 +503,8 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "tar")
- & Exec.Add(cmd, "cvfj")
- & Exec.Add(cmd, dest)
- & Exec.Add(cmd, src)
+ & Exec.Key(cmd, "cvfj")
+ & Exec.Vals(cmd, dest, src)
  & (Exec.Do(cmd) = Exec.Ok)
  END TarBz2;
 
@@ -518,10 +512,9 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "awk")
- & Exec.Add(cmd, script)
- & Exec.Add(cmd, src)
- & Exec.AddClean(cmd, " > ")
- & Exec.Add(cmd, dest)
+ & Exec.Vals(cmd, script, src)
+ & Exec.AddAsIs(cmd, " > ")
+ & Exec.Val(cmd, dest)
  & (Exec.Do(cmd) = Exec.Ok)
  END Awk;
 
@@ -669,8 +662,8 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR cmd: Exec.Code;
  RETURN
    Exec.Init(cmd, "rpmbuild")
- & Exec.Add(cmd, "-ba")
- & Exec.Add(cmd, spec)
+ & Exec.Key(cmd, "-ba")
+ & Exec.Val(cmd, spec)
  & (Exec.Do(cmd) = Exec.Ok)
  END RpmBuild;
 

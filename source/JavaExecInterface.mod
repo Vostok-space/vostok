@@ -1,5 +1,5 @@
 (*  Executor of Java classes
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019,2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -23,17 +23,17 @@ MODULE JavaExecInterface;
     ASSERT(Exec.Init(e, "java"))
   END Init;
 
-  PROCEDURE AddClassPath*(VAR e: Exec.Code;
-                          path: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  PROCEDURE ClassPath*(VAR e: Exec.Code;
+                       path: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
-    Exec.Add(e, "-cp")
+    Exec.Key(e, "-cp")
   & Exec.AddByOfs(e, path, ofs)
-  END AddClassPath;
+  END ClassPath;
 
-  PROCEDURE AddJar*(VAR e: Exec.Code; jar: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  PROCEDURE Jar*(VAR e: Exec.Code; jar: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
-    Exec.Add(e, "-jar")
+    Exec.Key(e, "-jar")
   & Exec.AddByOfs(e, jar, ofs)
-  END AddJar;
+  END Jar;
 
 END JavaExecInterface.

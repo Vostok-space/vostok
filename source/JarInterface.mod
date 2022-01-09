@@ -1,6 +1,6 @@
 Wrapper for CLI of jar-utility
 
-Copyright 2021 ComdivByZero
+Copyright 2021-2022 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ MODULE JarInterface;
 
   PROCEDURE Create*(VAR ji: T; fileName: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Exec.Add(ji.cmd, "--create")
+    Exec.Key(ji.cmd, "--create")
   & (   (fileName = "")
-     OR Exec.Add(ji.cmd, "--file")
+     OR Exec.Key(ji.cmd, "--file")
       & Exec.AddFullPath(ji.cmd, fileName)
     )
   END Create;
@@ -48,23 +48,22 @@ MODULE JarInterface;
   BEGIN
     ASSERT(name # "")
   RETURN
-    Exec.Add(ji.cmd, "--main-class")
-  & Exec.Add(ji.cmd, name)
+    Exec.Par(ji.cmd, "--main-class", name)
   END MainClass;
 
   PROCEDURE Class*(VAR ji: T; fileName: ARRAY OF CHAR): BOOLEAN;
   BEGIN
     ASSERT(fileName # "")
   RETURN
-    Exec.Add(ji.cmd, fileName)
+    Exec.Val(ji.cmd, fileName)
   END Class;
 
-  PROCEDURE Clean*(VAR ji: T; text: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE AddAsIs*(VAR ji: T; text: ARRAY OF CHAR): BOOLEAN;
   BEGIN
     ASSERT(text # "")
   RETURN
-    Exec.AddClean(ji.cmd, text)
-  END Clean;
+    Exec.AddAsIs(ji.cmd, text)
+  END AddAsIs;
 
   PROCEDURE Do*(VAR ji: T; baseDir: ARRAY OF CHAR): INTEGER;
   VAR ret, len: INTEGER; cur: ARRAY (*TODO*)256 OF CHAR;

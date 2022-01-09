@@ -192,7 +192,7 @@ BEGIN
 				ret := Cli.ErrOpenC
 			ELSE
 				(* TODO *)
-				ASSERT(~usecc OR CComp.AddC(ccomp, dir, 0));
+				ASSERT(~usecc OR CComp.Cfile(ccomp, dir, 0));
 
 				ret := ErrNo
 			END
@@ -341,7 +341,7 @@ BEGIN
 				File.CloseOut(impl)
 			END
 		ELSIF name[0] # Utf8.Null THEN
-			ASSERT(~usecc OR CComp.AddC(ccomp, name, 0))
+			ASSERT(~usecc OR CComp.Cfile(ccomp, name, 0))
 		END
 	END
 	RETURN ret
@@ -492,22 +492,22 @@ VAR ret: INTEGER;
 	    ccEnd: INTEGER;
 	    ok: BOOLEAN;
 
-	    PROCEDURE IncludeCdirsAndAddO7c(VAR cmd: CComp.Compiler; cDirs: ARRAY OF CHAR): BOOLEAN;
-	    VAR ok, o7c: BOOLEAN; i, nameLen: INTEGER; name: ARRAY 512 OF CHAR;
+		PROCEDURE IncludeCdirsAndAddO7c(VAR cmd: CComp.Compiler; cDirs: ARRAY OF CHAR): BOOLEAN;
+		VAR ok, o7c: BOOLEAN; i, nameLen: INTEGER; name: ARRAY 512 OF CHAR;
 		BEGIN
 			i := 0;
 			o7c := FALSE;
 			ok := TRUE;
 			WHILE ok & (cDirs[i] # Utf8.Null) DO
 				nameLen := 0;
-				ok := CComp.AddInclude(cmd, cDirs, i);
+				ok := CComp.Include(cmd, cDirs, i);
 				IF ~o7c & ok THEN
 					ok := Chars0X.Copy      (name, nameLen, cDirs, i)
 					    & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
 					    & Chars0X.CopyString(name, nameLen, "o7.c");
 					o7c := ok & Files.Exist(name, 0);
 					IF o7c THEN
-						ok := CComp.AddC(cmd, name, 0)
+						ok := CComp.Cfile(cmd, name, 0)
 					END;
 					INC(i)
 				ELSE
@@ -539,8 +539,8 @@ VAR ret: INTEGER;
 			outC[outCLen] := Utf8.Null;
 			IF ret = ErrNo THEN
 				ok := ok
-				    & CComp.AddOutputExe(cmd, bin)
-				    & CComp.AddInclude(cmd, outC, 0)
+				    & CComp.OutputExe(cmd, bin)
+				    & CComp.Include(cmd, outC, 0)
 				    & IncludeCdirsAndAddO7c(cmd, cDirs)
 				    & (  (opt.memManager # GeneratorC.MemManagerCounter)
 				      OR CComp.AddOpt(cmd, "-DO7_MEMNG_MODEL=O7_MEMNG_COUNTER")
@@ -577,7 +577,7 @@ VAR ret: INTEGER;
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf)
+			    & Exec.Val(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)
@@ -630,7 +630,7 @@ BEGIN
 			file := NIL
 		ELSIF usejavac THEN
 			(* TODO *)
-			ASSERT(JavaComp.AddJava(javac, dir, 0))
+			ASSERT(JavaComp.Java(javac, dir, 0))
 		END
 	ELSE
 		file := NIL
@@ -700,7 +700,7 @@ BEGIN
 	IF ret = ErrNo THEN
 		IF IsModuleInSingularity(module, javaDirs, Java, ".java", name) THEN
 			(* TODO *)
-			ASSERT(~usejavac OR JavaComp.AddJava(javac, name, 0))
+			ASSERT(~usejavac OR JavaComp.Java(javac, name, 0))
 		ELSE
 			ret := OpenJavaOutput(out, module, "", dir, dirLen);
 			fileName := dir;
@@ -708,7 +708,7 @@ BEGIN
 				GeneratorJava.Generate(out, module, cmd, prov, opt);
 				File.CloseOut(out);
 				(* TODO *)
-				ASSERT(~usejavac OR JavaComp.AddJava(javac, fileName, 0))
+				ASSERT(~usejavac OR JavaComp.Java(javac, fileName, 0))
 			END
 		END
 	END
@@ -754,7 +754,7 @@ VAR opt: GeneratorJava.Options;
 				ok := JavaComp.Search(prov.javac) & JavaComp.Debug(prov.javac);
 				opt.identEnc := GenOptions.IdentEncSame
 			END;
-			ok := ok & JavaComp.AddClassPath(prov.javac, args.resPath, 0);
+			ok := ok & JavaComp.ClassPath(prov.javac, args.resPath, 0);
 			prov.usejavac := TRUE;
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundJavaCompiler
@@ -766,9 +766,9 @@ VAR opt: GeneratorJava.Options;
 			outJava[outJavaLen] := Utf8.Null;
 			IF ret = ErrNo THEN
 				IF res = Cli.ResultJar THEN
-					ok := JavaComp.AddDestinationDir(prov.javac, outJava)
+					ok := JavaComp.DestinationDir(prov.javac, outJava)
 				ELSE
-					ok := JavaComp.AddDestinationDir(prov.javac, args.resPath)
+					ok := JavaComp.DestinationDir(prov.javac, args.resPath)
 				END;
 
 				i := 0;
@@ -779,7 +779,7 @@ VAR opt: GeneratorJava.Options;
 					    & Chars0X.CopyString(name, nameLen, "O7.java")
 
 					    & ( ~Files.Exist(name, 0)
-					     OR JavaComp.AddJava(prov.javac, name, 0)
+					     OR JavaComp.Java(prov.javac, name, 0)
 					      );
 					INC(i)
 				END;
@@ -799,7 +799,7 @@ VAR opt: GeneratorJava.Options;
 		Jar.Init(jar);
 		IF Jar.Create(jar, res)
 		 & Jar.MainClass(jar, mainClass)
-		 & Jar.Clean(jar, " o7/*.class ")
+		 & Jar.AddAsIs(jar, " o7/*.class ")
 		THEN
 			ret := Jar.Do(jar, out);
 			IF ret # Jar.ErrNo THEN
@@ -824,13 +824,13 @@ VAR opt: GeneratorJava.Options;
 	BEGIN
 		JavaExec.Init(cmd);
 		ret := Cli.ErrTooLongRunArgs;
-		IF JavaExec.AddClassPath(cmd, outClass, 0)
-		 & Exec.Add(cmd, mainClass)
+		IF JavaExec.ClassPath(cmd, outClass, 0)
+		 & Exec.Val(cmd, mainClass)
 		THEN
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf)
+			    & Exec.Val(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)
@@ -1062,7 +1062,7 @@ VAR opt: GeneratorJs.Options;
 			len := 0;
 			WHILE (arg < CLI.count)
 			    & CLI.Get(buf, len, arg)
-			    & Exec.Add(cmd, buf)
+			    & Exec.Val(cmd, buf)
 			DO
 				len := 0;
 				INC(arg)

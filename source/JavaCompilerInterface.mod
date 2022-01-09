@@ -1,5 +1,5 @@
 (*  Wrapper for CLI of Java Compiler, based on CCompilerInterface
- *  Copyright (C) 2018 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -39,15 +39,15 @@ MODULE JavaCompilerInterface;
     c.destDir := FALSE;
     c.classPath := FALSE
   RETURN
-    Exec.AddClean(c.cmd, cmd)
+    Exec.AddAsIs(c.cmd, cmd)
   END Set;
 
   PROCEDURE Implicit*(VAR c: Compiler): BOOLEAN;
-  RETURN Exec.AddClean(c.cmd, " -implicit:none")
+  RETURN Exec.AddAsIs(c.cmd, " -implicit:none")
   END Implicit;
 
   PROCEDURE Debug*(VAR c: Compiler): BOOLEAN;
-  RETURN Exec.AddClean(c.cmd, " -g")
+  RETURN Exec.AddAsIs(c.cmd, " -g")
   END Debug;
 
   PROCEDURE Search*(VAR c: Compiler): BOOLEAN;
@@ -55,10 +55,10 @@ MODULE JavaCompilerInterface;
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
-      ok := Exec.Init(exec, c) & Exec.Add(exec, ver)
+      ok := Exec.Init(exec, c) & Exec.Val(exec, ver)
           & (Platform.Java
-          OR (Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
-          OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
+          OR (Platform.Posix & Exec.AddAsIs(exec, " >/dev/null 2>/dev/null"))
+          OR (Platform.Windows & Exec.AddAsIs(exec, ">NUL 2>NUL"))
             )
           & (Exec.Ok = Exec.Do(exec));
       Exec.Log(exec);
@@ -78,45 +78,43 @@ MODULE JavaCompilerInterface;
     Test(c, Javac, "javac", "-version")
   END Search;
 
-  PROCEDURE AddDestinationDir*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE DestinationDir*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
   BEGIN
     ASSERT(~c.destDir);
     c.destDir := TRUE
   RETURN
-    Exec.Add(c.cmd, "-d")
-  & Exec.Add(c.cmd, o)
-  END AddDestinationDir;
+    Exec.Par(c.cmd, "-d", o)
+  END DestinationDir;
 
-  PROCEDURE AddClassPath*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
-                         : BOOLEAN;
+  PROCEDURE ClassPath*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER) : BOOLEAN;
   BEGIN
     ASSERT(~c.classPath);
     c.classPath := TRUE
   RETURN
-    Exec.Add(c.cmd, "-cp")
+    Exec.Key(c.cmd, "-cp")
   & Exec.AddByOfs(c.cmd, path, ofs)
-  END AddClassPath;
+  END ClassPath;
 
-  PROCEDURE AddJava*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  PROCEDURE Java*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
     Exec.AddByOfs(c.cmd, file, ofs)
-  END AddJava;
+  END Java;
 
-  PROCEDURE AddOpt*(VAR c: Compiler; opt: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE Opt*(VAR c: Compiler; opt: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Exec.Add(c.cmd, opt)
-  END AddOpt;
+    Exec.Key(c.cmd, opt)
+  END Opt;
 
-  PROCEDURE AddTargetVersion*(VAR c: Compiler; ver: INTEGER): BOOLEAN;
+  PROCEDURE TargetVersion*(VAR c: Compiler; ver: INTEGER): BOOLEAN;
   VAR s: ARRAY 4 OF CHAR;
   BEGIN
     ASSERT((ver > 1) & (ver < 10));
     s := "1.0";
     s[2] := CHR(ORD("0") + ver)
   RETURN
-    Exec.Add(c.cmd, "-source") & Exec.Add(c.cmd, s)
-  & Exec.Add(c.cmd, "-target") & Exec.Add(c.cmd, s)
-  END AddTargetVersion;
+    Exec.Par(c.cmd, "-source", s)
+  & Exec.Par(c.cmd, "-target", s)
+  END TargetVersion;
 
   PROCEDURE Do*(VAR c: Compiler): INTEGER;
   RETURN

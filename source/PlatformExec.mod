@@ -1,6 +1,6 @@
 (*  Wrapper over OS-specific execution
  *
- *  Copyright (C) 2017-2019,2021 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -188,13 +188,9 @@ BEGIN
 	RETURN ok
 END AddByOfs;
 
-PROCEDURE Add*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-	RETURN AddByOfs(c, arg, 0)
-END Add;
-
-PROCEDURE AddClean*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
+PROCEDURE AddAsIs*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 	RETURN Chars0X.CopyString(c.buf, c.len, arg)
-END AddClean;
+END AddAsIs;
 
 PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;
 BEGIN
@@ -206,7 +202,7 @@ VAR p: ARRAY (*TODO*)1000H OF CHAR; l: INTEGER;
 BEGIN
 	l := 0
 	RETURN OsUtil.CopyFullPath(p, l, path)
-	     & Add(c, p)
+	     & AddByOfs(c, p, 0)
 END AddFullPath;
 
 PROCEDURE FirstPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
@@ -249,6 +245,26 @@ PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
 	RETURN LastPartByOfs(c, arg, 0)
 END LastPart;
 
+PROCEDURE Key*(VAR c: Code; key: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, key, 0)
+END Key;
+
+PROCEDURE Keys*(VAR c: Code; key1, key2: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, key1, 0) & AddByOfs(c, key2, 0)
+END Keys;
+
+PROCEDURE Val*(VAR c: Code; val: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, val, 0)
+END Val;
+
+PROCEDURE Vals*(VAR c: Code; val1, val2: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, val1, 0) & AddByOfs(c, val2, 0)
+END Vals;
+
+PROCEDURE Par*(VAR c: Code; key, val: ARRAY OF CHAR): BOOLEAN;
+	RETURN AddByOfs(c, key, 0) & AddByOfs(c, val, 0)
+END Par;
+
 PROCEDURE Log*(c: Code);
 BEGIN
 	DLog.StrLn(c.buf)
@@ -269,4 +285,4 @@ BEGIN
 	autoCorrectDirSeparator := FALSE
 END PlatformExec.
 
-Init { Add | AddClean | ( FirstPart { AddPart } LastPart ) } [ Do ]
+Init { Add | AddAsIs | ( FirstPart { AddPart } LastPart ) } [ Do ]

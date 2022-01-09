@@ -1,6 +1,6 @@
 (*  Wrapper for CLI of C Compilers
  *
- *  Copyright (C) 2018-2019,2021 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -41,7 +41,7 @@ MODULE CCompilerInterface;
     (* TODO *)
     c.id := Unknown
   RETURN
-    Exec.AddClean(c.cmd, cmd)
+    Exec.AddAsIs(c.cmd, cmd)
   END Set;
 
   PROCEDURE Search*(VAR c: Compiler; lightweight: BOOLEAN): BOOLEAN;
@@ -49,9 +49,9 @@ MODULE CCompilerInterface;
     PROCEDURE Test(VAR cc: Compiler; id: INTEGER; c, ver: ARRAY OF CHAR): BOOLEAN;
     VAR exec: Exec.Code; ok: BOOLEAN;
     BEGIN
-      ok := Exec.Init(exec, c) & ((ver = "") OR Exec.Add(exec, ver))
-          & ((Platform.Posix & Exec.AddClean(exec, " >/dev/null 2>/dev/null"))
-          OR (Platform.Windows & Exec.AddClean(exec, ">NUL 2>NUL"))
+      ok := Exec.Init(exec, c) & ((ver = "") OR Exec.Val(exec, ver))
+          & ((Platform.Posix & Exec.AddAsIs(exec, " >/dev/null 2>/dev/null"))
+          OR (Platform.Windows & Exec.AddAsIs(exec, ">NUL 2>NUL"))
             )
           & (Exec.Ok = Exec.Do(exec));
       IF ok THEN
@@ -67,59 +67,57 @@ MODULE CCompilerInterface;
   RETURN
       lightweight
     & (
-      Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+      Test(c, Tiny, "tcc",    "-dumpversion") & Exec.Keys(c.cmd, "-g", "-w")
 
    OR Test(c, Zig, "zig",     "version")
-    & Exec.AddClean(c.cmd, " cc -g -w -UNDEBUG -DO7_DISABLE_ATTR_CONST=1")
+    & Exec.AddAsIs(c.cmd, " cc -g -w -UNDEBUG -DO7_DISABLE_ATTR_CONST=1")
 
-   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
-   OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -w")
+   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.Keys(c.cmd, "-g", "-w")
+   OR Test(c, Clang, "clang", "-dumpversion") & Exec.Keys(c.cmd, "-g", "-w")
       )
 
    OR ~lightweight
     & (
       Test(c, Zig, "zig",     "version")
-    & Exec.AddClean(c.cmd, " cc -g -UNDEBUG -DO7_DISABLE_ATTR_CONST=1 -O1")
+    & Exec.AddAsIs(c.cmd, " cc -g -UNDEBUG -DO7_DISABLE_ATTR_CONST=1 -O1")
 
-   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
-   OR Test(c, Clang, "clang", "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
-   OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.AddClean(c.cmd, " -g")
+   OR Test(c, Gnu, "gcc",     "-dumpversion") & Exec.Keys(c.cmd, "-g", "-O1")
+   OR Test(c, Clang, "clang", "-dumpversion") & Exec.Keys(c.cmd, "-g", "-O1")
+   OR Test(c, Tiny, "tcc",    "-dumpversion") & Exec.Key(c.cmd, "-g")
       )
 
    OR (
-      Test(c, CompCert, "ccomp", "--version") & Exec.AddClean(c.cmd, " -g -O")
-   OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.AddClean(c.cmd, " -g -O1")
+      Test(c, CompCert, "ccomp", "--version") & Exec.Keys(c.cmd, "-g", "-O")
+   OR Test(c, Unknown, "cc",  "-dumpversion") & Exec.Keys(c.cmd, "-g", "-O1")
    OR Platform.Windows & Test(c, Msvc, "cl.exe",  "")
-      ) & (~lightweight OR Exec.AddClean(c.cmd, " -w"))
+      ) & (~lightweight OR Exec.AddAsIs(c.cmd, " -w"))
   END Search;
 
-  PROCEDURE AddOutputExe*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
+  PROCEDURE OutputExe*(VAR c: Compiler; o: ARRAY OF CHAR): BOOLEAN;
   VAR ok: BOOLEAN;
   BEGIN
     IF c.id = Msvc THEN
-      ok := Exec.AddClean(c.cmd, " -Fe")
+      ok := Exec.AddAsIs(c.cmd, " -Fe")
           & Exec.AddQuote(c.cmd)
-          & Exec.AddClean(c.cmd, o)
+          & Exec.AddAsIs(c.cmd, o)
           & Exec.AddQuote(c.cmd)
     ELSE
-      ok := Exec.Add(c.cmd, "-o")
-          & Exec.Add(c.cmd, o)
+      ok := Exec.Par(c.cmd, "-o", o)
     END
   RETURN
     ok
-  END AddOutputExe;
+  END OutputExe;
 
-  PROCEDURE AddInclude*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER)
-                       : BOOLEAN;
+  PROCEDURE Include*(VAR c: Compiler; path: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
     Exec.FirstPart(c.cmd, "-I")
   & Exec.LastPartByOfs(c.cmd, path, ofs)
-  END AddInclude;
+  END Include;
 
-  PROCEDURE AddC*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+  PROCEDURE Cfile*(VAR c: Compiler; file: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN
     Exec.AddByOfs(c.cmd, file, ofs)
-  END AddC;
+  END Cfile;
 
   PROCEDURE AddOptByOfs*(VAR c: Compiler; opt: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   RETURN

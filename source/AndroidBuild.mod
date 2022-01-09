@@ -1,6 +1,6 @@
 (*  Builder of simple Android applications from Oberon-07
  *
- *  Copyright (C) 2018-2019,2021 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -203,13 +203,13 @@ VAR
   BEGIN
     ok := FALSE;
     IF ~(InitWithSdk(cmd, args, {BuildTools}, "dx")
-       & Exec.Add(cmd, "--dex")
+       & Exec.Key(cmd, "--dex")
 
-       & Exec.AddClean(cmd, " --output=")
-       & Exec.AddClean(cmd, args.args.tmp)
-       & Exec.AddClean(cmd, "/classes.dex")
+       & Exec.AddAsIs(cmd, " --output=")
+       & Exec.AddAsIs(cmd, args.args.tmp)
+       & Exec.AddAsIs(cmd, "/classes.dex")
 
-       & Exec.Add(cmd, args.args.tmp)
+       & Exec.Val(cmd, args.args.tmp)
        & (Exec.Ok = Exec.Do(cmd))
         )
     THEN
@@ -219,24 +219,19 @@ VAR
     ELSIF ~GenerateManifest(args.activity) THEN
       Sn("Error when create AndroidManifest.xml")
     ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "aapt")
-          & Exec.Add(cmd, "package")
-          & Exec.Add(cmd, "-f")
-          & Exec.Add(cmd, "-m")
-          & Exec.Add(cmd, "-F")
-          & Exec.Add(cmd, "raw.apk")
-          & Exec.Add(cmd, "-M")
-          & Exec.Add(cmd, "AndroidManifest.xml")
-          & Exec.Add(cmd, "-I")
-          & Exec.Add(cmd, args.baseClasses)
+          & Exec.Val(cmd, "package")
+          & Exec.Keys(cmd, "-f", "-m")
+          & Exec.Par(cmd, "-F", "raw.apk")
+          & Exec.Par(cmd, "-M", "AndroidManifest.xml")
+          & Exec.Par(cmd, "-I", args.baseClasses)
 
           & (Exec.Ok = Exec.Do(cmd))
            )
     THEN
       Sn("Error during call aapt tool for package")
     ELSIF ~(InitWithSdk(cmd, args, {BuildTools}, "aapt")
-          & Exec.Add(cmd, "add")
-          & Exec.Add(cmd, "raw.apk")
-          & Exec.Add(cmd, "classes.dex")
+          & Exec.Val(cmd, "add")
+          & Exec.Vals(cmd, "raw.apk", "classes.dex")
 
           & (Exec.Ok = Exec.Do(cmd))
            )
@@ -244,10 +239,8 @@ VAR
       Sn("Error during call aapt tool for adding classes")
     ELSE
       IF ~(InitWithSdk(cmd, args, {BuildTools}, "zipalign")
-         & Exec.Add(cmd, "-f")
-         & Exec.Add(cmd, "4")
-         & Exec.Add(cmd, "raw.apk")
-         & Exec.Add(cmd, apk)
+         & Exec.Par(cmd, "-f", "4")
+         & Exec.Vals(cmd, "raw.apk", apk)
 
          & (Exec.Ok = Exec.Do(cmd))
           )
@@ -257,21 +250,14 @@ VAR
 
       IF args.ksGen
        & ~(Exec.Init(cmd, "keytool")
-         & Exec.Add(cmd, "-genkeypair")
-         & Exec.Add(cmd, "-validity")
-         & Exec.Add(cmd, "32")
-         & Exec.Add(cmd, "-keystore")
-         & Exec.Add(cmd, args.key)
-         & Exec.Add(cmd, "-keyalg")
-         & Exec.Add(cmd, "RSA")
-         & Exec.Add(cmd, "-keysize")
-         & Exec.Add(cmd, "2048")
-         & Exec.Add(cmd, "-dname")
-         & Exec.Add(cmd, "cn=Developer, ou=Earth, o=Universe, c=SU")
-         & Exec.Add(cmd, "-storepass")
-         & Exec.Add(cmd, args.ksPass)
-         & Exec.Add(cmd, "-keypass")
-         & Exec.Add(cmd, args.ksPass)
+         & Exec.Key(cmd, "-genkeypair")
+         & Exec.Par(cmd, "-validity" , "32")
+         & Exec.Par(cmd, "-keystore" , args.key)
+         & Exec.Par(cmd, "-keyalg"   , "RSA")
+         & Exec.Par(cmd, "-keysize"  , "2048")
+         & Exec.Par(cmd, "-dname"    , "cn=Developer, ou=Earth, o=Universe, c=SU")
+         & Exec.Par(cmd, "-storepass", args.ksPass)
+         & Exec.Par(cmd, "-keypass"  , args.ksPass)
 
          & (Exec.Ok = Exec.Do(cmd))
           )
@@ -279,26 +265,22 @@ VAR
         Sn("Error during call keytool for generating keystore")
       ELSIF (args.key # "-")
           & ~(Exec.Init(cmd, "apksigner")
-            & Exec.Add(cmd, "sign")
+            & Exec.Val(cmd, "sign")
 
             & ( (args.ksPass = "")
-             OR Exec.Add(cmd, "--ks")
-              & Exec.Add(cmd, args.key)
+             OR Exec.Par(cmd, "--ks", args.key)
 
-              & Exec.Add(cmd, "--ks-pass")
+              & Exec.Key(cmd, "--ks-pass")
               & Exec.FirstPart(cmd, "pass:")
               & Exec.LastPart(cmd, args.ksPass)
               )
 
             & ( (args.cert = "")
-             OR Exec.Add(cmd, "--cert")
-              & Exec.Add(cmd, args.cert)
-
-              & Exec.Add(cmd, "--key")
-              & Exec.Add(cmd, args.key)
+             OR   Exec.Par(cmd, "--cert", args.cert)
+                & Exec.Par(cmd, "--key", args.key)
               )
 
-            & Exec.Add(cmd, apk)
+            & Exec.Val(cmd, apk)
 
             & (Exec.Ok = Exec.Do(cmd))
             )
@@ -316,24 +298,19 @@ VAR
   VAR cmd: Exec.Code; ok: BOOLEAN;
   BEGIN
     ok := InitWithSdk(cmd, args, {PlatformTools}, "adb")
-        & Exec.Add(cmd, "uninstall")
-        & Exec.Add(cmd, args.activity.val)
-
+        & Exec.Vals(cmd, "uninstall", args.activity.val)
         & (Exec.Ok = Exec.Do(cmd));
     ok := FALSE;
     IF ~(InitWithSdk(cmd, args, {PlatformTools}, "adb")
-       & Exec.Add(cmd, "install")
-       & Exec.Add(cmd, apk)
-
+       & Exec.Vals(cmd, "install", apk)
        & (Exec.Ok = Exec.Do(cmd))
         )
     THEN
       Sn("Can not install application")
     ELSIF ~(InitWithSdk(cmd, args, {PlatformTools}, "adb")
-          & Exec.Add(cmd, "shell")
-          & Exec.Add(cmd, "am")
-          & Exec.Add(cmd, "start")
-          & Exec.Add(cmd, "-n")
+          & Exec.Val(cmd, "shell")
+          & Exec.Vals(cmd, "am", "start")
+          & Exec.Key(cmd, "-n")
 
           & Exec.FirstPart(cmd, args.activity.val)
           & Exec.AddPart(cmd, "/.")
@@ -354,7 +331,7 @@ VAR
   VAR cmd: Exec.Code;
   RETURN
     Exec.Init(cmd, "xdg-open")
-  & Exec.Add(cmd, apk)
+  & Exec.Val(cmd, apk)
   & (Exec.Ok = Exec.Do(cmd))
   END OpenApp;
 

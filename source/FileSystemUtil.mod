@@ -1,6 +1,6 @@
 (*  Utilities for work with file system
  *
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -24,11 +24,11 @@ MODULE FileSystemUtil;
   BEGIN
     IF Platform.Posix THEN
       ASSERT(Exec.Init(cmd, "mkdir")
-           & Exec.Add(cmd, name)
-           & (Platform.Java OR Exec.AddClean(cmd, " 2>/dev/null")))
+           & Exec.Val(cmd, name)
+           & (Platform.Java OR Exec.AddAsIs(cmd, " 2>/dev/null")))
     ELSE ASSERT(Platform.Windows);
       ASSERT(Exec.Init(cmd, "mkdir")
-           & Exec.Add(cmd, name))
+           & Exec.Val(cmd, name))
     END
     RETURN Exec.Do(cmd) = Exec.Ok
   END MakeDir;
@@ -38,13 +38,13 @@ MODULE FileSystemUtil;
   BEGIN
     IF Platform.Posix THEN
       ASSERT(Exec.Init(cmd, "rm")
-           & Exec.Add(cmd, "-r")
-           & Exec.Add(cmd, name)
-           & (Platform.Java OR Exec.AddClean(cmd, " 2>/dev/null")))
+           & Exec.Key(cmd, "-r")
+           & Exec.Val(cmd, name)
+           & (Platform.Java OR Exec.AddAsIs(cmd, " 2>/dev/null")))
     ELSE ASSERT(Platform.Windows);
       ASSERT(Exec.Init(cmd, "rmdir")
-           & Exec.AddClean(cmd, " /s/q")
-           & Exec.Add(cmd, name))
+           & Exec.Key(cmd, "/s/q")
+           & Exec.Val(cmd, name))
     END
     RETURN Exec.Do(cmd) = Exec.Ok
   END RemoveDir;
@@ -59,9 +59,8 @@ MODULE FileSystemUtil;
   BEGIN
     IF Platform.Posix THEN
       ASSERT(Exec.Init(cmd, "cp")
-           & (~dir OR Exec.Add(cmd, "-r"))
-           & Exec.Add(cmd, src)
-           & Exec.Add(cmd, dest))
+           & (~dir OR Exec.Key(cmd, "-r"))
+           & Exec.Vals(cmd, src, dest))
     ELSE ASSERT(FALSE)
     END
     RETURN Exec.Do(cmd) = Exec.Ok
@@ -83,9 +82,7 @@ MODULE FileSystemUtil;
   VAR cmd: Exec.Code;
   BEGIN
     IF Platform.Posix THEN
-      ASSERT(Exec.Init(cmd, "mv")
-           & Exec.Add(cmd, src)
-           & Exec.Add(cmd, dest))
+      ASSERT(Exec.Init(cmd, "mv") & Exec.Vals(cmd, src, dest))
     ELSE
       (* TODO *)
       ASSERT(FALSE)
