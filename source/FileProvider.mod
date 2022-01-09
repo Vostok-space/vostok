@@ -1,6 +1,6 @@
 Provider of the content source from the file system
 
-Copyright (C) 2021 ComdivByZero
+Copyright (C) 2021-2022 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -121,6 +121,7 @@ MODULE FileProvider;
       InputProvider.Init(p, GetIterator);
 
       ArrayCopy.Chars(p.path, 0, searchPathes, 0, pathesLen);
+      p.path[pathesLen + 1] := 0X;
       p.pathForDecl := pathForDecl
     END;
     out := p

@@ -1,6 +1,6 @@
 (*  Command line interface for Oberon-07 translator
  *
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -106,7 +106,7 @@ TYPE
 		resPath*, tmp*: ARRAY 1024 OF CHAR;
 		resPathLen*, srcNameEnd*: INTEGER;
 		modPath*, cDirs*, javaDirs*, jsDirs*,
-		cc*, javac*: ARRAY 4096 OF CHAR;
+		cc*, javac*: ARRAY 4095 OF CHAR;
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
@@ -175,8 +175,7 @@ VAR ok: BOOLEAN;
 		ret := Chars0X.CopyString(str, i, base)
 		     & Chars0X.CopyString(str, i, add);
 		IF ret THEN
-			INC(i);
-			str[i] := Utf8.Null
+			INC(i)
 		END
 		RETURN ret
 	END Copy;
@@ -249,7 +248,6 @@ BEGIN
 					INCL(args.sing, count)
 				END;
 				INC(i);
-				args.modPath[i] := Utf8.Null;
 				INC(count)
 			END
 		ELSIF opt = "-allow-system" THEN
@@ -358,19 +356,14 @@ BEGIN
 	THEN
 		ret := ErrTooLongModuleDirs
 	END;
-	IF ret # ErrNo THEN
-		;
-	ELSIF i + 1 < LEN(args.modPath) THEN
-		args.modPathLen := i + 1;
-		args.modPath[i + 1] := Utf8.Null;
+	IF ret = ErrNo THEN
+		IF i = 0 THEN
+			i := 1
+		END;
+		args.modPathLen := i;
 		IF count >= 32 THEN
 			ret := ErrTooManyModuleDirs
 		END;
-	ELSE
-		ret := ErrTooLongModuleDirs;
-		args.modPath[LEN(args.modPath) - 1] := Utf8.Null;
-		args.modPath[LEN(args.modPath) - 2] := Utf8.Null;
-		args.modPath[LEN(args.modPath) - 3] := "#"
 	END
 	RETURN ret
 END Options;
@@ -392,6 +385,8 @@ BEGIN
 	args.cStd     := -1;
 	args.cPlan9   := FALSE;
 	args.obStd    := -1;
+	args.modPath  := "";
+	args.modPathLen := 1;
 	args.allowSystem     := FALSE;
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
@@ -440,7 +435,6 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 			IF Chars0X.CopyChars(args.modPath, i, file, j, sep + 1) THEN
 				args.modPathLen := i + 1;
 				args.modPath[i + 1] := Utf8.Null;
-				args.modPath[i + 2] := Utf8.Null;
 				INC(count)
 			ELSE
 				ret := ErrTooLongModuleDirs
@@ -448,7 +442,6 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 		ELSE
 			args.modPathLen := 1;
 			args.modPath[0] := ".";
-			args.modPath[1] := Utf8.Null;
 			args.modPath[2] := Utf8.Null;
 			INC(count)
 		END;
