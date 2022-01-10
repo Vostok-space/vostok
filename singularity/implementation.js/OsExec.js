@@ -22,11 +22,19 @@ o7.export.OsExec = module;
 var Ok = 0;
 module.Ok = Ok;
 
-function Do(cmd) {
-	var ret, out, errout;
-	o7.assert((0xFF & cmd[0]) != 0x00);
+if (typeof require !== 'undefined') {
+	child_process = require("child_process");
+	fs = require('fs');
+} else {
+	child_process = null;
+	fs = null;
+}
 
-	if (child_process != null) {
+if (child_process != null) {
+	module.Do = function(cmd) {
+		var ret, out, errout;
+		o7.assert((0xFF & cmd[0]) != 0x00);
+
 		try {
 			out = child_process.execSync(o7.utf8ToStr(cmd))
 			errout = null;
@@ -54,20 +62,16 @@ function Do(cmd) {
 			}
 			console.log(out);
 		}
-	} else {
-		ret = -1;
+		return ret;
 	}
-	return ret;
-}
-module.Do = Do;
-
-
-if (typeof require !== 'undefined') {
-	child_process = require("child_process");
-	fs = require('fs');
+} else if (typeof os !== 'undefined') {
+	module.Do = function(cmd) {
+		o7.assert((0xFF & cmd[0]) != 0x00);
+		/* TODO */
+		return os.exec(["bash", "-c", o7.utf8ToStr(cmd)]);
+	}
 } else {
-	child_process = null;
-	fs = null;
+	module.Do = function(cmd) { o7.assert((0xFF & cmd[0]) != 0x00); return -1; }
 }
 
 return module;
