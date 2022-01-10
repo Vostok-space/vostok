@@ -28,14 +28,21 @@ function Do(cmd) {
 
 	if (child_process != null) {
 		try {
-			/*TODO*/
-			out = child_process.execSync(o7.utf8ToStr(cmd));
+			out = child_process.execSync(o7.utf8ToStr(cmd)).toString();
 			ret = Ok;
 		} catch (err) {
 			ret = err.status;
+			if (err.stdout != null && err.stderr != null) {
+				out = err.stdout.toString() + err.stderr.toString();
+			} else if (err.stdout != null) {
+				out = err.stdout.toString();
+			} else {
+				out = err.stderr.toString();
+			}
 		}
-		if (ret == Ok && out.length > 0) {
-			console.log(out.toString());
+		if (out != undefined && out.length > 0) {
+			/* TODO */
+			console.log(out);
 		}
 	} else {
 		ret = -1;
