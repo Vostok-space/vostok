@@ -720,17 +720,37 @@ char unsigned o7_chr(int v) {
 	return (char unsigned)v;
 }
 
-/* TODO лучше бы использовать макрос isfinite, но доступен в C99 и не для всех
- * компиляторов и платформ */
+#if __GNUC__ * 100 + __GNUC_MINOR__ >= 440
+	O7_CONST_INLINE
+	o7_cbool o7_isfinite(double v) {
+		return __builtin_isfinite(v);
+	}
+
+	O7_CONST_INLINE
+	o7_cbool o7_isfinitef(float v) {
+		return __builtin_isfinite(v);
+	}
+#else
+	O7_CONST_INLINE
+	o7_cbool o7_isfinite(double v) {
+		return O7_EXPECT((-1.0/0.0 < v) && (v < 1.0/0.0));
+	}
+
+	O7_CONST_INLINE
+	o7_cbool o7_isfinitef(float v) {
+		return O7_EXPECT((-1.0f/0.0f < v) && (v < 1.0f/0.0f));
+	}
+#endif
+
 O7_CONST_INLINE
 double o7_dbl_finite(double v) {
-	o7_assert(((-1.0/0.0) < v) && (v < (1.0/0.0)));
+	o7_assert(o7_isfinite(v));
 	return v;
 }
 
 O7_CONST_INLINE
 float o7_flt_finite(float v) {
-	o7_assert((-FLT_MAX <= v) && (v <= FLT_MAX));
+	o7_assert(o7_isfinitef(v));
 	return v;
 }
 
