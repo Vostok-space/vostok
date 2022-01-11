@@ -1,5 +1,5 @@
 (*  Checker of special identifiers
- *  Copyright (C) 2018,2020 ComdivByZero
+ *  Copyright (C) 2018,2020,2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -342,13 +342,32 @@ MODULE SpecIdentChecker;
     RETURN Eq(n, "unix") OR Eq(n, "linux") OR Eq(n, "BSD")
   END IsCMacros;
 
+  (* Ключевые слова C++ кроме пришедших из C *)
   PROCEDURE IsCppKeyWord*(n: Strings.String): BOOLEAN;
   VAR o: BOOLEAN;
   BEGIN
     CASE n.block.s[n.ofs] OF
-      "a": o := Eq(n, "array")
+      "a": o := Eq(n, "alignas")
+             OR Eq(n, "alignof")
+             OR Eq(n, "array")
+             OR Eq(n, "and")
+             OR Eq(n, "and_eq")
+    | "b": o := Eq(n, "bitand")
+             OR Eq(n, "bitor")
     | "c": o := Eq(n, "catch")
+             OR Eq(n, "char8_t")
+             OR Eq(n, "char16_t")
+             OR Eq(n, "char32_t")
              OR Eq(n, "class")
+             OR Eq(n, "compl")
+             OR Eq(n, "concept")
+             OR Eq(n, "consteval")
+             OR Eq(n, "constexpr")
+             OR Eq(n, "constinit")
+             OR Eq(n, "const_cast")
+             OR Eq(n, "co_await")
+             OR Eq(n, "co_return")
+             OR Eq(n, "co_yield")
     | "d": o := Eq(n, "decltype")
              OR Eq(n, "delegate")
              OR Eq(n, "delete")
@@ -356,10 +375,13 @@ MODULE SpecIdentChecker;
              OR Eq(n, "dllexport")
              OR Eq(n, "dllimport")
              OR Eq(n, "dllexport")
+             OR Eq(n, "dynamic_cast")
     | "e": o := Eq(n, "event")
              OR Eq(n, "explicit")
+             OR Eq(n, "export")
              OR Eq(n, "each")
-    | "f": o := Eq(n, "finally")
+    | "f": o := Eq(n, "false")
+             OR Eq(n, "finally")
              OR Eq(n, "friend")
     | "g": o := Eq(n, "gcnew")
              OR Eq(n, "generic")
@@ -367,7 +389,8 @@ MODULE SpecIdentChecker;
              OR Eq(n, "initonly")
              OR Eq(n, "interface")
     | "l": o := Eq(n, "literal")
-    | "m": o := Eq(n, "mutable")
+    | "m": o := Eq(n, "module")
+             OR Eq(n, "mutable")
     | "n": o := Eq(n, "naked")
              OR Eq(n, "namespace")
              OR Eq(n, "new")
@@ -377,26 +400,39 @@ MODULE SpecIdentChecker;
              OR Eq(n, "novtable")
              OR Eq(n, "nullptr")
     | "o": o := Eq(n, "operator")
+             OR Eq(n, "or")
+             OR Eq(n, "or_eq")
     | "p": o := Eq(n, "private")
              OR Eq(n, "property")
              OR Eq(n, "protected")
              OR Eq(n, "public")
     | "r": o := Eq(n, "ref")
+             OR Eq(n, "reflexpr")
+             OR Eq(n, "reinterpret_cast")
+             OR Eq(n, "requires")
     | "s": o := Eq(n, "safecast")
              OR Eq(n, "sealed")
              OR Eq(n, "selectany")
+             OR Eq(n, "static_assert")
+             OR Eq(n, "static_cast")
              OR Eq(n, "super")
     | "t": o := Eq(n, "template")
              OR Eq(n, "this")
              OR Eq(n, "thread")
+             OR Eq(n, "thread_local")
              OR Eq(n, "throw")
+             OR Eq(n, "true")
              OR Eq(n, "try")
              OR Eq(n, "typeid")
              OR Eq(n, "typename")
     | "u": o := Eq(n, "uuid")
+             OR Eq(n, "using")
     | "v": o := Eq(n, "value")
              OR Eq(n, "virtual")
-    | "b", "h", "j", "k", "q", "w" .. "z": o := FALSE
+    | "w": o := Eq(n, "wchar_t")
+    | "x": o := Eq(n, "xor")
+             OR Eq(n, "xor_eq")
+    | "h", "j", "k", "q", "y" .. "z": o := FALSE
     END
     RETURN o
   END IsCppKeyWord;
