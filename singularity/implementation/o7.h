@@ -1,4 +1,4 @@
-/* Copyright 2016-2021 ComdivByZero
+/* Copyright 2016-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -388,8 +388,10 @@ typedef struct {
 
 #if defined(O7_CHECK_UNDEFINED)
 	enum { O7_UNDEF = O7_CHECK_UNDEFINED };
-#else
+#elif O7_INIT == O7_INIT_UNDEF
 	enum { O7_UNDEF = 1 };
+#else
+	enum { O7_UNDEF = 0 };
 #endif
 
 #if defined(O7_CHECK_ARRAY_INDEX)
@@ -744,13 +746,17 @@ char unsigned o7_chr(int v) {
 
 O7_CONST_INLINE
 double o7_dbl_finite(double v) {
-	o7_assert(o7_isfinite(v));
+	if (O7_OVERFLOW > 0 || O7_UNDEF) {
+		o7_assert(o7_isfinite(v));
+	}
 	return v;
 }
 
 O7_CONST_INLINE
 float o7_flt_finite(float v) {
-	o7_assert(o7_isfinitef(v));
+	if (O7_OVERFLOW > 0 || O7_UNDEF) {
+		o7_assert(o7_isfinitef(v));
+	}
 	return v;
 }
 
