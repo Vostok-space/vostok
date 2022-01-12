@@ -154,7 +154,7 @@ BEGIN
 	IF (g.procTypeNamer = NIL)
 	OR (decl.module # NIL) & (g.module # decl.module.m)
 	THEN
-		IF ~decl.mark & (decl IS Ast.Const) THEN
+		IF ~decl.mark & (decl.id = Ast.IdConst) THEN
 			(* TODO предварительно пометить экспортом *)
 			expression(g, decl(Ast.Const).expr.value, {})
 		ELSE
@@ -527,7 +527,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			BEGIN
 				count := e.type(Ast.Array).count;
 				IF count # NIL THEN
-					Expression(g, count, {})
+					Expression(g, count.value, {})
 				ELSE
 					des := e(Ast.Designator);
 					GlobalName(g, des.decl);
