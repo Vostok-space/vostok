@@ -1,6 +1,6 @@
 Simple output subroutines with short names
 
-Copyright 2021 ComdivByZero
+Copyright 2021-2022 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,14 @@ MODULE log;
   BEGIN
     Out.String(str); Out.Ln
   END sn;
+
+  PROCEDURE c*(ch: CHAR);
+  VAR str: ARRAY 2 OF CHAR;
+  BEGIN
+    str[0] := ch;
+    str[1] := 0X;
+    Out.String(str)
+  END c;
 
   PROCEDURE i*(int: INTEGER);
   BEGIN
