@@ -1677,33 +1677,19 @@ PROCEDURE DeclarationSearch*(ds: Declarations; VAR buf: ARRAY OF CHAR;
                              begin, end: INTEGER): Declaration;
 VAR d: Declaration;
 BEGIN
-	IF ds IS Procedure THEN
-		d := SearchName(ds(Procedure).header.params, buf, begin, end)
-	ELSE
-		d := NIL
-	END;
-	IF d = NIL THEN
-		d := SearchName(ds.start, buf, begin, end);
-		IF ds IS Procedure THEN
-			IF d = NIL THEN
-				REPEAT
-					ds := ds.up.d
-				UNTIL (ds = NIL) OR (ds IS Module);
-				IF ds # NIL THEN
-					d := SearchName(ds.start, buf, begin, end)
-				END
-			END
-		ELSE (* TODO Нужно ли это ?*)
-			WHILE (d = NIL) & (ds.up # NIL) DO
-				ds := ds.up.d;
-				d := SearchName(ds.start, buf, begin, end)
-			END
-		END;
-		IF (d = NIL) & (ds IS Module) & ~ds(Module).fixed THEN
-			d := SearchPredefined(buf, begin, end)
+	d := SearchName(ds.start, buf, begin, end);
+	IF (d = NIL) & (ds.id = IdProc) THEN
+		d := SearchName(ds(Procedure).header.params, buf, begin, end);
+		IF d = NIL THEN
+			ds := ds.module.m;
+			d := SearchName(ds.start, buf, begin, end)
 		END
 	END;
-	IF (d # NIL) & (d IS Type) THEN
+	IF d = NIL THEN
+		IF ~ds(Module).fixed THEN
+			d := SearchPredefined(buf, begin, end)
+		END
+	ELSIF d IS Type THEN
 		d.used := TRUE
 	END
 	RETURN d
