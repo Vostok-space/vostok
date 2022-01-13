@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -23,7 +23,7 @@ IMPORT
 	Stream := VDataStream;
 
 CONST
-	BlockSize = 256;
+	BlockSize = 255;
 
 TYPE
 	Block* = POINTER TO RBlock;
@@ -146,16 +146,23 @@ BEGIN
 END GetIter;
 
 PROCEDURE IterNext*(VAR iter: Iterator): BOOLEAN;
+VAR i: INTEGER; c: CHAR; b: Block;
 BEGIN
-	IF iter.char # Utf8.Null THEN
-		INC(iter.i);
-		IF iter.b.s[iter.i] = Utf8.NewPage THEN
-			iter.b := iter.b.next;
-			iter.i := 0
+	c := iter.char;
+	IF c # Utf8.Null THEN
+		i := iter.i + 1;
+		b := iter.b;
+		c := b.s[i];
+		IF c = Utf8.NewPage THEN
+			b := b.next;
+			iter.b := b;
+			i := 0;
+			c := b.s[0]
 		END;
-		iter.char := iter.b.s[iter.i]
+		iter.char := c;
+		iter.i := i
 	END
-	RETURN iter.char # Utf8.Null
+	RETURN c # Utf8.Null
 END IterNext;
 
 PROCEDURE NextUtf*(VAR it: UtfIterator): BOOLEAN;
@@ -205,8 +212,7 @@ BEGIN
 END GetChar;
 
 PROCEDURE IsEqualToChars*(w: String; s: ARRAY OF CHAR; j, end: INTEGER): BOOLEAN;
-VAR i: INTEGER;
-	b: Block;
+VAR i: INTEGER; b: Block;
 BEGIN
 	(*ASSERT(ODD(LEN(s)));*)
 	ASSERT((j >= 0) & (j < LEN(s) - 1));
@@ -215,14 +221,14 @@ BEGIN
 	b := w.block;
 	WHILE (b.s[i] = s[j]) & (j # end) DO
 		INC(i);
-		j := (j + 1) MOD (LEN(s) - 1)
+		INC(j);
+		IF j = LEN(s) - 1 THEN
+			j := 0
+		END
 	ELSIF b.s[i] = Utf8.NewPage DO
 		b := b.next;
 		i := 0
 	END
-	(*Log.Int(ORD(b.s[i])); Log.Ln;
-	Log.Int(j); Log.Ln;
-	Log.Int(end); Log.Ln;*)
 	RETURN (b.s[i] = Utf8.Null) & (j = end)
 END IsEqualToChars;
 
@@ -233,7 +239,7 @@ BEGIN
 	j := 0;
 	i := w.ofs;
 	b := w.block;
-	WHILE (j < LEN(s)) & (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
+	WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
 		INC(i);
 		INC(j)
 	ELSIF b.s[i] = Utf8.NewPage DO

@@ -1,6 +1,6 @@
 (*  Generator of JavaScript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
  *
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -114,7 +114,7 @@ BEGIN
 	IF (decl.module # NIL) & (g.module # decl.module.m)
 	OR (decl.id = Ast.IdVar) & decl.mark
 	THEN
-		IF ~decl.mark & (decl IS Ast.Const) THEN
+		IF ~decl.mark & (decl.id = Ast.IdConst) THEN
 			(* TODO предварительно пометить экспортом *)
 			expression(g, decl(Ast.Const).expr.value, {})
 		ELSE
@@ -318,9 +318,9 @@ PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
 VAR des: Ast.Designator; var: Ast.Var;
 BEGIN
 	var := NIL;
-	IF e IS Ast.Designator THEN
+	IF e.id = Ast.IdDesignator THEN
 		des := e(Ast.Designator);
-		IF des.decl IS Ast.Var THEN
+		IF des.decl.id = Ast.IdVar THEN
 			var := des.decl(Ast.Var)
 		ELSE
 			des := NIL
@@ -759,7 +759,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					t := fp.type
 				END;
 				g.opt.expectArray := fp.type.id = Ast.IdArray;
-				IF ~g.opt.expectArray & (p.expr IS Ast.Designator) THEN
+				IF ~g.opt.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
@@ -1246,7 +1246,7 @@ END ProcParams;
 PROCEDURE Declarator(VAR g: Generator; decl: Ast.Declaration;
                      typeDecl, sameType, global: BOOLEAN);
 BEGIN
-	ASSERT(~(decl IS Ast.Procedure));
+	ASSERT(decl.id # Ast.IdProc);
 
 	IF decl IS Ast.Type THEN
 		type(g, decl, decl(Ast.Type), typeDecl, FALSE)
@@ -1890,7 +1890,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		END;
 		IF (elemWithRange # NIL)
 		 & (st.expr.value = NIL)
-		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
+		 & ((st.expr.id # Ast.IdDesignator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
 			Str(g, "(function() { var o7_case_expr = ");
@@ -2026,15 +2026,15 @@ END LnIfWrote;
 PROCEDURE Declarations(VAR g: Generator; ds: Ast.Declarations);
 VAR d: Ast.Declaration; inModule: BOOLEAN;
 BEGIN
-	inModule := ds IS Ast.Module;
+	inModule := ds.id = Ast.IdModule;
 
 	d := ds.start;
 
-	WHILE (d # NIL) & (d IS Ast.Import) DO
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
 		d := d.next
 	END;
 
-	WHILE (d # NIL) & (d IS Ast.Const) DO
+	WHILE (d # NIL) & (d.id = Ast.IdConst) DO
 		Const(g, d(Ast.Const), inModule);
 		d := d.next
 	END;
@@ -2046,7 +2046,7 @@ BEGIN
 	END;
 	LnIfWrote(g);
 
-	WHILE (d # NIL) & (d IS Ast.Var) DO
+	WHILE (d # NIL) & (d.id = Ast.IdVar) DO
 		Var(g, NIL, d, TRUE, FALSE);
 		d := d.next
 	END;
@@ -2089,7 +2089,7 @@ VAR d: Ast.Declaration;
 	END Import;
 BEGIN
 	d := m.import;
-	WHILE (d # NIL) & (d IS Ast.Import) DO
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
 		Import(g, d);
 		d := d.next
 	END;
@@ -2100,7 +2100,7 @@ PROCEDURE UnlinkImports(VAR g: Generator; m: Ast.Module);
 VAR d: Ast.Declaration;
 BEGIN
 	d := m.import;
-	WHILE (d # NIL) & (d IS Ast.Import) DO
+	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
 		d.module.m.ext := NIL;
 		d := d.next;
 	END;

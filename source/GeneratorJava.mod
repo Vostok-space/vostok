@@ -369,7 +369,7 @@ BEGIN
 	var := NIL;
 	IF e IS Ast.Designator THEN
 		des := e(Ast.Designator);
-		IF des.decl IS Ast.Var THEN
+		IF des.decl.id = Ast.IdVar THEN
 			var := des.decl(Ast.Var)
 		ELSE
 			des := NIL
@@ -793,7 +793,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					t := fp.type
 				END;
 				g.opt.expectArray := fp.type.id = Ast.IdArray;
-				IF ~g.opt.expectArray & (p.expr IS Ast.Designator) THEN
+				IF ~g.opt.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
@@ -1258,7 +1258,7 @@ END Expression;
 PROCEDURE Declarator(VAR g: Generator; decl: Ast.Declaration;
                      typeDecl, sameType, global: BOOLEAN);
 BEGIN
-	ASSERT(~(decl IS Ast.Procedure));
+	ASSERT(decl.id # Ast.IdProc);
 
 	IF decl IS Ast.Type THEN
 		type(g, decl, decl(Ast.Type), typeDecl, FALSE)
@@ -1784,7 +1784,7 @@ BEGIN
 		END;
 		IF var.up # NIL THEN
 			Mark(g, mark);
-			IF var.up.d IS Ast.Module THEN
+			IF var.up.d.id = Ast.IdModule THEN
 				Str(g, "static ")
 			END
 		END;
@@ -2048,7 +2048,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		END;
 		IF (elemWithRange # NIL)
 		 & (st.expr.value = NIL)
-		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
+		 & ((st.expr.id # Ast.IdDesignator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
 			Str(g, "{ int o7_case_expr = ");

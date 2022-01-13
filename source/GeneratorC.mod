@@ -116,6 +116,8 @@ TYPE
 		next: Ast.Record
 	END;
 
+	SpecNameMark = POINTER TO RECORD(V.Base) END;
+
 VAR
 	type: PROCEDURE(VAR g: Generator; decl: Ast.Declaration; type: Ast.Type;
 	                typeDecl, sameType: BOOLEAN);
@@ -124,6 +126,8 @@ VAR
 	declarations: PROCEDURE(VAR out: MOut; ds: Ast.Declarations);
 	statements: PROCEDURE(VAR g: Generator; stats: Ast.Statement);
 	expression: PROCEDURE(VAR g: Generator; expr: Ast.Expression);
+
+	specNameMark: ARRAY 2 OF SpecNameMark;
 
 
 PROCEDURE Str    (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.Str    (g, s) END Str;
@@ -205,9 +209,22 @@ PROCEDURE Name(VAR g: Generator; decl: Ast.Declaration);
 VAR up: Ast.Declarations;
     prs: ARRAY TranLim.DeepProcedures + 1 OF Ast.Declarations;
     i: INTEGER;
+
+	PROCEDURE IsSpecName(d: Ast.Declaration): BOOLEAN;
+	VAR spec: BOOLEAN;
+	BEGIN
+		spec := d.ext = specNameMark[ORD(TRUE)];
+		IF ~spec & (d.ext # specNameMark[ORD(FALSE)]) THEN
+			spec := SpecIdentChecker.IsSpecName(d.name, {});
+			IF (d.ext = NIL) & (d.id # Ast.IdRecord) THEN
+				d.ext := specNameMark[ORD(spec)]
+			END
+		END
+		RETURN spec
+	END IsSpecName;
 BEGIN
 	IF (decl IS Ast.Type) & (decl.up # NIL) & (decl.up.d # decl.module.m)
-	OR ~g.opt.procLocal & (decl IS Ast.Procedure)
+	OR ~g.opt.procLocal & (decl.id = Ast.IdProc)
 	THEN
 		up := decl.up.d;
 		i := 0;
@@ -223,9 +240,9 @@ BEGIN
 		END
 	END;
 	Ident(g, decl.name);
-	IF decl IS Ast.Const THEN
+	IF decl.id = Ast.IdConst THEN
 		Str(g, "_cnst")
-	ELSIF SpecIdentChecker.IsSpecName(decl.name, {}) THEN
+	ELSIF IsSpecName(decl) THEN
 		Chr(g, "_")
 	END
 END Name;
@@ -238,7 +255,7 @@ BEGIN
 
 		Text.Data(g, "__", 0, ORD(SpecIdentChecker.IsO7SpecName(decl.name)) + 1);
 		Ident(g, decl.name);
-		IF decl IS Ast.Const THEN
+		IF decl.id = Ast.IdConst THEN
 			Str(g, "_cnst")
 		END
 	ELSE
@@ -375,7 +392,7 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 		END Search;
 	BEGIN
 		var := sel(Ast.SelRecord).var;
-		IF typ IS Ast.Pointer THEN
+		IF typ.id = Ast.IdPointer THEN
 			up := typ(Ast.Pointer).type(Ast.Record)
 		ELSE
 			up := typ(Ast.Record)
@@ -584,7 +601,7 @@ PROCEDURE IsDesignatorMayNotInited(des: Ast.Designator): BOOLEAN;
 END IsDesignatorMayNotInited;
 
 PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
-	RETURN (e IS Ast.Designator) & IsDesignatorMayNotInited(e(Ast.Designator))
+	RETURN (e.id = Ast.IdDesignator) & IsDesignatorMayNotInited(e(Ast.Designator))
 END IsMayNotInited;
 
 PROCEDURE Designator(VAR g: Generator; des: Ast.Designator);
@@ -859,12 +876,12 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				sizeof: BOOLEAN;
 			BEGIN
 				count := e.type(Ast.Array).count;
-				IF e IS Ast.Designator THEN
+				IF e.id = Ast.IdDesignator THEN
 					des := e(Ast.Designator);
-					sizeof := ~(e(Ast.Designator).decl IS Ast.Const)
-					         & ((des.decl.type.id # Ast.IdArray)
-					        OR ~(des.decl IS Ast.FormalParam)
-					        OR  g.opt.vla & ~g.opt.vlaMark
+					sizeof := ~(e(Ast.Designator).decl.id = Ast.IdConst)
+					         & (  (des.decl.type.id # Ast.IdArray)
+					           OR ~(des.decl IS Ast.FormalParam)
+					           OR g.opt.vla & ~g.opt.vlaMark
 					           )
 				ELSE
 					ASSERT(count # NIL);
@@ -925,7 +942,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 					Str(g, "(o7_int_t)");
 					Factor(g, e)
 				| Ast.IdBoolean:
-					IF (e IS Ast.Designator)
+					IF (e.id = Ast.IdDesignator)
 					 & (g.opt.varInit = GenOptions.VarInitUndefined)
 					THEN
 						Str(g, "(o7_int_t)o7_bl(");
@@ -1193,7 +1210,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 					WHILE (t.id = Ast.IdArray)
 					    & (fpt(Ast.Array).count = NIL)
 					DO
-						IF (i = -1) & (p.expr IS Ast.Designator) THEN
+						IF (i = -1) & (p.expr.id = Ast.IdDesignator) THEN
 							i := ArrayDeep(p.expr(Ast.Designator).decl.type)
 							   - ArrayDeep(fp.type);
 							(* TODO запутано *)
@@ -1990,14 +2007,14 @@ BEGIN
 	g.interface := gen.interface;
 	g.opt := gen.opt;
 
-	IF (decl IS Ast.FormalParam) &
-	   ((Ast.ParamOut IN decl(Ast.FormalParam).access)
-	   & ~(decl.type IS Ast.Array)
-	   OR (decl.type IS Ast.Record)
+	IF (decl IS Ast.FormalParam)
+	 & (   (Ast.ParamOut IN decl(Ast.FormalParam).access)
+	     & (decl.type.id # Ast.IdArray)
+	    OR (decl.type.id = Ast.IdRecord)
 	   )
 	THEN
 		Chr(g, "*")
-	ELSIF decl IS Ast.Const THEN
+	ELSIF decl.id = Ast.IdConst THEN
 		Str(g, "const ")
 	END;
 	IF global THEN
@@ -2005,7 +2022,7 @@ BEGIN
 	ELSE
 		Name(g, decl)
 	END;
-	IF decl IS Ast.Procedure THEN
+	IF decl.id = Ast.IdProc THEN
 		ProcHead(g, decl(Ast.Procedure).header)
 	ELSE
 		mo.invert := ~mo.invert;
@@ -2376,14 +2393,14 @@ BEGIN
 	ELSE
 		IF ~typeDecl & Strings.IsDefined(typ.name) THEN
 			IF sameType THEN
-				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name)
-				THEN	Chr(g, "*")
+				IF (typ.id = Ast.IdPointer) & Strings.IsDefined(typ.type.name) THEN
+					Chr(g, "*")
 				END
 			ELSE
-				IF (typ IS Ast.Pointer) & Strings.IsDefined(typ.type.name) THEN
+				IF (typ.id = Ast.IdPointer) & Strings.IsDefined(typ.type.name) THEN
 					Str(g, "struct ");
 					GlobalName(g, typ.type); Str(g, " *")
-				ELSIF typ IS Ast.Record THEN
+				ELSIF typ.id = Ast.IdRecord THEN
 					Str(g, "struct ");
 					IF CheckStructName(g, typ(Ast.Record)) THEN
 						GlobalName(g, typ); Chr(g, " ")
@@ -2728,7 +2745,7 @@ PROCEDURE Assign(VAR g: Generator; st: Ast.Assign);
 			ELSIF (st.expr.type(Ast.Array).count # NIL)
 			    & ~Ast.IsFormalParam(st.expr)
 			THEN
-				IF (st.expr IS Ast.ExprString) & st.expr(Ast.ExprString).asChar THEN
+				IF (st.expr.id = Ast.IdString) & st.expr(Ast.ExprString).asChar THEN
 					Str(g, ", 2")
 				ELSE
 					Str(g, ", sizeof(");
@@ -2954,7 +2971,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		END;
 		IF (elemWithRange # NIL)
 		 & (st.expr.value = NIL)
-		 & (~(st.expr IS Ast.Designator) OR (st.expr(Ast.Designator).sel # NIL))
+		 & ((st.expr.id # Ast.IdDesignator) OR (st.expr(Ast.Designator).sel # NIL))
 		THEN
 			caseExpr := NIL;
 			Str(g, "{ o7_int_t o7_case_expr = ");
@@ -3092,7 +3109,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		PROCEDURE CloseConsts(VAR g: Generator; consts: Ast.Declaration);
 		BEGIN
-			WHILE (consts # NIL) & (consts IS Ast.Const) DO
+			WHILE (consts # NIL) & (consts.id = Ast.IdConst) DO
 				Text.StrIgnoreIndent(g, "#");
 				Str(g, "undef ");
 				Name(g, consts);
@@ -3216,7 +3233,7 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 		t := proc.types;
 		WHILE (t # NIL) & (t IS Ast.Type) DO
 			TypeDecl(out, t(Ast.Type));
-			(*IF t IS Ast.Record THEN
+			(*IF t.id = Ast.IdRecord THEN
 				RecordTag(out.g[Implementation], t(Ast.Record))
 			END;*)
 			t := t.next
@@ -3260,8 +3277,8 @@ END LnIfWrote;
 PROCEDURE VarsInit(VAR g: Generator; d: Ast.Declaration);
 VAR arrDeep, arrTypeId: INTEGER;
 BEGIN
-	WHILE (d # NIL) & (d IS Ast.Var) DO
-		IF d.type.id IN {Ast.IdArray, Ast.IdRecord} THEN
+	WHILE (d # NIL) & (d.id = Ast.IdVar) DO
+		IF d.type.id IN Ast.Structures THEN
 			IF (g.opt.varInit = GenOptions.VarInitUndefined)
 			 & (d.type.id = Ast.IdRecord) & Strings.IsDefined(d.type.name)
 			 & Ast.IsGlobal(d.type)
@@ -3290,8 +3307,8 @@ PROCEDURE Declarations(VAR out: MOut; ds: Ast.Declarations);
 VAR d, prev: Ast.Declaration; inModule: BOOLEAN;
 BEGIN
 	d := ds.start;
-	inModule := ds IS Ast.Module;
-	ASSERT((d = NIL) OR ~(d IS Ast.Module));
+	inModule := ds.id = Ast.IdModule;
+	ASSERT((d = NIL) OR (d.id # Ast.IdModule));
 	WHILE (d # NIL) & (d.id = Ast.IdImport) DO
 		IF ~d.module.m.spec THEN
 			Include(out.g[ORD(~out.opt.main)], d.module.m.name)
@@ -3732,5 +3749,7 @@ BEGIN
 	declarator := Declarator;
 	declarations := Declarations;
 	statements := Statements;
-	expression := Expression
+	expression := Expression;
+	NEW(specNameMark[0]); V.Init(specNameMark[0]^);
+	NEW(specNameMark[1]); V.Init(specNameMark[1]^)
 END GeneratorC.

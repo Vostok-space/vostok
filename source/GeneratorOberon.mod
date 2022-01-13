@@ -1,6 +1,6 @@
 (*  Generator of Oberon-code by abstract syntax tree
  *
- *  Copyright (C) 2019,2021 ComdivByZero
+ *  Copyright (C) 2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -164,7 +164,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
     Import(g, d);
     d := d.next;
-    WHILE (d # NIL) & (d IS Ast.Import) DO
+    WHILE (d # NIL) & (d.id = Ast.IdImport) DO
       StrLn(g, ",");
       Import(g, d);
       d := d.next

@@ -204,7 +204,9 @@ CONST
 	IdConst*            = 33;
 	IdVar*              = 34;
 	IdProc*             = 35;
-	LastId              = 35;
+
+	IdModule*           = 36;
+	LastId              = 36;
 
 	InitedNo*     = 0;
 	InitedNil*    = 1;
@@ -696,7 +698,7 @@ BEGIN
 		d.module := NIL;
 		d.up := NIL
 	ELSE
-		IF (ds.module = NIL) & (ds IS Module) THEN
+		IF (ds.module = NIL) & (ds.id = IdModule) THEN
 			d.module := ds(Module).bag
 		ELSE
 			d.module := ds.module
@@ -716,17 +718,17 @@ VAR p: Declaration;
 BEGIN
 	ASSERT(d # NIL);
 	ASSERT(name # "");
-	ASSERT(~(d IS Module));
-	ASSERT((ds.start = NIL) OR ~(ds.start IS Module));
+	ASSERT(d.id # IdModule);
+	ASSERT((ds.start = NIL) OR (ds.start.id # IdModule));
 
 	DeclInit(d, ds);
-	IF (ds.end # NIL) & (ds.procedures # NIL) & (d IS Var) THEN
+	IF (ds.end # NIL) & (ds.procedures # NIL) & (d.id = IdVar) THEN
 		IF ds.vars = NIL THEN
 			IF ds.start = ds.procedures THEN
 				ds.start := d
 			ELSE
 				p := ds.start;
-				WHILE ~(p.next IS Procedure) DO
+				WHILE p.next.id # IdProc DO
 					p := p.next
 				END;
 				p.next := d
@@ -745,7 +747,7 @@ BEGIN
 			ASSERT(ds.start = NIL);
 			ds.start := d
 		END;
-		ASSERT(~(ds.start IS Module));
+		ASSERT(ds.start.id # IdModule);
 		ds.end := d;
 	END;
 	IF start >= 0 THEN
@@ -795,7 +797,7 @@ PROCEDURE ModuleNew*(name: ARRAY OF CHAR): Module;
 VAR m: Module;
 BEGIN
 	NEW(m);
-	NodeInit(m^, NoId);
+	NodeInit(m^, IdModule);
 	DeclarationsInit(m, NIL);
 	NEW(m.bag);
 	m.bag.m := m;
@@ -853,12 +855,12 @@ VAR d: Declaration;
     err: INTEGER;
 BEGIN
 	d := ds.start;
-	WHILE (d # NIL) & (d IS Import) DO
+	WHILE (d # NIL) & (d.id = IdImport) DO
 		d := d.next
 	END;
 	WHILE (d # NIL)
 	    & (d.mark OR d.used
-	    OR (d IS Var) & ({} # {InitedValue, InitedNil} * d(Var).state.inited)
+	    OR (d.id = IdVar) & ({} # {InitedValue, InitedNil} * d(Var).state.inited)
 	      )
 	DO
 		d := d.next
@@ -947,7 +949,7 @@ BEGIN
 	ASSERT(~m.fixed);
 
 	i := m.import;
-	ASSERT((i = NIL) OR (m.end IS Import));
+	ASSERT((i = NIL) OR (m.end.id = IdImport));
 	IF Strings.IsEqualToChars(m.name, buf, realOfs, realEnd) THEN
 		err := ErrImportSelf
 	ELSE
@@ -980,12 +982,17 @@ END ImportAdd;
 
 PROCEDURE SearchName(d: Declaration;
                      buf: ARRAY OF CHAR; begin, end: INTEGER): Declaration;
+VAR ch: CHAR;
 BEGIN
 	IF begin < 0 THEN
 		d := NIL
 	ELSE
-		WHILE (d # NIL) & ~Strings.IsEqualToChars(d.name, buf, begin, end) DO
-			ASSERT(~(d IS Module));
+		ch := buf[begin];
+		WHILE (d # NIL)
+			& (   (ch # d.name.block.s[d.name.ofs])
+			   OR ~Strings.IsEqualToChars(d.name, buf, begin, end)
+			  )
+		DO
 			d := d.next
 		END
 	END
@@ -997,7 +1004,7 @@ PROCEDURE DeclarationLineSearch(ds: Declarations; buf: ARRAY OF CHAR;
 VAR d: Declaration;
 BEGIN
 	d := SearchName(ds.start, buf, begin, end);
-	IF (d = NIL) & (ds IS Procedure) THEN
+	IF (d = NIL) & (ds.id = IdProc) THEN
 		d := SearchName(ds(Procedure).header.params, buf, begin, end)
 	END
 	RETURN d
@@ -1733,7 +1740,7 @@ BEGIN
 		END
 	ELSIF ~d.mark & (d.module # NIL) & d.module.m.fixed THEN
 		err := ErrDeclarationIsPrivate
-	ELSIF (d IS Const) & ~d(Const).finished THEN
+	ELSIF (d.id = IdConst) & ~d(Const).finished THEN
 		err := ErrConstRecursive;
 		d(Const).finished := TRUE
 	ELSE
@@ -2070,11 +2077,11 @@ BEGIN
 	d.decl := decl;
 	d.sel := NIL;
 	d.type := decl.type;
-	IF decl IS Var THEN
+	IF decl.id = IdVar THEN
 		d.inited := decl(Var).state.inited
 	ELSE
 		d.inited := {InitedValue};
-		IF decl IS Const THEN
+		IF decl.id = IdConst THEN
 			d.value := decl(Const).expr.value;
 			ASSERT(d.value # NIL)
 		ELSIF decl IS GeneralProcedure THEN
@@ -2107,7 +2114,7 @@ VAR err: INTEGER; v: Var;
 	END InVarParam;
 BEGIN
 	err := ErrNo;
-	IF d.decl IS Var THEN
+	IF d.decl.id = IdVar THEN
 		v := d.decl(Var);
 
 		IF (ParamForAddress IN context) & (v.state.inited * {InitedValue, InitedCheck} = {}) THEN
@@ -2156,12 +2163,12 @@ VAR err: INTEGER;
     len: INTEGER;
 BEGIN
 	d := ds.vars;
-	WHILE (d # NIL) & (d IS Var)
+	WHILE (d # NIL) & (d.id = IdVar)
 	    & (~(Used IN d(Var).state.inited) OR (InitedValue IN d(Var).state.inited))
 	DO
 		d := d.next
 	END;
-	IF (d # NIL) & (d IS Var) THEN
+	IF (d # NIL) & (d.id = IdVar) THEN
 		len := 0;
 		IF Strings.CopyToChars(name, len, d.name) THEN
 			Log.StrLn(name)
@@ -2205,7 +2212,7 @@ BEGIN
 	NEW(sp); SelInit(sp);
 	sel := sp;
 	type.used := TRUE;
-	IF type IS Pointer THEN
+	IF type.id = IdPointer THEN
 		err := ErrNo;
 		type := type.type
 	ELSE
@@ -2223,23 +2230,25 @@ BEGIN
 	NEW(sa); SelInit(sa);
 	sa.index := index;
 	sel := sa;
-	IF ~(type IS Array) THEN
+	IF type.id # IdArray THEN
 		err := ErrArrayItemToNotArray
-	ELSIF index.type.id # IdInteger THEN
-		err := ErrArrayIndexNotInt
-	ELSIF (index.value # NIL) & (index.value(ExprInteger).int < 0) THEN
-		err := ErrArrayIndexNegative
-	ELSIF (index.value # NIL)
-	    & (type(Array).count # NIL) & (type(Array).count.value # NIL)
-	    & (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
-	THEN
-		err := ErrArrayIndexOutOfRange
-	ELSIF ~IsAllowStrIndex & (value # NIL) & (value IS ExprString) THEN
-		err := ErrStringIndexing
 	ELSE
-		err := ErrNo
+		IF index.type.id # IdInteger THEN
+			err := ErrArrayIndexNotInt
+		ELSIF (index.value # NIL) & (index.value(ExprInteger).int < 0) THEN
+			err := ErrArrayIndexNegative
+		ELSIF (index.value # NIL)
+		    & (type(Array).count # NIL) & (type(Array).count.value # NIL)
+		    & (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
+		THEN
+			err := ErrArrayIndexOutOfRange
+		ELSIF ~IsAllowStrIndex & (value # NIL) & (value.id = IdString) THEN
+			err := ErrStringIndexing
+		ELSE
+			err := ErrNo
+		END;
+		type := type.type
 	END;
-	type := type.type;
 	sel.type := type
 	RETURN err
 END SelArrayNew;
@@ -2416,7 +2425,7 @@ BEGIN
 		err := ErrGuardedTypeNotExtensible
 	ELSIF des.type.id = IdRecord THEN
 		IF (guard = NIL)
-		OR ~(guard IS Record)
+		OR (guard.id # IdRecord)
 		OR ~IsRecordExtension(dist, des.type(Record), guard(Record))
 		THEN
 			err := ErrGuardExpectRecordExt
@@ -2429,7 +2438,7 @@ BEGIN
 		END
 	ELSE
 		IF (guard = NIL)
-		OR ~(guard IS Pointer)
+		OR (guard.id # IdPointer)
 		OR ~IsRecordExtension(dist, des.type(Pointer).type(Record), guard(Pointer).type(Record))
 		THEN
 			err := ErrGuardExpectPointerExt
@@ -2512,7 +2521,7 @@ BEGIN
 		err := ErrIsExtTypeNotRecord
 	ELSIF des = NIL THEN
 		;
-	ELSIF des IS Designator THEN
+	ELSIF des.id = IdDesignator THEN
 		e.designator := des(Designator);
 		desType := des.type;
 		IF desType = NIL THEN
@@ -2546,11 +2555,11 @@ VAR ret: BOOLEAN;
 BEGIN
 	ret := (t1.id = IdChar)
 	     & (e2.value # NIL)
-	     & (e2.value IS ExprString)
+	     & (e2.value.id = IdString)
 	     & (e2.value(ExprString).int >= 0);
 	IF ret & ~e2.value(ExprString).asChar THEN
-		IF e2 IS ExprString THEN
-			e2 := ExprCharNew(e2.value(ExprString).int)
+		IF e2.id = IdString THEN
+			e2 := ExprCharNew(e2(ExprString).int)
 		ELSE
 			e2.value := ExprCharNew(e2.value(ExprString).int)
 		END;
@@ -2564,7 +2573,7 @@ PROCEDURE CompatibleAsIntAndByte(t1, t2: Type): BOOLEAN;
 END CompatibleAsIntAndByte;
 
 PROCEDURE CompatibleAsStrings(t: Type; e: Expression): BOOLEAN;
-	RETURN (t.id = IdArray) & (t.type.id = IdChar) & (e.value # NIL) & (e.value IS ExprString)
+	RETURN (t.id = IdArray) & (t.type.id = IdChar) & (e.value # NIL) & (e.value.id = IdString)
 END CompatibleAsStrings;
 
 PROCEDURE IsChars(t: Type): BOOLEAN;
@@ -2626,7 +2635,7 @@ VAR err: INTEGER;
 
 	PROCEDURE IsNotProc(e1, e2: Expression; VAR err: INTEGER): BOOLEAN;
 		PROCEDURE IsProc(e: Expression): BOOLEAN;
-			RETURN (e IS Designator) & (e(Designator).decl IS GeneralProcedure)
+			RETURN (e.id = IdDesignator) & (e(Designator).decl IS GeneralProcedure)
 		END IsProc;
 	BEGIN
 		ASSERT(err = ErrNo);
@@ -3129,7 +3138,7 @@ BEGIN
 			des.decl.type := pt;
 			des.type := pt
 		ELSIF des.type # NIL THEN
-			IF des.type IS ProcType THEN
+			IF des.type.id IN ProcTypes THEN
 				t := des.type.type;
 				IF (t # NIL) # func THEN
 					err := ErrCallIgnoredReturn + ORD(func)
@@ -3179,18 +3188,18 @@ BEGIN
 END IsChangeable;
 
 PROCEDURE IsVar*(e: Expression): BOOLEAN;
-	RETURN (e IS Designator) & (e(Designator).decl IS Var)
+	RETURN (e.id = IdDesignator) & (e(Designator).decl.id = IdVar)
 END IsVar;
 
 PROCEDURE IsFormalParam*(e: Expression): BOOLEAN;
-RETURN (e IS Designator)
+RETURN (e.id = IdDesignator)
      & (e(Designator).sel = NIL)
      & (e(Designator).decl IS FormalParam)
 END IsFormalParam;
 
 PROCEDURE IsConstOrLocalVar*(e: Expression): BOOLEAN;
 RETURN (e.value # NIL)
-    OR   (e IS Designator)
+    OR   (e.id = IdDesignator)
        & (e(Designator).sel = NIL)
        & ~IsGlobal(e(Designator).decl)
 END IsConstOrLocalVar;
@@ -3267,7 +3276,7 @@ END ProcedureEnd;
 
 PROCEDURE IsExprChar*(e: Expression): BOOLEAN;
 BEGIN
-	RETURN (e IS ExprString) & e(ExprString).asChar
+	RETURN (e.id = IdString) & e(ExprString).asChar
 END IsExprChar;
 
 PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
@@ -3358,7 +3367,7 @@ BEGIN
 			currentFormalParam := NIL
 		END;
 		IF (err = ErrNo) & (fp.type.id IN ProcTypes)
-		 & (e # NIL) & (e IS Designator) & (e(Designator).decl.id = IdProc)
+		 & (e # NIL) & (e.id = IdDesignator) & (e(Designator).decl.id = IdProc)
 		THEN
 			e(Designator).decl(Procedure).usedAsValue := TRUE
 		END;
@@ -3465,7 +3474,7 @@ VAR err: INTEGER;
 		| SpecIdent.Ord:
 			IF v.type.id = IdChar THEN
 				call.value := v
-			ELSIF v IS ExprString THEN
+			ELSIF v.id = IdString THEN
 				IF v(ExprString).int > -1 THEN
 					call.value := ExprIntegerNew(v(ExprString).int)
 				END
@@ -3497,7 +3506,7 @@ BEGIN
 		err := ErrCallParamsNotEnough
 	ELSIF call.designator.decl.id = SpecIdent.Len THEN
 		(* TODO заменить на общую проверку корректности выбора параметра *)
-		IF (call.params.expr.type IS Array)
+		IF (call.params.expr.type.id = IdArray)
 		 & (call.params.expr.type(Array).count # NIL)
 		THEN
 			call.value := call.params.expr.type(Array).count.value
@@ -3556,7 +3565,7 @@ BEGIN
 		err := ErrDeclarationNotFound
 	ELSIF ~d.mark THEN
 		err := ErrDeclarationIsPrivate
-	ELSIF ~(d IS Procedure) THEN
+	ELSIF d.id # IdProc THEN
 		err := ErrDeclarationNotProc
 	ELSIF d(Procedure).header.type # NIL THEN
 		err := ErrProcNotCommandHaveReturn
@@ -3755,11 +3764,11 @@ BEGIN
 	decl.used := TRUE;
 	IF decl.id = IdError THEN
 		err := ErrNo
-	ELSIF ~(decl IS Const) THEN
+	ELSIF decl.id # IdConst THEN
 		err := ErrCaseLabelNotConst
 	ELSIF ~(decl(Const).expr.type.id IN {IdInteger, IdChar})
-	    & ~((decl(Const).expr IS ExprString)
-	    & (decl(Const).expr(ExprString).int > -1)
+	     & (   (decl(Const).expr.id # IdString)
+	        OR (decl(Const).expr(ExprString).int < 0)
 	       )
 	THEN
 		err := ErrCaseLabelNotIntOrChar
@@ -3918,7 +3927,7 @@ BEGIN
 	a.designator := des;
 	err := ErrNo;
 	IF des # NIL THEN
-		IF (des.decl IS Var) & IsChangeable(des) THEN
+		IF (des.decl.id = IdVar) & IsChangeable(des) THEN
 			var := des.decl(Var);
 			TypeInclAssigned(des.type);
 			IF var.type.id = IdPointer THEN
@@ -3967,7 +3976,7 @@ BEGIN
 
 		IF ~((err = ErrNo) & (expr.value # NIL)) THEN
 			;
-		ELSIF expr.value IS ExprString THEN
+		ELSIF expr.value.id = IdString THEN
 			IF (des.type.id = IdArray) & (des.type(Array).count # NIL)
 			 & (   des.type(Array).count.value(ExprInteger).int
 			     < expr.value.type(Array).count.value(ExprInteger).int)

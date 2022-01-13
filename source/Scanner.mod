@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2021 ComdivByZero
+ *  Copyright (C) 2016-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -97,7 +97,7 @@ TYPE
 		in: Stream.PIn;
 		line*, column*: INTEGER;
 		buf*: ARRAY BlockSize * 2 + 1 OF CHAR;
-		ind: INTEGER;
+		ind, transmissionEndPos: INTEGER;
 
 		lexStart*, lexEnd*, emptyLines*: INTEGER;
 
@@ -134,62 +134,60 @@ BEGIN
 	s.ind := LEN(s.buf) - 1;
 	s.buf[0] := NewPage;
 	s.buf[s.ind] := NewPage;
+	s.transmissionEndPos := -1
 END Init;
 
 PROCEDURE InitByString*(VAR s: Scanner; in: ARRAY OF CHAR): BOOLEAN;
-VAR len: INTEGER;
-    ret: BOOLEAN;
+VAR len: INTEGER; ok: BOOLEAN;
 BEGIN
 	PreInit(s);
 	s.in := NIL;
 	s.ind := 0;
 	s.buf[0] := " ";
-
 	len := 1;
-	ret := Chars0X.CopyString(s.buf, len, in);
-	s.buf[len] := Utf8.TransmissionEnd
-	RETURN ret
+	ok := Chars0X.CopyString(s.buf, len, in)
+	    & Chars0X.PutChar(s.buf, len, Utf8.TransmissionEnd);
+	s.transmissionEndPos := len - 1
+	RETURN ok
 END InitByString;
 
-PROCEDURE FillBuf(VAR buf: ARRAY OF CHAR; VAR ind: INTEGER; VAR in: Stream.In);
-VAR size: INTEGER;
-
-	PROCEDURE Normalize(VAR buf: ARRAY OF CHAR; i, end: INTEGER);
-	BEGIN
-		WHILE i < end DO
-			IF (buf[i] = NewPage) OR (buf[i] = Utf8.TransmissionEnd) THEN
-				buf[i] := Utf8.Idle
-			END;
-			INC(i)
-		END
-	END Normalize;
+PROCEDURE FillBuf(VAR s: Scanner; VAR ind: INTEGER): BOOLEAN;
+VAR size: INTEGER; ok: BOOLEAN;
 BEGIN
-	ASSERT(ODD(LEN(buf)));
-	IF ind MOD (LEN(buf) DIV 2) # 0 THEN
-		Log.StrLn("индекс новой страницы в неожиданном месте");
-		ASSERT(buf[ind] = NewPage);
-		buf[ind] := Utf8.Null
-	ELSE
-		ind := ind MOD (LEN(buf) - 1);
-		IF buf[ind] = NewPage THEN
-			size := Stream.ReadChars(in, buf, ind, LEN(buf) DIV 2);
-			Normalize(buf, ind, ind + size);
-			IF size = LEN(buf) DIV 2 THEN
-				buf[(ind + LEN(buf) DIV 2) MOD (LEN(buf) - 1)] := NewPage
+	ASSERT(ODD(LEN(s.buf)));
+	ASSERT(s.buf[ind] = NewPage);
+	ok := ind MOD (LEN(s.buf) DIV 2) = 0;
+	IF ok THEN
+		ind := ind MOD (LEN(s.buf) - 1);
+		IF s.buf[ind] = NewPage THEN
+			size := Stream.ReadChars(s.in^, s.buf, ind, LEN(s.buf) DIV 2);
+			IF size = LEN(s.buf) DIV 2 THEN
+				s.buf[(ind + LEN(s.buf) DIV 2) MOD (LEN(s.buf) - 1)] := NewPage
 			ELSE
-				buf[ind + size] := Utf8.TransmissionEnd
+				s.transmissionEndPos := ind + size;
+				s.buf[ind + size] := Utf8.TransmissionEnd
 			END
 		END
 	END
+	RETURN ok
 END FillBuf;
 
+PROCEDURE LookupEqual(VAR s: Scanner; i: INTEGER; sample: CHAR): BOOLEAN;
+BEGIN
+	INC(i)
+	RETURN (s.buf[i] = sample)
+	    OR (s.buf[i] = NewPage) & FillBuf(s, i) & (s.buf[i] = sample)
+END LookupEqual;
+
 PROCEDURE Lookup(VAR s: Scanner; i: INTEGER): CHAR;
+VAR ignore: BOOLEAN; ch: CHAR;
 BEGIN
 	INC(i);
-	IF s.buf[i] = NewPage THEN
-		FillBuf(s.buf, i, s.in^)
-	END
-	RETURN s.buf[i]
+	ch := s.buf[i];
+	IF ch = NewPage THEN
+		ignore := FillBuf(s, i)
+	END;
+	RETURN ch
 END Lookup;
 
 PROCEDURE ScanChars(VAR s: Scanner; suit: Suit);
@@ -197,8 +195,8 @@ BEGIN
 	WHILE suit(s.buf[s.ind]) DO
 		INC(s.ind);
 		INC(s.column)
-	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
-		FillBuf(s.buf, s.ind, s.in^)
+	ELSIF (s.buf[s.ind] = NewPage) & FillBuf(s, s.ind) DO
+		;
 	END
 END ScanChars;
 
@@ -214,9 +212,8 @@ END IsHexDigit;
 PROCEDURE ValDigit(ch: CHAR): INTEGER;
 VAR i: INTEGER;
 BEGIN
-	IF (ch >= "0") & (ch <= "9") THEN
-		i := ORD(ch) - ORD("0")
-	ELSE
+	i := ORD(ch) - ORD("0");
+	IF i > 9 THEN
 		i := -1
 	END
 	RETURN i
@@ -225,10 +222,11 @@ END ValDigit;
 PROCEDURE ValHexDigit(ch: CHAR): INTEGER;
 VAR i: INTEGER;
 BEGIN
-	IF (ch >= "0") & (ch <= "9") THEN
-		i := ORD(ch) - ORD("0")
+	i := ORD(ch) - ORD("0");
+	IF i < 0AH THEN
+		;
 	ELSIF (ch >= "A") & (ch <= "F") THEN
-		i := 10 + ORD(ch) - ORD("A")
+		i :=  ORD(ch) - (ORD("A") - 0AH)
 	ELSE
 		i := -1
 	END
@@ -270,7 +268,7 @@ VAR
 	PROCEDURE ValReal(VAR s: Scanner; VAR lex: INTEGER); (* TODO *)
 	VAR
 		i, d, scale: INTEGER;
-		scMinus: BOOLEAN;
+		scMinus, ignore: BOOLEAN;
 		val, t: REAL;
 	BEGIN
 		val := 1.0;
@@ -294,22 +292,21 @@ VAR
 			t := t * 10.0;
 			INC(i);
 			d := ValDigit(s.buf[i])
-		ELSIF s.buf[i] = NewPage DO
-			FillBuf(s.buf, i, s.in^);
+		ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
 			d := ValDigit(s.buf[i])
 		END;
 		IF s.buf[i] = "E" THEN
 			INC(i);
 			INC(s.column);
 			IF s.buf[i] = NewPage THEN
-				FillBuf(s.buf, i, s.in^)
+				ignore := FillBuf(s, i)
 			END;
 			scMinus := s.buf[i] = "-";
 			IF scMinus OR (s.buf[i] = "+") THEN
 				INC(i);
 				INC(s.column);
 				IF s.buf[i] = NewPage THEN
-					FillBuf(s.buf, i, s.in^)
+					ignore := FillBuf(s, i)
 				END
 			END;
 			d := ValDigit(s.buf[i]);
@@ -322,8 +319,7 @@ VAR
 					END;
 					INC(i);
 					d := ValDigit(s.buf[i])
-				ELSIF s.buf[i] = NewPage DO
-					FillBuf(s.buf, i, s.in^);
+				ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
 					d := ValDigit(s.buf[i])
 				END;
 				IF scale <= RealScaleMax THEN
@@ -380,9 +376,9 @@ BEGIN
 END SNumber;
 
 PROCEDURE IsLetterOrDigit(ch: CHAR): BOOLEAN;
-	RETURN (ch >= "A") & (ch <= "Z")
-	    OR (ch >= "a") & (ch <= "z")
-	    OR (ch >= "0") & (ch <= "9")
+	RETURN ("a" <= ch) & (ch <= "z")
+	    OR ("A" <= ch) & (ch <= "Z")
+	    OR ("0" <= ch) & (ch <= "9")
 END IsLetterOrDigit;
 
 PROCEDURE SWord(VAR s: Scanner): INTEGER;
@@ -431,8 +427,8 @@ BEGIN
 	WHILE IsCurrentCyrillic(s) DO
 		s.ind := (s.ind + 2) MOD (LEN(s.buf) - 1);
 		INC(s.column)
-	ELSIF (s.buf[s.ind] = NewPage) & (s.in # NIL) DO
-		FillBuf(s.buf, s.ind, s.in^)
+	ELSIF (s.buf[s.ind] = NewPage) & FillBuf(s, s.ind) DO
+		;
 	END;
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(0 < len);
@@ -456,9 +452,6 @@ BEGIN
 	WHILE s.buf[i] = " " DO
 		INC(i);
 		INC(column)
-	ELSIF s.buf[i] = Utf8.CarRet DO
-		INC(i);
-		column := 0;
 	ELSIF s.buf[i] = Utf8.Tab DO
 		INC(i);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
@@ -467,9 +460,7 @@ BEGIN
 		INC(s.emptyLines);
 		column := 0;
 		INC(i)
-	ELSIF s.buf[i] = NewPage DO
-		FillBuf(s.buf, i, s.in^)
-	ELSIF (s.buf[i] = "(") & (Lookup(s, i) = "*") DO
+	ELSIF (s.buf[i] = "(") & LookupEqual(s, i, "*") DO
 		i := (i + 2) MOD (LEN(s.buf) - 1);
 		INC(column, 2);
 		INC(comment);
@@ -477,8 +468,13 @@ BEGIN
 		IF commentsCount = 1 THEN
 			s.commentOfs := i
 		END
+	ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
+		;
+	ELSIF s.buf[i] = Utf8.CarRet DO
+		INC(i);
+		column := 0;
 	ELSIF (0 < comment) & (s.buf[i] # Utf8.Null) (* & ~blank *) DO
-		IF (s.buf[i] = "*") & (Lookup(s, i) = ")") THEN
+		IF (s.buf[i] = "*") & LookupEqual(s, i, ")") THEN
 			DEC(comment);
 			IF comment = 0 THEN
 				s.commentEnd := i;
@@ -492,9 +488,9 @@ BEGIN
 			END;
 			INC(i)
 		END
-	ELSIF (0EFX = s.buf[i])
-	    & (0BBX = Lookup(s, i))
-	    & (0BFX = Lookup(s, (i + 1) MOD (LEN(s.buf) - 1)))
+	ELSIF (s.buf[i] = 0EFX)
+	    & LookupEqual(s, i, 0BBX)
+	    & LookupEqual(s, (i + 1) MOD (LEN(s.buf) - 1), 0BFX)
 	DO
 		(* Пробел 0-й длины, также, используемый как BOM в UTF *)
 		i := (i + 3) MOD (LEN(s.buf) - 1)
@@ -510,13 +506,10 @@ VAR l, i, j, count, column: INTEGER;
 BEGIN
 	i := s.ind + 1;
 	column := s.column  + 1;
-	IF s.buf[i] = NewPage THEN
-		FillBuf(s.buf, i, s.in^)
-	END;
 	j := i;
 	count := 0;
 	WHILE (s.buf[i] # Utf8.DQuote) & (" " <= s.buf[i]) DO
-		IF (s.buf[i] < 80X) OR (s.buf[i] >= 0C0X) THEN
+		IF Utf8.IsBegin(s.buf[i]) THEN
 			INC(column)
 		END;
 		INC(count);
@@ -525,8 +518,8 @@ BEGIN
 		INC(i);
 		INC(count);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
-	ELSIF s.buf[i] = NewPage DO
-		FillBuf(s.buf, i, s.in^)
+	ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
+		;
 	END;
 	s.isChar := FALSE;
 	IF s.buf[i] = Utf8.DQuote THEN
@@ -546,24 +539,24 @@ END ScanString;
 PROCEDURE Next*(VAR s: Scanner): INTEGER;
 VAR lex: INTEGER;
 
-	PROCEDURE L(VAR lex: INTEGER; VAR s: Scanner; l: INTEGER);
+	PROCEDURE L(VAR s: Scanner; l: INTEGER): INTEGER;
 	BEGIN
 		INC(s.ind);
-		lex := l
+		RETURN l
 	END L;
 
-	PROCEDURE Li(VAR lex: INTEGER; VAR s: Scanner; ch: CHAR; then, else: INTEGER);
+	PROCEDURE Li(VAR s: Scanner; lex: INTEGER; ch: CHAR; lexWithCh: INTEGER): INTEGER;
+	VAR i: INTEGER;
 	BEGIN
-		INC(s.ind);
-		IF s.buf[s.ind] = NewPage THEN
-			FillBuf(s.buf, s.ind, s.in^)
+		i := s.ind + 1;
+		IF (s.buf[i] = ch)
+		OR (s.buf[i] = NewPage) & FillBuf(s, i) & (s.buf[i] = ch)
+		THEN
+			lex := lexWithCh;
+			INC(i)
 		END;
-		IF s.buf[s.ind] = ch THEN
-			lex := then;
-			INC(s.ind)
-		ELSE
-			lex := else
-		END
+		s.ind := i
+		RETURN lex
 	END Li;
 BEGIN
 	IF ~ScanBlank(s) THEN
@@ -571,11 +564,14 @@ BEGIN
 	ELSE
 		s.lexStart := s.ind;
 		CASE s.buf[s.ind] OF
-		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX:
-			lex := ErrUnexpectChar;
-			INC(s.ind)
-		| Utf8.TransmissionEnd:
-			lex := EndOfFile
+		  0X..03X, 05X.."!", "$", "%", "'", "?", "@", "\", "_", "`", 7FX..0CFX, 0D3X..0FFX,
+		  Utf8.TransmissionEnd:
+			IF s.ind = s.transmissionEndPos THEN
+				lex := EndOfFile
+			ELSE
+				lex := ErrUnexpectChar;
+				INC(s.ind)
+			END
 		| "0" .. "9":
 			lex := SNumber(s)
 		| "a" .. "z", "A" .. "Z":
@@ -587,28 +583,28 @@ BEGIN
 				lex := ErrUnexpectChar;
 				INC(s.ind)
 			END
-		| "+": L(lex, s, Plus)
-		| "-": L(lex, s, Minus)
-		| "*": L(lex, s, Asterisk)
-		| "/": L(lex, s, Slash)
-		| ".": Li(lex, s, ".", Range, Dot)
-		| ",": L(lex, s, Comma)
-		| ":": Li(lex, s, "=", Assign, Colon)
-		| ";": L(lex, s, Semicolon)
-		| "^": L(lex, s, Dereference)
-		| "=": L(lex, s, Equal)
-		| "#": L(lex, s, Inequal)
-		| "~": L(lex, s, Negate)
-		| "<": Li(lex, s, "=", LessEqual, Less)
-		| ">": Li(lex, s, "=", GreaterEqual, Greater)
-		| "&": L(lex, s, And)
-		| "|": L(lex, s, Alternative)
-		| "(": L(lex, s, Brace1Open)
-		| ")": L(lex, s, Brace1Close)
-		| "[": L(lex, s, Brace2Open)
-		| "]": L(lex, s, Brace2Close)
-		| "{": L(lex, s, Brace3Open)
-		| "}": L(lex, s, Brace3Close)
+		| "+": lex := L (s, Plus)
+		| "-": lex := L (s, Minus)
+		| "*": lex := L (s, Asterisk)
+		| "/": lex := L (s, Slash)
+		| ".": lex := Li(s, Dot, ".", Range)
+		| ",": lex := L (s, Comma)
+		| ":": lex := Li(s, Colon, "=", Assign)
+		| ";": lex := L (s, Semicolon)
+		| "^": lex := L (s, Dereference)
+		| "=": lex := L (s, Equal)
+		| "#": lex := L (s, Inequal)
+		| "~": lex := L (s, Negate)
+		| "<": lex := Li(s, Less, "=", LessEqual)
+		| ">": lex := Li(s, Greater, "=", GreaterEqual)
+		| "&": lex := L (s, And)
+		| "|": lex := L (s, Alternative)
+		| "(": lex := L (s, Brace1Open)
+		| ")": lex := L (s, Brace1Close)
+		| "[": lex := L (s, Brace2Open)
+		| "]": lex := L (s, Brace2Close)
+		| "{": lex := L (s, Brace3Open)
+		| "}": lex := L (s, Brace3Close)
 		| Utf8.DQuote: lex := ScanString(s)
 		END;
 		s.lexEnd := s.ind

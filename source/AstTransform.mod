@@ -359,7 +359,7 @@ MODULE AstTransform;
   BEGIN
     sel := d.sel;
     ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d);
-    IF (sel # NIL) & (o.outParam # 0) & (d.decl IS Ast.Var) THEN
+    IF (sel # NIL) & (o.outParam # 0) & (d.decl.id = Ast.IdVar) THEN
       Item(o, NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;
     last := NIL;
@@ -377,7 +377,7 @@ MODULE AstTransform;
     IF o.outParam # 0 THEN
       IF actualParam = NIL THEN
         IF last = NIL THEN
-          IF d.decl IS Ast.Var THEN
+          IF d.decl.id = Ast.IdVar THEN
             Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
@@ -390,7 +390,7 @@ MODULE AstTransform;
           END
       ELSE
         IF last = NIL THEN
-          IF d.decl IS Ast.Var THEN
+          IF d.decl.id = Ast.IdVar THEN
             Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
@@ -611,6 +611,7 @@ MODULE AstTransform;
   BEGIN
     st := stats;
     WHILE st # NIL DO
+      (* TODO CASE *)
       IF st IS Ast.Assign THEN
         IF st.ext # o.mark THEN
           Assign(st(Ast.Assign), o)
@@ -664,7 +665,7 @@ MODULE AstTransform;
         ds.consts := NIL;
         LineName(o.consts.last);
         o.consts.last.up := ds.module.m.dag;
-        WHILE (o.consts.last.next # NIL) & (o.consts.last.next IS Ast.Const) DO
+        WHILE (o.consts.last.next # NIL) & (o.consts.last.next.id = Ast.IdConst) DO
           o.consts.last := o.consts.last.next(Ast.Const);
           LineName(o.consts.last);
           o.consts.last.up := ds.module.m.dag
@@ -673,7 +674,7 @@ MODULE AstTransform;
         o.consts.last.next := ds.consts;
         ds.consts := NIL;
         o.consts.last.up := ds.module.m.dag;
-        WHILE (o.consts.last.next # NIL) & (o.consts.last.next IS Ast.Const) DO
+        WHILE (o.consts.last.next # NIL) & (o.consts.last.next.id = Ast.IdConst) DO
           o.consts.last := o.consts.last.next(Ast.Const);
           LineName(o.consts.last);
           o.consts.last.up := ds.module.m.dag
@@ -720,13 +721,13 @@ MODULE AstTransform;
   BEGIN
     d := ds.start;
     last := NIL;
-    WHILE (d # NIL) & (d IS Ast.Import) DO
+    WHILE (d # NIL) & (d.id = Ast.IdImport) DO
       Import(d(Ast.Import), o);
       last := d;
       d := d.next
     END;
 
-    WHILE (d # NIL) & (d IS Ast.Const) DO
+    WHILE (d # NIL) & (d.id = Ast.IdConst) DO
       Const(d(Ast.Const), o);
       d := d.next
     END;
@@ -742,7 +743,7 @@ MODULE AstTransform;
       IF ds.consts # NIL THEN
         o.consts.first := ds.consts;
         o.consts.last := ds.consts;
-        WHILE (o.consts.last.next # NIL) & (o.consts.last.next IS Ast.Const) DO
+        WHILE (o.consts.last.next # NIL) & (o.consts.last.next.id = Ast.IdConst) DO
           o.consts.last := o.consts.last.next(Ast.Const)
         END
       END;
@@ -759,7 +760,7 @@ MODULE AstTransform;
       END
     END;
 
-    WHILE (d # NIL) & (d IS Ast.Var) DO
+    WHILE (d # NIL) & (d.id = Ast.IdVar) DO
       Var(d, o);
       d := d.next
     END;
@@ -810,7 +811,7 @@ MODULE AstTransform;
   VAR imp: Ast.Declaration;
   BEGIN
     imp := m.import;
-    WHILE (imp # NIL) & (imp IS Ast.Import) DO
+    WHILE (imp # NIL) & (imp.id = Ast.IdImport) DO
       IF (imp.module.m.ext # o.mark) & ~imp.module.m.spec THEN
         imp.module.m.ext := o.mark;
         Ast.ModuleReopen(imp.module.m);
@@ -831,7 +832,7 @@ MODULE AstTransform;
   VAR imp: Ast.Declaration;
   BEGIN
     imp := m.import;
-    WHILE (imp # NIL) & (imp IS Ast.Import) DO
+    WHILE (imp # NIL) & (imp.id = Ast.IdImport) DO
       IF imp.module.m.ext = mark THEN
         imp.module.m.ext := NIL;
         AstOk(Ast.ModuleEnd(imp.module.m));

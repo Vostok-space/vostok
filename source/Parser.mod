@@ -284,7 +284,7 @@ PROCEDURE Qualident(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	d := ExpectDecl(p, ds);
-	IF d IS Ast.Import THEN
+	IF d.id = Ast.IdImport THEN
 		Expect(p, Scanner.Dot, ErrExpectDot);
 		d := ExpectDecl(p, d(Ast.Import).module.m)
 	END
@@ -326,7 +326,7 @@ BEGIN
 	END;
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
-		IF (decl IS Ast.Var) OR (decl IS Ast.Const) THEN
+		IF (decl.id = Ast.IdVar) OR (decl.id = Ast.IdConst) THEN
 			prev := NIL;
 
 			REPEAT
@@ -346,7 +346,7 @@ BEGIN
 						var := ExpectRecordExtend(p, ds, des.type(Ast.Construct));
 						CheckAst(p, Ast.SelGuardNew(sel, des, var));
 						Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-					ELSIF ~(des.type IS Ast.ProcType) THEN
+					ELSIF ~(des.type.id IN Ast.ProcTypes) THEN
 						AddError(p, ErrExpectVarRecordOrPointer)
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
@@ -354,7 +354,7 @@ BEGIN
 					CheckAst(p, Ast.SelArrayNew(sel, des.type, des.value, expression(p, ds, {})));
 					IF des.value = NIL THEN
 						;
-					ELSIF (des.value IS Ast.ExprString)
+					ELSIF (des.value.id = Ast.IdString)
 					    & (sel(Ast.SelArray).index.value # NIL)
 					THEN
 						val := des.value(Ast.ExprString).int;
@@ -380,7 +380,7 @@ BEGIN
 				SetSel(prev, sel, des)
 			UNTIL sel = NIL
 
-		ELSIF ~((decl IS Ast.Const) OR (decl IS Ast.GeneralProcedure)
+		ELSIF ~((decl.id = Ast.IdConst) OR (decl IS Ast.GeneralProcedure)
 		     OR (decl.id = Ast.IdError)
 		       )
 		THEN
@@ -408,7 +408,7 @@ VAR par: Ast.Parameter;
 BEGIN
 	ASSERT(p.l = Scanner.Brace1Open);
 	Scan(p);
-	IF (e.designator.type # NIL) & (e.designator.type IS Ast.ProcType) THEN
+	IF (e.designator.type # NIL) & (e.designator.type.id IN Ast.ProcTypes) THEN
 		fp := e.designator.type(Ast.ProcType).params
 	ELSE
 		fp := NIL
@@ -857,7 +857,7 @@ BEGIN
 			Ast.PointerSetRecord(tp, typeDecl);
 
 			Scan(p)
-		ELSIF decl IS Ast.Record THEN
+		ELSIF decl.id = Ast.IdRecord THEN
 			Ast.PointerSetRecord(tp, decl(Ast.Record));
 			Scan(p)
 		ELSE
@@ -1254,7 +1254,7 @@ BEGIN
 	CheckAst(p, Ast.CallNew(st, des));
 	IF p.l = Scanner.Brace1Open THEN
 		CallParams(p, ds, st.expr(Ast.ExprCall))
-	ELSIF (des # NIL) & (des.type # NIL) & (des.type IS Ast.ProcType) THEN
+	ELSIF (des # NIL) & (des.type # NIL) & (des.type.id IN Ast.ProcTypes) THEN
 		CheckAst(p, Ast.CallParamsEnd(st.expr(Ast.ExprCall),
 		                              des.type(Ast.ProcType).params,
 		                              ds)
