@@ -1778,12 +1778,22 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 
 	PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR g: Generator; set: Ast.ExprSet);
+		VAR v: INTEGER;
 		BEGIN
 			IF set.exprs[0] = NIL THEN
 				Chr(g, "0")
 			ELSE
 				IF set.exprs[1] = NIL THEN
-					Str(g, "(1u << ");
+					IF set.exprs[0].value # NIL THEN
+						v := set.exprs[0].value(Ast.ExprInteger).int
+					ELSE
+						v := 63
+					END;
+					IF v <= Limits.SetMax THEN
+						Str(g, "(1u << ")
+					ELSE
+						Str(g, "((o7_ulong_t)1 << ")
+					END;
 					Factor(g, set.exprs[0])
 				ELSE
 					IF (set.exprs[0].value = NIL) OR (set.exprs[1].value = NIL)
