@@ -2835,13 +2835,13 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	END Repeat;
 
 	PROCEDURE For(VAR g: Generator; st: Ast.For);
-		PROCEDURE IsEndMinus1(sum: Ast.ExprSum): BOOLEAN;
-		RETURN (sum.next # NIL)
-		     & (sum.next.next = NIL)
-		     & (sum.next.add = Ast.Minus)
-		     & (sum.next.term.value # NIL)
-		     & (sum.next.term.value(Ast.ExprInteger).int = 1)
-		END IsEndMinus1;
+		PROCEDURE IsMinus1(next: Ast.ExprSum): BOOLEAN;
+		RETURN (next # NIL)
+		     & (next.next = NIL)
+		     & (next.add = Ast.Minus)
+		     & (next.term.value # NIL)
+		     & (next.term.value(Ast.ExprInteger).int = 1)
+		END IsMinus1;
 	BEGIN
 		Str(g, "for (");
 		GlobalName(g, st.var);
@@ -2850,7 +2850,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		Str(g, "; ");
 		GlobalName(g, st.var);
 		IF st.by > 0 THEN
-			IF (st.to IS Ast.ExprSum) & IsEndMinus1(st.to(Ast.ExprSum)) THEN
+			IF (st.to IS Ast.ExprSum) & IsMinus1(st.to(Ast.ExprSum).next) THEN
 				Str(g, " < ");
 				Expression(g, st.to(Ast.ExprSum).term)
 			ELSE
