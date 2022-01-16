@@ -169,7 +169,7 @@ MODULE make;
  END OstAddOpts;
 
  PROCEDURE TestAllBy(srcDir: ARRAY OF CHAR; example: BOOLEAN; ost: ARRAY OF CHAR;
-                  runLang: INTEGER): BOOLEAN;
+                     runLang: INTEGER): BOOLEAN;
  VAR code: Exec.Code;
      dir: Dir.Dir;
      file: Dir.File;
@@ -184,7 +184,7 @@ MODULE make;
        l := 0;
        j := 0;
        ASSERT(Dir.CopyName(n, l, file));
-       IF (n[0] # ".") & OstInit(code, ost, runLang) & CopyFileName(c, n) THEN
+       IF (n[0] # ".") & (n # "android") & OstInit(code, ost, runLang) & CopyFileName(c, n) THEN
          ASSERT(
            ( example & Exec.Val(code, c)
           OR ~example & Exec.FirstPart(code, c) & Exec.LastPart(code, ".Go")
