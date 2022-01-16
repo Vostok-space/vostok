@@ -1,5 +1,5 @@
 (* Operations with arrays of chars, which represent 0-terminated strings
- * Copyright 2018-2019,2021 ComdivByZero
+ * Copyright 2018-2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  *)
 MODULE Chars0X;
 
-  IMPORT Utf8, ArrayFill;
+  IMPORT Utf8, ArrayFill, ArrayCopy;
 
   PROCEDURE CalcLen*(str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
   VAR i: INTEGER;
@@ -115,31 +115,55 @@ MODULE Chars0X;
     src[s] = Utf8.Null
   END Copy;
 
+  PROCEDURE FindNull(s: ARRAY OF CHAR; ofs, end: INTEGER): INTEGER;
+  BEGIN
+    WHILE (ofs < end) & (s[ofs] # Utf8.Null) DO
+      INC(ofs)
+    END
+  RETURN
+    ofs
+  END FindNull;
+
   PROCEDURE CopyChars*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                        src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
-  VAR s, d: INTEGER; ok: BOOLEAN;
+  VAR s, d, len: INTEGER; ok: BOOLEAN;
   BEGIN
     s := srcOfs;
     d := destOfs;
     ASSERT((0 <= s) & (s <= LEN(src)));
     ASSERT((0 <= d) & (d <= LEN(dest)));
     ASSERT(s <= srcEnd);
+    ASSERT(FindNull(src, s, srcEnd) = srcEnd);
 
-    ok := d < LEN(dest) - (srcEnd - srcOfs);
+    len := srcEnd - s;
+    ok := d < LEN(dest) - len;
     IF ~ok THEN
-      srcEnd := LEN(dest) - (srcEnd - srcOfs) - 1
+      len := LEN(dest);
+      srcEnd := s + len - 1
     END;
-    WHILE s < srcEnd DO
-      ASSERT(src[s] # Utf8.Null);
-      dest[d] := src[s];
-      INC(d);
-      INC(s)
+    IF len > 0 THEN
+      ArrayCopy.Chars(dest, d, src, s, srcEnd - s)
     END;
+    INC(d, len);
     dest[d] := Utf8.Null;
     destOfs := d
   RETURN
     ok
   END CopyChars;
+
+  PROCEDURE CopyCharsFromLoop*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
+                               src: ARRAY OF CHAR; srcOfs, srcEnd: INTEGER): BOOLEAN;
+  VAR ok: BOOLEAN;
+  BEGIN
+    IF srcOfs <= srcEnd THEN
+      ok := CopyChars(dest, destOfs, src, srcOfs, srcEnd)
+    ELSE
+      ok := CopyChars(dest, destOfs, src, srcOfs, LEN(src))
+          & CopyChars(dest, destOfs, src, 0     , srcEnd)
+    END
+  RETURN
+    ok
+  END CopyCharsFromLoop;
 
   PROCEDURE CopyCharsUntil*(VAR dest: ARRAY OF CHAR; VAR destOfs: INTEGER;
                             src: ARRAY OF CHAR; VAR srcOfs: INTEGER; until: CHAR): BOOLEAN;
