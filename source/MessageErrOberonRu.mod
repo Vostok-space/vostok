@@ -1,5 +1,5 @@
 (*  Russian messages for syntax and semantic errors. Extracted from MessageRu.
- *  Copyright (C) 2017-2021 ComdivByZero
+ *  Copyright (C) 2017-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -27,17 +27,17 @@ PROCEDURE Ast*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  AST.ErrImportNameDuplicate:
-		C("Имя модуля уже встречается в списке импорта")
+		C("Имя модуля уже встречается в списке импорта - ")
 	| AST.ErrImportSelf:
-		C("Модуль импортирует себя")
+		C("Модуль импортирует себя - ")
 	| AST.ErrImportLoop:
-		C("Прямой или косвенный циклический импорт запрещён")
+		C("Прямой или косвенный циклический импорт запрещён - ")
 	| AST.ErrDeclarationNameDuplicate:
-		C("Повторное объявление имени в той же области видимости")
+		C("Повторное объявление имени в той же области видимости - ")
 	| AST.ErrDeclarationNameHide:
-		C("Имя объявления затеняет объявление из модуля")
+		C("Имя объявления затеняет объявление из модуля - ")
 	| AST.ErrPredefinedNameHide:
-		C("Имя объявления затеняет предопределённое имя")
+		C("Имя объявления затеняет предопределённое имя - ")
 	| AST.ErrMultExprDifferentTypes:
 		C("Типы подвыражений в умножении несовместимы")
 	| AST.ErrDivExprDifferentTypes:
@@ -137,13 +137,13 @@ BEGIN
 	| AST.ErrExpectReturn:
 		C("Ожидался возврат значения, так как в заголовке процедуры указан возвращаемый тип")
 	| AST.ErrDeclarationNotFound:
-		C("Предварительное объявление имени не было найдено")
+		C("Не было найдено предварительного объявления имени - ")
 	| AST.ErrConstRecursive:
 		C("Недопустимое использование константы для задания собственного значения")
 	| AST.ErrImportModuleNotFound:
-		C("Импортированный модуль не был найден")
+		C("Импортированный модуль не был найден - ")
 	| AST.ErrImportModuleWithError:
-		C("Импортированный модуль содержит ошибки")
+		C("Импортированный модуль содержит ошибки - ")
 	| AST.ErrDerefToNotPointer:
 		C("Разыменование применено не к указателю")
 	| AST.ErrArrayLenLess1:
@@ -169,7 +169,7 @@ BEGIN
 	| AST.ErrDotSelectorToNotRecord:
 		C("Селектор элемента записи применён не к записи")
 	| AST.ErrDeclarationNotVar:
-		C("Ожидалась переменная")
+		C("Ожидалась переменная вместо ")
 	| AST.ErrForIteratorNotInteger:
 		C("Итератор FOR должен задаваться именем переменной типа INTEGER")
 	| AST.ErrNotBoolInIfCondition:
@@ -187,7 +187,7 @@ BEGIN
 	| AST.ErrUntilAlwaysTrue:
 		C("Условие завершения всегда истинно")
 	| AST.ErrDeclarationIsPrivate:
-		C("Объявление не экспортировано")
+		C("Объявление не экспортировано - ")
 	| AST.ErrNegateNotBool:
 		C("Логическое отрицание применено не к логическому типу")
 	| AST.ErrConstAddOverflow:
@@ -217,9 +217,9 @@ BEGIN
 	| AST.ErrForPossibleOverflow:
 		C("Во время итерации в FOR возможно переполнение")
 	| AST.ErrVarUninitialized:
-		C("Использование неинициализированной переменной")
+		C("Использование неинициализированной переменной - ")
 	| AST.ErrVarMayUninitialized:
-		C("Использование переменной, которая может быть не инициализирована")
+		C("Использование переменной, которая может быть не инициализирована - ")
 	| AST.ErrDeclarationNotProc:
 		C("Имя должно указывать на процедуру")
 	| AST.ErrProcNotCommandHaveReturn:

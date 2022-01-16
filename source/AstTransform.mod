@@ -58,8 +58,8 @@ MODULE AstTransform;
     END;
 
   VAR
-    type      : PROCEDURE(t: Ast.Type;   VAR o: Options);
-    expression: PROCEDURE(VAR e: Ast.Expression; o: Options);
+    type      : PROCEDURE(VAR c: Ast.Context; t: Ast.Type;       VAR o: Options);
+    expression: PROCEDURE(c: Ast.Context; VAR e: Ast.Expression; o: Options);
     incParam  : Ast.FormalParam;
 
   PROCEDURE Import(imp: Ast.Import; o: Options);
@@ -84,9 +84,9 @@ MODULE AstTransform;
     t := Ast.ArrayGet(t, o.mark (* 1 *))
   END ChangeTypeOnArray;
 
-  PROCEDURE Var(d: Ast.Declaration; VAR o: Options);
+  PROCEDURE Var(VAR c: Ast.Context; d: Ast.Declaration; VAR o: Options);
   BEGIN
-    type(d.type, o);
+    type(c, d.type, o);
     IF (o.outParam # 0)
      & ~(d.type.id IN Ast.Structures) & d(Ast.Var).inVarParam
     THEN
@@ -108,19 +108,19 @@ MODULE AstTransform;
     ASSERT(Ast.ErrNo = err);
   END AstOk;
 
-  PROCEDURE FormalParam(proc: Ast.ProcType; ds: Ast.Procedure;
+  PROCEDURE FormalParam(VAR c: Ast.Context; proc: Ast.ProcType; ds: Ast.Procedure;
                         VAR sfp: Ast.Declaration; o: Options);
   VAR np, fp: Ast.FormalParam; var: Ast.Var;
       name: ARRAY TranLim.LenName + 3 OF CHAR;
       ofs: INTEGER;
 
-      PROCEDURE AssignFormalParamToLocalArray(ds: Ast.Procedure; var, fp: Ast.Var; o: Options);
+      PROCEDURE AssignFormalParamToLocalArray(VAR c: Ast.Context; ds: Ast.Procedure; var, fp: Ast.Var; o: Options);
       VAR dst, src: Ast.Designator; a: Ast.Assign;
       BEGIN
         AstOk(Ast.DesignatorNew(dst, var));
-        AstOk(Ast.SelArrayNew(dst.sel, dst.type, dst.value, Ast.ExprIntegerNew(0)));
+        AstOk(Ast.SelArrayNew(c, dst.sel, dst.type, dst.value, Ast.ExprIntegerNew(0)));
         AstOk(Ast.DesignatorNew(src, fp));
-        AstOk(Ast.AssignNew(a, FALSE, dst, src));
+        AstOk(Ast.AssignNew(c, a, FALSE, dst, src));
         a.next := ds.stats;
         ds.stats := a;
         a.ext := o.mark
@@ -147,16 +147,16 @@ MODULE AstTransform;
       AstOk(Ast.VarAdd(var, ds, name, 0, ofs));
       var.type := Ast.ArrayGet(fp.type, o.mark (* 1 *));
       fp.ext := var;
-      AssignFormalParamToLocalArray(ds, var, fp, o)
+      AssignFormalParamToLocalArray(c, ds, var, fp, o)
     END
   END FormalParam;
 
-  PROCEDURE ProcType(p: Ast.ProcType; ds: Ast.Procedure; o: Options);
+  PROCEDURE ProcType(VAR c: Ast.Context; p: Ast.ProcType; ds: Ast.Procedure; o: Options);
   VAR fp: Ast.Declaration;
   BEGIN
     fp := p.params;
     WHILE fp # NIL DO
-      FormalParam(p, ds, fp, o);
+      FormalParam(c, p, ds, fp, o);
       fp := fp.next
     END
   END ProcType;
@@ -171,7 +171,7 @@ MODULE AstTransform;
     str[ofs + 3] := CHR(Z + val          MOD 10)
   END Put4Digits;
 
-  PROCEDURE Record(r: Ast.Record; VAR o: Options);
+  PROCEDURE Record(VAR c: Ast.Context; r: Ast.Record; VAR o: Options);
   VAR d: Ast.Declaration;
 
     (* TODO Привязать действия к опции o.anonRecord *)
@@ -227,13 +227,13 @@ MODULE AstTransform;
     d := r.vars;
     IF o.renameSameInRecExt & (r.base # NIL) THEN
       WHILE d # NIL DO
-        Var(d, o);
+        Var(c, d, o);
         CheckSameName(r.base, d);
         d := d.next
       END
     ELSE
       WHILE d # NIL DO
-        Var(d, o);
+        Var(c, d, o);
         d := d.next
       END
     END;
@@ -245,26 +245,26 @@ MODULE AstTransform;
     END
   END Record;
 
-  PROCEDURE Type(t: Ast.Type; VAR o: Options);
+  PROCEDURE Type(VAR c: Ast.Context; t: Ast.Type; VAR o: Options);
 
-    PROCEDURE Array(a: Ast.Type; VAR o: Options);
+    PROCEDURE Array(VAR c: Ast.Context; a: Ast.Type; VAR o: Options);
     VAR t: Ast.Type;
     BEGIN
       t := a.type;
       WHILE t.id = Ast.IdArray DO
         t := t.type
       END;
-      Type(t, o)
+      Type(c, t, o)
     END Array;
   BEGIN
     IF (o.outParam # 0) & (t.ext # o.mark) THEN
       t.ext := o.mark;
       CASE t.id OF
-        Ast.IdRecord  : Record(t(Ast.Record), o)
-      | Ast.IdPointer : Record(t.type(Ast.Record), o)
+        Ast.IdRecord  : Record(c, t(Ast.Record), o)
+      | Ast.IdPointer : Record(c, t.type(Ast.Record), o)
       | Ast.IdProcType, Ast.IdFuncType
-                      : ProcType(t(Ast.ProcType), NIL, o)
-      | Ast.IdArray   : Array(t, o)
+                      : ProcType(c, t(Ast.ProcType), NIL, o)
+      | Ast.IdArray   : Array(c, t, o)
 
       | Ast.IdInteger .. Ast.IdLongSet
                       : ;
@@ -325,11 +325,11 @@ MODULE AstTransform;
     RETURN i
   END CutIndex;
 
-  PROCEDURE Designator(d: Ast.Designator; o: Options;
+  PROCEDURE Designator(c: Ast.Context; d: Ast.Designator; o: Options;
                        actualParam: Ast.Parameter; fp: Ast.FormalParam);
   VAR sel, last: Ast.Selector; index: Ast.Expression;
 
-    PROCEDURE Item(o: Options; d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector;
+    PROCEDURE Item(c: Ast.Context; o: Options; d: Ast.Designator; prev: Ast.Selector; VAR sel: Ast.Selector;
                    v: Ast.Var; mark: Ast.ExprInteger);
     VAR t: Ast.Type; index: Ast.Factor; ns: Ast.Selector;
     BEGIN
@@ -340,7 +340,7 @@ MODULE AstTransform;
           ASSERT(prev.next = sel);
           prev.type := t
         END;
-        AstOk(Ast.SelArrayNew(ns, t, NIL, index));
+        AstOk(Ast.SelArrayNew(c, ns, t, NIL, index));
         (*
         ASSERT(d.type = ns.type);
         *)
@@ -360,17 +360,17 @@ MODULE AstTransform;
     sel := d.sel;
     ReplaceFormalParamByLocalArrayIfUsedAsVarParam(d);
     IF (sel # NIL) & (o.outParam # 0) & (d.decl.id = Ast.IdVar) THEN
-      Item(o, NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
+      Item(c, o, NIL, NIL, d.sel, d.decl(Ast.Var), o.mark)
     END;
     last := NIL;
     WHILE sel # NIL DO
       IF sel IS Ast.SelArray THEN
-        expression(sel(Ast.SelArray).index, o)
+        expression(c, sel(Ast.SelArray).index, o)
       END;
       last := sel;
       sel := sel.next;
       IF (sel # NIL) & (o.outParam # 0) & (last IS Ast.SelRecord) THEN
-        Item(o, NIL, last, last.next, last(Ast.SelRecord).var, o.mark)
+        Item(c, o, NIL, last, last.next, last(Ast.SelRecord).var, o.mark)
       END
     END;
 
@@ -378,10 +378,10 @@ MODULE AstTransform;
       IF actualParam = NIL THEN
         IF last = NIL THEN
           IF d.decl.id = Ast.IdVar THEN
-            Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
+            Item(c, o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(c, o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       ELSIF (fp.type.id = Ast.IdArray) & (fp.ext = o.mark) THEN
           index := CutIndex(o.outParam, actualParam.expr(Ast.Designator));
@@ -391,44 +391,44 @@ MODULE AstTransform;
       ELSE
         IF last = NIL THEN
           IF d.decl.id = Ast.IdVar THEN
-            Item(o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
+            Item(c, o, d, NIL, d.sel, d.decl(Ast.Var), o.mark)
           END
         ELSIF last IS Ast.SelRecord THEN
-          Item(o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
+          Item(c, o, d, last, last.next, last(Ast.SelRecord).var, o.mark)
         END
       END
     END
   END Designator;
 
-  PROCEDURE Expression(VAR e: Ast.Expression; o: Options);
+  PROCEDURE Expression(c: Ast.Context; VAR e: Ast.Expression; o: Options);
 
-    PROCEDURE Set(set: Ast.ExprSet; o: Options);
+    PROCEDURE Set(c: Ast.Context; set: Ast.ExprSet; o: Options);
     BEGIN
       IF set.exprs[0] = NIL THEN
         ASSERT(set.exprs[1] = NIL);
         ASSERT(set.next = NIL)
       ELSE
         REPEAT
-          Expression(set.exprs[0], o);
+          Expression(c, set.exprs[0], o);
           IF set.exprs[1] # NIL THEN
-            Expression(set.exprs[1], o)
+            Expression(c, set.exprs[1], o)
           END;
           set := set.next
         UNTIL set = NIL
       END
     END Set;
 
-    PROCEDURE Call(c: Ast.ExprCall; o: Options);
+    PROCEDURE Call(ac: Ast.Context; c: Ast.ExprCall; o: Options);
     VAR p: Ast.Parameter; fp: Ast.Declaration;
     BEGIN
-      Designator(c.designator, o, NIL, NIL);
+      Designator(ac, c.designator, o, NIL, NIL);
       p  := c.params;
       fp := c.designator.type(Ast.ProcType).params;
       WHILE p # NIL DO
         IF p.expr.id = Ast.IdDesignator THEN
-          Designator(p.expr(Ast.Designator), o, p, fp(Ast.FormalParam))
+          Designator(ac, p.expr(Ast.Designator), o, p, fp(Ast.FormalParam))
         ELSE
-          Expression(p.expr, o)
+          Expression(ac, p.expr, o)
         END;
         p  := p.next;
         IF fp # NIL THEN
@@ -443,13 +443,13 @@ MODULE AstTransform;
       END
     END Call;
 
-    PROCEDURE Relation(r: Ast.ExprRelation; o: Options);
+    PROCEDURE Relation(c: Ast.Context; r: Ast.ExprRelation; o: Options);
     BEGIN
-      Expression(r.exprs[0], o);
-      Expression(r.exprs[1], o)
+      Expression(c, r.exprs[0], o);
+      Expression(c, r.exprs[1], o)
     END Relation;
 
-    PROCEDURE Sum(sum: Ast.ExprSum; o: Options): Ast.ExprSum;
+    PROCEDURE Sum(c: Ast.Context; sum: Ast.ExprSum; o: Options): Ast.ExprSum;
     VAR s: Ast.ExprSum;
 
       PROCEDURE IsolateAdd(VAR sum: Ast.ExprSum);
@@ -477,7 +477,7 @@ MODULE AstTransform;
     BEGIN
       s := sum;
       REPEAT
-        Expression(s.term, o);
+        Expression(c, s.term, o);
         s := s.next;
       UNTIL s = NIL;
       IF o.setSubBrace & (sum.type.id IN Ast.Sets) THEN
@@ -487,31 +487,31 @@ MODULE AstTransform;
       sum
     END Sum;
 
-    PROCEDURE Term(term: Ast.ExprTerm; o: Options);
+    PROCEDURE Term(c: Ast.Context; term: Ast.ExprTerm; o: Options);
 
-      PROCEDURE Factor(f: Ast.Factor; o: Options);
+      PROCEDURE Factor(c: Ast.Context; f: Ast.Factor; o: Options);
       VAR e: Ast.Expression;
       BEGIN
         e := f;
-        Expression(e, o);
+        Expression(c, e, o);
         ASSERT(e = f)
       END Factor;
 
     BEGIN
       REPEAT
-        Factor(term.factor, o);
+        Factor(c, term.factor, o);
         IF term.expr IS Ast.ExprTerm THEN
           term := term.expr(Ast.ExprTerm)
         ELSE
-          Expression(term.expr, o);
+          Expression(c, term.expr, o);
           term := NIL
         END
       UNTIL term = NIL
     END Term;
 
-    PROCEDURE IsExtension(is: Ast.ExprIsExtension; o: Options);
+    PROCEDURE IsExtension(c: Ast.Context; is: Ast.ExprIsExtension; o: Options);
     BEGIN
-      Designator(is.designator, o, NIL, NIL);
+      Designator(c, is.designator, o, NIL, NIL);
     END IsExtension;
 
   BEGIN
@@ -519,39 +519,39 @@ MODULE AstTransform;
       Ast.IdInteger .. Ast.IdReal32, Ast.IdPointer, Ast.IdString, Ast.IdExprType
                        : (* *)
     | Ast.IdSet, Ast.IdLongSet
-                       : Set(e(Ast.ExprSet), o)
-    | Ast.IdCall       : Call(e(Ast.ExprCall), o)
-    | Ast.IdDesignator : Designator(e(Ast.Designator), o, NIL, NIL)
-    | Ast.IdRelation   : Relation(e(Ast.ExprRelation), o)
-    | Ast.IdSum        : e := Sum(e(Ast.ExprSum), o)
-    | Ast.IdTerm       : Term(e(Ast.ExprTerm), o)
-    | Ast.IdNegate     : Expression(e(Ast.ExprNegate).expr, o)
-    | Ast.IdBraces     : Expression(e(Ast.ExprBraces).expr, o)
-    | Ast.IdIsExtension: IsExtension(e(Ast.ExprIsExtension), o)
+                       : Set(c, e(Ast.ExprSet), o)
+    | Ast.IdCall       : Call(c, e(Ast.ExprCall), o)
+    | Ast.IdDesignator : Designator(c, e(Ast.Designator), o, NIL, NIL)
+    | Ast.IdRelation   : Relation(c, e(Ast.ExprRelation), o)
+    | Ast.IdSum        : e := Sum(c, e(Ast.ExprSum), o)
+    | Ast.IdTerm       : Term(c, e(Ast.ExprTerm), o)
+    | Ast.IdNegate     : Expression(c, e(Ast.ExprNegate).expr, o)
+    | Ast.IdBraces     : Expression(c, e(Ast.ExprBraces).expr, o)
+    | Ast.IdIsExtension: IsExtension(c, e(Ast.ExprIsExtension), o)
     END
   END Expression;
 
-  PROCEDURE Statements(VAR stats: Ast.Statement; o: Options);
+  PROCEDURE Statements(VAR c: Ast.Context; VAR stats: Ast.Statement; o: Options);
   VAR st: Ast.Statement;
 
-    PROCEDURE WhileIf(wi: Ast.WhileIf; o: Options);
+    PROCEDURE WhileIf(VAR c: Ast.Context; wi: Ast.WhileIf; o: Options);
     BEGIN
       REPEAT
         IF wi.expr # NIL THEN
-          Expression(wi.expr, o)
+          Expression(c, wi.expr, o)
         END;
-        Statements(wi.stats, o);
+        Statements(c, wi.stats, o);
         wi := wi.elsif
       UNTIL wi = NIL
     END WhileIf;
 
-    PROCEDURE Repeat(r: Ast.Repeat; o: Options);
+    PROCEDURE Repeat(VAR c: Ast.Context; r: Ast.Repeat; o: Options);
     BEGIN
-      Statements(r.stats, o);
-      Expression(r.expr, o)
+      Statements(c, r.stats, o);
+      Expression(c, r.expr, o)
     END Repeat;
 
-    PROCEDURE For(VAR stats: Ast.Statement; for: Ast.For; o: Options);
+    PROCEDURE For(VAR c: Ast.Context; VAR stats: Ast.Statement; for: Ast.For; o: Options);
     VAR w: Ast.While; e: Ast.ExprRelation; var, d: Ast.Designator;
         last: Ast.Statement; inc: Ast.Call; einc: Ast.ExprCall;
         fp: Ast.FormalParam; par: Ast.Parameter;
@@ -559,8 +559,8 @@ MODULE AstTransform;
     BEGIN
       IF (o.outParam # 0) & for.var.inVarParam THEN
         AstOk(Ast.DesignatorNew(var, for.var));
-        AstOk(Ast.SelArrayNew(var.sel, var.type, var.value, Ast.ExprIntegerNew(0)));
-        AstOk(Ast.AssignNew(a, FALSE, var, for.expr));
+        AstOk(Ast.SelArrayNew(c, var.sel, var.type, var.value, Ast.ExprIntegerNew(0)));
+        AstOk(Ast.AssignNew(c, a, FALSE, var, for.expr));
         IF for.by > 0 THEN
           rel   := Ast.LessEqual;
           ident := SpecIdent.Inc
@@ -568,10 +568,10 @@ MODULE AstTransform;
           rel   := Ast.GreaterEqual;
           ident := SpecIdent.Dec
         END;
-        AstOk(Ast.ExprRelationNew(e, var, rel, for.to));
+        AstOk(Ast.ExprRelationNew(c, e, var, rel, for.to));
         AstOk(Ast.WhileNew(w, e, for.stats));
         AstOk(Ast.DesignatorNew(d, Ast.PredefinedGet(ident)));
-        AstOk(Ast.CallNew(inc, d));
+        AstOk(Ast.CallNew(c, inc, d));
         einc := inc.expr(Ast.ExprCall);
         fp := d.type(Ast.ProcType).params;
         AstOk(Ast.CallParamNew(einc, einc.params, var, fp));
@@ -585,28 +585,28 @@ MODULE AstTransform;
         w.next := a.next;
         a.next := w
       ELSE
-        Expression(for.expr, o);
-        Expression(for.to, o);
-        Statements(for.stats, o)
+        Expression(c, for.expr, o);
+        Expression(c, for.to, o);
+        Statements(c, for.stats, o)
       END
     END For;
 
-    PROCEDURE Case(c: Ast.Case; o: Options);
+    PROCEDURE Case(VAR ac: Ast.Context; c: Ast.Case; o: Options);
     VAR el: Ast.CaseElement;
     BEGIN
-      Expression(c.expr, o);
+      Expression(ac, c.expr, o);
       el := c.elements;
       WHILE el # NIL DO
-        Statements(el.stats, o);
+        Statements(ac, el.stats, o);
         el := el.next
       END;
-      Statements(c.else, o)
+      Statements(ac, c.else, o)
     END Case;
 
-    PROCEDURE Assign(a: Ast.Assign; o: Options);
+    PROCEDURE Assign(VAR c: Ast.Context; a: Ast.Assign; o: Options);
     BEGIN
-      Designator(a.designator, o, NIL, NIL);
-      Expression(a.expr, o)
+      Designator(c, a.designator, o, NIL, NIL);
+      Expression(c, a.expr, o)
     END Assign;
   BEGIN
     st := stats;
@@ -614,18 +614,18 @@ MODULE AstTransform;
       (* TODO CASE *)
       IF st IS Ast.Assign THEN
         IF st.ext # o.mark THEN
-          Assign(st(Ast.Assign), o)
+          Assign(c, st(Ast.Assign), o)
         END
       ELSIF st IS Ast.Call THEN
-        Expression(st.expr, o)
+        Expression(c, st.expr, o)
       ELSIF st IS Ast.WhileIf THEN
-        WhileIf(st(Ast.WhileIf), o)
+        WhileIf(c, st(Ast.WhileIf), o)
       ELSIF st IS Ast.Repeat THEN
-        Repeat(st(Ast.Repeat), o)
+        Repeat(c, st(Ast.Repeat), o)
       ELSIF st IS Ast.For THEN
-        For(stats, st(Ast.For), o)
+        For(c, stats, st(Ast.For), o)
       ELSE ASSERT(st IS Ast.Case);
-        Case(st(Ast.Case), o)
+        Case(c, st(Ast.Case), o)
       END;
       st := st.next
     END
@@ -706,15 +706,15 @@ MODULE AstTransform;
     END
   END ProcCutConstAndTypes;
 
-  PROCEDURE Declarations(ds: Ast.Declarations; VAR o: Options);
+  PROCEDURE Declarations(VAR c: Ast.Context; ds: Ast.Declarations; VAR o: Options);
   VAR d, last: Ast.Declaration;
 
-    PROCEDURE Proc(p: Ast.Procedure; VAR o: Options);
+    PROCEDURE Proc(VAR c: Ast.Context; p: Ast.Procedure; VAR o: Options);
     BEGIN
-      ProcType(p.header, p, o);
-      Declarations(p, o);
+      ProcType(c, p.header, p, o);
+      Declarations(c, p, o);
       IF p.return # NIL THEN
-        Expression(p.return, o)
+        Expression(c, p.return, o)
       END
     END Proc;
 
@@ -733,7 +733,7 @@ MODULE AstTransform;
     END;
 
     WHILE (d # NIL) & (d IS Ast.Type) DO
-      Type(d(Ast.Type), o);
+      Type(c, d(Ast.Type), o);
       d := d.next
     END;
 
@@ -761,12 +761,12 @@ MODULE AstTransform;
     END;
 
     WHILE (d # NIL) & (d.id = Ast.IdVar) DO
-      Var(d, o);
+      Var(c, d, o);
       d := d.next
     END;
 
     WHILE d # NIL DO
-      Proc(d(Ast.Procedure), o);
+      Proc(c, d(Ast.Procedure), o);
       d := d.next
     END;
 
@@ -804,10 +804,10 @@ MODULE AstTransform;
       END
     END;
 
-    Statements(ds.stats, o)
+    Statements(c, ds.stats, o)
   END Declarations;
 
-  PROCEDURE Transform(m: Ast.Module; VAR o: Options);
+  PROCEDURE Transform(VAR c: Ast.Context; m: Ast.Module; VAR o: Options);
   VAR imp: Ast.Declaration;
   BEGIN
     imp := m.import;
@@ -815,7 +815,7 @@ MODULE AstTransform;
       IF (imp.module.m.ext # o.mark) & ~imp.module.m.spec THEN
         imp.module.m.ext := o.mark;
         Ast.ModuleReopen(imp.module.m);
-        Transform(imp.module.m, o)
+        Transform(c, imp.module.m, o)
       END;
       imp := imp.next
     END;
@@ -825,7 +825,7 @@ MODULE AstTransform;
     o.types.first  := NIL;
     o.types.last   := NIL;
     o.anon         := 0;
-    Declarations(m, o)
+    Declarations(c, m, o)
   END Transform;
 
   PROCEDURE Fix(m: Ast.Module; mark: Ast.Expression);
@@ -835,19 +835,19 @@ MODULE AstTransform;
     WHILE (imp # NIL) & (imp.id = Ast.IdImport) DO
       IF imp.module.m.ext = mark THEN
         imp.module.m.ext := NIL;
-        AstOk(Ast.ModuleEnd(imp.module.m));
+        Ast.ModuleEndCheckless(imp.module.m);
         Fix(imp.module.m, mark)
       END;
       imp := imp.next
     END;
   END Fix;
 
-  PROCEDURE Do*(m: Ast.Module; VAR o: Options);
+  PROCEDURE Do*(VAR c: Ast.Context; m: Ast.Module; VAR o: Options);
   BEGIN
     ASSERT(o.anonRecord IN AnonSet);
     ASSERT(o.outParam IN OutParamSet);
 
-    Transform(m, o);
+    Transform(c, m, o);
     Fix(m, o.mark)
   END Do;
 

@@ -266,13 +266,33 @@ CONST
 	StrUsedUndef*   = 1;
 	StrUsedAsArray* = 2;
 
-	IsAllowCmpProc = FALSE;
-	IsAllowStrIndex = FALSE;
-
 TYPE
+	Options* = RECORD(V.Base)
+		allowCmpProc*,
+		allowStrIndex*,
+		allowLongTypes*,
+		allowSystem*: BOOLEAN
+	END;
+
 	Module* = POINTER TO RModule;
 	ModuleBag* = POINTER TO RECORD
 		m*: Module
+	END;
+
+	Error* = POINTER TO RError;
+
+	Context* = RECORD(V.Base)
+		opt: Options;
+
+		m: Module;
+		errLast*: Error;
+
+		strings: Strings.Store;
+
+		err: RECORD
+			code: INTEGER;
+			note: Strings.String
+		END
 	END;
 
 	Provider* = POINTER TO RProvider;
@@ -294,7 +314,6 @@ TYPE
 		ext*: V.PBase
 	END;
 
-	Error* = POINTER TO RError;
 	RError = RECORD(Node)
 		code*: INTEGER;
 		line*, column*, bytes*: INTEGER;
@@ -437,10 +456,7 @@ TYPE
 		fixed,
 		spec*: BOOLEAN;
 
-		(* TODO переделать *)
-		unusedDecl: Declaration;
-
-		errors*, errLast*: Error
+		errors*: Error
 	END;
 
 	GeneralProcedure* = POINTER TO RGeneralProcedure;
@@ -653,6 +669,14 @@ VAR
 
 	system: Module;
 
+PROCEDURE DefaultOptions*(VAR o: Options);
+BEGIN
+	o.allowCmpProc   := FALSE;
+	o.allowStrIndex  := FALSE;
+	o.allowLongTypes := FALSE;
+	o.allowSystem    := FALSE
+END DefaultOptions;
+
 PROCEDURE PutChars*(m: Module; VAR w: Strings.String;
                     s: ARRAY OF CHAR; begin, end: INTEGER);
 BEGIN
@@ -663,6 +687,16 @@ BEGIN
 		Strings.Put(m.store, w, "#error", 0, 5)
 	END
 END PutChars;
+
+PROCEDURE PutCharsTodo*(c: Context; VAR w: Strings.String;
+                        s: ARRAY OF CHAR; begin, end: INTEGER);
+BEGIN
+	IF 0 <= begin THEN
+		Strings.Put(c.strings, w, s, begin, end)
+	ELSE
+		Strings.Put(c.strings, w, "#error", 0, 5)
+	END
+END PutCharsTodo;
 
 PROCEDURE NodeInit(VAR n: Node; id: INTEGER);
 BEGIN
@@ -793,7 +827,16 @@ BEGIN
 	d.up := up.dag
 END DeclarationsConnect;
 
-PROCEDURE ModuleNew*(name: ARRAY OF CHAR): Module;
+PROCEDURE ContextInit*(VAR c: Context; opt: Options);
+BEGIN
+	V.Init(c);
+	c.strings := Strings.StoreNew();
+	c.opt := opt;
+	c.errLast := NIL;
+	c.err.code := ErrNo;
+END ContextInit;
+
+PROCEDURE ModuleCreate(name: ARRAY OF CHAR): Module;
 VAR m: Module;
 BEGIN
 	NEW(m);
@@ -804,24 +847,46 @@ BEGIN
 	m.fixed := FALSE;
 	m.spec := FALSE;
 	m.import := NIL;
-	m.errors := NIL; m.errLast := NIL;
-	Strings.StoreInit(m.store);
+	m.errors := NIL;
+	m.store := Strings.StoreNew();
 
 	PutChars(m, m.name, name, 0, Chars0X.CalcLen(name, 0));
 	m.module := m.bag;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
-	m.script := FALSE
+	m.script := FALSE;
+
+	RETURN m
+END ModuleCreate;
+
+PROCEDURE ModuleNew*(VAR c: Context; name: ARRAY OF CHAR): Module;
+VAR m: Module;
+BEGIN
+	m := ModuleCreate(name);
+	c.m := m
 	RETURN m
 END ModuleNew;
 
-PROCEDURE ScriptNew*(): Module;
+PROCEDURE ScriptNew*(VAR c: Context): Module;
 VAR m: Module;
 BEGIN
-	m := ModuleNew("script");
+	m := ModuleNew(c, "script");
 	m.script := TRUE
 	RETURN m
 END ScriptNew;
+
+PROCEDURE AddErrorNote(VAR c: Context; err: INTEGER; note: Strings.String);
+BEGIN
+	c.err.code := err;
+	c.err.note := note
+END AddErrorNote;
+
+PROCEDURE AddErrorNoteFromBuf(VAR c: Context; err: INTEGER;
+                              note: ARRAY OF CHAR; ofs, end: INTEGER);
+BEGIN
+	PutCharsTodo(c, c.err.note, note, ofs, end);
+	c.err.code := err;
+END AddErrorNoteFromBuf;
 
 PROCEDURE ProvideModule*(prov: Provider; host: Module;
                          name: ARRAY OF CHAR): Module;
@@ -850,9 +915,8 @@ PROCEDURE RegModule*(provider: Provider; m: Module): BOOLEAN;
 RETURN provider.reg(provider, m)
 END RegModule;
 
-PROCEDURE CheckUnusedDeclarations(ds: Declarations): INTEGER;
-VAR d: Declaration;
-    err: INTEGER;
+PROCEDURE CheckUnusedDeclarations(VAR c: Context; ds: Declarations): INTEGER;
+VAR d: Declaration; err: INTEGER;
 BEGIN
 	d := ds.start;
 	WHILE (d # NIL) & (d.id = IdImport) DO
@@ -868,24 +932,30 @@ BEGIN
 	IF d = NIL THEN
 		err := ErrNo
 	ELSE
-		ds.module.m.unusedDecl := d;
-		err := ErrDeclarationUnused
+		err := ErrDeclarationUnused;
+		AddErrorNote(c, err, d.name)
 	END
 	RETURN err
 END CheckUnusedDeclarations;
 
-PROCEDURE ModuleEnd*(m: Module): INTEGER;
+PROCEDURE ModuleEndCheckless*(m: Module);
+BEGIN
+	ASSERT(~m.fixed);
+	m.fixed := TRUE
+END ModuleEndCheckless;
+
+PROCEDURE ModuleEnd*(VAR c: Context; m: Module): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	ASSERT(~m.fixed);
-	m.fixed := TRUE;
 	IF m.script THEN
 		err := ErrNo
 	ELSE
-		err := CheckUnusedDeclarations(m)
+		err := CheckUnusedDeclarations(c, m)
 		(* TODO проверять наличие используемых не инициализировавшихся
 		   глобальных переменных *)
-	END
+	END;
+	m.fixed := TRUE
 	RETURN err
 END ModuleEnd;
 
@@ -893,7 +963,7 @@ PROCEDURE ModuleReopen*(m: Module);
 BEGIN
 	ASSERT(m.fixed);
 	ASSERT(m # system);
-	m.fixed := FALSE
+	m.fixed := FALSE;
 END ModuleReopen;
 
 PROCEDURE ImportHandle*(m: Module);
@@ -908,10 +978,9 @@ BEGIN
 	m.handleImport := FALSE
 END ImportEnd;
 
-PROCEDURE ImportAdd*(prov: Provider; m: Module; buf: ARRAY OF CHAR;
-                     nameOfs, nameEnd, realOfs, realEnd: INTEGER;
-                     allowSystem: BOOLEAN): INTEGER;
-VAR imp: Import;
+PROCEDURE ImportAdd*(VAR c: Context; prov: Provider; m: Module; buf: ARRAY OF CHAR;
+                     nameOfs, nameEnd, realOfs, realEnd: INTEGER): INTEGER;
+VAR imp: Import; dup: Strings.String;
 	i: Declaration;
 	err, ofs: INTEGER;
 	name: ARRAY TranLim.LenName + 1 OF CHAR;
@@ -922,7 +991,8 @@ VAR imp: Import;
 		i := 0;
 		res := GetModuleByName(prov, host, name);
 		IF res = NIL THEN
-			m := ModuleNew(name);
+			m := ModuleCreate(name);
+			ModuleEndCheckless(m);
 			res := m.bag;
 			err := ErrImportModuleNotFound
 		ELSIF res.m.errors # NIL THEN
@@ -936,14 +1006,24 @@ VAR imp: Import;
 		RETURN err
 	END Load;
 
-	PROCEDURE IsDup(i: Import; buf: ARRAY OF CHAR;
-	                nameOfs, nameEnd, realOfs, realEnd: INTEGER): BOOLEAN;
-		RETURN Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd)
-		    OR (realOfs # nameOfs) & (
-		          (i.name.ofs # i.module.m.name.ofs)
+	PROCEDURE IsDup(i: Declaration; buf: ARRAY OF CHAR;
+	                nameOfs, nameEnd, realOfs, realEnd: INTEGER;
+	                VAR dup: Strings.String): BOOLEAN;
+
+	BEGIN
+		IF Strings.IsEqualToChars(i.name, buf, nameOfs, nameEnd) THEN
+			dup := i.name
+		ELSIF (realOfs # nameOfs)
+		    & (   (i.name.ofs # i.module.m.name.ofs)
 		       OR (i.name.block # i.module.m.name.block)
-		       )
-		       & Strings.IsEqualToChars(i.module.m.name, buf, realOfs, realEnd)
+		      )
+		    & Strings.IsEqualToChars(i.module.m.name, buf, realOfs, realEnd)
+		THEN
+			dup := i.module.m.name
+		ELSE
+			Strings.Undef(dup)
+		END
+		RETURN Strings.IsDefined(dup)
 	END IsDup;
 BEGIN
 	ASSERT(~m.fixed);
@@ -951,15 +1031,15 @@ BEGIN
 	i := m.import;
 	ASSERT((i = NIL) OR (m.end.id = IdImport));
 	IF Strings.IsEqualToChars(m.name, buf, realOfs, realEnd) THEN
-		err := ErrImportSelf
+		err := ErrImportSelf;
+		AddErrorNote(c, err, m.name)
 	ELSE
-		WHILE (i # NIL)
-		    & ~IsDup(i(Import), buf, nameOfs, nameEnd, realOfs, realEnd)
-		DO
+		WHILE (i # NIL) & ~IsDup(i, buf, nameOfs, nameEnd, realOfs, realEnd, dup) DO
 			i := i.next
 		END;
 		IF i # NIL THEN
-			err := ErrImportNameDuplicate
+			err := ErrImportNameDuplicate;
+			AddErrorNote(c, err, dup)
 		ELSE
 			NEW(imp); NodeInit(imp^, IdImport);
 			DeclConnect(imp, m, buf, nameOfs, nameEnd);
@@ -969,11 +1049,14 @@ BEGIN
 			END;
 			ofs := 0;
 			ASSERT(Chars0X.CopyChars(name, ofs, buf, realOfs, realEnd));
-			IF allowSystem & (name = "SYSTEM") THEN
+			IF c.opt.allowSystem & (name = "SYSTEM") THEN
 				imp.module := system.bag;
 				err := ErrNo
 			ELSE
-				err := Load(imp.module, prov, m, name)
+				err := Load(imp.module, prov, m, name);
+				IF err # ErrNo THEN
+					AddErrorNoteFromBuf(c, err, name, 0, Chars0X.CalcLen(name, 0))
+				END
 			END
 		END
 	END
@@ -1017,7 +1100,7 @@ BEGIN
 	IF begin < 0 THEN
 		err := ErrNo
 	ELSIF DeclarationLineSearch(ds, buf, begin, end) # NIL THEN
-		err := ErrDeclarationNameDuplicate
+		err := ErrDeclarationNameDuplicate;
 	ELSIF ds.module.m.errorHide & (ds.up # NIL)
 	    & (DeclarationLineSearch(ds.module.m, buf, begin, end) # NIL)
 	THEN
@@ -1032,7 +1115,7 @@ BEGIN
 	RETURN err
 END CheckNameDuplicate;
 
-PROCEDURE ConstAdd*(ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
+PROCEDURE ConstAdd*(VAR ctx: Context; ds: Declarations; VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
                     VAR c: Const): INTEGER;
 VAR err: INTEGER;
 BEGIN
@@ -1040,6 +1123,9 @@ BEGIN
 
 	NEW(c); NodeInit(c^, IdConst);
 	err := CheckNameDuplicate(ds, buf, begin, end);
+	IF err # ErrNo THEN
+		AddErrorNoteFromBuf(ctx, err, buf, begin, end)
+	END;
 	DeclConnect(c, ds, buf, begin, end);
 	c.expr := NIL;
 	c.finished := FALSE;
@@ -1511,7 +1597,7 @@ BEGIN
 	RETURN err
 END ProcTypeSetReturn;
 
-PROCEDURE AddError*(m: Module; error, line, column: INTEGER);
+PROCEDURE AddError*(VAR c: Context; error, line, column: INTEGER);
 VAR e: Error;
 BEGIN
 	NEW(e); NodeInit(e^, NoId);
@@ -1519,18 +1605,21 @@ BEGIN
 	e.code := error;
 	e.line := line;
 	e.column := column;
-	IF m.unusedDecl = NIL THEN
+
+	IF (c.err.code # ErrNo) & Strings.IsDefined(c.err.note) THEN
+		e.str := c.err.note
+	ELSE
 		Strings.Undef(e.str)
-	ELSE
-		e.str := m.unusedDecl.name;
-		m.unusedDecl := NIL
 	END;
-	IF m.errLast = NIL THEN
-		m.errors := e
+	c.err.code := ErrNo;
+	Strings.Undef(c.err.note);
+
+	IF c.errLast = NIL THEN
+		c.m.errors := e
 	ELSE
-		m.errLast.next := e
+		c.errLast.next := e
 	END;
-	m.errLast := e
+	c.errLast := e
 END AddError;
 
 PROCEDURE TypeGet*(id: INTEGER): Type;
@@ -1721,26 +1810,30 @@ BEGIN
 	RETURN d
 END DeclErrorNew;
 
-PROCEDURE RegularDeclGet(VAR d: Declaration; prov: Provider; ds: Declarations;
+PROCEDURE RegularDeclGet(VAR c: Context;
+                         VAR d: Declaration; prov: Provider; ds: Declarations;
                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
 		IF (ds.module # NIL) & ds.module.m.script THEN
-			err := ImportAdd(prov, ds.module.m, buf, begin, end, begin, end, FALSE);
+			err := ImportAdd(c, prov, ds.module.m, buf, begin, end, begin, end);
 			d := ds.end
 		ELSE
 			err := ErrNo
 		END;
 		IF (d = NIL) & (err = ErrNo) THEN
 			err := ErrDeclarationNotFound;
+			AddErrorNoteFromBuf(c, err, buf, begin, end);
 			d := DeclErrorNew(ds, buf, begin, end);
 			ASSERT(d.type # NIL)
 		END
 	ELSIF ~d.mark & (d.module # NIL) & d.module.m.fixed THEN
-		err := ErrDeclarationIsPrivate
+		err := ErrDeclarationIsPrivate;
+		AddErrorNote(c, err, d.name)
 	ELSIF (d.id = IdConst) & ~d(Const).finished THEN
+		(* TODO не добавлять константу до распознавания выражения *)
 		err := ErrConstRecursive;
 		d(Const).finished := TRUE
 	ELSE
@@ -1749,38 +1842,44 @@ BEGIN
 	RETURN err
 END RegularDeclGet;
 
-PROCEDURE DeclarationGet*(VAR d: Declaration; prov: Provider; ds: Declarations;
+PROCEDURE DeclarationGet*(VAR c: Context;
+                          VAR d: Declaration; prov: Provider; ds: Declarations;
                           VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err, id: INTEGER;
 BEGIN
 	IF ds # system THEN
-		err := RegularDeclGet(d, prov, ds, buf, begin, end)
+		err := RegularDeclGet(c, d, prov, ds, buf, begin, end)
 	ELSIF SpecIdent.IsSystemProc(id, buf, begin, end) THEN
 		d := predefined[id - SpecIdent.PredefinedFirst];
 		err := ErrNo
 	ELSE
-		err := ErrDeclarationNotFound
+		err := ErrDeclarationNotFound;
+		AddErrorNoteFromBuf(c, err, buf, begin, end);
 	END
 	RETURN err
 END DeclarationGet;
 
-PROCEDURE VarGet*(VAR v: Var; ds: Declarations;
+PROCEDURE VarGet*(VAR c: Context;
+                  VAR v: Var; ds: Declarations;
                   VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 	d: Declaration;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
-		err := ErrDeclarationNotFound
+		err := ErrDeclarationNotFound;
+		AddErrorNoteFromBuf(c, err, buf, begin, end)
 	ELSIF d.id # IdVar THEN
-		err := ErrDeclarationNotVar
+		err := ErrDeclarationNotVar;
+		AddErrorNote(c, err, d.name)
 	ELSE
 		err := ErrNo
 	END;
 	IF err = ErrNo THEN
 		v := d(Var);
 		IF ~d.mark & d.module.m.fixed THEN
-			err := ErrDeclarationIsPrivate
+			err := ErrDeclarationIsPrivate;
+			AddErrorNote(c, err, d.name)
 		END
 	ELSE
 		ChecklessVarAdd(v, ds, buf, begin, end)
@@ -1789,11 +1888,12 @@ BEGIN
 END VarGet;
 
 (* TODO итератор должен быть только локальным? *)
-PROCEDURE ForIteratorGet*(VAR v: Var; ds: Declarations;
+PROCEDURE ForIteratorGet*(VAR c: Context;
+                          VAR v: Var; ds: Declarations;
                           VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
-	err := VarGet(v, ds, buf, begin, end);
+	err := VarGet(c, v, ds, buf, begin, end);
 	IF v # NIL THEN
 		IF v.type = NIL THEN
 			v.type := TypeGet(IdInteger)
@@ -2095,7 +2195,7 @@ PROCEDURE IsGlobal*(d: Declaration): BOOLEAN;
 	RETURN (d.up # NIL) & (d.up.d.up = NIL)
 END IsGlobal;
 
-PROCEDURE DesignatorUsed*(d: Designator; context: SET): INTEGER;
+PROCEDURE DesignatorUsed*(VAR c: Context; d: Designator; context: SET): INTEGER;
 VAR err: INTEGER; v: Var;
 
 	PROCEDURE InVarParam(v: Var; sel: Selector);
@@ -2137,7 +2237,8 @@ BEGIN
 		      & ({} # (v.state.inited * {InitedNo, InitedNil}))
 		      )
 		THEN
-			err := ErrVarUninitialized (* TODO *)
+			err := ErrVarUninitialized; (* TODO *)
+			AddErrorNote(c, err, v.name)
 		ELSIF ~(~(InitedNo IN v.state.inited)
 		    OR v.state.inCondition & ({} # v.state.inited - {InitedNo})
 		       )
@@ -2145,6 +2246,7 @@ BEGIN
 		   & ((v.up # NIL) & (v.up.d.up # NIL) OR (v IS FormalParam))
 		THEN
 			err := ErrVarUninitialized - ORD(InitedValue IN v.state.inited);
+			AddErrorNote(c, err, v.name);
 			v.state.inited := { InitedValue }
 		ELSIF InitedNo IN v.state.inited THEN
 			INCL(v.state.inited, InitedCheck);
@@ -2222,7 +2324,7 @@ BEGIN
 	RETURN err
 END SelPointerNew;
 
-PROCEDURE SelArrayNew*(VAR sel: Selector; VAR type: Type; value, index: Expression)
+PROCEDURE SelArrayNew*(c: Context; VAR sel: Selector; VAR type: Type; value, index: Expression)
                       : INTEGER;
 VAR sa: SelArray;
 	err: INTEGER;
@@ -2242,7 +2344,7 @@ BEGIN
 		    & (index.value(ExprInteger).int >= type(Array).count.value(ExprInteger).int)
 		THEN
 			err := ErrArrayIndexOutOfRange
-		ELSIF ~IsAllowStrIndex & (value # NIL) & (value.id = IdString) THEN
+		ELSIF ~c.opt.allowStrIndex & (value # NIL) & (value.id = IdString) THEN
 			err := ErrStringIndexing
 		ELSE
 			err := ErrNo
@@ -2304,17 +2406,19 @@ BEGIN
 	RETURN err
 END RecordVarAdd;
 
-PROCEDURE RecordVarGet*(VAR v: Var; r: Record;
+PROCEDURE RecordVarGet*(VAR c: Context; VAR v: Var; r: Record;
                         name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	v := RecordVarSearch(r, name, begin, end);
 	IF v = NIL THEN
 		err := ErrDeclarationNotFound; (* TODO *)
+		AddErrorNoteFromBuf(c, err, name, begin, end);
 		v := RecordChecklessVarAdd(r, name, begin, end);
 		v.type := TypeGet(IdInteger)
 	ELSIF ~v.mark & v.module.m.fixed THEN
 		err := ErrDeclarationIsPrivate;
+		AddErrorNote(c, err, v.name);
 		v.mark := TRUE
 	ELSE
 		err := ErrNo
@@ -2378,7 +2482,7 @@ BEGIN
 	RETURN i
 END ArrayGetSubtype;
 
-PROCEDURE SelRecordNew*(VAR sel: Selector; VAR type: Type;
+PROCEDURE SelRecordNew*(VAR c: Context; VAR sel: Selector; VAR type: Type;
                         name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR sr: SelRecord;
 	err: INTEGER;
@@ -2400,7 +2504,7 @@ BEGIN
 				record := type.type(Record)
 			END;
 			IF record # NIL THEN
-				err := RecordVarGet(var, record, name, begin, end);
+				err := RecordVarGet(c, var, record, name, begin, end);
 				IF var # NIL THEN
 					type := var.type
 				ELSE
@@ -2581,7 +2685,7 @@ BEGIN
 	RETURN (t.id = IdArray) & (t.type.id = IdChar)
 END IsChars;
 
-PROCEDURE ExprRelationNew*(VAR e: ExprRelation; expr1: Expression;
+PROCEDURE ExprRelationNew*(c: Context; VAR e: ExprRelation; expr1: Expression;
                            relation: INTEGER; expr2: Expression): INTEGER;
 CONST
 	AcceptableRelations = {RelationFirst .. RelationLast} - {Is};
@@ -2675,7 +2779,7 @@ BEGIN
 	err := ErrNo;
 	IF (expr1 # NIL) & (expr2 # NIL)
 	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
-	 & (IsAllowCmpProc OR IsNotProc(expr1, expr2, err))
+	 & (c.opt.allowCmpProc OR IsNotProc(expr1, expr2, err))
 	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Is)
 	THEN
 		v1 := e.exprs[0].value;
@@ -3228,7 +3332,7 @@ BEGIN
 	RETURN err
 END ProcedureAdd;
 
-PROCEDURE ProcedureSetReturn*(p: Procedure; e: Expression): INTEGER;
+PROCEDURE ProcedureSetReturn*(VAR c: Context; p: Procedure; e: Expression): INTEGER;
 VAR err, distance: INTEGER;
 BEGIN
 	ASSERT(p.return = NIL);
@@ -3257,19 +3361,19 @@ BEGIN
 			err := ErrSetFromLongSet
 		END;
 		IF err = ErrNo THEN
-			err := CheckUnusedDeclarations(p)
+			err := CheckUnusedDeclarations(c, p)
 		END
 	END
 	RETURN err
 END ProcedureSetReturn;
 
-PROCEDURE ProcedureEnd*(p: Procedure): INTEGER;
+PROCEDURE ProcedureEnd*(VAR c: Context; p: Procedure): INTEGER;
 VAR err: INTEGER;
 BEGIN
 	IF (p.header.type # NIL) & (p.return = NIL) THEN
 		err := ErrExpectReturn
 	ELSE
-		err := CheckUnusedDeclarations(p)
+		err := CheckUnusedDeclarations(c, p)
 	END
 	RETURN err
 END ProcedureEnd;
@@ -3539,19 +3643,20 @@ BEGIN
 	s.next := NIL
 END StatInit;
 
-PROCEDURE CallNew*(VAR c: Call; des: Designator): INTEGER;
+PROCEDURE CallNew*(VAR ctx: Context; VAR c: Call; des: Designator): INTEGER;
 VAR err: INTEGER;
 	e: ExprCall;
 BEGIN
 	err := ExprCallCreate(e, des, FALSE);
 	IF err = ErrNo THEN
-		err := DesignatorUsed(des, {})
+		err := DesignatorUsed(ctx, des, {})
 	END;
 	NEW(c); StatInit(c, e)
 	RETURN err
 END CallNew;
 
-PROCEDURE CallBeginGet*(VAR call: Call; m: Module; acceptParams: BOOLEAN;
+PROCEDURE CallBeginGet*(VAR c: Context;
+                        VAR call: Call; m: Module; acceptParams: BOOLEAN;
                         name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 VAR d: Declaration;
 	des: Designator;
@@ -3562,9 +3667,12 @@ BEGIN
 		ASSERT(d = NIL);
 		err := ErrExpectProcNameWithoutParams
 	ELSIF d = NIL THEN
-		err := ErrDeclarationNotFound
+		err := ErrDeclarationNotFound;
+		(*TODO*)
+		AddErrorNoteFromBuf(c, err, name, begin, end)
 	ELSIF ~d.mark THEN
-		err := ErrDeclarationIsPrivate
+		err := ErrDeclarationIsPrivate;
+		AddErrorNote(c, err, d.name)
 	ELSIF d.id # IdProc THEN
 		err := ErrDeclarationNotProc
 	ELSIF d(Procedure).header.type # NIL THEN
@@ -3574,16 +3682,17 @@ BEGIN
 	ELSE
 		err := DesignatorNew(des, d);
 		IF err = ErrNo THEN
-			err := CallNew(call, des);
+			err := CallNew(c, call, des);
 		END
 	END
 	RETURN err
 END CallBeginGet;
 
-PROCEDURE CommandGet*(VAR call: Call; m: Module;
+PROCEDURE CommandGet*(VAR c: Context;
+                      VAR call: Call; m: Module;
                       name: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
 BEGIN
-	RETURN CallBeginGet(call, m, FALSE, name, begin, end)
+	RETURN CallBeginGet(c, call, m, FALSE, name, begin, end)
 END CommandGet;
 
 PROCEDURE IfNew*(VAR if: If; expr: Expression; stats: Statement): INTEGER;
@@ -3918,7 +4027,7 @@ BEGIN
 	END
 END TypeInclAssigned;
 
-PROCEDURE AssignNew*(VAR a: Assign; inLoops: BOOLEAN; des: Designator;
+PROCEDURE AssignNew*(VAR c: Context; VAR a: Assign; inLoops: BOOLEAN; des: Designator;
                      expr: Expression): INTEGER;
 VAR err: INTEGER;
     var: Var;
@@ -3937,7 +4046,8 @@ BEGIN
 				  & ({} # (var.state.inited * {InitedNo, InitedNil}))
 				   ) & ~inLoops
 				THEN
-					err := ErrVarUninitialized (* TODO *)
+					err := ErrVarUninitialized; (* TODO *)
+					AddErrorNote(c, err, var.name)
 				END;
 				var.used := TRUE
 			END;
@@ -4166,7 +4276,7 @@ BEGIN
 	ParamAddPredefined(tp, typeInt, {ParamOut});
 
 
-	system := ModuleNew("SYSTEM");
+	system := ModuleCreate("SYSTEM");
 	tp := ProcNew(SpecIdent.Adr, IdInteger);
 	ParamAddPredefined(tp, typeVarAny, {ParamIn});
 
@@ -4195,7 +4305,7 @@ BEGIN
 END PredefinedDeclarationsInit;
 
 PROCEDURE HasError*(m: Module): BOOLEAN;
-	RETURN m.errLast # NIL
+	RETURN m.errors # NIL
 END HasError;
 
 PROCEDURE ProviderInit*(p: Provider; get: Provide; reg: Register);

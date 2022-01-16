@@ -52,7 +52,7 @@ TYPE
 		code*: INTEGER
 	END;
 
-	Store* = RECORD(V.Base)
+	Store* = POINTER TO RECORD(V.Base)
 		first, last: Block;
 		ofs: INTEGER
 	END;
@@ -68,7 +68,7 @@ PROCEDURE IsDefined*(s: String): BOOLEAN;
 	RETURN s.block # NIL
 END IsDefined;
 
-PROCEDURE Put*(VAR store: Store; VAR w: String;
+PROCEDURE Put*(store: Store; VAR w: String;
                s: ARRAY OF CHAR; j, end: INTEGER);
 VAR
 	b: Block;
@@ -337,22 +337,25 @@ BEGIN
 	RETURN b.s[i] = Utf8.Null
 END CopyToChars;
 
-PROCEDURE StoreInit*(VAR s: Store);
+PROCEDURE StoreNew*(): Store;
+VAR s: Store;
 BEGIN
-	V.Init(s);
+	NEW(s); V.Init(s^);
 	NEW(s.first); V.Init(s.first^);
 	s.first.num := 0;
 	s.last := s.first;
 	s.last.next := NIL;
 	s.ofs := 0
-END StoreInit;
+	RETURN s
+END StoreNew;
 
 PROCEDURE StoreDone*(VAR s: Store);
 BEGIN
 	WHILE s.first # NIL DO
 		s.first := s.first.next
 	END;
-	s.last := NIL
+	s.last := NIL;
+	s := NIL
 END StoreDone;
 
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода

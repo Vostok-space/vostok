@@ -268,7 +268,7 @@ BEGIN
 		ModulesStorage.New(p, m);
 
 		Parser.DefaultOptions(opt);
-		opt.system      := args.allowSystem;
+		opt.ast.allowSystem := args.allowSystem;
 		opt.printError  := ErrorMessage;
 		opt.cyrillic    := args.cyrillic # Cli.CyrillicNo;
 		opt.multiErrors := args.multiErrors;
@@ -1169,10 +1169,12 @@ VAR ret: INTEGER;
     opt: Parser.Options;
     str: Strings.String;
     save: CHAR;
+    ac: Ast.Context; ao: Ast.Options;
 BEGIN
 	NewProvider(mp, opt, args);
 
 	ASSERT(opt.provider # NIL);
+
 
 	IF args.script THEN
 		module := Parser.Script(args.src, opt)
@@ -1188,8 +1190,13 @@ BEGIN
 		ret := ErrParse;
 		PrintErrors(ModulesStorage.Iterate(mp), module)
 	ELSE
+		(* TODO *)
+		Ast.DefaultOptions(ao);
+		ao.allowSystem := args.allowSystem;
+		Ast.ContextInit(ac, ao);
+
 		IF ~args.script & (args.srcNameEnd < args.srcLen - 1) THEN
-			ret := Ast.CommandGet(call, module,
+			ret := Ast.CommandGet(ac, call, module,
 			                      args.src, args.srcNameEnd + 1, args.srcLen - 1);
 			cmd := call
 		ELSE
@@ -1204,11 +1211,11 @@ BEGIN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			IF res IN Cli.ThroughJava THEN
-				AstTransform.Do(module, tranOpt);
+				AstTransform.Do(ac, module, tranOpt);
 				ret := GenerateThroughJava(res, args, module, cmd, listener)
 			ELSE ASSERT(res IN Cli.ThroughJs);
 				tranOpt.renameSameInRecExt := TRUE;
-				AstTransform.Do(module, tranOpt);
+				AstTransform.Do(ac, module, tranOpt);
 				ret := GenerateThroughJs(res, args, module, cmd, listener)
 			END
 		ELSIF res IN Cli.ThroughC THEN

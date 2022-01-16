@@ -1,5 +1,5 @@
 (*  English messages for syntax and semantic errors. Extracted from MessageEn.
- *  Copyright (C) 2017-2021 ComdivByZero
+ *  Copyright (C) 2017-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -33,17 +33,17 @@ PROCEDURE Ast*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  AST.ErrImportNameDuplicate:
-		C("Module's name already declared in the import list")
+		C("Module's name already declared in the import list - ")
 	| AST.ErrImportSelf:
-		C("Module imports itself")
+		C("Module imports itself - ")
 	| AST.ErrImportLoop:
-		C("Cyclic import of modules is prohibited")
+		C("Cyclic import of modules is prohibited - ")
 	| AST.ErrDeclarationNameDuplicate:
-		C("Redeclaration of name in the same scope")
+		C("Redeclaration of name in the same scope - ")
 	| AST.ErrDeclarationNameHide:
-		C("Declaration's name shadows module's declaration")
+		C("Declaration's name shadows module's declaration - ")
 	| AST.ErrPredefinedNameHide:
-		C("Declaration's name shadows predefined identifier")
+		C("Declaration's name shadows predefined identifier - ")
 	| AST.ErrMultExprDifferentTypes:
 		C("Subexpressions types are incompatible")
 	| AST.ErrDivExprDifferentTypes:
@@ -144,13 +144,13 @@ BEGIN
 	| AST.ErrExpectReturn:
 		C("Expected return")
 	| AST.ErrDeclarationNotFound:
-		C("Declaration not found")
+		C("Declaration not found - ")
 	| AST.ErrConstRecursive:
 		C("Recursive declaration of constant denied")
 	| AST.ErrImportModuleNotFound:
-		C("Imported module not found")
+		C("Imported module not found - ")
 	| AST.ErrImportModuleWithError:
-		C("Imported module contain mistakes")
+		C("Imported module contain mistakes - ")
 	| AST.ErrDerefToNotPointer:
 		C("Dereference applicable only to pointers")
 	| AST.ErrArrayLenLess1:
@@ -176,7 +176,7 @@ BEGIN
 	| AST.ErrDotSelectorToNotRecord:
 		C("Selector '.' applicable only to record and pointer to record")
 	| AST.ErrDeclarationNotVar:
-		C("Expected variable")
+		C("Expected variable instead of ")
 	| AST.ErrForIteratorNotInteger:
 		C("Iterator of 'FOR'-loop should be and identifier of INTEGER variable")
 	| AST.ErrNotBoolInIfCondition:
@@ -194,7 +194,7 @@ BEGIN
 	| AST.ErrUntilAlwaysTrue:
 		C("End conditin always true")
 	| AST.ErrDeclarationIsPrivate:
-		C("Declaration is not exported")
+		C("Declaration is not exported - ")
 	| AST.ErrNegateNotBool:
 		C("Logic negative ~ applicable only to boolean values")
 	| AST.ErrConstAddOverflow:
@@ -224,9 +224,9 @@ BEGIN
 	| AST.ErrForPossibleOverflow:
 		C("Iterator in FOR can overflow")
 	| AST.ErrVarUninitialized:
-		C("Using uninitialized variable")
+		C("Using uninitialized variable - ")
 	| AST.ErrVarMayUninitialized:
-		C("Using variable, which may be uninitialized")
+		C("Using variable, which may be uninitialized - ")
 	| AST.ErrDeclarationNotProc:
 		C("Expected name of procedure")
 	| AST.ErrProcNotCommandHaveReturn:

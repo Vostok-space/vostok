@@ -40,7 +40,7 @@ MODULE JavaStoreProcTypes;
     IF st # NIL THEN
       V.Init(st^);
       st.next := NIL;
-      Strings.StoreInit(st.names);
+      st.names := Strings.StoreNew();
       st.items := st;
       st.last := st.items
     END

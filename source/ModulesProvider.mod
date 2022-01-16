@@ -1,5 +1,5 @@
 (*  Provider of modules through file system
- *  Copyright (C) 2019,2021 ComdivByZero
+ *  Copyright (C) 2019,2021-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -31,6 +31,7 @@ MODULE ModulesProvider;
 
   TYPE
     Provider* = POINTER TO RECORD(Ast.RProvider)
+      aopt: Ast.Options;
       opt: Parser.Options;
 
       in: InputProvider.P;
@@ -124,5 +125,10 @@ MODULE ModulesProvider;
   BEGIN
     p.opt := o
   END SetParserOptions;
+
+  PROCEDURE SetAstOptions*(p: Provider; o: Ast.Options);
+  BEGIN
+    p.aopt := o
+  END SetAstOptions;
 
 END ModulesProvider.

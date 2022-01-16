@@ -1,5 +1,5 @@
 (*  Ukrainian messages for syntax and semantic errors. Extracted from MessageUa.
- *  Copyright (C) 2018-2021 ComdivByZero
+ *  Copyright (C) 2018-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -27,17 +27,17 @@ PROCEDURE Ast*(code: INTEGER);
 BEGIN
 	CASE code OF
 	  AST.ErrImportNameDuplicate:
-		C("Ім'я модуля вже є у списці імпорту")
+		C("Ім'я модуля вже є у списці імпорту - ")
 	| AST.ErrImportSelf:
-		C("Модуль імпортує себе")
+		C("Модуль імпортує себе - ")
 	| AST.ErrImportLoop:
-		C("Прямий або опосередкований циклічний імпорт заборонений")
+		C("Прямий або опосередкований циклічний імпорт заборонений - ")
 	| AST.ErrDeclarationNameDuplicate:
-		C("Повторна об'ява імені в тій самій області видимості")
+		C("Повторна об'ява імені в тій самій області видимості - ")
 	| AST.ErrDeclarationNameHide:
-		C("Ім'я декларації перекриває декларацію з модулю")
+		C("Ім'я декларації перекриває декларацію з модулю - ")
 	| AST.ErrPredefinedNameHide:
-		C("Ім'я декларації перекриває зумовлене ім'я")
+		C("Ім'я декларації перекриває зумовлене ім'я - ")
 	| AST.ErrMultExprDifferentTypes:
 		C("Типи підвиразів у множенні несумісні")
 	| AST.ErrDivExprDifferentTypes:
@@ -137,13 +137,13 @@ BEGIN
 	| AST.ErrExpectReturn:
 		C("Очікувалось повернення значення, бо у заголовку підпрограми вказаний тип повернення")
 	| AST.ErrDeclarationNotFound:
-		C("Попередня декларація імені не було знайдена")
+		C("Не було знайдено декларації імені - ")
 	| AST.ErrConstRecursive:
 		C("Некоректне використання сталої для задання власного значення")
 	| AST.ErrImportModuleNotFound:
-		C("Імпортований модуль не знайдений")
+		C("Імпортований модуль не знайдений - ")
 	| AST.ErrImportModuleWithError:
-		C("Імпортований модуль має помилки")
+		C("Імпортований модуль має помилки - ")
 	| AST.ErrDerefToNotPointer:
 		C("Розіменування прикладено не до покажчика")
 	| AST.ErrArrayLenLess1:
@@ -169,7 +169,7 @@ BEGIN
 	| AST.ErrDotSelectorToNotRecord:
 		C("Селектор елементу запису прикладений не до запису")
 	| AST.ErrDeclarationNotVar:
-		C("Очікувалась змінна")
+		C("Очікувалась змінна замість ")
 	| AST.ErrForIteratorNotInteger:
 		C("Ітератор FOR має бути іменем змінної типу INTEGER")
 	| AST.ErrNotBoolInIfCondition:
@@ -187,7 +187,7 @@ BEGIN
 	| AST.ErrUntilAlwaysTrue:
 		C("Умова завершення завжди істинна")
 	| AST.ErrDeclarationIsPrivate:
-		C("Декларація не експортована")
+		C("Декларація не експортована - ")
 	| AST.ErrNegateNotBool:
 		C("Логічне заперечення прикладено не до логічного типу")
 	| AST.ErrConstAddOverflow:
@@ -217,9 +217,9 @@ BEGIN
 	| AST.ErrForPossibleOverflow:
 		C("Під час ітерації в FOR можливе переповнення")
 	| AST.ErrVarUninitialized:
-		C("Використання неініціалізованої змінної")
+		C("Використання неініціалізованої змінної - ")
 	| AST.ErrVarMayUninitialized:
-		C("Використання змінної, що може бути не ініціалізована")
+		C("Використання змінної, що може бути не ініціалізована - ")
 	| AST.ErrDeclarationNotProc:
 		C("Ім'я має вказувати на підпрограму")
 	| AST.ErrProcNotCommandHaveReturn:

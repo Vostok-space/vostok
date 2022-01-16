@@ -85,12 +85,12 @@ TYPE
 	Options* = RECORD(V.Base)
 		strictSemicolon*,
 		strictReturn*,
-		system*,
 		saveComments*,
 		multiErrors*,
 		cyrillic*       : BOOLEAN;
 		printError*: PrintError;
 
+		ast*: Ast.Options;
 		(* TODO удалить *)
 		provider*: Ast.Provider
 	END;
@@ -108,6 +108,7 @@ TYPE
 
 		inLoops: INTEGER;
 
+		c: Ast.Context;
 		module: Ast.Module
 	END;
 
@@ -121,20 +122,17 @@ VAR
 
 PROCEDURE AddError(VAR p: Parser; err: INTEGER);
 BEGIN
-	IF p.module # NIL THEN
-		Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
-		Log.Int(p.s.line); Log.Str(":");
-		Log.Int(p.s.column); Log.Ln;
-		p.err := err > ErrAstBegin;
+	Log.Str("AddError "); Log.Int(err); Log.Str(" at ");
+	Log.Int(p.s.line); Log.Str(":");
+	Log.Int(p.s.column); Log.Ln;
+	p.err := err > ErrAstBegin;
 
-		IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
-			INC(p.errorsCount);
-			Ast.AddError(p.module, err, p.s.line, p.s.column);
-			ASSERT(p.module.errors # NIL)
-		END
+	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
+		INC(p.errorsCount);
+		Ast.AddError(p.c, err, p.s.line, p.s.column)
 	END;
 	IF p.opt.multiErrors & Log.state THEN
-		p.opt.printError(err, p.module.errLast.str);
+		p.opt.printError(err, p.c.errLast.str);
 		Log.Str(". ");
 		Log.Int(p.s.line + 1);
 		Log.Str(":");
@@ -260,7 +258,7 @@ PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	d := NIL;
-	CheckAst(p, Ast.DeclarationGet(d, p.opt.provider, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
+	CheckAst(p, Ast.DeclarationGet(p.c, d, p.opt.provider, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
 	RETURN d
 END DeclarationGet;
 
@@ -336,7 +334,7 @@ BEGIN
 					ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
 					IF nameBegin >= 0 THEN
 						CheckAst(p,
-							Ast.SelRecordNew(sel, des.type,
+							Ast.SelRecordNew(p.c, sel, des.type,
 							                 p.s.buf, nameBegin, nameEnd)
 						)
 					END
@@ -351,7 +349,7 @@ BEGIN
 					END
 				ELSIF p.l = Scanner.Brace2Open THEN
 					Scan(p);
-					CheckAst(p, Ast.SelArrayNew(sel, des.type, des.value, expression(p, ds, {})));
+					CheckAst(p, Ast.SelArrayNew(p.c, sel, des.type, des.value, expression(p, ds, {})));
 					IF des.value = NIL THEN
 						;
 					ELSIF (des.value.id = Ast.IdString)
@@ -370,7 +368,7 @@ BEGIN
 					WHILE ScanIfEqual(p, Scanner.Comma) DO
 						SetSel(prev, sel, des);
 						CheckAst(p,
-							Ast.SelArrayNew(sel, des.type, des.value, expression(p, ds, {})))
+							Ast.SelArrayNew(p.c, sel, des.type, des.value, expression(p, ds, {})))
 					END;
 					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
 				ELSIF p.l = Scanner.Dereference THEN
@@ -452,7 +450,7 @@ BEGIN
 	IF 0 < p.inLoops THEN
 		INCL(context, Ast.InLoop)
 	END;
-	CheckAst(p, Ast.DesignatorUsed(des, context))
+	CheckAst(p, Ast.DesignatorUsed(p.c, des, context))
 END DesignatorUsed;
 
 PROCEDURE Factor(VAR p: Parser; ds: Ast.Declarations; context: SET): Ast.Expression;
@@ -604,7 +602,7 @@ BEGIN
 	IF (Scanner.RelationFirst <= p.l) & (p.l < Scanner.RelationLast) THEN
 		rel := p.l;
 		Scan(p);
-		CheckAst(p, Ast.ExprRelationNew(e, expr, rel, Sum(p, ds, {})));
+		CheckAst(p, Ast.ExprRelationNew(p.c, e, expr, rel, Sum(p, ds, {})));
 		expr := e
 	ELSIF ScanIfEqual(p, Scanner.Is) THEN
 		CheckAst(p, Ast.ExprIsExtensionNew(isExt, expr, type(p, ds, -1, -1)));
@@ -636,7 +634,7 @@ BEGIN
 		IF ~p.err THEN
 			emptyLines := p.s.emptyLines;
 			ExpectIdent(p, begin, end, ErrExpectConstName);
-			CheckAst(p, Ast.ConstAdd(ds, p.s.buf, begin, end, const));
+			CheckAst(p, Ast.ConstAdd(p.c, ds, p.s.buf, begin, end, const));
 			const.emptyLines := emptyLines;
 			Mark(p, const);
 			Expect(p, Scanner.Equal, ErrExpectEqual);
@@ -1179,10 +1177,10 @@ BEGIN
 	IF p.l # Scanner.Ident THEN
 		errName := "FORITERATOR";
 		AddError(p, ErrExpectIdent
-		          + Ast.ForIteratorGet(v, ds, errName, 0, 10) * 0
+		          + Ast.ForIteratorGet(p.c, v, ds, errName, 0, 10) * 0
 		)
 	ELSE
-		CheckAst(p, Ast.ForIteratorGet(v, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
+		CheckAst(p, Ast.ForIteratorGet(p.c, v, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
 	END;
 	Scan(p);
 	Expect(p, Scanner.Assign, ErrExpectAssign);
@@ -1244,14 +1242,14 @@ BEGIN
 	IF (des.decl.type.id = Ast.IdPointer) & (des.sel # NIL) THEN
 		DesignatorUsed(p, des, {})
 	END;
-	CheckAst(p, Ast.AssignNew(st, 0 < p.inLoops, des, Expression(p, ds, {})))
+	CheckAst(p, Ast.AssignNew(p.c, st, 0 < p.inLoops, des, Expression(p, ds, {})))
 	RETURN st
 END Assign;
 
 PROCEDURE Call(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator): Ast.Call;
 VAR st: Ast.Call;
 BEGIN
-	CheckAst(p, Ast.CallNew(st, des));
+	CheckAst(p, Ast.CallNew(p.c, st, des));
 	IF p.l = Scanner.Brace1Open THEN
 		CallParams(p, ds, st.expr(Ast.ExprCall))
 	ELSIF (des # NIL) & (des.type # NIL) & (des.type.id IN Ast.ProcTypes) THEN
@@ -1358,7 +1356,7 @@ PROCEDURE Return(VAR p: Parser; proc: Ast.Procedure);
 BEGIN
 	IF p.l = SpecIdent.Return THEN
 		Scan(p);
-		CheckAst(p, Ast.ProcedureSetReturn(proc, Expression(p, proc, {})));
+		CheckAst(p, Ast.ProcedureSetReturn(p.c, proc, Expression(p, proc, {})));
 		IF p.l = Scanner.Semicolon THEN
 			IF p.opt.strictSemicolon THEN
 				AddError(p, ErrExcessSemicolon);
@@ -1367,7 +1365,7 @@ BEGIN
 			Scan(p)
 		END
 	ELSE
-		CheckAst(p, Ast.ProcedureEnd(proc))
+		CheckAst(p, Ast.ProcedureEnd(p.c, proc))
 	END
 END Return;
 
@@ -1443,9 +1441,8 @@ BEGIN
 			realEnd := nameEnd
 		END;
 		IF ~p.err & (realOfs >= 0) THEN
-			CheckAst(p, Ast.ImportAdd(p.opt.provider, p.module, p.s.buf,
-			                          nameOfs, nameEnd, realOfs, realEnd,
-			                          p.opt.system)
+			CheckAst(p, Ast.ImportAdd(p.c, p.opt.provider, p.module, p.s.buf,
+			                          nameOfs, nameEnd, realOfs, realEnd)
 			)
 		ELSIF p.err THEN
 			p.err := FALSE;
@@ -1481,18 +1478,18 @@ VAR expectedName: BOOLEAN; moduleName: ARRAY TranLim.LenName + 1 OF CHAR;
 	END SearchModule;
 BEGIN
 	IF ~SearchModule(p.s) THEN
-		p.module := Ast.ModuleNew("#ERR");
+		p.module := Ast.ModuleNew(p.c, "#ERR");
 		AddError(p, ErrExpectModule);
 		ASSERT((p.module = NIL) OR (p.module.errors # NIL))
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
-			p.module := Ast.ModuleNew("#ERR");
+			p.module := Ast.ModuleNew(p.c, "#ERR");
 			AddError(p, ErrExpectIdent);
 			expectedName := TRUE
 		ELSE
 			Scanner.CopyCurrent(p.s, moduleName);
-			p.module := Ast.ModuleNew(moduleName);
+			p.module := Ast.ModuleNew(p.c, moduleName);
 			expectedName := Ast.RegModule(p.opt.provider, p.module);
 			IF expectedName THEN
 				IF TakeComment(p) THEN
@@ -1527,7 +1524,7 @@ BEGIN
 			IF p.l # Scanner.Dot THEN
 				AddError(p, ErrExpectDot)
 			END;
-			CheckAst(p, Ast.ModuleEnd(p.module))
+			CheckAst(p, Ast.ModuleEnd(p.c, p.module))
 		END
 	END
 END Module;
@@ -1541,11 +1538,12 @@ BEGIN
 
 	opt.strictSemicolon := TRUE;
 	opt.strictReturn    := TRUE;
-	opt.system          := FALSE;
 	opt.saveComments    := TRUE;
 	opt.multiErrors     := TRUE;
 	opt.cyrillic        := FALSE;
 	opt.printError      := Blank;
+
+	Ast.DefaultOptions(opt.ast);
 
 	opt.provider        := NIL
 END DefaultOptions;
@@ -1564,7 +1562,9 @@ BEGIN
 	ELSE
 		ASSERT(Scanner.InitByString(p.s, src))
 	END;
-	p.s.opt.cyrillic := opt.cyrillic
+	p.s.opt.cyrillic := opt.cyrillic;
+
+	Ast.ContextInit(p.c, opt.ast)
 END ParserInit;
 
 PROCEDURE Parse*(in: Stream.PIn; opt: Options): Ast.Module;
@@ -1580,13 +1580,13 @@ PROCEDURE Script*(in: ARRAY OF CHAR; opt: Options): Ast.Module;
 VAR p: Parser;
 BEGIN
 	ParserInit(p, NIL, in, opt);
-	p.module := Ast.ScriptNew();
+	p.module := Ast.ScriptNew(p.c);
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
 	IF (p.module.stats = NIL) & (p.module.errors = NIL) THEN
 		AddError(p, ErrUnexpectedContentInScript);
 	END;
-	CheckAst(p, Ast.ModuleEnd(p.module))
+	CheckAst(p, Ast.ModuleEnd(p.c, p.module))
 	RETURN p.module
 END Script;
 
