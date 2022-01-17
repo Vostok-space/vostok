@@ -1,3 +1,29 @@
+ vostok-bin (0.0.8.dev) unstable; urgency=low
+  * Supported pseudo module SYSTEM, available by option -allow-system
+  * Added generator of module DEFINITION, available by command ost to-modef
+  * Added possibility to convert a single file to standard output,
+    available by setting destination as "-"
+  * In generated code by default tabulations replaced by spaces
+  * Fixed false diagnostic of hiding in the extended record of not exported item from imported module
+  * Fixed generating to JavaScript item of extended records, with the same name as not exported
+    item of base record, declared in the imported module
+  * Fixed generating to Java and JavaScript in the mode without initialization
+  * Fixed generating to Java LEN for lengths set as complex expression
+  * To the output of diagnostic of some errors added names to improve clarity
+  * Improved analysis of uninitialized variables using
+  * Improved restoring after syntax mistake in the operators list
+  * Extended list of known C++ keywords to avoid name conflicts in the generated code
+  * Improved readability of generated C: removed excess O7_MUL,
+                                         removed excess escaping of non-ASCII chars in strings
+  * Fixed generating to C: open arrays of arrays with a fixed length,
+                           anonymous pointers in reference counting mode,
+                           exported pointers to closed records,
+                           values of LONGSET
+  * Fixed crashing of parsing mistaken code, where created array selector from mistaken type
+  * Fixed crashing of array length checking, set as a complex expression
+
+ -- project Vostok <project-Vostok@yandex.ru> Mon, 17 Jan 2022 00:00:00 +0200
+
  vostok-bin (0.0.7.dev) unstable; urgency=low
   * Fixed diagnostic of uninitialized variables in VAR-argument of predefined procedures
   * Avoided marking of optional arguments of predefined procedures as VAR

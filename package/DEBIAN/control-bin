@@ -5,6 +5,6 @@ Section:      devel
 Architecture: cpu-arch
 Priority:     optional
 Depends:      libc6
-Recommends:   vostok-deflib (= lib-version), tcc
-Description:  Oberon translator to C, Js, Java
+Recommends:   vostok-deflib (= lib-version), tcc, libgc-dev
+Description:  Oberon translator to C, Js, Java, Oberon
  Oberon-07 compiler from "Vostok"-project with defensive style of generated code

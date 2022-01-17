@@ -1,4 +1,4 @@
-Summary:        Oberon translator to C, Js, Java
+Summary:        Oberon translator to C, Js, Java, Oberon
 Name:           vostok-bin
 Version:        bin-version
 Release:        0%{?dist}
@@ -8,6 +8,7 @@ Group:          User Development/Languages/Oberon
 Source:         %{name}-%{version}.tar.bz2
 
 Requires:       vostok-deflib = lib-version
+Recommends:     libgc-dev, tcc
 
 %description
 Oberon-07 translator from "Vostok"-project with defensive style of generated code
@@ -29,7 +30,7 @@ mkdir -p %{buildroot}%{_bindir}
 install result/ost %{buildroot}%{_bindir}/ost
 
 %check
-%{buildroot}%{_bindir}/ost run 'make.TestStrict(TRUE); make.Test' -infr . -m source
+%{buildroot}%{_bindir}/ost run 'make.Test; make.Self' -infr . -m source
 
 %clean
 rm -rf %{buildroot}

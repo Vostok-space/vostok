@@ -1,3 +1,16 @@
+ vostok-bin (0.0.8.dev) unstable; urgency=low
+  * In generated code by default tabulations replaced by spaces
+  * Fixed false diagnostic of hiding in the extended record of not exported item from imported module
+  * Fixed generating in the mode without initialization
+  * Fixed generating LEN for lengths set as complex expression
+  * To the output of diagnostic of some errors added names to improve clarity
+  * Improved analysis of uninitialized variables using
+  * Improved restoring after syntax mistake in the operators list
+  * Extended list of known C++ keywords to avoid name conflicts in the generated code
+  * Fixed crashing of parsing mistaken code, where created array selector from mistaken type
+  * Fixed crashing of array length checking, set as a complex expression
+
+ -- project Vostok <project-Vostok@yandex.ru> Mon, 17 Jan 2022 00:00:00 +0200
  vostok-android (0.0.7.dev) unstable; urgency=low
   * Allows to setup android activity name
   * Allows to setup path to android.jar
