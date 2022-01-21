@@ -1099,10 +1099,15 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END
   END Vars;
 
-  PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf; then: ARRAY OF CHAR);
+  PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg: ARRAY OF CHAR);
   BEGIN
-    Expression(g, wi.expr);
-    StrOpen(g, then);
+    IF (thenNeg # "") & (wi.expr IS Ast.ExprNegate) THEN
+      Expression(g, wi.expr(Ast.ExprNegate).expr);
+      StrOpen(g, ") then (no)")
+    ELSE
+      Expression(g, wi.expr);
+      StrOpen(g, then)
+    END;
     statements(g, wi.stats);
     wi := wi.elsif
   END ExprThenStats;
@@ -1111,19 +1116,20 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
     PROCEDURE WhileIf(VAR g: Generator; wi: Ast.WhileIf);
 
-      PROCEDURE Wr(VAR g: Generator; wi: Ast.WhileIf; begin, then, elsif, else, end: ARRAY OF CHAR);
+      PROCEDURE Wr(VAR g: Generator; wi: Ast.WhileIf;
+                   begin, then, thenNeg, elsif, else, end: ARRAY OF CHAR);
 
-        PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then, elsif: ARRAY OF CHAR);
+        PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg, elsif: ARRAY OF CHAR);
         BEGIN
           WHILE (wi # NIL) & (wi.expr # NIL) DO
             Text.LnStrClose(g, elsif);
-            ExprThenStats(g, wi, then)
+            ExprThenStats(g, wi, then, thenNeg)
           END
         END Elsif;
       BEGIN
         Str(g, begin);
-        ExprThenStats(g, wi, then);
-        Elsif(g, wi, then, elsif);
+        ExprThenStats(g, wi, then, thenNeg);
+        Elsif(g, wi, then, thenNeg, elsif);
         IF wi # NIL THEN
           LnClose(g);
           StrOpen(g, else);
@@ -1134,26 +1140,26 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     BEGIN
       IF wi IS Ast.If THEN
         IF g.opt.plantUml THEN
-          Wr(g, wi, "if (", ") then (yes)", "elseif (", "else", "endif")
+          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", "else", "endif")
         ELSE
-          Wr(g, wi, "IF ", " THEN", "ELSIF ", "ELSE", "END")
+          Wr(g, wi, "IF ", " THEN", "", "ELSIF ", "ELSE", "END")
         END;
       ELSIF (wi.elsif = NIL) OR g.opt.multibranchWhile THEN
         IF g.opt.plantUml THEN
-          Wr(g, wi, "while (", ")", "", "", "endwhile")
+          Wr(g, wi, "while (", ") is (yes)", ") is (no)", "", "", "endwhile")
         ELSE
-          Wr(g, wi, "WHILE ", " DO", "ELSIF ", "", "END")
+          Wr(g, wi, "WHILE ", " DO", "", "ELSIF ", "", "END")
         END
       ELSE
         IF g.opt.plantUml THEN
           StrOpen(g, "repeat");
-          Wr(g, wi, "if (", ") then (yes)", "elseif (", "", "");
+          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", "", "");
           StrOpen(g, "else");
           StrLn(g, ":stop;");
           Text.StrClose(g, "endif");
           Text.LnStrClose(g, "repeat while(continue?) not (stop) ")
         ELSE
-          Wr(g, wi, "LOOP IF ", " THEN", "ELSIF ", "", "ELSE EXIT END END")
+          Wr(g, wi, "LOOP IF ", " THEN", "", "ELSIF ", "", "ELSE EXIT END END")
         END
       END
     END WhileIf;
@@ -1164,8 +1170,13 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         StrOpen(g, "repeat");
         statements(g, st.stats);
         Text.LnStrClose(g, "repeat while (");
-        Expression(g, st.expr);
-        Str(g, ") is (no) not (yes)")
+        IF st.expr IS Ast.ExprNegate THEN
+          Expression(g, st.expr(Ast.ExprNegate).expr);
+          Str(g, ") is (yes) not (no)")
+        ELSE
+          Expression(g, st.expr);
+          Str(g, ") is (no) not (yes)")
+        END
       ELSE
         StrOpen(g, "REPEAT");
         statements(g, st.stats);
@@ -1190,7 +1201,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       IF g.opt.plantUml THEN
         StrOpen(g, ")");
         statements(g, st.stats);
-        Text.LnStrClose(g, "endwhile")
+        Text.LnStrClose(g, "endwhile (end)")
       ELSE
         StrOpen(g, " DO");
         statements(g, st.stats);
