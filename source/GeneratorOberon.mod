@@ -1099,11 +1099,26 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END
   END Vars;
 
-  PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg: ARRAY OF CHAR);
+  PROCEDURE ExtractNegate(e: Ast.Expression; VAR sube: Ast.Expression): BOOLEAN;
   BEGIN
-    IF (thenNeg # "") & (wi.expr IS Ast.ExprNegate) THEN
-      Expression(g, wi.expr(Ast.ExprNegate).expr);
-      StrOpen(g, ") then (no)")
+    IF e IS Ast.ExprNegate THEN
+      sube := e(Ast.ExprNegate).expr;
+      IF sube IS Ast.ExprBraces THEN
+        sube := sube(Ast.ExprBraces).expr
+      END
+    ELSE
+      sube := NIL
+    END
+  RETURN
+    sube # NIL
+  END ExtractNegate;
+
+  PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg: ARRAY OF CHAR);
+  VAR sub: Ast.Expression;
+  BEGIN
+    IF (thenNeg # "") & ExtractNegate(wi.expr, sub) THEN
+      Expression(g, sub);
+      StrOpen(g, thenNeg)
     ELSE
       Expression(g, wi.expr);
       StrOpen(g, then)
@@ -1165,13 +1180,14 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END WhileIf;
 
     PROCEDURE Repeat(VAR g: Generator; st: Ast.Repeat);
+    VAR sub: Ast.Expression;
     BEGIN
       IF g.opt.plantUml THEN
         StrOpen(g, "repeat");
         statements(g, st.stats);
         Text.LnStrClose(g, "repeat while (");
-        IF st.expr IS Ast.ExprNegate THEN
-          Expression(g, st.expr(Ast.ExprNegate).expr);
+        IF ExtractNegate(st.expr, sub) THEN
+          Expression(g, sub);
           Str(g, ") is (yes) not (no)")
         ELSE
           Expression(g, st.expr);
