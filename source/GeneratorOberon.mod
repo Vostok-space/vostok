@@ -1358,13 +1358,16 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END Return;
   BEGIN
     IF g.opt.plantUml THEN
-      Str(g, "group PROCEDURE ")
+      Str(g, "group PROCEDURE ");
+      MarkedName(g, p, "");
+      ProcParams(g, p.header);
+      Ln(g)
     ELSE
-      Str(g, "PROCEDURE ")
+      Str(g, "PROCEDURE ");
+      MarkedName(g, p, "");
+      ProcParams(g, p.header);
+      StrLn(g, ";")
     END;
-    MarkedName(g, p, "");
-    ProcParams(g, p.header);
-    StrLn(g, ";");
     IF ~g.opt.declaration THEN
       declarations(g, p);
       IF g.opt.plantUml THEN
@@ -1378,7 +1381,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       IF g.opt.plantUml THEN
         Ln(g);
         StrLn(g, "stop");
-        StrLnClose(g, "end group");
+        StrLnClose(g, "end group")
       ELSE
         Text.LnStrClose(g, "END ");
         Name(g, p);
