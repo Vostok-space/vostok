@@ -36,7 +36,8 @@ TYPE
   Options* = POINTER TO RECORD(GenOptions.R)
     std*: INTEGER;
     multibranchWhile*,
-    declaration*, import*: BOOLEAN
+    declaration*, import*,
+    plantUml*: BOOLEAN
   END;
 
   Generator = RECORD(Text.Out)
@@ -103,7 +104,8 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       V.Init(o^);
       GenOptions.Default(o^);
       o.std := StdO7;
-      o.multibranchWhile := o.std = StdO7;
+      o.plantUml := FALSE;
+      o.multibranchWhile := (o.std = StdO7) & ~o.plantUml;
       o.declaration := FALSE;
       o.import := FALSE
     END;
@@ -118,6 +120,8 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     IF opt.std IN {StdCp, StdAo} THEN
       opt.caseAbort := FALSE
     END;
+    opt.multibranchWhile := (opt.std = StdO7) & ~opt.plantUml;
+
     Text.Init(g, out);
 
     g.module := m;
@@ -130,9 +134,16 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     Ln(g)
   END LnClose;
 
-  PROCEDURE Comment(VAR g: Generator; text: Strings.String);
+  PROCEDURE Comment(VAR g: Generator; text: Strings.String; justText: BOOLEAN);
   BEGIN
-    GenCommon.CommentOberon(g, g.opt^, text)
+    IF justText OR ~g.opt.plantUml THEN
+      GenCommon.CommentOberon(g, g.opt^, text)
+    ELSIF g.opt.comment & Strings.IsDefined(text) & ~Strings.SearchSubString(text, "end note") THEN
+      StrOpen(g, "note");
+      Text.String(g, text);
+      Ln(g);
+      StrLnClose(g, "end note")
+    END
   END Comment;
 
   PROCEDURE EmptyLines(VAR g: Generator; n: Ast.PNode);
@@ -141,6 +152,13 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Ln(g)
     END
   END EmptyLines;
+
+  PROCEDURE PlantUmlPrefix(VAR g: Generator);
+  BEGIN
+    IF g.opt.plantUml THEN
+      Chr(g, ":")
+    END
+  END PlantUmlPrefix;
 
   PROCEDURE Imports(VAR g: Generator; d: Ast.Declaration);
     PROCEDURE Import(VAR g: Generator; decl: Ast.Declaration);
@@ -154,7 +172,10 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       END
     END Import;
   BEGIN
-    IF (g.opt.std = StdO7) OR g.opt.declaration THEN
+    IF g.opt.plantUml THEN
+      StrLn(g, "card IMPORT {");
+      Chr(g, ":")
+    ELSIF (g.opt.std = StdO7) OR g.opt.declaration THEN
       Ln(g);
       StrOpen(g, "IMPORT")
     ELSE ASSERT(g.opt.std IN {StdAo, StdCp});
@@ -171,7 +192,12 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END;
     StrLn(g, ";");
 
-    LnClose(g)
+    IF g.opt.plantUml THEN
+      StrLn(g, "kill");
+      StrLn(g, "}")
+    ELSE
+      LnClose(g)
+    END
   END Imports;
 
   PROCEDURE ExpressionBraced(VAR g: Generator;
@@ -609,7 +635,8 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     END SetValue;
 
     PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
-      PROCEDURE Val(VAR g: Generator; set: Ast.ExprSet);
+    VAR braces: ARRAY 3 OF CHAR;
+      PROCEDURE Val(VAR g: Generator; set: Ast.ExprSet; braces: ARRAY OF CHAR);
         PROCEDURE Item(VAR g: Generator; set: Ast.ExprSet);
         BEGIN
           IF set.exprs[1] = NIL THEN
@@ -620,9 +647,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         END Item;
       BEGIN
         IF (set.next = NIL) & (set.exprs[0] = NIL) THEN
-          Str(g, "{}")
+          Str(g, braces)
         ELSE
-          Chr(g, "{");
+          Chr(g, braces[0]);
           Item(g, set);
           set := set.next;
           WHILE set # NIL DO
@@ -630,14 +657,19 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
             Item(g, set);
             set := set.next
           END;
-          Chr(g, "}")
+          Chr(g, braces[1])
         END
       END Val;
     BEGIN
+      IF g.opt.plantUml THEN
+        braces := "()"
+      ELSE
+        braces := "{}"
+      END;
       CASE g.opt.std OF
         StdO7,
-        StdCp: Val(g, set)
-      | StdAo: Str(g, "SET32("); Val(g, set); Str(g, ")")
+        StdCp: Val(g, set, braces)
+      | StdAo: Str(g, "SET32("); Val(g, set, braces); Str(g, ")")
       END
     END Set;
 
@@ -723,22 +755,34 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
   PROCEDURE Consts(VAR g: Generator; d: Ast.Declaration);
     PROCEDURE Const(VAR g: Generator; c: Ast.Const);
     BEGIN
-      Comment(g, c.comment);
+      Comment(g, c.comment, TRUE);
       EmptyLines(g, c);
 
       MarkedName(g, c, " = ");
       Expression(g, c.expr);
-      StrLn(g, ";")
+      IF g.opt.plantUml THEN
+        Ln(g)
+      ELSE
+        StrLn(g, ";")
+      END
     END Const;
   BEGIN
-    StrOpen(g, "CONST");
+    IF g.opt.plantUml THEN
+      Str(g, ":")
+    ELSE
+      StrOpen(g, "CONST")
+    END;
     WHILE (d # NIL) & (d.id = Ast.IdConst) DO
       IF d.mark OR ~g.opt.declaration THEN
         Const(g, d(Ast.Const))
       END;
       d := d.next
     END;
-    LnClose(g)
+    IF g.opt.plantUml THEN
+      StrLn(g, ";")
+    ELSE
+      LnClose(g)
+    END
   END Consts;
 
   PROCEDURE ProcParams(VAR g: Generator; proc: Ast.ProcType);
@@ -801,7 +845,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
   PROCEDURE VarList(VAR g: Generator; v: Ast.Declaration);
 
-    PROCEDURE ListSameType(VAR g: Generator; VAR v: Ast.Declaration);
+    PROCEDURE ListSameType(VAR g: Generator; VAR v: Ast.Declaration; sep: ARRAY OF CHAR);
     VAR p: Ast.Declaration;
 
       PROCEDURE Next(g: Generator; VAR v: Ast.Declaration): BOOLEAN;
@@ -821,15 +865,19 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         MarkedName(g, v, "");
         p := v
       END;
-      Str(g, ": ");
+      Str(g, sep);
       type(g, p.type)
     END ListSameType;
 
   BEGIN
-    ListSameType(g, v);
+    ListSameType(g, v, ": ");
     WHILE (v # NIL) & (v.id = Ast.IdVar) DO
-      StrLn(g, ";");
-      ListSameType(g, v)
+      IF g.opt.plantUml THEN
+        Ln(g)
+      ELSE
+        StrLn(g, ";")
+      END;
+      ListSameType(g, v, ": ")
     END
   END VarList;
 
@@ -1009,28 +1057,46 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
   PROCEDURE Types(VAR g: Generator; d: Ast.Declaration);
     PROCEDURE Decl(VAR g: Generator; t: Ast.Type);
     BEGIN
-      Comment(g, t.comment);
+      Comment(g, t.comment, TRUE);
       EmptyLines(g, t);
       MarkedName(g, t, " = ");
       Type(g, t, TRUE);
-      StrLn(g, ";")
+      IF g.opt.plantUml THEN
+        Ln(g)
+      ELSE
+        StrLn(g, ";")
+      END;
     END Decl;
   BEGIN
-    StrOpen(g, "TYPE");
+    IF g.opt.plantUml THEN
+      Str(g, ":")
+    ELSE
+      StrOpen(g, "TYPE")
+    END;
     WHILE (d # NIL) & (d.id IN Ast.DeclarableTypes) DO
       IF d.mark OR ~g.opt.declaration THEN
         Decl(g, d(Ast.Type))
       END;
       d := d.next
     END;
-    LnClose(g)
+    IF g.opt.plantUml THEN
+      StrLn(g, ";")
+    ELSE
+      LnClose(g)
+    END
   END Types;
 
   PROCEDURE Vars(VAR g: Generator; d: Ast.Declaration);
   BEGIN
-    StrOpen(g, "VAR");
-    VarList(g, d);
-    StrLnClose(g, ";");
+    IF g.opt.plantUml THEN
+      Str(g, ":");
+      VarList(g, d);
+      StrLn(g, ";")
+    ELSE
+      StrOpen(g, "VAR");
+      VarList(g, d);
+      StrLnClose(g, ";")
+    END
   END Vars;
 
   PROCEDURE ExprThenStats(VAR g: Generator; VAR wi: Ast.WhileIf; then: ARRAY OF CHAR);
@@ -1045,47 +1111,74 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
     PROCEDURE WhileIf(VAR g: Generator; wi: Ast.WhileIf);
 
-      PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then: ARRAY OF CHAR);
+      PROCEDURE Wr(VAR g: Generator; wi: Ast.WhileIf; begin, then, elsif, else, end: ARRAY OF CHAR);
+
+        PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then, elsif: ARRAY OF CHAR);
+        BEGIN
+          WHILE (wi # NIL) & (wi.expr # NIL) DO
+            Text.LnStrClose(g, elsif);
+            ExprThenStats(g, wi, then)
+          END
+        END Elsif;
       BEGIN
-        WHILE (wi # NIL) & (wi.expr # NIL) DO
-          Text.LnStrClose(g, "ELSIF ");
-          ExprThenStats(g, wi, then)
-        END
-      END Elsif;
-    BEGIN
-      IF wi IS Ast.If THEN
-        Str(g, "IF ");
-        ExprThenStats(g, wi, " THEN");
-        Elsif(g, wi, " THEN");
+        Str(g, begin);
+        ExprThenStats(g, wi, then);
+        Elsif(g, wi, then, elsif);
         IF wi # NIL THEN
           LnClose(g);
-          StrOpen(g, "ELSE");
+          StrOpen(g, else);
           statements(g, wi.stats)
         END;
-        Text.LnStrClose(g, "END")
+        Text.LnStrClose(g, end)
+      END Wr;
+    BEGIN
+      IF wi IS Ast.If THEN
+        IF g.opt.plantUml THEN
+          Wr(g, wi, "if (", ") then (yes)", "elseif (", "else", "endif")
+        ELSE
+          Wr(g, wi, "IF ", " THEN", "ELSIF ", "ELSE", "END")
+        END;
       ELSIF (wi.elsif = NIL) OR g.opt.multibranchWhile THEN
-        Str(g, "WHILE ");
-        ExprThenStats(g, wi, " DO");
-        Elsif(g, wi, " DO");
-        Text.LnStrClose(g, "END")
+        IF g.opt.plantUml THEN
+          Wr(g, wi, "while (", ")", "", "", "endwhile")
+        ELSE
+          Wr(g, wi, "WHILE ", " DO", "ELSIF ", "", "END")
+        END
       ELSE
-        Str(g, "LOOP IF ");
-        ExprThenStats(g, wi, " THEN");
-        Elsif(g, wi, " THEN");
-        Text.LnStrClose(g, "ELSE EXIT END END")
+        IF g.opt.plantUml THEN
+          StrOpen(g, "repeat");
+          Wr(g, wi, "if (", ") then (yes)", "elseif (", "", "");
+          StrOpen(g, "else");
+          StrLn(g, ":stop;");
+          Text.StrClose(g, "endif");
+          Text.LnStrClose(g, "repeat while(continue?) not (stop) ")
+        ELSE
+          Wr(g, wi, "LOOP IF ", " THEN", "ELSIF ", "", "ELSE EXIT END END")
+        END
       END
     END WhileIf;
 
     PROCEDURE Repeat(VAR g: Generator; st: Ast.Repeat);
     BEGIN
-      StrOpen(g, "REPEAT");
-      statements(g, st.stats);
-      Text.LnStrClose(g, "UNTIL ");
-      Expression(g, st.expr);
+      IF g.opt.plantUml THEN
+        StrOpen(g, "repeat");
+        statements(g, st.stats);
+        Text.LnStrClose(g, "repeat while (");
+        Expression(g, st.expr);
+        Str(g, ") is (no) not (yes)")
+      ELSE
+        StrOpen(g, "REPEAT");
+        statements(g, st.stats);
+        Text.LnStrClose(g, "UNTIL ");
+        Expression(g, st.expr)
+      END
     END Repeat;
 
     PROCEDURE For(VAR g: Generator; st: Ast.For);
     BEGIN
+      IF g.opt.plantUml THEN
+        Str(g, "while (")
+      END;
       Str(g, "FOR ");
       GlobalName(g, st.var);
       ExpressionBraced(g, " := ", st.expr, " TO ");
@@ -1094,9 +1187,15 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         Str(g, " BY ");
         Int(g, st.by)
       END;
-      StrOpen(g, " DO");
-      statements(g, st.stats);
-      Text.LnStrClose(g, "END")
+      IF g.opt.plantUml THEN
+        StrOpen(g, ")");
+        statements(g, st.stats);
+        Text.LnStrClose(g, "endwhile")
+      ELSE
+        StrOpen(g, " DO");
+        statements(g, st.stats);
+        Text.LnStrClose(g, "END")
+      END
     END For;
 
     PROCEDURE Assign(VAR g: Generator; st: Ast.Assign);
@@ -1148,6 +1247,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         END Range;
       BEGIN
         r := elem.labels;
+        IF g.opt.plantUml THEN Str(g, "case (") END;
         Range(g, r, tid);
         r := r.next;
         WHILE r # NIL DO
@@ -1155,37 +1255,60 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
           Range(g, r, tid);
           r := r.next
         END;
-        StrOpen(g, ":");
+        IF g.opt.plantUml THEN
+          StrOpen(g, ")")
+        ELSE
+          StrOpen(g, ":")
+        END;
         statements(g, elem.stats);
         LnClose(g)
       END CaseElement;
     BEGIN
-      ExpressionBraced(g, "CASE ", st.expr, " OF");
-      Ln(g);
-      Str(g, "  ");
+      IF g.opt.plantUml THEN
+        ExpressionBraced(g, "switch (", st.expr, ")");
+        Ln(g)
+      ELSE
+        ExpressionBraced(g, "CASE ", st.expr, " OF");
+        Ln(g);
+        Str(g, "  ")
+      END;
       elem := st.elements;
       CaseElement(g, elem, st.expr.type.id);
       elem := elem.next;
       WHILE elem # NIL DO
-        Str(g, "| ");
+        IF ~g.opt.plantUml THEN Str(g, "| ") END;
         CaseElement(g, elem, st.expr.type.id);
         elem := elem.next
       END;
-      IF g.opt.caseAbort & (g.opt.std # StdO7) THEN
-        (* TODO *)
-        StrLn(g, "ELSE HALT(1)")
-      END;
-      Str(g, "END");
+      IF g.opt.plantUml THEN
+        Str(g, "endswitch")
+      ELSE
+        IF g.opt.caseAbort & (g.opt.std # StdO7) THEN
+          (* TODO *)
+          StrLn(g, "ELSE HALT(1)")
+        END;
+        Str(g, "END")
+      END
     END Case;
   BEGIN
-    Comment(g, st.comment);
+    Comment(g, st.comment, FALSE);
     IF 0 < st.emptyLines THEN
       Ln(g)
     END;
     IF st IS Ast.Assign THEN
-      Assign(g, st(Ast.Assign))
+      IF g.opt.plantUml THEN
+        Chr(g, ":");
+        Assign(g, st(Ast.Assign));
+        Chr(g, ";")
+      ELSE
+        Assign(g, st(Ast.Assign))
+      END
     ELSIF st IS Ast.Call THEN
-      Expression(g, st.expr)
+      IF g.opt.plantUml THEN
+        ExpressionBraced(g, ":", st.expr, ";")
+      ELSE
+        Expression(g, st.expr)
+      END
     ELSIF st IS Ast.WhileIf THEN
       WhileIf(g, st(Ast.WhileIf))
     ELSIF st IS Ast.Repeat THEN
@@ -1203,7 +1326,11 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Statement(g, stat);
       stat := stat.next;
       WHILE stat # NIL DO
-        StrLn(g, ";");
+        IF g.opt.plantUml THEN
+          Ln(g)
+        ELSE
+          StrLn(g, ";")
+        END;
         Statement(g, stat);
         stat := stat.next
       END
@@ -1215,30 +1342,53 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     BEGIN
       IF ret # NIL THEN
         IF stats THEN
-          StrLn(g, ";")
+          IF g.opt.plantUml THEN
+            Ln(g)
+          ELSE
+            StrLn(g, ";")
+          END
         END;
+        PlantUmlPrefix(g);
         Str(g, "RETURN ");
-        Expression(g, ret)
+        Expression(g, ret);
+        IF g.opt.plantUml THEN
+          Chr(g, ";")
+        END
       END
     END Return;
   BEGIN
-    Str(g, "PROCEDURE ");
+    IF g.opt.plantUml THEN
+      Str(g, "group PROCEDURE ")
+    ELSE
+      Str(g, "PROCEDURE ")
+    END;
     MarkedName(g, p, "");
     ProcParams(g, p.header);
     StrLn(g, ";");
     IF ~g.opt.declaration THEN
       declarations(g, p);
-      StrOpen(g, "BEGIN");
+      IF g.opt.plantUml THEN
+        Text.IndentOpen(g);
+        StrLn(g, "start")
+      ELSE
+        StrOpen(g, "BEGIN")
+      END;
       Statements(g, p.stats);
       Return(g, p.stats # NIL, p.return);
-      Text.LnStrClose(g, "END ");
-      Name(g, p);
-      StrLn(g, ";")
+      IF g.opt.plantUml THEN
+        Ln(g);
+        StrLn(g, "stop");
+        StrLnClose(g, "end group");
+      ELSE
+        Text.LnStrClose(g, "END ");
+        Name(g, p);
+        StrLn(g, ";")
+      END
     END
   END Procedure;
 
   PROCEDURE Declarations(VAR g: Generator; ds: Ast.Declarations);
-  VAR c, t, v, p: Ast.Declaration;
+  VAR c, t, v, p: Ast.Declaration; decl: BOOLEAN;
   BEGIN
     c := ds.consts;
     t := ds.types;
@@ -1251,7 +1401,12 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       FirstMarked(p)
     END;
 
-    IF (c # NIL) OR (t # NIL) OR (v # NIL) OR (p # NIL) THEN
+    decl := (c # NIL) OR (t # NIL) OR (v # NIL);
+    IF g.opt.plantUml THEN
+      IF decl THEN
+        StrLn(g, "card Declarations {")
+      END
+    ELSIF decl OR (p # NIL) THEN
       Ln(g)
     END;
 
@@ -1267,14 +1422,19 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Vars(g, v)
     END;
 
+    IF decl & g.opt.plantUml THEN
+      StrLn(g, "kill");
+      StrLn(g, "}")
+    END;
+
     WHILE p # NIL DO
       IF p.mark OR ~g.opt.declaration THEN
         EmptyLines(g, p);
-        Comment(g, p.comment);
+        Comment(g, p.comment, FALSE);
         Procedure(g, p(Ast.Procedure))
       END;
       p := p.next
-    END;
+    END
   END Declarations;
 
   PROCEDURE Generate*(out: Stream.POut; module: Ast.Module; opt: Options);
@@ -1282,13 +1442,23 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
   BEGIN
     Init(g, out, module, opt);
 
-    IF g.opt.declaration THEN
-      Str(g, "DEFINITION ")
+    IF g.opt.plantUml THEN
+      StrLn(g, "@startuml");
+      Str(g, "package ");
+      Chr(g, Utf8.DQuote);
+      Str(g, "MODULE ");
+      Name(g, module);
+      Chr(g, Utf8.DQuote);
+      StrLn(g, " {")
     ELSE
-      Str(g, "MODULE ")
+      IF g.opt.declaration THEN
+        Str(g, "DEFINITION ")
+      ELSE
+        Str(g, "MODULE ")
+      END;
+      Name(g, module);
+      StrLn(g, ";")
     END;
-    Name(g, module);
-    StrLn(g, ";");
 
     IF ~opt.declaration THEN
       (* TODO *)
@@ -1305,14 +1475,28 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     Declarations(g, module);
     Ln(g);
     IF (module.stats # NIL) & ~g.opt.declaration THEN
-      StrOpen(g, "BEGIN");
-      Statements(g, module.stats);
-      LnClose(g)
+      IF g.opt.plantUml THEN
+        StrOpen(g, "group initialization");
+        StrLn(g, "start");
+        Statements(g, module.stats);
+        Ln(g);
+        StrLn(g, "stop");
+        StrLnClose(g, "end group")
+      ELSE
+        StrOpen(g, "BEGIN");
+        Statements(g, module.stats);
+        LnClose(g)
+      END
     END;
 
-    Str(g, "END ");
-    Name(g, module);
-    StrLn(g, ".")
+    IF g.opt.plantUml THEN
+      StrLn(g, "}");
+      StrLn(g, "@enduml")
+    ELSE
+      Str(g, "END ");
+      Name(g, module);
+      StrLn(g, ".")
+    END
   END Generate;
 
 BEGIN

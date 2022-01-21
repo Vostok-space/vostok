@@ -40,13 +40,14 @@ CONST
 
 	ResultMod*     = 17;
 	ResultDecl*    = 18;
+	ResultUml*     = 19;
 
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultJar, ResultRunJava};
 	ThroughJs*   = {ResultJs, ResultRunJs};
-	ThroughMod*  = {ResultMod, ResultDecl};
+	ThroughMod*  = {ResultMod, ResultUml};
 	ForRun*      = {ResultRun, ResultRunJava, ResultRunJs};
-	MainCommands = {ResultC .. ResultDecl};
+	MainCommands = {ResultC .. ResultUml};
 
 	CyrillicNo*       = 0;
 	CyrillicDefault*  = 1;
@@ -110,7 +111,7 @@ TYPE
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
-		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*: BOOLEAN;
+		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*, puml*: BOOLEAN;
 		cyrillic*: INTEGER;
 
 		multiErrors*: BOOLEAN
@@ -385,6 +386,7 @@ BEGIN
 	args.cStd     := -1;
 	args.cPlan9   := FALSE;
 	args.obStd    := -1;
+	args.puml     := FALSE;
 	args.modPath  := "";
 	args.modPathLen := 1;
 	args.allowSystem     := FALSE;
@@ -578,6 +580,11 @@ BEGIN
 
 	ArgsInit(args);
 
+	IF ret = ResultUml THEN
+		args.puml := TRUE;
+		ret := ResultMod
+	END;
+
 	arg := 1;
 	IF GetParam(ret, ErrTooLongSourceName, args.src, args.srcLen, arg) THEN
 		ret := ParseOptions(args, ret, arg)
@@ -629,6 +636,8 @@ BEGIN
 		ret := Command(args, ResultMod)
 	ELSIF cmd = "to-modef" THEN
 		ret := Command(args, ResultDecl)
+	ELSIF cmd = "to-puml" THEN
+		ret := Command(args, ResultUml)
 	ELSE
 		ret := ErrUnknownCommand
 	END

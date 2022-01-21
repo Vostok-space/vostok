@@ -1,6 +1,6 @@
 (*  Ukrainian messages for interface
  *
- *  Copyright (C) 2018-2021 ComdivByZero
+ *  Copyright (C) 2018-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -27,7 +27,7 @@ END S;
 
 PROCEDURE Usage*(full: BOOLEAN);
 BEGIN
-S("Транслятор Oberon-07 в C, Java, JavaScript, Oberon. 2021");
+S("Транслятор Oberon-07 в C, Java, JavaScript, Oberon. 2022");
 S("Використання: ");
 S(" 0) ost help     # докладна довідка");
 S(" 1) ost to-c     Код ВихТека {-m ТзМ | -i ТзІ | -infr Інфр}");
@@ -41,6 +41,7 @@ S(" 8) ost to-js    Код ВихТек {-m ТзМ | -i ТзІ | -infr Інфр}
 S(" 9) ost run-js   Код {-m ТзМ|-i ТзІ|-js ТJs|-t ТимчТек} [-- Пар-ри]");
 S(" A) ost to-mod   Мод ВихТека {-m ТзМ | -i ТзІ | -infr Інфр | -std:(O7|AO|CP)}");
 S("    ost to-modef Мод ВихТека {-m ТзМ | -i ТзІ | -infr Інфр | -std:(O7|AO|CP)}");
+S("    ost to-puml  Мод ВихТека {-m ТзМ | -i ТзІ | -infr Інфр}");
 S(" B) ost          Файл.mod         [ Пар-ри ]");
 S("    ost .Команда Файл.mod         [ Пар-ри ]");
 S("    ost .        Файл.mod Команда [ Пар-ри ]");
@@ -57,6 +58,7 @@ S("8) to-js    перетворює модулі в набір .js файлів"
 S("9) run-js   запускає неявний .js файл, створений по Коду");
 S("A) to-mod   перетворює модулі назад у код одного з діалектів Оберону");
 S("   to-modef перетворює модулі у декларації модулів Оберону");
+S("   to-puml  приводить модулі до формату Plant UML");
 S("B) запускає код модуля у файлі, сумісно з she-bang");
 S("");
 S("Код - це спрощений текст на Обероні, що описується різновидом РБНФ:");

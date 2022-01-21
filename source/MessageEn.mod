@@ -1,6 +1,6 @@
 (*  English messages for interface
  *
- *  Copyright (C) 2017-2021 ComdivByZero
+ *  Copyright (C) 2017-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -28,7 +28,7 @@ END S;
 PROCEDURE Usage*(full: BOOLEAN);
 	PROCEDURE Short;
 	BEGIN
-S("Translator from Oberon-07 to C, Java, JavaScript, Oberon. 2021");
+S("Translator from Oberon-07 to C, Java, JavaScript, Oberon. 2022");
 S("Usage: ost command [parameter] {-option}");
 S(" 0) ost help     # For detailed help");
 S(" 1) ost to-c     Code OutDir { -m PM | -i PI | -infr Infr }");
@@ -42,6 +42,7 @@ S(" 8) ost to-js    Code Out {-m PM | -i PI | -infr Infr}");
 S(" 9) ost run-js   Code {-m PM|-i PI|-js PJs|-t Temp} [-- Args]");
 S(" A) ost to-mod   Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
 S("    ost to-modef Code OutDir {-m PM | -i PI | -infr Infr | -std:(O7|AO|CP)}");
+S("    ost to-puml  Code OutDir {-m PM | -i PI | -infr Infr}");
 S(" B) ost          File.mod         [ Args ]");
 S("    ost .Command File.mod         [ Args ]");
 S("    ost .        File.mod Command [ Args ]")
@@ -60,6 +61,7 @@ S("8) to-js    converts modules to .js files");
 S("9) run-js   executes implicit .js file, created by Code");
 S("A) to-mod   converts to Oberon-modules");
 S("   to-modef converts to declaration of Oberon-modules");
+S("   to-puml  converts to Plamt UML");
 S("B) run code of module in the file, may be used with she-bang");
 S("");
 S("Code is simple Oberon-source. Can be described in kind of EBNF:");

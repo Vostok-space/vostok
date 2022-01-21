@@ -1105,7 +1105,7 @@ END GenerateThroughJs;
 
 PROCEDURE GenerateOberon(module: Ast.Module; opt: GeneratorOberon.Options;
                          VAR dir: ARRAY OF CHAR; dirLen: INTEGER): INTEGER;
-VAR imp: Ast.Declaration; ret: INTEGER; out: File.Out; ext: ARRAY 5 OF CHAR;
+VAR imp: Ast.Declaration; ret: INTEGER; out: File.Out; ext: ARRAY 6 OF CHAR;
 BEGIN
 	module.used := TRUE;
 
@@ -1124,6 +1124,8 @@ BEGIN
 	THEN
 		IF opt.declaration THEN
 			ext := ".dfn"
+		ELSIF opt.plantUml THEN
+			ext := ".puml"
 		ELSIF opt.std = GeneratorOberon.StdAo THEN
 			ext := ".Mod"
 		ELSE
@@ -1148,10 +1150,11 @@ BEGIN
 	SetCommonOptions(opt^, args);
 	IF args.obStd >= 0 THEN
 		opt.std := args.obStd;
-		IF args.obStd # GeneratorOberon.StdO7 THEN
+		IF (args.obStd # GeneratorOberon.StdO7) OR opt.plantUml THEN
 			opt.multibranchWhile := FALSE
-		END;
+		END
 	END;
+	opt.plantUml := args.puml;
 	opt.declaration := res = Cli.ResultDecl;
 
 	ret := GenerateOberon(module, opt, args.resPath, args.resPathLen)
