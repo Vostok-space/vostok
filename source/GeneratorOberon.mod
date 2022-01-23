@@ -1331,10 +1331,12 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         Assign(g, st(Ast.Assign))
       END
     ELSIF st IS Ast.Call THEN
-      IF g.opt.plantUml THEN
+      IF ~g.opt.plantUml THEN
+        Expression(g, st.expr)
+      ELSIF st.expr(Ast.ExprCall).designator.decl IS Ast.PredefinedProcedure THEN
         ExpressionBraced(g, ":", st.expr, ";")
       ELSE
-        Expression(g, st.expr)
+        ExpressionBraced(g, ":", st.expr, "|")
       END
     ELSIF st IS Ast.WhileIf THEN
       WhileIf(g, st(Ast.WhileIf))
