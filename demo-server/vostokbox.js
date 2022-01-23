@@ -22,9 +22,9 @@ var VostokBox;
   function logAppendChild(box, item) {
     var needScroll;
     needScroll = box.log.scrollHeight - box.log.scrollTop < box.log.clientHeight + 40;
-    box.log.appendChild(table);
+    box.log.appendChild(item);
     if (needScroll) {
-      table.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      item.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
     }
   }
 
