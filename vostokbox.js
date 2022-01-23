@@ -65,7 +65,6 @@ var VostokBox;
 
     req = new XMLHttpRequest();
 
-    req.timeout = 6000;
     req.ontimeout = function (e) {
       errorLog(box, 'connection timeout');
     };
@@ -73,10 +72,12 @@ var VostokBox;
       errorLog(box, 'connection error');
     };
     if (scr.toUpperCase() == "/TO-SCHEME") {
+      req.timeout = 12000;
       req.onload = function (e) {
         svgLog(box, 'vostokbox-log-out', req.responseText);
       };
     } else {
+      req.timeout = 6000;
       req.onload = function (e) {
         normalLog(box, req.responseText);
       };
