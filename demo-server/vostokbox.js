@@ -19,18 +19,31 @@ var VostokBox;
     return box;
   };
 
-  function log(box, className, text) {
-    var pre, table, needScroll;
-    pre = box.doc.createElement('pre');
-    pre.innerText = text;
-    pre.className = className;
-    table = box.doc.createElement('table');
-    table.appendChild(pre);
+  function logAppendChild(box, item) {
+    var needScroll;
     needScroll = box.log.scrollHeight - box.log.scrollTop < box.log.clientHeight + 40;
     box.log.appendChild(table);
     if (needScroll) {
       table.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
     }
+  }
+
+  function log(box, className, text) {
+    var pre, table;
+    pre = box.doc.createElement('pre');
+    pre.innerText = text;
+    pre.className = className;
+    table = box.doc.createElement('table');
+    table.appendChild(pre);
+    logAppendChild(box, table);
+  }
+
+  function svgLog(box, className, text) {
+    var div;
+    div = box.doc.createElement('div');
+    div.innerHTML = text;
+    div.className = className;
+    logAppendChild(box, div);
   }
 
   function errorLog(box, text) {
@@ -59,9 +72,15 @@ var VostokBox;
     req.onerror = function (e) {
       errorLog(box, 'connection error');
     };
-    req.onload = function (e) {
-      normalLog(box, req.responseText);
-    };
+    if (scr.toUpperCase() == "/TO-SCHEME") {
+      req.onload = function (e) {
+        svgLog(box, 'vostokbox-log-out', req.responseText);
+      };
+    } else {
+      req.onload = function (e) {
+        normalLog(box, req.responseText);
+      };
+    }
     req.open('POST', '/run');
     data = new FormData();
     data.append('module', box.editorSession.getValue());

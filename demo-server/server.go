@@ -40,7 +40,8 @@ const (
     "/INFO - show this help\n" +
     "/LIST - list available modules\n" +
     "/INFO ModuleName - show info about module\n" +
-    "/TO-(C|JS|JAVA) - convert code to appropriate language\n"
+    "/TO-(C|JS|JAVA|PUML|SCHEME)\n" +
+    "    - convert code to appropriate language\n"
 
   teleHelp = webHelp +
     `/O7: log.s("Script mode")` +
@@ -211,14 +212,22 @@ func infoModule(name string) (info []byte) {
 
 func toLang(source, vcmd string) (translated []byte) {
   var (
-    tmp, name string;
+    tmp, name, puml, svg, str string;
     cmd *exec.Cmd;
   )
   tmp, name, _, source, _ = saveSource(source, "");
-  cmd = exec.Command("vostok/result/ost", vcmd, name, "-",
-                     "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
-                     "-init", "noinit", "-no-array-index-check", "-no-nil-check",
-                     "-no-arithmetic-overflow-check");
+  if vcmd == "to-scheme" {
+    puml = tmp + "/out.puml";
+    svg  = tmp + "/out.svg";
+    str = "vostok/result/ost to-puml " + name + " - -m " + tmp + " -infr vostok > " +
+          puml + " && plantuml -tsvg " + puml + " && cat " + svg;
+    cmd = exec.Command("sh", "-c", str)
+  } else {
+    cmd = exec.Command("vostok/result/ost", vcmd, name, "-",
+                       "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
+                       "-init", "noinit", "-no-array-index-check", "-no-nil-check",
+                       "-no-arithmetic-overflow-check");
+  }
   translated, _ = cmd.CombinedOutput();
   os.RemoveAll(tmp);
   return
@@ -249,7 +258,8 @@ func command(text, help, module string) (res []byte, ok bool) {
   } else if cmd == "info" || cmd == "help" || cmd == "list" {
     res = infoModule(par)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
-            cmd == "to-mod" || cmd == "to-modef" {
+            cmd == "to-mod" || cmd == "to-modef" ||
+            cmd == "to-puml" || cmd == "to-scheme" {
     if module == "" {
       module = par
     }
