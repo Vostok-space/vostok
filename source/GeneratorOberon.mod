@@ -1317,6 +1317,23 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         Str(g, "END")
       END
     END Case;
+
+    PROCEDURE Call(VAR g: Generator; call: Ast.ExprCall);
+    BEGIN
+      PlantUmlPrefix(g);
+      IF call.params = NIL THEN
+        Designator(g, call.designator)
+      ELSE
+        Expression(g, call)
+      END;
+      IF ~g.opt.plantUml THEN
+        ;
+      ELSIF call.designator.decl IS Ast.PredefinedProcedure THEN
+        Chr(g, ";")
+      ELSE
+        Chr(g, "|")
+      END
+    END Call;
   BEGIN
     Comment(g, st.comment, FALSE);
     IF 0 < st.emptyLines THEN
@@ -1331,13 +1348,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         Assign(g, st(Ast.Assign))
       END
     ELSIF st IS Ast.Call THEN
-      IF ~g.opt.plantUml THEN
-        Expression(g, st.expr)
-      ELSIF st.expr(Ast.ExprCall).designator.decl IS Ast.PredefinedProcedure THEN
-        ExpressionBraced(g, ":", st.expr, ";")
-      ELSE
-        ExpressionBraced(g, ":", st.expr, "|")
-      END
+      Call(g, st.expr(Ast.ExprCall))
     ELSIF st IS Ast.WhileIf THEN
       WhileIf(g, st(Ast.WhileIf))
     ELSIF st IS Ast.Repeat THEN
