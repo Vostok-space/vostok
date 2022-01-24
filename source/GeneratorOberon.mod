@@ -42,6 +42,7 @@ TYPE
 
   Generator = RECORD(Text.Out)
     module: Ast.Module;
+    presentAlternative: BOOLEAN;
     opt: Options
   END;
 
@@ -123,7 +124,6 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     opt.multibranchWhile := (opt.std = StdO7) & ~opt.plantUml;
 
     Text.Init(g, out);
-
     g.module := m;
     g.opt    := opt
   END Init;
@@ -296,7 +296,10 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         s[2] := Utf8.DQuote
       END;
       s[1] := CHR(code);
-      Text.Data(g, s, 0, 3)
+      Text.Data(g, s, 0, 3);
+      IF g.opt.plantUml & (s[1] = "|") THEN
+        g.presentAlternative := TRUE
+      END
     END
   END Char;
 
@@ -606,6 +609,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
           Str(g, "SHORT(");
           Text.String(g, w);
           Chr(g, ")")
+        END;
+        IF g.opt.plantUml & Strings.SearchSubString(w, "|") THEN
+          g.presentAlternative := TRUE
         END
       ELSE
         Char(g, e.int, e.usedAs)
@@ -1321,6 +1327,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     PROCEDURE Call(VAR g: Generator; call: Ast.ExprCall);
     BEGIN
       PlantUmlPrefix(g);
+      g.presentAlternative := FALSE;
       IF call.params = NIL THEN
         Designator(g, call.designator)
       ELSE
@@ -1328,7 +1335,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       END;
       IF ~g.opt.plantUml THEN
         ;
-      ELSIF call.designator.decl IS Ast.PredefinedProcedure THEN
+      ELSIF (call.designator.decl IS Ast.PredefinedProcedure)
+         OR g.presentAlternative
+      THEN
         Chr(g, ";")
       ELSE
         Chr(g, "|")
