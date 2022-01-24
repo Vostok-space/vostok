@@ -1381,18 +1381,17 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     PROCEDURE Return(VAR g: Generator; stats: BOOLEAN; ret: Ast.Expression);
     BEGIN
       IF ret # NIL THEN
-        IF stats THEN
-          IF g.opt.plantUml THEN
-            Ln(g)
-          ELSE
-            StrLn(g, ";")
-          END
-        END;
-        PlantUmlPrefix(g);
-        Str(g, "RETURN ");
-        Expression(g, ret);
         IF g.opt.plantUml THEN
-          Chr(g, ";")
+          IF stats THEN
+            Ln(g)
+          END;
+          (* Невидимая { нужна из-за слабости разборщика Plang UML *)
+          ExpressionBraced(g, ": RETURN ", ret, "<color:white>{}")
+        ELSE
+          IF stats THEN
+            StrLn(g, ";")
+          END;
+          ExpressionBraced(g, "RETURN ", ret, "")
         END
       END
     END Return;
@@ -1412,15 +1411,25 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       declarations(g, p);
       IF g.opt.plantUml THEN
         Text.IndentOpen(g);
-        StrLn(g, "start")
-      ELSE
+        IF p.stats # NIL THEN
+          StrLn(g, "start")
+        END
+      ELSIF (p.stats # NIL)
+         OR (g.opt.std # StdO7) & (p.return # NIL)
+      THEN
         StrOpen(g, "BEGIN")
+      ELSE
+        Text.IndentOpen(g)
       END;
       Statements(g, p.stats);
       Return(g, p.stats # NIL, p.return);
       IF g.opt.plantUml THEN
         Ln(g);
-        StrLn(g, "stop");
+        IF p.return = NIL THEN
+          StrLn(g, "stop")
+        ELSE
+          StrLn(g, "kill")
+        END;
         StrLnClose(g, "end group")
       ELSE
         Text.LnStrClose(g, "END ");
