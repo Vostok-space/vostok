@@ -1,51 +1,65 @@
-(*	Автор: Trurl
-	http://oberspace.dyndns.org/index.php/topic,689.msg21632.html#msg21632
- *)
+From Algrorithms and Structures. Niklaus Wirth
+
 MODULE Queens;
 
 IMPORT Out;
 
-VAR count:INTEGER;
-	board: ARRAY 32 OF INTEGER;
+VAR
+  solutionsCount, ln: INTEGER;
+  x: ARRAY 8 OF INTEGER;
+  a: ARRAY 8 OF BOOLEAN;
+  b, c: ARRAY 15 OF BOOLEAN;
+  write: BOOLEAN;
 
-PROCEDURE canplace(row,col:INTEGER):BOOLEAN;
-VAR i:INTEGER;
+PROCEDURE Write;
+VAR i: INTEGER;
 BEGIN
-	i:=1;
-	WHILE (i < row) & (board[i] # col) & (ABS(board[i]-col) # ABS(i-row)) DO
-		INC(i)
-	END
-	RETURN i = row
-END canplace;
+  FOR i := 0 TO LEN(x) - 1 DO Out.Int(x[i], 2) END;
+  INC(ln); IF ln = 4 THEN Out.Ln; ln := 0 ELSE Out.String("  ") END
+END Write;
 
-PROCEDURE queen(row, n:INTEGER);
-VAR col:INTEGER;
+PROCEDURE Init; VAR i: INTEGER;
 BEGIN
-	FOR col := 1 TO n DO
-	IF canplace(row,col)  THEN
-		board[row] := col;
-		IF row = n THEN count := count + 1 ELSE queen(row+1, n)  END
-		END
-	END
-END queen;
+  FOR i := 0 TO LEN(a) - 1 DO a[i] := TRUE; x[i] := -1   END;
+  FOR i := 0 TO LEN(b) - 1 DO b[i] := TRUE; c[i] := TRUE END;
+  solutionsCount := 0; ln := 0
+END Init;
 
-PROCEDURE solve(n:INTEGER);
+PROCEDURE Try(i: INTEGER);
+VAR j: INTEGER;
 BEGIN
-	count := 0;
-	queen(1,n)
-END solve;
+  IF i < LEN(x) THEN
+    FOR j := 0 TO LEN(x) - 1 DO
+      IF a[j] & b[i + j] & c[i - j + 7] THEN
+        x[i] := j;  a[j] := FALSE; b[i + j] := FALSE; c[i - j + 7] := FALSE;
+        Try(i + 1);
+        x[i] := -1; a[j] := TRUE;  b[i + j] := TRUE;  c[i - j + 7] := TRUE
+      END
+    END
+  ELSE
+    IF write THEN
+      Write
+    END;
+    INC(solutionsCount)
+  END
+END Try;
 
-PROCEDURE Do*(N:INTEGER);
+PROCEDURE All*;
 BEGIN
-	Out.String("Solving "); Out.Int(N, 0); Out.String(" Queens Problem"); Out.Ln;
-	solve(N);
-	Out.Int(count, 0); Out.String(" solutions found"); Out.Ln
-END Do;
+  Init;
+  Try(0);
+  IF write THEN
+    Out.String("Count of solutions: "); Out.Int(solutionsCount, 0); Out.Ln
+  END
+END All;
 
 PROCEDURE Go*;
 BEGIN
-	Do(11);
-	ASSERT(count = 2680)
+  write := FALSE;
+  All;
+  ASSERT(solutionsCount = 92)
 END Go;
 
+BEGIN
+  write := TRUE
 END Queens.
