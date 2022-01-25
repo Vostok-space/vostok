@@ -33,7 +33,8 @@ TYPE
   Options* = POINTER TO RECORD(GenOptions.R)
     std*: INTEGER;
     multibranchWhile*,
-    declaration*, import*: BOOLEAN
+    declaration*, import*,
+    plantUml*: BOOLEAN
   END;
 
   PROCEDURE DefaultOptions*(): Options;
