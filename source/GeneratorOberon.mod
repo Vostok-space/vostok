@@ -59,6 +59,7 @@ PROCEDURE Ln     (VAR g: Text.Out);                   BEGIN Text.Ln     (g)    E
 PROCEDURE Int    (VAR g: Text.Out; i: INTEGER);       BEGIN Text.Int    (g, i) END Int;
 PROCEDURE Chr    (VAR g: Text.Out; c: CHAR);          BEGIN Text.Char   (g, c) END Chr;
 PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g, s) END StrLnClose;
+PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g, s) END LnStrClose;
 
   PROCEDURE Ident(VAR g: Generator; ident: Strings.String);
   BEGIN
@@ -136,7 +137,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
   PROCEDURE Comment(VAR g: Generator; text: Strings.String; justText: BOOLEAN);
   BEGIN
-    IF justText OR ~g.opt.plantUml THEN
+    ASSERT(justText OR g.opt.plantUml);
+
+    IF justText THEN
       GenCommon.CommentOberon(g, g.opt^, text)
     ELSIF g.opt.comment & Strings.IsDefined(text) & ~Strings.SearchSubString(text, "end note") THEN
       StrOpen(g, "note");
@@ -1143,7 +1146,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg, elsif: ARRAY OF CHAR);
         BEGIN
           WHILE (wi # NIL) & (wi.expr # NIL) DO
-            Text.LnStrClose(g, elsif);
+            LnStrClose(g, elsif);
             ExprThenStats(g, wi, then, thenNeg)
           END
         END Elsif;
@@ -1156,7 +1159,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
           StrOpen(g, else);
           statements(g, wi.stats)
         END;
-        Text.LnStrClose(g, end)
+        LnStrClose(g, end)
       END Wr;
     BEGIN
       IF wi IS Ast.If THEN
@@ -1178,7 +1181,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
           StrOpen(g, "else");
           StrLn(g, ":stop;");
           Text.StrClose(g, "endif");
-          Text.LnStrClose(g, "repeat while(continue?) not (stop) ")
+          LnStrClose(g, "repeat while(continue?) not (stop) ")
         ELSE
           Wr(g, wi, "LOOP IF ", " THEN", "", "ELSIF ", "", "ELSE EXIT END END")
         END
@@ -1191,7 +1194,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       IF g.opt.plantUml THEN
         StrOpen(g, "repeat");
         statements(g, st.stats);
-        Text.LnStrClose(g, "repeat while (");
+        LnStrClose(g, "repeat while (");
         IF ExtractNegate(st.expr, sub) THEN
           Expression(g, sub);
           Str(g, ") is (yes) not (no)")
@@ -1202,7 +1205,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       ELSE
         StrOpen(g, "REPEAT");
         statements(g, st.stats);
-        Text.LnStrClose(g, "UNTIL ");
+        LnStrClose(g, "UNTIL ");
         Expression(g, st.expr)
       END
     END Repeat;
@@ -1223,11 +1226,11 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       IF g.opt.plantUml THEN
         StrOpen(g, ")");
         statements(g, st.stats);
-        Text.LnStrClose(g, "endwhile (end)")
+        LnStrClose(g, "endwhile (end)")
       ELSE
         StrOpen(g, " DO");
         statements(g, st.stats);
-        Text.LnStrClose(g, "END")
+        LnStrClose(g, "END")
       END
     END For;
 
@@ -1344,7 +1347,9 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       END
     END Call;
   BEGIN
-    Comment(g, st.comment, FALSE);
+    IF ~g.opt.plantUml THEN
+      Comment(g, st.comment, TRUE)
+    END;
     IF 0 < st.emptyLines THEN
       Ln(g)
     END;
@@ -1366,7 +1371,11 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       For(g, st(Ast.For))
     ELSE ASSERT(st IS Ast.Case);
       Case(g, st(Ast.Case))
-    END
+    END;
+    IF g.opt.plantUml THEN
+      Ln(g);
+      Comment(g, st.comment, FALSE)
+    END;
   END Statement;
 
   PROCEDURE Statements(VAR g: Generator; stat: Ast.Statement);
@@ -1375,9 +1384,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Statement(g, stat);
       stat := stat.next;
       WHILE stat # NIL DO
-        IF g.opt.plantUml THEN
-          Ln(g)
-        ELSE
+        IF ~g.opt.plantUml THEN
           StrLn(g, ";")
         END;
         Statement(g, stat);
@@ -1409,8 +1416,10 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
       Str(g, "group PROCEDURE ");
       MarkedName(g, p, "");
       ProcParams(g, p.header);
-      Ln(g)
+      Ln(g);
+      Comment(g, p.comment, FALSE)
     ELSE
+      Comment(g, p.comment, TRUE);
       Str(g, "PROCEDURE ");
       MarkedName(g, p, "");
       ProcParams(g, p.header);
@@ -1441,7 +1450,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
         END;
         StrLnClose(g, "end group")
       ELSE
-        Text.LnStrClose(g, "END ");
+        LnStrClose(g, "END ");
         Name(g, p);
         StrLn(g, ";")
       END
@@ -1491,7 +1500,6 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
     WHILE p # NIL DO
       IF p.mark OR ~g.opt.declaration THEN
         EmptyLines(g, p);
-        Comment(g, p.comment, FALSE);
         Procedure(g, p(Ast.Procedure))
       END;
       p := p.next
