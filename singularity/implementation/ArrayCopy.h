@@ -47,8 +47,8 @@ O7_ALWAYS_INLINE void ArrayCopy_Chars(
 }
 
 O7_ALWAYS_INLINE void ArrayCopy_Bytes(
-    o7_int_t dest_len, char unsigned dest[O7_VLA()], o7_int_t destOfs,
-    o7_int_t src_len, char unsigned src[O7_VLA()], o7_int_t srcOfs,
+    o7_int_t dest_len, char unsigned dest[O7_VLA(dest_len)], o7_int_t destOfs,
+    o7_int_t src_len, char unsigned src[O7_VLA(src_len)], o7_int_t srcOfs,
     o7_int_t count)
 {
     ArrayCopy_Params_Check(dest_len, destOfs, src_len, srcOfs, count);
@@ -56,8 +56,8 @@ O7_ALWAYS_INLINE void ArrayCopy_Bytes(
 }
 
 O7_ALWAYS_INLINE void ArrayCopy_CharsToBytes(
-    o7_int_t dest_len, char unsigned dest[O7_VLA()], o7_int_t destOfs,
-    o7_int_t src_len, o7_char src[O7_VLA()], o7_int_t srcOfs,
+    o7_int_t dest_len, char unsigned dest[O7_VLA(dest_len)], o7_int_t destOfs,
+    o7_int_t src_len, o7_char src[O7_VLA(src_len)], o7_int_t srcOfs,
     o7_int_t count)
 {
     ArrayCopy_Params_Check(dest_len, destOfs, src_len, srcOfs, count);
@@ -65,8 +65,8 @@ O7_ALWAYS_INLINE void ArrayCopy_CharsToBytes(
 }
 
 O7_ALWAYS_INLINE void ArrayCopy_BytesToChars(
-    o7_int_t dest_len, o7_char dest[O7_VLA()], o7_int_t destOfs,
-    o7_int_t src_len, char unsigned src[O7_VLA()], o7_int_t srcOfs, o7_int_t count)
+    o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)], o7_int_t destOfs,
+    o7_int_t src_len, char unsigned src[O7_VLA(src_len)], o7_int_t srcOfs, o7_int_t count)
 {
     ArrayCopy_Params_Check(dest_len, destOfs, src_len, srcOfs, count);
     memcpy(dest + destOfs, src + srcOfs, (size_t)count);
