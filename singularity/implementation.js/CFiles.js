@@ -37,17 +37,37 @@ if (typeof require !== 'undefined' && typeof process !== 'undefined') {
 	fs = null;
 }
 
-if (fs != null) {
-	function wrapFile(file) {
-		var f;
-		f = new File();
-		f.fd = file.fd;
-		f.notsync = true;
-		return f;
+function wrapFile1(file) {
+	var f;
+	f = new File();
+	f.fd = file.fd;
+	f.notsync = true;
+	return f;
+}
+
+/* TODO сохранение буфера до Сlose */
+function bufGet(size) {
+	var data;
+	if (Buffer.allocUnsafe) {
+		data = Buffer.allocUnsafe(size);
+	} else {
+		data = new Buffer(size);
 	}
-	module.in_ = wrapFile(process.stdin);
-	module.out = wrapFile(process.stdout);
-	module.err = wrapFile(process.stderr);
+	return data;
+}
+
+function wrapFile2(file) {
+	var f;
+	f = new File();
+	f.f = file;
+	return f;
+}
+
+
+if (fs != null) {
+	module.in_ = wrapFile1(process.stdin);
+	module.out = wrapFile1(process.stdout);
+	module.err = wrapFile1(process.stderr);
 
 	module.Open = function(bytes_name, ofs, mode) {
 		var f, name, fd, smode, i;
@@ -79,17 +99,6 @@ if (fs != null) {
 			fs.closeSync(file[file_ai].fd);
 			file[file_ai] = null;
 		}
-	}
-
-	/* TODO сохранение буфера до Сlose */
-	function bufGet(size) {
-		var data;
-		if (Buffer.allocUnsafe) {
-			data = Buffer.allocUnsafe(size);
-		} else {
-			data = new Buffer(size);
-		}
-		return data;
 	}
 
 	module.Read = function(file, buf, ofs, count) {
@@ -141,15 +150,9 @@ if (fs != null) {
 	}
 
 } else if (typeof std !== 'undefined') {
-	function wrapFile(file) {
-		var f;
-		f = new File();
-		f.f = file;
-		return f;
-	}
-	module.in_ = wrapFile(std.in);
-	module.out = wrapFile(std.out);
-	module.err = wrapFile(std.err);
+	module.in_ = wrapFile2(std.in);
+	module.out = wrapFile2(std.out);
+	module.err = wrapFile2(std.err);
 
 	module.Open = function(bytes_name, ofs, mode) {
 		var f, name, file, smode;
@@ -225,13 +228,14 @@ if (fs != null) {
 	}
 
 	module.Tell = function(file, gibs, gibs_ai, bytes, bytes_ai) {
-		var pos;
+		var pos, ok;
 		pos = file.tello();
-		if (pos >= 0n) {
+		ok = pos >= BigInt(0);
+		if (ok) {
 			gibs[gibs_ai] = Number(pos / BigInt(GiB));
 			bytes[bytes_ai] = Number(pos % BigInt(GiB));
 		}
-		return pos >= 0n;
+		return ok;
 	}
 
 } else {
@@ -256,18 +260,8 @@ module.WriteChars = function(file, buf, ofs, count) {
 }
 
 if (!module.Seek) {
-	/* полная позиция = gibs * GiB + bytes; 0 <= bytes < GiB */
-	function Seek(file, gibs, bytes) {
-		/* нет в node*/
-		return false;
-	}
-	function Tell(file, gibs, gibs_ai, bytes, bytes_ai) {
-		/* нет в node*/
-		return false;
-	}
-
-	module.Seek = Seek;
-	module.Tell = Tell;
+	module.Seek = function(file, gibs, bytes) { return false; };
+	module.Tell = function(file, gibs, gibs_ai, bytes, bytes_ai) { return false; };
 }
 
 return module;
