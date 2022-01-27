@@ -474,13 +474,13 @@ TYPE
 	PredefinedProcedure* = POINTER TO RECORD(RGeneralProcedure)
 	END;
 
-	Factor* = POINTER TO RFactor;
+	Value* = POINTER TO ExprValue;
 
 	RExpression* = RECORD(Node)
 		type*: Type;
 
 		properties*: SET;
-		value*: Factor
+		value*: Value
 	END;
 
 	Selector* = POINTER TO RSelector;
@@ -502,9 +502,8 @@ TYPE
 		var*: Var
 	END;
 
-	RFactor = RECORD(RExpression)
-		nextValue: Factor
-	END;
+	RFactor = RECORD(RExpression) END;
+	Factor* = POINTER TO RFactor;
 
 	Designator* = POINTER TO RECORD(RFactor)
 		decl*: Declaration;
@@ -512,8 +511,11 @@ TYPE
 		sel*: Selector
 	END;
 
-	ExprNumber* = RECORD(RFactor)
+	ExprValue* = RECORD(RFactor)
+		nextValue: Value
 	END;
+
+	ExprNumber* = RECORD(ExprValue) END;
 
 	RExprInteger* = RECORD(ExprNumber)
 		int*: INTEGER
@@ -525,7 +527,7 @@ TYPE
 		str*: Strings.String (* Для генераторов обратно в текст *)
 	END;
 
-	ExprBoolean* = POINTER TO RECORD(RFactor)
+	ExprBoolean* = POINTER TO RECORD(ExprValue)
 		bool*: BOOLEAN
 	END;
 
@@ -535,7 +537,7 @@ TYPE
 		usedAs*: INTEGER
 	END;
 
-	ExprNil* = POINTER TO RECORD(RFactor) END;
+	ExprNil* = POINTER TO RECORD(ExprValue) END;
 
 	ExprSet* = POINTER TO RExprSet;
 	RExprSet = RECORD(RFactor)
@@ -544,8 +546,7 @@ TYPE
 		next*: ExprSet
 	END;
 
-	(* TODO ввести тип Value как основы вместо RFactor *)
-	ExprSetValue* = POINTER TO RECORD(RFactor)
+	ExprSetValue* = POINTER TO RECORD(ExprValue)
 		set *: LongSet.Type;
 		long*: BOOLEAN
 	END;
@@ -664,7 +665,7 @@ VAR
 	booleans: ARRAY 2 OF ExprBoolean;
 	nil: ExprNil;
 
-	values: Factor;
+	values: Value;
 	needTags: NeedTagList;
 
 	system: Module;
@@ -1915,12 +1916,12 @@ BEGIN
 	e.value := NIL
 END ExprInit;
 
-PROCEDURE ValueInit(f: Factor; id: INTEGER; t: Type);
+PROCEDURE ValueInit(v: Value; id: INTEGER; t: Type);
 BEGIN
-	ExprInit(f, id, t);
-	f.value := f;
-	f.nextValue := values;
-	values := f
+	ExprInit(v, id, t);
+	v.value := v;
+	v.nextValue := values;
+	values := v
 END ValueInit;
 
 PROCEDURE ExprIntegerNew*(int: INTEGER): ExprInteger;
@@ -2139,8 +2140,8 @@ BEGIN
 			IF err = ErrNo THEN
 				e.value := ExprSetByValue(set);
 
-				e.nextValue := values;
-				values := e
+				e.value.nextValue := values;
+				values := e.value
 			END
 		END
 	END;
@@ -3160,7 +3161,7 @@ END MultCalc;
 PROCEDURE ExprTermGeneral(VAR e: ExprTerm; result: Expression; factor: Factor;
                           mult: INTEGER; factorOrTerm: Expression): INTEGER;
 VAR t: Type;
-    val: Factor;
+    val: Value;
     err: INTEGER;
 BEGIN
 	ASSERT((MultFirst <= mult) & (mult <= MultLast));
@@ -3530,7 +3531,7 @@ PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
                          ds: Declarations): INTEGER;
 VAR err: INTEGER;
 
-	PROCEDURE CalcPredefined(call: ExprCall; v: Factor; VAR err: INTEGER);
+	PROCEDURE CalcPredefined(call: ExprCall; v: Value; VAR err: INTEGER);
 	BEGIN
 		CASE call.designator.decl.id OF
 		  SpecIdent.Abs:

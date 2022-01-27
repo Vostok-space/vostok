@@ -453,7 +453,7 @@ MODULE AstTransform;
     VAR s: Ast.ExprSum;
 
       PROCEDURE IsolateAdd(VAR sum: Ast.ExprSum);
-      VAR p, s: Ast.ExprSum; value: Ast.Factor;
+      VAR p, s: Ast.ExprSum; value: Ast.Value;
       BEGIN
         value := sum.value;
         REPEAT
