@@ -63,7 +63,7 @@ TYPE
 		procTypeNamer: ProviderProcTypeName;
 		opt: Options;
 
-		expressionSemicolon, forAssign, unreached: BOOLEAN
+		forAssign, unreached: BOOLEAN
 	END;
 
 	Selectors = RECORD
@@ -2109,13 +2109,8 @@ BEGIN
 	IF st IS Ast.Assign THEN
 		Assign(g, st(Ast.Assign))
 	ELSIF st IS Ast.Call THEN
-		g.expressionSemicolon := TRUE;
 		Expression(g, st.expr, {});
-		IF g.expressionSemicolon THEN
-			StrLn(g, ";")
-		ELSE
-			Ln(g)
-		END
+		StrLn(g, ";")
 	ELSIF st IS Ast.WhileIf THEN
 		WhileIf(g, st(Ast.WhileIf))
 	ELSIF st IS Ast.Repeat THEN

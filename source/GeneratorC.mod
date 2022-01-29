@@ -91,8 +91,7 @@ TYPE
 		interface: BOOLEAN;
 		opt: Options;
 
-		expressionSemicolon,
-		insideSizeOf       : BOOLEAN;
+		insideSizeOf: BOOLEAN;
 
 		memout: PMemoryOut
 	END;
@@ -3032,13 +3031,8 @@ BEGIN
 		Assign(g, st(Ast.Assign));
 		StrLn(g, ";")
 	ELSIF st IS Ast.Call THEN
-		g.expressionSemicolon := TRUE;
 		Expression(g, st.expr);
-		IF g.expressionSemicolon THEN
-			StrLn(g, ";")
-		ELSE
-			Ln(g)
-		END
+		StrLn(g, ";")
 	ELSIF st IS Ast.WhileIf THEN
 		WhileIf(g, st(Ast.WhileIf))
 	ELSIF st IS Ast.Repeat THEN
