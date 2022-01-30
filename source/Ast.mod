@@ -75,7 +75,8 @@ CONST
 	ErrCallParamsNotEnough*         = -43;
 	ErrCallVarPointerTypeNotSame*   = -44;
 	ErrCaseExprWrongType*           = -45;
-	ErrCaseRecordNotLocalVar*        = -113;(*TODO*)
+	ErrCaseRecordNotLocalVar*       = -113;(*TODO*)
+	ErrCasePointerVarParam*         = -114;(*TODO*)
 	ErrCaseLabelWrongType*          = -46;
 	ErrCaseElemExprTypeMismatch*    = -47;
 	ErrCaseElemDuplicate*           = -48;
@@ -152,6 +153,7 @@ CONST
 
 	ErrParamOutInFunc*              = -112;
 	                                (*-113*)
+	                                (*-114*)
 
 	ErrMin*                         = -200;
 
@@ -3844,7 +3846,7 @@ BEGIN
 END ForNew;
 
 PROCEDURE CaseNew*(VAR c: Context; VAR case: Case; expr: Expression): INTEGER;
-VAR err: INTEGER; t: Type;
+VAR err: INTEGER; t: Type; fp: FormalParam;
 BEGIN
 	NEW(case); StatInit(case, expr);
 	case.elements := NIL;
@@ -3860,7 +3862,11 @@ BEGIN
 			ChecklessVarAdd(c.case.var, c.ds, "#ERR", 0, 4);
 			c.case.var.type := t
 		ELSIF c.case.var IS FormalParam THEN
-			SetNeedTag(c.case.var(FormalParam))
+			fp := c.case.var(FormalParam);
+			SetNeedTag(fp);
+			IF (t.id = IdPointer) & (ParamOut IN fp.access) THEN
+				err := ErrCasePointerVarParam
+			END
 		END;
 		c.case.save := t
 	ELSIF ~(t.id IN {IdInteger, IdChar}) THEN

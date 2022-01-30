@@ -127,6 +127,8 @@ BEGIN
 		C("Label of CASE must have integer or char type, or be type record or pointer")
 	| AST.ErrCaseRecordNotLocalVar:
 		C("Expression in CASE of record or pointer type is not a local variable")
+	| AST.ErrCasePointerVarParam:
+		C("Expression in CASE should not be a VAR-parameter of pointer")
 	| AST.ErrCaseElemExprTypeMismatch:
 		C("Label of CASE must be integer or char")
 	| AST.ErrCaseElemDuplicate:

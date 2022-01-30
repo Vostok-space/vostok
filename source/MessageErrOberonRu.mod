@@ -120,6 +120,8 @@ BEGIN
 		C("Метка CASE должна быть целочисленной или литерой, или быть типом указатель или запись")
 	| AST.ErrCaseRecordNotLocalVar:
 		C("Выражение в CASE указательного или записевого типа не является локальной переменной")
+	| AST.ErrCasePointerVarParam:
+		C("Выражение в CASE не должно быть VAR-параметром указательного типа")
 	| AST.ErrCaseElemExprTypeMismatch:
 		C("Тип метки CASE должен соответствовать типу выражения в CASE")
 	| AST.ErrCaseElemDuplicate:
