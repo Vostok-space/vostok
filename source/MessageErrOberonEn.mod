@@ -121,10 +121,12 @@ BEGIN
 		C("For variable parameter - pointer must used argument of same type")
 	| AST.ErrCallParamsNotEnough:
 		C("Not enough parameters in subroutine's call")
-	| AST.ErrCaseExprNotIntOrChar:
-		C("Expression in CASE must be integer or char")
-	| AST.ErrCaseLabelNotIntOrChar:
-		C("Case label must have integer or char type")
+	| AST.ErrCaseExprWrongType:
+		C("Expression in CASE must be integer, char, record or pointer")
+	| AST.ErrCaseLabelWrongType:
+		C("Label of CASE must have integer or char type, or be type record or pointer")
+	| AST.ErrCaseRecordNotLocalVar:
+		C("Expression in CASE of record or pointer type is not a local variable")
 	| AST.ErrCaseElemExprTypeMismatch:
 		C("Label of CASE must be integer or char")
 	| AST.ErrCaseElemDuplicate:

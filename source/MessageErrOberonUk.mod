@@ -114,12 +114,14 @@ BEGIN
 		C("Для змінного параметру - покажчика повинен використовуватись аргумент того ж типу")
 	| AST.ErrCallParamsNotEnough:
 		C("Не вистачає фактичних параметрів у виклику підпрограми")
-	| AST.ErrCaseExprNotIntOrChar:
-		C("Вираз у CASE повинен бути цілочисельним або літерою")
-	| AST.ErrCaseLabelNotIntOrChar:
-		C("Мітка CASE повинна бути цілочисельною або літерою")
+	| AST.ErrCaseExprWrongType:
+		C("Вираз у CASE повинен бути цілочисельним або літерою, або бути типом запис чи вказівник")
+	| AST.ErrCaseLabelWrongType:
+		C("Мітка CASE повинна бути цілочисельною, літерою, записом або вказівником")
+	| AST.ErrCaseRecordNotLocalVar:
+		C("Вираз в CASE вказівникового або записевого типу не є локальною змінною")
 	| AST.ErrCaseElemExprTypeMismatch:
-		C("Мітки CASE повинні бути цілочисельними або літерами")
+		C("Тип мітки CASE повинен відповідати типу виразу в CASE")
 	| AST.ErrCaseElemDuplicate:
 		C("Дублирование значения меток в CASE")
 	| AST.ErrCaseRangeLabelsTypeMismatch:

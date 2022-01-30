@@ -54,7 +54,3 @@ List of possible diagnostics kinds in decreasing of preference order:
    or useless code.
  * Notification and emergency stop in runtime.
  * Absence diagnostics, what allowed due to the difficulty in diagnosis or the need for efficiency.
-
-## Incompleteness of embodiment:
- * CASE-statement for records and pointers is not implemented.
- * Absent module SYSTEM

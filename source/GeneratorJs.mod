@@ -1770,7 +1770,8 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 		        & (st.expr.value = NIL);
 		braces := ORD(toByte);
-		IF st.designator.type.id = Ast.IdArray THEN
+		g.opt.expectArray := st.designator.type.id = Ast.IdArray;
+		IF g.opt.expectArray THEN
 			INC(braces);
 			IF st.expr.id = Ast.IdString THEN
 				Str(g, "o7.strcpy(")
@@ -1778,8 +1779,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 				Str(g, "o7.copy(")
 			END;
 			Designator(g, st.designator, {ForSameType});
-			Str(g, ", ");
-			g.opt.expectArray := TRUE
+			Str(g, ", ")
 		ELSIF st.designator.type.id = Ast.IdRecord THEN
 			INC(braces);
 			Designator(g, st.designator, {ForSameType});
@@ -1944,6 +1944,36 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			StrLnClose(g, "})();")
 		END
 	END Case;
+
+	PROCEDURE CaseRecord(VAR g: Generator; st: Ast.Case);
+	VAR elem: Ast.CaseElement; decl, guard: Ast.Declaration; save: Ast.Type; ptr: BOOLEAN;
+	BEGIN
+		decl := st.expr(Ast.Designator).decl;
+		ptr := st.expr.type.id = Ast.IdPointer;
+		elem := st.elements;
+		REPEAT
+			guard := elem.labels.qual;
+			IF ptr THEN
+				guard := guard.type
+			END;
+			Str(g, "if (");
+			GlobalName(g, decl);
+			Str(g, " instanceof ");
+			GlobalName(g, guard);
+			StrOpen(g, ") {");
+
+			save := decl.type;
+			decl.type := elem.labels.qual(Ast.Type);
+			statements(g, elem.stats);
+			decl.type := save;
+
+			Text.IndentClose(g);
+			Str(g, "} else ");
+
+			elem := elem.next
+		UNTIL elem = NIL;
+		StrLn(g, "o7.caseFail();")
+	END CaseRecord;
 BEGIN
 	Comment(g, st.comment);
 	IF 0 < st.emptyLines THEN
@@ -1961,7 +1991,11 @@ BEGIN
 	ELSIF st IS Ast.For THEN
 		For(g, st(Ast.For))
 	ELSE ASSERT(st IS Ast.Case);
-		Case(g, st(Ast.Case))
+		IF st.expr.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+			CaseRecord(g, st(Ast.Case))
+		ELSE
+			Case(g, st(Ast.Case))
+		END
 	END
 END Statement;
 

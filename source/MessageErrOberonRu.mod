@@ -114,12 +114,14 @@ BEGIN
 		C("Для переменного параметра - указателя должен использоваться аргумент того же типа")
 	| AST.ErrCallParamsNotEnough:
 		C("Не хватает фактических параметров в вызове процедуры")
-	| AST.ErrCaseExprNotIntOrChar:
-		C("Выражение в CASE должно быть целочисленным или литерой")
-	| AST.ErrCaseLabelNotIntOrChar:
-		C("Метка CASE должна быть целочисленной или литерой")
+	| AST.ErrCaseExprWrongType:
+		C("Выражение в CASE должно быть целочисленным, литерой, указателем или записью")
+	| AST.ErrCaseLabelWrongType:
+		C("Метка CASE должна быть целочисленной или литерой, или быть типом указатель или запись")
+	| AST.ErrCaseRecordNotLocalVar:
+		C("Выражение в CASE указательного или записевого типа не является локальной переменной")
 	| AST.ErrCaseElemExprTypeMismatch:
-		C("Метки CASE должно быть целочисленными или литерами")
+		C("Тип метки CASE должен соответствовать типу выражения в CASE")
 	| AST.ErrCaseElemDuplicate:
 		C("Дублирование значения меток в CASE")
 	| AST.ErrCaseRangeLabelsTypeMismatch:

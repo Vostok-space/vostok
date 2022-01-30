@@ -3024,6 +3024,52 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			StrLnClose(g, "}")
 		END
 	END Case;
+
+	PROCEDURE CaseRecord(VAR g: Generator; st: Ast.Case);
+	VAR elem: Ast.CaseElement; ptr: BOOLEAN; decl, guard: Ast.Declaration; save: Ast.Type;
+	BEGIN
+		decl := st.expr(Ast.Designator).decl;
+		ptr := st.expr.type.id = Ast.IdPointer;
+		elem := st.elements;
+		REPEAT
+			guard := elem.labels.qual;
+			IF ptr THEN
+				Str(g, "if (o7_is(");
+				guard := guard.type
+			ELSE
+				Str(g, "if (o7_is_r(");
+				GlobalName(g, decl);
+				Str(g, "_tag, ");
+			END;
+			GlobalName(g, decl);
+			Str(g, ", &");
+			GlobalName(g, guard);
+			StrOpen(g, "_tag)) {");
+			Str(g, "struct ");
+			GlobalName(g, guard);
+			Str(g, " *");
+			GlobalName(g, decl);
+			Str(g, "__ = (struct ");
+			GlobalName(g, guard);
+			Str(g, " *)");
+			GlobalName(g, decl);
+			Str(g, ", *");
+			GlobalName(g, decl);
+			Str(g, " = ");
+			GlobalName(g, decl);
+			StrLn(g, "__;");
+
+			save := decl.type;
+			decl.type := elem.labels.qual(Ast.Type);
+			statements(g, elem.stats);
+			decl.type := save;
+
+			elem := elem.next;
+			Text.IndentClose(g);
+			Str(g, "} else ")
+		UNTIL elem = NIL;
+		StrLn(g, "o7_case_fail(0);")
+	END CaseRecord;
 BEGIN
 	Comment(g, st.comment);
 	EmptyLines(g, st);
@@ -3040,7 +3086,11 @@ BEGIN
 	ELSIF st IS Ast.For THEN
 		For(g, st(Ast.For))
 	ELSE ASSERT(st IS Ast.Case);
-		Case(g, st(Ast.Case))
+		IF st.expr.type.id IN (Ast.Integers + {Ast.IdChar}) THEN
+			Case(g, st(Ast.Case))
+		ELSE ASSERT(st.expr.type.id IN {Ast.IdRecord, Ast.IdPointer});
+			CaseRecord(g, st(Ast.Case))
+		END
 	END
 END Statement;
 

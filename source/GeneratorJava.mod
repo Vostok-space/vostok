@@ -63,7 +63,9 @@ TYPE
 		procTypeNamer: ProviderProcTypeName;
 		opt: Options;
 
-		forAssign, unreached: BOOLEAN
+		forAssign, unreached: BOOLEAN;
+
+		guardDecl: Ast.Declaration
 	END;
 
 	Selectors = RECORD
@@ -130,7 +132,9 @@ BEGIN
 		END
 	END;
 	Ident(g, decl.name);
-	IF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC})
+	IF g.guardDecl = decl THEN
+		Str(g, "__")
+	ELSIF SpecIdentChecker.IsSpecName(decl.name, {SpecIdentChecker.MathC})
 	OR IsGlobalRecordWithSameNameAsModule(decl)
 	THEN
 		Chr(g, "_")
@@ -1485,7 +1489,9 @@ BEGIN
 	g.opt := opt;
 
 	g.fixedLen := g.len;
-	g.unreached := FALSE
+	g.unreached := FALSE;
+
+	g.guardDecl := NIL
 END GenInit;
 
 PROCEDURE GeneratorNotify(VAR g: Generator);
@@ -1942,7 +1948,8 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		THEN
 			toByte := (st.designator.type.id = Ast.IdByte)
 			        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-			IF st.designator.type.id = Ast.IdArray THEN
+			g.opt.expectArray := st.designator.type.id = Ast.IdArray;
+			IF g.opt.expectArray THEN
 				IF st.expr.id = Ast.IdString THEN
 					Str(g, "O7.strcpy(")
 				ELSE
@@ -2101,6 +2108,46 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			StrLnClose(g, "}")
 		END
 	END Case;
+
+	PROCEDURE CaseRecord(VAR g: Generator; st: Ast.Case);
+	VAR elem: Ast.CaseElement; decl, guard: Ast.Declaration; save: Ast.Type; ignore, ptr: BOOLEAN;
+	BEGIN
+		decl := st.expr(Ast.Designator).decl;
+		ptr := st.expr.type.id = Ast.IdPointer;
+		elem := st.elements;
+		REPEAT
+			guard := elem.labels.qual;
+			IF ptr THEN
+				guard := guard.type
+			END;
+			Str(g, "if (");
+			GlobalName(g, decl);
+			Str(g, " instanceof ");
+			GlobalName(g, guard);
+			StrOpen(g, ") {");
+			GlobalName(g, guard);
+			Str(g, " ");
+			GlobalName(g, decl);
+			Str(g, "__ = (");
+			GlobalName(g, guard);
+			Str(g, ")");
+			GlobalName(g, decl);
+			StrLn(g, ";");
+
+			g.guardDecl := decl;
+			save := decl.type;
+			decl.type := elem.labels.qual(Ast.Type);
+			ignore := statements(g, elem.stats);
+			decl.type := save;
+			g.guardDecl := NIL;
+
+			Text.IndentClose(g);
+			Str(g, "} else ");
+
+			elem := elem.next
+		UNTIL elem = NIL;
+		StrLn(g, "throw O7.caseFail(0);")
+	END CaseRecord;
 BEGIN
 	Comment(g, st.comment);
 	IF 0 < st.emptyLines THEN
@@ -2118,7 +2165,11 @@ BEGIN
 	ELSIF st IS Ast.For THEN
 		For(g, st(Ast.For))
 	ELSE ASSERT(st IS Ast.Case);
-		Case(g, st(Ast.Case))
+		IF st.expr.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+			CaseRecord(g, st(Ast.Case))
+		ELSE
+			Case(g, st(Ast.Case))
+		END
 	END
 END Statement;
 

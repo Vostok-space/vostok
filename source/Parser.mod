@@ -1086,7 +1086,7 @@ VAR case: Ast.Case;
 						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdChar, i));
 						Scan(p)
 					ELSIF p.l = Scanner.Ident THEN
-						CheckAst(p, Ast.CaseLabelQualNew(l, Qualident(p, ds)))
+						CheckAst(p, Ast.CaseLabelQualNew(p.c, l, Qualident(p, ds)))
 					ELSE
 						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdInteger, 0));
 						AddError(p, ErrExpectIntOrStrOrQualident)
@@ -1119,12 +1119,12 @@ VAR case: Ast.Case;
 		Expect(p, Scanner.Colon, ErrExpectColon);
 		elem.stats := statements(p, ds);
 
-		CheckAst(p, Ast.CaseElementAdd(case, elem))
+		CheckAst(p, Ast.CaseElementAdd(p.c, case, elem))
 	END Element;
 BEGIN
 	ASSERT(p.l = SpecIdent.Case);
 	Scan(p);
-	CheckAst(p, Ast.CaseNew(case, Expression(p, ds, {})));
+	CheckAst(p, Ast.CaseNew(p.c, case, Expression(p, ds, {})));
 	Expect(p, SpecIdent.Of, ErrExpectOf);
 	i := 1;
 	WHILE ScanIfEqual(p, Scanner.Alternative) DO ; END;
@@ -1141,7 +1141,8 @@ BEGIN
 		DEC(i);
 		Ast.BackFromBranch(ds)
 	UNTIL i = 0;
-	Expect(p, SpecIdent.End, ErrExpectEnd)
+	Expect(p, SpecIdent.End, ErrExpectEnd);
+	Ast.CaseEnd(p.c, case)
 	RETURN case
 END Case;
 

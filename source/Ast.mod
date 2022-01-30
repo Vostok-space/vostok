@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log := DLog, Out,
+	Log := DLog, Out, log,
 	Utf8,
 	Limits := TypesLimits,
 	V,
@@ -74,8 +74,9 @@ CONST
 	ErrCallExpectAddressableParam*  = -42;
 	ErrCallParamsNotEnough*         = -43;
 	ErrCallVarPointerTypeNotSame*   = -44;
-	ErrCaseExprNotIntOrChar*        = -45;
-	ErrCaseLabelNotIntOrChar*       = -46;
+	ErrCaseExprWrongType*           = -45;
+	ErrCaseRecordNotLocalVar*        = -113;(*TODO*)
+	ErrCaseLabelWrongType*          = -46;
 	ErrCaseElemExprTypeMismatch*    = -47;
 	ErrCaseElemDuplicate*           = -48;
 	ErrCaseRangeLabelsTypeMismatch* = -49;
@@ -150,6 +151,7 @@ CONST
 	ErrExpectProcNameWithoutParams* = -111;
 
 	ErrParamOutInFunc*              = -112;
+	                                (*-113*)
 
 	ErrMin*                         = -200;
 
@@ -279,12 +281,17 @@ TYPE
 		m*: Module
 	END;
 
-	Error* = POINTER TO RError;
+	Declarations* = POINTER TO RDeclarations;
+	Type*         = POINTER TO RType;
+	Var*          = POINTER TO RVar;
+	Error*        = POINTER TO RError;
 
 	Context* = RECORD(V.Base)
 		opt: Options;
 
 		m: Module;
+
+		ds: Declarations;
 		errLast*: Error;
 
 		strings: Strings.Store;
@@ -292,6 +299,11 @@ TYPE
 		err: RECORD
 			code: INTEGER;
 			note: Strings.String
+		END;
+
+		case: RECORD
+			var: Var;
+			save: Type
 		END
 	END;
 
@@ -321,9 +333,7 @@ TYPE
 		next*: Error
 	END;
 
-	Type* = POINTER TO RType;
 	Declaration* = POINTER TO RDeclaration;
-	Declarations* = POINTER TO RDeclarations;
 	DeclarationsBag = POINTER TO RECORD
 		d*: Declarations
 	END;
@@ -372,7 +382,6 @@ TYPE
 		root, if, else: VarState
 	END;
 
-	Var* = POINTER TO RVar;
 	RVar* = RECORD(RDeclaration)
 		state: VarState;
 
@@ -583,8 +592,7 @@ TYPE
 		expr*: Expression (* Factor or ExprTerm *)
 	END;
 
-	ExprType* = POINTER TO RECORD(RExpression)
-	END;
+	ExprType* = POINTER TO RECORD(RExpression) END;
 
 	Parameter* = POINTER TO RParameter;
 	RParameter = RECORD(Node)
@@ -611,7 +619,7 @@ TYPE
 		elsif*: WhileIf (* elsif with NIL expr mean else branch *)
 	END;
 
-	If* = POINTER TO RECORD(RWhileIf)END;
+	If* = POINTER TO RECORD(RWhileIf) END;
 
 	CaseLabel* = POINTER TO RCaseLabel;
 	RCaseLabel = RECORD(Node)
@@ -835,6 +843,7 @@ BEGIN
 	c.opt := opt;
 	c.errLast := NIL;
 	c.err.code := ErrNo;
+	c.case.var := NIL
 END ContextInit;
 
 PROCEDURE ModuleCreate(name: ARRAY OF CHAR): Module;
@@ -3302,12 +3311,33 @@ RETURN (e.id = IdDesignator)
      & (e(Designator).decl IS FormalParam)
 END IsFormalParam;
 
+PROCEDURE ExprGetLocalVar*(e: Expression): Var;
+VAR des: Designator; decl: Declaration; v: Var;
+BEGIN
+	v := NIL;
+	IF e.id = IdDesignator THEN
+		des := e(Designator);
+		decl := des.decl;
+
+		IF (des.sel = NIL)
+		 & (decl.id = IdVar)
+		 & ~IsGlobal(decl)
+		THEN
+			v := decl(Var)
+		END
+	END
+	RETURN v
+END ExprGetLocalVar;
+
+PROCEDURE IsLocalVar*(e: Expression): BOOLEAN;
+RETURN ExprGetLocalVar(e) # NIL
+END IsLocalVar;
+
+(*
 PROCEDURE IsConstOrLocalVar*(e: Expression): BOOLEAN;
-RETURN (e.value # NIL)
-    OR   (e.id = IdDesignator)
-       & (e(Designator).sel = NIL)
-       & ~IsGlobal(e(Designator).decl)
+RETURN (e.value # NIL) OR IsLocalVar(e)
 END IsConstOrLocalVar;
+*)
 
 PROCEDURE ProcedureAdd*(ds: Declarations; VAR p: Procedure; typeId: INTEGER;
                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
@@ -3813,16 +3843,28 @@ BEGIN
 	RETURN err
 END ForNew;
 
-PROCEDURE CaseNew*(VAR case: Case; expr: Expression): INTEGER;
-VAR err: INTEGER;
+PROCEDURE CaseNew*(VAR c: Context; VAR case: Case; expr: Expression): INTEGER;
+VAR err: INTEGER; t: Type;
 BEGIN
 	NEW(case); StatInit(case, expr);
 	case.elements := NIL;
 	case.else := NIL;
-	IF (expr.type # NIL) & ~(expr.type.id IN {IdInteger, IdChar}) THEN
-		err := ErrCaseExprNotIntOrChar
-	ELSE
-		err := ErrNo
+	t := expr.type;
+	err := ErrNo;
+	IF t = NIL THEN
+		(* TODO *)
+	ELSIF t.id IN {IdRecord, IdPointer} THEN
+		c.case.var := ExprGetLocalVar(expr);
+		IF c.case.var = NIL THEN
+			err := ErrCaseRecordNotLocalVar;
+			ChecklessVarAdd(c.case.var, c.ds, "#ERR", 0, 4);
+			c.case.var.type := t
+		ELSIF c.case.var IS FormalParam THEN
+			SetNeedTag(c.case.var(FormalParam))
+		END;
+		c.case.save := t
+	ELSIF ~(t.id IN {IdInteger, IdChar}) THEN
+		err := ErrCaseExprWrongType
 	END
 	RETURN err
 END CaseNew;
@@ -3867,7 +3909,36 @@ BEGIN
 	RETURN ErrNo
 END CaseLabelNew;
 
-PROCEDURE CaseLabelQualNew*(VAR label: CaseLabel; decl: Declaration): INTEGER;
+PROCEDURE CaseGuardPut(VAR c: Context; t: Type);
+BEGIN
+	ASSERT(c.case.var # NIL);
+	ASSERT(t # NIL);
+
+	c.case.var.type := t
+END CaseGuardPut;
+
+PROCEDURE CaseLabelTypeNew*(VAR c: Context; VAR label: CaseLabel; decl: Declaration): INTEGER;
+VAR t: Type;
+BEGIN
+	ASSERT(decl.id IN {IdRecord, IdPointer});
+
+	NEW(label); NodeInit(label^, decl.id);
+
+	t := decl(Type);
+	CaseGuardPut(c, t);
+	IF decl.id = IdPointer THEN
+		t := t.type
+	END;
+	t(Record).needTag := TRUE;
+
+	label.qual := decl;
+	label.value := -1;
+	label.right := NIL;
+	label.next := NIL
+	RETURN ErrNo
+END CaseLabelTypeNew;
+
+PROCEDURE CaseLabelQualNew*(VAR c: Context; VAR label: CaseLabel; decl: Declaration): INTEGER;
 VAR err, i: INTEGER;
 BEGIN
 	label := NIL;
@@ -3875,21 +3946,22 @@ BEGIN
 	IF decl.id = IdError THEN
 		err := ErrNo
 	ELSIF decl.id # IdConst THEN
-		err := ErrCaseLabelNotConst
+		IF ~(decl.id IN {IdRecord, IdPointer}) THEN
+			err := ErrCaseLabelNotConst
+		ELSE
+			err := CaseLabelTypeNew(c, label, decl)
+		END
 	ELSIF ~(decl(Const).expr.type.id IN {IdInteger, IdChar})
 	     & (   (decl(Const).expr.id # IdString)
 	        OR (decl(Const).expr(ExprString).int < 0)
 	       )
 	THEN
-		err := ErrCaseLabelNotIntOrChar
+		err := ErrCaseLabelWrongType
 	ELSIF decl(Const).expr.type.id = IdInteger THEN
 		err := CaseLabelNew(label, IdInteger, decl(Const).expr.value(ExprInteger).int)
 	ELSE
 		i := decl(Const).expr.value(ExprInteger).int;
-		IF i < 0 THEN
-			(* TODO *) ASSERT(FALSE);
-			i := ORD(decl(Const).expr.value(ExprString).string.block.s[0])
-		END;
+		ASSERT(i >= 0);
 		err := CaseLabelNew(label, IdChar, i)
 	END;
 	IF label = NIL THEN
@@ -3920,9 +3992,26 @@ BEGIN
 END CaseRangeNew;
 
 PROCEDURE IsRangesCross(l1, l2: CaseLabel): BOOLEAN;
-VAR cross: BOOLEAN;
+VAR cross: BOOLEAN; r1, r2: Record;
+	PROCEDURE IsRecordCross(r1, r2: Record): BOOLEAN;
+	VAR ignore: INTEGER;
+	RETURN IsRecordExtension(ignore, r1, r2)
+	    OR IsRecordExtension(ignore, r2, r1)
+	END IsRecordCross;
 BEGIN
-	IF l1.value < l2.value THEN
+	IF (l1.qual # NIL) & (l1.qual.id IN {IdRecord, IdPointer}) THEN
+		cross := l1.qual = l2.qual;
+		IF ~cross THEN
+			IF l1.qual.id = IdRecord THEN
+				r1 := l1.qual(Record);
+				r2 := l2.qual(Record)
+			ELSE
+				r1 := l1.qual.type(Record);
+				r2 := l2.qual.type(Record)
+			END;
+			cross := IsRecordCross(r1, r2)
+		END
+	ELSIF l1.value < l2.value THEN
 		cross := (l1.right # NIL) & (l1.right.value >= l2.value)
 	ELSE
 		cross := (l1.value = l2.value)
@@ -3953,8 +4042,8 @@ BEGIN
 	ASSERT(new.next = NIL);
 	ASSERT(case.else = NIL);
 	IF (case.expr.type.id # new.id)
-	 & ~((case.expr.type.id IN {IdInteger, IdByte})
-	   & (new.id IN {IdInteger, IdByte})
+	 & ~((case.expr.type.id IN Integers)
+	   & (new.id IN Integers)
 	    )
 	THEN
 		err := ErrCaseRangeLabelsTypeMismatch
@@ -3990,7 +4079,7 @@ BEGIN
 	RETURN elem
 END CaseElementNew;
 
-PROCEDURE CaseElementAdd*(case: Case; elem: CaseElement): INTEGER;
+PROCEDURE CaseElementAdd*(VAR c: Context; case: Case; elem: CaseElement): INTEGER;
 VAR err: INTEGER;
 	last: CaseElement;
 BEGIN
@@ -4007,6 +4096,15 @@ BEGIN
 	err := ErrNo
 	RETURN err
 END CaseElementAdd;
+
+PROCEDURE CaseEnd*(VAR c: Context; case: Case);
+BEGIN
+	IF c.case.var # NIL THEN
+		c.case.var.type := c.case.save;
+		c.case.save := NIL;
+		c.case.var := NIL
+	END
+END CaseEnd;
 
 PROCEDURE TypeInclAssigned(t: Type);
 VAR v: Declaration;
