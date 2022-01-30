@@ -45,10 +45,7 @@ TYPE
 	Options* = POINTER TO RECORD(GenOptions.R)
 		std*: INTEGER;
 
-		index: INTEGER;
-
-		(* TODO для более сложных случаев *)
-		expectArray: BOOLEAN
+		index: INTEGER
 	END;
 
 	Generator = RECORD(Text.Out)
@@ -60,7 +57,7 @@ TYPE
 
 		opt: Options;
 
-		forAssign: BOOLEAN
+		forAssign, expectArray: BOOLEAN
 	END;
 
 	Selectors = RECORD
@@ -512,7 +509,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			BEGIN
 				CASE e.type.id OF
 				  Ast.IdChar, Ast.IdArray:
-					g.opt.expectArray := FALSE;
+					g.expectArray := FALSE;
 					Expression(g, e, {});
 					(*
 					ExpressionBraced(g, "o7.cti(", e, ")", {});
@@ -758,13 +755,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				IF fp.type.id # Ast.IdChar THEN
 					t := fp.type
 				END;
-				g.opt.expectArray := fp.type.id = Ast.IdArray;
-				IF ~g.opt.expectArray & (p.expr.id = Ast.IdDesignator) THEN
+				g.expectArray := fp.type.id = Ast.IdArray;
+				IF ~g.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
 				END;
-				g.opt.expectArray := FALSE;
+				g.expectArray := FALSE;
 
 				t := p.expr.type
 			END;
@@ -1051,7 +1048,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
 	BEGIN
 		w := e.string;
-		IF e.asChar & ~g.opt.expectArray THEN
+		IF e.asChar & ~g.expectArray THEN
 			ch := CHR(e.int);
 			Str(g, "0x");
 			Chr(g, Hex.To(e.int DIV 16));
@@ -1373,7 +1370,9 @@ BEGIN
 
 	g.opt := opt;
 
-	g.fixedLen := g.len
+	g.fixedLen := g.len;
+
+	g.expectArray := FALSE
 END GenInit;
 
 PROCEDURE GeneratorNotify(VAR g: Generator);
@@ -1770,8 +1769,8 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 		        & (st.expr.value = NIL);
 		braces := ORD(toByte);
-		g.opt.expectArray := st.designator.type.id = Ast.IdArray;
-		IF g.opt.expectArray THEN
+		g.expectArray := st.designator.type.id = Ast.IdArray;
+		IF g.expectArray THEN
 			INC(braces);
 			IF st.expr.id = Ast.IdString THEN
 				Str(g, "o7.strcpy(")
@@ -1802,7 +1801,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			END
 		END;
 		CheckExpr(g, st.expr, IsForSameType(st.designator.type, st.expr.type));
-		g.opt.expectArray := FALSE;
+		g.expectArray := FALSE;
 		CASE braces OF
 		  0: StrLn(g, ";")
 		| 1: StrLn(g, ");")
@@ -2094,9 +2093,7 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 		GenOptions.Default(o^);
-		o.std     := EcmaScript5;
-
-		o.expectArray := FALSE
+		o.std     := EcmaScript5
 	END
 	RETURN o
 END DefaultOptions;

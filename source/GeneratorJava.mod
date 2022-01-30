@@ -47,10 +47,7 @@ TYPE
 	END;
 
 	Options* = POINTER TO RECORD(GenOptions.R)
-		index: INTEGER;
-
-		(* TODO для более сложных случаев *)
-		expectArray: BOOLEAN
+		index: INTEGER
 	END;
 
 	Generator = RECORD(Text.Out)
@@ -63,7 +60,7 @@ TYPE
 		procTypeNamer: ProviderProcTypeName;
 		opt: Options;
 
-		forAssign, unreached: BOOLEAN;
+		forAssign, unreached, expectArray: BOOLEAN;
 
 		guardDecl: Ast.Declaration
 	END;
@@ -556,7 +553,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			BEGIN
 				CASE e.type.id OF
 				  Ast.IdChar, Ast.IdArray:
-					g.opt.expectArray := FALSE;
+					g.expectArray := FALSE;
 					IF e.id = Ast.IdDesignator THEN
 						ExpressionBraced(g, "O7.toInt(", e, ")", {});
 					ELSE
@@ -796,13 +793,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				IF fp.type.id # Ast.IdChar THEN
 					t := fp.type
 				END;
-				g.opt.expectArray := fp.type.id = Ast.IdArray;
-				IF ~g.opt.expectArray & (p.expr.id = Ast.IdDesignator) THEN
+				g.expectArray := fp.type.id = Ast.IdArray;
+				IF ~g.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
 				END;
-				g.opt.expectArray := FALSE;
+				g.expectArray := FALSE;
 
 				t := p.expr.type
 			END;
@@ -1074,7 +1071,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
 	BEGIN
 		w := e.string;
-		IF e.asChar & ~g.opt.expectArray THEN
+		IF e.asChar & ~g.expectArray THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
 				Str(g, "((byte)'\'')")
@@ -1490,6 +1487,7 @@ BEGIN
 
 	g.fixedLen := g.len;
 	g.unreached := FALSE;
+	g.expectArray := FALSE;
 
 	g.guardDecl := NIL
 END GenInit;
@@ -1536,6 +1534,7 @@ BEGIN
 	Chr(g, " ");
 	IF out # NIL THEN
 		GenInit(ng, out, g.module, NIL, g.opt);
+		ng.expectArray := g.expectArray;
 		ClassForProcType(ng, name, proc);
 		Stream.CloseOut(out)
 	END
@@ -1948,16 +1947,15 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		THEN
 			toByte := (st.designator.type.id = Ast.IdByte)
 			        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-			g.opt.expectArray := st.designator.type.id = Ast.IdArray;
-			IF g.opt.expectArray THEN
+			g.expectArray := st.designator.type.id = Ast.IdArray;
+			IF g.expectArray THEN
 				IF st.expr.id = Ast.IdString THEN
 					Str(g, "O7.strcpy(")
 				ELSE
 					Str(g, "O7.copy(")
 				END;
 				Designator(g, st.designator, {ForSameType});
-				Str(g, ", ");
-				g.opt.expectArray := TRUE
+				Str(g, ", ")
 			ELSIF st.designator.type.id = Ast.IdRecord THEN
 				Designator(g, st.designator, {ForSameType});
 				Str(g, ".assign(")
@@ -1969,7 +1967,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 				Str(g, " = ")
 			END;
 			CheckExpr(g, st.expr, IsForSameType(st.designator.type, st.expr.type));
-			g.opt.expectArray := FALSE;
+			g.expectArray := FALSE;
 			CASE ORD(toByte)
 			   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
 			OF
