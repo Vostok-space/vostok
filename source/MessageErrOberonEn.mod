@@ -129,6 +129,8 @@ BEGIN
 		C("Expression in CASE of record or pointer type is not a local variable")
 	| AST.ErrCasePointerVarParam:
 		C("Expression in CASE should not be a VAR-parameter of pointer")
+	| AST.ErrCaseRecordNotParam:
+		C("Variable of record type in CASE should ber formal parameter")
 	| AST.ErrCaseLabelNotRecExt:
 		C("Type guard shoud be extension of type of expression in CASE")
 	| AST.ErrCaseElemExprTypeMismatch:

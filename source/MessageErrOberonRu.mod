@@ -122,6 +122,8 @@ BEGIN
 		C("Выражение в CASE указательного или записевого типа не является локальной переменной")
 	| AST.ErrCasePointerVarParam:
 		C("Выражение в CASE не должно быть VAR-параметром указательного типа")
+	| AST.ErrCaseRecordNotParam:
+		C("Переменная-запись в CASE должна быть формальным параметром")
 	| AST.ErrCaseLabelNotRecExt:
 		C("Тип метки в CASE должен быть расширением типа выражения в CASE")
 	| AST.ErrCaseElemExprTypeMismatch:

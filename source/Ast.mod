@@ -77,6 +77,7 @@ CONST
 	ErrCaseExprWrongType*           = -45;
 	ErrCaseRecordNotLocalVar*       = -113;(*TODO*)
 	ErrCasePointerVarParam*         = -114;(*TODO*)
+	ErrCaseRecordNotParam*          = -116;(*TODO*)
 	ErrCaseLabelNotRecExt*          = -115;(*TODO*)
 	ErrCaseLabelWrongType*          = -46;
 	ErrCaseElemExprTypeMismatch*    = -47;
@@ -156,6 +157,7 @@ CONST
 	                                (*-113*)
 	                                (*-114*)
 	                                (*-115*)
+	                                (*-116*)
 
 	ErrMin*                         = -200;
 
@@ -3869,6 +3871,8 @@ BEGIN
 			IF (t.id = IdPointer) & (ParamOut IN fp.access) THEN
 				err := ErrCasePointerVarParam
 			END
+		ELSIF t.id = IdRecord THEN
+			err := ErrCaseRecordNotParam
 		END;
 		c.case.save := t
 	ELSIF ~(t.id IN {IdInteger, IdChar}) THEN
