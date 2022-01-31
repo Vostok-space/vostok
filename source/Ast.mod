@@ -77,6 +77,7 @@ CONST
 	ErrCaseExprWrongType*           = -45;
 	ErrCaseRecordNotLocalVar*       = -113;(*TODO*)
 	ErrCasePointerVarParam*         = -114;(*TODO*)
+	ErrCaseLabelNotRecExt*          = -115;(*TODO*)
 	ErrCaseLabelWrongType*          = -46;
 	ErrCaseElemExprTypeMismatch*    = -47;
 	ErrCaseElemDuplicate*           = -48;
@@ -154,6 +155,7 @@ CONST
 	ErrParamOutInFunc*              = -112;
 	                                (*-113*)
 	                                (*-114*)
+	                                (*-115*)
 
 	ErrMin*                         = -200;
 
@@ -4043,16 +4045,21 @@ BEGIN
 END IsElementsCrossRange;
 
 PROCEDURE CaseRangeListAdd*(case: Case; first, new: CaseLabel): INTEGER;
-VAR err: INTEGER;
+VAR err, ignore: INTEGER; ct: Type;
 BEGIN
 	ASSERT(new.next = NIL);
 	ASSERT(case.else = NIL);
-	IF (case.expr.type.id # new.id)
-	 & ~((case.expr.type.id IN Integers)
+	ct := case.expr.type;
+	IF (ct.id # new.id)
+	 & ~((ct.id IN Integers)
 	   & (new.id IN Integers)
 	    )
 	THEN
 		err := ErrCaseRangeLabelsTypeMismatch
+	ELSIF (new.id = IdRecord ) & ~IsRecordExtension(ignore, ct(Record), new.qual(Record))
+	   OR (new.id = IdPointer) & ~IsRecordExtension(ignore, ct.type(Record), new.qual.type(Record))
+	THEN
+		err := ErrCaseLabelNotRecExt
 	ELSE
 		IF IsElementsCrossRange(case.elements, new)
 		THEN err := ErrCaseElemDuplicate
