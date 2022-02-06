@@ -45,7 +45,7 @@ CONST
 	ThroughC*    = {ResultC, ResultBin, ResultRun};
 	ThroughJava* = {ResultJava, ResultClass, ResultJar, ResultRunJava};
 	ThroughJs*   = {ResultJs, ResultRunJs};
-	ThroughMod*  = {ResultMod, ResultUml};
+	ThroughMod*  = {ResultMod .. ResultUml};
 	ForRun*      = {ResultRun, ResultRunJava, ResultRunJs};
 	MainCommands = {ResultC .. ResultUml};
 
