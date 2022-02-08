@@ -39,6 +39,31 @@ static void nothing(void *mem) {
 	(void)mem;
 }
 
+static int calcByteOrder(void) {
+	o7_int_t i, bo;
+	char b[sizeof(i)];
+	b[0] = 1;
+	b[1] = 2;
+	b[2] = 3;
+	b[3] = 4;
+	memcpy(&i, b, sizeof(b));
+	if (i == 0x04030201) {
+		bo = O7_ORDER_LE;
+	} else { assert(i == 0x01020304);
+		bo = O7_ORDER_BE;
+	}
+	return bo;
+}
+
+#if !defined(O7_BYTE_ORDER)
+	o7_int_t O7_BYTE_ORDER;
+	static void setByteOrder(void) {
+		O7_BYTE_ORDER = calcByteOrder();
+	}
+#else
+	static void setByteOrder(void) {}
+#endif
+
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined, nan;
 	float undefinedf, nanf;
@@ -74,6 +99,8 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	if (O7_MEMNG == O7_MEMNG_GC) {
 		o7_gc_init();
 	}
+
+	setByteOrder();
 }
 
 extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *)) {
@@ -219,8 +246,8 @@ extern double o7_raw_unpk(double x, o7_int_t *exp) {
 
 	memcpy(u, &x, sizeof(u));
 
-	e = u[1 - O7_BYTE_ORDER] / DH;
-	m = (u[1 - O7_BYTE_ORDER] % DH * D32 + u[O7_BYTE_ORDER]) / (DH * D32) + 1.0;
+	e = u[2 - O7_BYTE_ORDER] / DH;
+	m = (u[2 - O7_BYTE_ORDER] % DH * D32 + u[O7_BYTE_ORDER - 1]) / (DH * D32) + 1.0;
 	if (e >= 0x800) {
 		e -= 0xBFF;
 		m = -m;

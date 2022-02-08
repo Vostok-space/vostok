@@ -80,17 +80,26 @@
 #	define O7_INT_ENOUGH_FOR_SIZE (((size_t)-1) == O7_UINT_MAX)
 #endif
 
-#define O7_ORDER_LE 0
-#define O7_ORDER_BE 1
+#define O7_ORDER_LE 1
+#define O7_ORDER_BE 2
 
-#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__)
-#	define O7_BYTE_ORDER (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__)
+#if defined(__BYTE_ORDER__)
+#	if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#		define O7_BYTE_ORDER O7_ORDER_LE
+#	elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#		define O7_BYTE_ORDER O7_ORDER_BE
+#	elif __BYTE_ORDER__ == __ORDER_PDP_ENDIAN__
+#		error PDP endianess is not supported
+#	else
+#		error Unknown byte order
+#	endif
 #elif __LITTLE_ENDIAN__
 #	define O7_BYTE_ORDER O7_ORDER_LE
 #elif __BIG_ENDIAN__
 #	define O7_BYTE_ORDER O7_ORDER_BE
 #else
-#	define O7_BYTE_ORDER O7_ORDER_LE
+	/* Вычисляемый в инициализации */
+	extern int O7_BYTE_ORDER;
 #endif
 
 #if (O7_INIT == O7_INIT_UNDEF)
@@ -1520,6 +1529,56 @@ void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
 {
 	o7_assert(src_len <= dest_len);
 	memcpy(dest, src, (size_t)src_len);
+}
+
+#if (__GNUC__ * 100 + __GNUC_MINOR__ >= 480) \
+ && (!defined(O7_USE_GNUC_BUILTIN_BSWAP) || O7_USE_GNUC_BUILTIN_BSWAP)
+
+	enum { O7_USED_GNUC_BUILTIN_BSWAP = 0 < 1 };
+	O7_CONST_INLINE
+	o7_uint_t  o7_gnuc_bswap32(o7_uint_t i ) { return __builtin_bswap32(i); }
+	O7_CONST_INLINE
+	o7_ulong_t o7_gnuc_bswap64(o7_ulong_t i) { return __builtin_bswap64(i); }
+#else
+	enum { O7_USED_GNUC_BUILTIN_BSWAP = 0 > 1 };
+	O7_CONST_INLINE
+	o7_uint_t  o7_gnuc_bswap32(o7_uint_t i ) { abort(); return O7_INT_UNDEF;  }
+	O7_CONST_INLINE
+	o7_ulong_t o7_gnuc_bswap64(o7_ulong_t i) { abort(); return O7_LONG_UNDEF; }
+#endif
+
+O7_CONST_INLINE
+o7_uint_t o7_bswap_uint(o7_uint_t i) {
+	if (O7_USED_GNUC_BUILTIN_BSWAP) {
+		i = o7_gnuc_bswap32(i);
+	} else {
+		i = (i >> 24) | ((i >> 8) & 0xFF00)
+		  | (i << 24) | ((i & 0xFF00) << 8);
+	}
+	return i;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_bswap_int(o7_int_t i) {
+	/* TODO */
+	return (o7_int_t)o7_bswap_uint((o7_uint_t)i);
+}
+
+O7_CONST_INLINE
+o7_ulong_t o7_bswap_ulong(o7_ulong_t i) {
+	if (O7_USED_GNUC_BUILTIN_BSWAP) {
+		i = o7_gnuc_bswap64(i);
+	} else {
+		i = (i >> 56) | ((i >> 40) & 0xFF00) | ((i >> 24) & 0xFF0000) | ((i >> 8) & 0xFF000000)
+		  | (i << 56) | ((i & 0xFF00) << 40) | ((i & 0xFF0000) << 24) | ((i & 0xFF000000) << 8);
+	}
+	return i;
+}
+
+O7_CONST_INLINE
+o7_long_t o7_bswap_long(o7_long_t i) {
+	/* TODO */
+	return (o7_long_t)o7_bswap_ulong((o7_ulong_t)i);
 }
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i);
