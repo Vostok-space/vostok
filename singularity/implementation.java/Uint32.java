@@ -1,4 +1,4 @@
-/* Copyright 2021 ComdivByZero
+/* Copyright 2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,11 @@ public static final byte[]
 	min = new byte[Size],
 	max = new byte[Size];
 
+public static final int
+	LittleEndian = 1,
+	BigEndian    = 2,
+	ByteOrder = LittleEndian;
+
 private static long tolong(byte[] v) {
 	return (v[0] & 0xFF) | ((v[1] & 0xFF) << 8) | ((v[2] & 0xFF) << 16) | ((v[3] & 0xFFL) << 24);
 }
@@ -48,6 +53,12 @@ public static void FromInt(byte[] v, int i) {
 public static int ToInt(byte[] v) {
 	O7.asrt(v[Size - 1] >= 0);
 	return (v[0] & 0xFF) | ((v[1] & 0xFF) << 8) | ((v[2] & 0xFF) << 16) | ((v[3] & 0xFF) << 24);
+}
+
+public static void SwapOrder(byte[] v) {
+	byte b;
+	b = v[0]; v[0] = v[3]; v[3] = b;
+	b = v[1]; v[1] = v[2]; v[2] = b;
 }
 
 public static void Add(byte[] sum, byte[] a1, byte[] a2) {

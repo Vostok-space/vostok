@@ -1,4 +1,4 @@
-/* Copyright 2016, 2018 ComdivByZero
+/* Copyright 2016,2018,2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@
  */
 #if !defined HEADER_GUARD_Uint32
 #    define  HEADER_GUARD_Uint32 1
+
+#define Uint32_LittleEndian_cnst O7_ORDER_LE
+#define Uint32_BigEndian_cnst    O7_ORDER_BE
+
+#define Uint32_ByteOrder O7_BYTE_ORDER
 
 typedef o7_uint_t Uint32_t;
 #define Uint32_Max O7_UINT_MAX
@@ -33,6 +38,10 @@ O7_PURE_INLINE o7_int_t Uint32_ToInt(Uint32_Type v) {
 		assert(*(Uint32_t *)v <= O7_INT_MAX);
 	}
 	return *(Uint32_t *)v;
+}
+
+O7_ALWAYS_INLINE void Uint32_SwapOrder(Uint32_Type v) {
+	*(Uint32_t *)v = o7_bswap_uint(*(Uint32_t *)v);
 }
 
 O7_ALWAYS_INLINE void

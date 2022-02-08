@@ -1,4 +1,4 @@
-(* Copyright 2016, 2018 ComdivByZero
+(* Copyright 2016,2018,2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@ MODULE Uint32;
  CONST
    Size = 4;
 
+   LittleEndian* = 1;
+   BigEndian*    = 2;
+
  TYPE
    Type* = ARRAY Size OF BYTE;
 
  VAR
    min*, max*: Type;
+   ByteOrder*: INTEGER;
 
  PROCEDURE FromInt*(VAR v: Type; i: INTEGER);
  VAR k: INTEGER;
@@ -47,6 +51,16 @@ MODULE Uint32;
  RETURN
    int
  END ToInt;
+
+ PROCEDURE SwapOrder*(VAR v: Type);
+ VAR k: INTEGER; b: BYTE;
+ BEGIN
+   FOR k := 0 TO LEN(v) DIV 2 - 1 DO
+     b             := v[k];
+     v[k]          := v[LEN(v) - k];
+     v[LEN(v) - k] := b
+   END
+ END SwapOrder;
 
  PROCEDURE Add*(VAR sum: Type; a1, a2: Type);
  VAR i, r: INTEGER;
@@ -161,5 +175,7 @@ BEGIN
   max[0] := 0FFH;
   max[1] := 0FFH;
   max[2] := 0FFH;
-  max[3] := 0FFH
+  max[3] := 0FFH;
+
+  ByteOrder := LittleEndian
 END Uint32.
