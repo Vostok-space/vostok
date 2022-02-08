@@ -1,4 +1,4 @@
-/* Copyright 2018-2019,2021 ComdivByZero
+/* Copyright 2018-2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ public static final boolean Posix,
                             Java,
                             JavaScript;
 
+public static final int LittleEndian = 1,
+                        BigEndian    = 2;
+public static final int ByteOrder = LittleEndian;
 
 static {
     java.lang.String OS;

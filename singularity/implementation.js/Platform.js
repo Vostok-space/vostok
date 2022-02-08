@@ -1,4 +1,4 @@
-/* Copyright 2019,2021 ComdivByZero
+/* Copyright 2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,10 @@ module.Posix      = module.Linux || module.Bsd || module.Darwin || platform == '
 module.C          = false;
 module.Java       = false;
 module.JavaScript = true;
+
+module.LittleEndian = 1;
+module.BigEndian    = 2;
+module.ByteOrder    = 1;
 
 return module;
 })();

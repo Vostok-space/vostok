@@ -1,4 +1,4 @@
-/* Copyright 2017-2018,2021 ComdivByZero
+/* Copyright 2017-2018,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
 #if !defined HEADER_GUARD_Platform
 #    define  HEADER_GUARD_Platform 1
 
+#define Platform_LittleEndian_cnst O7_ORDER_LE
+#define Platform_BigEndian_cnst    O7_ORDER_BE
+
 extern o7_cbool const
   Platform_Posix,
   Platform_Linux,
@@ -27,6 +30,8 @@ extern o7_cbool const
   Platform_C,
   Platform_Java,
   Platform_JavaScript;
+
+#define Platform_ByteOrder O7_BYTE_ORDER
 
 O7_ALWAYS_INLINE void Platform_init(void) {}
 O7_ALWAYS_INLINE void Platform_done(void) {}

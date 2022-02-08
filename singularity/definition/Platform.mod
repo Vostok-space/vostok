@@ -1,4 +1,4 @@
-(* Copyright 2017-2019,2021 ComdivByZero
+(* Copyright 2017-2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
  *)
 MODULE Platform;
 
+ CONST
+   LittleEndian* = 1;
+   BigEndian*    = 2;
+
  VAR
    Posix*,
    Linux*,
@@ -27,6 +31,9 @@ MODULE Platform;
    Java*,
    JavaScript*: BOOLEAN;
 
+   (* Main or at least preferable integer endianness *)
+   ByteOrder*: INTEGER;
+
 BEGIN
   Posix      := FALSE;
   Linux      := FALSE;
@@ -38,4 +45,6 @@ BEGIN
   C          := FALSE;
   Java       := FALSE;
   JavaScript := FALSE;
+
+  ByteOrder := LittleEndian
 END Platform.
