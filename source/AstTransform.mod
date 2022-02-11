@@ -300,11 +300,15 @@ MODULE AstTransform;
     ASSERT(outParam IN OutParamSet);
 
     sel  := e.sel;
+    e.type := e.decl.type;
     IF sel # NIL THEN
       prev := NIL;
       WHILE sel.next # NIL DO
         prev := sel;
         sel  := sel.next
+      END;
+      IF prev # NIL THEN
+        e.type := prev.type
       END;
       IF ~(sel IS Ast.SelArray) THEN
         i := Ast.ExprIntegerNew(0)
@@ -341,7 +345,7 @@ MODULE AstTransform;
           prev.type := t
         END;
         AstOk(Ast.SelArrayNew(c, ns, t, NIL, index));
-        (*
+        (* TODO
         ASSERT(d.type = ns.type);
         *)
         ns.next := sel;
