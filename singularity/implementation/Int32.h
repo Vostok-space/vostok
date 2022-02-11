@@ -1,4 +1,4 @@
-/* Copyright 2016, 2018 ComdivByZero
+/* Copyright 2016,2018,2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,16 @@ typedef o7_uint_t Int32_ut;
 #define Int32_Max   O7_INT_MAX
 #define Int32_Min (-O7_INT_MAX + (INT_MIN + INT_MAX))
 
+#define Int32_LittleEndian_cnst O7_ORDER_LE
+#define Int32_BigEndian_cnst    O7_ORDER_BE
+
 #define Int32_Size_cnst ((int)sizeof(Int32_t))
 
 typedef o7_char Int32_Type[Int32_Size_cnst];
 
 static Int32_Type Int32_min, Int32_max;
+
+#define Int32_ByteOrder O7_BYTE_ORDER
 
 O7_ALWAYS_INLINE void Int32_FromInt(Int32_Type v, o7_int_t i) {
 	*(Int32_t *)v = o7_int(i);
@@ -35,6 +40,10 @@ O7_PURE_INLINE o7_int_t Int32_ToInt(Int32_Type v) {
 		assert(-O7_INT_MAX <= *(Int32_t *)v);
 	}
 	return *(Int32_t *)v;
+}
+
+O7_ALWAYS_INLINE void Int32_SwapOrder(Int32_Type v) {
+	*(Int32_t *)v = o7_bswap_int(*(Int32_t *)v);
 }
 
 O7_ALWAYS_INLINE void Int32_Add(Int32_Type sum, Int32_Type a1, Int32_Type a2) {

@@ -1,4 +1,4 @@
-/* Copyright 2021 ComdivByZero
+/* Copyright 2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@ module.min = min;
 max = o7.array(Size);
 module.max = max;
 
+module.LittleEndian = 1;
+module.BigEndian    = 2;
+module.ByteOrder    = 1;
+
 function FromInt(v, i) {
 	v[0] = i & 0xFF;
 	v[1] = (i >> 8) & 0xFF;
@@ -58,6 +62,13 @@ function ToInt(v) {
 	return i;
 }
 module.ToInt = ToInt;
+
+function SwapOrder(v) {
+	var b;
+	b = v[0]; v[0] = v[3]; v[3] = b;
+	b = v[1]; v[1] = v[2]; v[2] = b;
+}
+module.SwapOrder = SwapOrder;
 
 function Add(sum, a1, a2) {
 	fromint(sum, toint(a1) + toint(a2));

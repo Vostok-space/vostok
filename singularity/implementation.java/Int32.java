@@ -1,4 +1,4 @@
-/* Copyright 2021 ComdivByZero
+/* Copyright 2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,14 @@ public final class Int32 {
 
 private static final int Size = 4, Min = (1 << (Size * 8 - 1)), Max = -1 + Min;
 
-public static byte[] min = new byte[Size];
-public static byte[] max = new byte[Size];
+public static final byte[]
+	min = new byte[Size],
+	max = new byte[Size];
+
+public static final int
+	LittleEndian = 1,
+	BigEndian    = 2,
+	ByteOrder = LittleEndian;
 
 public static void FromInt(byte[] v, int i) {
 	v[0] = (byte)i;
@@ -44,6 +50,12 @@ public static int ToInt(byte[] v) {
 	i = toint(v);
 	O7.asrt(i > Min);
 	return i;
+}
+
+public static void SwapOrder(byte[] v) {
+	byte b;
+	b = v[0]; v[0] = v[3]; v[3] = b;
+	b = v[1]; v[1] = v[2]; v[2] = b;
 }
 
 public static void Add(byte[] sum, byte[] a1, byte[] a2) {

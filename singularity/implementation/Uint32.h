@@ -15,19 +15,19 @@
 #if !defined HEADER_GUARD_Uint32
 #    define  HEADER_GUARD_Uint32 1
 
-#define Uint32_LittleEndian_cnst O7_ORDER_LE
-#define Uint32_BigEndian_cnst    O7_ORDER_BE
-
-#define Uint32_ByteOrder O7_BYTE_ORDER
-
 typedef o7_uint_t Uint32_t;
 #define Uint32_Max O7_UINT_MAX
 
 #define Uint32_Size_cnst ((int)sizeof(Uint32_t))
 
+#define Uint32_LittleEndian_cnst O7_ORDER_LE
+#define Uint32_BigEndian_cnst    O7_ORDER_BE
+
 typedef o7_char Uint32_Type[Uint32_Size_cnst];
 
 static Uint32_Type Uint32_min, Uint32_max;
+
+#define Uint32_ByteOrder O7_BYTE_ORDER
 
 O7_ALWAYS_INLINE void Uint32_FromInt(Uint32_Type v, o7_int_t i) {
 	*(Uint32_t *)v = o7_int(i);
