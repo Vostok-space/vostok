@@ -1,6 +1,6 @@
 (* Abstract interfaces for data input and output
  *
- * Copyright (C) 2016-2019 ComdivByZero
+ * Copyright (C) 2016-2019,2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,6 +168,10 @@ BEGIN
 	ASSERT((0 <= w) & (w <= count))
 	RETURN w
 END WriteChars;
+
+PROCEDURE WriteCharsWhole*(VAR out: Out; buf: ARRAY OF CHAR): INTEGER;
+	RETURN WriteChars(out, buf, 0, LEN(buf))
+END WriteCharsWhole;
 
 PROCEDURE InitInOpener*(opener: PInOpener; open: OpenInStream);
 BEGIN
