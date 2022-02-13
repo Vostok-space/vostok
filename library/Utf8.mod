@@ -134,4 +134,45 @@ TYPE
 		ORD(ch) DIV 40H # 2
 	END IsBegin;
 
+	PROCEDURE FromCode*(VAR utf8: ARRAY OF CHAR; VAR ofs: INTEGER; val: INTEGER): BOOLEAN;
+	VAR ok: BOOLEAN; i: INTEGER;
+	BEGIN
+		ASSERT((0 <= val) & (val < 110000H));
+
+		i := ofs;
+		IF val < 80H THEN
+			ok := i < LEN(utf8);
+			IF ok THEN
+				utf8[i] := CHR(val);
+				ofs := i + 1
+			END
+		ELSIF val < 800H THEN
+			ok := i < LEN(utf8) - 1;
+			IF ok THEN
+				utf8[i    ] := CHR(0C0H + val DIV 40H);
+				utf8[i + 1] := CHR( 80H + val MOD 40H);
+				ofs := i + 2
+			END
+		ELSIF val < 10000H THEN
+			ok := i < LEN(utf8) - 2;
+			IF ok THEN
+				utf8[i    ] := CHR(0E0H + val DIV 1000H);
+				utf8[i + 1] := CHR( 80H + val DIV 40H MOD 40H);
+				utf8[i + 2] := CHR( 80H + val MOD 40H);
+				ofs := i + 3
+			END
+		ELSE
+			ok := i < LEN(utf8) - 3;
+			IF ok THEN
+				utf8[i    ] := CHR(0F0H + val DIV 40000H);
+				utf8[i + 1] := CHR( 80H + val DIV 1000H MOD 40H);
+				utf8[i + 2] := CHR( 80H + val DIV 40H MOD 40H);
+				utf8[i + 3] := CHR( 80H + val MOD 40H);
+				ofs := i + 4
+			END
+		END
+	RETURN
+		ok
+	END FromCode;
+
 END Utf8.
