@@ -262,6 +262,15 @@ MODULE Chars0X;
     0 <= j
   END SearchCharLast;
 
+  PROCEDURE Compare*(s1: ARRAY OF CHAR; ofs1: INTEGER; s2: ARRAY OF CHAR; ofs2: INTEGER): INTEGER;
+  BEGIN
+    WHILE (s1[ofs1] = s2[ofs2]) & (s1[ofs1] # Utf8.Null) DO
+      INC(ofs1); INC(ofs2)
+    END
+  RETURN
+    ORD(s1[ofs1]) - ORD(s2[ofs2])
+  END Compare;
+
   PROCEDURE Trim*(VAR str: ARRAY OF CHAR; ofs: INTEGER): INTEGER;
   VAR i, j: INTEGER;
   BEGIN
