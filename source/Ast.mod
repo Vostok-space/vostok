@@ -3875,7 +3875,7 @@ BEGIN
 			err := ErrCaseRecordNotParam
 		END;
 		c.case.save := t
-	ELSIF ~(t.id IN {IdInteger, IdChar}) THEN
+	ELSIF ~(t.id IN (Integers + {IdChar})) THEN
 		err := ErrCaseExprWrongType
 	END
 	RETURN err
