@@ -1,6 +1,6 @@
 (* Implementations of Data Stream interfaces by CFiles
  *
- * Copyright (C) 2016, 2019, 2021 ComdivByZero
+ * Copyright (C) 2016,2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,12 +89,12 @@ BEGIN
 	CFiles.Close(o(ROut).file)
 END CloseROut;
 
-PROCEDURE OpenOut*(name: ARRAY OF CHAR): Out;
+PROCEDURE OpenOutFile(name, attr: ARRAY OF CHAR): Out;
 VAR o: Out; file: CFiles.File;
 BEGIN
 	NEW(o);
 	IF o # NIL THEN
-		file := CFiles.Open(name, 0, "wb");
+		file := CFiles.Open(name, 0, attr);
 		IF file = NIL THEN
 			o := NIL
 		ELSE
@@ -103,7 +103,15 @@ BEGIN
 		END
 	END
 	RETURN o
+END OpenOutFile;
+
+PROCEDURE OpenOut*(name: ARRAY OF CHAR): Out;
+	RETURN OpenOutFile(name, "wb")
 END OpenOut;
+
+PROCEDURE OpenForAppend*(name: ARRAY OF CHAR): Out;
+	RETURN OpenOutFile(name, "ab")
+END OpenForAppend;
 
 PROCEDURE CloseOut*(VAR o: Out);
 BEGIN
