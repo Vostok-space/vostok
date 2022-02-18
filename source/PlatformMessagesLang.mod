@@ -1,6 +1,6 @@
 Platform-specific determination of preferable user interface language
 
-Copyright (C) 2021 ComdivByZero
+Copyright (C) 2021-2022 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE PlatformMessagesLang;
 
-  IMPORT Lang := InterfaceLang, Env := OsEnv, Platform, LocaleParser;
+  IMPORT Lang := InterfaceLang, Env := OsEnv, Platform, LocaleParser, Windows;
 
   PROCEDURE GetEnv(VAR env: ARRAY OF CHAR): BOOLEAN;
   VAR ofs: INTEGER;
@@ -31,21 +31,32 @@ MODULE PlatformMessagesLang;
 
   PROCEDURE Get*(VAR lang: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN; env: ARRAY 16 OF CHAR; lng, state: ARRAY 3 OF CHAR; enc: ARRAY 6 OF CHAR;
+      lcid: INTEGER;
   BEGIN
     ok := Platform.Posix
         & GetEnv(env)
         & LocaleParser.Parse(env, lng, state, enc)
         & ((enc = "UTF-8") OR (enc = "UTF8") OR (enc = "utf8") OR (enc = "utf-8"));
+    lang := Lang.En;
     IF ~ok THEN
       ;
     ELSIF lng = "ru" THEN
       lang := Lang.Ru
     ELSIF lng = "uk" THEN
       lang := Lang.Uk
-    ELSIF lng = "en" THEN
-      lang := Lang.En
     ELSE
-      ok := FALSE
+      ok := lng = "en"
+    END;
+    IF ~ok & Platform.Windows THEN
+      lcid := Windows.GetUserDefaultUILanguage() MOD 100H;
+      ok := TRUE;
+      IF lcid = Windows.Russian THEN
+        lang := Lang.Ru
+      ELSIF lcid = Windows.Ukrainian THEN
+        lang := Lang.Uk
+      ELSIF lcid # Windows.English THEN
+        ok := FALSE
+      END
     END
   RETURN
     ok
