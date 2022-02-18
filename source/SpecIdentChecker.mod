@@ -539,6 +539,7 @@ MODULE SpecIdentChecker;
       OR EqIc(n, "uchar")
       OR EqIc(n, "wchar")
       OR EqIc(n, "wctype")
+      OR EqIc(n, "windows")
       OR EqIc(n, "unistd")
   END IsSpecCHeaderName;
 
