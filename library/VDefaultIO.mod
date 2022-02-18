@@ -1,6 +1,6 @@
 (* Default input and output
  *
- * Copyright (C) 2019,2021 ComdivByZero
+ * Copyright (C) 2019,2021-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
  *)
 MODULE VDefaultIO;
 
-  IMPORT Stream := VDataStream, Files := VFileStream;
+  IMPORT Stream := VDataStream, Files := VFileStream, Platform, Windows;
 
   VAR
     in : Stream.PInOpener;
     out: Stream.POutOpener;
 
   PROCEDURE OpenIn*(): Stream.PIn;
-  VAR s: Stream.PIn;
+  VAR s: Stream.PIn; ignore: BOOLEAN;
   BEGIN
     IF in = NIL THEN
-      s := Files.in
+      s := Files.in;
+      ignore := Platform.Windows & Windows.SetConsoleCP(Windows.Utf8)
     ELSE
       s := Stream.OpenIn(in)
     END
@@ -35,10 +36,11 @@ MODULE VDefaultIO;
   END OpenIn;
 
   PROCEDURE OpenOut*(): Stream.POut;
-  VAR s: Stream.POut;
+  VAR s: Stream.POut; ignore: BOOLEAN;
   BEGIN
     IF out = NIL THEN
-      s := Files.out
+      s := Files.out;
+      ignore := Platform.Windows & Windows.SetConsoleOutputCP(Windows.Utf8)
     ELSE
       s := Stream.OpenOut(out)
     END
