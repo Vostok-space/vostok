@@ -2240,7 +2240,7 @@ BEGIN
 			IF context # (context + {ParamOutReturnable, ParamOfPredefined}) THEN
 				InVarParam(v, d.sel)
 			END;
-			IF ~(ParamOfPredefined IN context) & ~(InitedValue IN v.state.inited) THEN
+			IF ~(ParamOfPredefined IN context) & (InitedNo IN v.state.inited) THEN
 				v.checkInit := TRUE;
 				INCL(v.state.inited, InitedCheck)
 			END;
