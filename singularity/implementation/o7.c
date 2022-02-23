@@ -61,7 +61,7 @@ static int calcByteOrder(void) {
 		O7_BYTE_ORDER = calcByteOrder();
 	}
 #else
-	static void setByteOrder(void) {}
+	static void setByteOrder(void) {(void)calcByteOrder;}
 #endif
 
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
