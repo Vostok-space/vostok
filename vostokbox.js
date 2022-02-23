@@ -72,7 +72,7 @@ var VostokBox;
       errorLog(box, 'connection error');
     };
     if (scr.toUpperCase() == "/TO-SCHEME") {
-      req.timeout = 12000;
+      req.timeout = 30000;
       req.onload = function (e) {
         svgLog(box, 'vostokbox-log-out', req.responseText);
       };
