@@ -1,3 +1,13 @@
+ vostok-bin (0.0.9.dev) unstable; urgency=low
+  * Accounted preferrable UI language in Windows
+  * Supported CASE for pointers and records
+  * Added generator of Plant UML schemes
+  * Fixed determination of variable initialization state with the need of dynamic check
+  * Fixed changing of transformed designators type, that have an influence on correctness
+    of generated Java and JavaScript code
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 23 Feb 2022 00:00:00 +0200
+
  vostok-bin (0.0.8.dev) unstable; urgency=low
   * Supported pseudo module SYSTEM, available by option -allow-system
   * Added generator of module DEFINITION, available by command ost to-modef

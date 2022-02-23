@@ -25,7 +25,7 @@ MODULE make;
    C = 0; Java = 1; Js = 2;
 
    BinVer = TranslatorVersion.Val;
-   LibVer = "0.0.7.dev";
+   LibVer = "0.0.8.dev";
 
  VAR ok*, windows, posix, testStrict, testTogether: BOOLEAN;
      lang: INTEGER;

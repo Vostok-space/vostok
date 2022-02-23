@@ -1,3 +1,15 @@
+ vostok-deflib (0.0.8.dev) unstable; urgency=low
+  * Added wrapper for WinAPI functions GetUserDefaultUILanguage, SetConsoleCP, SetConsoleOutputCP
+    and encoding setup for correct input and output
+  * Added VRead module for reading different kinds of data from VDataStream.In
+  * Added ArrayCmp module for byte and char arrays comparison
+  * Added VDataStream.WriteCharsWhole, Utf8.FromCode, Chars0X.Compare, VFileStream.OpenForAppend
+  * Added byte order subroutines
+  * Fixed compatibility with ECMAScript 5 of CFiles.js
+  * Fixed compilability of ArrayCopy.h for some compilers
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 23 Feb 2022 00:00:00 +0200
+
  vostok-deflib (0.0.7.dev) unstable; urgency=low
   * Added OsRand.Set for reading SET, Chars0X.CopyCharsFromLoop for copy from looped buffers,
     log.c for logging single char
@@ -6,7 +18,7 @@
   * Fixed in Java possibility of a name conflict with the module, named System
   * Implemented ArrayCopy and ArrayFill as efficient C code
   * Optimized in C checking of REAL calculations results
-  * Fixed compilability and warnings when compiled ad C++
+  * Fixed compilability and warnings when compiled as C++
   * Fixed compilability in the reference counting mode
   * Compilability by chibicc
   * Fixed closing of standard data streams

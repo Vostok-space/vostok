@@ -59,6 +59,8 @@ IMPORT
 	TranslatorVersion;
 
 CONST
+	version* = TranslatorVersion.Val;
+
 	ErrNo*             =  0;
 	ErrParse*          = -1;
 	ErrCantGenJsToMem* = -2;
