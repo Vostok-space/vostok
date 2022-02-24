@@ -1,4 +1,12 @@
- vostok-bin (0.0.8.dev) unstable; urgency=low
+ vostok-android (0.0.9.dev) unstable; urgency=low
+  * Supported CASE for pointers and records
+  * Fixed determination of variable initialization state with the need of dynamic check
+  * Fixed changing of transformed designators type, that have an influence on correctness
+    of generated Java code
+
+ -- project Vostok <project-Vostok@yandex.ru> Wed, 23 Feb 2022 00:00:00 +0200
+
+ vostok-android (0.0.8.dev) unstable; urgency=low
   * In generated code by default tabulations replaced by spaces
   * Fixed false diagnostic of hiding in the extended record of not exported item from imported module
   * Fixed generating in the mode without initialization
@@ -11,6 +19,7 @@
   * Fixed crashing of array length checking, set as a complex expression
 
  -- project Vostok <project-Vostok@yandex.ru> Mon, 17 Jan 2022 00:00:00 +0200
+
  vostok-android (0.0.7.dev) unstable; urgency=low
   * Allows to setup android activity name
   * Allows to setup path to android.jar
