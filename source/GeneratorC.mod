@@ -1722,7 +1722,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 	VAR s: ARRAY 6 OF CHAR; ch: CHAR; w: Strings.String;
 	BEGIN
 		w := e.string;
-		IF e.asChar & ~g.opt.expectArray THEN
+		IF e.asChar & ~(g.opt.expectArray OR g.insideSizeOf) THEN
 			ch := CHR(e.int);
 			IF ch = "'" THEN
 				Str(g, "(o7_char)'\''")
@@ -2744,7 +2744,7 @@ PROCEDURE Assign(VAR g: Generator; st: Ast.Assign);
 			ELSIF (st.expr.type(Ast.Array).count # NIL)
 			    & ~Ast.IsFormalParam(st.expr)
 			THEN
-				IF (st.expr.id = Ast.IdString) & st.expr(Ast.ExprString).asChar THEN
+				IF Ast.IsString(st.expr) & st.expr.value(Ast.ExprString).asChar THEN
 					Str(g, ", 2")
 				ELSE
 					Str(g, ", sizeof(");

@@ -1,4 +1,4 @@
-/* Copyright 2018-2021 ComdivByZero
+/* Copyright 2018-2022 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -605,7 +605,8 @@ var o7;
 
   function copy(d, s) {
     var i, len;
-    len = d.length;
+    len = s.length;
+    assert(d.length >= len);
     if ((s[0] instanceof Object) && s[0].length) {
       for (i = 0; i < len; i += 1) {
         copy(d[i], s[i]);

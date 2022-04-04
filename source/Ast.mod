@@ -2055,6 +2055,10 @@ BEGIN
 	END
 END StringUsedWithExpr;
 
+PROCEDURE IsString*(e: Expression): BOOLEAN;
+	RETURN (e.value # NIL) & (e.value.id = IdString)
+END IsString;
+
 PROCEDURE ExprNilGet*(): ExprNil;
 BEGIN
 	IF nil = NIL THEN

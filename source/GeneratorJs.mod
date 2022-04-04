@@ -1772,7 +1772,7 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		g.expectArray := st.designator.type.id = Ast.IdArray;
 		IF g.expectArray THEN
 			INC(braces);
-			IF st.expr.id = Ast.IdString THEN
+			IF Ast.IsString(st.expr) THEN
 				Str(g, "o7.strcpy(")
 			ELSE
 				Str(g, "o7.copy(")

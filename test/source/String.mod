@@ -10,6 +10,8 @@ CONST S  = "0123";
 
       S4 = "русскийAтекстFцифра7";
 
+      S5 = 9X;
+
 PROCEDURE Err*;
 VAR s1, s2: ARRAY 12 OF CHAR;
 	i: INTEGER;
@@ -148,7 +150,15 @@ BEGIN
 	ASSERT("F" = s5[25]);
 	ASSERT("7" = s5[36]);
 	ASSERT("7" <= s5[36]);
-	ASSERT("7" >= s5[36])
+	ASSERT("7" >= s5[36]);
+
+	s0[2] := 94X;
+	s0[3] := 95X;
+	s0 := S5;
+	ASSERT(s0[0] = 9X);
+	ASSERT(s0[1] = 0X);
+	ASSERT(s0[2] = 94X);
+	ASSERT(s0[3] = 95X)
 END Go;
 
 END String.
