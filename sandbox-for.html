@@ -19,9 +19,8 @@
 
 MODULE For;
 
-CONST N = 100;
-
-VAR a: ARRAY N OF REAL;
+CONST N* = 100;
+VAR a*: ARRAY N OF REAL;
 
 PROCEDURE Sum*(): REAL;
 VAR sum: REAL; i: INTEGER;
@@ -67,6 +66,7 @@ END For.</div>
   box = VostokBox.createByDefaultIdentifiers(document, ace);
   VostokBox.addRootRunner(box, 'Out.Real(For.Sum(), 0)');
   VostokBox.addRunner(box, 'Out.Int(For.Max(), 0)');
+  VostokBox.addRunner(box, 'Out.Real(For.a[For.Max()], 0)');
   VostokBox.addRunner(box, '/INFO');
   VostokBox.addRunner(box, '/INFO Out');
   VostokBox.addRunner(box, '/TO-SCHEME');
