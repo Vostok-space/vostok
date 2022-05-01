@@ -6,7 +6,7 @@ CONST
 	A* = 77;
 	B = -A;
 	C = 7H;
-	D* = C;
+	D* = C + A + B;
 	E = 0FFX;
 	F = E;
 	Const = 4 + 5;

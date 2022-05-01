@@ -434,6 +434,8 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 				GlobalName(g, decl);
 				Chr(g, ")")
 			END
+		ELSIF g.interface & (decl.id = Ast.IdConst) & ~decl.mark THEN
+			expression(g, decl(Ast.Const).expr)
 		ELSE
 			GlobalName(g, decl)
 		END
