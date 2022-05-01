@@ -16,6 +16,7 @@ Generates code for:
   * Java 1.7
   * JavaScript compatible with ECMAScript 5
   * Oberon-07, Active Oberon and Component Pascal
+  * Plant UML Activity Diagrams
 
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.
