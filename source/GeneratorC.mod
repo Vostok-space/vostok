@@ -248,7 +248,7 @@ END Name;
 
 PROCEDURE GlobalName(VAR g: Generator; decl: Ast.Declaration);
 BEGIN
-	IF decl.mark OR (decl.module # NIL) & (g.module # decl.module.m) THEN
+	IF decl.mark THEN
 		ASSERT(decl.module # NIL);
 		Ident(g, decl.module.m.name);
 
@@ -257,6 +257,12 @@ BEGIN
 		IF decl.id = Ast.IdConst THEN
 			Str(g, "_cnst")
 		END
+	ELSIF (decl.id = Ast.IdConst)
+	    & ((decl.module # NIL) & (g.module # decl.module.m) OR g.interface)
+	THEN
+		(* Неэкспортированная константа, косвенно используемая во внешнем коде,
+		   например, в длине экспортированной переменной-массиве *)
+		expression(g, decl(Ast.Const).expr)
 	ELSE
 		Name(g, decl)
 	END
@@ -434,8 +440,6 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 				GlobalName(g, decl);
 				Chr(g, ")")
 			END
-		ELSIF g.interface & (decl.id = Ast.IdConst) & ~decl.mark THEN
-			expression(g, decl(Ast.Const).expr)
 		ELSE
 			GlobalName(g, decl)
 		END
