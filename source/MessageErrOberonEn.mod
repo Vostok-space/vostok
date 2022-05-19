@@ -301,7 +301,7 @@ BEGIN
 	| Parser.ErrExpectDot:
 		C("Expected '.'")
 	| Parser.ErrExpectModuleName:
-		C("Expected имя модуля")
+		C("Expected module name")
 	| Parser.ErrExpectEqual:
 		C("Expected '='")
 	| Parser.ErrExpectBrace1Open:
