@@ -1139,11 +1139,11 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		END
 	END ExprLongInt;
 
-	PROCEDURE SetValue(VAR g: Generator; set: Ast.ExprSetValue);
+	PROCEDURE ValueOfSet(VAR g: Generator; set: Ast.ExprSetValue);
 	BEGIN
 		Int(g, ORD(set.set[0]));
 		Chr(g, "u")
-	END SetValue;
+	END ValueOfSet;
 
 	PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
 		PROCEDURE Item(VAR g: Generator; set: Ast.ExprSet);
@@ -1211,7 +1211,7 @@ BEGIN
 		IF expr IS Ast.ExprSet THEN
 			Set(g, expr(Ast.ExprSet))
 		ELSE
-			SetValue(g, expr(Ast.ExprSetValue))
+			ValueOfSet(g, expr(Ast.ExprSetValue))
 		END
 	| Ast.IdCall:
 		Call(g, expr(Ast.ExprCall), {})

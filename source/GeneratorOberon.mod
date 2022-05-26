@@ -637,11 +637,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       ASSERT(FALSE);
     END ExprLongInt;
 
-    PROCEDURE SetValue(VAR g: Generator; set: Ast.ExprSetValue);
+    PROCEDURE ValueOfSet(VAR g: Generator; set: Ast.ExprSetValue);
     BEGIN
       ASSERT(FALSE);
       Int(g, ORD(set.set[0]));
-    END SetValue;
+    END ValueOfSet;
 
     PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
     VAR braces: ARRAY 3 OF CHAR;
@@ -706,7 +706,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     | Ast.IdSet, Ast.IdLongSet:
       IF expr IS Ast.ExprSet
       THEN Set(g, expr(Ast.ExprSet))
-      ELSE SetValue(g, expr(Ast.ExprSetValue))
+      ELSE ValueOfSet(g, expr(Ast.ExprSetValue))
       END
     | Ast.IdCall:
       Call(g, expr(Ast.ExprCall))
