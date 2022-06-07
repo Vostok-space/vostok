@@ -72,7 +72,7 @@ var VostokBox;
       errorLog(box, 'connection error');
     };
     if (scr.toUpperCase() == "/TO-SCHEME") {
-      req.timeout = 30000;
+      req.timeout = 10000;
       req.onload = function (e) {
         svgLog(box, 'vostokbox-log-out', req.responseText);
       };
@@ -82,7 +82,7 @@ var VostokBox;
         normalLog(box, req.responseText);
       };
     }
-    req.open('POST', 'http://176.32.33.19/run');
+    req.open('POST', 'http://178.32.173.236:8080/run');
     data = new FormData();
     data.append('module', box.editorSession.getValue());
     data.append('script', scr);
