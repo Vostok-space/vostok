@@ -13,20 +13,22 @@
 
 <body>
 
+<div id="vostokbox-tabs"></div>
+
 <div style='width:1200px'>
-  <div id='vostokbox-editor'>MODULE Hello;
+  <div class='vostokbox-editor'>MODULE Hello;
 
-  IMPORT Out;
+IMPORT Out;
 
-  PROCEDURE Come*;
-  BEGIN
-    Out.String("Добро пожаловать."); Out.Ln
-  END Come;
+PROCEDURE Come*;
+BEGIN
+  Out.String("Добро пожаловать."); Out.Ln
+END Come;
 
-  PROCEDURE Gone*;
-  BEGIN
-    Out.String("До скорой встречи."); Out.Ln
-  END Gone;
+PROCEDURE Gone*;
+BEGIN
+  Out.String("До скорой встречи."); Out.Ln
+END Gone;
 
 END Hello.
 </div>
@@ -35,22 +37,18 @@ END Hello.
 
 </div>
 
+
 <div id='vostokbox-runners'></div>
 
 <script>
+(function() {
   var box;
 
   box = VostokBox.createByDefaultIdentifiers(document, ace);
   VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
-  VostokBox.addRunner(box, 'Hello.Come');
-  VostokBox.addRunner(box, 'Hello.Gone');
-  VostokBox.addRunner(box, '/INFO');
-  VostokBox.addRunner(box, '/LIST');
-  VostokBox.addRunner(box, '/INFO log');
-  VostokBox.addRunner(box, '/TO-C');
-  VostokBox.addRunner(box, '/TO-JAVA');
-  VostokBox.addRunner(box, '/TO-JS');
-  VostokBox.addRunner(box, '/TO-SCHEME');
+  VostokBox.addRunners(box, ['Hello.Come', 'Hello.Gone', '/INFO', '/LIST', '/INFO log',
+                              '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME']);
+})();
 </script>
 
 </body>

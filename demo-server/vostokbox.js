@@ -2,27 +2,173 @@ var VostokBox;
 (function(vb) {
   'use strict';
 
-  vb.createByDefaultIdentifiers = function(doc, ace) {
-    var box, editor;
-    box = { doc: doc };
-    editor = ace.edit('vostokbox-editor');
-    editor.setDisplayIndentGuides(true);
-    box.editorSession = editor.getSession();
-    box.editorSession.setOptions({
+  function assert(cond) { if (!cond) { throw "incorrectness"; } }
+
+  function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
+    var i;
+    for (i = box.editors.length - 1; i >= 0; i -= 1) {
+      box.editors[i].div.style.display  = "none";
+      box.editors[i].tab.className      = "";
+    }
+    box.selected = ind;
+    box.editors[ind].div.style.display  = "block";
+    box.editors[ind].tab.className      = "active";
+  }
+  vb.selectTab = selectTab;
+
+  function removeTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
+    var ed, text, i, p;
+    ed = box.editors[ind];
+    ed.div.parentNode.removeChild(ed.div);
+    p = ed.tab.parentNode;
+    p.removeChild(ed.tab);
+    i = ind;
+    while (i < box.editors.length - 1) {
+      box.editors[i] = box.editors[i + 1];
+      box.editors[i].index = i;
+      text = box.editors[i].ace.getSession().getValue();
+      box.editors[i].tab.innerText = getTabName(text, i);
+      i += 1;
+    }
+    box.editors.length = i;
+    if (i > 0) {
+      if (ind == i) {
+        ind -= 1;
+      }
+      selectTab(box, ind);
+      if (i == 31) {
+        p.appendChild(box.tabAdder);
+      }
+    }
+  }
+
+  function tabCreate(box, name, ind) {
+    var b, ed;
+    b = box.doc.createElement("button");
+    b.innerText = name;
+    ed = box.editors[ind];
+    b.onclick = function() {
+      if (box.selected != ed.index) {
+        selectTab(box, ed.index);
+      } else if (ed.ace.getSession().getValue() == "") {
+        removeTab(box, ed.index);
+      }
+    };
+    ed.tab = b;
+    return b;
+  }
+
+  function createAceEditor(ace, div, index) {
+    var editor;
+    editor = {
+      div   : div,
+      ace   : ace.edit(div),
+      index : index
+    };
+    editor.ace.setDisplayIndentGuides(true);
+    editor.ace.setTheme('ace/theme/idle_fingers');
+    editor.ace.getSession().setOptions({
       tabSize: 2,
       useSoftTabs: true,
-      navigateWithinSoftTabs: true}
-    );
-    box.script = doc.getElementById('vostokbox-script');
-    box.runners = doc.getElementById('vostokbox-runners');
-    box.log = doc.getElementById('vostokbox-log');
+      navigateWithinSoftTabs: true
+    });
+    return editor;
+  }
+
+  function tabAdder(box) {
+    var b;
+    b = box.doc.createElement("button");
+    b.innerText = "[ + ]";
+    b.onclick = function() {
+      var d, lc, ind, p;
+      p = b.parentNode;
+      lc = p.lastChild;
+      p.removeChild(lc);
+      d = box.doc.createElement("div");
+      d.className = "vostokbox-editor";
+      ind = box.editors.length;
+      box.editors[ind] = createAceEditor(box.ace, d, ind);
+      box.editorsContainer.appendChild(d);
+      p.appendChild(tabCreate(box, getTabName("", ind), ind));
+      if (ind < 31) {
+        p.appendChild(lc);
+      }
+      selectTab(box, ind);
+    };
+    return b;
+  }
+
+  function isForIdent(code) {
+    return (code >= 65 && code < 91)
+        || (code >= 97 && code < 123)
+        || (code >= 48 && code < 58)
+        || (code == 95)
+        || (code >= 0x400 && code < 0x530);
+  }
+
+  function isBlank(ch) {
+    return " \t\r\n".indexOf(ch) >= 0;
+  }
+
+  function getTabName(text, ind) {
+    var n, t, i, l;
+
+    n = null;
+
+    t = text;
+    i = -1;
+    do {
+      i = t.indexOf("MODULE", i + 1);
+    } while (i >= 0 && !((i == 0 || isBlank(t.charAt(i - 1))) && isBlank(t.charAt(i + 6))));
+    if (i >= 0) {
+      i += 7;
+      while (isBlank(t.charAt(i))) { i += 1; }
+      l = i;
+      while ((l - i < 32) && isForIdent(t.charCodeAt(l))) { l += 1; }
+      if (l > i) {
+        n = t.substring(i, l);
+      }
+    }
+    if (n == null) {
+      n = "[  " + ind + "  ]";
+    }
+    return n;
+  }
+
+  vb.createByDefaultIdentifiers = function(doc, ace) {
+    var box, editor, editors, i, tabs, text;
+
+    tabs = doc.getElementById("vostokbox-tabs");
+    box = {
+      ace     : ace,
+      doc     : doc,
+      script  : doc.getElementById('vostokbox-script'),
+      runners : doc.getElementById('vostokbox-runners'),
+      log     : doc.getElementById('vostokbox-log'),
+      editors : [],
+      selected: 0,
+      editorsContainer: null,
+      tabAdder: null
+    };
+    editors = doc.getElementsByClassName("vostokbox-editor");
+    if (editors.length > 0) {
+      for (i = 0; i < editors.length; i += 1) {
+        text = editors[i].innerText;
+        box.editors[i] = createAceEditor(ace, editors[i], i);
+        tabs.appendChild(tabCreate(box, getTabName(text, i), i));
+      }
+      box.editorsContainer = editors[i - 1].parentNode;
+    }
+    box.tabAdder = tabAdder(box);
+    tabs.appendChild(box.tabAdder);
+    selectTab(box, 0);
     return box;
   };
 
-  function logAppendChild(box, item) {
+  function logAppendChild(log, item) {
     var needScroll;
-    needScroll = box.log.scrollHeight - box.log.scrollTop < box.log.clientHeight + 40;
-    box.log.appendChild(item);
+    needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 40;
+    log.appendChild(item);
     if (needScroll) {
       item.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
     }
@@ -35,7 +181,8 @@ var VostokBox;
     pre.className = className;
     table = box.doc.createElement('table');
     table.appendChild(pre);
-    logAppendChild(box, table);
+    logAppendChild(box.log, table);
+    return table;
   }
 
   function svgLog(box, className, text) {
@@ -43,7 +190,7 @@ var VostokBox;
     div = box.doc.createElement('div');
     div.innerHTML = text;
     div.className = className;
-    logAppendChild(box, div);
+    logAppendChild(box.log, div);
   }
 
   function errorLog(box, text) {
@@ -55,35 +202,37 @@ var VostokBox;
   }
 
   function scriptEcho(box, src) {
-    log(box, 'vostokbox-log-script', src);
+    var echo;
+    echo = log(box, 'vostokbox-log-script', src);
+    echo.onclick = function() { requestRun(box, src); };
   }
 
   function requestRun(box, scr) {
-    var req, data;
+    var req, data, i, text;
 
     scriptEcho(box, scr);
 
     req = new XMLHttpRequest();
 
     req.timeout = 6000;
-    req.ontimeout = function (e) {
-      errorLog(box, 'connection timeout');
-    };
-    req.onerror = function (e) {
-      errorLog(box, 'connection error');
-    };
+    req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
+    req.onerror   = function (e) { errorLog(box, 'connection error'); };
     if (scr.toUpperCase() == "/TO-SCHEME") {
-      req.onload = function (e) {
-        svgLog(box, 'vostokbox-log-out', req.responseText);
-      };
+      req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
     } else {
-      req.onload = function (e) {
-        normalLog(box, req.responseText);
-      };
+      req.onload  = function (e) { normalLog(box, req.responseText); };
     }
     req.open('POST', '/run');
     data = new FormData();
-    data.append('module', box.editorSession.getValue());
+    i = box.editors.length;
+    console.log(box.selected, i);
+    data.append("texts-count", [box.selected, ":", i].join(""));
+    while (i > 0) {
+      i -= 1;
+      text = box.editors[i].ace.getSession().getValue();
+      data.append('text-' + i, text);
+      box.editors[i].tab.innerText = getTabName(text, i);
+    }
     data.append('script', scr);
     req.send(data);
   }
@@ -96,30 +245,22 @@ var VostokBox;
     inp.value = command;
     run = box.doc.createElement('button');
     run.innerText = 'Run';
-    run.onclick = function() {
-      requestRun(box, inp.value);
-    };
+    run.onclick = function() { requestRun(box, inp.value); };
     add = box.doc.createElement('button');
     box.script = inp;
     add.innerText = 'Add';
-    add.onclick = function() {
-      addRunner(box, inp.value, false);
-    };
+    add.onclick = function() { addRunner(box, inp.value, false); };
     div.appendChild(inp);
     div.appendChild(run);
     div.appendChild(add);
 
     del = box.doc.createElement('button');
     if (root) {
-      del.innerText = 'Cln';
-      del.onclick = function() {
-        box.log.innerHTML = '';
-      };
+      del.innerText = 'Clr';
+      del.onclick = function() { box.log.innerHTML = ''; };
     } else {
       del.innerText = 'Del';
-      del.onclick = function() {
-        box.runners.removeChild(div);
-      };
+      del.onclick = function() { box.runners.removeChild(div); };
     }
     div.appendChild(del);
 
@@ -132,6 +273,13 @@ var VostokBox;
 
   vb.addRunner = function(box, command) {
     addRunner(box, command, false);
+  };
+
+  vb.addRunners = function(box, commands) {
+    var i;
+    for (i = 0; i < commands.length; i += 1) {
+      addRunner(box, commands[i], false);
+    }
   };
 
 })(VostokBox || (VostokBox = {}));

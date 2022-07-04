@@ -76,7 +76,32 @@ type (
     Chat int    `json:"chat_id"`;
     Txt  string `json:"text"`
   }
+
+  source struct {
+    name,
+    cmd, par,
+    script    string
+
+    texts     []string;
+    selected  int
+  }
 )
+
+func createTmp(name string) (tmp string, err error) {
+  tmp = fmt.Sprintf("%s/ost", os.TempDir());
+  err = os.Mkdir(tmp, 0700);
+  if err != nil {
+    tmp, err = ioutil.TempDir(tmp, name)
+  }
+  return
+}
+
+func saveModule(tmp, name, source string) (err error) {
+  var (filename string)
+  filename = fmt.Sprintf("%v/%v.mod", tmp, name);
+  err = ioutil.WriteFile(filename, []byte(source), 0600);
+  return
+}
 
 func getModuleName(source string) (name string) {
   var (module, semicolon int)
@@ -92,64 +117,35 @@ func getModuleName(source string) (name string) {
   return
 }
 
-func saveModule(name, source string) (tmp string, err error) {
-  var (filename string)
-  if 0 < len(name) {
-    tmp = fmt.Sprintf("%s/ost", os.TempDir());
-    err = os.Mkdir(tmp, 0777);
-    tmp, err = ioutil.TempDir(tmp, name);
-    if err == nil {
-      filename = fmt.Sprintf("%v/%v.mod", tmp, name);
-      err = ioutil.WriteFile(filename, []byte(source), 0666);
-    }
-  } else {
-    tmp = "";
-    err = errors.New("Can not found module name in source")
-  }
-  return
-}
+func saveSource(src source) (tmp string, err error) {
+  tmp, err = createTmp(src.name)
 
-func saveSource(src, scrpt string) (tmp, name, source, script string, err error) {
-  source = src;
-  script = scrpt;
-  tmp = "";
-  name = "";
-  err = nil;
-  if source != "" {
-    name = getModuleName(source);
-    if name == "" && script == "" {
-      script = source;
-      source = "";
-    } else {
-      if script == "" {
-        script = name
-      }
-      tmp, err = saveModule(name, source)
+  for i := 0; i < len(src.texts) && err == nil; i += 1 {
+    var (nm string)
+    nm = getModuleName(src.texts[i]);
+    if nm != "" {
+      err = saveModule(tmp, nm, src.texts[i])
     }
   }
   return
 }
 
-func run(source, script, cc string, timeout int) (output []byte, err error) {
+func run(src source, cc string, timeout int) (output []byte, err error) {
   var (
-    name, tmp, bin, timeOut string;
+    tmp, bin, timeOut string;
     cmd *exec.Cmd
   )
 
-  tmp, name, source, script, err = saveSource(source, script);
-  if source == "" {
-    name = "script-module";
-    tmp, err = ioutil.TempDir(tmp, name)
-  }
+  tmp, err = saveSource(src);
   if err == nil {
+    bin = tmp + "/" + src.name;
     if runtime.GOOS == "windows" {
-      bin = fmt.Sprintf("%v\\%v.exe", tmp, name)
-    } else {
-      bin = fmt.Sprintf("%v/%v", tmp, name)
+      bin += ".exe"
     }
 
-    cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
+    cmd = exec.Command("vostok/result/ost", "to-bin", src.script, bin,
                        "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
+    fmt.Println("(", src.script, ")");
     output, err = cmd.CombinedOutput();
     fmt.Print(string(output));
     if err == nil {
@@ -177,6 +173,7 @@ func run(source, script, cc string, timeout int) (output []byte, err error) {
 func listModules(sep1, sep2 string) (list string) {
   var (
     files []os.FileInfo;
+    f os.FileInfo;
     err error;
     path, add string;
     i int
@@ -186,7 +183,7 @@ func listModules(sep1, sep2 string) (list string) {
     files, err = ioutil.ReadDir(path);
     if err == nil {
       add = "";
-      for _, f := range files {
+      for _, f = range files {
         if strings.HasSuffix(f.Name(), ".mod") {
           list += add + strings.TrimSuffix(f.Name(), ".mod");
           add = sep1
@@ -210,26 +207,63 @@ func infoModule(name string) (info []byte) {
   return
 }
 
-func toLang(source, vcmd string) (translated []byte) {
+func toLang(src source) (translated []byte) {
   var (
-    tmp, name, puml, svg, str string;
+    tmp, puml, svg, str string;
     cmd *exec.Cmd;
   )
-  tmp, name, _, source, _ = saveSource(source, "");
-  if vcmd == "to-scheme" {
+  tmp, _ = saveSource(src);
+  if src.cmd == "to-scheme" {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
-    str = "vostok/result/ost to-puml " + name + " - -m " + tmp + " -infr vostok > " +
+    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp + " -infr vostok > " +
           puml + " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
-    cmd = exec.Command("vostok/result/ost", vcmd, name, "-",
+    cmd = exec.Command("vostok/result/ost", src.cmd, src.name, "-",
                        "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
                        "-init", "noinit", "-no-array-index-check", "-no-nil-check",
-                       "-no-arithmetic-overflow-check");
+                       "-no-arithmetic-overflow-check")
   }
   translated, _ = cmd.CombinedOutput();
   os.RemoveAll(tmp);
+  return
+}
+
+func command(src source, help string, skipUnknownCommand bool) (res []byte, ok bool) {
+  var (cmd, par string)
+
+  ok = true;
+  cmd = src.cmd;
+  par = src.par;
+  if par == "" && (cmd == "info" || cmd == "help") {
+    res = []byte(help)
+  } else if par == "" && cmd == "list" {
+    res = []byte(listModules("\n", "\n\n"))
+  } else if cmd == "info" || cmd == "help" || cmd == "list" {
+    res = infoModule(par)
+  } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
+            cmd == "to-mod" || cmd == "to-modef" ||
+            cmd == "to-puml" || cmd == "to-scheme" {
+    res = toLang(src)
+  } else if skipUnknownCommand {
+    res = []byte{}
+  } else {
+    res = []byte("Wrong command, use /INFO for help");
+    ok = false
+  }
+  return
+}
+
+func handleInput(src source, help, cc string, timeout int, skipUnknownCommand bool) (res []byte, err error) {
+  err = nil;
+  if src.script == "" {
+    res = []byte{}
+  } else if src.cmd == "run" {
+    res, err = run(src, cc, timeout)
+  } else {
+    res, _ = command(src, help, skipUnknownCommand)
+  }
   return
 }
 
@@ -246,48 +280,58 @@ func splitCommand(text string) (cmd, par string) {
   return
 }
 
-func command(text, help, module string) (res []byte, ok bool) {
-  var (cmd, par string)
-
-  cmd, par = splitCommand(text);
-  ok = true;
-  if par == "" && (cmd == "info" || cmd == "help") {
-    res = []byte(help)
-  } else if par == "" && cmd == "list" {
-    res = []byte(listModules("\n", "\n\n"))
-  } else if cmd == "info" || cmd == "help" || cmd == "list" {
-    res = infoModule(par)
-  } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
-            cmd == "to-mod" || cmd == "to-modef" ||
-            cmd == "to-puml" || cmd == "to-scheme" {
-    if module == "" {
-      module = par
-    }
-    res = toLang(module, cmd)
-  } else {
-    res = []byte("Wrong command, use /INFO for help");
-    ok = false
+func normalizeSource(src *source) {
+  src.name = getModuleName(src.texts[0]);
+  if src.script == "" && src.name == "" {
+    src.script = strings.Trim(src.texts[0], " \t\n\r");
+    src.texts[0] = ""
   }
-  return
+  if strings.HasPrefix(src.script, "/") || strings.HasPrefix(src.script, ":") {
+    src.cmd, src.par = splitCommand(src.script[1:])
+  } else {
+    if src.script == "" {
+      src.script = src.name
+    }
+    src.cmd = "run"
+    src.par = ""
+  }
+  if src.name == "" {
+    src.name = "script"
+  }
 }
 
-func handleInput(script, module, help, cc string, timeout int) (res []byte, err error) {
-  script = strings.Trim(script, " \t\n\r");
-  err = nil;
-  if script == "" {
-    res = []byte{}
-  } else if strings.HasPrefix(script, "/") || strings.HasPrefix(script, ":") {
-    res, _ = command(script[1:], help, module)
-  } else {
-    res, err = run(module, script, cc, timeout)
+func getTexts(r *http.Request) (src source, err error) {
+  var (count, selected, scanned int)
+
+  scanned, err = fmt.Sscanf(r.FormValue("texts-count"), "%v:%v", &selected, &count);
+  if err != nil || scanned == 0 {
+    ;
+  } else if count < 0 || count > 32 {
+    err = errors.New("modules count out of range")
+  } else if selected < 0 || selected >= count {
+    err = errors.New("selected module out of range " + fmt.Sprint(selected, count));
+  }
+  if err == nil {
+    src.script = strings.Trim(r.FormValue("script"), " \t\n\r");
+
+    src.texts = make([]string, count);
+    src.texts[0] = r.FormValue(fmt.Sprint("text-", selected));
+    for i := 0; i < selected; i += 1 {
+      src.texts[i + 1] = r.FormValue(fmt.Sprint("text-", i))
+    }
+    for i := selected + 1; i < count; i += 1 {
+      src.texts[i] = r.FormValue(fmt.Sprint("text-", i))
+    }
+    normalizeSource(&src)
   }
   return
 }
 
 func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow string) {
   var (
-    out []byte
-    err error
+    out []byte;
+    err error;
+    src source
   )
   if r.Method != "POST" {
     http.NotFound(w, r)
@@ -295,7 +339,10 @@ func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, all
     if allow != "" {
       w.Header().Set("Access-Control-Allow-Origin", allow)
     }
-    out, err = handleInput(r.FormValue("script"), r.FormValue("module"), webHelp, cc, timeout)
+    src, err = getTexts(r);
+    if err == nil {
+      out, err = handleInput(src, webHelp, cc, timeout, false)
+    }
     if err == nil {
       w.Write(out)
     } else {
@@ -353,40 +400,34 @@ func teleSend(api, text string, chat int) (err error) {
   return
 }
 
-func teleGetSrc(upd teleUpdate) (src string, chat int) {
-  src = upd.Msg.Txt;
-  if src == "" {
-    src  = upd.Edited.Txt;
+func teleGetSrc(upd teleUpdate) (src source, chat int) {
+  var (txt string)
+  txt = upd.Msg.Txt;
+  if txt == "" {
+    txt = upd.Edited.Txt;
     chat = upd.Edited.Chat.Id
   } else {
     chat = upd.Msg.Chat.Id
   }
-  if strings.HasPrefix(src, "/O7:") {
-    src = src[4:]
-  } else if strings.HasPrefix(src, "/MODULE ") {
-    src = src[1:]
-  } else if strings.HasPrefix(src, "/") {
-    src = ""
+  if strings.HasPrefix(txt, "/O7:") {
+    txt = txt[4:]
+  } else if strings.HasPrefix(txt, "/MODULE ") {
+    txt = txt[1:]
+  } else if strings.HasPrefix(txt, "/") {
+    txt = ""
   }
-  return
-}
-
-func handleIfCommand(api, code string, chat int) (err error) {
-  var (res []byte; ok bool)
-  err = nil;
-  if len(code) > 0 && code[0] == '/' {
-    res, ok = command(code[1:], teleHelp, "");
-    if ok {
-      err = teleSend(api, string(res), chat)
-    }
-  }
+  src.script = "";
+  src.texts = []string{txt};
+  normalizeSource(&src)
   return
 }
 
 func teleBot(token, cc string, timeout int) (err error) {
   var (
-    api, src string;
+    api string;
+    src source;
     upds []teleUpdate;
+    upd teleUpdate;
     lastUpdate, chat int;
     output []byte
   )
@@ -396,14 +437,10 @@ func teleBot(token, cc string, timeout int) (err error) {
   for err == nil {
     upds, err = teleGetUpdates(api, lastUpdate + 1);
     if err == nil {
-      for _, upd := range upds {
+      for _, upd = range upds {
         src, chat = teleGetSrc(upd);
-        if src != "" {
-          output, err = run(src, "", cc, timeout);
-          err = teleSend(api, string(output), chat)
-        } else {
-          handleIfCommand(api, strings.Trim(upd.Msg.Txt, " \t\r\n"), chat)
-        }
+        output, err = handleInput(src, teleHelp, cc, timeout, true);
+        err = teleSend(api, string(output), chat);
         lastUpdate = upd.Id
       }
     }
@@ -418,11 +455,11 @@ func main() {
     err error;
     telegram, access *string
   )
-  port     = flag.Int("port", 8080, "tcp/ip");
-  access   = flag.String("access", "", "web server's allowed clients mask");
-  timeout  = flag.Int("timeout", 5, "in seconds");
-  cc       = flag.String("cc", "tcc", "c compiler");
-  telegram = flag.String("telegram", "", "telegram bot's token");
+  port     = flag.Int   ("port"     , 8080  , "tcp/ip");
+  access   = flag.String("access"   , ""    , "web server's allowed clients mask");
+  timeout  = flag.Int   ("timeout"  , 5     , "in seconds");
+  cc       = flag.String("cc"       , "tcc" , "c compiler");
+  telegram = flag.String("telegram" , ""    , "telegram bot's token");
   flag.Parse();
 
   if *telegram != "" {
