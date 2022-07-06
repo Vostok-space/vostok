@@ -80,10 +80,10 @@ type (
   source struct {
     name,
     cmd, par,
-    script    string
+    script,
+    input     string;
 
-    texts     []string;
-    selected  int
+    texts     []string
   }
 )
 
@@ -150,6 +150,7 @@ func run(src source, cc string, timeout int) (output []byte, err error) {
     fmt.Print(string(output));
     if err == nil {
       cmd = exec.Command(bin);
+      cmd.Stdin = strings.NewReader(src.input);
       timeOut = "";
       output = nil;
       go func() {
@@ -281,6 +282,7 @@ func splitCommand(text string) (cmd, par string) {
 }
 
 func normalizeSource(src *source) {
+  src.input = src.texts[0];
   src.name = getModuleName(src.texts[0]);
   if src.script == "" && src.name == "" {
     src.script = strings.Trim(src.texts[0], " \t\n\r");
