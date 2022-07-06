@@ -281,8 +281,14 @@ var VostokBox;
       add.innerHTML = "<div class='no-ctrl'>+</div><div class='ctrl'>-</div>";
     }
     add.onclick = function(pe) {
+      var val;
+      if (pe.ctrlKey) {
+        val = "";
+      } else {
+        val = inp.value;
+      }
       if (root || !pe.ctrlKey) {
-        addRunner(box, inp.value, false);
+        addRunner(box, val, false);
       } else {
         div.remove();
       }
