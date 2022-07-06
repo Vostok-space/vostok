@@ -19,9 +19,9 @@ var VostokBox;
   function removeTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
     var ed, text, i, p;
     ed = box.editors[ind];
-    ed.div.parentNode.removeChild(ed.div);
     p = ed.tab.parentNode;
-    p.removeChild(ed.tab);
+    ed.div.remove();
+    ed.tab.remove();
     i = ind;
     while (i < box.editors.length - 1) {
       box.editors[i] = box.editors[i + 1];
@@ -83,7 +83,7 @@ var VostokBox;
       var d, lc, ind, p;
       p = b.parentNode;
       lc = p.lastChild;
-      p.removeChild(lc);
+      lc.remove();
       d = box.doc.createElement("div");
       d.className = "vostokbox-editor";
       ind = box.editors.length;
@@ -135,6 +135,17 @@ var VostokBox;
     return n;
   }
 
+  function switchCtrl(box, ke, from, to) {
+    var el, i;
+    if (ke.keyCode == 17) {
+      el = box.doc.getElementsByClassName(from);
+      box.ctrl = ke.ctrlKey;
+      for (i = el.length - 1; i >= 0; i -= 1) {
+        el[i].className = to;
+      }
+    }
+  }
+
   vb.createByDefaultIdentifiers = function(doc, ace) {
     var box, editor, editors, i, tabs, text;
 
@@ -142,14 +153,15 @@ var VostokBox;
     box = {
       ace     : ace,
       doc     : doc,
-      script  : doc.getElementById('vostokbox-script'),
       runners : doc.getElementById('vostokbox-runners'),
       log     : doc.getElementById('vostokbox-log'),
       editors : [],
       selected: 0,
       editorsContainer: null,
-      tabAdder: null
+      tabAdder: null,
+      ctrl    : false
     };
+
     editors = doc.getElementsByClassName("vostokbox-editor");
     if (editors.length > 0) {
       for (i = 0; i < editors.length; i += 1) {
@@ -162,6 +174,10 @@ var VostokBox;
     box.tabAdder = tabAdder(box);
     tabs.appendChild(box.tabAdder);
     selectTab(box, 0);
+
+    doc.onkeydown = function(ke) { switchCtrl(box, ke, "ctrl-up", "ctrl-down"); };
+    doc.onkeyup   = function(ke) { switchCtrl(box, ke, "ctrl-down", "ctrl-up"); };
+
     return box;
   };
 
@@ -208,33 +224,43 @@ var VostokBox;
   }
 
   function requestRun(box, scr) {
-    var req, data, i, text;
+    var req, data, i, text, uscr, add;
 
     scriptEcho(box, scr);
 
-    req = new XMLHttpRequest();
-
-    req.timeout = 6000;
-    req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
-    req.onerror   = function (e) { errorLog(box, 'connection error'); };
-    if (scr.toUpperCase() == "/TO-SCHEME") {
-      req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
+    uscr = scr.toUpperCase();
+    if (uscr == "/CLEAR" || uscr == "/CLS") {
+      box.log.innerHTML = "";
     } else {
-      req.onload  = function (e) { normalLog(box, req.responseText); };
+      req = new XMLHttpRequest();
+
+      req.timeout = 6000;
+      req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
+      req.onerror   = function (e) { errorLog(box, 'connection error'); };
+      if (uscr == "/TO-SCHEME") {
+        req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
+      } else {
+        if (uscr == "/INFO") {
+          add = "/CLEAR - clear the log";
+        } else {
+          add = "";
+        }
+        req.onload  = function (e) { normalLog(box, req.responseText + add); };
+      }
+      req.open('POST', '/run');
+      data = new FormData();
+      i = box.editors.length;
+      console.log(box.selected, i);
+      data.append("texts-count", [box.selected, ":", i].join(""));
+      while (i > 0) {
+        i -= 1;
+        text = box.editors[i].ace.getSession().getValue();
+        data.append('text-' + i, text);
+        box.editors[i].tab.innerText = getTabName(text, i);
+      }
+      data.append('script', scr);
+      req.send(data);
     }
-    req.open('POST', '/run');
-    data = new FormData();
-    i = box.editors.length;
-    console.log(box.selected, i);
-    data.append("texts-count", [box.selected, ":", i].join(""));
-    while (i > 0) {
-      i -= 1;
-      text = box.editors[i].ace.getSession().getValue();
-      data.append('text-' + i, text);
-      box.editors[i].tab.innerText = getTabName(text, i);
-    }
-    data.append('script', scr);
-    req.send(data);
   }
 
   function addRunner(box, command, root) {
@@ -245,24 +271,25 @@ var VostokBox;
     inp.value = command;
     run = box.doc.createElement('button');
     run.innerText = 'Run';
-    run.onclick = function() { requestRun(box, inp.value); };
+    run.onclick = function(pe) { requestRun(box, inp.value); };
+
     add = box.doc.createElement('button');
-    box.script = inp;
-    add.innerText = 'Add';
-    add.onclick = function() { addRunner(box, inp.value, false); };
+    if (root) {
+      add.innerHTML = "+";
+    } else {
+      add.className = "ctrl-up";
+      add.innerHTML = "<div class='no-ctrl'>+</div><div class='ctrl'>-</div>";
+    }
+    add.onclick = function(pe) {
+      if (root || !pe.ctrlKey) {
+        addRunner(box, inp.value, false);
+      } else {
+        div.remove();
+      }
+    };
     div.appendChild(inp);
     div.appendChild(run);
     div.appendChild(add);
-
-    del = box.doc.createElement('button');
-    if (root) {
-      del.innerText = 'Clr';
-      del.onclick = function() { box.log.innerHTML = ''; };
-    } else {
-      del.innerText = 'Del';
-      del.onclick = function() { box.runners.removeChild(div); };
-    }
-    div.appendChild(del);
 
     box.runners.appendChild(div);
   }

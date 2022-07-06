@@ -74,3 +74,8 @@ button {
 
   width: 400px;
 }
+
+.ctrl-up   .ctrl     { display: none; }
+.ctrl-up   .no-ctrl  { display: block;}
+.ctrl-down .ctrl     { display: block;}
+.ctrl-down .no-ctrl  { display: none; }
