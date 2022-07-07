@@ -292,6 +292,12 @@ var VostokBox;
     inp = box.doc.createElement('input', 'type="text"');
     inp.className = 'vostokbox-command-line';
     inp.value = command;
+    inp.onkeyup = function(ke) {
+      if (ke.keyCode == 13) {
+        requestRun(box, inp.value);
+        inp.select();
+      }
+    };
 
     run = box.doc.createElement('button');
     run.innerHTML = "<div class='ctrl-up'><div class='no-ctrl'>Run</div><div class='ctrl'>Fix</div></div>";
