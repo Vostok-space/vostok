@@ -217,7 +217,7 @@ func toLang(src source) (translated []byte) {
   if src.cmd == "to-scheme" {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
-    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp + " -infr vostok > " +
+    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp + " -infr vostok -cyrillic > " +
           puml + " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
