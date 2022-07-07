@@ -37,6 +37,7 @@ END Hello.
 
 </div>
 
+<div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
@@ -45,8 +46,9 @@ END Hello.
 
   box = VostokBox.createByDefaultIdentifiers(document, ace);
   VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
-  VostokBox.addRunners(box, ['Hello.Come', 'Hello.Gone', '/INFO', '/LIST', '/INFO log',
-                              '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR']);
+  VostokBox.addButtonRunners(box, ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME',
+                                   '/CLEAR']);
+  VostokBox.addRunners(box, ['Hello.Come', 'Hello.Gone', '/INFO Out']);
 })();
 </script>
 

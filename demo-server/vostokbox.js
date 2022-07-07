@@ -154,6 +154,7 @@ var VostokBox;
       ace     : ace,
       doc     : doc,
       runners : doc.getElementById('vostokbox-runners'),
+      buttons : doc.getElementById('vostokbox-button-runners'),
       log     : doc.getElementById('vostokbox-log'),
       editors : [],
       selected: 0,
@@ -186,6 +187,7 @@ var VostokBox;
     log = box.log;
     needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
+
     if (needScroll) {
       end = box.doc.createElement('div');
       log.appendChild(end);
@@ -266,15 +268,40 @@ var VostokBox;
     }
   }
 
-  function addRunner(box, command, root) {
+  function addButtonRunner(box, command) {
+    var b;
+    if (command != "") {
+      b = box.doc.createElement("button");
+      b.className = "vostokbox-button-runner";
+      b.innerHTML = "<div class='ctrl-up'><div class='ctrl'>-</div></div>";
+      b.append(command);
+      b.onclick = function(pe) {
+        if (pe.ctrlKey) {
+          b.remove();
+        } else {
+          requestRun(box, command);
+        }
+      }
+      box.buttons.appendChild(b);
+    }
+  }
+
+  function addRunner(box, command, root) { assert(command != null);
     var div, inp, run, add, del;
     div = box.doc.createElement('div');
     inp = box.doc.createElement('input', 'type="text"');
     inp.className = 'vostokbox-command-line';
     inp.value = command;
+
     run = box.doc.createElement('button');
-    run.innerText = 'Run';
-    run.onclick = function(pe) { requestRun(box, inp.value); };
+    run.innerHTML = "<div class='ctrl-up'><div class='no-ctrl'>Run</div><div class='ctrl'>Fix</div></div>";
+    run.onclick = function(pe) {
+      if (pe.ctrlKey) {
+        addButtonRunner(box, inp.value);
+      } else {
+        requestRun(box, inp.value);
+      }
+    };
 
     add = box.doc.createElement('button');
     if (root) {
@@ -317,5 +344,14 @@ var VostokBox;
       addRunner(box, commands[i], false);
     }
   };
+
+  vb.addButtonRunner = addButtonRunner;
+
+  vb.addButtonRunners = function(box, commands) {
+    var i;
+    for (i = 0; i < commands.length; i += 1) {
+      addButtonRunner(box, commands[i]);
+    }
+  }
 
 })(VostokBox || (VostokBox = {}));
