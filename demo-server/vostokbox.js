@@ -181,12 +181,15 @@ var VostokBox;
     return box;
   };
 
-  function logAppendChild(log, item) {
-    var needScroll;
-    needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 40;
+  function logAppendChild(box, item) {
+    var log, needScroll, end;
+    log = box.log;
+    needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
     if (needScroll) {
-      item.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      end = box.doc.createElement('div');
+      log.appendChild(end);
+      end.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
     }
   }
 
@@ -197,7 +200,7 @@ var VostokBox;
     pre.className = className;
     table = box.doc.createElement('table');
     table.appendChild(pre);
-    logAppendChild(box.log, table);
+    logAppendChild(box, table);
     return table;
   }
 
@@ -206,7 +209,7 @@ var VostokBox;
     div = box.doc.createElement('div');
     div.innerHTML = text;
     div.className = className;
-    logAppendChild(box.log, div);
+    logAppendChild(box, div);
   }
 
   function errorLog(box, text) {
@@ -237,10 +240,10 @@ var VostokBox;
       req.timeout = 6000;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
-      if (uscr == "/TO-SCHEME") {
+      if (uscr == "/TO-SCHEME" || uscr == ":TO-SCHEME") {
         req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
       } else {
-        if (uscr == "/INFO") {
+        if (uscr == "/INFO" || uscr == ":INFO") {
           add = "/CLEAR - clear the log";
         } else {
           add = "";
