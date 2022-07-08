@@ -129,6 +129,10 @@ BEGIN
 
 	IF (p.errorsCount = 0) OR p.opt.multiErrors THEN
 		INC(p.errorsCount);
+		IF p.module = NIL THEN
+			ASSERT(p.errorsCount = 1);
+			p.module := Ast.ModuleNew(p.c, "#ERR");
+		END;
 		Ast.AddError(p.c, err, p.s.line, p.s.column)
 	END;
 	IF p.opt.multiErrors & Log.state THEN
@@ -1479,13 +1483,10 @@ VAR expectedName: BOOLEAN; moduleName: ARRAY TranLim.LenName + 1 OF CHAR;
 	END SearchModule;
 BEGIN
 	IF ~SearchModule(p.s) THEN
-		p.module := Ast.ModuleNew(p.c, "#ERR");
-		AddError(p, ErrExpectModule);
-		ASSERT((p.module = NIL) OR (p.module.errors # NIL))
+		AddError(p, ErrExpectModule)
 	ELSE
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
-			p.module := Ast.ModuleNew(p.c, "#ERR");
 			AddError(p, ErrExpectIdent);
 			expectedName := TRUE
 		ELSE
