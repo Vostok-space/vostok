@@ -25,7 +25,14 @@ BEGIN
 	c := 7FX;
 	CASE c OF
 	7FX: ;
-	END
+	END;
+
+	c := 8FX;
+	CASE c OF
+	8FX: ;
+	END;
+
+	ASSERT(c = 8FX)
 END Go;
 
 END Char.

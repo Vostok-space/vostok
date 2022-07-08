@@ -2051,17 +2051,21 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 		WHILE (elemWithRange # NIL) & ~IsCaseElementWithRange(elemWithRange) DO
 			elemWithRange := elemWithRange.next
 		END;
+		caseExpr := st.expr;
 		IF (elemWithRange # NIL)
-		 & (st.expr.value = NIL)
-		 & ((st.expr.id # Ast.IdDesignator) OR (st.expr(Ast.Designator).sel # NIL))
+		 & (caseExpr.value = NIL)
+		 & ((caseExpr.id # Ast.IdDesignator) OR (caseExpr(Ast.Designator).sel # NIL))
+		OR (caseExpr.type.id = Ast.IdChar)
 		THEN
+			IF caseExpr.type.id = Ast.IdChar THEN
+				ExpressionBraced(g, "{ int o7_case_expr = O7.toInt(", caseExpr, ");", {})
+			ELSE
+				ExpressionBraced(g, "{ int o7_case_expr = ", caseExpr, ";", {})
+			END;
 			caseExpr := NIL;
-			Str(g, "{ int o7_case_expr = ");
-			Expression(g, st.expr, {});
-			StrOpen(g, ";");
+			Text.StrOpen(g, "");
 			StrLn(g, "switch (o7_case_expr) {")
 		ELSE
-			caseExpr := st.expr;
 			Str(g, "switch (");
 			Expression(g, caseExpr, {});
 			StrLn(g, ") {")
