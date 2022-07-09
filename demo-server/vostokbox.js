@@ -75,26 +75,29 @@ var VostokBox;
     return editor;
   }
 
+  function addEditor(box, text) {
+    var d, lc, ind;
+    if (box.tabAdder != null) {
+      box.tabAdder.remove();
+    }
+    d = box.doc.createElement("div");
+    d.className = "vostokbox-editor";
+    d.append(text);
+    ind = box.editors.length;
+    box.editors[ind] = createAceEditor(box.ace, d, ind);
+    box.editorsContainer.appendChild(d);
+    box.tabs.appendChild(tabCreate(box, getTabName(text, ind), ind));
+    if (box.tabAdder != null && ind < 31) {
+      box.tabs.appendChild(box.tabAdder);
+    }
+    selectTab(box, ind);
+  }
+
   function tabAdder(box) {
     var b;
     b = box.doc.createElement("button");
     b.innerText = "[ + ]";
-    b.onclick = function() {
-      var d, lc, ind, p;
-      p = b.parentNode;
-      lc = p.lastChild;
-      lc.remove();
-      d = box.doc.createElement("div");
-      d.className = "vostokbox-editor";
-      ind = box.editors.length;
-      box.editors[ind] = createAceEditor(box.ace, d, ind);
-      box.editorsContainer.appendChild(d);
-      p.appendChild(tabCreate(box, getTabName("", ind), ind));
-      if (ind < 31) {
-        p.appendChild(lc);
-      }
-      selectTab(box, ind);
-    };
+    b.onclick = function() { addEditor(box, ""); };
     return b;
   }
 
@@ -146,17 +149,63 @@ var VostokBox;
     }
   }
 
-  vb.createByDefaultIdentifiers = function(doc, ace) {
-    var box, editor, editors, i, tabs, text;
+  function storeRunners(box) {
+    var i;
+    i = 0;
+    box.runners.forEach(function(inp) {
+      localStorage["vostokbox-runner-" + i] = inp.value;
+      i += 1;
+    });
+    localStorage["vostokbox-runners-len"] = i;
 
-    tabs = doc.getElementById("vostokbox-tabs");
+    i = 0;
+    box.buttons.forEach(function(cmd) {
+      localStorage["vostokbox-button-runner-" + i] = cmd;
+      i += 1;
+    });
+    localStorage["vostokbox-button-runners-len"] = i;
+  }
+
+  function loadRunners(box) {
+    var i, k, load, len;
+    i = localStorage["vostokbox-runners-len"];
+    k = localStorage["vostokbox-button-runners-len"];
+    load = i != null || k != null;
+    if (i != null) {
+      len = parseInt(i);
+      for (i = 0; i < len; i += 1) {
+        addRunner(box, localStorage["vostokbox-runner-" + i], i == 0);
+      }
+    }
+    if (k != null) {
+      len = parseInt(k);
+      for (i = 0; i < len; i += 1) {
+        addButtonRunner(box, localStorage["vostokbox-button-runner-" + i]);
+      }
+    }
+    return load;
+  }
+
+  function addAllRunners(box, runners) {
+    vb.addRootRunner(box, runners.rootRunner || "");
+    vb.addRunners(box, runners.runners || []);
+    vb.addButtonRunners(box, runners.buttonRunners || []);
+  }
+
+  vb.createByDefaultIdentifiers = function(doc, ace, runners) {
+    var box, editor, editors, i, text, texts, log, len;
+
     box = {
       ace     : ace,
       doc     : doc,
-      runners : doc.getElementById('vostokbox-runners'),
-      buttons : doc.getElementById('vostokbox-button-runners'),
+      runnersContainer : doc.getElementById('vostokbox-runners'),
+      buttonsContainer : doc.getElementById('vostokbox-button-runners'),
       log     : doc.getElementById('vostokbox-log'),
+      tabs    : doc.getElementById("vostokbox-tabs"),
       editors : [],
+      runners : new Set(),
+      buttons : new Set(),
+
       selected: 0,
       editorsContainer: null,
       tabAdder: null,
@@ -165,19 +214,39 @@ var VostokBox;
 
     editors = doc.getElementsByClassName("vostokbox-editor");
     if (editors.length > 0) {
-      for (i = 0; i < editors.length; i += 1) {
-        text = editors[i].innerText;
-        box.editors[i] = createAceEditor(ace, editors[i], i);
-        tabs.appendChild(tabCreate(box, getTabName(text, i), i));
+      box.editorsContainer = editors[editors.length - 1].parentNode;
+      len = parseInt(localStorage["vostokbox-texts-len"]);
+      if (len > 0) {
+        for (i = 0; i < editors.length; i += 1) {
+          editors[i].remove();
+        }
+        for (i = 0; i < len; i += 1) {
+          addEditor(box, localStorage["vostokbox-texts-" + i]);
+        }
+      } else {
+        for (i = 0; i < editors.length; i += 1) {
+          text = editors[i].innerText;
+          box.editors[i] = createAceEditor(ace, editors[i], i);
+          box.tabs.appendChild(tabCreate(box, getTabName(text, i), i));
+        }
       }
-      box.editorsContainer = editors[i - 1].parentNode;
     }
     box.tabAdder = tabAdder(box);
-    tabs.appendChild(box.tabAdder);
+    box.tabs.appendChild(box.tabAdder);
     selectTab(box, 0);
 
     doc.onkeydown = function(ke) { switchCtrl(box, ke, "ctrl-up", "ctrl-down"); };
     doc.onkeyup   = function(ke) { switchCtrl(box, ke, "ctrl-down", "ctrl-up"); };
+
+    log = localStorage["vostokbox-log"];
+    if (log != null) {
+      box.log.innerHTML = log;
+    } else {
+      box.log.innerText = "This site uses web-storage to store input";
+    }
+    if (!loadRunners(box)) {
+      addAllRunners(box, runners);
+    }
 
     return box;
   };
@@ -187,6 +256,8 @@ var VostokBox;
     log = box.log;
     needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
+
+    localStorage["vostokbox-log"] = log.innerHTML;
 
     if (needScroll) {
       end = box.doc.createElement('div');
@@ -229,23 +300,27 @@ var VostokBox;
   }
 
   function requestRun(box, scr) {
-    var req, data, i, text, uscr, add;
+    var req, data, i, text, texts, uscr, add;
 
     scriptEcho(box, scr);
 
-    uscr = scr.toUpperCase();
+    uscr = scr.trim().toUpperCase();
+    if (uscr.charAt(0) == ":") {
+      uscr = "/" + uscr.substring(1);
+    }
     if (uscr == "/CLEAR" || uscr == "/CLS") {
       box.log.innerHTML = "";
+      localStorage.removeItem("vostokbox-log");
     } else {
       req = new XMLHttpRequest();
 
       req.timeout = 6000;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
-      if (uscr == "/TO-SCHEME" || uscr == ":TO-SCHEME") {
+      if (uscr == "/TO-SCHEME") {
         req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
       } else {
-        if (uscr == "/INFO" || uscr == ":INFO") {
+        if (uscr == "/INFO") {
           add = "/CLEAR - clear the log";
         } else {
           add = "";
@@ -255,14 +330,20 @@ var VostokBox;
       req.open('POST', '/run');
       data = new FormData();
       i = box.editors.length;
-      console.log(box.selected, i);
       data.append("texts-count", [box.selected, ":", i].join(""));
+
+      localStorage.clear();
+      localStorage["vostokbox-texts-len"] = i;
       while (i > 0) {
         i -= 1;
         text = box.editors[i].ace.getSession().getValue();
         data.append('text-' + i, text);
         box.editors[i].tab.innerText = getTabName(text, i);
+        localStorage["vostokbox-texts-" + i] = text;
       }
+      localStorage["vostokbox-log"] = box.log.innerHTML;
+      storeRunners(box);
+
       data.append('script', scr);
       req.send(data);
     }
@@ -278,11 +359,13 @@ var VostokBox;
       b.onclick = function(pe) {
         if (pe.ctrlKey) {
           b.remove();
+          box.buttons.delete(command);
         } else {
           requestRun(box, command);
         }
       }
-      box.buttons.appendChild(b);
+      box.buttons.add(command);
+      box.buttonsContainer.appendChild(b);
     }
   }
 
@@ -327,13 +410,15 @@ var VostokBox;
         addRunner(box, val, false);
       } else {
         div.remove();
+        box.runners.delete(inp);
       }
     };
     div.appendChild(inp);
     div.appendChild(run);
     div.appendChild(add);
 
-    box.runners.appendChild(div);
+    box.runners.add(inp);
+    box.runnersContainer.appendChild(div);
   }
 
   vb.addRootRunner = function(box, command) {

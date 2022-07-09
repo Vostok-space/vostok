@@ -44,11 +44,11 @@ END Hello.
 (function() {
   var box;
 
-  box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
-  VostokBox.addButtonRunners(box, ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME',
-                                   '/CLEAR']);
-  VostokBox.addRunners(box, ['Hello.Come', 'Hello.Gone', '/INFO Out']);
+  box = VostokBox.createByDefaultIdentifiers(document, ace, {
+    rootRunner    : 'Hello.Come; Hello.Gone',
+    runners       : ['Hello.Come', 'Hello.Gone', '/INFO Out'],
+    buttonRunners : ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR']
+  });
 })();
 </script>
 
