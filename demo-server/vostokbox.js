@@ -272,6 +272,9 @@ var VostokBox;
     log = localStorage["vostokbox-log"];
     if (log != null) {
       box.log.innerHTML = log;
+      if (box.log.lastChild != null) {
+        box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      }
     } else {
       box.log.innerText = "This site uses web-storage to store input";
     }
