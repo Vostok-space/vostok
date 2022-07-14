@@ -30,6 +30,7 @@ import (
   "encoding/json"
   "bytes"
   "strconv"
+  "crypto/rand"
 )
 
 const (
@@ -41,7 +42,10 @@ const (
     "/LIST - list available modules\n" +
     "/INFO ModuleName - show info about module\n" +
     "/TO-(C|JS|JAVA|PUML|SCHEME)\n" +
-    "    - convert code to appropriate language\n"
+    "    - convert code to appropriate language\n" +
+    "/SAVE [id|name] - save project to server\n" +
+    "      optional name for new save, id for existing\n" +
+    "/LOAD id - load project from server\n"
 
   teleHelp = webHelp +
     `/O7: log.s("Script mode")` +
@@ -83,7 +87,20 @@ type (
     script,
     input     string;
 
-    texts     []string
+    texts,
+    runners,
+    buttons   []string
+  }
+
+  saveInfo struct {
+    ViewId  string    `json:"viewId"`;
+    Runners []string  `json:"runners"`;
+    Buttons []string  `json:"buttons"`
+  }
+
+  project struct {
+    Info  saveInfo    `json:"info"`;
+    Texts []string    `json:"texts"`
   }
 )
 
@@ -231,22 +248,314 @@ func toLang(src source) (translated []byte) {
   return
 }
 
-func command(src source, help string, skipUnknownCommand bool) (res []byte, ok bool) {
-  var (cmd, par string)
+func randInt() (r int) {
+  var (
+    b [4]byte;
+    err error
+  )
+  _, err = rand.Read(b[:]);
+  if err == nil {
+    r = int(b[0]) + int(b[1]) * 0x100 + int(b[2]) * 0x10000 + int(b[3]) % 0x80 * 0x1000000
+  } else {
+    // TODO
+    r = 0
+  }
+  return
+}
+
+func checkName(s string) (err error) {
+  err = nil;
+  return
+}
+
+func checkId(s string) (err error) {
+  err = nil;
+  return
+}
+
+func parseIdAndName(str string) (id, name string, err error) {
+  var (all []string)
+
+  all = strings.SplitN(strings.Trim(str, " \t\n\r"), "-", 2);
+  if len(all) > 1 {
+    id = all[0];
+    name = all[1]
+  } else {
+    id = "";
+    name = all[0]
+  }
+  err = checkName(name);
+  if err == nil {
+    err = checkId(id)
+  }
+  return
+}
+
+func newId(forEdit bool) (id string, err error) {
+  var (s [12]byte; i, lim int)
+
+  _, err = rand.Read(s[:]);
+  if err == nil {
+    if forEdit {
+      s[0] = 'a' + s[0] % 26
+    } else {
+      s[0] = '0' + s[0] % 10
+    }
+    lim = 1024;
+    for i = 1; err == nil && i < len(s) && lim > 0; lim -= 1 {
+      /* 0x40 вместо 36 для равномерности */
+      s[i] %= 0x40;
+      if s[i] < 36 {
+        if s[i] < 10 {
+          s[i] += '0'
+        } else {
+          s[i] += 'a' - 10
+        }
+        i += 1
+      } else {
+        _, err = rand.Read(s[i : i + 1])
+      }
+    }
+    if err == nil && lim <= 0 {
+      err = errors.New("Loop limit exceeded for ID generation")
+    }
+  }
+  if err == nil {
+    id = string(s[:])
+  } else {
+    id = ""
+  }
+  return
+}
+
+func fullId(id, name string) (fid string) {
+  if name == "" {
+    fid = id
+  } else {
+    fid = id + "-" + name
+  }
+  return
+}
+
+func getIdAndName(str string) (fid string, isNewId bool, name string, err error) {
+  fid, name, err = parseIdAndName(str);
+  if err == nil {
+    isNewId = fid == "";
+    if isNewId {
+      fid, err = newId(true)
+    }
+    if err == nil {
+      fid = fullId(fid, name)
+    }
+  }
+  return
+}
+
+func readView(editdir string) (view string) {
+  var (data []byte; err error; info saveInfo)
+
+  view = "";
+  data, err = os.ReadFile(editdir + "/info.json");
+  if err == nil {
+    err = json.Unmarshal(data, &info);
+    if err == nil {
+      view = info.ViewId
+    }
+  }
+  return
+}
+
+func linkView(workdir, editId, name string) (id string, err error) {
+  var (view string)
+
+  id, err = newId(false);
+  if err == nil {
+    id = fullId(id, name);
+    view = workdir + "/view/" + id;
+    err = os.MkdirAll(workdir + "/view", 0700);
+    if err == nil {
+      err = os.Symlink("../edit/" + editId, view)
+    }
+  }
+  return
+}
+
+func writeInfo(editdir string, view string, runners, buttons []string) (err error) {
+  var (info saveInfo; data []byte)
+
+  info.ViewId = view;
+  info.Runners = runners;
+  info.Buttons = buttons;
+  data, err = json.Marshal(&info);
+  if err == nil {
+    err = os.WriteFile(editdir + "/" + "info.json", data, 0600)
+  }
+  return
+}
+
+func saveToWorkdir(src source, workdir string) (resp []byte) {
+  var (
+    err error;
+    tmp, dir, old, file, edit, view string;
+    isNewId bool;
+    id, name string;
+    i int
+  )
+
+  if workdir == "" {
+    err = errors.New("Saving is not allowed - working directory not set by server")
+  } else {
+    id, isNewId, name, err = getIdAndName(src.par);
+    if err == nil {
+      edit = fmt.Sprintf("%v/edit", workdir);
+      err = os.MkdirAll(edit, 0700);
+      if err == nil {
+        dir = fmt.Sprintf("%v/%v", edit, id);
+        tmp = dir;
+        err = os.Mkdir(dir, 0700);
+        if isNewId == os.IsExist(err) {
+          if !isNewId {
+            err = fmt.Errorf("Project %v does not exist. Remove id to save as new.", id)
+          }
+        } else {
+          if isNewId {
+            err = nil
+          } else {
+            view = readView(dir);
+            i = randInt();
+            tmp = fmt.Sprintf("%v/tmp-%v-%v", edit, i, id);
+            old = fmt.Sprintf("%v/tmp-old-%v-%v", edit, i, id);
+            err = os.Mkdir(tmp, 0700)
+          }
+          for i = 0; i < len(src.texts) && err == nil; i += 1 {
+            file = fmt.Sprintf("%v/%v", tmp, i);
+            err = ioutil.WriteFile(file, []byte(src.texts[i]), 0600)
+          }
+          if err != nil {
+            ;
+          } else if tmp != dir {
+            err = os.Rename(dir, old);
+            if err == nil {
+              err = os.Rename(tmp, dir);
+              if err != nil {
+                os.Rename(old, dir);
+                old = tmp
+              }
+            }
+            if err == nil {
+              if view == "" {
+                view, err = linkView(workdir, id, name);
+              }
+              if err == nil {
+                err = writeInfo(dir, view, src.runners, src.buttons)
+              }
+              tmp = old
+            }
+          } else {
+            tmp = ""
+          }
+        }
+        if err == nil {
+          if err == nil {
+            resp = []byte(fmt.Sprintf(
+              "Project saved by EDIT id: %v. Don't share it.\n" +
+              "VIEW id: %v", id, view))
+          }
+        }
+        if tmp != "" {
+           os.RemoveAll(tmp)
+        }
+      }
+    }
+  }
+  if err != nil {
+    resp = []byte(fmt.Sprintf("Save error:\n    %v", err.Error()))
+  }
+  return
+}
+
+func removeCommandSave(commands *[]string) {
+  var (i, j int; s []string)
+  j = 0;
+  s = *commands;
+  for i = 0; i < len(s); i += 1 {
+    if !strings.HasPrefix(strings.ToUpper(s[i]), "/SAVE") {
+      s[j] = s[i];
+      j += 1
+    }
+  }
+  *commands = s[:j]
+}
+
+func load(workdir, id string) (res []byte) {
+  var (
+    pr project;
+    forEdit bool;
+    dir string;
+    data []byte;
+    e1, e2 error;
+    i int;
+    err struct {
+      Error string `json:"error"`
+    }
+  )
+
+  forEdit = 'a' <= id[0] && id[0] <= 'z';
+  if forEdit {
+    dir = "/edit/"
+  } else {
+    dir = "/view/"
+  }
+  dir = workdir + dir + id + "/";
+
+  data, e1 = os.ReadFile(dir + "info.json");
+  if e1 == nil {
+    e1 = json.Unmarshal(data, &pr.Info); data = nil;
+    if e1 != nil {
+      pr.Info.Runners = []string{};
+      pr.Info.Buttons = []string{}
+    } else if !forEdit {
+      removeCommandSave(&pr.Info.Runners);
+      removeCommandSave(&pr.Info.Buttons)
+    }
+  }
+  e2 = nil;
+  pr.Texts = make([]string, 0, 32);
+  for i = 0; i < 32 && e2 == nil; {
+    data, e2 = os.ReadFile(dir + strconv.Itoa(i));
+    if e2 == nil {
+      pr.Texts = append(pr.Texts, string(data)); data = nil;
+      i += 1
+    }
+  }
+  if e1 != nil && i == 0 {
+    err.Error = "Can't open project for " + id;
+    res, e1 = json.Marshal(&err)
+  } else {
+    res, e1 = json.Marshal(&pr)
+  }
+  return
+}
+
+func command(src source, help, workdir string, skipUnknownCommand bool) (res []byte, ok bool) {
+  var (cmd string)
 
   ok = true;
   cmd = src.cmd;
-  par = src.par;
-  if par == "" && (cmd == "info" || cmd == "help") {
+  if src.par == "" && (cmd == "info" || cmd == "help") {
     res = []byte(help)
-  } else if par == "" && cmd == "list" {
+  } else if src.par == "" && cmd == "list" {
     res = []byte(listModules("\n", "\n\n"))
   } else if cmd == "info" || cmd == "help" || cmd == "list" {
-    res = infoModule(par)
+    res = infoModule(src.par)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
             cmd == "to-mod" || cmd == "to-modef" ||
             cmd == "to-puml" || cmd == "to-scheme" {
     res = toLang(src)
+  } else if cmd == "save" {
+    res = saveToWorkdir(src, workdir)
+  } else if cmd == "load" {
+    res = load(workdir, src.par)
   } else if skipUnknownCommand {
     res = []byte{}
   } else {
@@ -256,14 +565,14 @@ func command(src source, help string, skipUnknownCommand bool) (res []byte, ok b
   return
 }
 
-func handleInput(src source, help, cc string, timeout int, skipUnknownCommand bool) (res []byte, err error) {
+func handleInput(src source, help, cc string, timeout int, workdir string, skipUnknownCommand bool) (res []byte, err error) {
   err = nil;
   if src.script == "" {
     res = []byte{}
   } else if src.cmd == "run" {
     res, err = run(src, cc, timeout)
   } else {
-    res, _ = command(src, help, skipUnknownCommand)
+    res, _ = command(src, help, workdir, skipUnknownCommand)
   }
   return
 }
@@ -274,7 +583,7 @@ func splitCommand(text string) (cmd, par string) {
   all = strings.SplitN(text, " ", 2);
   cmd = strings.ToLower(all[0]);
   if len(all) > 1 {
-    par = all[1]
+    par = strings.Trim(all[1], " \t\r\n")
   } else {
     par = ""
   }
@@ -294,7 +603,7 @@ func normalizeSource(src *source) {
     if src.script == "" {
       src.script = src.name
     }
-    src.cmd = "run"
+    src.cmd = "run";
     src.par = ""
   }
   if src.name == "" {
@@ -302,26 +611,46 @@ func normalizeSource(src *source) {
   }
 }
 
+func getArrayOfStrings(r *http.Request, scount, sitem string) (arr []string, err error) {
+  var (i, count int)
+  count, err = strconv.Atoi(r.FormValue(scount));
+  if err == nil {
+    arr = make([]string, count);
+    for i = 0; i < count; i += 1 {
+      arr[i] = r.FormValue(sitem + strconv.Itoa(i))
+    }
+  }
+  return
+}
+
+func getRunners(r *http.Request) (runners, buttons []string, err error) {
+  runners, err = getArrayOfStrings(r, "runners-count", "runner-");
+  if err == nil {
+    buttons, err = getArrayOfStrings(r, "buttons-count", "button-");
+  }
+  return
+}
+
 func getTexts(r *http.Request) (src source, err error) {
-  var (count, selected, scanned int)
+  var (count, selected, scanned, i int)
 
   scanned, err = fmt.Sscanf(r.FormValue("texts-count"), "%v:%v", &selected, &count);
   if err != nil || scanned == 0 {
     ;
   } else if count < 0 || count > 32 {
-    err = errors.New("modules count out of range")
+    err = errors.New("Modules count out of range")
   } else if selected < 0 || selected >= count {
-    err = errors.New("selected module out of range " + fmt.Sprint(selected, count));
+    err = errors.New("Selected module out of range " + fmt.Sprint(selected, count));
   }
   if err == nil {
     src.script = strings.Trim(r.FormValue("script"), " \t\n\r");
 
     src.texts = make([]string, count);
     src.texts[0] = r.FormValue(fmt.Sprint("text-", selected));
-    for i := 0; i < selected; i += 1 {
+    for i = 0; i < selected; i += 1 {
       src.texts[i + 1] = r.FormValue(fmt.Sprint("text-", i))
     }
-    for i := selected + 1; i < count; i += 1 {
+    for i = selected + 1; i < count; i += 1 {
       src.texts[i] = r.FormValue(fmt.Sprint("text-", i))
     }
     normalizeSource(&src)
@@ -329,7 +658,7 @@ func getTexts(r *http.Request) (src source, err error) {
   return
 }
 
-func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow string) {
+func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow, workdir string) {
   var (
     out []byte;
     err error;
@@ -343,7 +672,8 @@ func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, all
     }
     src, err = getTexts(r);
     if err == nil {
-      out, err = handleInput(src, webHelp, cc, timeout, false)
+      src.runners, src.buttons, err = getRunners(r);
+      out, err = handleInput(src, webHelp, cc, timeout, workdir, false)
     }
     if err == nil {
       w.Write(out)
@@ -353,13 +683,10 @@ func handler(w http.ResponseWriter, r *http.Request, cc string, timeout int, all
   }
 }
 
-func webServer(port, timeout int, cc, allow string) (err error) {
+func webServer(port, timeout int, cc, allow, workdir string) (err error) {
   http.Handle("/", http.FileServer(http.Dir(".")));
-  http.HandleFunc(
-    "/run",
-    func(w http.ResponseWriter, r *http.Request) {
-      handler(w, r, cc, timeout, allow)
-    });
+  http.HandleFunc("/run",
+    func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
   return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
@@ -441,7 +768,7 @@ func teleBot(token, cc string, timeout int) (err error) {
     if err == nil {
       for _, upd = range upds {
         src, chat = teleGetSrc(upd);
-        output, err = handleInput(src, teleHelp, cc, timeout, true);
+        output, err = handleInput(src, teleHelp, cc, timeout, ""/* TODO */, true);
         err = teleSend(api, string(output), chat);
         lastUpdate = upd.Id
       }
@@ -453,21 +780,21 @@ func teleBot(token, cc string, timeout int) (err error) {
 func main() {
   var (
     port, timeout *int;
-    cc *string;
-    err error;
-    telegram, access *string
+    cc, telegram, access, workdir *string;
+    err error
   )
   port     = flag.Int   ("port"     , 8080  , "tcp/ip");
   access   = flag.String("access"   , ""    , "web server's allowed clients mask");
   timeout  = flag.Int   ("timeout"  , 5     , "in seconds");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
+  workdir  = flag.String("workdir"  , ""    , "directory for saves");
   flag.Parse();
 
   if *telegram != "" {
     err = teleBot(*telegram, *cc, *timeout)
   } else {
-    err = webServer(*port, *timeout, *cc, *access)
+    err = webServer(*port, *timeout, *cc, *access, *workdir)
   }
   if err != nil {
     fmt.Println(err);

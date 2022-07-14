@@ -41,15 +41,11 @@ END Hello.
 <div id='vostokbox-runners'></div>
 
 <script>
-(function() {
-  var box;
-
-  box = VostokBox.createByDefaultIdentifiers(document, ace, {
+  VostokBox.createByDefaultIdentifiers(document, ace, {
     rootRunner    : 'Hello.Come; Hello.Gone',
     runners       : ['Hello.Come', 'Hello.Gone', '/INFO Out'],
     buttonRunners : ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR']
   });
-})();
 </script>
 
 </body>

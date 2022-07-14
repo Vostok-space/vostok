@@ -16,6 +16,37 @@ var VostokBox;
   }
   vb.selectTab = selectTab;
 
+  function removeAllRunners(box) {
+    box.runners.forEach(function(inp) {
+      inp.parentNode.remove();
+    });
+    box.runners.clear();
+  }
+
+  function removeAllButtons(box) {
+    var bs, i;
+    bs = box.doc.getElementsByClassName("vostokbox-button-runner");
+    i = bs.length;
+    while (i > 0) {
+      i -= 1;
+      bs[i].remove();
+    }
+    box.buttons.clear();
+  }
+
+  function removeAllTabs(box) {
+    var ed, i, p;
+
+    for (i = 0; i < box.editors.length; i += 1) {
+      ed = box.editors[i];
+      p = ed.tab.parentNode;
+      ed.div.remove();
+      ed.tab.remove();
+    }
+    box.editors = [];
+    p.appendChild(box.tabAdder);
+  }
+
   function removeTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
     var ed, text, i, p;
     ed = box.editors[ind];
@@ -299,6 +330,35 @@ var VostokBox;
     echo.onclick = function() { requestRun(box, src); };
   }
 
+  function load(box, text) {
+    var res, i;
+    try {
+      res = JSON.parse(text);
+      /* TODO */
+    } catch(e) {
+      res = null;
+    }
+    if (!(res instanceof Object)) {
+      res = {error: "Invalid format of /LOAD response"};
+    }
+    if (res.error == null) {
+      removeAllTabs(box);
+      removeAllRunners(box);
+      removeAllButtons(box);
+
+      for (i = 0; i < res.texts.length; i += 1) {
+        addEditor(box, res.texts[i]);
+      }
+      if (res.texts.length > 0) {
+        selectTab(box, 0);
+      }
+      addRunners(box, res.info.runners || []);
+      addButtonRunners(box, res.info.buttons || []);
+    } else {
+      errorLog(box, res.error);
+    }
+  }
+
   function requestRun(box, scr) {
     var req, data, i, text, texts, uscr, add;
 
@@ -318,7 +378,9 @@ var VostokBox;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
       if (uscr == "/TO-SCHEME") {
-        req.onload  = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
+        req.onload = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
+      } else if (uscr.startsWith("/LOAD ")) {
+        req.onload = function (e) { load(box, req.responseText); };
       } else {
         if (uscr == "/INFO") {
           add = "/CLEAR - clear the log";
@@ -341,6 +403,21 @@ var VostokBox;
         box.editors[i].tab.innerText = getTabName(text, i);
         localStorage["vostokbox-texts-" + i] = text;
       }
+
+      data.append('runners-count', box.runners.size);
+      i = 0;
+      box.runners.forEach(function(inp) {
+        data.append('runner-' + i, inp.value);
+        i += 1;
+      });
+
+      data.append('buttons-count', box.buttons.size);
+      i = 0;
+      box.buttons.forEach(function(cmd) {
+        data.append('button-' + i, cmd);
+        i += 1;
+      });
+
       localStorage["vostokbox-log"] = box.log.innerHTML;
       storeRunners(box);
 
@@ -421,6 +498,20 @@ var VostokBox;
     box.runnersContainer.appendChild(div);
   }
 
+  function addRunners(box, commands) {
+    var i;
+    for (i = 0; i < commands.length; i += 1) {
+      addRunner(box, commands[i], false);
+    }
+  }
+
+  function addButtonRunners(box, commands) {
+    var i;
+    for (i = 0; i < commands.length; i += 1) {
+      addButtonRunner(box, commands[i]);
+    }
+  }
+
   vb.addRootRunner = function(box, command) {
     addRunner(box, command, true);
   };
@@ -429,20 +520,9 @@ var VostokBox;
     addRunner(box, command, false);
   };
 
-  vb.addRunners = function(box, commands) {
-    var i;
-    for (i = 0; i < commands.length; i += 1) {
-      addRunner(box, commands[i], false);
-    }
-  };
+  vb.addRunners       = addRunners;
+  vb.addButtonRunner  = addButtonRunner;
+  vb.addButtonRunners = addButtonRunners;
 
-  vb.addButtonRunner = addButtonRunner;
-
-  vb.addButtonRunners = function(box, commands) {
-    var i;
-    for (i = 0; i < commands.length; i += 1) {
-      addButtonRunner(box, commands[i]);
-    }
-  }
 
 })(VostokBox || (VostokBox = {}));
