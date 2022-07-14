@@ -449,6 +449,14 @@ var VostokBox;
     }
   }
 
+  function runOrFix(box, cmd, keyEvent) {
+    if (keyEvent.ctrlKey) {
+      addButtonRunner(box, cmd);
+    } else {
+      requestRun(box, cmd);
+    }
+  }
+
   function addRunner(box, command, root) { assert(command != null);
     var div, inp, run, add, del;
     div = box.doc.createElement('div');
@@ -457,20 +465,14 @@ var VostokBox;
     inp.value = command;
     inp.onkeyup = function(ke) {
       if (ke.keyCode == 13) {
-        requestRun(box, inp.value);
+        runOrFix(box, inp.value, ke);
         inp.select();
       }
     };
 
     run = box.doc.createElement('button');
     run.innerHTML = "<div class='ctrl-up'><div class='no-ctrl'>Run</div><div class='ctrl'>Fix</div></div>";
-    run.onclick = function(pe) {
-      if (pe.ctrlKey) {
-        addButtonRunner(box, inp.value);
-      } else {
-        requestRun(box, inp.value);
-      }
-    };
+    run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
     if (root) {
