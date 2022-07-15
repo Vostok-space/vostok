@@ -2,17 +2,17 @@ var VostokBox;
 (function(vb) {
   'use strict';
 
-  function assert(cond) { if (!cond) { throw "incorrectness"; } }
+  function assert(cond) { if (!cond) { throw 'incorrectness'; } }
 
   function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
     var i;
     for (i = box.editors.length - 1; i >= 0; i -= 1) {
-      box.editors[i].div.style.display  = "none";
-      box.editors[i].tab.className      = "";
+      box.editors[i].div.style.display  = 'none';
+      box.editors[i].tab.className      = '';
     }
     box.selected = ind;
-    box.editors[ind].div.style.display  = "block";
-    box.editors[ind].tab.className      = "active";
+    box.editors[ind].div.style.display  = 'block';
+    box.editors[ind].tab.className      = 'active';
   }
   vb.selectTab = selectTab;
 
@@ -25,7 +25,7 @@ var VostokBox;
 
   function removeAllButtons(box) {
     var bs, i;
-    bs = box.doc.getElementsByClassName("vostokbox-button-runner");
+    bs = box.doc.getElementsByClassName('vostokbox-button-runner');
     i = bs.length;
     while (i > 0) {
       i -= 1;
@@ -75,13 +75,13 @@ var VostokBox;
 
   function tabCreate(box, name, ind) {
     var b, ed;
-    b = box.doc.createElement("button");
+    b = box.doc.createElement('button');
     b.innerText = name;
     ed = box.editors[ind];
     b.onclick = function() {
       if (box.selected != ed.index) {
         selectTab(box, ed.index);
-      } else if (ed.ace.getSession().getValue() == "") {
+      } else if (ed.ace.getSession().getValue() == '') {
         removeTab(box, ed.index);
       }
     };
@@ -111,8 +111,8 @@ var VostokBox;
     if (box.tabAdder != null) {
       box.tabAdder.remove();
     }
-    d = box.doc.createElement("div");
-    d.className = "vostokbox-editor";
+    d = box.doc.createElement('div');
+    d.className = 'vostokbox-editor';
     d.append(text);
     ind = box.editors.length;
     box.editors[ind] = createAceEditor(box.ace, d, ind);
@@ -126,9 +126,9 @@ var VostokBox;
 
   function tabAdder(box) {
     var b;
-    b = box.doc.createElement("button");
-    b.innerText = "[ + ]";
-    b.onclick = function() { addEditor(box, ""); };
+    b = box.doc.createElement('button');
+    b.innerText = '[ + ]';
+    b.onclick = function() { addEditor(box, ''); };
     return b;
   }
 
@@ -141,7 +141,7 @@ var VostokBox;
   }
 
   function isBlank(ch) {
-    return " \t\r\n".indexOf(ch) >= 0;
+    return ' \t\r\n'.indexOf(ch) >= 0;
   }
 
   function getTabName(text, ind) {
@@ -152,7 +152,7 @@ var VostokBox;
     t = text;
     i = -1;
     do {
-      i = t.indexOf("MODULE", i + 1);
+      i = t.indexOf('MODULE', i + 1);
     } while (i >= 0 && !((i == 0 || isBlank(t.charAt(i - 1))) && isBlank(t.charAt(i + 6))));
     if (i >= 0) {
       i += 7;
@@ -164,7 +164,7 @@ var VostokBox;
       }
     }
     if (n == null) {
-      n = "[  " + ind + "  ]";
+      n = '[  ' + ind + '  ]';
     }
     return n;
   }
@@ -180,45 +180,55 @@ var VostokBox;
     }
   }
 
+  function storagePut(box, name, value) {
+    console.log('put', box.storagePrefix + name, value);
+    box.storage[box.storagePrefix + name] = value;
+  }
+
+  function storageGet(box, name) {
+    console.log('get', box.storagePrefix + name, box.storage[box.storagePrefix + name]);
+    return box.storage[box.storagePrefix + name];
+  }
+
   function storeRunners(box) {
     var i;
     i = 0;
     box.runners.forEach(function(inp) {
-      localStorage["vostokbox-runner-" + i] = inp.value;
+      storagePut(box, 'runner-' + i, inp.value);
       i += 1;
     });
-    localStorage["vostokbox-runners-len"] = i;
+    storagePut(box, 'runners-len', i);
 
     i = 0;
     box.buttons.forEach(function(cmd) {
-      localStorage["vostokbox-button-runner-" + i] = cmd;
+      storagePut(box, 'button-runner-' + i, cmd);
       i += 1;
     });
-    localStorage["vostokbox-button-runners-len"] = i;
+    storagePut(box, 'button-runners-len', i);
   }
 
   function loadRunners(box) {
     var i, k, load, len;
-    i = localStorage["vostokbox-runners-len"];
-    k = localStorage["vostokbox-button-runners-len"];
+    i = storageGet(box, 'runners-len');
+    k = storageGet(box, 'button-runners-len');
     load = i != null || k != null;
     if (i != null) {
       len = parseInt(i);
       for (i = 0; i < len; i += 1) {
-        addRunner(box, localStorage["vostokbox-runner-" + i], i == 0);
+        addRunner(box, storageGet(box, 'runner-' + i), i == 0);
       }
     }
     if (k != null) {
       len = parseInt(k);
       for (i = 0; i < len; i += 1) {
-        addButtonRunner(box, localStorage["vostokbox-button-runner-" + i]);
+        addButtonRunner(box, storageGet(box, 'button-runner-' + i));
       }
     }
     return load;
   }
 
   function addAllRunners(box, runners) {
-    vb.addRootRunner(box, runners.rootRunner || "");
+    vb.addRootRunner(box, runners.rootRunner || '');
     vb.addRunners(box, runners.runners || []);
     vb.addButtonRunners(box, runners.buttonRunners || []);
   }
@@ -229,10 +239,12 @@ var VostokBox;
     box = {
       ace     : ace,
       doc     : doc,
+      storage : window.localStorage,
+      storagePrefix: 'vostokbox(' + new URL(window.location.href).pathname + ")-",
       runnersContainer : doc.getElementById('vostokbox-runners'),
       buttonsContainer : doc.getElementById('vostokbox-button-runners'),
       log     : doc.getElementById('vostokbox-log'),
-      tabs    : doc.getElementById("vostokbox-tabs"),
+      tabs    : doc.getElementById('vostokbox-tabs'),
       editors : [],
       runners : new Set(),
       buttons : new Set(),
@@ -243,16 +255,16 @@ var VostokBox;
       ctrl    : false
     };
 
-    editors = doc.getElementsByClassName("vostokbox-editor");
+    editors = doc.getElementsByClassName('vostokbox-editor');
     if (editors.length > 0) {
       box.editorsContainer = editors[editors.length - 1].parentNode;
-      len = parseInt(localStorage["vostokbox-texts-len"]);
+      len = parseInt(storageGet(box, 'texts-len'));
       if (len > 0) {
         for (i = 0; i < editors.length; i += 1) {
           editors[i].remove();
         }
         for (i = 0; i < len; i += 1) {
-          addEditor(box, localStorage["vostokbox-texts-" + i]);
+          addEditor(box, storageGet(box, 'texts-' + i));
         }
       } else {
         for (i = 0; i < editors.length; i += 1) {
@@ -266,17 +278,17 @@ var VostokBox;
     box.tabs.appendChild(box.tabAdder);
     selectTab(box, 0);
 
-    doc.onkeydown = function(ke) { switchCtrl(box, ke, "ctrl-up", "ctrl-down"); };
-    doc.onkeyup   = function(ke) { switchCtrl(box, ke, "ctrl-down", "ctrl-up"); };
+    doc.onkeydown = function(ke) { switchCtrl(box, ke, 'ctrl-up', 'ctrl-down'); };
+    doc.onkeyup   = function(ke) { switchCtrl(box, ke, 'ctrl-down', 'ctrl-up'); };
 
-    log = localStorage["vostokbox-log"];
+    log = box.storage['vostokbox-log'];
     if (log != null) {
       box.log.innerHTML = log;
       if (box.log.lastChild != null) {
         box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
       }
     } else {
-      box.log.innerText = "This site uses web-storage to store input";
+      box.log.innerText = 'This site uses web-storage to store input';
     }
     if (!loadRunners(box)) {
       addAllRunners(box, runners);
@@ -291,7 +303,7 @@ var VostokBox;
     needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
 
-    localStorage["vostokbox-log"] = log.innerHTML;
+    box.storage['vostokbox-log'] = log.innerHTML;
 
     if (needScroll) {
       end = box.doc.createElement('div');
@@ -342,7 +354,7 @@ var VostokBox;
       res = null;
     }
     if (!(res instanceof Object)) {
-      res = {error: "Invalid format of /LOAD response"};
+      res = {error: 'Invalid format of /LOAD response'};
     }
     if (res.error == null) {
       removeAllTabs(box);
@@ -368,43 +380,43 @@ var VostokBox;
     scriptEcho(box, scr);
 
     uscr = scr.trim().toUpperCase();
-    if (uscr.charAt(0) == ":") {
-      uscr = "/" + uscr.substring(1);
+    if (uscr.charAt(0) == ':') {
+      uscr = '/' + uscr.substring(1);
     }
-    if (uscr == "/CLEAR" || uscr == "/CLS") {
-      box.log.innerHTML = "";
-      localStorage.removeItem("vostokbox-log");
+    if (uscr == '/CLEAR' || uscr == '/CLS') {
+      box.log.innerHTML = '';
+      box.storage.removeItem('vostokbox-log');
     } else {
       req = new XMLHttpRequest();
 
       req.timeout = 6000;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
-      if (uscr == "/TO-SCHEME") {
+      if (uscr == '/TO-SCHEME') {
         req.onload = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
-      } else if (uscr.startsWith("/LOAD ")) {
+      } else if (uscr.startsWith('/LOAD ')) {
         req.onload = function (e) { load(box, req.responseText); };
       } else {
-        if (uscr == "/INFO") {
-          add = "/CLEAR - clear the log";
+        if (uscr == '/INFO') {
+          add = '/CLEAR - clear the log';
         } else {
-          add = "";
+          add = '';
         }
         req.onload  = function (e) { normalLog(box, req.responseText + add); };
       }
       req.open('POST', '/run');
       data = new FormData();
       i = box.editors.length;
-      data.append("texts-count", [box.selected, ":", i].join(""));
+      data.append('texts-count', [box.selected, ':', i].join(''));
 
-      localStorage.clear();
-      localStorage["vostokbox-texts-len"] = i;
+      box.storage.clear();
+      storagePut(box, 'texts-len', i);
       while (i > 0) {
         i -= 1;
         text = box.editors[i].ace.getSession().getValue();
         data.append('text-' + i, text);
         box.editors[i].tab.innerText = getTabName(text, i);
-        localStorage["vostokbox-texts-" + i] = text;
+        storagePut(box, 'texts-' + i, text);
       }
 
       data.append('runners-count', box.runners.size);
@@ -421,7 +433,7 @@ var VostokBox;
         i += 1;
       });
 
-      localStorage["vostokbox-log"] = box.log.innerHTML;
+      box.storage['vostokbox-log'] = box.log.innerHTML;
       storeRunners(box);
 
       data.append('script', scr);
@@ -431,10 +443,10 @@ var VostokBox;
 
   function addButtonRunner(box, command) {
     var b;
-    if (command != "") {
-      b = box.doc.createElement("button");
-      b.className = "vostokbox-button-runner";
-      b.innerHTML = "<div class='ctrl-up'><div class='ctrl'>-</div></div>";
+    if (command != '') {
+      b = box.doc.createElement('button');
+      b.className = 'vostokbox-button-runner';
+      b.innerHTML = '<div class="ctrl-up"><div class="ctrl">-</div></div>';
       b.append(command);
       b.onclick = function(pe) {
         if (pe.ctrlKey) {
@@ -471,20 +483,20 @@ var VostokBox;
     };
 
     run = box.doc.createElement('button');
-    run.innerHTML = "<div class='ctrl-up'><div class='no-ctrl'>Run</div><div class='ctrl'>Fix</div></div>";
+    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl">Run</div><div class="ctrl">Fix</div></div>';
     run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
     if (root) {
-      add.innerHTML = "+";
+      add.innerHTML = '+';
     } else {
-      add.className = "ctrl-up";
-      add.innerHTML = "<div class='no-ctrl'>+</div><div class='ctrl'>-</div>";
+      add.className = 'ctrl-up';
+      add.innerHTML = '<div class="no-ctrl">+</div><div class="ctrl">-</div>';
     }
     add.onclick = function(pe) {
       var val;
       if (pe.ctrlKey) {
-        val = "";
+        val = '';
       } else {
         val = inp.value;
       }
@@ -528,6 +540,5 @@ var VostokBox;
   vb.addRunners       = addRunners;
   vb.addButtonRunner  = addButtonRunner;
   vb.addButtonRunners = addButtonRunners;
-
 
 })(VostokBox || (VostokBox = {}));
