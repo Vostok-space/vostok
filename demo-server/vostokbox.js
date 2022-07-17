@@ -90,7 +90,7 @@ var VostokBox;
   }
 
   function createAceEditor(ace, div, index) {
-    var editor;
+    var editor, s;
     editor = {
       div   : div,
       ace   : ace.edit(div),
@@ -98,16 +98,23 @@ var VostokBox;
     };
     editor.ace.setDisplayIndentGuides(true);
     editor.ace.setTheme('ace/theme/idle_fingers');
-    editor.ace.getSession().setOptions({
-      tabSize: 2,
-      useSoftTabs: true,
+    s = editor.ace.getSession();
+    s.setMode("ace/mode/oberon");
+    s.setOptions({
+      tabSize               : 2,
+      useSoftTabs           : true,
       navigateWithinSoftTabs: true
+    });
+    editor.ace.setOptions({
+      enableBasicAutocompletion : true,
+      enableSnippets            : true,
+      enableLiveAutocompletion  : true
     });
     return editor;
   }
 
   function addEditor(box, text) {
-    var d, lc, ind;
+    var d, ind;
     if (box.tabAdder != null) {
       box.tabAdder.remove();
     }
