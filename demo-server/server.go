@@ -684,7 +684,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
 }
 
 func webServer(port, timeout int, cc, allow, workdir string) (err error) {
-  http.Handle("/", http.FileServer(http.Dir(".")));
+  http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
   return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
