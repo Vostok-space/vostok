@@ -147,23 +147,33 @@ func saveSource(src source) (tmp string, err error) {
   return
 }
 
+func ostToBin(script, bin, tmp, cc string, multiErrors bool) (output []byte, err error) {
+  var (cmd *exec.Cmd)
+  cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
+                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
+  if !multiErrors {
+    cmd.Args = cmd.Args[:len(cmd.Args) - 1]
+  }
+  output, err = cmd.CombinedOutput();
+  return
+}
+
 func run(src source, cc string, timeout int) (output []byte, err error) {
   var (
     tmp, bin, timeOut string;
     cmd *exec.Cmd
   )
-
   tmp, err = saveSource(src);
   if err == nil {
     bin = tmp + "/" + src.name;
     if runtime.GOOS == "windows" {
       bin += ".exe"
     }
-
-    cmd = exec.Command("vostok/result/ost", "to-bin", src.script, bin,
-                       "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
     fmt.Println("(", src.script, ")");
-    output, err = cmd.CombinedOutput();
+    output, err = ostToBin(src.script, bin, tmp, cc, true);
+    if err != nil && err.(*exec.ExitError).ExitCode() < 0 {
+      output, err = ostToBin(src.script, bin, tmp, cc, false)
+    }
     fmt.Print(string(output));
     if err == nil {
       cmd = exec.Command(bin);
