@@ -694,11 +694,11 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
   }
 }
 
-func webServer(port, timeout int, cc, allow, workdir string) (err error) {
+func webServer(addr string, port, timeout int, cc, allow, workdir string) (err error) {
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
-  return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+  return http.ListenAndServe(fmt.Sprintf("%v:%d", addr, port), nil)
 }
 
 func teleGetUpdates(api string, ofs int) (upd []teleUpdate, err error) {
@@ -791,10 +791,11 @@ func teleBot(token, cc string, timeout int) (err error) {
 func main() {
   var (
     port, timeout *int;
-    cc, telegram, access, workdir *string;
+    addr, cc, telegram, access, workdir *string;
     err error
   )
-  port     = flag.Int   ("port"     , 8080  , "tcp/ip");
+  addr     = flag.String("addr"     , ""    , "served tcp/ip address");
+  port     = flag.Int   ("port"     , 8080  , "port tcp/ip");
   access   = flag.String("access"   , ""    , "web server's allowed clients mask");
   timeout  = flag.Int   ("timeout"  , 5     , "in seconds");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
@@ -805,7 +806,7 @@ func main() {
   if *telegram != "" {
     err = teleBot(*telegram, *cc, *timeout)
   } else {
-    err = webServer(*port, *timeout, *cc, *access, *workdir)
+    err = webServer(*addr, *port, *timeout, *cc, *access, *workdir)
   }
   if err != nil {
     fmt.Println(err);
