@@ -180,7 +180,6 @@ var VostokBox;
     var el, i;
     if (ke.keyCode == 17) {
       el = box.doc.getElementsByClassName(from);
-      box.ctrl = ke.ctrlKey;
       for (i = el.length - 1; i >= 0; i -= 1) {
         el[i].className = to;
       }
@@ -188,12 +187,10 @@ var VostokBox;
   }
 
   function storagePut(box, name, value) {
-    console.log('put', box.storagePrefix + name, value);
     box.storage[box.storagePrefix + name] = value;
   }
 
   function storageGet(box, name) {
-    console.log('get', box.storagePrefix + name, box.storage[box.storagePrefix + name]);
     return box.storage[box.storagePrefix + name];
   }
 
@@ -240,6 +237,14 @@ var VostokBox;
     vb.addButtonRunners(box, runners.buttonRunners || []);
   }
 
+  function checkPageParams(box, params) {
+    var id;
+    id = params.get("edit") || params.get("view");
+    if (id != null) {
+      requestRun(box, "/LOAD " + id);
+    }
+  }
+
   vb.createByDefaultIdentifiers = function(doc, ace, runners) {
     var box, editor, editors, i, text, texts, log, len;
 
@@ -258,8 +263,7 @@ var VostokBox;
 
       selected: 0,
       editorsContainer: null,
-      tabAdder: null,
-      ctrl    : false
+      tabAdder: null
     };
 
     editors = doc.getElementsByClassName('vostokbox-editor');
@@ -300,6 +304,8 @@ var VostokBox;
     if (!loadRunners(box)) {
       addAllRunners(box, runners);
     }
+
+    checkPageParams(box, new URL(window.location.href).searchParams);
 
     return box;
   };

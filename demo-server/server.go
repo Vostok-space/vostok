@@ -403,7 +403,7 @@ func writeInfo(editdir string, view string, runners, buttons []string) (err erro
   return
 }
 
-func saveToWorkdir(src source, workdir string) (resp []byte) {
+func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
   var (
     err error;
     tmp, dir, old, file, edit, view string;
@@ -466,11 +466,11 @@ func saveToWorkdir(src source, workdir string) (resp []byte) {
           }
         }
         if err == nil {
-          if err == nil {
-            resp = []byte(fmt.Sprintf(
-              "Project saved by EDIT id: %v. Don't share it.\n" +
-              "VIEW id: %v", id, view))
-          }
+          resp = []byte(fmt.Sprintf(
+            "Project saved by EDIT id: %v. Don't share it.\n" +
+            "    %v/?edit=%v\n\n" +
+            "VIEW id: %v for sharing\n" +
+            "    %v/?view=%v", id, origin, id, view, origin, view))
         }
         if tmp != "" {
            os.RemoveAll(tmp)
@@ -547,7 +547,7 @@ func load(workdir, id string) (res []byte) {
   return
 }
 
-func command(src source, help, workdir string, skipUnknownCommand bool) (res []byte, ok bool) {
+func command(src source, help, workdir string, skipUnknownCommand bool, origin string) (res []byte, ok bool) {
   var (cmd string)
 
   ok = true;
@@ -563,7 +563,7 @@ func command(src source, help, workdir string, skipUnknownCommand bool) (res []b
             cmd == "to-puml" || cmd == "to-scheme" {
     res = toLang(src)
   } else if cmd == "save" {
-    res = saveToWorkdir(src, workdir)
+    res = saveToWorkdir(src, workdir, origin)
   } else if cmd == "load" {
     res = load(workdir, src.par)
   } else if skipUnknownCommand {
@@ -575,14 +575,15 @@ func command(src source, help, workdir string, skipUnknownCommand bool) (res []b
   return
 }
 
-func handleInput(src source, help, cc string, timeout int, workdir string, skipUnknownCommand bool) (res []byte, err error) {
+func handleInput(src source, help, cc string, timeout int, workdir string, skipUnknownCommand bool,
+                 origin string) (res []byte, err error) {
   err = nil;
   if src.script == "" {
     res = []byte{}
   } else if src.cmd == "run" {
     res, err = run(src, cc, timeout)
   } else {
-    res, _ = command(src, help, workdir, skipUnknownCommand)
+    res, _ = command(src, help, workdir, skipUnknownCommand, origin)
   }
   return
 }
@@ -683,7 +684,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
     src, err = getTexts(r);
     if err == nil {
       src.runners, src.buttons, err = getRunners(r);
-      out, err = handleInput(src, webHelp, cc, timeout, workdir, false)
+      out, err = handleInput(src, webHelp, cc, timeout, workdir, false, r.Header["Origin"][0])
     }
     if err == nil {
       w.Write(out)
@@ -778,7 +779,7 @@ func teleBot(token, cc string, timeout int) (err error) {
     if err == nil {
       for _, upd = range upds {
         src, chat = teleGetSrc(upd);
-        output, err = handleInput(src, teleHelp, cc, timeout, ""/* TODO */, true);
+        output, err = handleInput(src, teleHelp, cc, timeout, ""/* TODO */, true, "");
         err = teleSend(api, string(output), chat);
         lastUpdate = upd.Id
       }
