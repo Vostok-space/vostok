@@ -56,6 +56,10 @@ button {
   margin: 0px;
 }
 
+a {
+  color: inherit;
+}
+
 .vostokbox-log-script:hover {
   text-decoration: underline;
 }

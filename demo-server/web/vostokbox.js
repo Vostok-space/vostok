@@ -359,7 +359,7 @@ var VostokBox;
   }
 
   function load(box, text) {
-    var res, i;
+    var res, i, loc;
     try {
       res = JSON.parse(text);
       /* TODO */
@@ -382,6 +382,9 @@ var VostokBox;
       }
       addRunners(box, res.info.runners || []);
       addButtonRunners(box, res.info.buttons || []);
+
+      loc = window.location;
+      svgLog(box, '', 'Successfully loaded. <a href="' + loc.origin + loc.pathname + '">Cancel</a>');
     } else {
       errorLog(box, res.error);
     }
@@ -406,16 +409,16 @@ var VostokBox;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
       if (uscr == '/TO-SCHEME') {
-        req.onload = function (e) { svgLog(box, 'vostokbox-log-out', req.responseText); };
+        req.onload = function (e) { svgLog(box, 'vostokbox-log-out', e.target.responseText); };
       } else if (uscr.startsWith('/LOAD ')) {
-        req.onload = function (e) { load(box, req.responseText); };
+        req.onload = function (e) { load(box, e.target.responseText); };
       } else {
         if (uscr == '/INFO') {
           add = '/CLEAR - clear the log';
         } else {
           add = '';
         }
-        req.onload  = function (e) { normalLog(box, req.responseText + add); };
+        req.onload = function (e) { normalLog(box, e.target.responseText + add); };
       }
       req.open('POST', '/run');
       data = new FormData();
