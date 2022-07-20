@@ -219,7 +219,7 @@ var VostokBox;
     if (i != null) {
       len = parseInt(i);
       for (i = 0; i < len; i += 1) {
-        addRunner(box, storageGet(box, 'runner-' + i), i == 0);
+        addRunner(box, storageGet(box, 'runner-' + i));
       }
     }
     if (k != null) {
@@ -231,12 +231,6 @@ var VostokBox;
     return load;
   }
 
-  function addAllRunners(box, runners) {
-    vb.addRootRunner(box, runners.rootRunner || '');
-    vb.addRunners(box, runners.runners || []);
-    vb.addButtonRunners(box, runners.buttonRunners || []);
-  }
-
   function checkPageParams(box, params) {
     var id;
     id = params.get("edit") || params.get("view");
@@ -245,70 +239,40 @@ var VostokBox;
     }
   }
 
-  vb.createByDefaultIdentifiers = function(doc, ace, runners) {
-    var box, editor, editors, i, text, texts, log, len;
+  function createLink(box, text, onclick) {
+    var link;
+    link = box.doc.createElement('code');
+    link.innerText = text;
+    link.className = 'vostokbox-log-script';
+    link.onclick = onclick;
+    return link;
+  }
 
-    box = {
-      ace     : ace,
-      doc     : doc,
-      storage : window.localStorage,
-      storagePrefix: 'vostokbox(' + new URL(window.location.href).pathname + ")-",
-      runnersContainer : doc.getElementById('vostokbox-runners'),
-      buttonsContainer : doc.getElementById('vostokbox-button-runners'),
-      log     : doc.getElementById('vostokbox-log'),
-      tabs    : doc.getElementById('vostokbox-tabs'),
-      editors : [],
-      runners : new Set(),
-      buttons : new Set(),
+  function ln(box, node) {
+    node.appendChild(box.doc.createElement("br"));
+  }
 
-      selected: 0,
-      editorsContainer: null,
-      tabAdder: null
-    };
-
-    editors = doc.getElementsByClassName('vostokbox-editor');
-    if (editors.length > 0) {
-      box.editorsContainer = editors[editors.length - 1].parentNode;
-      len = parseInt(storageGet(box, 'texts-len'));
-      if (len > 0) {
-        for (i = 0; i < editors.length; i += 1) {
-          editors[i].remove();
-        }
-        for (i = 0; i < len; i += 1) {
-          addEditor(box, storageGet(box, 'texts-' + i));
-        }
-      } else {
-        for (i = 0; i < editors.length; i += 1) {
-          text = editors[i].innerText;
-          box.editors[i] = createAceEditor(ace, editors[i], i);
-          box.tabs.appendChild(tabCreate(box, getTabName(text, i), i));
-        }
-      }
+  function defaultLog(box, empty) {
+    var div, list, add, runners;
+    div = box.doc.createElement('div');
+    box.log.append(div);
+    div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
+    if (empty) {
+      ln(box, div);
+      runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
+      div.append(
+        'Use this links to add ',
+        createLink(box, 'editor', function() { addEditor(box, ''); }),
+        ', ',
+        createLink(box, 'commands runner', function() { addRunner(box, '/INFO Out'); }),
+        ', ',
+        createLink(box, 'predefined buttons', function() {addButtonRunners(box, runners); }),
+        '.'
+      );
     }
-    box.tabAdder = tabAdder(box);
-    box.tabs.appendChild(box.tabAdder);
-    selectTab(box, 0);
-
-    doc.onkeydown = function(ke) { switchCtrl(box, ke, 'ctrl-up', 'ctrl-down'); };
-    doc.onkeyup   = function(ke) { switchCtrl(box, ke, 'ctrl-down', 'ctrl-up'); };
-
-    log = box.storage['vostokbox-log'];
-    if (log != null) {
-      box.log.innerHTML = log;
-      if (box.log.lastChild != null) {
-        box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
-      }
-    } else {
-      box.log.innerText = 'This site uses web-storage to store input';
-    }
-    if (!loadRunners(box)) {
-      addAllRunners(box, runners);
-    }
-
-    checkPageParams(box, new URL(window.location.href).searchParams);
-
-    return box;
-  };
+    ln(box, div);
+    div.append('Note that sandbox uses web-storage to store input.');
+  }
 
   function logAppendChild(box, item) {
     var log, needScroll, end;
@@ -485,8 +449,8 @@ var VostokBox;
     }
   }
 
-  function addRunner(box, command, root) { assert(command != null);
-    var div, inp, run, add, del;
+  function addRunner(box, command) { assert(command != null);
+    var div, inp, run, add, del, root;
     div = box.doc.createElement('div');
     inp = box.doc.createElement('input', 'type="text"');
     inp.className = 'vostokbox-command-line';
@@ -503,6 +467,7 @@ var VostokBox;
     run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
+    root = box.runners.size == 0;
     if (root) {
       add.innerHTML = '+';
     } else {
@@ -517,7 +482,7 @@ var VostokBox;
         val = inp.value;
       }
       if (root || !pe.ctrlKey) {
-        addRunner(box, val, false);
+        addRunner(box, val);
       } else {
         div.remove();
         box.runners.delete(inp);
@@ -534,7 +499,14 @@ var VostokBox;
   function addRunners(box, commands) {
     var i;
     for (i = 0; i < commands.length; i += 1) {
-      addRunner(box, commands[i], false);
+      addRunner(box, commands[i]);
+    }
+  }
+
+  function addAllRunners(box, runners) {
+    if (!runners.empty) {
+      addRunners(box, runners.runners || []);
+      addButtonRunners(box, runners.buttonRunners || []);
     }
   }
 
@@ -545,16 +517,76 @@ var VostokBox;
     }
   }
 
-  vb.addRootRunner = function(box, command) {
-    addRunner(box, command, true);
-  };
-
-  vb.addRunner = function(box, command) {
-    addRunner(box, command, false);
-  };
-
+  vb.addRunner        = addRunner;
   vb.addRunners       = addRunners;
   vb.addButtonRunner  = addButtonRunner;
   vb.addButtonRunners = addButtonRunners;
+
+  vb.createByDefaultIdentifiers = function(doc, ace, runners) {
+    var box, editor, editors, i, text, texts, log, len;
+
+    box = {
+      ace     : ace,
+      doc     : doc,
+      storage : window.localStorage,
+      storagePrefix: 'vostokbox(' + new URL(window.location.href).pathname + ")-",
+      runnersContainer : doc.getElementById('vostokbox-runners'),
+      buttonsContainer : doc.getElementById('vostokbox-button-runners'),
+      log     : doc.getElementById('vostokbox-log'),
+      tabs    : doc.getElementById('vostokbox-tabs'),
+      editors : [],
+      runners : new Set(),
+      buttons : new Set(),
+
+      selected: 0,
+      editorsContainer: null,
+      tabAdder: null
+    };
+
+    editors = doc.getElementsByClassName('vostokbox-editor');
+    if (editors.length > 0) {
+      box.editorsContainer = editors[editors.length - 1].parentNode;
+      len = parseInt(storageGet(box, 'texts-len'));
+      if (len > 0 || runners.empty) {
+        for (i = 0; i < editors.length; i += 1) {
+          editors[i].remove();
+        }
+        for (i = 0; i < len; i += 1) {
+          addEditor(box, storageGet(box, 'texts-' + i));
+        }
+      } else {
+        for (i = 0; i < editors.length; i += 1) {
+          text = editors[i].innerText;
+          box.editors[i] = createAceEditor(ace, editors[i], i);
+          box.tabs.appendChild(tabCreate(box, getTabName(text, i), i));
+        }
+      }
+    }
+    box.tabAdder = tabAdder(box);
+    if (box.editors.length > 0) {
+      box.tabs.appendChild(box.tabAdder);
+      selectTab(box, 0);
+    }
+
+    doc.onkeydown = function(ke) { switchCtrl(box, ke, 'ctrl-up', 'ctrl-down'); };
+    doc.onkeyup   = function(ke) { switchCtrl(box, ke, 'ctrl-down', 'ctrl-up'); };
+
+    log = box.storage['vostokbox-log'];
+    if (log != null) {
+      box.log.innerHTML = log;
+    }
+    if (!loadRunners(box)) {
+      addAllRunners(box, runners);
+    }
+    if (log == null || box.runners.size == 0 || box.editors.length == 0) {
+      defaultLog(box, runners.empty);
+    }
+    if (box.log.lastChild != null) {
+      box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+    }
+    checkPageParams(box, new URL(window.location.href).searchParams);
+
+    return box;
+  };
 
 })(VostokBox || (VostokBox = {}));

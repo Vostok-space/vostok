@@ -38,6 +38,7 @@ const (
   teleApi = "https://api.telegram.org/bot"
 
   webHelp =
+    "Module.Proc(Params) - run Oberon-code\n" +
     "/INFO - show this help\n" +
     "/LIST - list available modules\n" +
     "/INFO ModuleName - show info about module\n" +

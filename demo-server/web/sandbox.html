@@ -22,35 +22,15 @@
 <div id="vostokbox-tabs"></div>
 
 <div style='width:1214px'>
-  <div class='vostokbox-editor'>MODULE Hello;
-
-IMPORT Out;
-
-PROCEDURE Come*;
-BEGIN
-  Out.String("Добро пожаловать."); Out.Ln
-END Come;
-
-PROCEDURE Gone*;
-BEGIN
-  Out.String("До скорой встречи."); Out.Ln
-END Gone;
-
-END Hello.
-</div>
-
+  <div class='vostokbox-editor'></div>
   <div id='vostokbox-log'></div>
-
 </div>
 
 <div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
-  VostokBox.createByDefaultIdentifiers(document, ace, {
-    runners       : ['Hello.Come; Hello.Gone', 'Hello.Come', 'Hello.Gone', '/INFO Out'],
-    buttonRunners : ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR']
-  });
+  VostokBox.createByDefaultIdentifiers(document, ace, {empty:true});
 </script>
 
 </body>
