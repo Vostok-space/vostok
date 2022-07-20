@@ -602,11 +602,13 @@ func splitCommand(text string) (cmd, par string) {
 }
 
 func normalizeSource(src *source) {
-  src.input = src.texts[0];
-  src.name = getModuleName(src.texts[0]);
-  if src.script == "" && src.name == "" {
-    src.script = strings.Trim(src.texts[0], " \t\n\r");
-    src.texts[0] = ""
+  if len(src.texts) > 0 {
+    src.input = src.texts[0];
+    src.name = getModuleName(src.texts[0]);
+    if src.script == "" && src.name == "" {
+      src.script = strings.Trim(src.texts[0], " \t\n\r");
+      src.texts[0] = ""
+    }
   }
   if strings.HasPrefix(src.script, "/") || strings.HasPrefix(src.script, ":") {
     src.cmd, src.par = splitCommand(src.script[1:])
@@ -650,19 +652,21 @@ func getTexts(r *http.Request) (src source, err error) {
     ;
   } else if count < 0 || count > 32 {
     err = errors.New("Modules count out of range")
-  } else if selected < 0 || selected >= count {
+  } else if selected < 0 || selected >= count && selected != 0  {
     err = errors.New("Selected module out of range " + fmt.Sprint(selected, count));
   }
   if err == nil {
     src.script = strings.Trim(r.FormValue("script"), " \t\n\r");
 
     src.texts = make([]string, count);
-    src.texts[0] = r.FormValue(fmt.Sprint("text-", selected));
-    for i = 0; i < selected; i += 1 {
-      src.texts[i + 1] = r.FormValue(fmt.Sprint("text-", i))
-    }
-    for i = selected + 1; i < count; i += 1 {
-      src.texts[i] = r.FormValue(fmt.Sprint("text-", i))
+    if count > 0 {
+      src.texts[0] = r.FormValue(fmt.Sprint("text-", selected));
+      for i = 0; i < selected; i += 1 {
+        src.texts[i + 1] = r.FormValue(fmt.Sprint("text-", i))
+      }
+      for i = selected + 1; i < count; i += 1 {
+        src.texts[i] = r.FormValue(fmt.Sprint("text-", i))
+      }
     }
     normalizeSource(&src)
   }
@@ -797,7 +801,7 @@ func main() {
   addr     = flag.String("addr"     , ""    , "served tcp/ip address");
   port     = flag.Int   ("port"     , 8080  , "port tcp/ip");
   access   = flag.String("access"   , ""    , "web server's allowed clients mask");
-  timeout  = flag.Int   ("timeout"  , 5     , "in seconds");
+  timeout  = flag.Int   ("timeout"  , 5     , "task restriction in seconds");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
