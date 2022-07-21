@@ -6,15 +6,21 @@
 
 <title>Vostok translator</title>
 
-<link rel='stylesheet' type='text/css' href='vostokbox.css'/>
-<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'></script>
-<script src='vostokbox.js'></script>
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='https://ajaxorg.github.io/ace-builds/src/ext-language_tools.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='ace-oberon.js' type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'  type='text/javascript' charset='utf-8'></script>
 </head>
 
 <body>
 
-<div style='width:1200px'>
-  <div id='vostokbox-editor'>MODULE Hello;
+<div id="vostokbox-tabs"></div>
+
+<div style='width:1214px'>
+  <div class='vostokbox-editor'>MODULE Hello;
 
   IMPORT log;
 
@@ -35,21 +41,14 @@ END Hello.
 
 </div>
 
+<div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
-  var box;
-
-  box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Hello.Come; Hello.Gone');
-  VostokBox.addRunner(box, 'Hello.Come');
-  VostokBox.addRunner(box, 'Hello.Gone');
-  VostokBox.addRunner(box, '/INFO');
-  VostokBox.addRunner(box, '/INFO log');
-  VostokBox.addRunner(box, '/TO-C');
-  VostokBox.addRunner(box, '/TO-JAVA');
-  VostokBox.addRunner(box, '/TO-JS');
-  VostokBox.addRunner(box, '/TO-SCHEME');
+  VostokBox.createByDefaultIdentifiers(document, ace, {
+    runners: ['Hello.Come; Hello.Gone', 'Hello.Come', 'Hello.Gone'],
+    buttonRunners: ['/INFO', '/INFO log', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME']
+  });
 </script>
 
 </body>

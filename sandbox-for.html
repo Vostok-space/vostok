@@ -6,15 +6,21 @@
 
 <title>Vostok translator</title>
 
-<link rel='stylesheet' type='text/css' href='vostokbox.css'/>
-<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'></script>
-<script src='vostokbox.js'></script>
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='https://ajaxorg.github.io/ace-builds/src/ext-language_tools.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='ace-oberon.js' type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'  type='text/javascript' charset='utf-8'></script>
 </head>
 
 <body>
 
-<div style='width:1200px'>
-  <div id='vostokbox-editor'>Algorithms and Data Structures © N. Wirth 1985 (Oberon version: August 2004).
+<div id="vostokbox-tabs"></div>
+
+<div style='width:1214px'>
+  <div class='vostokbox-editor'>Algorithms and Data Structures © N. Wirth 1985 (Oberon version: August 2004).
 § 1.4 FOR iteration by array
 
 MODULE For;
@@ -58,18 +64,14 @@ END For.</div>
 
 </div>
 
+<div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
-  var box;
-
-  box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Out.Real(For.Sum(), 0)');
-  VostokBox.addRunner(box, 'Out.Int(For.Max(), 0)');
-  VostokBox.addRunner(box, 'Out.Real(For.a[For.Max()], 0)');
-  VostokBox.addRunner(box, '/INFO');
-  VostokBox.addRunner(box, '/INFO Out');
-  VostokBox.addRunner(box, '/TO-SCHEME');
+  VostokBox.createByDefaultIdentifiers(document, ace, {
+    runners: ['Out.Real(For.Sum(), 0)', 'Out.Int(For.Max(), 0)', 'Out.Real(For.a[For.Max()], 0)'],
+    buttonRunners: ['/INFO', '/INFO Out', '/TO-SCHEME']
+  });
 </script>
 
 </body>

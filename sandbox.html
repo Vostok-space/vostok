@@ -1,49 +1,35 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
+<meta charset='utf-8'/>
 <title>Vostok translator</title>
 
-<link rel='stylesheet' type='text/css' href='vostokbox.css'/>
-<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'></script>
-<script src='vostokbox.js'></script>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+
+<script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='https://ajaxorg.github.io/ace-builds/src/ext-language_tools.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='ace-oberon.js' type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'  type='text/javascript' charset='utf-8'></script>
+
 </head>
 
 <body>
 
-<div style='width:1200px'>
-  <div id='vostokbox-editor'>MODULE Sandbox;
+<div id="vostokbox-tabs"></div>
 
-  IMPORT log;
-
-  PROCEDURE Go*;
-  BEGIN
-    log.sn("")
-  END Go;
-
-END Sandbox.
-</div>
-
+<div style='width:1214px'>
+  <div class='vostokbox-editor'></div>
   <div id='vostokbox-log'></div>
-
 </div>
 
+<div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
-  var box;
-
-  box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Sandbox.Go');
-  VostokBox.addRunner(box, '/INFO');
-  VostokBox.addRunner(box, '/INFO log');
-  VostokBox.addRunner(box, '/LIST');
-  VostokBox.addRunner(box, '/TO-C');
-  VostokBox.addRunner(box, '/TO-JAVA');
-  VostokBox.addRunner(box, '/TO-JS');
-  VostokBox.addRunner(box, '/TO-SCHEME');
+  VostokBox.createByDefaultIdentifiers(document, ace, {empty:true});
 </script>
 
 </body>

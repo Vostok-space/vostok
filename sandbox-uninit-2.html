@@ -7,14 +7,21 @@
 <title>Vostok translator</title>
 
 <link rel='stylesheet' type='text/css' href='vostokbox.css'>
-<script src='https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js'></script>
-<script src='vostokbox.js'></script>
+<script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='https://ajaxorg.github.io/ace-builds/src/ext-language_tools.js'
+        type='text/javascript' charset='utf-8'></script>
+<script src='ace-oberon.js' type='text/javascript' charset='utf-8'></script>
+
+<script src='vostokbox.js'  type='text/javascript' charset='utf-8'></script>
 </head>
 
 <body>
 
-<div style='width:1200px'>
-  <div id='vostokbox-editor'>MODULE Uninit;
+<div id="vostokbox-tabs"></div>
+
+<div style='width:1214px'>
+  <div class='vostokbox-editor'>MODULE Uninit;
 
   IMPORT Out;
 
@@ -36,15 +43,12 @@ END Uninit.
 
 </div>
 
+<div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
 <script>
-  var box;
-
-  box = VostokBox.createByDefaultIdentifiers(document, ace);
-  VostokBox.addRootRunner(box, 'Uninit.Go(TRUE, TRUE)');
-  VostokBox.addRunner(box, 'Uninit.Go(FALSE, TRUE)');
-  VostokBox.addRootRunner(box, '/INFO');
+  VostokBox.createByDefaultIdentifiers(document, ace,
+    { runners: ['Uninit.Go(TRUE, TRUE)', 'Uninit.Go(FALSE, TRUE)', '/INFO'] });
 </script>
 
 </body>
