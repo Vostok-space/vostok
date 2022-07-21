@@ -35,16 +35,17 @@ var VostokBox;
   }
 
   function removeAllTabs(box) {
-    var ed, i, p;
+    var ed, i;
 
     for (i = 0; i < box.editors.length; i += 1) {
       ed = box.editors[i];
-      p = ed.tab.parentNode;
       ed.div.remove();
       ed.tab.remove();
     }
     box.editors = [];
-    p.appendChild(box.tabAdder);
+    if (i > 0) {
+      box.tabs.appendChild(box.tabAdder);
+    }
   }
 
   function removeTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
@@ -233,7 +234,7 @@ var VostokBox;
 
   function checkPageParams(box, params) {
     var id;
-    id = params.get("edit") || params.get("view");
+    id = params.get("EDIT") || params.get("view");
     if (id != null) {
       requestRun(box, "/LOAD " + id);
     }

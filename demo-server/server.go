@@ -469,9 +469,9 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
         if err == nil {
           resp = []byte(fmt.Sprintf(
             "Project saved by EDIT id: %v. Don't share it.\n" +
-            "    %v/?edit=%v\n\n" +
+            "    %v/sandbox.html?EDIT=%v\n\n" +
             "VIEW id: %v for sharing\n" +
-            "    %v/?view=%v", id, origin, id, view, origin, view))
+            "    %v/sandbox.html?view=%v", id, origin, id, view, origin, view))
         }
         if tmp != "" {
            os.RemoveAll(tmp)
