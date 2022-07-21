@@ -253,13 +253,16 @@ var VostokBox;
     node.appendChild(box.doc.createElement("br"));
   }
 
-  function defaultLog(box, empty) {
+  function defaultLog(box, empty, savedLog) {
     var div, list, add, runners;
+
     div = box.doc.createElement('div');
     box.log.append(div);
-    div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
-    if (empty) {
+    if (savedLog == null) {
+      div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
       ln(box, div);
+    }
+    if (empty) {
       runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
       div.append(
         'Use this links to add ',
@@ -270,9 +273,11 @@ var VostokBox;
         createLink(box, 'predefined buttons', function() {addButtonRunners(box, runners); }),
         '.'
       );
+      ln(box, div);
     }
-    ln(box, div);
-    div.append('Note that sandbox uses web-storage to store input.');
+    if (savedLog == null) {
+      div.append('Note that sandbox uses web-storage to store input.');
+    }
   }
 
   function logAppendChild(box, item) {
@@ -580,7 +585,7 @@ var VostokBox;
       addAllRunners(box, runners);
     }
     if (log == null || box.runners.size == 0 || box.editors.length == 0) {
-      defaultLog(box, runners.empty);
+      defaultLog(box, runners.empty, log);
     }
     if (box.log.lastChild != null) {
       box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
