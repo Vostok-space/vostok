@@ -35,16 +35,17 @@ var VostokBox;
   }
 
   function removeAllTabs(box) {
-    var ed, i, p;
+    var ed, i;
 
     for (i = 0; i < box.editors.length; i += 1) {
       ed = box.editors[i];
-      p = ed.tab.parentNode;
       ed.div.remove();
       ed.tab.remove();
     }
     box.editors = [];
-    p.appendChild(box.tabAdder);
+    if (i > 0) {
+      box.tabs.appendChild(box.tabAdder);
+    }
   }
 
   function removeTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
@@ -233,7 +234,7 @@ var VostokBox;
 
   function checkPageParams(box, params) {
     var id;
-    id = params.get("edit") || params.get("view");
+    id = params.get("EDIT") || params.get("view");
     if (id != null) {
       requestRun(box, "/LOAD " + id);
     }
@@ -252,13 +253,16 @@ var VostokBox;
     node.appendChild(box.doc.createElement("br"));
   }
 
-  function defaultLog(box, empty) {
+  function defaultLog(box, empty, savedLog) {
     var div, list, add, runners;
+
     div = box.doc.createElement('div');
     box.log.append(div);
-    div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
-    if (empty) {
+    if (savedLog == null) {
+      div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
       ln(box, div);
+    }
+    if (empty) {
       runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
       div.append(
         'Use this links to add ',
@@ -269,9 +273,11 @@ var VostokBox;
         createLink(box, 'predefined buttons', function() {addButtonRunners(box, runners); }),
         '.'
       );
+      ln(box, div);
     }
-    ln(box, div);
-    div.append('Note that sandbox uses web-storage to store input.');
+    if (savedLog == null) {
+      div.append('Note that sandbox uses web-storage to store input.');
+    }
   }
 
   function logAppendChild(box, item) {
@@ -579,7 +585,7 @@ var VostokBox;
       addAllRunners(box, runners);
     }
     if (log == null || box.runners.size == 0 || box.editors.length == 0) {
-      defaultLog(box, runners.empty);
+      defaultLog(box, runners.empty, log);
     }
     if (box.log.lastChild != null) {
       box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
