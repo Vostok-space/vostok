@@ -430,6 +430,7 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
           }
         } else {
           if isNewId {
+            view = "";
             err = nil
           } else {
             view = readView(dir);
@@ -454,16 +455,18 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
               }
             }
             if err == nil {
-              if view == "" {
-                view, err = linkView(workdir, id, name);
-              }
-              if err == nil {
-                err = writeInfo(dir, view, src.runners, src.buttons)
-              }
               tmp = old
             }
           } else {
             tmp = ""
+          }
+          if err == nil {
+            if view == "" {
+              view, err = linkView(workdir, id, name)
+            }
+            if err == nil {
+              err = writeInfo(dir, view, src.runners, src.buttons)
+            }
           }
         }
         if err == nil {
