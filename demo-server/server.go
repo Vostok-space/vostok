@@ -489,11 +489,12 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
 }
 
 func removeCommandSave(commands *[]string) {
-  var (i, j int; s []string)
+  var (i, j int; s []string, su string)
   j = 0;
   s = *commands;
   for i = 0; i < len(s); i += 1 {
-    if !strings.HasPrefix(strings.ToUpper(s[i]), "/SAVE") {
+    su = strings.ToUpper(s[i]);
+    if !strings.HasPrefix(su, "/SAVE") && !strings.HasPrefix(su, ":SAVE") {
       s[j] = s[i];
       j += 1
     }
