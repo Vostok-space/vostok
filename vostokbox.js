@@ -212,7 +212,22 @@ var VostokBox;
     storagePut(box, 'button-runners-len', i);
   }
 
-  function loadRunners(box) {
+  function storageGetCommand(box, storageId, saveId) {
+    var s, t, cmd;
+    cmd = storageGet(box, storageId);
+    if (saveId != null) {
+      t = cmd.trim();
+      s = t.toUpperCase();
+      /* TODO */
+      if (s.startsWith('/SAVE') || s.startsWith(':SAVE')) {
+        cmd = t.substring(0, 5) + ' ' + saveId;
+        storagePut(box, storageId, cmd);
+      }
+    }
+    return cmd;
+  }
+
+  function loadRunners(box, saveId) {
     var i, k, load, len;
     i = storageGet(box, 'runners-len');
     k = storageGet(box, 'button-runners-len');
@@ -220,13 +235,13 @@ var VostokBox;
     if (i != null) {
       len = parseInt(i);
       for (i = 0; i < len; i += 1) {
-        addRunner(box, storageGet(box, 'runner-' + i));
+        addRunner(box, storageGetCommand(box, 'runner-' + i, saveId));
       }
     }
     if (k != null) {
       len = parseInt(k);
       for (i = 0; i < len; i += 1) {
-        addButtonRunner(box, storageGet(box, 'button-runner-' + i));
+        addButtonRunner(box, storageGetCommand(box, 'button-runner-' + i, saveId));
       }
     }
     return load;
@@ -328,7 +343,18 @@ var VostokBox;
     echo.onclick = function() { requestRun(box, src); };
   }
 
-  function load(box, text) {
+  function addIdToCommandSave(id, cmds) {
+    var i, s;
+    for (i = 0; i < cmds.length; i += 1) {
+      s = cmds[i].toUpperCase();
+      if (s == "/SAVE" || s == ":SAVE") {
+        cmds[i] += " " + id;
+      }
+    }
+    return cmds;
+  }
+
+  function load(box, id, text) {
     var res, i, loc;
     try {
       res = JSON.parse(text);
@@ -350,8 +376,8 @@ var VostokBox;
       if (res.texts.length > 0) {
         selectTab(box, 0);
       }
-      addRunners(box, res.info.runners || []);
-      addButtonRunners(box, res.info.buttons || []);
+      addRunners(box, addIdToCommandSave(id, res.info.runners || []));
+      addButtonRunners(box, addIdToCommandSave(id, res.info.buttons || []));
 
       loc = window.location;
       svgLog(box, '', 'Successfully loaded. <a href="' + loc.origin + loc.pathname + '">Cancel</a>');
@@ -360,8 +386,31 @@ var VostokBox;
     }
   }
 
+  function onSave(box, text) {
+    var s, i, pref, id;
+    pref = 'EDIT id: ';
+    s = text.indexOf(pref);
+    if (s >= 0) {
+      id = text.substring(s + pref.length, text.indexOf('.', s + pref.length));
+      removeAllRunners(box);
+      removeAllButtons(box);
+      loadRunners(box, id);
+    }
+    normalLog(box, text);
+  }
+
+  function trimCommand(cmd) {
+    var s;
+    cmd = cmd.trim();
+    s = cmd.toUpperCase();
+    if (s.startsWith('/SAVE ') || s.startsWith(':SAVE ')) {
+      cmd = cmd.substring(0, 5);
+    }
+    return cmd;
+  }
+
   function requestRun(box, scr) {
-    var req, data, i, text, texts, uscr, add;
+    var req, data, i, text, texts, uscr, add, id;
 
     scriptEcho(box, scr);
 
@@ -381,7 +430,10 @@ var VostokBox;
       if (uscr == '/TO-SCHEME') {
         req.onload = function (e) { svgLog(box, 'vostokbox-log-out', e.target.responseText); };
       } else if (uscr.startsWith('/LOAD ')) {
-        req.onload = function (e) { load(box, e.target.responseText); };
+        id = scr.trim().substring(5).trim();
+        req.onload = function (e) { load(box, id, e.target.responseText); };
+      } else if (uscr.startsWith('/SAVE ')) {
+        req.onload = function (e) { onSave(box, e.target.responseText); };
       } else {
         if (uscr == '/INFO') {
           add = '/CLEAR - clear the log';
@@ -408,14 +460,14 @@ var VostokBox;
       data.append('runners-count', box.runners.size);
       i = 0;
       box.runners.forEach(function(inp) {
-        data.append('runner-' + i, inp.value);
+        data.append('runner-' + i, trimCommand(inp.value));
         i += 1;
       });
 
       data.append('buttons-count', box.buttons.size);
       i = 0;
       box.buttons.forEach(function(cmd) {
-        data.append('button-' + i, cmd);
+        data.append('button-' + i, trimCommand(cmd));
         i += 1;
       });
 
@@ -581,7 +633,7 @@ var VostokBox;
     if (log != null) {
       box.log.innerHTML = log;
     }
-    if (!loadRunners(box)) {
+    if (!loadRunners(box, null)) {
       addAllRunners(box, runners);
     }
     if (log == null || box.runners.size == 0 || box.editors.length == 0) {
