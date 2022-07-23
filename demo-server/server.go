@@ -489,7 +489,7 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
 }
 
 func removeCommandSave(commands *[]string) {
-  var (i, j int; s []string, su string)
+  var (i, j int; s []string; su string)
   j = 0;
   s = *commands;
   for i = 0; i < len(s); i += 1 {
