@@ -580,8 +580,18 @@ var VostokBox;
   vb.addButtonRunner  = addButtonRunner;
   vb.addButtonRunners = addButtonRunners;
 
+  function setHttpIfNeed() {
+    var href;
+    if (window.location.protocol == 'https:') {
+      href = "http" + window.location.href.slice(5);
+      window.location.replace(href);
+    }
+  }
+
   vb.createByDefaultIdentifiers = function(doc, ace, runners) {
     var box, editor, editors, i, text, texts, log, len;
+
+    setHttpIfNeed();
 
     box = {
       ace     : ace,
