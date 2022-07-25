@@ -4252,10 +4252,12 @@ BEGIN
 				stats := add
 			END
 		END;
-		WHILE l.next # NIL DO
-			l := l.next
+		IF l # NIL THEN
+			WHILE l.next # NIL DO
+				l := l.next
+			END;
+			l.next := add
 		END;
-		l.next := add;
 		nearLast := add
 	END
 END StatementAdd;
