@@ -703,11 +703,19 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
   }
 }
 
-func webServer(addr string, port, timeout int, cc, allow, workdir string) (err error) {
+func webServer(addr string, port, timeout int, cc, allow, workdir, crt, key string) (err error) {
+  var (a string)
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
-  return http.ListenAndServe(fmt.Sprintf("%v:%d", addr, port), nil)
+
+  a = fmt.Sprintf("%v:%d", addr, port);
+  if crt != "" {
+    err = http.ListenAndServeTLS(a, crt, key, nil)
+  } else {
+    err = http.ListenAndServe(a, nil)
+  }
+  return
 }
 
 func teleGetUpdates(api string, ofs int) (upd []teleUpdate, err error) {
@@ -800,7 +808,7 @@ func teleBot(token, cc string, timeout int) (err error) {
 func main() {
   var (
     port, timeout *int;
-    addr, cc, telegram, access, workdir *string;
+    addr, cc, telegram, access, workdir, crt, key *string;
     err error
   )
   addr     = flag.String("addr"     , ""    , "served tcp/ip address");
@@ -810,12 +818,14 @@ func main() {
   cc       = flag.String("cc"       , "tcc" , "c compiler");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
+  crt      = flag.String("crt"      , ""    , "file with TLS certificate");
+  key      = flag.String("key"      , ""    , "file with TLS private key");
   flag.Parse();
 
   if *telegram != "" {
     err = teleBot(*telegram, *cc, *timeout)
   } else {
-    err = webServer(*addr, *port, *timeout, *cc, *access, *workdir)
+    err = webServer(*addr, *port, *timeout, *cc, *access, *workdir, *crt, *key)
   }
   if err != nil {
     fmt.Println(err);
