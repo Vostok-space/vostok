@@ -442,7 +442,7 @@ var VostokBox;
         }
         req.onload = function (e) { normalLog(box, e.target.responseText + add); };
       }
-      req.open('POST', 'htts://178.32.173.236:3443/run');
+      req.open('POST', 'https://178.32.173.236:3443/run');
       data = new FormData();
       i = box.editors.length;
       data.append('texts-count', [box.selected, ':', i].join(''));
