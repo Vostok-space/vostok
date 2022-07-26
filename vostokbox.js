@@ -442,7 +442,7 @@ var VostokBox;
         }
         req.onload = function (e) { normalLog(box, e.target.responseText + add); };
       }
-      req.open('POST', 'http://178.32.173.236:8080/run');
+      req.open('POST', 'htts://178.32.173.236:3443/run');
       data = new FormData();
       i = box.editors.length;
       data.append('texts-count', [box.selected, ':', i].join(''));
@@ -591,7 +591,7 @@ var VostokBox;
   vb.createByDefaultIdentifiers = function(doc, ace, runners) {
     var box, editor, editors, i, text, texts, log, len;
 
-    setHttpIfNeed();
+    /*setHttpIfNeed();*/
 
     box = {
       ace     : ace,
