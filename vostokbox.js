@@ -442,7 +442,7 @@ var VostokBox;
         }
         req.onload = function (e) { normalLog(box, e.target.responseText + add); };
       }
-      req.open('POST', 'https://178.32.173.236:3443/run');
+      req.open('POST', box.runUrl);
       data = new FormData();
       i = box.editors.length;
       data.append('texts-count', [box.selected, ':', i].join(''));
@@ -580,18 +580,8 @@ var VostokBox;
   vb.addButtonRunner  = addButtonRunner;
   vb.addButtonRunners = addButtonRunners;
 
-  function setHttpIfNeed() {
-    var href;
-    if (window.location.protocol == 'https:') {
-      href = "http" + window.location.href.slice(5);
-      window.location.replace(href);
-    }
-  }
-
   vb.createByDefaultIdentifiers = function(doc, ace, runners) {
     var box, editor, editors, i, text, texts, log, len;
-
-    /*setHttpIfNeed();*/
 
     box = {
       ace     : ace,
@@ -608,8 +598,16 @@ var VostokBox;
 
       selected: 0,
       editorsContainer: null,
-      tabAdder: null
+      tabAdder: null,
+
+      runUrl  : null
     };
+
+    if (window.location.protocol == 'https:') {
+      box.runUrl = 'https://178.32.173.236:3443/run';
+    } else {
+      box.runUrl = 'http://178.32.173.236:8080/run';
+    }
 
     editors = doc.getElementsByClassName('vostokbox-editor');
     if (editors.length > 0) {
