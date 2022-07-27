@@ -759,7 +759,7 @@ func teleSend(api, text string, chat int) (err error) {
 }
 
 func teleGetSrc(upd teleUpdate) (src source, chat int) {
-  var (txt string)
+  var (txt string; i int)
   txt = upd.Msg.Txt;
   if txt == "" {
     txt = upd.Edited.Txt;
@@ -767,18 +767,25 @@ func teleGetSrc(upd teleUpdate) (src source, chat int) {
   } else {
     chat = upd.Msg.Chat.Id
   }
+  txt = strings.Trim(txt, " \t\n\r");
+  src.script = "";
   if strings.HasPrefix(txt, "/O7:") {
     txt = txt[4:]
   } else if strings.HasPrefix(txt, "/MODULE ") {
     txt = txt[1:]
+  } else if strings.HasPrefix(txt, "/") {
+    i = strings.IndexAny(txt, "\r\n");
+    if i > 0 {
+      src.script = txt[:i];
+      txt = txt[i:]
+    }
   }
-  src.script = "";
   src.texts = []string{txt};
   normalizeSource(&src)
   return
 }
 
-func teleBot(token, cc string, timeout int) (err error) {
+func teleBot(token, cc, workdir string, timeout int) (err error) {
   var (
     api string;
     src source;
@@ -795,7 +802,7 @@ func teleBot(token, cc string, timeout int) (err error) {
     if err == nil {
       for _, upd = range upds {
         src, chat = teleGetSrc(upd);
-        output, err = handleInput(src, teleHelp, cc, timeout, ""/* TODO */, true, "");
+        output, err = handleInput(src, teleHelp, cc, timeout, workdir, true, "");
         err = teleSend(api, string(output), chat);
         lastUpdate = upd.Id
       }
@@ -822,7 +829,7 @@ func main() {
   flag.Parse();
 
   if *telegram != "" {
-    err = teleBot(*telegram, *cc, *timeout)
+    err = teleBot(*telegram, *cc, *workdir, *timeout)
   } else {
     err = webServer(*addr, *port, *timeout, *cc, *access, *workdir, *crt, *key)
   }
