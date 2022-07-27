@@ -151,7 +151,7 @@ func saveSource(src source) (tmp string, err error) {
 func ostToBin(script, bin, tmp, cc string, multiErrors bool) (output []byte, err error) {
   var (cmd *exec.Cmd)
   cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
-                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors");
+                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors", "-msg-lang:eng");
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
   }
@@ -231,7 +231,7 @@ func infoModule(name string) (info []byte) {
     cmd *exec.Cmd
   )
   cmd = exec.Command("vostok/result/ost", "to-modef", name, "",
-                     "-infr", "vostok", "-cyrillic", "-multi-errors");
+                     "-infr", "vostok", "-cyrillic", "-multi-errors", "-msg-lang:eng");
   info, _ = cmd.CombinedOutput();
   return
 }
@@ -245,14 +245,15 @@ func toLang(src source) (translated []byte) {
   if src.cmd == "to-scheme" {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
-    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp + " -infr vostok -cyrillic > " +
-          puml + " && plantuml -tsvg " + puml + " && cat " + svg;
+    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp +
+          " -infr vostok -cyrillic -msg-lang:eng > " + puml +
+          " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
     cmd = exec.Command("vostok/result/ost", src.cmd, src.name, "-",
                        "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
                        "-init", "noinit", "-no-array-index-check", "-no-nil-check",
-                       "-no-arithmetic-overflow-check")
+                       "-no-arithmetic-overflow-check", "-msg-lang:eng")
   }
   translated, _ = cmd.CombinedOutput();
   os.RemoveAll(tmp);

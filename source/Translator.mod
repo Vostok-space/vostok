@@ -1275,6 +1275,21 @@ PROCEDURE GoOpt*(set: SET);
 VAR ret, lang: INTEGER;
     args: Cli.Args;
     nothing: V.Base;
+    ok: BOOLEAN;
+
+	PROCEDURE SetLang(args: Cli.Args);
+	BEGIN
+		CASE args.msgLang OF
+		  Cli.MsgLangUndefined:
+			;
+		| Cli.MsgLangRussian:
+			InterfaceLang.Set(InterfaceLang.Ru)
+		| Cli.MsgLangUkrainian:
+			InterfaceLang.Set(InterfaceLang.Uk)
+		| Cli.MsgLangEnglish:
+			InterfaceLang.Set(InterfaceLang.En)
+		END
+	END SetLang;
 
 	PROCEDURE Enabled(VAR ret: INTEGER): BOOLEAN;
 	BEGIN
@@ -1302,7 +1317,9 @@ BEGIN
 	END;
 
 	V.Init(nothing);
-	IF ~Cli.Parse(args, ret) OR ~Enabled(ret) OR ~Handle(args, ret, nothing) THEN
+	ok := Cli.Parse(args, ret);
+	SetLang(args);
+	IF ~ok OR ~Enabled(ret) OR ~Handle(args, ret, nothing) THEN
 		CLI.SetExitCode(Exec.Ok + 1);
 		IF ret # ErrParse THEN
 			Message.CliError(ret)

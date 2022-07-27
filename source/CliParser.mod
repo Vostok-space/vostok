@@ -55,6 +55,11 @@ CONST
 	CyrillicTranslit* = 3;
 	CyrillicEscape*   = 4;
 
+	MsgLangUndefined* = 0;
+	MsgLangRussian*   = 1;
+	MsgLangUkrainian* = 2;
+	MsgLangEnglish*   = 3;
+
 	ErrNo*                   =   0;
 
 	ErrWrongArgs*            = -10;
@@ -112,7 +117,7 @@ TYPE
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
 		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*, puml*: BOOLEAN;
-		cyrillic*: INTEGER;
+		cyrillic*, msgLang*: INTEGER;
 
 		multiErrors*: BOOLEAN
 	END;
@@ -345,6 +350,12 @@ BEGIN
 			args.obStd := GeneratorOberon.StdCp
 		ELSIF opt = "-multi-errors" THEN
 			args.multiErrors := TRUE
+		ELSIF opt = "-msg-lang:rus" THEN
+			args.msgLang := MsgLangRussian
+		ELSIF opt = "-msg-lang:ukr" THEN
+			args.msgLang := MsgLangUkrainian
+		ELSIF opt = "-msg-lang:eng" THEN
+			args.msgLang := MsgLangEnglish
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -387,6 +398,7 @@ BEGIN
 	args.cPlan9   := FALSE;
 	args.obStd    := -1;
 	args.puml     := FALSE;
+	args.msgLang  := MsgLangUndefined;
 	args.modPath  := "";
 	args.modPathLen := 1;
 	args.allowSystem     := FALSE;
