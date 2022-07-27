@@ -771,8 +771,6 @@ func teleGetSrc(upd teleUpdate) (src source, chat int) {
     txt = txt[4:]
   } else if strings.HasPrefix(txt, "/MODULE ") {
     txt = txt[1:]
-  } else if strings.HasPrefix(txt, "/") {
-    txt = ""
   }
   src.script = "";
   src.texts = []string{txt};
