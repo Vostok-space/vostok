@@ -604,9 +604,9 @@ var VostokBox;
     };
 
     if (window.location.protocol == 'https:') {
-      box.runUrl = 'https://178.32.173.236:3443/run';
+      box.runUrl = VostokBoxConfig.runUrl.https;
     } else {
-      box.runUrl = 'http://178.32.173.236:8080/run';
+      box.runUrl = VostokBoxConfig.runUrl.http;
     }
 
     editors = doc.getElementsByClassName('vostokbox-editor');
