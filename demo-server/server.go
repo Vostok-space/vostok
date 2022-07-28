@@ -489,13 +489,18 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
   return
 }
 
+func isCommandSave(cmd string) (yes bool) {
+  cmd = strings.ToUpper(cmd);
+  yes = strings.HasPrefix(cmd, "/SAVE") || strings.HasPrefix(cmd, ":SAVE")
+  return
+}
+
 func removeCommandSave(commands *[]string) {
-  var (i, j int; s []string; su string)
+  var (i, j int; s []string)
   j = 0;
   s = *commands;
   for i = 0; i < len(s); i += 1 {
-    su = strings.ToUpper(s[i]);
-    if !strings.HasPrefix(su, "/SAVE") && !strings.HasPrefix(su, ":SAVE") {
+    if !isCommandSave(s[i]) {
       s[j] = s[i];
       j += 1
     }
@@ -759,7 +764,7 @@ func teleSend(api, text string, chat int) (err error) {
 }
 
 func teleGetSrc(upd teleUpdate) (src source, chat int) {
-  var (txt, name string; i int)
+  var (txt, name, cmd string; i int)
   txt = upd.Msg.Txt;
   if txt == "" {
     txt = upd.Edited.Txt;
@@ -776,12 +781,16 @@ func teleGetSrc(upd teleUpdate) (src source, chat int) {
   } else if strings.HasPrefix(txt, "/") {
     i = strings.IndexAny(txt, "\r\n");
     if i > 0 {
-      src.script = txt[:i];
+      cmd = txt[:i];
+      src.script = cmd;
+      if isCommandSave(cmd) {
+        cmd = cmd[:5]
+      }
       name = getModuleName(txt);
       if name == "" {
-        src.runners = []string{src.script}
+        src.runners = []string{cmd}
       } else {
-        src.runners = []string{name, src.script}
+        src.runners = []string{name, cmd}
       }
       txt = txt[i:]
     }
