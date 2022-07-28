@@ -759,7 +759,7 @@ func teleSend(api, text string, chat int) (err error) {
 }
 
 func teleGetSrc(upd teleUpdate) (src source, chat int) {
-  var (txt string; i int)
+  var (txt, name string; i int)
   txt = upd.Msg.Txt;
   if txt == "" {
     txt = upd.Edited.Txt;
@@ -777,6 +777,12 @@ func teleGetSrc(upd teleUpdate) (src source, chat int) {
     i = strings.IndexAny(txt, "\r\n");
     if i > 0 {
       src.script = txt[:i];
+      name = getModuleName(txt);
+      if name == "" {
+        src.runners = []string{src.script}
+      } else {
+        src.runners = []string{name, src.script}
+      }
       txt = txt[i:]
     }
   }
