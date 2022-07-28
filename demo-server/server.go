@@ -802,7 +802,8 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
     if err == nil {
       for _, upd = range upds {
         src, chat = teleGetSrc(upd);
-        output, err = handleInput(src, teleHelp, cc, timeout, workdir, true, "");
+        output, err = handleInput(src, teleHelp, cc, timeout, workdir, true,
+                                  "https://vostok.oberon.org");
         err = teleSend(api, string(output), chat);
         lastUpdate = upd.Id
       }
