@@ -65,8 +65,10 @@ type (
     Id int `json:"id"`
   }
   teleMessage struct {
-    Chat teleChat `json:"chat"`;
-    Txt  string   `json:"text"`
+    Id    int           `json:"message_id"`;
+    Chat  teleChat      `json:"chat"`;
+    Txt   string        `json:"text"`;
+    Reply *teleMessage  `json:"reply_to_message,omitempty"`
   }
   teleUpdate struct {
     Id     int         `json:"update_id"`;
@@ -79,7 +81,8 @@ type (
   }
   teleAnswer struct {
     Chat int    `json:"chat_id"`;
-    Txt  string `json:"text"`
+    Txt  string `json:"text"`;
+    ReplyId int `json:"reply_to_message_id,omitempty"`
   }
 
   source struct {
@@ -745,7 +748,7 @@ func teleGetUpdates(api string, ofs int) (upd []teleUpdate, err error) {
   return
 }
 
-func teleSend(api, text string, chat int) (err error) {
+func teleSend(api, text string, chat int, replyId int) (err error) {
   var (
     resp *http.Response;
     msg  teleAnswer;
@@ -753,6 +756,7 @@ func teleSend(api, text string, chat int) (err error) {
   )
   msg.Chat = chat;
   msg.Txt = text;
+  msg.ReplyId = replyId;
   data, err = json.Marshal(&msg);
   if err == nil {
     resp, err = http.Post(api + "sendMessage", "application/json", bytes.NewBuffer(data));
@@ -763,13 +767,15 @@ func teleSend(api, text string, chat int) (err error) {
   return
 }
 
-func teleGetSrc(upd teleUpdate) (src source, chat int) {
+func teleGetSrc(upd teleUpdate) (src source, chat, msgId int) {
   var (txt, name, cmd string; i int)
   txt = upd.Msg.Txt;
   if txt == "" {
     txt = upd.Edited.Txt;
+    msgId = upd.Edited.Id;
     chat = upd.Edited.Chat.Id
   } else {
+    msgId = upd.Msg.Id;
     chat = upd.Msg.Chat.Id
   }
   txt = strings.Trim(txt, " \t\n\r");
@@ -806,7 +812,7 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
     src source;
     upds []teleUpdate;
     upd teleUpdate;
-    lastUpdate, chat int;
+    lastUpdate, chat, msgId int;
     output []byte
   )
   api = teleApi + token + "/";
@@ -816,10 +822,10 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
     upds, err = teleGetUpdates(api, lastUpdate + 1);
     if err == nil {
       for _, upd = range upds {
-        src, chat = teleGetSrc(upd);
+        src, chat, msgId = teleGetSrc(upd);
         output, err = handleInput(src, teleHelp, cc, timeout, workdir, true,
                                   "https://vostok.oberon.org");
-        err = teleSend(api, string(output), chat);
+        err = teleSend(api, string(output), chat, msgId);
         lastUpdate = upd.Id
       }
     }
