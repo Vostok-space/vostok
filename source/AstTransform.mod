@@ -20,7 +20,7 @@ MODULE AstTransform;
   IMPORT Out, V, Ast,
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
-         Chars0X, Utf8,
+         Chars0X, IntToChars0X, Utf8,
          SpecIdent := OberonSpecIdent;
 
   CONST
@@ -38,7 +38,10 @@ MODULE AstTransform;
   TYPE
     Options* = RECORD(V.Base)
       setSubBrace*,
-      renameSameInRecExt*: BOOLEAN;
+      renameSameInRecExt*,
+      moveStringToConst*: BOOLEAN;
+
+      moveStringIndex: INTEGER;
 
       anonRecord* ,
       outParam    : INTEGER;
@@ -58,8 +61,8 @@ MODULE AstTransform;
     END;
 
   VAR
-    type      : PROCEDURE(VAR c: Ast.Context; t: Ast.Type;       VAR o: Options);
-    expression: PROCEDURE(c: Ast.Context; VAR e: Ast.Expression; o: Options);
+    type      : PROCEDURE(VAR c: Ast.Context; t: Ast.Type;           VAR o: Options);
+    expression: PROCEDURE(VAR c: Ast.Context; VAR e: Ast.Expression; VAR o: Options);
     incParam  : Ast.FormalParam;
 
   PROCEDURE Import(imp: Ast.Import; o: Options);
@@ -72,6 +75,7 @@ MODULE AstTransform;
   BEGIN
     o.setSubBrace := TRUE;
     o.renameSameInRecExt := FALSE;
+    o.moveStringToConst := FALSE;
     o.anonRecord := AnonDeclareGlobalScope;
     o.outParam := OutParamToArrayAndIndex;
 
@@ -329,7 +333,7 @@ MODULE AstTransform;
     RETURN i
   END CutIndex;
 
-  PROCEDURE Designator(c: Ast.Context; d: Ast.Designator; o: Options;
+  PROCEDURE Designator(VAR c: Ast.Context; d: Ast.Designator; VAR o: Options;
                        actualParam: Ast.Parameter; fp: Ast.FormalParam);
   VAR sel, last: Ast.Selector; index: Ast.Expression;
 
@@ -404,9 +408,9 @@ MODULE AstTransform;
     END
   END Designator;
 
-  PROCEDURE Expression(c: Ast.Context; VAR e: Ast.Expression; o: Options);
+  PROCEDURE Expression(VAR c: Ast.Context; VAR e: Ast.Expression; VAR o: Options);
 
-    PROCEDURE Set(c: Ast.Context; set: Ast.ExprSet; o: Options);
+    PROCEDURE Set(VAR c: Ast.Context; set: Ast.ExprSet; VAR o: Options);
     BEGIN
       IF set.exprs[0] = NIL THEN
         ASSERT(set.exprs[1] = NIL);
@@ -422,7 +426,7 @@ MODULE AstTransform;
       END
     END Set;
 
-    PROCEDURE Call(ac: Ast.Context; c: Ast.ExprCall; o: Options);
+    PROCEDURE Call(VAR ac: Ast.Context; c: Ast.ExprCall; VAR o: Options);
     VAR p: Ast.Parameter; fp: Ast.Declaration;
     BEGIN
       Designator(ac, c.designator, o, NIL, NIL);
@@ -447,13 +451,13 @@ MODULE AstTransform;
       END
     END Call;
 
-    PROCEDURE Relation(c: Ast.Context; r: Ast.ExprRelation; o: Options);
+    PROCEDURE Relation(VAR c: Ast.Context; r: Ast.ExprRelation; VAR o: Options);
     BEGIN
       Expression(c, r.exprs[0], o);
       Expression(c, r.exprs[1], o)
     END Relation;
 
-    PROCEDURE Sum(c: Ast.Context; sum: Ast.ExprSum; o: Options): Ast.ExprSum;
+    PROCEDURE Sum(VAR c: Ast.Context; sum: Ast.ExprSum; VAR o: Options): Ast.ExprSum;
     VAR s: Ast.ExprSum;
 
       PROCEDURE IsolateAdd(VAR sum: Ast.ExprSum);
@@ -491,9 +495,9 @@ MODULE AstTransform;
       sum
     END Sum;
 
-    PROCEDURE Term(c: Ast.Context; term: Ast.ExprTerm; o: Options);
+    PROCEDURE Term(VAR c: Ast.Context; term: Ast.ExprTerm; VAR o: Options);
 
-      PROCEDURE Factor(c: Ast.Context; f: Ast.Factor; o: Options);
+      PROCEDURE Factor(VAR c: Ast.Context; f: Ast.Factor; VAR o: Options);
       VAR e: Ast.Expression;
       BEGIN
         e := f;
@@ -513,15 +517,37 @@ MODULE AstTransform;
       UNTIL term = NIL
     END Term;
 
-    PROCEDURE IsExtension(c: Ast.Context; is: Ast.ExprIsExtension; o: Options);
+    PROCEDURE IsExtension(VAR c: Ast.Context; is: Ast.ExprIsExtension; VAR o: Options);
     BEGIN
       Designator(c, is.designator, o, NIL, NIL);
     END IsExtension;
 
+    PROCEDURE String(VAR ctx: Ast.Context; VAR e: Ast.Expression; VAR o: Options);
+    VAR name: ARRAY 16 OF CHAR; i: INTEGER; des: Ast.Designator; c: Ast.Const;
+    BEGIN
+      IF o.moveStringToConst THEN
+        name := "str_";
+        i := 4;
+        ASSERT(IntToChars0X.Dec(name, i, o.moveStringIndex, 0));
+        INC(o.moveStringIndex);
+        AstOk(Ast.ConstNew(ctx, o.module, name, 0, i, c));
+        AstOk(Ast.ConstSetExpression(c, e));
+        AstOk(Ast.DesignatorNew(des, c));
+        e := des;
+        IF o.consts.last = NIL THEN
+          o.consts.first := c
+        ELSE
+          o.consts.last.next := c
+        END;
+        o.consts.last := c
+      END
+    END String;
+
   BEGIN
     CASE e.id OF
-      Ast.IdInteger .. Ast.IdReal32, Ast.IdPointer, Ast.IdString, Ast.IdExprType
+      Ast.IdInteger .. Ast.IdReal32, Ast.IdPointer, Ast.IdExprType
                        : (* *)
+    | Ast.IdString     : String(c, e, o)
     | Ast.IdSet, Ast.IdLongSet
                        : Set(c, e(Ast.ExprSet), o)
     | Ast.IdCall       : Call(c, e(Ast.ExprCall), o)
@@ -535,10 +561,10 @@ MODULE AstTransform;
     END
   END Expression;
 
-  PROCEDURE Statements(VAR c: Ast.Context; VAR stats: Ast.Statement; o: Options);
+  PROCEDURE Statements(VAR c: Ast.Context; VAR stats: Ast.Statement; VAR o: Options);
   VAR st: Ast.Statement;
 
-    PROCEDURE WhileIf(VAR c: Ast.Context; wi: Ast.WhileIf; o: Options);
+    PROCEDURE WhileIf(VAR c: Ast.Context; wi: Ast.WhileIf; VAR o: Options);
     BEGIN
       REPEAT
         IF wi.expr # NIL THEN
@@ -549,13 +575,13 @@ MODULE AstTransform;
       UNTIL wi = NIL
     END WhileIf;
 
-    PROCEDURE Repeat(VAR c: Ast.Context; r: Ast.Repeat; o: Options);
+    PROCEDURE Repeat(VAR c: Ast.Context; r: Ast.Repeat; VAR o: Options);
     BEGIN
       Statements(c, r.stats, o);
       Expression(c, r.expr, o)
     END Repeat;
 
-    PROCEDURE For(VAR c: Ast.Context; VAR stats: Ast.Statement; for: Ast.For; o: Options);
+    PROCEDURE For(VAR c: Ast.Context; VAR stats: Ast.Statement; for: Ast.For; VAR o: Options);
     VAR w: Ast.While; e: Ast.ExprRelation; var, d: Ast.Designator;
         last: Ast.Statement; inc: Ast.Call; einc: Ast.ExprCall;
         fp: Ast.FormalParam; par: Ast.Parameter;
@@ -595,7 +621,7 @@ MODULE AstTransform;
       END
     END For;
 
-    PROCEDURE Case(VAR ac: Ast.Context; c: Ast.Case; o: Options);
+    PROCEDURE Case(VAR ac: Ast.Context; c: Ast.Case; VAR o: Options);
     VAR el: Ast.CaseElement;
     BEGIN
       Expression(ac, c.expr, o);
@@ -607,7 +633,7 @@ MODULE AstTransform;
       Statements(ac, c.else, o)
     END Case;
 
-    PROCEDURE Assign(VAR c: Ast.Context; a: Ast.Assign; o: Options);
+    PROCEDURE Assign(VAR c: Ast.Context; a: Ast.Assign; VAR o: Options);
     BEGIN
       Designator(c, a.designator, o, NIL, NIL);
       Expression(c, a.expr, o)
@@ -774,6 +800,8 @@ MODULE AstTransform;
       d := d.next
     END;
 
+    Statements(c, ds.stats, o);
+
     IF ds.up = NIL THEN
       IF o.consts.first # NIL THEN
         ds.consts := o.consts.first;
@@ -806,9 +834,8 @@ MODULE AstTransform;
       ELSE
         ds.start := ds.procedures
       END
-    END;
+    END
 
-    Statements(c, ds.stats, o)
   END Declarations;
 
   PROCEDURE Transform(VAR c: Ast.Context; m: Ast.Module; VAR o: Options);
@@ -829,6 +856,8 @@ MODULE AstTransform;
     o.types.first  := NIL;
     o.types.last   := NIL;
     o.anon         := 0;
+    o.moveStringIndex := 0;
+
     Declarations(c, m, o)
   END Transform;
 

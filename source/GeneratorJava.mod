@@ -1068,27 +1068,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	END Boolean;
 
 	PROCEDURE CString(VAR g: Generator; e: Ast.ExprString);
-	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
-	BEGIN
-		w := e.string;
-		IF e.asChar & ~g.expectArray THEN
-			ch := CHR(e.int);
-			IF ch = "'" THEN
-				Str(g, "((byte)'\'')")
-			ELSIF ch = "\" THEN
-				Str(g, "((byte)'\\')")
-			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
-				Str(g, "((byte)'");
-				Chr(g, ch);
-				Str(g, "')")
-			ELSE
-				Str(g, "((byte)0x");
-				Chr(g, Hex.To(e.int DIV 16));
-				Chr(g, Hex.To(e.int MOD 16));
-				Chr(g, ")")
-			END
-		ELSE
+	VAR ch: CHAR;
+
+		PROCEDURE StringValue(VAR g: Generator; e: Ast.ExprString);
+		VAR s: ARRAY 8 OF CHAR; len: INTEGER; w: Strings.String;
+		BEGIN
 			Str(g, "O7.bytes(");
+			w := e.string;
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
 				Text.ScreeningString(g, w, FALSE)
 			ELSE
@@ -1113,6 +1099,54 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				Text.Data(g, s, 0, len)
 			END;
 			Chr(g, ")")
+		END StringValue;
+
+		PROCEDURE ByteString(VAR g: Generator; w: Strings.String; i: INTEGER);
+		VAR it: Strings.Iterator; j: INTEGER;
+		BEGIN
+			Str(g, "new byte[] {");
+			IF Strings.IsDefined(w) THEN
+				j := 0;
+				ASSERT(Strings.GetIter(it, w, 1));
+				WHILE it.char # Utf8.DQuote DO
+					i := ORD(it.char);
+					Text.Int(g, i - i DIV 80H * 100H);
+					INC(j);
+					IF j MOD 16 = 0 THEN
+						StrLn(g, ",")
+					ELSE
+						Chr(g, ",")
+					END;
+					ASSERT(Strings.IterNext(it))
+				END
+			ELSE
+				Text.Int(g, i - i DIV 80H * 100H);
+				Chr(g, ",")
+			END;
+			Str(g, "0}")
+		END ByteString;
+
+	BEGIN
+		IF e.asChar & ~g.expectArray THEN
+			ch := CHR(e.int);
+			IF ch = "'" THEN
+				Str(g, "((byte)'\'')")
+			ELSIF ch = "\" THEN
+				Str(g, "((byte)'\\')")
+			ELSIF (ch >= " ") & (ch <= CHR(127)) THEN
+				Str(g, "((byte)'");
+				Chr(g, ch);
+				Str(g, "')")
+			ELSE
+				Str(g, "((byte)0x");
+				Chr(g, Hex.To(e.int DIV 16));
+				Chr(g, Hex.To(e.int MOD 16));
+				Chr(g, ")")
+			END
+		ELSIF g.opt.directString THEN
+			ByteString(g, e.string, e.int)
+		ELSE
+			StringValue(g, e)
 		END
 	END CString;
 
@@ -1217,6 +1251,7 @@ BEGIN
 		Call(g, expr(Ast.ExprCall), {})
 	| Ast.IdDesignator:
 		IF (expr.value # NIL) & (expr.value.id = Ast.IdString)
+		 & (g.expectArray = expr.value(Ast.ExprString).asChar)
 		THEN	CString(g, expr.value(Ast.ExprString))
 		ELSE	Designator(g, expr(Ast.Designator), set)
 		END
@@ -2366,8 +2401,11 @@ BEGIN
 	IF o # NIL THEN
 		V.Init(o^);
 		GenOptions.Default(o^);
-		o.varInit    := GenOptions.VarInitZero;
-		o.checkArith := TRUE & FALSE
+		o.varInit      := GenOptions.VarInitZero;
+		(* Можно получить code too large, из-за того, что байтовые массивы заполняются
+		   в методе, все константы - в статическом инициализаторе *)
+		o.directString := FALSE;
+		o.checkArith   := TRUE & FALSE
 	END
 	RETURN o
 END DefaultOptions;

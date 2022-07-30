@@ -456,7 +456,7 @@ BEGIN
 	END;
 	IF args.noIndexCheck THEN
 		opt.checkIndex := FALSE
-	END;
+	END
 END SetCommonOptions;
 
 PROCEDURE GenerateThroughC(res: INTEGER; VAR args: Cli.Args;
@@ -1216,6 +1216,7 @@ BEGIN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			IF res IN Cli.ThroughJava THEN
+				tranOpt.moveStringToConst := TRUE;
 				AstTransform.Do(ac, module, tranOpt);
 				ret := GenerateThroughJava(res, args, module, cmd, listener)
 			ELSE ASSERT(res IN Cli.ThroughJs);

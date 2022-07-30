@@ -35,6 +35,9 @@ MODULE GenOptions;
       caseAbort*,
       o7Assert*,
 
+      (* Представление строк без в виде байт без подпрограмм преобразования *)
+      directString*,
+
       comment*,
       generatorNote*,
 
@@ -51,6 +54,8 @@ MODULE GenOptions;
       o.checkArith    := TRUE;
       o.caseAbort     := TRUE;
       o.o7Assert      := TRUE;
+
+      o.directString  := TRUE;
 
       o.comment       := TRUE;
       o.generatorNote := TRUE;

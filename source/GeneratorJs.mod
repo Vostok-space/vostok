@@ -1046,6 +1046,17 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 
 	PROCEDURE CString(VAR g: Generator; e: Ast.ExprString);
 	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
+		PROCEDURE ByteString(VAR g: Generator; w: Strings.String);
+		VAR it: Strings.Iterator;
+		BEGIN
+			ASSERT(Strings.GetIter(it, w, 1));
+			WHILE it.char # Utf8.DQuote DO
+				Text.Int(g, ORD(it.char));
+				Chr(g, ",");
+				ASSERT(Strings.IterNext(it))
+			END;
+			Chr(g, "0")
+		END ByteString;
 	BEGIN
 		w := e.string;
 		IF e.asChar & ~g.expectArray THEN
@@ -1053,6 +1064,15 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			Str(g, "0x");
 			Chr(g, Hex.To(e.int DIV 16));
 			Chr(g, Hex.To(e.int MOD 16))
+		ELSIF g.opt.directString THEN
+			Chr(g, "[");
+			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
+				ByteString(g, w);
+				Chr(g, "]")
+			ELSE
+				Text.Int(g, e.int);
+				Str(g, ",0]")
+			END;
 		ELSE
 			Str(g, "o7.toUtf8(");
 			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
@@ -1071,8 +1091,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 					s[2] := "u";
 					s[3] := "0";
 					s[4] := "0";
-					s[5] := Hex.To(e.int DIV 16);
-					s[6] := Hex.To(e.int MOD 16);
+					s[5] := Hex.To(e.int DIV 10H);
+					s[6] := Hex.To(e.int MOD 10H);
 					len := 8
 				END;
 				s[len - 1] := Utf8.DQuote;

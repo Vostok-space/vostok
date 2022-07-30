@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log := DLog, Out, log,
+	Log := DLog, Out,
 	Utf8,
 	Limits := TypesLimits,
 	V,
@@ -1150,6 +1150,28 @@ BEGIN
 	END
 	RETURN err
 END ConstAdd;
+
+(* Создаёт откреплённую от деклараций константу *)
+PROCEDURE ConstNew*(VAR ctx: Context; ds: Declarations;
+                    VAR buf: ARRAY OF CHAR; begin, end: INTEGER;
+                    VAR c: Const): INTEGER;
+VAR err: INTEGER; consts: Const; dend: Declaration;
+BEGIN
+	consts := ds.consts;
+	dend := ds.end;
+	err := ConstAdd(ctx, ds, buf, begin, end, c);
+	IF err = ErrNo THEN
+		ASSERT(c.next = NIL);
+		ds.end := dend;
+		IF dend # NIL THEN
+			ASSERT(dend.next = c);
+			dend.next := NIL
+		END;
+		ds.consts := consts
+	END
+RETURN
+	err
+END ConstNew;
 
 PROCEDURE ConstSetExpression*(const: Const; expr: Expression): INTEGER;
 VAR err: INTEGER;
