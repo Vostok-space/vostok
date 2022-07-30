@@ -615,6 +615,7 @@ VAR cmdLen: INTEGER; cmd: ARRAY 100H OF CHAR; ignore: BOOLEAN;
 		RETURN Chars0X.SearchChar(str, i, ".")
 	END SearchDot;
 BEGIN
+	args.msgLang := MsgLangUndefined;
 	cmdLen := 0;
 	IF CLI.count <= 0 THEN
 		ret := ErrWrongArgs
