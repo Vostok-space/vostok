@@ -1,11 +1,8 @@
 body {
   margin: 1px;
-  background-color: #333;
-  color: #DDD;
 }
 
 .vostokbox-editor {
-  background-color: #444;
   width: 614px;
   height: 600px;
   font-size: 14px;
@@ -18,33 +15,17 @@ body {
 }
 
 button {
-  background-color: #444;
   border-radius: 3px;
   color: inherit;
-  border: 1px solid #333;
   transition: 0.2s;
 }
 
-button:hover {
-  background-color: #555;
-}
-
 input {
-  border: 1px solid #444;
-  border-radius: 3px;
   outline: none;
 }
 
-input:focus {
-  background-color: #383838;
-  border: 1px solid #555;
-}
-
 #vostokbox-tabs button {
-  background-color: #444444;
-  border: 0;
   border-radius: 0;
-  color: #DDD;
   border: none;
   outline: none;
   cursor: pointer;
@@ -53,27 +34,15 @@ input:focus {
   transition: 0.2s;
 }
 
-#vostokbox-tabs button:hover {
-  background-color: #555;
-}
-
-#vostokbox-tabs button.active {
-  background-color: #666;
-  color: #EEE
-}
-
 #vostokbox-log {
   min-width: 320px;
   width: calc(100% - 614px);
   height: 600px;
   overflow: auto;
   float: right;
-  color: #EEE;
-  background-color: #383838;
 }
 
 .vostokbox-log-script {
-  background-color: #787878;
   padding: 4px;
   border-radius: 6px;
   margin: 0px;
@@ -91,10 +60,6 @@ a {
   margin: 0px;
 }
 
-.vostokbox-log-error {
-  color: #FF9090;
-}
-
 .vostokbox-command-line {
   background-color: inherit;
   color: inherit;
@@ -106,3 +71,31 @@ a {
 .ctrl-up   .no-ctrl  { display: block;}
 .ctrl-down .ctrl     { display: block;}
 .ctrl-down .no-ctrl  { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  body                          { background-color: #333; color: #DDD; }
+  .vostokbox-editor             { background-color: #444; }
+  button                        { background-color: #444; border: 1px solid #333; }
+  button:hover                  { background-color: #555; }
+  input                         { border: 1px solid #444; }
+  input:focus                   { background-color: #383838; border: 1px solid #555; }
+  #vostokbox-tabs button        { background-color: #444444; color: #DDD; }
+  #vostokbox-tabs button:hover  { background-color: #555; }
+  #vostokbox-tabs button.active { background-color: #666; color: #EEE; }
+  #vostokbox-log                { background-color: #383838; color: #EEE; }
+  .vostokbox-log-script         { background-color: #787878; }
+  .vostokbox-log-error          { color: #FF9090; }
+}
+
+@media (prefers-color-scheme: light) {
+  button                        { background-color: #CCC;  border: 1px solid #DDD; }
+  button:hover                  { background-color: #BBB; }
+  input                         { border: 1px solid #CCC; }
+  input:focus                   { background-color: #EEE; border: 1px solid #DDD; }
+  #vostokbox-tabs button        { background-color: #EEE; }
+  #vostokbox-tabs button:hover  { background-color: #D8D8D8; }
+  #vostokbox-tabs button.active { background-color: #DDD; }
+  #vostokbox-log                { background-color: #EEE; }
+  .vostokbox-log-script         { background-color: #D8D8D8; }
+  .vostokbox-log-error          { color: #FF0000; }
+}

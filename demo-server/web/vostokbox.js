@@ -107,7 +107,9 @@ var VostokBox;
     };
 
     editor.ace.setDisplayIndentGuides(true);
-    editor.ace.setTheme('ace/theme/idle_fingers');
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      editor.ace.setTheme('ace/theme/idle_fingers');
+    }
     s = editor.ace.getSession();
     s.setMode("ace/mode/oberon");
     s.setOptions({
