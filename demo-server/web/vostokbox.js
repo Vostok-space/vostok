@@ -5,14 +5,22 @@ var VostokBox;
   function assert(cond) { if (!cond) { throw 'incorrectness'; } }
 
   function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
-    var i;
+    var i, ed, s, r;
+    r = box.editorSize;
     for (i = box.editors.length - 1; i >= 0; i -= 1) {
       box.editors[i].div.style.display  = 'none';
       box.editors[i].tab.className      = '';
     }
     box.selected = ind;
-    box.editors[ind].div.style.display  = 'block';
-    box.editors[ind].tab.className      = 'active';
+    ed = box.editors[ind];
+    ed.tab.className = 'active';
+    box.editorSizeListener.disconnect();
+    box.editorSizeListener.observe(ed.div);
+    s = ed.div.style;
+    s.display = 'block';
+    s.width   = r.width + 'px';
+    s.height  = r.height + 'px';
+    ed.ace.resize();
   }
   vb.selectTab = selectTab;
 
@@ -97,6 +105,7 @@ var VostokBox;
       ace   : ace.edit(div),
       index : index
     };
+
     editor.ace.setDisplayIndentGuides(true);
     editor.ace.setTheme('ace/theme/idle_fingers');
     s = editor.ace.getSession();
@@ -114,6 +123,14 @@ var VostokBox;
     return editor;
   }
 
+  function normalizeLogSize(box) {
+    var r, s;
+    r = box.editorSize;
+    s = box.log.style;
+    s.height = r.height + "px";
+    s.width = 'calc(100% - ' + r.width + 'px)';
+  }
+
   function addEditor(box, text) {
     var d, ind;
     if (box.tabAdder != null) {
@@ -124,6 +141,7 @@ var VostokBox;
     d.append(text);
     ind = box.editors.length;
     box.editors[ind] = createAceEditor(box.ace, d, ind);
+
     box.editorsContainer.appendChild(d);
     box.tabs.appendChild(tabCreate(box, getTabName(text, ind), ind));
     if (box.tabAdder != null && ind < 31) {
@@ -510,7 +528,8 @@ var VostokBox;
   function addRunner(box, command) { assert(command != null);
     var div, inp, run, add, del, root;
     div = box.doc.createElement('div');
-    inp = box.doc.createElement('input', 'type="text"');
+    inp = box.doc.createElement('input');
+    inp.type = 'text';
     inp.className = 'vostokbox-command-line';
     inp.value = command;
     inp.onkeyup = function(ke) {
@@ -593,6 +612,11 @@ var VostokBox;
       log     : doc.getElementById('vostokbox-log'),
       tabs    : doc.getElementById('vostokbox-tabs'),
       editors : [],
+      editorSize: null,
+      editorSizeListener: new ResizeObserver(function(es) {
+          box.editorSize = es[0].contentRect;
+          normalizeLogSize(box);
+        }),
       runners : new Set(),
       buttons : new Set(),
 
@@ -611,7 +635,12 @@ var VostokBox;
 
     editors = doc.getElementsByClassName('vostokbox-editor');
     if (editors.length > 0) {
-      box.editorsContainer = editors[editors.length - 1].parentNode;
+      editor = editors[editors.length - 1];
+      box.editorsContainer = editor.parentNode;
+      box.editorSize = {
+        width: editor.offsetWidth,
+        height: editor.offsetHeight
+      };
       len = parseInt(storageGet(box, 'texts-len'));
       if (len > 0 || runners.empty) {
         for (i = 0; i < editors.length; i += 1) {
