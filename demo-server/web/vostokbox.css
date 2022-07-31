@@ -1,34 +1,55 @@
 body {
   margin: 1px;
   background-color: #333;
-  color: #BBB;
+  color: #DDD;
 }
 
 .vostokbox-editor {
   background-color: #444;
-  display: none;
   width: 614px;
   height: 600px;
   font-size: 14px;
   white-space: pre;
   float: left;
+  color: inherit;
+  border: 0;
+  padding: 0;
 }
 
 button {
-  background-color: inherit;
+  background-color: #444;
+  border-radius: 3px;
   color: inherit;
+  border: 1px solid #333;
+  transition: 0.2s;
+}
+
+button:hover {
+  background-color: #555;
+}
+
+input {
+  border: 1px solid #444;
+  border-radius: 3px;
+  outline: none;
+}
+
+input:focus {
+  background-color: #383838;
+  border: 1px solid #555;
 }
 
 #vostokbox-tabs button {
   background-color: #444444;
+  border: 0;
+  border-radius: 0;
   color: #DDD;
-
   border: none;
   outline: none;
   cursor: pointer;
   padding: 3px 12px;
   white-space: pre;
-  transition: 0.3s;
+  transition: 0.2s;
 }
 
 #vostokbox-tabs button:hover {
@@ -41,12 +62,13 @@ button {
 }
 
 #vostokbox-log {
-  width: 600px;
+  min-width: 320px;
+  width: calc(100% - 614px);
   height: 600px;
   overflow: auto;
-  float:right;
-  color:#EEE;
-  background-color: #505050;
+  float: right;
+  color: #EEE;
+  background-color: #383838;
 }
 
 .vostokbox-log-script {
@@ -60,7 +82,7 @@ a {
   color: inherit;
 }
 
-.vostokbox-log-script:hover {
+.vostokbox-log-script:hover, .vostokbox-button-runner:hover {
   text-decoration: underline;
 }
 
@@ -69,7 +91,7 @@ a {
 }
 
 .vostokbox-log-error {
-  color: #F00;
+  color: #FF9090;
 }
 
 .vostokbox-command-line {
