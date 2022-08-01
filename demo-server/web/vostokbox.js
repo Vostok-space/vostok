@@ -8,18 +8,18 @@ var VostokBox;
     var i, ed, s, r;
     r = box.editorSize;
     for (i = box.editors.length - 1; i >= 0; i -= 1) {
-      box.editors[i].div.style.display  = 'none';
-      box.editors[i].tab.className      = '';
+      box.editors[i].div.classList.add('inactive');
+      box.editors[i].tab.classList.remove('active');
     }
     box.selected = ind;
     ed = box.editors[ind];
-    ed.tab.className = 'active';
+    ed.tab.classList.add('active');
     box.editorSizeListener.disconnect();
     box.editorSizeListener.observe(ed.div);
     s = ed.div.style;
-    s.display = 'block';
-    s.width   = r.width + 'px';
-    s.height  = r.height + 'px';
+    ed.div.classList.remove('inactive');
+    s.width  = r.width  + 'px';
+    s.height = r.height + 'px';
     ed.ace.resize();
   }
   vb.selectTab = selectTab;
