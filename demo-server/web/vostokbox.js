@@ -329,14 +329,13 @@ var VostokBox;
   }
 
   function log(box, className, text) {
-    var pre, table;
+    var pre;
     pre = box.doc.createElement('pre');
     pre.innerText = text;
     pre.className = className;
-    table = box.doc.createElement('table');
-    table.appendChild(pre);
-    logAppendChild(box, table);
-    return table;
+    pre.style.width = "fit-content";
+    logAppendChild(box, pre);
+    return pre;
   }
 
   function svgLog(box, className, text) {
