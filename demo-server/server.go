@@ -109,11 +109,9 @@ type (
 )
 
 func createTmp(name string) (tmp string, err error) {
-  tmp = fmt.Sprintf("%s/ost", os.TempDir());
-  err = os.Mkdir(tmp, 0700);
-  if err != nil {
-    tmp, err = ioutil.TempDir(tmp, name)
-  }
+  tmp = os.TempDir() + "/ost";
+  os.Mkdir(tmp, 0700);
+  tmp, err = ioutil.TempDir(tmp, name);
   return
 }
 
