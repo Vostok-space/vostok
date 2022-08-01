@@ -142,6 +142,8 @@ var VostokBox;
       box.tabs.appendChild(box.tabAdder);
     }
     selectTab(box, ind);
+
+    box.log.style.resize = 'none';
   }
 
   function tabAdder(box) {
@@ -614,11 +616,14 @@ var VostokBox;
       editorSizeListener: new ResizeObserver(function(es) {
           var r, s;
           r = es[0].contentRect;
+          s = box.log.style;
           if (r.width > 0 && r.height > 0) {
             box.editorSize = r;
-            s = box.log.style;
             s.height = r.height + "px";
             s.width = 'calc(100% - ' + r.width + 'px)';
+          } else {
+            s.width = '100%';
+            s.resize = 'vertical';
           }
         }),
       runners : new Set(),
