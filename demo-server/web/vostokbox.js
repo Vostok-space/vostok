@@ -125,14 +125,6 @@ var VostokBox;
     return editor;
   }
 
-  function normalizeLogSize(box) {
-    var r, s;
-    r = box.editorSize;
-    s = box.log.style;
-    s.height = r.height + "px";
-    s.width = 'calc(100% - ' + r.width + 'px)';
-  }
-
   function addEditor(box, text) {
     var d, ind;
     if (box.tabAdder != null) {
@@ -144,7 +136,7 @@ var VostokBox;
     ind = box.editors.length;
     box.editors[ind] = createAceEditor(box.ace, d, ind);
 
-    box.editorsContainer.appendChild(d);
+    box.editorsContainer.prepend(d);
     box.tabs.appendChild(tabCreate(box, getTabName(text, ind), ind));
     if (box.tabAdder != null && ind < 31) {
       box.tabs.appendChild(box.tabAdder);
@@ -197,13 +189,17 @@ var VostokBox;
     return n;
   }
 
-  function switchCtrl(box, ke, from, to) {
+  function switchClassName(doc, from, to) {
     var el, i;
+    el = doc.getElementsByClassName(from);
+    for (i = el.length - 1; i >= 0; i -= 1) {
+      assert(el[i].classList.replace(from, to));
+    }
+  }
+
+  function switchCtrl(doc, ke, from, to) {
     if (ke.keyCode == 17) {
-      el = box.doc.getElementsByClassName(from);
-      for (i = el.length - 1; i >= 0; i -= 1) {
-        el[i].className = to;
-      }
+      switchClassName(doc, from, to);
     }
   }
 
@@ -616,8 +612,14 @@ var VostokBox;
       editors : [],
       editorSize: null,
       editorSizeListener: new ResizeObserver(function(es) {
-          box.editorSize = es[0].contentRect;
-          normalizeLogSize(box);
+          var r, s;
+          r = es[0].contentRect;
+          if (r.width > 0 && r.height > 0) {
+            box.editorSize = r;
+            s = box.log.style;
+            s.height = r.height + "px";
+            s.width = 'calc(100% - ' + r.width + 'px)';
+          }
         }),
       runners : new Set(),
       buttons : new Set(),
@@ -665,8 +667,8 @@ var VostokBox;
       selectTab(box, 0);
     }
 
-    doc.onkeydown = function(ke) { switchCtrl(box, ke, 'ctrl-up', 'ctrl-down'); };
-    doc.onkeyup   = function(ke) { switchCtrl(box, ke, 'ctrl-down', 'ctrl-up'); };
+    doc.onkeydown = function(ke) { switchCtrl(box.doc, ke, 'ctrl-up', 'ctrl-down'); };
+    doc.onkeyup   = function(ke) { switchCtrl(box.doc, ke, 'ctrl-down', 'ctrl-up'); };
 
     log = box.storage['vostokbox-log'];
     if (log != null) {
