@@ -16,12 +16,18 @@ body {
 
 button {
   border-radius: 3px;
+  border: 1px solid;
   color: inherit;
   transition: 0.2s;
 }
 
 input {
+  border: 1px solid;
   outline: none;
+}
+
+input:focus {
+  border: 1px solid;
 }
 
 #vostokbox-tabs button {
@@ -39,7 +45,6 @@ input {
   width: calc(100% - 614px);
   height: 600px;
   overflow: auto;
-  float: right;
 }
 
 .vostokbox-log-script {
@@ -75,10 +80,10 @@ a {
 @media (prefers-color-scheme: dark) {
   body                          { background-color: #333; color: #DDD; }
   .vostokbox-editor             { background-color: #444; }
-  button                        { background-color: #444; border: 1px solid #333; }
+  button                        { background-color: #444; border-color: #333; }
   button:hover                  { background-color: #555; }
-  input                         { border: 1px solid #444; }
-  input:focus                   { background-color: #383838; border: 1px solid #555; }
+  input                         { border-color: #444; }
+  input:focus                   { background-color: #383838; border-color: #555; }
   #vostokbox-tabs button        { background-color: #444444; color: #DDD; }
   #vostokbox-tabs button:hover  { background-color: #555; }
   #vostokbox-tabs button.active { background-color: #666; color: #EEE; }
@@ -88,10 +93,10 @@ a {
 }
 
 @media (prefers-color-scheme: light) {
-  button                        { background-color: #CCC;  border: 1px solid #DDD; }
+  button                        { background-color: #CCC;  border-color: #DDD; }
   button:hover                  { background-color: #BBB; }
-  input                         { border: 1px solid #CCC; }
-  input:focus                   { background-color: #EEE; border: 1px solid #DDD; }
+  input                         { border-color: #CCC; }
+  input:focus                   { background-color: #EEE; border-color: #DDD; }
   #vostokbox-tabs button        { background-color: #EEE; }
   #vostokbox-tabs button:hover  { background-color: #D8D8D8; }
   #vostokbox-tabs button.active { background-color: #DDD; }
