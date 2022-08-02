@@ -16,7 +16,9 @@ MODULE ReadDir;
      WHILE D.Read(e, d) DO
        l := 0;
        ASSERT(D.CopyName(n, l, e));
-       Out.String(n); Out.Ln
+       IF (n # ".") & (n # "..") THEN
+         Out.String(n); Out.Ln
+       END
      END;
      ASSERT(D.Close(d))
    END
