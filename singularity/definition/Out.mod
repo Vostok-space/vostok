@@ -74,7 +74,7 @@ MODULE Out;
  BEGIN
    o := IO.OpenOut();
    success := o # NIL;
-   IF o # NIL THEN
+   IF success THEN
      Stream.CloseOut(out);
      out := o
    END

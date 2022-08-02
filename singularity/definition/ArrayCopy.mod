@@ -27,14 +27,19 @@ MODULE ArrayCopy;
     FromBytesToChars* = FromBytes + ToChars;
     FromBytesToBytes* = FromBytes + ToBytes;
 
+  PROCEDURE Check(destLen, destOfs, srcLen, srcOfs, count: INTEGER);
+  BEGIN
+    ASSERT(count > 0);
+    ASSERT((0 <= destOfs) & (destOfs <= destLen - count));
+    ASSERT((0 <= srcOfs) & (srcOfs <= srcLen - count))
+  END Check;
+
   PROCEDURE Chars*(VAR dest: ARRAY OF CHAR; destOfs: INTEGER;
                         src: ARRAY OF CHAR;  srcOfs: INTEGER;
                    count: INTEGER);
   VAR di, si, last: INTEGER;
   BEGIN
-    ASSERT(count > 0);
-    ASSERT((0 <= destOfs) & (destOfs <= LEN(dest) - count));
-    ASSERT((0 <= srcOfs) & (srcOfs <= LEN(src) - count));
+    Check(LEN(dest), destOfs, LEN(src), srcOfs, count);
 
     last := destOfs + count - 1;
     IF destOfs = srcOfs THEN
@@ -55,9 +60,7 @@ MODULE ArrayCopy;
                    count: INTEGER);
   VAR di, si, last: INTEGER;
   BEGIN
-    ASSERT(count > 0);
-    ASSERT((0 <= destOfs) & (destOfs <= LEN(dest) - count));
-    ASSERT((0 <= srcOfs) & (srcOfs <= LEN(src) - count));
+    Check(LEN(dest), destOfs, LEN(src), srcOfs, count);
 
     last := destOfs + count - 1;
     IF destOfs = srcOfs THEN
@@ -78,9 +81,7 @@ MODULE ArrayCopy;
                           count: INTEGER);
   VAR di, si, last: INTEGER;
   BEGIN
-    ASSERT(count > 0);
-    ASSERT((0 <= destOfs) & (destOfs <= LEN(dest) - count));
-    ASSERT((0 <= srcOfs) & (srcOfs <= LEN(src) - count));
+    Check(LEN(dest), destOfs, LEN(src), srcOfs, count);
 
     last := destOfs + count - 1;
     IF destOfs = srcOfs THEN
@@ -101,9 +102,7 @@ MODULE ArrayCopy;
                           count: INTEGER);
   VAR di, si, last: INTEGER;
   BEGIN
-    ASSERT(count > 0);
-    ASSERT((0 <= destOfs) & (destOfs <= LEN(dest) - count));
-    ASSERT((0 <= srcOfs) & (srcOfs <= LEN(src) - count));
+    Check(LEN(dest), destOfs, LEN(src), srcOfs, count);
 
     last := destOfs + count - 1;
     IF destOfs = srcOfs THEN

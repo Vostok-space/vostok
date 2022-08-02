@@ -49,9 +49,9 @@ CONST
   BEGIN
     ASSERT(InRange(d));
 
-    IF ("0" <= d) & (d <= "9") THEN
+    IF d <= "9" THEN
       i := ORD(d) - ORD("0")
-    ELSE ASSERT(("A" <= d) & (d <= "F"));
+    ELSE
       i := ORD(d) - (ORD("A") - 10)
     END
   RETURN
@@ -63,9 +63,9 @@ CONST
   BEGIN
     ASSERT(InRangeWithLowCase(d));
 
-    IF ("0" <= d) & (d <= "9") THEN
+    IF d <= "9" THEN
       i := ORD(d) - ORD("0")
-    ELSIF ("A" <= d) & (d <= "F") THEN
+    ELSIF d <= "F" THEN
       i := ORD(d) - (ORD("A") - 10)
     ELSE
       i := ORD(d) - (ORD("a") - 10)
