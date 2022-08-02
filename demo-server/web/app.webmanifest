@@ -1,0 +1,13 @@
+{
+  "name": "OstBox",
+  "short_name": "Vostok translator sandbox",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Sandbox for Oberon-07 translator",
+  "icons": [{
+    "src": "icon.svg",
+    "sizes": "any",
+    "type": "image/svg+xml"
+  }]
+}

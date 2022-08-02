@@ -441,7 +441,7 @@ var VostokBox;
     } else {
       req = new XMLHttpRequest();
 
-      req.timeout = 6000;
+      req.timeout = box.runTimeout;
       req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
       req.onerror   = function (e) { errorLog(box, 'connection error'); };
       if (uscr == '/TO-SCHEME') {
@@ -632,7 +632,8 @@ var VostokBox;
       editorsContainer: null,
       tabAdder: null,
 
-      runUrl  : null
+      runUrl  : null,
+      runTimeout: VostokBoxConfig.timeout
     };
 
     if (window.location.protocol == 'https:') {
