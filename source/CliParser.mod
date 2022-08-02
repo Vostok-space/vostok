@@ -116,7 +116,7 @@ TYPE
 		modPathLen*: INTEGER;
 		sing*: SET;
 		init*, memng*, arg*, cStd*, obStd*: INTEGER;
-		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*, puml*: BOOLEAN;
+		noNilCheck*, noOverflowCheck*, noIndexCheck*, cPlan9*, puml*, nativeString*: BOOLEAN;
 		cyrillic*, msgLang*: INTEGER;
 
 		multiErrors*: BOOLEAN
@@ -356,6 +356,8 @@ BEGIN
 			args.msgLang := MsgLangUkrainian
 		ELSIF opt = "-msg-lang:eng" THEN
 			args.msgLang := MsgLangEnglish
+		ELSIF opt = "-native-string" THEN
+			args.nativeString := TRUE
 		ELSE
 			ret := ErrUnexpectArg
 		END;
@@ -405,6 +407,7 @@ BEGIN
 	args.noNilCheck      := FALSE;
 	args.noOverflowCheck := FALSE;
 	args.noIndexCheck    := FALSE;
+	args.nativeString    := FALSE;
 	args.cyrillic        := CyrillicNo;
 	args.toSingleFile    := FALSE;
 	args.multiErrors     := FALSE

@@ -456,6 +456,9 @@ BEGIN
 	END;
 	IF args.noIndexCheck THEN
 		opt.checkIndex := FALSE
+	END;
+	IF args.nativeString THEN
+		opt.directString := FALSE
 	END
 END SetCommonOptions;
 
@@ -1216,7 +1219,9 @@ BEGIN
 			Ast.ModuleReopen(module);
 			AstTransform.DefaultOptions(tranOpt);
 			IF res IN Cli.ThroughJava THEN
-				tranOpt.moveStringToConst := TRUE;
+				IF ~args.nativeString THEN
+					tranOpt.moveStringToConst := TRUE
+				END;
 				AstTransform.Do(ac, module, tranOpt);
 				ret := GenerateThroughJava(res, args, module, cmd, listener)
 			ELSE ASSERT(res IN Cli.ThroughJs);
