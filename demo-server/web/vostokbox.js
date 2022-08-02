@@ -686,7 +686,7 @@ var VostokBox;
       defaultLog(box, runners.empty, log);
     }
     if (box.log.lastChild != null) {
-      box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      box.log.lastChild.scrollIntoView({ block: 'nearest'});
     }
     checkPageParams(box, new URL(window.location.href).searchParams);
 
