@@ -609,7 +609,7 @@ BEGIN
 END Command;
 
 PROCEDURE Parse*(VAR args: Args; VAR ret: INTEGER): BOOLEAN;
-VAR cmdLen: INTEGER; cmd: ARRAY 100H OF CHAR; ignore: BOOLEAN;
+VAR cmdLen, arg: INTEGER; cmd: ARRAY 100H OF CHAR; ignore: BOOLEAN;
 
 	PROCEDURE SearchDot(str: ARRAY OF CHAR): BOOLEAN;
 	VAR i: INTEGER;
@@ -627,7 +627,12 @@ BEGIN
 	ELSIF SearchDot(cmd) THEN
 		ignore := ArgsForRunFile(args, ret)
 	ELSIF (cmd = "help") OR (cmd = "--help") THEN
-		ret := CmdHelp
+		ArgsInit(args);
+		arg := 1;
+		ret := Options(args, arg);
+		IF ret = ErrNo THEN
+			ret := CmdHelp
+		END
 	ELSIF (cmd = "version") OR (cmd = "--version") THEN
 		ret := CmdVersion
 	ELSIF cmd = "to-c" THEN

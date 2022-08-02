@@ -105,11 +105,16 @@ S("");
 S("-C90 | -C99 | -C11            - ISO standard of generated C-code");
 S("-out:O7|-out:AO|-out:CP       - dialect of generated Oberon-code");
 S("");
-S("-cyrillic[-same|-escape|-translit] - allow russian identifiers in a source.");
+S("-cyrillic[-same|-escape|-translit] - allow cyrillic identifiers in a source.");
 S("   by default used suitable method of name generation, specific for compiler.");
 S("  -same     translate to identical C names.");
 S("  -escape   translate with escaped unicode chars - \uXXXX.");
-S("  -translit use transliteration in output names in C.")
+S("  -translit use transliteration in output names in C.");
+S("");
+S("-native-string - generate more natural strings of target language");
+S("");
+S("User interface:");
+S("-msg-lang:(eng|rus|ukr) - set the translator's messages language")
 	END Details;
 
 BEGIN
