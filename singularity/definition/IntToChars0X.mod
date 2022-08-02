@@ -23,12 +23,9 @@ MODULE IntToChars0X;
   VAR c, i: INTEGER;
   BEGIN
     i := v;
-    IF i >= 0 THEN
-      c := 0;
-      neg := FALSE;
-    ELSE
-      neg := TRUE;
-      c := 1;
+    c := ORD(i < 0);
+    neg := c = 1;
+    IF c = 1 THEN
       i := -i;
       v := i
     END;
@@ -54,12 +51,9 @@ MODULE IntToChars0X;
   VAR c, i: INTEGER;
   BEGIN
     i := v;
-    IF i >= 0 THEN
-      c := 0;
-      neg := FALSE;
-    ELSE
-      neg := TRUE;
-      c := 1;
+    c := ORD(i < 0);
+    neg := c = 1;
+    IF c = 1 THEN
       i := -i;
       v := i
     END;
@@ -150,7 +144,7 @@ MODULE IntToChars0X;
         str[i] := "-"
       END;
 
-      ArrayFill.Char(str, s, 0X, i - s)
+      ArrayFill.Char(str, s, " ", i - s)
     END
   RETURN
     ok
