@@ -1,13 +1,15 @@
 {
-  "name": "OstBox",
-  "short_name": "Vostok translator sandbox",
-  "start_url": ".",
+  "lang": "en-us",
+  "name": "Vostok translator sandbox",
+  "short_name": "Vostok",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#fff",
-  "description": "Sandbox for Oberon-07 translator",
+  "background_color": "#000",
+  "description": "Interactive environment for Oberon-07 translator",
   "icons": [{
     "src": "icon.svg",
-    "sizes": "any",
-    "type": "image/svg+xml"
+    "sizes": "16x16 32x32 48x48 64x64 72x72 96x96 128x128 150x150 256x256 512x512 1024x1024",
+    "type": "image/svg+xml",
+    "purpose": "any"
   }]
 }
