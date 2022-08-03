@@ -35,28 +35,49 @@ import (
 
 const (
   kwModule = "MODULE";
-  teleApi = "https://api.telegram.org/bot"
+  teleApi = "https://api.telegram.org/bot";
 
-  webHelp =
-    "Module.Proc(Params) - run Oberon-code\n" +
-    "/INFO - show this help\n" +
-    "/LIST - list available modules\n" +
-    "/INFO ModuleName - show info about module\n" +
-    "/TO-(C|JS|JAVA|PUML|SCHEME)\n" +
-    "    - convert code to appropriate language\n" +
-    "/SAVE [id|name] - save project to server\n" +
-    "      optional name for new save, id for existing\n" +
-    "/LOAD id - load project from server\n"
-
-  teleHelp = webHelp +
-    `/O7: log.s("Script mode")` +
-    "\n/MODULE ModuleMode; END ModuleMode.\n"
+  eng = 0;
+  rus = 1;
+  ukr = 2;
 )
 
 var (
   moduleDirs = [] string {
     "vostok/library",
     "vostok/singularity/definition",
+  };
+
+  langStrs = [] string {
+    "eng",
+    "rus",
+    "ukr",
+  };
+
+  webHelp = [] string {
+    "Module.Proc(Params) - run Oberon-code\n" +
+    "/INFO - show this help\n" +
+    "/LIST - list available modules\n" +
+    "/INFO ModuleName - show info about module\n" +
+    "/TO-(C|JS|JAVA|PUML|SCHEME)\n" +
+    "    - convert code to appropriate language\n" +
+    "/SAVE [name]|id - save project to server\n" +
+    "      optional name for new save, id for existing\n" +
+    "/LOAD id - load project from server\n",
+
+    "Module.Proc(Params) - запуск кода на Oberon\n" +
+    "/INFO - показ этой справки\n" +
+    "/LIST - список доступных модулей\n" +
+    "/INFO ModuleName - справка по модулю\n" +
+    "/TO-(C|JS|JAVA|PUML|SCHEME)\n" +
+    "    - преобразование модуля в соответствующий язык\n" +
+    "/SAVE [name]|id - сохранить проект на сервер\n" +
+    "      пусто или имя латиницей для 1-го сохранения, id для следующих\n" +
+    "/LOAD id - загрузить проект с сервера\n",
+  };
+  teleHelp = [] string {
+    `/O7: log.sn("Script mode")` +
+    "\n/MODULE ModuleMode; END ModuleMode.\n",
   }
 )
 
@@ -64,8 +85,12 @@ type (
   teleChat struct {
     Id int `json:"id"`
   }
+  teleUser struct {
+    Lang string `json:"language_code"`
+  }
   teleMessage struct {
     Id    int           `json:"message_id"`;
+    From  teleUser      `json:"from"`;
     Chat  teleChat      `json:"chat"`;
     Txt   string        `json:"text"`;
     Reply *teleMessage  `json:"reply_to_message,omitempty"`
@@ -149,10 +174,11 @@ func saveSource(src source) (tmp string, err error) {
   return
 }
 
-func ostToBin(script, bin, tmp, cc string, multiErrors bool) (output []byte, err error) {
+func ostToBin(script, bin, tmp, cc string, multiErrors bool, lang int) (output []byte, err error) {
   var (cmd *exec.Cmd)
   cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
-                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors", "-msg-lang:eng");
+                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors",
+                     "-msg-lang:" + langStrs[lang]);
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
   }
@@ -160,7 +186,7 @@ func ostToBin(script, bin, tmp, cc string, multiErrors bool) (output []byte, err
   return
 }
 
-func run(src source, cc string, timeout int) (output []byte, err error) {
+func run(src source, cc string, timeout, lang int) (output []byte, err error) {
   var (
     tmp, bin, timeOut string;
     cmd *exec.Cmd
@@ -172,9 +198,9 @@ func run(src source, cc string, timeout int) (output []byte, err error) {
       bin += ".exe"
     }
     fmt.Println("(", src.script, ")");
-    output, err = ostToBin(src.script, bin, tmp, cc, true);
+    output, err = ostToBin(src.script, bin, tmp, cc, true, lang);
     if err != nil && err.(*exec.ExitError).ExitCode() < 0 {
-      output, err = ostToBin(src.script, bin, tmp, cc, false)
+      output, err = ostToBin(src.script, bin, tmp, cc, false, lang)
     }
     fmt.Print(string(output));
     if err == nil {
@@ -227,17 +253,18 @@ func listModules(sep1, sep2 string) (list string) {
   return
 }
 
-func infoModule(name string) (info []byte) {
+func infoModule(name string, lang int) (info []byte) {
   var (
     cmd *exec.Cmd
   )
   cmd = exec.Command("vostok/result/ost", "to-modef", name, "",
-                     "-infr", "vostok", "-cyrillic", "-multi-errors", "-msg-lang:eng");
+                     "-infr", "vostok", "-cyrillic", "-multi-errors",
+                     "-msg-lang:" + langStrs[lang]);
   info, _ = cmd.CombinedOutput();
   return
 }
 
-func toLang(src source) (translated []byte) {
+func toLang(src source, lang int) (translated []byte) {
   var (
     tmp, puml, svg, str string;
     cmd *exec.Cmd;
@@ -247,14 +274,14 @@ func toLang(src source) (translated []byte) {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
     str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp +
-          " -infr vostok -cyrillic -msg-lang:eng > " + puml +
+          " -infr vostok -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
           " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
     cmd = exec.Command("vostok/result/ost", src.cmd, src.name, "-",
                        "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
                        "-init", "noinit", "-no-array-index-check", "-no-nil-check",
-                       "-no-arithmetic-overflow-check", "-msg-lang:eng")
+                       "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
   }
   translated, _ = cmd.CombinedOutput();
   os.RemoveAll(tmp);
@@ -406,7 +433,7 @@ func writeInfo(editdir string, view string, runners, buttons []string) (err erro
   return
 }
 
-func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
+func saveToWorkdir(src source, workdir, origin string, lang int) (resp []byte) {
   var (
     err error;
     tmp, dir, old, file, edit, view string;
@@ -416,7 +443,10 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
   )
 
   if workdir == "" {
-    err = errors.New("Saving is not allowed - working directory not set by server")
+    err = errors.New(local([]string{
+      "Saving is not allowed - working directory not set by server",
+      "Сохранение недоступно - на сервере не выставлен рабочий каталог",
+    }, lang))
   } else {
     id, isNewId, name, err = getIdAndName(src.par);
     if err == nil {
@@ -428,7 +458,10 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
         err = os.Mkdir(dir, 0700);
         if isNewId == os.IsExist(err) {
           if !isNewId {
-            err = fmt.Errorf("Project %v does not exist. Remove id to save as new.", id)
+            err = fmt.Errorf(local([]string {
+              "Project %v does not exist. Remove id to save as new.",
+              "Проект %v не существует. Уберите идентификатор для сохранения как нового",
+              }, lang), id)
           }
         } else {
           if isNewId {
@@ -472,11 +505,17 @@ func saveToWorkdir(src source, workdir, origin string) (resp []byte) {
           }
         }
         if err == nil {
-          resp = []byte(fmt.Sprintf(
+          resp = []byte(fmt.Sprintf(local([]string {
             "Project saved by EDIT id: %v. Don't share it.\n" +
             "    %v/sandbox.html?EDIT=%v\n\n" +
             "VIEW id: %v for sharing\n" +
-            "    %v/sandbox.html?view=%v", id, origin, id, view, origin, view))
+            "    %v/sandbox.html?view=%v",
+
+            "Сохранено под РЕДАКТОРСКИМ id: %v. Не делитесь им.\n" +
+            "    %v/sandbox.html?EDIT=%v\n\n" +
+            "Для просмотра и распространения - id: %v\n" +
+            "    %v/sandbox.html?view=%v",
+            }, lang), id, origin, id, view, origin, view))
         }
         if tmp != "" {
            os.RemoveAll(tmp)
@@ -559,7 +598,7 @@ func load(workdir, id string) (res []byte) {
   return
 }
 
-func command(src source, help, workdir string, skipUnknownCommand bool, origin string) (res []byte, ok bool) {
+func command(src source, help, workdir string, skipUnknownCommand bool, origin string, lang int) (res []byte, ok bool) {
   var (cmd string)
 
   ok = true;
@@ -569,13 +608,13 @@ func command(src source, help, workdir string, skipUnknownCommand bool, origin s
   } else if src.par == "" && cmd == "list" {
     res = []byte(listModules("\n", "\n\n"))
   } else if cmd == "info" || cmd == "help" || cmd == "list" {
-    res = infoModule(src.par)
+    res = infoModule(src.par, lang)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
             cmd == "to-mod" || cmd == "to-modef" ||
             cmd == "to-puml" || cmd == "to-scheme" {
-    res = toLang(src)
+    res = toLang(src, lang)
   } else if cmd == "save" {
-    res = saveToWorkdir(src, workdir, origin)
+    res = saveToWorkdir(src, workdir, origin, lang)
   } else if cmd == "load" {
     res = load(workdir, src.par)
   } else if skipUnknownCommand {
@@ -588,14 +627,14 @@ func command(src source, help, workdir string, skipUnknownCommand bool, origin s
 }
 
 func handleInput(src source, help, cc string, timeout int, workdir string, skipUnknownCommand bool,
-                 origin string) (res []byte, err error) {
+                 origin string, lang int) (res []byte, err error) {
   err = nil;
   if src.script == "" {
     res = []byte{}
   } else if src.cmd == "run" {
-    res, err = run(src, cc, timeout)
+    res, err = run(src, cc, timeout, lang)
   } else {
-    res, _ = command(src, help, workdir, skipUnknownCommand, origin)
+    res, _ = command(src, help, workdir, skipUnknownCommand, origin, lang)
   }
   return
 }
@@ -685,22 +724,42 @@ func getTexts(r *http.Request) (src source, err error) {
   return
 }
 
+func getMsgLangId(l string) (lang int) {
+  if l == "ru" {
+    lang = rus
+  } else if l == "uk" {
+    lang = ukr
+  } else {
+    lang = eng
+  }
+  return
+}
+
+func getMsgLang(r *http.Request) (lang int) {
+  lang = getMsgLangId(r.Header["Accept-Language"][0][:2])
+  return
+}
+
 func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow, workdir string) {
   var (
     out []byte;
     err error;
-    src source
+    src source;
+    lang int
   )
+  fmt.Println();
   if r.Method != "POST" {
     http.NotFound(w, r)
   } else {
     if allow != "" {
       w.Header().Set("Access-Control-Allow-Origin", allow)
     }
+    lang = getMsgLang(r);
     src, err = getTexts(r);
     if err == nil {
       src.runners, src.buttons, err = getRunners(r);
-      out, err = handleInput(src, webHelp, cc, timeout, workdir, false, r.Header["Origin"][0])
+      out, err = handleInput(src, local(webHelp, lang), cc, timeout, workdir, false,
+                             r.Header["Origin"][0], lang)
     }
     if err == nil {
       w.Write(out)
@@ -715,7 +774,6 @@ func webServer(addr string, port, timeout int, cc, allow, workdir, crt, key stri
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
-
   a = fmt.Sprintf("%v:%d", addr, port);
   if crt != "" {
     err = http.ListenAndServeTLS(a, crt, key, nil)
@@ -804,13 +862,22 @@ func teleGetSrc(upd teleUpdate) (src source, chat, msgId int) {
   return
 }
 
+func local(texts []string, lang int) (text string) {
+  if lang < len(texts) && texts[lang] != "" {
+    text = texts[lang]
+  } else {
+    text = texts[0]
+  }
+  return
+}
+
 func teleBot(token, cc, workdir string, timeout int) (err error) {
   var (
-    api string;
+    api, lang string;
     src source;
     upds []teleUpdate;
     upd teleUpdate;
-    lastUpdate, chat, msgId int;
+    lastUpdate, chat, msgId, lng int;
     output []byte
   )
   api = teleApi + token + "/";
@@ -821,8 +888,15 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
     if err == nil {
       for _, upd = range upds {
         src, chat, msgId = teleGetSrc(upd);
-        output, err = handleInput(src, teleHelp, cc, timeout, workdir, true,
-                                  "https://vostok.oberon.org");
+        if upd.Msg.Txt == "" {
+          lang = upd.Msg.From.Lang
+        } else {
+          lang = upd.Edited.From.Lang
+        }
+        lng = getMsgLangId(lang);
+        output, err = handleInput(src, local(webHelp, lng) + local(teleHelp, lng),
+                                  cc, timeout, workdir, true,
+                                  "https://vostok.oberon.org", lng);
         err = teleSend(api, string(output), chat, msgId);
         lastUpdate = upd.Id
       }

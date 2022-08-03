@@ -2,7 +2,31 @@ var VostokBox;
 (function(vb) {
   'use strict';
 
+  var version = '0.1.0';
+
   function assert(cond) { if (!cond) { throw 'incorrectness'; } }
+
+  function getLangInd(code) {
+    var ind;
+    if (code == 'ru') {
+      ind = 1;
+    } else if (code == 'uk') {
+      ind = 2;
+    } else { /* en */
+      ind = 0;
+    }
+    return ind;
+  }
+
+  function local(box, texts) {
+    var t;
+    if (box.lang < texts.length && texts[box.lang] != null) {
+      t = texts[box.lang];
+    } else {
+      t = texts[0];
+    }
+    return t;
+  }
 
   function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
     var i, ed, s, r;
@@ -292,24 +316,29 @@ var VostokBox;
     div = box.doc.createElement('div');
     box.log.append(div);
     if (savedLog == null) {
-      div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
+      div.append(local(box, ['Sandbox v' + version + ' of Vostok - Oberon translator.',
+                             'Среда ' + version + ' Востока - транслятора Oberon.']));
       ln(box, div);
     }
     if (empty) {
       runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
       div.append(
-        'Use this links to add ',
-        createLink(box, 'editor', function() { addEditor(box, ''); }),
+        local(box, ['Use this links to add ', 'Используйте эти ссылки, чтобы добавить ']),
+        createLink(box, local(box, ['editor', 'редактор']),
+                   function() { addEditor(box, ''); }),
         ', ',
-        createLink(box, 'commands runner', function() { addRunner(box, '/INFO Out'); }),
+        createLink(box, local(box, ['commands runner', 'командные строки']),
+                   function() { addRunner(box, '/INFO Out'); }),
         ', ',
-        createLink(box, 'predefined buttons', function() {addButtonRunners(box, runners); }),
+        createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
+                   function() {addButtonRunners(box, runners); }),
         '.'
       );
       ln(box, div);
     }
     if (savedLog == null) {
-      div.append('Note that sandbox uses web-storage to store input.');
+      div.append(local(box, ['Note that sandbox uses web-storage to store input.',
+                             'Среда использует web-хранилище для сохранения ввода.']));
     }
   }
 
@@ -397,7 +426,9 @@ var VostokBox;
       addButtonRunners(box, addIdToCommandSave(id, res.info.buttons || []));
 
       loc = window.location;
-      svgLog(box, '', 'Successfully loaded. <a href="' + loc.origin + loc.pathname + '">Cancel</a>');
+      svgLog(box, '', local(box, ['Successfully loaded', 'Загружено']) +
+        '. <a href="' + loc.origin + loc.pathname + '">' +
+        local(box, ['Cancel', 'Отменить']) + '</a>');
     } else {
       errorLog(box, res.error);
     }
@@ -405,7 +436,7 @@ var VostokBox;
 
   function onSave(box, text) {
     var s, i, pref, id;
-    pref = 'EDIT id: ';
+    pref = ' id: ';
     s = text.indexOf(pref);
     if (s >= 0) {
       id = text.substring(s + pref.length, text.indexOf('.', s + pref.length));
@@ -416,7 +447,7 @@ var VostokBox;
     normalLog(box, text);
   }
 
-  function trimCommand(cmd) {
+  function trimCommandForServer(cmd) {
     var s;
     cmd = cmd.trim();
     s = cmd.toUpperCase();
@@ -442,18 +473,22 @@ var VostokBox;
       req = new XMLHttpRequest();
 
       req.timeout = box.runTimeout;
-      req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
-      req.onerror   = function (e) { errorLog(box, 'connection error'); };
+      req.ontimeout = function (e) {
+        errorLog(box, local(box, ['connection timeout', 'соединение просрочено']));
+      };
+      req.onerror   = function (e) {
+        errorLog(box, local(box, ['connection error', 'ошибка соединения']));
+      };
       if (uscr == '/TO-SCHEME') {
         req.onload = function (e) { svgLog(box, 'vostokbox-log-out', e.target.responseText); };
       } else if (uscr.startsWith('/LOAD ')) {
         id = scr.trim().substring(5).trim();
         req.onload = function (e) { load(box, id, e.target.responseText); };
-      } else if (uscr.startsWith('/SAVE ')) {
+      } else if (uscr.startsWith('/SAVE')) {
         req.onload = function (e) { onSave(box, e.target.responseText); };
       } else {
         if (uscr == '/INFO') {
-          add = '/CLEAR - clear the log';
+          add = '/CLEAR - ' + local(box, ['clear the log', 'чистка журнала']);
         } else {
           add = '';
         }
@@ -477,14 +512,14 @@ var VostokBox;
       data.append('runners-count', box.runners.size);
       i = 0;
       box.runners.forEach(function(inp) {
-        data.append('runner-' + i, trimCommand(inp.value));
+        data.append('runner-' + i, trimCommandForServer(inp.value));
         i += 1;
       });
 
       data.append('buttons-count', box.buttons.size);
       i = 0;
       box.buttons.forEach(function(cmd) {
-        data.append('button-' + i, trimCommand(cmd));
+        data.append('button-' + i, trimCommandForServer(cmd));
         i += 1;
       });
 
@@ -539,7 +574,8 @@ var VostokBox;
     };
 
     run = box.doc.createElement('button');
-    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl">Run</div><div class="ctrl">Fix</div></div>';
+    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl">' + local(box, ['Run', 'Пуск']) +
+      '</div><div class="ctrl">' + local(box, ['Button', 'Кнопка']) + '</div></div>';
     run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
@@ -633,7 +669,9 @@ var VostokBox;
       tabAdder: null,
 
       runUrl  : null,
-      runTimeout: VostokBoxConfig.timeout
+      runTimeout: VostokBoxConfig.timeout,
+
+      lang: getLangInd(window.navigator.language.slice(0, 2))
     };
 
     if (window.location.protocol == 'https:') {
