@@ -44,8 +44,8 @@ const (
 
 var (
   moduleDirs = [] string {
-    "vostok/library",
-    "vostok/singularity/definition",
+    "library",
+    "singularity/definition",
   };
 
   langStrs = [] string {
@@ -174,10 +174,10 @@ func saveSource(src source) (tmp string, err error) {
   return
 }
 
-func ostToBin(script, bin, tmp, cc string, multiErrors bool, lang int) (output []byte, err error) {
+func ostToBin(ostDir, script, bin, tmp, cc string, multiErrors bool, lang int) (output []byte, err error) {
   var (cmd *exec.Cmd)
-  cmd = exec.Command("vostok/result/ost", "to-bin", script, bin,
-                     "-infr", "vostok", "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors",
+  cmd = exec.Command(ostDir + "/result/ost", "to-bin", script, bin,
+                     "-infr", ostDir, "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors",
                      "-msg-lang:" + langStrs[lang]);
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
@@ -186,7 +186,7 @@ func ostToBin(script, bin, tmp, cc string, multiErrors bool, lang int) (output [
   return
 }
 
-func run(src source, cc string, timeout, lang int) (output []byte, err error) {
+func run(ostDir string, src source, cc string, timeout, lang int) (output []byte, err error) {
   var (
     tmp, bin, timeOut string;
     cmd *exec.Cmd
@@ -198,9 +198,9 @@ func run(src source, cc string, timeout, lang int) (output []byte, err error) {
       bin += ".exe"
     }
     fmt.Println("(", src.script, ")");
-    output, err = ostToBin(src.script, bin, tmp, cc, true, lang);
+    output, err = ostToBin(ostDir, src.script, bin, tmp, cc, true, lang);
     if err != nil && err.(*exec.ExitError).ExitCode() < 0 {
-      output, err = ostToBin(src.script, bin, tmp, cc, false, lang)
+      output, err = ostToBin(ostDir, src.script, bin, tmp, cc, false, lang)
     }
     fmt.Print(string(output));
     if err == nil {
@@ -226,7 +226,7 @@ func run(src source, cc string, timeout, lang int) (output []byte, err error) {
   return
 }
 
-func listModules(sep1, sep2 string) (list string) {
+func listModules(ostDir, sep1, sep2 string) (list string) {
   var (
     files []os.FileInfo;
     f os.FileInfo;
@@ -236,7 +236,7 @@ func listModules(sep1, sep2 string) (list string) {
   )
   list = "";
   for i, path = range moduleDirs {
-    files, err = ioutil.ReadDir(path);
+    files, err = ioutil.ReadDir(ostDir + "/" + path);
     if err == nil {
       add = "";
       for _, f = range files {
@@ -253,18 +253,18 @@ func listModules(sep1, sep2 string) (list string) {
   return
 }
 
-func infoModule(name string, lang int) (info []byte) {
+func infoModule(ostDir, name string, lang int) (info []byte) {
   var (
     cmd *exec.Cmd
   )
-  cmd = exec.Command("vostok/result/ost", "to-modef", name, "",
-                     "-infr", "vostok", "-cyrillic", "-multi-errors",
+  cmd = exec.Command(ostDir + "/result/ost", "to-modef", name, "",
+                     "-infr", ostDir, "-cyrillic", "-multi-errors",
                      "-msg-lang:" + langStrs[lang]);
   info, _ = cmd.CombinedOutput();
   return
 }
 
-func toLang(src source, lang int) (translated []byte) {
+func toLang(ostDir string, src source, lang int) (translated []byte) {
   var (
     tmp, puml, svg, str string;
     cmd *exec.Cmd;
@@ -273,13 +273,13 @@ func toLang(src source, lang int) (translated []byte) {
   if src.cmd == "to-scheme" {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
-    str = "vostok/result/ost to-puml " + src.name + " - -m " + tmp +
-          " -infr vostok -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
+    str = ostDir + "/result/ost to-puml " + src.name + " - -m " + tmp +
+          " -infr " + ostDir + " -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
           " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
-    cmd = exec.Command("vostok/result/ost", src.cmd, src.name, "-",
-                       "-m", tmp, "-infr", "vostok", "-cyrillic-same", "-multi-errors", "-C11",
+    cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-",
+                       "-m", tmp, "-infr", ostDir, "-cyrillic-same", "-multi-errors", "-C11",
                        "-init", "noinit", "-no-array-index-check", "-no-nil-check",
                        "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
   }
@@ -598,7 +598,8 @@ func load(workdir, id string) (res []byte) {
   return
 }
 
-func command(src source, help, workdir string, skipUnknownCommand bool, origin string, lang int) (res []byte, ok bool) {
+func command(ostDir string, src source, help, workdir string, skipUnknownCommand bool,
+             origin string, lang int) (res []byte, ok bool) {
   var (cmd string)
 
   ok = true;
@@ -606,13 +607,13 @@ func command(src source, help, workdir string, skipUnknownCommand bool, origin s
   if src.par == "" && (cmd == "info" || cmd == "help") {
     res = []byte(help)
   } else if src.par == "" && cmd == "list" {
-    res = []byte(listModules("\n", "\n\n"))
+    res = []byte(listModules(ostDir, "\n", "\n\n"))
   } else if cmd == "info" || cmd == "help" || cmd == "list" {
-    res = infoModule(src.par, lang)
+    res = infoModule(ostDir, src.par, lang)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
             cmd == "to-mod" || cmd == "to-modef" ||
             cmd == "to-puml" || cmd == "to-scheme" {
-    res = toLang(src, lang)
+    res = toLang(ostDir, src, lang)
   } else if cmd == "save" {
     res = saveToWorkdir(src, workdir, origin, lang)
   } else if cmd == "load" {
@@ -626,15 +627,15 @@ func command(src source, help, workdir string, skipUnknownCommand bool, origin s
   return
 }
 
-func handleInput(src source, help, cc string, timeout int, workdir string, skipUnknownCommand bool,
-                 origin string, lang int) (res []byte, err error) {
+func handleInput(ostDir string, src source, help, cc string, timeout int, workdir string,
+                 skipUnknownCommand bool, origin string, lang int) (res []byte, err error) {
   err = nil;
   if src.script == "" {
     res = []byte{}
   } else if src.cmd == "run" {
-    res, err = run(src, cc, timeout, lang)
+    res, err = run(ostDir, src, cc, timeout, lang)
   } else {
-    res, _ = command(src, help, workdir, skipUnknownCommand, origin, lang)
+    res, _ = command(ostDir, src, help, workdir, skipUnknownCommand, origin, lang)
   }
   return
 }
@@ -740,7 +741,8 @@ func getMsgLang(r *http.Request) (lang int) {
   return
 }
 
-func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, allow, workdir string) {
+func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, cc string,
+                timeout int, allow, workdir string) {
   var (
     out []byte;
     err error;
@@ -758,7 +760,7 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
     src, err = getTexts(r);
     if err == nil {
       src.runners, src.buttons, err = getRunners(r);
-      out, err = handleInput(src, local(webHelp, lang), cc, timeout, workdir, false,
+      out, err = handleInput(ostDir, src, local(webHelp, lang), cc, timeout, workdir, false,
                              r.Header["Origin"][0], lang)
     }
     if err == nil {
@@ -769,11 +771,11 @@ func webHandler(w http.ResponseWriter, r *http.Request, cc string, timeout int, 
   }
 }
 
-func webServer(addr string, port, timeout int, cc, allow, workdir, crt, key string) (err error) {
+func webServer(ostDir, addr string, port, timeout int, cc, allow, workdir, crt, key string) (err error) {
   var (a string)
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
-    func(w http.ResponseWriter, r *http.Request) { webHandler(w, r, cc, timeout, allow, workdir) });
+    func(w http.ResponseWriter, r *http.Request) { webHandler(ostDir, w, r, cc, timeout, allow, workdir) });
   a = fmt.Sprintf("%v:%d", addr, port);
   if crt != "" {
     err = http.ListenAndServeTLS(a, crt, key, nil)
@@ -894,7 +896,7 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
           lang = upd.Edited.From.Lang
         }
         lng = getMsgLangId(lang);
-        output, err = handleInput(src, local(webHelp, lng) + local(teleHelp, lng),
+        output, err = handleInput("vostok", src, local(webHelp, lng) + local(teleHelp, lng),
                                   cc, timeout, workdir, true,
                                   "https://vostok.oberon.org", lng);
         err = teleSend(api, string(output), chat, msgId);
@@ -908,24 +910,35 @@ func teleBot(token, cc, workdir string, timeout int) (err error) {
 func main() {
   var (
     port, timeout *int;
-    addr, cc, telegram, access, workdir, crt, key *string;
+    addr, cc, telegram, allow, workdir, crt, key *string;
+    ostDir string;
+    full *bool;
     err error
   )
   addr     = flag.String("addr"     , ""    , "served tcp/ip address");
   port     = flag.Int   ("port"     , 8080  , "port tcp/ip");
-  access   = flag.String("access"   , ""    , "web server's allowed clients mask");
+  allow    = flag.String("allow"    , ""    , "web server's allowed clients mask");
   timeout  = flag.Int   ("timeout"  , 5     , "task restriction in seconds");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
   crt      = flag.String("crt"      , ""    , "file with TLS certificate");
   key      = flag.String("key"      , ""    , "file with TLS private key");
+  full     = flag.Bool  ("FULL-ACCESS", false , "to server from localhost-only by default");
   flag.Parse();
 
   if *telegram != "" {
     err = teleBot(*telegram, *cc, *workdir, *timeout)
   } else {
-    err = webServer(*addr, *port, *timeout, *cc, *access, *workdir, *crt, *key)
+    if *full {
+      if *addr == "" {
+        *addr = "localhost"
+      }
+      ostDir = "vostok-full"
+    } else {
+      ostDir = "vostok"
+    }
+    err = webServer(ostDir, *addr, *port, *timeout, *cc, *allow, *workdir, *crt, *key)
   }
   if err != nil {
     fmt.Println(err);
