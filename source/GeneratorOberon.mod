@@ -109,7 +109,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       o.plantUml := FALSE;
       o.multibranchWhile := (o.std = StdO7) & ~o.plantUml;
       o.declaration := FALSE;
-      o.import := FALSE
+      o.import := FALSE;
+      o.identEnc := GenOptions.IdentEncSame
     END;
   RETURN
     o
