@@ -46,6 +46,8 @@ var (
   moduleDirs = [] string {
     "library",
     "singularity/definition",
+    "example",
+    "example/android",
   };
 
   langStrs = [] string {
@@ -176,8 +178,9 @@ func saveSource(src source) (tmp string, err error) {
 
 func ostToBin(ostDir, script, bin, tmp, cc string, multiErrors bool, lang int) (output []byte, err error) {
   var (cmd *exec.Cmd)
-  cmd = exec.Command(ostDir + "/result/ost", "to-bin", script, bin,
-                     "-infr", ostDir, "-m", tmp, "-cc", cc, "-cyrillic", "-multi-errors",
+  cmd = exec.Command(ostDir + "/result/ost", "to-bin", script, bin, "-m", tmp,
+                     "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
+                     "-cc", cc, "-cyrillic", "-multi-errors",
                      "-msg-lang:" + langStrs[lang]);
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
@@ -258,8 +261,8 @@ func infoModule(ostDir, name string, lang int) (info []byte) {
     cmd *exec.Cmd
   )
   cmd = exec.Command(ostDir + "/result/ost", "to-modef", name, "",
-                     "-infr", ostDir, "-cyrillic", "-multi-errors",
-                     "-msg-lang:" + langStrs[lang]);
+                     "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
+                     "-cyrillic", "-multi-errors", "-msg-lang:" + langStrs[lang]);
   info, _ = cmd.CombinedOutput();
   return
 }
@@ -274,12 +277,14 @@ func toLang(ostDir string, src source, lang int) (translated []byte) {
     puml = tmp + "/out.puml";
     svg  = tmp + "/out.svg";
     str = ostDir + "/result/ost to-puml " + src.name + " - -m " + tmp +
-          " -infr " + ostDir + " -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
+          " -infr " + ostDir + " -m " + ostDir + "/example" + " -m " + ostDir + "/example/android" +
+          " -native-string -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
           " && plantuml -tsvg " + puml + " && cat " + svg;
     cmd = exec.Command("sh", "-c", str)
   } else {
-    cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-",
-                       "-m", tmp, "-infr", ostDir, "-cyrillic-same", "-multi-errors", "-C11",
+    cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-", "-m", tmp,
+                       "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
+                       "-cyrillic-same", "-multi-errors", "-C11", "-native-string",
                        "-init", "noinit", "-no-array-index-check", "-no-nil-check",
                        "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
   }
@@ -749,7 +754,6 @@ func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, cc string
     src source;
     lang int
   )
-  fmt.Println();
   if r.Method != "POST" {
     http.NotFound(w, r)
   } else {
