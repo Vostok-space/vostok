@@ -28,20 +28,35 @@ var VostokBox;
     return t;
   }
 
-  function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
-    var i, ed, s, r;
-    r = box.editorSize;
+  function deactivateTabs(box) {
+    var i;
+    box.editorSizeListener.disconnect();
     for (i = box.editors.length - 1; i >= 0; i -= 1) {
       box.editors[i].div.classList.add('inactive');
       box.editors[i].tab.classList.remove('active');
     }
+  }
+
+  function selectLog(box) {
+    if (box.logInTab) {
+      deactivateTabs(box);
+      box.log.classList.remove('inactive');
+      box.logSelected = true;
+    }
+  }
+
+  function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
+    var ed, s, r;
+    r = box.editorSize;
+    deactivateTabs(box);
+    box.logSelected = false;
+    if (box.logInTab) { box.log.classList.add('inactive'); }
     box.selected = ind;
     ed = box.editors[ind];
     ed.tab.classList.add('active');
-    box.editorSizeListener.disconnect();
     box.editorSizeListener.observe(ed.div);
-    s = ed.div.style;
     ed.div.classList.remove('inactive');
+    s = ed.div.style;
     s.width  = r.width  + 'px';
     s.height = r.height + 'px';
     ed.ace.resize();
@@ -112,13 +127,23 @@ var VostokBox;
     b.innerText = name;
     ed = box.editors[ind];
     b.onclick = function() {
-      if (box.selected != ed.index) {
+      if (box.logSelected || box.selected != ed.index) {
         selectTab(box, ed.index);
       } else if (ed.ace.getSession().getValue() == '') {
         removeTab(box, ed.index);
       }
     };
     ed.tab = b;
+    return b;
+  }
+
+  function createLogTab(box) {
+    var b;
+    b = box.doc.createElement('button');
+    b.innerHTML = '<strong>' + local(box, ['Log', 'Журнал']) + '</strong>';
+    b.onclick = function() {
+      selectLog(box);
+    };
     return b;
   }
 
@@ -344,8 +369,9 @@ var VostokBox;
 
   function logAppendChild(box, item) {
     var log, needScroll, end;
+    selectLog(box);
     log = box.log;
-    needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
+    needScroll = box.logInTab || log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
 
     box.storage['vostokbox-log'] = log.innerHTML;
@@ -562,9 +588,9 @@ var VostokBox;
   function addRunner(box, command) { assert(command != null);
     var div, inp, run, add, del, root;
     div = box.doc.createElement('div');
+    div.className = 'vostokbox-command-line';
     inp = box.doc.createElement('input');
     inp.type = 'text';
-    inp.className = 'vostokbox-command-line';
     inp.value = command;
     inp.onkeyup = function(ke) {
       if (ke.keyCode == 13) {
@@ -574,8 +600,8 @@ var VostokBox;
     };
 
     run = box.doc.createElement('button');
-    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl">' + local(box, ['Run', 'Пуск']) +
-      '</div><div class="ctrl">' + local(box, ['Button', 'Кнопка']) + '</div></div>';
+    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl"><strong>⏎</strong></div><div class="ctrl">' +
+                    local(box, ['Button', 'Кнопка']) + '</div></div>';
     run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
@@ -655,9 +681,7 @@ var VostokBox;
           if (r.width > 0 && r.height > 0) {
             box.editorSize = r;
             s.height = r.height + "px";
-            s.width = 'calc(100% - ' + r.width + 'px)';
           } else {
-            s.width = '100%';
             s.resize = 'vertical';
           }
         }),
@@ -671,13 +695,20 @@ var VostokBox;
       runUrl  : null,
       runTimeout: VostokBoxConfig.timeout,
 
-      lang: getLangInd(window.navigator.language.slice(0, 2))
+      lang: getLangInd(window.navigator.language.slice(0, 2)),
+
+      logInTab   : window.innerWidth < 934,
+      logSelected: false
     };
 
     if (window.location.protocol == 'https:') {
       box.runUrl = VostokBoxConfig.runUrl.https;
     } else {
       box.runUrl = VostokBoxConfig.runUrl.http;
+    }
+
+    if (box.logInTab) {
+      box.tabs.appendChild(createLogTab(box));
     }
 
     editors = doc.getElementsByClassName('vostokbox-editor');

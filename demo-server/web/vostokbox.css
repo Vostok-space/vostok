@@ -1,37 +1,24 @@
-body {
-  margin: 1px;
-}
+body { margin: 1px; }
 
 .vostokbox-editor {
-  width: 614px;
-  height: 600px;
+  width: min(100%, 614px);
+  height: 70vh;
+  float: left;
   font-size: 14px;
   white-space: pre;
-  float: left;
   color: inherit;
   border: 0;
   padding: 0;
   resize:both;
 }
 
-.vostokbox-editor.inactive {
-  display: none;
-}
+.inactive { display: none; }
 
 button {
   border-radius: 3px;
   border: 1px solid;
   color: inherit;
   transition: 0.2s;
-}
-
-input {
-  border: 1px solid;
-  outline: none;
-}
-
-input:focus {
-  border: 1px solid;
 }
 
 #vostokbox-tabs button {
@@ -41,12 +28,10 @@ input:focus {
   cursor: pointer;
   padding: 3px 12px;
   white-space: pre;
-  transition: 0.2s;
 }
 
 #vostokbox-log {
   min-width: 320px;
-  width: calc(100% - 614px);
   height: 600px;
   overflow: auto;
 }
@@ -57,37 +42,37 @@ input:focus {
   margin: 0px;
 }
 
-a {
-  color: inherit;
-}
+a { color: inherit; }
 
 .vostokbox-log-script:hover, .vostokbox-button-runner:hover {
   text-decoration: underline;
 }
 
-.vostokbox-log-out {
-  margin: 0px;
+.vostokbox-log-out { margin: 0px; }
+
+.vostokbox-command-line input {
+  border: 1px solid;
+  outline: none;
+  background-color: inherit;
+  color: inherit;
+  width: 100%;
 }
 
 .vostokbox-command-line {
-  background-color: inherit;
-  color: inherit;
-
-  width: 400px;
+  display: inline-flex;
+  width: min(500px, 100%);
 }
 
-.ctrl-up   .ctrl     { display: none; }
-.ctrl-up   .no-ctrl  { display: block;}
-.ctrl-down .ctrl     { display: block;}
-.ctrl-down .no-ctrl  { display: none; }
+.ctrl-up .ctrl, .ctrl-down .no-ctrl { display: none; }
 
 @media (prefers-color-scheme: dark) {
   body                          { background-color: #333; color: #DDD; }
   .vostokbox-editor             { background-color: #444; }
   button                        { background-color: #444; border-color: #333; }
   button:hover                  { background-color: #555; }
-  input                         { border-color: #444; }
-  input:focus                   { background-color: #383838; border-color: #555; }
+  .vostokbox-command-line input { border-color: #444; }
+  .vostokbox-command-line input:focus
+                                { background-color: #383838; border-color: #555; }
   #vostokbox-tabs button        { background-color: #444444; color: #DDD; }
   #vostokbox-tabs button:hover  { background-color: #555; }
   #vostokbox-tabs button.active { background-color: #666; color: #EEE; }
@@ -99,8 +84,9 @@ a {
 @media (prefers-color-scheme: light) {
   button                        { background-color: #CCC;  border-color: #DDD; }
   button:hover                  { background-color: #BBB; }
-  input                         { border-color: #CCC; }
-  input:focus                   { background-color: #EEE; border-color: #DDD; }
+  .vostokbox-command-line input { border-color: #CCC; }
+  .vostokbox-command-line input:focus
+                                { background-color: #EEE; border-color: #DDD; }
   #vostokbox-tabs button        { background-color: #EEE; }
   #vostokbox-tabs button:hover  { background-color: #D8D8D8; }
   #vostokbox-tabs button.active { background-color: #DDD; }
