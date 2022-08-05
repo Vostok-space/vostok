@@ -77,7 +77,7 @@ a { color: inherit; }
   #vostokbox-tabs button:hover  { background-color: #555; }
   #vostokbox-tabs button.active { background-color: #666; color: #EEE; }
   #vostokbox-log                { background-color: #383838; color: #EEE; }
-  .vostokbox-log-script         { background-color: #787878; }
+  .vostokbox-log-script         { background-color: #555; }
   .vostokbox-log-error          { color: #FF9090; }
 }
 

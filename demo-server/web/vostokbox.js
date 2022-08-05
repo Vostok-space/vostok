@@ -383,9 +383,9 @@ var VostokBox;
     }
   }
 
-  function log(box, className, text) {
+  function log(box, tag, className, text) {
     var pre;
-    pre = box.doc.createElement('pre');
+    pre = box.doc.createElement(tag);
     pre.innerText = text;
     pre.className = className;
     pre.style.width = "fit-content";
@@ -402,16 +402,16 @@ var VostokBox;
   }
 
   function errorLog(box, text) {
-    log(box, 'vostokbox-log-error', text);
+    log(box, 'pre', 'vostokbox-log-error', text);
   }
 
   function normalLog(box, text) {
-    log(box, 'vostokbox-log-out', text);
+    log(box, 'pre', 'vostokbox-log-out', text);
   }
 
   function scriptEcho(box, src) {
     var echo;
-    echo = log(box, 'vostokbox-log-script', src);
+    echo = log(box, 'code', 'vostokbox-log-script', src);
     echo.onclick = function() { requestRun(box, src); };
   }
 
@@ -558,12 +558,14 @@ var VostokBox;
   }
 
   function addButtonRunner(box, command) {
-    var b;
+    var b, c;
     if (command != '') {
       b = box.doc.createElement('button');
       b.className = 'vostokbox-button-runner';
       b.innerHTML = '<div class="ctrl-up"><div class="ctrl">-</div></div>';
-      b.append(command);
+      c = box.doc.createElement('code');
+      c.innerText = command;
+      b.appendChild(c);
       b.onclick = function(pe) {
         if (pe.ctrlKey || box.ctrl) {
           b.remove();
