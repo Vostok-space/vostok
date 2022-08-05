@@ -565,7 +565,7 @@ var VostokBox;
       b.innerHTML = '<div class="ctrl-up"><div class="ctrl">-</div></div>';
       b.append(command);
       b.onclick = function(pe) {
-        if (pe.ctrlKey) {
+        if (pe.ctrlKey || box.ctrl) {
           b.remove();
           box.buttons.delete(command);
         } else {
@@ -577,8 +577,27 @@ var VostokBox;
     }
   }
 
+  function createButtonCtrl(box) {
+    var b;
+    b = box.doc.createElement('button');
+    b.id = 'vostokbox-button-ctrl';
+    b.innerHTML = '<strong class="ctrl-up"><div class="no-ctrl">ctrl</div>' +
+                  '<div class="ctrl">Ctrl</div></strong>';
+    b.onclick = function(pe) {
+      var cl;
+      cl = b.childNodes[0].classList;
+      box.ctrl = cl.contains('ctrl-up');
+      if (box.ctrl) {
+        switchClassName(box.doc, 'ctrl-up', 'ctrl-down');
+      } else {
+        switchClassName(box.doc, 'ctrl-down', 'ctrl-up');
+      }
+    }
+    return b;
+  }
+
   function runOrFix(box, cmd, keyEvent) {
-    if (keyEvent.ctrlKey) {
+    if (keyEvent.ctrlKey || box.ctrl) {
       addButtonRunner(box, cmd);
     } else {
       requestRun(box, cmd);
@@ -614,12 +633,12 @@ var VostokBox;
     }
     add.onclick = function(pe) {
       var val;
-      if (pe.ctrlKey) {
+      if (pe.ctrlKey || box.ctrl) {
         val = '';
       } else {
         val = inp.value;
       }
-      if (root || !pe.ctrlKey) {
+      if (root || !(pe.ctrlKey || box.ctrl)) {
         addRunner(box, val);
       } else {
         div.remove();
@@ -697,8 +716,9 @@ var VostokBox;
 
       lang: getLangInd(window.navigator.language.slice(0, 2)),
 
-      logInTab   : window.innerWidth < 934,
-      logSelected: false
+      logInTab    : window.innerWidth < 934,
+      logSelected : false,
+      ctrl        : false
     };
 
     if (window.location.protocol == 'https:') {
@@ -709,6 +729,7 @@ var VostokBox;
 
     if (box.logInTab) {
       box.tabs.appendChild(createLogTab(box));
+      box.buttonsContainer.appendChild(createButtonCtrl(box));
     }
 
     editors = doc.getElementsByClassName('vostokbox-editor');
