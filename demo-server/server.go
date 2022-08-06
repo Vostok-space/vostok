@@ -21,6 +21,7 @@ import (
   "net/http"
   "os"
   "os/exec"
+  "sync/atomic"
   "flag"
   "strings"
   "io/ioutil"
@@ -132,6 +133,10 @@ type (
   project struct {
     Info  saveInfo    `json:"info"`;
     Texts []string    `json:"texts"`
+  }
+
+  limiter struct {
+    count, limit int32
   }
 )
 
@@ -775,11 +780,27 @@ func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, cc string
   }
 }
 
-func webServer(ostDir, addr string, port, timeout int, cc, allow, workdir, crt, key string) (err error) {
+func limInc(l *limiter) (ok bool) {
+  ok = atomic.AddInt32(&l.count, 1) <= l.limit
+  return
+}
+
+func limDec(l *limiter) {
+  atomic.AddInt32(&l.count, -1)
+}
+
+func webServer(ostDir, addr string, port, timeout int, cc, allow, workdir, crt, key string, lim *limiter) (err error) {
   var (a string)
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
-    func(w http.ResponseWriter, r *http.Request) { webHandler(ostDir, w, r, cc, timeout, allow, workdir) });
+    func(w http.ResponseWriter, r *http.Request) {
+      if limInc(lim) {
+        webHandler(ostDir, w, r, cc, timeout, allow, workdir)
+      } else {
+        w.Write([]byte("Too busy to handle request."))
+      }
+      limDec(lim)
+    });
   a = fmt.Sprintf("%v:%d", addr, port);
   if crt != "" {
     err = http.ListenAndServeTLS(a, crt, key, nil)
@@ -934,16 +955,18 @@ func teleBot(token, cc, workdir string, timeout int) {
 
 func main() {
   var (
-    port, timeout *int;
+    port, timeout, tasksLimit *int;
     addr, cc, telegram, allow, workdir, crt, key *string;
     ostDir string;
     full *bool;
-    err error
+    err error;
+    lim limiter
   )
   addr     = flag.String("addr"     , ""    , "served tcp/ip address");
   port     = flag.Int   ("port"     , 8080  , "port tcp/ip");
   allow    = flag.String("allow"    , ""    , "web server's allowed clients mask");
   timeout  = flag.Int   ("timeout"  , 5     , "task restriction in seconds");
+  tasksLimit = flag.Int ("limit"    , 8     , "of simultaneous requests handling");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
@@ -952,6 +975,10 @@ func main() {
   full     = flag.Bool  ("FULL-ACCESS", false , "to server from localhost-only by default");
   flag.Parse();
 
+  lim = limiter { count: 0, limit: *tasksLimit };
+  if lim.limit < 1 {
+    lim.limit = 1
+  }
   if *telegram != "" {
     err = nil;
     teleBot(*telegram, *cc, *workdir, *timeout)
@@ -964,7 +991,7 @@ func main() {
     } else {
       ostDir = "vostok"
     }
-    err = webServer(ostDir, *addr, *port, *timeout, *cc, *allow, *workdir, *crt, *key)
+    err = webServer(ostDir, *addr, *port, *timeout, *cc, *allow, *workdir, *crt, *key, &lim)
   }
   if err != nil {
     fmt.Println(err);
