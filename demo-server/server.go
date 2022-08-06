@@ -877,35 +877,56 @@ func local(texts []string, lang int) (text string) {
   return
 }
 
-func teleBot(token, cc, workdir string, timeout int) (err error) {
+func teleUpdateHandle(api, cc, workdir string, timeout int, upd teleUpdate) (err error) {
+  defer func() {
+    var (r interface{})
+    if r = recover(); r != nil {
+      err = errors.New(fmt.Sprint(r, " : ", upd))
+    }
+  }();
   var (
-    api, lang string;
+    lang string;
     src source;
-    upds []teleUpdate;
-    upd teleUpdate;
-    lastUpdate, chat, msgId, lng int;
+    chat, msgId, lng int;
     output []byte
   )
+  src, chat, msgId = teleGetSrc(upd);
+  if upd.Msg.Txt == "" {
+    lang = upd.Msg.From.Lang
+  } else {
+    lang = upd.Edited.From.Lang
+  }
+  lng = getMsgLangId(lang);
+  output, err = handleInput("vostok", src, local(webHelp, lng) + local(teleHelp, lng),
+                            cc, timeout, workdir, true,
+                            "https://vostok.oberon.org", lng);
+  err = teleSend(api, string(output), chat, msgId);
+  return
+}
+
+func teleBot(token, cc, workdir string, timeout int) {
+  var (
+    api string;
+    upds []teleUpdate;
+    upd teleUpdate;
+    lastUpdate int;
+    err error
+  )
   api = teleApi + token + "/";
-  err = nil;
   lastUpdate = -1;
-  for err == nil {
+  for {
     upds, err = teleGetUpdates(api, lastUpdate + 1);
     if err == nil {
       for _, upd = range upds {
-        src, chat, msgId = teleGetSrc(upd);
-        if upd.Msg.Txt == "" {
-          lang = upd.Msg.From.Lang
-        } else {
-          lang = upd.Edited.From.Lang
+        err = teleUpdateHandle(api, cc, workdir, timeout, upd);
+        if err != nil {
+          fmt.Errorf("Telegram update handle error: %v\n", err)
         }
-        lng = getMsgLangId(lang);
-        output, err = handleInput("vostok", src, local(webHelp, lng) + local(teleHelp, lng),
-                                  cc, timeout, workdir, true,
-                                  "https://vostok.oberon.org", lng);
-        err = teleSend(api, string(output), chat, msgId);
-        lastUpdate = upd.Id
       }
+      lastUpdate = upd.Id
+    } else {
+      fmt.Errorf("Telegram get updates error: %v\n", err);
+      time.Sleep(time.Second)
     }
   }
   return
@@ -932,7 +953,8 @@ func main() {
   flag.Parse();
 
   if *telegram != "" {
-    err = teleBot(*telegram, *cc, *workdir, *timeout)
+    err = nil;
+    teleBot(*telegram, *cc, *workdir, *timeout)
   } else {
     if *full {
       if *addr == "" {
