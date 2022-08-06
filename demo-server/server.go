@@ -975,7 +975,7 @@ func main() {
   full     = flag.Bool  ("FULL-ACCESS", false , "to server from localhost-only by default");
   flag.Parse();
 
-  lim = limiter { count: 0, limit: *tasksLimit };
+  lim = limiter { count: 0, limit: int32(*tasksLimit) };
   if lim.limit < 1 {
     lim.limit = 1
   }
