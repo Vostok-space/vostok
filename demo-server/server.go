@@ -138,6 +138,13 @@ type (
   limiter struct {
     count, limit int32
   }
+
+  compiler struct {
+    cc, java, js,
+    toExe,
+    exeExt,
+    runner string
+  }
 )
 
 func createTmp(name string) (tmp string, err error) {
@@ -181,38 +188,36 @@ func saveSource(src source) (tmp string, err error) {
   return
 }
 
-func ostToBin(ostDir, script, bin, tmp, cc string, multiErrors bool, lang int) (output []byte, err error) {
+func ostToBin(ostDir, script, bin, tmp string, comp compiler, multiErrors bool, lang int) (output []byte, err error) {
   var (cmd *exec.Cmd)
-  cmd = exec.Command(ostDir + "/result/ost", "to-bin", script, bin, "-m", tmp,
+  cmd = exec.Command(ostDir + "/result/ost", comp.toExe, script, bin, "-m", tmp,
                      "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
-                     "-cc", cc, "-cyrillic", "-multi-errors",
-                     "-msg-lang:" + langStrs[lang]);
+                     "-cc", comp.cc, "-javac", comp.java,
+                     "-cyrillic", "-msg-lang:" + langStrs[lang], "-multi-errors")
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
   }
+  fmt.Println(cmd);
   output, err = cmd.CombinedOutput();
   return
 }
 
-func run(ostDir string, src source, cc string, timeout, lang int) (output []byte, err error) {
+func run(ostDir string, src source, comp compiler, timeout, lang int) (output []byte, err error) {
   var (
     tmp, bin, timeOut string;
     cmd *exec.Cmd
   )
   tmp, err = saveSource(src);
   if err == nil {
-    bin = tmp + "/" + src.name;
-    if runtime.GOOS == "windows" {
-      bin += ".exe"
-    }
+    bin = tmp + "/" + src.name + comp.exeExt;
     fmt.Println("(", src.script, ")");
-    output, err = ostToBin(ostDir, src.script, bin, tmp, cc, true, lang);
+    output, err = ostToBin(ostDir, src.script, bin, tmp, comp, true, lang);
     if err != nil && err.(*exec.ExitError).ExitCode() < 0 {
-      output, err = ostToBin(ostDir, src.script, bin, tmp, cc, false, lang)
+      output, err = ostToBin(ostDir, src.script, bin, tmp, comp, false, lang)
     }
     fmt.Print(string(output));
     if err == nil {
-      cmd = exec.Command(bin);
+      cmd = exec.Command("sh", "-c", comp.runner + " " + bin);
       cmd.Stdin = strings.NewReader(src.input);
       timeOut = "";
       output = nil;
@@ -637,13 +642,13 @@ func command(ostDir string, src source, help, workdir string, skipUnknownCommand
   return
 }
 
-func handleInput(ostDir string, src source, help, cc string, timeout int, workdir string,
+func handleInput(ostDir string, src source, help string, comp compiler, timeout int, workdir string,
                  skipUnknownCommand bool, origin string, lang int) (res []byte, err error) {
   err = nil;
   if src.script == "" {
     res = []byte{}
   } else if src.cmd == "run" {
-    res, err = run(ostDir, src, cc, timeout, lang)
+    res, err = run(ostDir, src, comp, timeout, lang)
   } else {
     res, _ = command(ostDir, src, help, workdir, skipUnknownCommand, origin, lang)
   }
@@ -751,7 +756,7 @@ func getMsgLang(r *http.Request) (lang int) {
   return
 }
 
-func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, cc string,
+func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, comp compiler,
                 timeout int, allow, workdir string) {
   var (
     out []byte;
@@ -769,7 +774,7 @@ func webHandler(ostDir string, w http.ResponseWriter, r *http.Request, cc string
     src, err = getTexts(r);
     if err == nil {
       src.runners, src.buttons, err = getRunners(r);
-      out, err = handleInput(ostDir, src, local(webHelp, lang), cc, timeout, workdir, false,
+      out, err = handleInput(ostDir, src, local(webHelp, lang), comp, timeout, workdir, false,
                              r.Header["Origin"][0], lang)
     }
     if err == nil {
@@ -789,13 +794,13 @@ func limDec(l *limiter) {
   atomic.AddInt32(&l.count, -1)
 }
 
-func webServer(ostDir, addr string, port, timeout int, cc, allow, workdir, crt, key string, lim *limiter) (err error) {
+func webServer(ostDir, addr string, port, timeout int, comp compiler, allow, workdir, crt, key string, lim *limiter) (err error) {
   var (a string)
   http.Handle("/", http.FileServer(http.Dir("web")));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) {
       if limInc(lim) {
-        webHandler(ostDir, w, r, cc, timeout, allow, workdir)
+        webHandler(ostDir, w, r, comp, timeout, allow, workdir)
       } else {
         w.Write([]byte("Too busy to handle request."))
       }
@@ -898,7 +903,7 @@ func local(texts []string, lang int) (text string) {
   return
 }
 
-func teleUpdateHandle(api, cc, workdir string, timeout int, upd teleUpdate) (err error) {
+func teleUpdateHandle(api, workdir string, comp compiler, timeout int, upd teleUpdate) (err error) {
   defer func() {
     var (r interface{})
     if r = recover(); r != nil {
@@ -919,13 +924,13 @@ func teleUpdateHandle(api, cc, workdir string, timeout int, upd teleUpdate) (err
   }
   lng = getMsgLangId(lang);
   output, err = handleInput("vostok", src, local(webHelp, lng) + local(teleHelp, lng),
-                            cc, timeout, workdir, true,
+                            comp, timeout, workdir, true,
                             "https://vostok.oberon.org", lng);
   err = teleSend(api, string(output), chat, msgId);
   return
 }
 
-func teleBot(token, cc, workdir string, timeout int) {
+func teleBot(token, workdir string, comp compiler, timeout int) {
   var (
     api string;
     upds []teleUpdate;
@@ -939,7 +944,7 @@ func teleBot(token, cc, workdir string, timeout int) {
     upds, err = teleGetUpdates(api, lastUpdate + 1);
     if err == nil {
       for _, upd = range upds {
-        err = teleUpdateHandle(api, cc, workdir, timeout, upd);
+        err = teleUpdateHandle(api, workdir, comp, timeout, upd);
         if err != nil {
           fmt.Errorf("Telegram update handle error: %v\n", err)
         }
@@ -953,14 +958,37 @@ func teleBot(token, cc, workdir string, timeout int) {
   return
 }
 
+func newCompiler(cc, java, js string) (comp compiler) {
+  comp = compiler {cc: cc, java: java, js: js};
+  if js != "" {
+    comp.toExe = "to-js";
+    comp.exeExt = ".js";
+    comp.runner = js
+  } else if java != "" {
+    comp.toExe = "to-jar";
+    comp.exeExt = ".jar";
+    comp.runner = "java -jar"
+  } else {
+    comp.toExe = "to-bin";
+    if runtime.GOOS == "windows" {
+      comp.exeExt = ".exe"
+    } else {
+      comp.exeExt = ""
+    }
+    comp.runner = ""
+  }
+  return
+}
+
 func main() {
   var (
     port, timeout, tasksLimit *int;
-    addr, cc, telegram, allow, workdir, crt, key *string;
+    addr, cc, java, js, telegram, allow, workdir, crt, key *string;
     ostDir string;
     full *bool;
     err error;
-    lim limiter
+    lim limiter;
+    comp compiler
   )
   addr     = flag.String("addr"     , ""    , "served tcp/ip address");
   port     = flag.Int   ("port"     , 8080  , "port tcp/ip");
@@ -968,6 +996,8 @@ func main() {
   timeout  = flag.Int   ("timeout"  , 5     , "task restriction in seconds");
   tasksLimit = flag.Int ("limit"    , 8     , "of simultaneous requests handling");
   cc       = flag.String("cc"       , "tcc" , "c compiler");
+  js       = flag.String("js"       , ""    , "use JavaScript engine to run code");
+  java     = flag.String("java"     , ""    , "use Java compiler to build code");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
   crt      = flag.String("crt"      , ""    , "file with TLS certificate");
@@ -979,9 +1009,10 @@ func main() {
   if lim.limit < 1 {
     lim.limit = 1
   }
+  comp = newCompiler(*cc, *java, *js);
   if *telegram != "" {
     err = nil;
-    teleBot(*telegram, *cc, *workdir, *timeout)
+    teleBot(*telegram, *workdir, comp, *timeout)
   } else {
     if *full {
       if *addr == "" {
@@ -991,7 +1022,7 @@ func main() {
     } else {
       ostDir = "vostok"
     }
-    err = webServer(ostDir, *addr, *port, *timeout, *cc, *allow, *workdir, *crt, *key, &lim)
+    err = webServer(ostDir, *addr, *port, *timeout, comp, *allow, *workdir, *crt, *key, &lim)
   }
   if err != nil {
     fmt.Println(err);
