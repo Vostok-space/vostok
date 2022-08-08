@@ -2129,12 +2129,40 @@ PROCEDURE ExprSetByValue*(set: LongSet.Type): ExprSetValue;
 VAR e: ExprSetValue;
 BEGIN
 	NEW(e); ValueInit(e, IdSet, TypeGet(IdSet));
-	e.set := set;
+	e.long := set[1] # {};
+	e.set := set
 	RETURN e
 END ExprSetByValue;
 
+PROCEDURE ExprSetUnionWithSet*(e: ExprSetValue; s: LongSet.Type);
+BEGIN
+	LongSet.Union(e.set, s);
+	IF s[1] # {} THEN e.long := TRUE END
+END ExprSetUnionWithSet;
+
+PROCEDURE ExprSetUnion*(e0, e1: ExprSetValue);
+BEGIN
+	LongSet.Union(e0.set, e1.set);
+	IF e1.long THEN e0.long := TRUE END
+END ExprSetUnion;
+
+PROCEDURE ExprSetDiff*(e0, e1: ExprSetValue);
+BEGIN
+	LongSet.Diff(e0.set, e1.set);
+	IF e1.long THEN e0.long := TRUE END
+END ExprSetDiff;
+
+PROCEDURE ExprSetNot*(e: ExprSetValue);
+BEGIN
+	IF e.long THEN
+		LongSet.Not(e.set)
+	ELSE
+		e.set[0] := -e.set[0]
+	END
+END ExprSetNot;
+
 (* TODO сделать дизайн получше *)
-PROCEDURE ExprSetNew*(VAR base, e: ExprSet; expr1, expr2: Expression): INTEGER;
+PROCEDURE ExprSetNew*(c: Context; VAR base, e: ExprSet; expr1, expr2: Expression): INTEGER;
 VAR err, left, right: INTEGER; set: LongSet.Type;
 BEGIN
 	NEW(e); ExprInit(e, IdSet, TypeGet(IdSet));
@@ -2158,13 +2186,24 @@ BEGIN
 			IF expr2 # NIL THEN
 				right := expr2.value(ExprInteger).int
 			END;
-			IF ~LongSet.InRange(left)
-			OR (expr2 # NIL) & ~LongSet.InRange(right)
-			THEN
-				err := ErrSetElemOutOfLongRange
+			IF c.opt.allowLongTypes THEN
+				IF ~LongSet.InRange(left)
+				OR (expr2 # NIL) & ~LongSet.InRange(right)
+				THEN
+					err := ErrSetElemOutOfLongRange
+				END
+			ELSE
+				IF ~Limits.InSetRange(left)
+				OR (expr2 # NIL) & ~Limits.InSetRange(right)
+				THEN
+					err := ErrSetElemOutOfRange
+				END
+			END;
+			IF err # ErrNo THEN
+				;
 			ELSIF expr2 = NIL THEN
 				IF left <= Limits.SetMax THEN
-					set[0] := {left};
+					set[0] := {left}
 				ELSE
 					set[1] := {left MOD (Limits.SetMax + 1)}
 				END
@@ -2189,7 +2228,7 @@ BEGIN
 	IF base = NIL THEN
 		base := e
 	ELSIF (base.value # NIL) & (e.value # NIL) THEN
-		LongSet.Union(base.value(ExprSetValue).set, set)
+		ExprSetUnionWithSet(base.value(ExprSetValue), set)
 	END;
 	PropTouch(base, Prop(expr1) + Prop(expr2))
 
@@ -2960,7 +2999,7 @@ BEGIN
 			| IdSet, IdLongSet:
 				e.value := ExprSetByValue(term.value(ExprSetValue).set);
 				IF add = Minus THEN
-					LongSet.Not(e.value(ExprSetValue).set)
+					ExprSetNot(e.value(ExprSetValue))
 				END
 			| IdBoolean:
 				e.value := ExprBooleanGet(term.value(ExprBoolean).bool)
@@ -3032,9 +3071,9 @@ BEGIN
 				*)
 			| IdSet:
 				IF add = Plus THEN
-					LongSet.Union(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
+					ExprSetUnion(fullSum.value(ExprSetValue), term.value(ExprSetValue))
 				ELSE ASSERT(add = Minus);
-					LongSet.Diff(fullSum.value(ExprSetValue).set, term.value(ExprSetValue).set)
+					ExprSetDiff(fullSum.value(ExprSetValue), term.value(ExprSetValue))
 				END
 			END
 		END
@@ -3143,22 +3182,17 @@ VAR err: INTEGER;
 	END Rl;
 
 	PROCEDURE St(res: Expression; mult: INTEGER; b: Expression);
-	VAR s, s1, s2: LongSet.Type;
+	VAR s: LongSet.Type; rv, bv: ExprSetValue;
 	BEGIN
-		s1 := res.value(ExprSetValue).set;
-		s2 := b.value(ExprSetValue).set;
+		rv := res.value(ExprSetValue);
+		bv := b.value(ExprSetValue);
+		s := rv.set;
 		IF mult = Mult THEN
-			s[0] := s1[0] * s2[0];
-			s[1] := s1[1] * s2[1]
+			LongSet.Inter(s, bv.set)
 		ELSE
-			s[0] := s1[0] / s2[0];
-			s[1] := s1[1] / s2[1]
+			LongSet.SymDiff(s, bv.set)
 		END;
-		IF res.value = NIL THEN
-			res.value := ExprSetByValue(s)
-		ELSE
-			res.value(ExprSetValue).set := s
-		END
+		rv.set := s
 	END St;
 
 	PROCEDURE CheckDivisor(VAR err: INTEGER; d: INTEGER);

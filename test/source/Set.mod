@@ -8,6 +8,8 @@ CONST
 	s5 = {2, 4 .. 5, 13 .. 31};
 	s6*= s2 - s;
 
+	sinv = -s;
+
 	bt = 27 IN s5;
 	bf =  7 IN s5;
 
@@ -17,6 +19,7 @@ VAR i: INTEGER;
 	v4: SET;
 
 PROCEDURE Go*;
+VAR ls: SET;
 BEGIN
 	ASSERT(~(1 IN s));
 	ASSERT(2 IN s);
@@ -64,7 +67,9 @@ BEGIN
 	ASSERT(bt);
 	ASSERT(~bf);
 
-	ASSERT(FALSE OR TRUE)
+	ls := sinv;
+	ASSERT(-ls = s);
+	ASSERT(sinv = {0, 1, 5 .. 31})
 END Go;
 
 END Set.
