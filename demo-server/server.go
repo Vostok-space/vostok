@@ -147,10 +147,14 @@ type (
   }
 )
 
-func createTmp(name string) (tmp string, err error) {
+func createTmp(name string, msgLang int) (tmp string, err error) {
   tmp = os.TempDir() + "/ost";
   os.Mkdir(tmp, 0700);
   tmp, err = ioutil.TempDir(tmp, name);
+  if err != nil {
+    err = errors.New(local([]string {"Can not create temp directory",
+                                     "Не удалось создать временный каталог"}, msgLang))
+  }
   return
 }
 
@@ -175,8 +179,8 @@ func getModuleName(source string) (name string) {
   return
 }
 
-func saveSource(src source) (tmp string, err error) {
-  tmp, err = createTmp(src.name)
+func saveSource(src source, msgLang int) (tmp string, err error) {
+  tmp, err = createTmp(src.name, msgLang)
 
   for i := 0; i < len(src.texts) && err == nil; i += 1 {
     var (nm string)
@@ -207,7 +211,7 @@ func run(ostDir string, src source, comp compiler, timeout, lang int) (output []
     tmp, bin, timeOut string;
     cmd *exec.Cmd
   )
-  tmp, err = saveSource(src);
+  tmp, err = saveSource(src, lang);
   if err == nil {
     bin = tmp + "/" + src.name + comp.exeExt;
     fmt.Println("(", src.script, ")");
@@ -281,25 +285,31 @@ func toLang(ostDir string, src source, lang int) (translated []byte) {
   var (
     tmp, puml, svg, str string;
     cmd *exec.Cmd;
+    err error
   )
-  tmp, _ = saveSource(src);
-  if src.cmd == "to-scheme" {
-    puml = tmp + "/out.puml";
-    svg  = tmp + "/out.svg";
-    str = ostDir + "/result/ost to-puml " + src.name + " - -m " + tmp +
-          " -infr " + ostDir + " -m " + ostDir + "/example" + " -m " + ostDir + "/example/android" +
-          " -native-string -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
-          " && plantuml -tsvg " + puml + " && cat " + svg;
-    cmd = exec.Command("sh", "-c", str)
+  tmp, err = saveSource(src, lang);
+  if err == nil {
+    if src.cmd == "to-scheme" {
+      puml = tmp + "/out.puml";
+      fmt.Println(puml);
+      svg  = tmp + "/out.svg";
+      str = ostDir + "/result/ost to-puml " + src.name + " - -m " + tmp +
+            " -infr " + ostDir + " -m " + ostDir + "/example" + " -m " + ostDir + "/example/android" +
+            " -native-string -cyrillic -msg-lang:" + langStrs[lang] + " > " + puml +
+            " && plantuml -tsvg " + puml + " && cat " + svg;
+      cmd = exec.Command("sh", "-c", str)
+    } else {
+      cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-", "-m", tmp,
+                         "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
+                         "-cyrillic-same", "-multi-errors", "-C11", "-native-string",
+                         "-init", "noinit", "-no-array-index-check", "-no-nil-check",
+                         "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
+    }
+    translated, _ = cmd.CombinedOutput();
+    os.RemoveAll(tmp)
   } else {
-    cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-", "-m", tmp,
-                       "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
-                       "-cyrillic-same", "-multi-errors", "-C11", "-native-string",
-                       "-init", "noinit", "-no-array-index-check", "-no-nil-check",
-                       "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
+    translated = []byte(err.Error())
   }
-  translated, _ = cmd.CombinedOutput();
-  os.RemoveAll(tmp);
   return
 }
 
@@ -539,7 +549,7 @@ func saveToWorkdir(src source, workdir, origin string, lang int) (resp []byte) {
     }
   }
   if err != nil {
-    resp = []byte(fmt.Sprintf("Save error:\n    %v", err.Error()))
+    resp = []byte("Save error:\n    " + err.Error())
   }
   return
 }
