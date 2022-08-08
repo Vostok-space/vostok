@@ -148,9 +148,16 @@ type (
 )
 
 func createTmp(name string, msgLang int) (tmp string, err error) {
-  tmp = os.TempDir() + "/ost";
-  os.Mkdir(tmp, 0700);
-  tmp, err = ioutil.TempDir(tmp, name);
+  var (tempOst string; i int)
+  tempOst = os.TempDir() + "/ost";
+  os.Mkdir(tempOst, 0700);
+  tmp, err = ioutil.TempDir(tempOst, name);
+  tempOst += "-";
+  for i = 0; i < 16 && err != nil; i += 1 {
+    tmp = tempOst + strconv.Itoa(i);
+    os.Mkdir(tmp, 0700);
+    tmp, err = ioutil.TempDir(tmp, name)
+  }
   if err != nil {
     err = errors.New(local([]string {"Can not create temp directory",
                                      "Не удалось создать временный каталог"}, msgLang))
@@ -201,7 +208,6 @@ func ostToBin(ostDir, script, bin, tmp string, comp compiler, multiErrors bool, 
   if !multiErrors {
     cmd.Args = cmd.Args[:len(cmd.Args) - 1]
   }
-  fmt.Println(cmd);
   output, err = cmd.CombinedOutput();
   return
 }
@@ -291,7 +297,6 @@ func toLang(ostDir string, src source, lang int) (translated []byte) {
   if err == nil {
     if src.cmd == "to-scheme" {
       puml = tmp + "/out.puml";
-      fmt.Println(puml);
       svg  = tmp + "/out.svg";
       str = ostDir + "/result/ost to-puml " + src.name + " - -m " + tmp +
             " -infr " + ostDir + " -m " + ostDir + "/example" + " -m " + ostDir + "/example/android" +
