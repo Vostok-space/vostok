@@ -19,7 +19,7 @@ VAR i: INTEGER;
 	v4: SET;
 
 PROCEDURE Go*;
-VAR ls: SET;
+VAR ls: SET; l, h: INTEGER;
 BEGIN
 	ASSERT(~(1 IN s));
 	ASSERT(2 IN s);
@@ -69,7 +69,13 @@ BEGIN
 
 	ls := sinv;
 	ASSERT(-ls = s);
-	ASSERT(sinv = {0, 1, 5 .. 31})
+	ASSERT(sinv = {0, 1, 5 .. 31});
+	ASSERT(ls = {0, 1, 5 .. 31});
+
+	l := 5;
+	h := 8;
+	ASSERT({l .. h} = {8, 7, 6, 5});
+	ASSERT({h .. l} = {})
 END Go;
 
 END Set.

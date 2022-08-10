@@ -34,8 +34,7 @@ Considered as errors:
  * Negative integer divisor.
  * Assigning the BYTE variable a value outside of 0 .. 255.
  * CHR(int), where int outside of 0 .. 255.
- * Include to and exclude from SET values outside of 0 .. 31,
-   but checking for out-of-bounds numbers is acceptable.
+ * Any usage out-of-bounds numbers(not in 0..31) with SET
  * ORD(set), if the condition (31 IN set) is met.
  * Accessing an array at an out-of-bounds index.
  * Assigning value ​​of open array or string to array of insufficient size.

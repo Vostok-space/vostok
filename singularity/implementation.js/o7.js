@@ -216,7 +216,8 @@ var o7;
   }
 
   o7.in = function(n, st) {
-    return (0 <= n) && (n <= 31) && (0 != (st & (1 << n)));
+    assert((0 <= n) && (n <= 31));
+    return 0 != (st & (1 << n));
   };
 
   if (typeof Uint8Array !== 'undefined') {
@@ -502,10 +503,12 @@ var o7;
   o7.set = function(low, high) {
     if (high > 31) {
       throw new RangeError("high limit = " + high + " > 31");
+    } else if (high < 0) {
+      throw new RangeError("high limit = " + high + " < 0");
+    } else if (low > 31) {
+      throw new RangeError("low limit = " + low + " > 31");
     } else if (low < 0) {
       throw new RangeError("low limit = " + low + " < 0");
-    } else if (low > high) {
-      throw new RangeError("low limit = " + low + " > " + high + " - high limit");
     } else {
       return (~0 << low) & (~0 >>> (31 - high));
     }

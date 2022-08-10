@@ -424,7 +424,17 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 	END Record;
 
 	PROCEDURE Declarator(VAR g: Generator; decl: Ast.Declaration; sels: Selectors);
+	VAR isSet: BOOLEAN;
 	BEGIN
+		isSet := (decl.type # NIL) & (decl.type.id = Ast.IdSet);
+		IF isSet THEN
+			isSet := (decl.id = Ast.IdConst)
+		END;
+		IF isSet THEN
+			(* TODO *)
+			Str(g, "((o7_set_t)");
+		END;
+
 		IF (decl IS Ast.FormalParam)
 		 & (decl.type.id # Ast.IdArray)
 
@@ -442,6 +452,9 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 			END
 		ELSE
 			GlobalName(g, decl)
+		END;
+		IF isSet THEN
+			Chr(g, ")")
 		END
 	END Declarator;
 

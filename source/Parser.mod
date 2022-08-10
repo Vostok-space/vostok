@@ -230,9 +230,9 @@ VAR e, next: Ast.ExprSet;
 		left := expression(p, ds, {});
 		IF p.l = Scanner.Range THEN
 			Scan(p);
-			err := Ast.ExprSetNew(base, e, left, expression(p, ds, {}))
+			err := Ast.ExprSetNew(p.c, base, e, left, expression(p, ds, {}))
 		ELSE
-			err := Ast.ExprSetNew(base, e, left, NIL)
+			err := Ast.ExprSetNew(p.c, base, e, left, NIL)
 		END
 		RETURN err
 	END Element;
@@ -252,7 +252,7 @@ BEGIN
 		END;
 		Expect(p, Scanner.Brace3Close, ErrExpectBrace3Close)
 	ELSE (* Пустое множество *)
-		CheckAst(p, Ast.ExprSetNew(e, e, NIL, NIL));
+		CheckAst(p, Ast.ExprSetNew(p.c, e, e, NIL, NIL));
 		Scan(p)
 	END
 	RETURN e
@@ -568,13 +568,13 @@ BEGIN
 	or := FALSE;
 	l := p.l;
 
-	IF l IN {Scanner.Plus, Scanner.Minus} THEN
+	IF (l = Scanner.Plus) OR (l = Scanner.Minus) THEN
 		Scan(p);
 		CheckAst(p, Ast.ExprSumNew(sum, l, Term(p, ds, {})));
 		e := sum
 	ELSE
 		e := Term(p, ds, context);
-		IF p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} THEN
+		IF (p.l = Scanner.Plus) OR (p.l = Scanner.Minus) OR (p.l = Scanner.Or) THEN
 			or := p.l = Scanner.Or;
 			IF ~or THEN
 				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
@@ -585,7 +585,7 @@ BEGIN
 			e := sum
 		END
 	END;
-	WHILE p.l IN {Scanner.Plus, Scanner.Minus, Scanner.Or} DO
+	WHILE (p.l = Scanner.Plus) OR (p.l = Scanner.Minus) OR (p.l = Scanner.Or) DO
 		l := p.l;
 		Scan(p);
 		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, {})))

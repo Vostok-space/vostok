@@ -411,23 +411,25 @@ public static void copy(java.lang.Object d, java.lang.Object s) {
 }
 
 public static int set(final int low, final int high) {
-    asrt(high <= 31);
-    asrt(0 <= low && low <= high);
+    asrt(0 <= low  && low  <= 31);
+    asrt(0 <= high && high <= 31);
     return (~0 << low) & (~0 >>> (31 - high));
 }
 
 public static long lset(final int low, final int high) {
-    asrt(high <= 63);
-    asrt(0 <= low && low <= high);
+    asrt(0 <= low  && low  <= 63);
+    asrt(0 <= high && high <= 63);
     return (~0l << low) & (~0l >>> (63 - high));
 }
 
 public static boolean in(final int n, final int set) {
-    return (0 <= n) && (n <= 31) && (0 != (set & (1 << n)));
+    asrt(0 <= n && n <= 31);
+    return 0 != (set & (1 << n));
 }
 
 public static boolean in(final int n, final long set) {
-    return (0 <= n) && (n <= 63) && (0 != (set & (1l << n)));
+    asrt(0 <= n && n <= 63);
+    return 0 != (set & (1l << n));
 }
 
 public static int ror(final int n, final int shift) {

@@ -111,7 +111,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       o.declaration := FALSE;
       o.import := FALSE;
       o.identEnc := GenOptions.IdentEncSame
-    END;
+    END
   RETURN
     o
   END DefaultOptions;
@@ -1083,7 +1083,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     ELSE
       StrOpen(g, "TYPE")
     END;
-    WHILE (d # NIL) & (d.id IN Ast.DeclarableTypes) DO
+    WHILE (d # NIL) & (d.id < 32) & (d.id IN Ast.DeclarableTypes) DO
       IF d.mark OR ~g.opt.declaration THEN
         Decl(g, d(Ast.Type))
       END;

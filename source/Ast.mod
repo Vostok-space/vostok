@@ -3224,7 +3224,7 @@ BEGIN
 		END
 	ELSE
 		res.value := NIL;
-		IF ((mult - Div) IN {0, 1})
+		IF ((mult = Div) OR (mult = Rdiv))
 		 & (b.value # NIL) & (b.value.type.id = IdInteger)
 		THEN
 			CheckDivisor(err, b.value(ExprInteger).int)
@@ -4071,7 +4071,7 @@ VAR cross: BOOLEAN; r1, r2: Record;
 	    OR IsRecordExtension(ignore, r2, r1)
 	END IsRecordCross;
 BEGIN
-	IF (l1.qual # NIL) & (l1.qual.id IN {IdRecord, IdPointer}) THEN
+	IF (l1.qual # NIL) & ((l1.qual.id = IdRecord) OR (l1.qual.id = IdPointer)) THEN
 		cross := l1.qual = l2.qual;
 		IF ~cross THEN
 			IF l1.qual.id = IdRecord THEN

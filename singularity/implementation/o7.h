@@ -1174,33 +1174,35 @@ int o7_lcmp(o7_long_t a, o7_long_t b) {
 }
 
 O7_CONST_INLINE
-o7_ulong_t o7_lset(o7_int_t low, o7_int_t high) {
-	o7_assert(high <= 63);
-	o7_assert(0 <= low && low <= high);
-	return ((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high));
+o7_set64_t o7_lset(o7_int_t low, o7_int_t high) {
+	o7_assert(0 <= low  && low  <= 63);
+	o7_assert(0 <= high && high <= 63);
+	return ((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high));
 }
 
-#define O7_SET(low, high) (((o7_ulong_t)-1 << low) & ((o7_ulong_t)-1 >> (63 - high)))
+#define O7_SET(low, high) (((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high)))
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_ulong_t)1u << (n)))))
+#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_set64_t)1u << (n)))))
 
 O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_ulong_t set) {
-	return (n >= 0) && (n <= 63) && (0 != (set & ((o7_ulong_t)1 << n)));
+o7_bool o7_lin(o7_int_t n, o7_set64_t set) {
+	o7_assert((0 <= n) && (n <= 63));
+	return 0 != (set & ((o7_set64_t)1 << n));
 }
 
 #else /* O7_LONG_SUPPORT */
 
-#define O7_SET(low, high) (((o7_uint_t)-1 << low) & ((o7_uint_t)-1 >> (31 - high)))
+#define O7_SET(low, high) (((o7_set_t)-1 << low) & ((o7_set_t)-1 >> (31 - high)))
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 31) && (0 != ((set) & ((o7_uint_t)1u << (n)))))
-
-O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_uint_t set) {
-	return (n >= 0) && (n <= 31) && (0 != (set & ((o7_uint_t)1 << n)));
-}
+#define O7_IN(n, set) (0 != ((set) & ((o7_set_t)1u << (n))))
 
 #endif /* O7_LONG_SUPPORT */
+
+O7_CONST_INLINE
+o7_bool o7_in(o7_int_t n, o7_set_t set) {
+	o7_assert((0 <= n) && (n <= 31));
+	return 0 != (set & ((o7_set_t)1 << n));
+}
 
 #define O7_ASR(n, shift) \
 	((O7_ARITHMETIC_SHIFT || (n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift)))
@@ -1462,10 +1464,10 @@ void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
 	(*(struct ExtType *)o7_must_r(base, strct, &ExtType##_tag))
 
 O7_CONST_INLINE
-o7_uint_t o7_set(o7_int_t low, o7_int_t high) {
-	o7_assert(high <= 31);
-	o7_assert(0 <= low && low <= high);
-	return (~(o7_uint_t)0 << low) & (~(o7_uint_t)0 >> (31 - high));
+o7_set_t o7_set(o7_int_t low, o7_int_t high) {
+	o7_assert(0 <= low  && low  <= 31);
+	o7_assert(0 <= high && high <= 31);
+	return (~(o7_set_t)0 << low) & (~(o7_set_t)0 >> (31 - high));
 }
 
 
