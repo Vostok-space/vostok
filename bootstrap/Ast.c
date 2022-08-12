@@ -852,7 +852,7 @@ extern o7_int_t Ast_ProcTypeSetReturn(struct Ast_RProcType *proc, struct Ast_RTy
 	o7_int_t err;
 
 	proc->_._._.type = type;
-	if (!(o7_in(type->_._.id, ((1u << Ast_IdArray_cnst) | (1u << Ast_IdRecord_cnst))))) {
+	if (type->_._.id != Ast_IdArray_cnst && type->_._.id != Ast_IdRecord_cnst) {
 		err = Ast_ErrNo_cnst;
 	} else {
 		err = Ast_ErrReturnTypeArrayOrRecord_cnst;
@@ -948,7 +948,7 @@ extern void Ast_PointerSetRecord(struct Ast_RPointer *tp, struct Ast_RRecord *su
 extern o7_int_t Ast_PointerSetType(struct Ast_RPointer *tp, struct Ast_RType *subtype) {
 	o7_int_t err;
 
-	if (o7_in(subtype->_._.id, ((1u << Ast_IdRecord_cnst) | (1u << Ast_IdRecordForward_cnst)))) {
+	if (subtype->_._.id == Ast_IdRecord_cnst || subtype->_._.id == Ast_IdRecordForward_cnst) {
 		Ast_PointerSetRecord(tp, O7_GUARD(Ast_RRecord, subtype));
 		err = Ast_ErrNo_cnst;
 	} else {
@@ -968,7 +968,7 @@ extern void Ast_RecordSetBase(struct Ast_RRecord *r, struct Ast_RRecord *base) {
 }
 
 static void RecNew(struct Ast_RRecord **r, o7_int_t id) {
-	O7_ASSERT(o7_in(id, ((1u << Ast_IdRecord_cnst) | (1u << Ast_IdRecordForward_cnst))));
+	O7_ASSERT(id == Ast_IdRecord_cnst || id == Ast_IdRecordForward_cnst);
 
 	O7_NEW(&*r, Ast_RRecord);
 	TypeInit(&(*r)->_._, id);
@@ -999,7 +999,7 @@ extern struct Ast_RRecord *Ast_RecordForwardNew(struct Ast_RDeclarations *ds, o7
 }
 
 extern o7_int_t Ast_RecordEnd(struct Ast_RRecord *r) {
-	O7_ASSERT(o7_in(r->_._._._.id, ((1u << Ast_IdRecord_cnst) | (1u << Ast_IdRecordForward_cnst))));
+	O7_ASSERT(r->_._._._.id == Ast_IdRecord_cnst || r->_._._._.id == Ast_IdRecordForward_cnst);
 	r->_._._._.id = Ast_IdRecord_cnst;
 	r->_._._.used = (0 < 1);
 	r->complete = (0 < 1);
@@ -2411,7 +2411,8 @@ static o7_int_t MultCalc(struct Ast_RExpression *res, o7_int_t mult, struct Ast_
 		}
 	} else {
 		res->value_ = NULL;
-		if ((o7_in((o7_sub(mult, Scanner_Div_cnst)), ((1u << 0) | (1u << 1)))) && (b->value_ != NULL) && (b->value_->_.type->_._.id == Ast_IdInteger_cnst)) {
+
+		if ((mult == Scanner_Div_cnst || mult == Scanner_Mod_cnst) && (b->value_ != NULL) && (b->value_->_.type->_._.id == Ast_IdInteger_cnst)) {
 			MultCalc_CheckDivisor(&err, O7_GUARD(Ast_RExprInteger, b->value_)->int_);
 		}
 	}

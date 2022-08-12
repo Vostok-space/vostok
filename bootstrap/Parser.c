@@ -433,13 +433,13 @@ static struct Ast_RExpression *Sum(struct Parser *p, struct Ast_RDeclarations *d
 
 	l = p->l;
 
-	if (o7_in(l, ((1u << Scanner_Plus_cnst) | (1u << Scanner_Minus_cnst)))) {
+	if (l == Scanner_Plus_cnst || l == Scanner_Minus_cnst) {
 		Scan(p);
 		CheckAst(p, Ast_ExprSumNew(&sum, l, Term(p, ds, (0 > 1))));
 		e = (&(sum)->_);
 	} else {
 		e = Term(p, ds, varParam);
-		if (o7_in(p->l, ((1u << Scanner_Plus_cnst) | (1u << Scanner_Minus_cnst) | (1u << Scanner_Or_cnst)))) {
+		if (p->l == Scanner_Plus_cnst || p->l == Scanner_Minus_cnst || p->l == Scanner_Or_cnst) {
 			if (p->l != Scanner_Or_cnst) {
 				CheckAst(p, Ast_ExprSumNew(&sum, Ast_NoSign_cnst, e));
 			} else {
@@ -450,7 +450,7 @@ static struct Ast_RExpression *Sum(struct Parser *p, struct Ast_RDeclarations *d
 			e = (&(sum)->_);
 		}
 	}
-	while (o7_in(p->l, ((1u << Scanner_Plus_cnst) | (1u << Scanner_Minus_cnst) | (1u << Scanner_Or_cnst)))) {
+	while (p->l == Scanner_Plus_cnst || p->l == Scanner_Minus_cnst || p->l == Scanner_Or_cnst) {
 		l = p->l;
 		Scan(p);
 		if (l != Scanner_Or_cnst) {
