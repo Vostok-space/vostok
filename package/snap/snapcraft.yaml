@@ -1,5 +1,5 @@
 name: vostok
-base: core18
+base: core20
 adopt-info: ost
 license: LGPL-3.0-only
 icon: snap/gui/icon.svg
@@ -8,6 +8,7 @@ description: |
   Translator of Oberon-07 code into readable or error-resistant
   code for a range of industrial programming languages, as well as machine code and
   intermediate representations.
+  Package also provide interactive web-environment for the translator.
 
 grade: devel
 confinement: classic
@@ -27,6 +28,28 @@ parts:
     source:
       .
 
+  web:
+    plugin: nil
+    build-packages:
+      - golang-go
+    override-build: |
+      go build server.go
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
+      cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/
+      cp -r vostok vostok-full web $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server/
+      cd $SNAPCRAFT_PART_INSTALL/usr/share/vostok
+      mkdir result
+      cd result
+      ln -s ../../../bin/ost ./
+
+    source:
+      demo-server
+
+
 apps:
   vostok:
     command: usr/bin/ost
+  web:
+    command: usr/bin/server.sh 8080 -share
+  local:
+    command: usr/bin/server.sh 18083 -local -FULL-ACCESS
