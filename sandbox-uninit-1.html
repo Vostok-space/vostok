@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>Vostok translator</title>
@@ -20,7 +21,7 @@
 
 <div id="vostokbox-tabs"></div>
 
-<div style='width:1214px'>
+<div>
   <div class='vostokbox-editor'>MODULE Uninit;
 
   IMPORT Out;
@@ -45,7 +46,10 @@ END Uninit.
 <div id='vostokbox-runners'></div>
 
 <script>
-  VostokBox.createByDefaultIdentifiers(document, ace, { runners: ['Uninit.Go(TRUE)', '/INFO'] });
+  VostokBox.createByDefaultIdentifiers(document, ace, {
+    buttonRunners: ['/INFO', '/CLEAR'],
+    runners: ['Uninit.Go(TRUE)']
+  });
 </script>
 
 </body>

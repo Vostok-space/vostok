@@ -2,10 +2,14 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
 <title>Vostok translator</title>
 
-<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel='icon' type='image/svg+xml' href='icon.svg'>
 <link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<link rel='manifest' type='application/manifest+json' href='sandbox.webmanifest'>
 
 <script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
         type='text/javascript' charset='utf-8'></script>
@@ -21,7 +25,7 @@
 
 <div id="vostokbox-tabs"></div>
 
-<div style='width:1214px'>
+<div>
   <div class='vostokbox-editor'></div>
   <div id='vostokbox-log'></div>
 </div>
@@ -29,9 +33,7 @@
 <div id='vostokbox-button-runners'></div>
 <div id='vostokbox-runners'></div>
 
-<script>
-  VostokBox.createByDefaultIdentifiers(document, ace, {empty:true});
-</script>
+<script> VostokBox.createByDefaultIdentifiers(document, ace, {empty:true}); </script>
 
 </body>
 </html>

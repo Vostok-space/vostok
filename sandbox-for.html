@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>Vostok translator</title>
 
+<link rel='icon' type='image/svg+xml' href='icon.svg'>
 <link rel='stylesheet' type='text/css' href='vostokbox.css'>
 <script src='https://ajaxorg.github.io/ace-builds/src/ace.js'
         type='text/javascript' charset='utf-8'></script>
@@ -70,8 +72,8 @@ END For.</div>
 
 <script>
   VostokBox.createByDefaultIdentifiers(document, ace, {
-    runners: ['Out.Real(For.Sum(), 0)', 'Out.Int(For.Max(), 0)', 'Out.Real(For.a[For.Max()], 0)'],
-    buttonRunners: ['/INFO', '/INFO Out', '/TO-SCHEME']
+    buttonRunners: ['/INFO', '/INFO Out', '/TO-SCHEME', '/CLEAR'],
+    runners: ['Out.Real(For.Sum(), 0)', 'Out.Int(For.Max(), 0)', 'Out.Real(For.a[For.Max()], 0)']
   });
 </script>
 

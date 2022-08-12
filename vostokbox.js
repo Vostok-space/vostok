@@ -2,17 +2,64 @@ var VostokBox;
 (function(vb) {
   'use strict';
 
+  var version = '0.2.0';
+
   function assert(cond) { if (!cond) { throw 'incorrectness'; } }
 
-  function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
-    var i;
-    for (i = box.editors.length - 1; i >= 0; i -= 1) {
-      box.editors[i].div.style.display  = 'none';
-      box.editors[i].tab.className      = '';
+  function getLangInd(code) {
+    var ind;
+    if (code == 'ru') {
+      ind = 1;
+    } else if (code == 'uk') {
+      ind = 2;
+    } else { /* en */
+      ind = 0;
     }
+    return ind;
+  }
+
+  function local(box, texts) {
+    var t;
+    if (box.lang < texts.length && texts[box.lang] != null) {
+      t = texts[box.lang];
+    } else {
+      t = texts[0];
+    }
+    return t;
+  }
+
+  function deactivateTabs(box) {
+    var i;
+    box.editorSizeListener.disconnect();
+    for (i = box.editors.length - 1; i >= 0; i -= 1) {
+      box.editors[i].div.classList.add('inactive');
+      box.editors[i].tab.classList.remove('active');
+    }
+  }
+
+  function selectLog(box) {
+    if (box.logInTab) {
+      deactivateTabs(box);
+      box.log.classList.remove('inactive');
+      box.logSelected = true;
+    }
+  }
+
+  function selectTab(box, ind) { assert(0 <= ind && ind < box.editors.length);
+    var ed, s, r;
+    r = box.editorSize;
+    deactivateTabs(box);
+    box.logSelected = false;
+    if (box.logInTab) { box.log.classList.add('inactive'); }
     box.selected = ind;
-    box.editors[ind].div.style.display  = 'block';
-    box.editors[ind].tab.className      = 'active';
+    ed = box.editors[ind];
+    ed.tab.classList.add('active');
+    box.editorSizeListener.observe(ed.div);
+    ed.div.classList.remove('inactive');
+    s = ed.div.style;
+    s.width  = r.width  + 'px';
+    s.height = r.height + 'px';
+    ed.ace.resize();
   }
   vb.selectTab = selectTab;
 
@@ -80,13 +127,23 @@ var VostokBox;
     b.innerText = name;
     ed = box.editors[ind];
     b.onclick = function() {
-      if (box.selected != ed.index) {
+      if (box.logSelected || box.selected != ed.index) {
         selectTab(box, ed.index);
       } else if (ed.ace.getSession().getValue() == '') {
         removeTab(box, ed.index);
       }
     };
     ed.tab = b;
+    return b;
+  }
+
+  function createLogTab(box) {
+    var b;
+    b = box.doc.createElement('button');
+    b.innerHTML = '<strong>' + local(box, ['Log', 'Журнал']) + '</strong>';
+    b.onclick = function() {
+      selectLog(box);
+    };
     return b;
   }
 
@@ -97,8 +154,11 @@ var VostokBox;
       ace   : ace.edit(div),
       index : index
     };
+
     editor.ace.setDisplayIndentGuides(true);
-    editor.ace.setTheme('ace/theme/idle_fingers');
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      editor.ace.setTheme('ace/theme/idle_fingers');
+    }
     s = editor.ace.getSession();
     s.setMode("ace/mode/oberon");
     s.setOptions({
@@ -124,12 +184,15 @@ var VostokBox;
     d.append(text);
     ind = box.editors.length;
     box.editors[ind] = createAceEditor(box.ace, d, ind);
-    box.editorsContainer.appendChild(d);
+
+    box.editorsContainer.prepend(d);
     box.tabs.appendChild(tabCreate(box, getTabName(text, ind), ind));
     if (box.tabAdder != null && ind < 31) {
       box.tabs.appendChild(box.tabAdder);
     }
     selectTab(box, ind);
+
+    box.log.style.resize = 'none';
   }
 
   function tabAdder(box) {
@@ -177,13 +240,17 @@ var VostokBox;
     return n;
   }
 
-  function switchCtrl(box, ke, from, to) {
+  function switchClassName(doc, from, to) {
     var el, i;
+    el = doc.getElementsByClassName(from);
+    for (i = el.length - 1; i >= 0; i -= 1) {
+      assert(el[i].classList.replace(from, to));
+    }
+  }
+
+  function switchCtrl(doc, ke, from, to) {
     if (ke.keyCode == 17) {
-      el = box.doc.getElementsByClassName(from);
-      for (i = el.length - 1; i >= 0; i -= 1) {
-        el[i].className = to;
-      }
+      switchClassName(doc, from, to);
     }
   }
 
@@ -274,51 +341,54 @@ var VostokBox;
     div = box.doc.createElement('div');
     box.log.append(div);
     if (savedLog == null) {
-      div.append('Sandbox v0.1.0 of Vostok - Oberon translator.');
+      div.append(local(box, ['Sandbox v' + version + ' of Vostok - Oberon translator.',
+                             'Среда ' + version + ' Востока - транслятора Oberon.']));
       ln(box, div);
     }
     if (empty) {
       runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
       div.append(
-        'Use this links to add ',
-        createLink(box, 'editor', function() { addEditor(box, ''); }),
+        local(box, ['Use this links to add ', 'Используйте эти ссылки, чтобы добавить ']),
+        createLink(box, local(box, ['editor', 'редактор']),
+                   function() { addEditor(box, ''); }),
         ', ',
-        createLink(box, 'commands runner', function() { addRunner(box, '/INFO Out'); }),
+        createLink(box, local(box, ['commands runner', 'командные строки']),
+                   function() { addRunner(box, '/INFO Out'); }),
         ', ',
-        createLink(box, 'predefined buttons', function() {addButtonRunners(box, runners); }),
+        createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
+                   function() {addButtonRunners(box, runners); }),
         '.'
       );
       ln(box, div);
     }
     if (savedLog == null) {
-      div.append('Note that sandbox uses web-storage to store input.');
+      div.append(local(box, ['Note that sandbox uses web-storage to store input.',
+                             'Среда использует web-хранилище для сохранения ввода.']));
     }
   }
 
   function logAppendChild(box, item) {
-    var log, needScroll, end;
+    var log, needScroll;
+    selectLog(box);
     log = box.log;
-    needScroll = log.scrollHeight - log.scrollTop < log.clientHeight + 320;
+    needScroll = box.logInTab || log.scrollHeight - log.scrollTop < log.clientHeight + 320;
     log.appendChild(item);
 
     box.storage['vostokbox-log'] = log.innerHTML;
 
     if (needScroll) {
-      end = box.doc.createElement('div');
-      log.appendChild(end);
-      end.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      item.scrollIntoView({ behavior: 'smooth', block: 'end'});
     }
   }
 
-  function log(box, className, text) {
-    var pre, table;
-    pre = box.doc.createElement('pre');
+  function log(box, tag, className, text) {
+    var pre;
+    pre = box.doc.createElement(tag);
     pre.innerText = text;
     pre.className = className;
-    table = box.doc.createElement('table');
-    table.appendChild(pre);
-    logAppendChild(box, table);
-    return table;
+    pre.style.width = "fit-content";
+    logAppendChild(box, pre);
+    return pre;
   }
 
   function svgLog(box, className, text) {
@@ -330,16 +400,16 @@ var VostokBox;
   }
 
   function errorLog(box, text) {
-    log(box, 'vostokbox-log-error', text);
+    log(box, 'pre', 'vostokbox-log-error', text);
   }
 
   function normalLog(box, text) {
-    log(box, 'vostokbox-log-out', text);
+    log(box, 'pre', 'vostokbox-log-out', text);
   }
 
   function scriptEcho(box, src) {
     var echo;
-    echo = log(box, 'vostokbox-log-script', src);
+    echo = log(box, 'code', 'vostokbox-log-script', src);
     echo.onclick = function() { requestRun(box, src); };
   }
 
@@ -380,7 +450,9 @@ var VostokBox;
       addButtonRunners(box, addIdToCommandSave(id, res.info.buttons || []));
 
       loc = window.location;
-      svgLog(box, '', 'Successfully loaded. <a href="' + loc.origin + loc.pathname + '">Cancel</a>');
+      svgLog(box, '', local(box, ['Successfully loaded', 'Загружено']) +
+        '. <a href="' + loc.origin + loc.pathname + '">' +
+        local(box, ['Cancel', 'Отменить']) + '</a>');
     } else {
       errorLog(box, res.error);
     }
@@ -388,7 +460,7 @@ var VostokBox;
 
   function onSave(box, text) {
     var s, i, pref, id;
-    pref = 'EDIT id: ';
+    pref = ' id: ';
     s = text.indexOf(pref);
     if (s >= 0) {
       id = text.substring(s + pref.length, text.indexOf('.', s + pref.length));
@@ -399,7 +471,7 @@ var VostokBox;
     normalLog(box, text);
   }
 
-  function trimCommand(cmd) {
+  function trimCommandForServer(cmd) {
     var s;
     cmd = cmd.trim();
     s = cmd.toUpperCase();
@@ -424,19 +496,23 @@ var VostokBox;
     } else {
       req = new XMLHttpRequest();
 
-      req.timeout = 6000;
-      req.ontimeout = function (e) { errorLog(box, 'connection timeout'); };
-      req.onerror   = function (e) { errorLog(box, 'connection error'); };
+      req.timeout = box.runTimeout;
+      req.ontimeout = function (e) {
+        errorLog(box, local(box, ['connection timeout', 'соединение просрочено']));
+      };
+      req.onerror   = function (e) {
+        errorLog(box, local(box, ['connection error', 'ошибка соединения']));
+      };
       if (uscr == '/TO-SCHEME') {
         req.onload = function (e) { svgLog(box, 'vostokbox-log-out', e.target.responseText); };
       } else if (uscr.startsWith('/LOAD ')) {
         id = scr.trim().substring(5).trim();
         req.onload = function (e) { load(box, id, e.target.responseText); };
-      } else if (uscr.startsWith('/SAVE ')) {
+      } else if (uscr.startsWith('/SAVE')) {
         req.onload = function (e) { onSave(box, e.target.responseText); };
       } else {
         if (uscr == '/INFO') {
-          add = '/CLEAR - clear the log';
+          add = '/CLEAR - ' + local(box, ['clear the log', 'чистка журнала']);
         } else {
           add = '';
         }
@@ -460,14 +536,14 @@ var VostokBox;
       data.append('runners-count', box.runners.size);
       i = 0;
       box.runners.forEach(function(inp) {
-        data.append('runner-' + i, trimCommand(inp.value));
+        data.append('runner-' + i, trimCommandForServer(inp.value));
         i += 1;
       });
 
       data.append('buttons-count', box.buttons.size);
       i = 0;
       box.buttons.forEach(function(cmd) {
-        data.append('button-' + i, trimCommand(cmd));
+        data.append('button-' + i, trimCommandForServer(cmd));
         i += 1;
       });
 
@@ -480,14 +556,16 @@ var VostokBox;
   }
 
   function addButtonRunner(box, command) {
-    var b;
+    var b, c;
     if (command != '') {
       b = box.doc.createElement('button');
       b.className = 'vostokbox-button-runner';
       b.innerHTML = '<div class="ctrl-up"><div class="ctrl">-</div></div>';
-      b.append(command);
+      c = box.doc.createElement('code');
+      c.innerText = command;
+      b.appendChild(c);
       b.onclick = function(pe) {
-        if (pe.ctrlKey) {
+        if (pe.ctrlKey || box.ctrl) {
           b.remove();
           box.buttons.delete(command);
         } else {
@@ -499,8 +577,27 @@ var VostokBox;
     }
   }
 
+  function createButtonCtrl(box) {
+    var b;
+    b = box.doc.createElement('button');
+    b.id = 'vostokbox-button-ctrl';
+    b.innerHTML = '<strong class="ctrl-up"><div class="no-ctrl">ctrl</div>' +
+                  '<div class="ctrl">Ctrl</div></strong>';
+    b.onclick = function(pe) {
+      var cl;
+      cl = b.childNodes[0].classList;
+      box.ctrl = cl.contains('ctrl-up');
+      if (box.ctrl) {
+        switchClassName(box.doc, 'ctrl-up', 'ctrl-down');
+      } else {
+        switchClassName(box.doc, 'ctrl-down', 'ctrl-up');
+      }
+    }
+    return b;
+  }
+
   function runOrFix(box, cmd, keyEvent) {
-    if (keyEvent.ctrlKey) {
+    if (keyEvent.ctrlKey || box.ctrl) {
       addButtonRunner(box, cmd);
     } else {
       requestRun(box, cmd);
@@ -510,8 +607,9 @@ var VostokBox;
   function addRunner(box, command) { assert(command != null);
     var div, inp, run, add, del, root;
     div = box.doc.createElement('div');
-    inp = box.doc.createElement('input', 'type="text"');
-    inp.className = 'vostokbox-command-line';
+    div.className = 'vostokbox-command-line';
+    inp = box.doc.createElement('input');
+    inp.type = 'text';
     inp.value = command;
     inp.onkeyup = function(ke) {
       if (ke.keyCode == 13) {
@@ -521,7 +619,8 @@ var VostokBox;
     };
 
     run = box.doc.createElement('button');
-    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl">Run</div><div class="ctrl">Fix</div></div>';
+    run.innerHTML = '<div class="ctrl-up"><div class="no-ctrl"><strong>⏎</strong></div><div class="ctrl">' +
+                    local(box, ['Button', 'Кнопка']) + '</div></div>';
     run.onclick = function(pe) { runOrFix(box, inp.value, pe); };
 
     add = box.doc.createElement('button');
@@ -534,12 +633,12 @@ var VostokBox;
     }
     add.onclick = function(pe) {
       var val;
-      if (pe.ctrlKey) {
+      if (pe.ctrlKey || box.ctrl) {
         val = '';
       } else {
         val = inp.value;
       }
-      if (root || !pe.ctrlKey) {
+      if (root || !(pe.ctrlKey || box.ctrl)) {
         addRunner(box, val);
       } else {
         div.remove();
@@ -593,6 +692,18 @@ var VostokBox;
       log     : doc.getElementById('vostokbox-log'),
       tabs    : doc.getElementById('vostokbox-tabs'),
       editors : [],
+      editorSize: null,
+      editorSizeListener: new ResizeObserver(function(es) {
+          var r, s;
+          r = es[0].contentRect;
+          s = box.log.style;
+          if (r.width > 0 && r.height > 0) {
+            box.editorSize = r;
+            s.height = r.height + "px";
+          } else {
+            s.resize = 'vertical';
+          }
+        }),
       runners : new Set(),
       buttons : new Set(),
 
@@ -600,7 +711,14 @@ var VostokBox;
       editorsContainer: null,
       tabAdder: null,
 
-      runUrl  : null
+      runUrl  : null,
+      runTimeout: VostokBoxConfig.timeout,
+
+      lang: getLangInd(window.navigator.language.slice(0, 2)),
+
+      logInTab    : window.innerWidth < 934,
+      logSelected : false,
+      ctrl        : false
     };
 
     if (window.location.protocol == 'https:') {
@@ -609,9 +727,19 @@ var VostokBox;
       box.runUrl = VostokBoxConfig.runUrl.http;
     }
 
+    if (box.logInTab) {
+      box.tabs.appendChild(createLogTab(box));
+      box.buttonsContainer.appendChild(createButtonCtrl(box));
+    }
+
     editors = doc.getElementsByClassName('vostokbox-editor');
     if (editors.length > 0) {
-      box.editorsContainer = editors[editors.length - 1].parentNode;
+      editor = editors[editors.length - 1];
+      box.editorsContainer = editor.parentNode;
+      box.editorSize = {
+        width: editor.offsetWidth,
+        height: editor.offsetHeight
+      };
       len = parseInt(storageGet(box, 'texts-len'));
       if (len > 0 || runners.empty) {
         for (i = 0; i < editors.length; i += 1) {
@@ -634,8 +762,8 @@ var VostokBox;
       selectTab(box, 0);
     }
 
-    doc.onkeydown = function(ke) { switchCtrl(box, ke, 'ctrl-up', 'ctrl-down'); };
-    doc.onkeyup   = function(ke) { switchCtrl(box, ke, 'ctrl-down', 'ctrl-up'); };
+    doc.onkeydown = function(ke) { switchCtrl(box.doc, ke, 'ctrl-up', 'ctrl-down'); };
+    doc.onkeyup   = function(ke) { switchCtrl(box.doc, ke, 'ctrl-down', 'ctrl-up'); };
 
     log = box.storage['vostokbox-log'];
     if (log != null) {
@@ -648,7 +776,7 @@ var VostokBox;
       defaultLog(box, runners.empty, log);
     }
     if (box.log.lastChild != null) {
-      box.log.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      box.log.lastChild.scrollIntoView({ block: 'nearest'});
     }
     checkPageParams(box, new URL(window.location.href).searchParams);
 
