@@ -425,7 +425,7 @@ func readView(editdir string) (view string) {
   var (data []byte; err error; info saveInfo)
 
   view = "";
-  data, err = os.ReadFile(editdir + "/info.json");
+  data, err = ioutil.ReadFile(editdir + "/info.json");
   if err == nil {
     err = json.Unmarshal(data, &info);
     if err == nil {
@@ -458,7 +458,7 @@ func writeInfo(editdir string, view string, runners, buttons []string) (err erro
   info.Buttons = buttons;
   data, err = json.Marshal(&info);
   if err == nil {
-    err = os.WriteFile(editdir + "/" + "info.json", data, 0600)
+    err = ioutil.WriteFile(editdir + "/" + "info.json", data, 0600)
   }
   return
 }
@@ -599,7 +599,7 @@ func load(workdir, id string) (res []byte) {
   }
   dir = workdir + dir + id + "/";
 
-  data, e1 = os.ReadFile(dir + "info.json");
+  data, e1 = ioutil.ReadFile(dir + "info.json");
   if e1 == nil {
     e1 = json.Unmarshal(data, &pr.Info); data = nil;
     if e1 != nil {
@@ -613,7 +613,7 @@ func load(workdir, id string) (res []byte) {
   e2 = nil;
   pr.Texts = make([]string, 0, 32);
   for i = 0; i < 32 && e2 == nil; {
-    data, e2 = os.ReadFile(dir + strconv.Itoa(i));
+    data, e2 = ioutil.ReadFile(dir + strconv.Itoa(i));
     if e2 == nil {
       pr.Texts = append(pr.Texts, string(data)); data = nil;
       i += 1
