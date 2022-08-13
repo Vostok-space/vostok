@@ -32,8 +32,10 @@ parts:
     plugin: nil
     build-packages:
       - golang-go
+    build-attributes:
+      - no-patchelf
     override-build: |
-      go build server.go
+      go build -ldflags='-s -w' server.go
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
       cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/
       cp -r vostok vostok-full web $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server/
