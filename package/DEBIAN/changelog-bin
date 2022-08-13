@@ -1,3 +1,15 @@
+ vostok-bin (0.0.10.dev) unstable; urgency=low
+  * Ability to directly generate strings as byte-arrays and moving string constants to
+    declarations in Java and JavaScript to improve performance
+  * Ability to set interface language using CLI argument -msg-lang:(eng|rus|ukr)
+  * Fixed range of SET in calculations. IN-checks out of range interpreted as errors
+  * Fixed crashing after first wrong statement in the group
+  * Fixed generation to C exported delcarations, which are use unexported named constants
+  * Fixed assigning of one-letter string, which set by a designator
+  * Fixed default value of Oberon generator, that leads to cyrillic identifiers in the source form
+
+ -- project Vostok <project-Vostok@yandex.ru> Sun, 7 Aug 2022 00:00:00 +0200
+
  vostok-bin (0.0.9.dev) unstable; urgency=low
   * Accounted preferrable UI language in Windows
   * Supported CASE for pointers and records

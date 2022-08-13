@@ -2,7 +2,7 @@ var VostokBox;
 (function(vb) {
   'use strict';
 
-  var version = '0.1.0';
+  var version = '0.2.0';
 
   function assert(cond) { if (!cond) { throw 'incorrectness'; } }
 
@@ -368,7 +368,7 @@ var VostokBox;
   }
 
   function logAppendChild(box, item) {
-    var log, needScroll, end;
+    var log, needScroll;
     selectLog(box);
     log = box.log;
     needScroll = box.logInTab || log.scrollHeight - log.scrollTop < log.clientHeight + 320;
@@ -377,9 +377,7 @@ var VostokBox;
     box.storage['vostokbox-log'] = log.innerHTML;
 
     if (needScroll) {
-      end = box.doc.createElement('div');
-      log.appendChild(end);
-      end.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+      item.scrollIntoView({ behavior: 'smooth', block: 'end'});
     }
   }
 
