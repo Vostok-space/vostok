@@ -1,5 +1,5 @@
 name: vostok
-base: core20
+base: core18
 adopt-info: ost
 license: LGPL-3.0-only
 icon: snap/gui/icon.svg
@@ -30,8 +30,8 @@ parts:
 
   web:
     plugin: nil
-    build-packages:
-      - golang-go
+    build-snaps:
+      - go
     build-attributes:
       - no-patchelf
     override-build: |
