@@ -352,12 +352,15 @@ var VostokBox;
         createLink(box, local(box, ['editor', 'редактор']),
                    function() { addEditor(box, ''); }),
         ', ',
-        createLink(box, local(box, ['commands runner', 'командные строки']),
+        createLink(box, local(box, ['commands runner', 'командную строку']),
                    function() { addRunner(box, '/INFO Out'); }),
         ', ',
         createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
                    function() {addButtonRunners(box, runners); }),
-        '.'
+        '. ',
+        local(box, ['Use Ctrl-key for an additional possibility to modify environment.',
+                    'Используйте клавишу Ctrl для дополнительной возможности' +
+                    ' редактирования окружения.']),
       );
       ln(box, div);
     }
