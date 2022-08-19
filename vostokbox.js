@@ -332,7 +332,15 @@ var VostokBox;
   }
 
   function ln(box, node) {
-    node.appendChild(box.doc.createElement("br"));
+    node.appendChild(box.doc.createElement('br'));
+  }
+
+  function createHref(box, text, ref) {
+    var a;
+    a = box.doc.createElement('a');
+    a.innerText = text;
+    a.href = ref;
+    return a;
   }
 
   function defaultLog(box, empty, savedLog) {
@@ -357,14 +365,20 @@ var VostokBox;
         ', ',
         createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
                    function() {addButtonRunners(box, runners); }),
-        '. ',
-        local(box, ['Use Ctrl-key for an additional possibility to modify environment.',
-                    'Используйте клавишу Ctrl для дополнительной возможности' +
-                    ' редактирования окружения.']),
+        '. '
       );
       ln(box, div);
     }
     if (savedLog == null) {
+      div.append(local(box, ['Use Ctrl-key for an additional possibility to modify environment.',
+            'Используйте клавишу Ctrl для дополнительной возможности редактирования окружения.']));
+      ln(box, div);
+      div.append(
+        local(box, ['See ', 'Посмотрите ']),
+        createHref(box, local(box, ['examples', 'примеры']), 'https://vostok.oberon.org/examples.html'),
+        '.'
+      );
+      ln(box, div);
       div.append(local(box, ['Note that sandbox uses web-storage to store input.',
                              'Среда использует web-хранилище для сохранения ввода.']));
     }
