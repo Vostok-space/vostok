@@ -19,11 +19,13 @@ parts:
     override-build: |
       ./init.sh
       result/bs-ost run make.Build -infr . -m source
-      result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s"
+      result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -Os -flto -s"
       snapcraftctl set-version `result/ost version | awk '{print $2}'`
       rm -rf $SNAPCRAFT_PART_INSTALL/usr/share
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share
       result/ost run 'make.Self; make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
+      cp result/ost $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result/
 
     source:
       .
@@ -39,10 +41,6 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
       cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/
       cp -r vostok vostok-full web $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server/
-      cd $SNAPCRAFT_PART_INSTALL/usr/share/vostok
-      mkdir result
-      cd result
-      ln -s ../../../bin/ost ./
 
     source:
       demo-server
