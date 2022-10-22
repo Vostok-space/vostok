@@ -1,0 +1,28 @@
+diff --git a/package/snap/snapcraft.yaml b/package/snap/snapcraft.yaml
+index 9c171dc..0e43d05 100644
+--- a/package/snap/snapcraft.yaml
++++ b/package/snap/snapcraft.yaml
+@@ -1,5 +1,5 @@
+ name: vostok
+-base: core18
++base: core22
+ adopt-info: ost
+ license: LGPL-3.0-only
+ icon: snap/gui/icon.svg
+@@ -13,9 +13,16 @@ description: |
+ grade: devel
+ confinement: classic
+ 
++architectures:
++  - build-on: amd64
++    build-for: riscv64
++
+ parts:
+   ost:
+     plugin: nil
++    build-packages:
++      - gcc-riscv64-linux-gnu
++      - libc6-dev-riscv64-cross
+     override-build: |
+       ./init.sh
+       result/bs-ost run make.Build -infr . -m source
