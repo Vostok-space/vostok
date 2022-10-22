@@ -19,11 +19,23 @@ parts:
     override-build: |
       ./init.sh
       result/bs-ost run make.Build -infr . -m source
-      result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -Os -flto -s"
-      snapcraftctl set-version `result/ost version | awk '{print $2}'`
+      if [ "${SNAPCRAFT_TARGET_ARCH}" = "riscv64" ]; then
+        CC=riscv64-linux-gnu-gcc
+        OSTRUN=result/ost-run
+        mv result/ost $OSTRUN
+      else
+        CC=gcc
+        OSTRUN=result/ost
+      fi
+      $OSTRUN to-bin Translator.Go result/ost -infr . -m source -cc "$CC -Os -flto -s"
+      snapcraftctl set-version `$OSTRUN version | awk '{print $2}'`
       rm -rf $SNAPCRAFT_PART_INSTALL/usr/share
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share
-      result/ost run 'make.Self; make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      if [ "$CC" = "gcc" ]; then
+        $OSTRUN run 'make.Self; make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      else
+        $OSTRUN run 'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      fi
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
       cp result/ost $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result/
 
@@ -37,7 +49,11 @@ parts:
     build-attributes:
       - no-patchelf
     override-build: |
-      go build -ldflags='-s -w' server.go
+      if [ "${SNAPCRAFT_TARGET_ARCH}" = "riscv64" ]; then
+        GOARCH=riscv64 go build -ldflags='-s -w' server.go
+      else
+        go build -ldflags='-s -w' server.go
+      fi
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
       cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/
       cp -r vostok vostok-full web $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server/
