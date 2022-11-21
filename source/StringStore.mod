@@ -350,12 +350,18 @@ BEGIN
 END StoreNew;
 
 PROCEDURE StoreDone*(VAR s: Store);
+VAR b, n: Block;
 BEGIN
-	WHILE s.first # NIL DO
-		s.first := s.first.next
-	END;
-	s.last := NIL;
-	s := NIL
+	b       := s.first;
+	s.first := NIL;
+	s.last  := NIL;
+	s       := NIL;
+
+	WHILE b # NIL DO
+		n := b.next;
+		b.next := NIL;
+		b := n
+	END
 END StoreDone;
 
 (*	копирование содержимого строки, не включая завершающего 0 в поток вывода
