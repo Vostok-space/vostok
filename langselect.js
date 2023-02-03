@@ -20,7 +20,15 @@ function switchLang(lang) {
 }
 
 function switchLangToPreferable() {
-  var url;
-  url = new URL(window.location.href);
-  switchLang(url.searchParams.get("lang") || window.navigator.language.slice(0, 2));
+  var url, lang;
+  url = new URL(window.location);
+  if (url.searchParams) {
+    lang = url.searchParams.get("lang");
+  } else {
+    lang = null;
+  }
+  if (lang == null) {
+    lang = window.navigator.language.slice(0, 2);
+  }
+  switchLang(lang);
 }
