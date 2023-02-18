@@ -1,5 +1,5 @@
 /*  HTTP server and Telegram-bot for translator demonstration
- *  Copyright (C) 2017-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -306,7 +306,7 @@ func toLang(ostDir string, src source, lang int) (translated []byte) {
     } else {
       cmd = exec.Command(ostDir + "/result/ost", src.cmd, src.name, "-", "-m", tmp,
                          "-infr", ostDir, "-m", ostDir + "/example", "-m", ostDir + "/example/android",
-                         "-cyrillic-same", "-multi-errors", "-C11", "-native-string",
+                         "-cyrillic-same", "-C11", "-native-string",
                          "-init", "noinit", "-no-array-index-check", "-no-nil-check",
                          "-no-arithmetic-overflow-check", "-msg-lang:" + langStrs[lang])
     }
@@ -767,7 +767,13 @@ func getMsgLangId(l string) (lang int) {
 }
 
 func getMsgLang(r *http.Request) (lang int) {
-  lang = getMsgLangId(r.Header["Accept-Language"][0][:2])
+  var (al []string)
+  al = r.Header["Accept-Language"];
+  if al != nil && len(al) > 0 && len(al[0]) > 1 {
+    lang = getMsgLangId(al[0][:2])
+  } else {
+    lang = eng
+  }
   return
 }
 
