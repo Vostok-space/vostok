@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -158,6 +158,11 @@ CONST
 	                                (*-114*)
 	                                (*-115*)
 	                                (*-116*)
+
+	ErrNegativeShift*               = -120;
+	ErrLslTooLargeShift*            = -121;
+	ErrLslOverflow*                 = -122;
+	ErrShiftGeBits*                 = -123;
 
 	ErrMin*                         = -200;
 
@@ -3628,6 +3633,24 @@ PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
 VAR err: INTEGER;
 
 	PROCEDURE CalcPredefined(call: ExprCall; v: Value; VAR err: INTEGER);
+	VAR i2: INTEGER;
+
+		PROCEDURE ShiftVal(call: ExprCall; VAR err: INTEGER; VAR i2: INTEGER): BOOLEAN;
+		VAR v2: Value; val: BOOLEAN;
+		BEGIN
+			v2 := call.params.next.expr.value;
+			val := v2 # NIL;
+			IF val THEN
+				i2 := v2(ExprInteger).int;
+				IF i2 < 0 THEN
+					val := FALSE;
+					err := ErrNegativeShift
+				ELSIF i2 >= 32 THEN
+					err := ErrShiftGeBits
+				END
+			END
+			RETURN val
+		END ShiftVal;
 	BEGIN
 		CASE call.designator.decl.id OF
 		  SpecIdent.Abs:
@@ -3646,25 +3669,22 @@ VAR err: INTEGER;
 		| SpecIdent.Odd:
 			call.value := ExprBooleanGet(ODD(v(ExprInteger).int))
 		| SpecIdent.Lsl:
-			IF call.params.next.expr.value # NIL THEN
-				call.value := ExprIntegerNew(LSL(
-					v(ExprInteger).int,
-					call.params.next.expr.value(ExprInteger).int
-				))
+			IF ~ShiftVal(call, err, i2) THEN
+				;
+			ELSIF i2 >= 31 THEN
+				err := ErrLslTooLargeShift
+			ELSIF ~Arithmetic.MulPow2(i2, v(ExprInteger).int, i2) THEN
+				err := ErrLslOverflow
+			ELSE
+				call.value := ExprIntegerNew(i2)
 			END
 		| SpecIdent.Asr:
-			IF call.params.next.expr.value # NIL THEN
-				call.value := ExprIntegerNew(ASR(
-					v(ExprInteger).int,
-					call.params.next.expr.value(ExprInteger).int
-				))
+			IF ShiftVal(call, err, i2) THEN
+				call.value := ExprIntegerNew(ASR(v(ExprInteger).int, i2))
 			END
 		| SpecIdent.Ror:
-			IF call.params.next.expr.value # NIL THEN
-				call.value := ExprIntegerNew(ROR(
-					v(ExprInteger).int,
-					call.params.next.expr.value(ExprInteger).int
-				))
+			IF ShiftVal(call, err, i2) THEN
+				call.value := ExprIntegerNew(ROR(v(ExprInteger).int, i2))
 			END
 		| SpecIdent.Floor:
 			IF FALSE THEN

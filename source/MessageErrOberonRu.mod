@@ -1,5 +1,5 @@
 (*  Russian messages for syntax and semantic errors. Extracted from MessageRu.
- *  Copyright (C) 2017-2022 ComdivByZero
+ *  Copyright (C) 2017-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -258,6 +258,14 @@ BEGIN
 		C("Ожидалось имя команды - подпрограммы без параметров")
 	| AST.ErrParamOutInFunc:
 		C("Функция не может быть с выходным параметром")
+	| AST.ErrNegativeShift:
+		C("Отрицательное смещение недопустимо")
+	| AST.ErrLslTooLargeShift:
+		C("Слишком большое смещение")
+	| AST.ErrLslOverflow:
+		C("Переполнение в LSL")
+	| AST.ErrShiftGeBits:
+		C("Смещение ≥ 32")
 	END
 END Ast;
 

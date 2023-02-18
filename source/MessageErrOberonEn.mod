@@ -1,5 +1,5 @@
 (*  English messages for syntax and semantic errors. Extracted from MessageEn.
- *  Copyright (C) 2017-2022 ComdivByZero
+ *  Copyright (C) 2017-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -265,6 +265,14 @@ BEGIN
 		C("Expect command name - subroutine without parameters")
 	| AST.ErrParamOutInFunc:
 		C("Function can not have an output parameter")
+	| AST.ErrNegativeShift:
+		C("Negative shifting is incorrect")
+	| AST.ErrLslTooLargeShift:
+		C("Too large shifting")
+	| AST.ErrLslOverflow:
+		C("LSL overflow")
+	| AST.ErrShiftGeBits:
+		C("Shift ≥ 32")
 	END
 END Ast;
 

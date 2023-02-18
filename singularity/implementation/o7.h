@@ -1,4 +1,4 @@
-/* Copyright 2016-2022 ComdivByZero
+/* Copyright 2016-2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -593,8 +593,8 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 		return GC_MALLOC(size);
 	}
 #elif defined(O7_LSAN_LEAK_IGNORE)
-#	include <sanitizer/lsan_interface.h>
 	O7_INLINE void* o7_malloc(size_t size) {
+		extern void __lsan_ignore_object(void*);
 		void *mem;
 		mem = o7_raw_alloc(size);
 		__lsan_ignore_object(mem);
@@ -1205,18 +1205,22 @@ o7_bool o7_in(o7_int_t n, o7_set_t set) {
 }
 
 #define O7_ASR(n, shift) \
-	((O7_ARITHMETIC_SHIFT || (n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift)))
+	(((shift) >= 32) ? ((n) >= 0 ? 0 : -1) : (((n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift))))
 
 O7_CONST_INLINE
 o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {
 	o7_int_t r;
-	shift = o7_not_neg(shift);
-	if (O7_ARITHMETIC_SHIFT) {
-		r = o7_int(n) >> shift;
-	} else if (n >= 0) {
-		r = n >> shift;
+	if (0 <= shift && shift < 32) {
+		if (O7_ARITHMETIC_SHIFT) {
+			r = o7_int(n) >> shift;
+		} else if (n >= 0) {
+			r = n >> shift;
+		} else {
+			r = -1 - ((-1 - o7_int(n)) >> shift);
+		}
 	} else {
-		r = -1 - ((-1 - o7_int(n)) >> shift);
+		if (O7_OVERFLOW > 0) { o7_assert(0 <= shift); }
+		r = -(int)(n < 0);
 	}
 	return r;
 }
@@ -1239,6 +1243,28 @@ o7_int_t o7_ror(o7_int_t n, o7_int_t shift) {
 		}
 	}
 	return u;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_lsl(o7_int_t n, o7_int_t shift) {
+	o7_cbool overflow;
+	if (O7_OVERFLOW > 0) {
+		o7_not_neg(shift);
+		if (O7_EXPECT(n != 0)) {
+			if (n > 0) {
+				overflow = shift >= 31 || ((O7_INT_MAX >> shift) < n);
+			} else {
+				overflow = shift >= 31 || (-(O7_INT_MAX >> shift) > n);
+			}
+			o7_assert(!overflow);
+			n = n << shift;
+		}
+	} else {
+		if (o7_int(n) != 0) {
+			n = n << shift;
+		}
+	}
+	return n;
 }
 
 O7_CONST_INLINE
@@ -1423,28 +1449,28 @@ extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *
 		o7_tag_init(&ExtType##_tag, &BaseType##_tag, NULL)
 #endif
 
-O7_PURE_INLINE
+O7_CONST_INLINE
 o7_tag_t const * o7_dynamic_tag(void const *mem) {
 	o7_assert(NULL != mem);
 	return *((o7_tag_t const **)mem - 1);
 }
 
-O7_PURE_INLINE
-o7_bool o7_is_r(o7_tag_t const *base, void const *strct, o7_tag_t const *ext) {
+O7_CONST_INLINE
+o7_cbool o7_is_r(o7_tag_t const *base, void const *strct, o7_tag_t const *ext) {
 	if (NULL == base) {
 		base = o7_dynamic_tag(strct);
 	}
 	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
-O7_PURE_INLINE
-o7_bool o7_is(void const *strct, o7_tag_t const *ext) {
+O7_CONST_INLINE
+o7_cbool o7_is(void const *strct, o7_tag_t const *ext) {
 	o7_tag_t const *base;
 	base = o7_dynamic_tag(strct);
 	return base->ids[ext->ids[0]] == ext->ids[ext->ids[0]];
 }
 
-O7_PURE_INLINE
+O7_CONST_INLINE
 void *o7_must(void *strct, o7_tag_t const *ext) {
 	o7_assert(o7_is(strct, ext));
 	return strct;

@@ -1,5 +1,5 @@
 (*  Ukrainian messages for syntax and semantic errors. Extracted from MessageUa.
- *  Copyright (C) 2018-2022 ComdivByZero
+ *  Copyright (C) 2018-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -258,6 +258,14 @@ BEGIN
 		C("Очікувалось ім'я команди - підпрограми без параметрів")
 	| AST.ErrParamOutInFunc:
 		C("Функція не може мати вихідного параметру")
+	| AST.ErrNegativeShift:
+		C("Від'ємний зсув неприпустимий")
+	| AST.ErrLslTooLargeShift:
+		C("Завеликий зсув")
+	| AST.ErrLslOverflow:
+		C("Переповнення в LSL")
+	| AST.ErrShiftGeBits:
+		C("Зсув ≥ 32")
 	END
 END Ast;
 

@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -833,28 +833,28 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 		fp: Ast.Declaration;
 
 		PROCEDURE Predefined(VAR g: Generator; call: Ast.ExprCall);
-		VAR e1: Ast.Expression;
-			p2: Ast.Parameter;
+		VAR e1: Ast.Expression; p2: Ast.Parameter;
 
 			PROCEDURE LeftShift(VAR g: Generator; n, s: Ast.Expression);
 			BEGIN
-				(* TODO *)
-				Str(g, "(o7_int_t)((o7_uint_t)");
-				Factor(g, n);
-				Str(g, " << ");
-				Factor(g, s);
-				Chr(g, ")")
+				IF g.opt.checkArith & (s.value = NIL) THEN
+					ExprBraced(g, "o7_lsl(", n, ", ");
+					Expression(g, s);
+					StrLn(g, ")")
+				ELSE
+					Str(g, "(o7_int_t)((o7_uint_t)");
+					Factor(g, n);
+					Str(g, " << ");
+					Factor(g, s);
+					Chr(g, ")")
+				END
 			END LeftShift;
 
 			PROCEDURE ArithmeticRightShift(VAR g: Generator; n, s: Ast.Expression);
 			BEGIN
-				IF (n.value # NIL) & (s.value # NIL) THEN
-					Str(g, "O7_ASR(");
-					Expression(g, n);
-					Str(g, ", ");
-					Expression(g, s);
-					Chr(g, ")")
-				ELSIF g.opt.gnu THEN
+				IF (s.value # NIL) & (s.value(Ast.ExprInteger).int < 32)
+				 & (g.opt.gnu  OR  (n.value # NIL) & (n.value(Ast.ExprInteger).int >= 0))
+				THEN
 					Chr(g, "(");
 					Factor(g, n);
 					IF g.opt.checkArith & (s.value = NIL) THEN
@@ -865,9 +865,11 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 					Expression(g, s);
 					Str(g, "))")
 				ELSE
-					Str(g, "o7_asr(");
-					Expression(g, n);
-					Str(g, ", ");
+					IF (n.value # NIL) & (s.value # NIL) THEN
+						ExprBraced(g, "O7_ASR(", n, ", ")
+					ELSE
+						ExprBraced(g, "o7_asr(", n, ", ")
+					END;
 					Expression(g, s);
 					Chr(g, ")")
 				END
@@ -876,12 +878,10 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 			PROCEDURE Rotate(VAR g: Generator; n, r: Ast.Expression);
 			BEGIN
 				IF (n.value # NIL) & (r.value # NIL) THEN
-					Str(g, "O7_ROR(")
+					ExprBraced(g, "O7_ROR(", n, ", ")
 				ELSE
-					Str(g, "o7_ror(")
+					ExprBraced(g, "o7_ror(", n, ", ")
 				END;
-				Expression(g, n);
-				Str(g, ", ");
 				Expression(g, r);
 				Chr(g, ")")
 			END Rotate;
