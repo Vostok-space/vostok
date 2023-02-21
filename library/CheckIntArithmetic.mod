@@ -1,4 +1,4 @@
-(* Copyright 2016, 2018 ComdivByZero
+(* Copyright 2016,2018,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,20 @@ BEGIN
 	IF     norm THEN prod := m1 * m2 END
 	RETURN norm
 END Mul;
+
+(* prod := m * 2**p *)
+PROCEDURE MulPow2*(VAR prod: INTEGER; m, p: INTEGER): BOOLEAN;
+VAR ok: BOOLEAN;
+BEGIN
+	ASSERT(p >= 0);
+	IF m # 0 THEN
+		ok := (p < 31) & Mul(prod, m, LSL(1, p))
+	ELSE
+		prod := 0;
+		ok := TRUE
+	END
+	RETURN ok
+END MulPow2;
 
 PROCEDURE Div*(VAR frac: INTEGER; n, d: INTEGER): BOOLEAN;
 BEGIN
