@@ -1249,7 +1249,7 @@ O7_CONST_INLINE
 o7_int_t o7_lsl(o7_int_t n, o7_int_t shift) {
 	o7_cbool overflow;
 	if (O7_OVERFLOW > 0) {
-		o7_not_neg(shift);
+		(void)o7_not_neg(shift);
 		if (O7_EXPECT(n != 0)) {
 			if (n > 0) {
 				overflow = shift >= 31 || ((O7_INT_MAX >> shift) < n);
