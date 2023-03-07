@@ -19,24 +19,31 @@
     &nbsp;
     <nav>
       [ <a class="sandbox" href="sandbox.html">Web</a>
-      <span lang="ru">-песочница-</span><span lang="en">-sandbox-</span>
+      <span lang="uk">-пісочниця-</span>
+      <span lang="ru">-песочница-</span>
+      <span lang="en">-sandbox-</span>
       <a class="sandbox" href="https://t.me/OberonVostokBot">Telegram</a> ]
 
     </nav>
 
     <nav>
-      [ <a lang="ru" class="sandbox" href="examples.html?lang=ru">Примеры</a>
-      <a lang="en" class="sandbox" href="examples.html?lang=en">Examples</a>]
+      [ <a lang="uk" class="sandbox" href="examples.html?lang=ru">Приклади</a>
+        <a lang="ru" class="sandbox" href="examples.html?lang=ru">Примеры</a>
+        <a lang="en" class="sandbox" href="examples.html?lang=en">Examples</a>]
     </nav>
 
     <nav class="lang">
       <button onclick="switchLang('en')">Eng</button>
+      <button onclick="switchLang('uk')">Укр</button>
       <button onclick="switchLang('ru')">Рус</button>
     </nav>
   </header>
 
   <article>
 
+    <h3 lang="uk"> Транслятор проєкту
+      <a href="https://vostok-space.github.io/?lang=uk"><b>Восток</b></a>
+    </h3>
     <h3 lang="ru"> Транслятор проекта
       <a href="https://vostok-space.github.io/?lang=ru"><b>Восток</b></a>
     </h3>
@@ -45,6 +52,11 @@
       project
     </h3>
 
+    <p lang="uk">Націлений на підвищення стійкості до помилок під час програмування.
+    Дозволяє робити перетворення коду з деяких діалектів Oberon на читаємий або
+    стійкий до помилок код для низки промислових мов програмування,
+    а також на машинний код і проміжні форми.
+    </p>
     <p lang="ru">Нацелен на повышение ошибкоустойчивости при программировании.
     Позволяет делать преобразование кода из некоторых диалектов Oberon
     в читаемый или устойчивый к ошибкам код для ряда промышленных языков
@@ -58,12 +70,14 @@
 
 <dl>
   <dt>
+    <span lang="uk">Вхідні мови:</span>
     <span lang="ru">Входные языки:</span>
     <span lang="en">Source languages:</span>
   </dt>
   <dd>
     <ol>
     <li>
+      <a lang="uk" href="https://online.oberon.org/oberon">Oberon 07</a>
       <a lang="ru" href="https://online.oberon.org/oberon">Oberon 07</a>
       <a lang="en" href="https://online.oberon.org/oberon_en">Oberon 07</a>
     </li>
@@ -71,12 +85,14 @@
     </ol>
   </dd>
   <dt>
+    <span lang="uk">Вихідні мови та формати:</span>
     <span lang="ru">Выходные языки и форматы:</span>
     <span lang="en">Output languages and formats:</span>
   </dt>
   <dd>
     <ol>
     <li>
+      <span lang="uk">Загальна підмножина С и С++, сумісне з</span>
       <span lang="ru">Общее подмножество С и С++, совместимое с</span>
       <span lang="en">Common subset of С and С++, which is compatible with</span>
          gcc, clang,
@@ -85,6 +101,7 @@
 
       <ol>
       <li>
+        <span lang="uk">Виконувані формати</span>
         <span lang="ru">Исполнимые форматы</span>
         <span lang="en">Executable formats</span>
           ELF, PE, Mach-O
@@ -93,25 +110,31 @@
     </li>
     <li> Java
       <a href="https://docs.oracle.com/javase/specs/jls/se7/html/index.html">
+        <span lang="uk">стандарту 7</span>
         <span lang="ru">стандарта 7</span>
         <span lang="en">7 standard</span>
       </a>
       <ol>
       <li> *.class
+        <span lang="uk">файли</span>
         <span lang="ru">файлы</span>
         <span lang="en">files</span>
       </li>
       <li> Android *.apk
+        <span lang="uk">застосунки</span>
         <span lang="ru">приложения</span>
         <span lang="en">applications</span>
       </li>
       </ol>
     </li>
-    <li> JavaScript <span lang="ru">стандарта</span><span lang="en">of</span>
+    <li> JavaScript <span lang="uk">стандарту</span>
+    <span lang="ru">стандарта</span>
+    <span lang="en">of</span>
       <a href="https://262.ecma-international.org/5.1/">ECMAScript 5</a>
       <span lang="en">standard</span>
     </li>
     <li> Oberon 07, Active Oberon, Component Pascal,
+      <span lang="uk">включаючи декларації модулів</span>
       <span lang="ru">включая декларации модулей</span>
       <span lang="en">including module declaration</span>
     </li>
@@ -121,17 +144,23 @@
   </dd>
 
   <dt>
+    <span lang="uk">Особливості:</span>
     <span lang="ru">Особенности:</span>
     <span lang="en">Specificity:</span>
   </dt>
   <dd>
     <ol>
     <li>
+      <span lang="uk">Часткових статичний та динамічний контроль за використанням
+        неініціалізованних змінних</span>
       <span lang="ru">Частичный статический и динамический контроль использования
         неинициализированных переменных</span>
       <span lang="en">Partial static and dynamic control of using uninitialized variables</span>
     </li>
     <li>
+      <span lang="uk">Перевірка переповнення для цілих, дробів, множин.
+        (-i) та ABS(i) завжди коректні за рахунок виключення мінімального цілого, яке у
+        доповняльному коді за модулем більше максимального</span>
       <span lang="ru">Проверка переполнения для целых, дробей, множеств.
         (-i) и ABS(i) всегда корректны за счёт исключения минимального целого, которое в
         дополнительном коде по модулю больше, чем максимальное</span>
@@ -140,21 +169,25 @@
         by absolute value than the maximal value in two's complement</span>
     </li>
     <li>
-      <span lang="ru">Контроль за перекрытием имён и наличием неиспользуемых элементов в модуле.
+      <span lang="uk">Контроль за перекритям імен та присутністю невикористаних елементів у модулі
       </span>
-      <span lang="en">Control over the identifiers hiding and existence of unused items in the module.
+      <span lang="ru">Контроль за перекрытием имён и наличием неиспользуемых элементов в модуле
+      </span>
+      <span lang="en">Control over the identifiers hiding and existence of unused items in the module
       </span>
     </li>
     </ol>
   </dd>
 
   <dt>
+    <span lang="uk">Репозіторій коду:</span>
     <span lang="ru">Репозиторий исходного кода:</span>
     <span lang="en">Source code repository:</span>
   </dt>
   <dd><a href="https://github.com/Vostok-space/vostok">github.com/Vostok-space/vostok</a></dd>
 
   <dt>
+    <span lang="uk">Блог проєкту:</span>
     <span lang="ru">Блог проекта:</span>
     <span lang="en">Project blog:</span>
   </dt>
@@ -165,23 +198,33 @@
   </dt>
   <dd lang="ru">
     <a href="https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217&hilit=%D0%B2%D0%BE%D1%81%D1%82%D0%BE%D0%BA">forum.oberoncore.ru</a>,
-    <a href="https://chat.oberon.org/channel/vostok">chat.oberon.org</a>,
+    <a href="https://t.me/oberon_vostok">telegram</a>
+  </dd>
+
+  <dt lang="uk">
+    Обговорення:
+  </dt>
+  <dd lang="uk">
     <a href="https://t.me/oberon_vostok">telegram</a>
   </dd>
 </dl>
 
+    <h3 lang="uk"> Встановлення </h3>
     <h3 lang="ru"> Установка </h3>
     <h3 lang="en"> Installation </h3>
       <details>
         <summary>
+          <span lang="uk">Для GNU/Linux зі <a href="https://snapcraft.io/vostok">Snap Store</a></span>
           <span lang="ru">Для GNU/Linux из <a href="https://snapcraft.io/vostok">Snap Store</a></span>
           <span lang="en">For GNU/Linux from <a href="https://snapcraft.io/vostok">Snap Store</a></span>
         </summary>
+        <span lang="uk">В Ubuntu або іншому дистрибутиві зі встановленим snap можно одразу виконати:</span>
         <span lang="ru">В Ubuntu или другом дистрибутиве с установленным snap можно сразу выполнить:</span>
         <span lang="en">On Ubuntu or another distribution with installed snap you can just execute:</span>
         <pre><code>snap install vostok --classic --beta &&
 snap alias vostok ost # добавляем краткий псевдоним</code></pre>
         <p>
+          <span lang="uk">Інструкції для інших дистрибутивів:</span>
           <span lang="ru">Для других доступных дистрибутивов следуйте инструкциям:</span>
           <span lang="en">For other available distributions follow the instructions:</span>
           <a href="https://snapcraft.io/install/vostok/arch">Arch Linux</a>,
@@ -202,9 +245,12 @@ snap alias vostok ost # добавляем краткий псевдоним</co
 
       <details>
         <summary>
-          <span lang="ru">Для GNU/Linux дистрибутивов, основанных на Debian</span>
+          <span lang="uk">Для GNU/Linux дистрибутивів на основі Debian</span>
+          <span lang="ru">Для GNU/Linux дистрибутивов на основе Debian</span>
           <span lang="en">For Debian based GNU/Linux distributions</span>
         </summary>
+        <span lang="uk">Встановлення <a href="https://wiki.oberon.org/repo">deb-репозиторію</a>
+          для ряду Оберон-пакетів</span>
         <span lang="ru">Установка <a href="https://wiki.oberon.org/repo">deb-репозитория</a>
           для ряда Оберон-пакетов</span>
         <span lang="en">Installation of <a href="https://wiki.oberon.org/repo">deb repository</a>
@@ -214,10 +260,12 @@ snap alias vostok ost # добавляем краткий псевдоним</co
 wget -qO- http://deb.oberon.org/deb.oberon.org.gpg.key | apt-key add - &&
 echo deb http://deb.oberon.org/linux testing main >> /etc/apt/sources.list &&
 apt update'</code></pre>
+        <span lang="uk">Встановлення транслятору:</span>
         <span lang="ru">Установка транслятора:</span>
         <span lang="en">Installation of the translator:</span>
         <pre><code>/usr/bin/sudo apt install vostok-bin</code></pre>
 
+        <span lang="uk">Збиральник Android-застосунків:</span>
         <span lang="ru">Сборщик Android-приложений:</span>
         <span lang="en">Android-applications builder:</span>
         <pre><code>/usr/bin/sudo apt install vostok-android</code></pre>
@@ -225,6 +273,7 @@ apt update'</code></pre>
 
       <details>
         <summary>
+          <span lang="uk">Для GNU/Linux дистрибутивів на основі RPM</span>
           <span lang="ru">Для основанных на RPM GNU/Linux дистрибутивов</span>
           <span lang="en">For RPM based GNU/Linux distributions</span>
         </summary>
@@ -245,10 +294,12 @@ vostokInstall 0.0.8 0.0.9</code></pre>
 
       <details>
         <summary>
+          <span lang="uk">Для macOS та GNU/Linux через</span>
           <span lang="ru">Для macOS и GNU/Linux через</span>
           <span lang="en">For macOS and GNU/Linux through</span>
           <a href="https://brew.sh/">Homebrew</a>
         </summary>
+        <span lang="uk">Встановлення репозиторію, а потім пакету з нього.</span>
         <span lang="ru">Установка репозитория, а затем пакета из него.</span>
         <span lang="en">Repository installation and then package installation.</span>
         <pre><code>brew tap vostok-space/oberon &&
@@ -258,6 +309,7 @@ brew install vostok
 
       <details>
         <summary>
+          <span lang="uk">Для POSIX(UNIX-подібних) з коду</span>
           <span lang="ru">Для POSIX(UNIX-подобных) из исходного кода</span>
           <span lang="en">Source based for POSIX(UNIX-like)</span>
         </summary>
@@ -267,13 +319,18 @@ cd vostok &&
 result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
 /usr/bin/sudo result/ost run make.Install -infr . -m source</code></pre>
 
+      <p lang="uk"> Для налаштування теки встановлення замість <code>/usr/local/</code>
+      за замовченням, слід вказувати <code>'make.InstallTo("/path/")'</code> замість
+      <code>make.Install</code>.
+      </p>
       <p lang="ru"> Для настройки пути установки вместо <code>/usr/local/</code> по умолчанию,
       следует использовать <code>'make.InstallTo("/path/")'</code> вместо <code>make.Install</code>.
       </p>
       <p lang="en"> For custom installation path instead of default <code>/usr/local/</code>,
       need to use <code>'make.InstallTo("/path/")'</code> instead of <code>make.Install</code>.
       </p>
-      <p><span lang="ru">Для сборки необходим один из компиляторов C:</span>
+      <p><span lang="uk">Для збирання необхідний один з компіляторів C:</span>
+         <span lang="ru">Для сборки необходим один из компиляторов C:</span>
          <span lang="en">For building need one of the C compilers:</span>
           gcc, clang, tcc, ccomp,
           <a href="https://andrewkelley.me/post/zig-cc-powerful-drop-in-replacement-gcc-clang.html">
@@ -283,11 +340,13 @@ result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
 
       <details>
         <summary>
+          <span lang="uk">Для Android у </span>
           <span lang="ru">Для Android в </span>
           <span lang="en">For Android in </span>
           <a href="https://termux.com/">Termux</a>
         </summary>
 
+        <span lang="uk">Збирання та встановлення транслятору:</span>
         <span lang="ru">Сборка и установка транслятора:</span>
         <span lang="en">Building and installation of the translator:</span>
         <pre><code>pkg install git clang &&
@@ -298,6 +357,7 @@ cd vostok &&
 result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
 result/ost run 'make.InstallTo("'"$PREFIX"'")' -infr . -m source</code></pre>
 
+        <span lang="uk">Після транслятору доступне встановлення збиральника APK-застосунків:</span>
         <span lang="ru">После сборки транслятора доступна установка сборщика APK-приложений:</span>
         <span lang="en">After the translator can be installed builder of APK applications:</span>
         <pre><code>pkg install ecj dx aapt apksigner &&
@@ -317,10 +377,12 @@ result/ost run 'make.InstallAndroidTo("'"$PREFIX"'")' -infr . -m source</code></
 
       <details>
         <summary>
+          <span lang="uk">Для</span>
           <span lang="ru">Для</span>
           <span lang="en">For</span>
           Windows
         </summary>
+        <p lang="uk">Доступний тільки збір з вихідного коду.</p>
         <p lang="ru">Сейчас доступна только сборка из исходного кода.
           Пишите, если нужен установщик.
         </p>
@@ -330,6 +392,7 @@ result/ost run 'make.InstallAndroidTo("'"$PREFIX"'")' -infr . -m source</code></
       </details>
   </article>
   <footer>
+    <label lang="uk">Зв'язок:</label>
     <label lang="ru">Связь:</label>
     <label lang="en">Contact:</label>
     <a href="mailto:/project/-Vostok/@yandex/.ru"

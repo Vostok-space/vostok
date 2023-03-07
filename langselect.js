@@ -1,5 +1,5 @@
 function switchLang(lang) {
-  const Languages = ["en", "ru"];
+  const Languages = ["en", "uk", "ru"];
 
   function setDisplay(lang, value) {
     var els, i;
