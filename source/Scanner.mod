@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -519,7 +519,7 @@ BEGIN
 		INC(count);
 		column := (column + s.opt.tabSize) DIV s.opt.tabSize * s.opt.tabSize
 	ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
-		;
+		IF count = 0 THEN j := i END
 	END;
 	s.isChar := FALSE;
 	IF s.buf[i] = Utf8.DQuote THEN
