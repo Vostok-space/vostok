@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017,2019-2020,2022 ComdivByZero
+ *  Copyright (C) 2017,2019-2020,2022-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -19,7 +19,7 @@ MODULE TextGenerator;
 IMPORT
 	V,
 	Utf8, Hexadecimal := Hex,
-	Strings := StringStore, Chars0X,
+	Strings := StringStore, Charz,
 	Stream  := VDataStream,
 	Limits  := TypesLimits,
 	ArrayFill;
@@ -138,13 +138,13 @@ END NewLine;
 PROCEDURE Str*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(g);
-	Write(g, str, 0, Chars0X.CalcLen(str, 0))
+	Write(g, str, 0, Charz.CalcLen(str, 0))
 END Str;
 
 PROCEDURE StrLn*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
 	NewLine(g);
-	Write(g, str, 0, Chars0X.CalcLen(str, 0));
+	Write(g, str, 0, Charz.CalcLen(str, 0));
 	Write(g, Utf8.NewLine, 0, 1);
 	g.isNewLine := TRUE
 END StrLn;
@@ -193,7 +193,7 @@ END LnStrClose;
 
 PROCEDURE StrIgnoreIndent*(VAR g: Out; str: ARRAY OF CHAR);
 BEGIN
-	Write(g, str, 0, Chars0X.CalcLen(str, 0))
+	Write(g, str, 0, Charz.CalcLen(str, 0))
 END StrIgnoreIndent;
 
 PROCEDURE String*(VAR g: Out; word: Strings.String);

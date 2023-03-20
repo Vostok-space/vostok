@@ -1,6 +1,6 @@
 Integers converter to 0X-terminated chars
 
-Copyright 2021 ComdivByZero
+Copyright 2021,2023 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-MODULE IntToChars0X;
+MODULE IntToCharz;
 
   IMPORT Hx := Hex, ArrayFill;
 
@@ -150,4 +150,4 @@ MODULE IntToChars0X;
     ok
   END Hex;
 
-END IntToChars0X.
+END IntToCharz.

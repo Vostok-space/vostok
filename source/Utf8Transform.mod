@@ -1,6 +1,6 @@
 (*  Transformations from cyrillic Utf-8 to ASC II
  *
- *  Copyright (C) 2016,2019,2021 ComdivByZero
+ *  Copyright (C) 2016,2019,2021,2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -17,11 +17,11 @@
  *)
 MODULE Utf8Transform;
 
-  IMPORT Strings := StringStore, Chars0X, Hex;
+  IMPORT Strings := StringStore, Charz, Hex;
 
   PROCEDURE Puts(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; str: ARRAY OF CHAR);
   BEGIN
-    ASSERT(Chars0X.CopyString(buf, i, str))
+    ASSERT(Charz.CopyString(buf, i, str))
   END Puts;
 
   PROCEDURE EscapeCyrillic*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER;

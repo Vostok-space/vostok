@@ -1,6 +1,6 @@
 (* Getting the base directory for temporary files
  *
- * Copyright 2021 ComdivByZero
+ * Copyright 2021,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  *)
 MODULE DirForTemp;
 
-  IMPORT Platform, OsEnv, Chars0X;
+  IMPORT Platform, OsEnv, Charz;
 
   PROCEDURE Get*(VAR val: ARRAY OF CHAR; VAR ofs: INTEGER): BOOLEAN;
   VAR ok: BOOLEAN; start: INTEGER;
@@ -24,12 +24,12 @@ MODULE DirForTemp;
     IF Platform.Posix THEN
       start := ofs;
       IF OsEnv.Get(val, ofs, "TMPDIR") THEN
-        ok := (start = ofs) OR Chars0X.CopyString(val, ofs, "/")
+        ok := (start = ofs) OR Charz.CopyString(val, ofs, "/")
       ELSE
-        ok := (start = ofs) & Chars0X.CopyString(val, ofs, "/tmp/")
+        ok := (start = ofs) & Charz.CopyString(val, ofs, "/tmp/")
       END
     ELSIF Platform.Windows THEN
-      ok := OsEnv.Get(val, ofs, "TEMP") & Chars0X.CopyString(val, ofs, "\")
+      ok := OsEnv.Get(val, ofs, "TEMP") & Charz.CopyString(val, ofs, "\")
     ELSE
       (* TODO *)
       ASSERT(FALSE)

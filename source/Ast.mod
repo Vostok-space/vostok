@@ -23,7 +23,7 @@ IMPORT
 	V,
 	Scanner,
 	SpecIdent := OberonSpecIdent,
-	Strings := StringStore, Chars0X,
+	Strings := StringStore, Charz,
 	TranLim := TranslatorLimits,
 	Arithmetic := CheckIntArithmetic,
 	LongSet;
@@ -871,7 +871,7 @@ BEGIN
 	m.errors := NIL;
 	m.store := Strings.StoreNew();
 
-	PutChars(m, m.name, name, 0, Chars0X.CalcLen(name, 0));
+	PutChars(m, m.name, name, 0, Charz.CalcLen(name, 0));
 	m.module := m.bag;
 	m.errorHide := TRUE;
 	m.handleImport := FALSE;
@@ -1069,14 +1069,14 @@ BEGIN
 				m.import := imp
 			END;
 			ofs := 0;
-			ASSERT(Chars0X.CopyChars(name, ofs, buf, realOfs, realEnd));
+			ASSERT(Charz.CopyChars(name, ofs, buf, realOfs, realEnd));
 			IF c.opt.allowSystem & (name = "SYSTEM") THEN
 				imp.module := system.bag;
 				err := ErrNo
 			ELSE
 				err := Load(imp.module, prov, m, name);
 				IF err # ErrNo THEN
-					AddErrorNoteFromBuf(c, err, name, 0, Chars0X.CalcLen(name, 0))
+					AddErrorNoteFromBuf(c, err, name, 0, Charz.CalcLen(name, 0))
 				END
 			END
 		END

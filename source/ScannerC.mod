@@ -1,5 +1,5 @@
 (*  Scanner of C lexems, based on Scanner for Oberon
- *  Copyright (C) 2016-2020 ComdivByZero
+ *  Copyright (C) 2016-2020,2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -21,7 +21,7 @@ IMPORT
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
-	Chars0X,
+	Charz,
 	Log := DLog;
 
 CONST
@@ -180,7 +180,7 @@ BEGIN
 	s.buf[0] := " ";
 
 	len := 1;
-	ret := Chars0X.CopyString(s.buf, len, in);
+	ret := Charz.CopyString(s.buf, len, in);
 	s.buf[len] := Utf8.TransmissionEnd
 	RETURN ret
 END InitByString;

@@ -1,6 +1,6 @@
 (*  Builder of simple Android applications from Oberon-07
  *
- *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -29,7 +29,7 @@ IMPORT
   CFiles,
   Dir := CDir,
   Utf8,
-  Chars0X,
+  Charz,
   Env := OsEnv, OsUtil;
 
 CONST
@@ -117,7 +117,7 @@ VAR
   PROCEDURE W0(f: Files.Out; str: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
   VAR len: INTEGER;
   BEGIN
-    len := Chars0X.CalcLen(str, ofs)
+    len := Charz.CalcLen(str, ofs)
   RETURN
     len = Stream.WriteChars(f^, str, ofs, len)
   END W0;
@@ -337,7 +337,7 @@ VAR
 
   PROCEDURE Copy(VAR dest: ARRAY OF CHAR; VAR i: INTEGER; src: ARRAY OF CHAR): BOOLEAN;
   RETURN
-    Chars0X.CopyString(dest, i, src)
+    Charz.CopyString(dest, i, src)
   END Copy;
 
   PROCEDURE ActivityPath(VAR act: ARRAY OF CHAR; dir: ARRAY OF CHAR; name: ActivityName): BOOLEAN;
@@ -357,14 +357,14 @@ VAR
   RETURN
     ok
   & Copy(act, i, "/")
-  & Chars0X.Copy(act, i, name.val, ni)
+  & Charz.Copy(act, i, name.val, ni)
   & Copy(act, i, ".java")
   END ActivityPath;
 
   PROCEDURE SetJavac(VAR javac: ARRAY OF CHAR; args: Listener): BOOLEAN;
   VAR i: INTEGER;
   BEGIN
-    i := Chars0X.CalcLen(javac, 0);
+    i := Charz.CalcLen(javac, 0);
   RETURN
     ((i > 0) OR Copy(javac, i, javacDefault))
   & Copy(javac, i, " -bootclasspath ")
@@ -404,14 +404,14 @@ VAR
   VAR i: INTEGER; ok: BOOLEAN;
   BEGIN
     act.name := 0;
-    IF Chars0X.SearchCharLast(value, act.name, ".") THEN
+    IF Charz.SearchCharLast(value, act.name, ".") THEN
       INC(act.name);
-      ok := Chars0X.Set(act.val, value)
+      ok := Charz.Set(act.val, value)
     ELSE
       i := 0;
-      ok := Chars0X.CopyString(act.val, i, "o7.android.");
+      ok := Charz.CopyString(act.val, i, "o7.android.");
       act.name := i;
-      ok := ok & Chars0X.CopyString(act.val, i, value)
+      ok := ok & Charz.CopyString(act.val, i, value)
     END
   RETURN
     ok
@@ -481,16 +481,16 @@ VAR
     RETURN
       (*TODO*)
       Env.Get(ks, i, "HOME")
-    & Chars0X.CopyString(ks, i, "/.android/debug.keystore")
+    & Charz.CopyString(ks, i, "/.android/debug.keystore")
 
     & CFiles.Exist(ks, 0)
     END IsDebugKeystoreExist;
   BEGIN
     len := 0;
 
-    ASSERT(Chars0X.Set(args.sdk, sdkDefault)
-         & Chars0X.Set(args.platform, platformDefault)
-         & Chars0X.Set(args.tools, toolsDefault));
+    ASSERT(Charz.Set(args.sdk, sdkDefault)
+         & Charz.Set(args.platform, platformDefault)
+         & Charz.Set(args.tools, toolsDefault));
     args.key := "";
     args.baseClasses := "";
 
@@ -507,16 +507,16 @@ VAR
         & (Cli.ErrNo = Cli.Options(args.args, args.args.arg));
 
     IF args.key = "" THEN
-      ASSERT(Chars0X.Set(args.key, keyDefault)
-           & Chars0X.Set(args.cert, certDefault))
+      ASSERT(Charz.Set(args.key, keyDefault)
+           & Charz.Set(args.cert, certDefault))
     END;
 
     args.ksGen := ok & (args.key = "")
-                & ~(IsDebugKeystoreExist(args.key) & Chars0X.Set(args.ksPass, "android"));
+                & ~(IsDebugKeystoreExist(args.key) & Charz.Set(args.ksPass, "android"));
     IF ~ok OR (args.baseClasses # "") THEN
       ;
     ELSIF baseClassPathDefault # "" THEN
-      ASSERT(Chars0X.Set(args.baseClasses, baseClassPathDefault))
+      ASSERT(Charz.Set(args.baseClasses, baseClassPathDefault))
     ELSE
       len := 0;
       ok := Copy(args.baseClasses, len, args.sdk)
@@ -525,8 +525,8 @@ VAR
           & Copy(args.baseClasses, len, "/android.jar")
     END;
     IF args.ksGen THEN
-      ok := Chars0X.Set(args.key, "o7.keystore")
-          & Chars0X.Set(args.ksPass, "oberon")
+      ok := Charz.Set(args.key, "o7.keystore")
+          & Charz.Set(args.ksPass, "oberon")
     END;
     IF args.activity.val = "" THEN
       args.activity := activityDefault
@@ -622,17 +622,17 @@ VAR
 
   PROCEDURE SetSdkDefault*(sdk: ARRAY OF CHAR);
   BEGIN
-    ASSERT(Chars0X.Set(sdkDefault, sdk))
+    ASSERT(Charz.Set(sdkDefault, sdk))
   END SetSdkDefault;
 
   PROCEDURE SetPlatformDefault*(pl: ARRAY OF CHAR);
   BEGIN
-    ASSERT(Chars0X.Set(platformDefault, pl))
+    ASSERT(Charz.Set(platformDefault, pl))
   END SetPlatformDefault;
 
   PROCEDURE SetToolsDefault*(tools: ARRAY OF CHAR);
   BEGIN
-    ASSERT(Chars0X.Set(toolsDefault, tools))
+    ASSERT(Charz.Set(toolsDefault, tools))
   END SetToolsDefault;
 
   PROCEDURE SetKeyDefault*(key, cert: ARRAY OF CHAR);

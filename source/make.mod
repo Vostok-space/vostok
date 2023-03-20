@@ -1,7 +1,7 @@
 #!/usr/bin/env -S ost .
 
 Build and test tasks for the translator
-Copyright (C) 2018-2022 ComdivByZero
+Copyright (C) 2018-2023 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE make;
 
- IMPORT Log := DLog, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Chars0X,
+ IMPORT Log := DLog, Exec := PlatformExec, Dir, CFiles, Platform, FS := FileSystemUtil, Charz,
         Env := OsEnv, Utf8, CLI, TranslatorVersion;
 
  CONST
@@ -39,7 +39,7 @@ MODULE make;
    i := 0;
    j := 0
  RETURN
-   Chars0X.CopyCharsUntil(n, i, nwe, j, ".")
+   Charz.CopyCharsUntil(n, i, nwe, j, ".")
  END CopyFileName;
 
  PROCEDURE Msg(str: ARRAY OF CHAR);
@@ -80,8 +80,8 @@ MODULE make;
  BEGIN
    i := 0
  RETURN
-   Chars0X.CopyString(dest, i, a)
- & Chars0X.CopyString(dest, i, b)
+   Charz.CopyString(dest, i, a)
+ & Charz.CopyString(dest, i, b)
  END Concat;
 
  PROCEDURE BuildBy(ost, script, res, tmp, cmd: ARRAY OF CHAR): BOOLEAN;
@@ -522,23 +522,23 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  VAR len: INTEGER;
    PROCEDURE Sub(VAR res: ARRAY OF CHAR; VAR len: INTEGER; from, to: ARRAY OF CHAR): BOOLEAN;
    RETURN
-     Chars0X.CopyString (res, len, "sub(")
-   & Chars0X.PutChar    (res, len, Utf8.DQuote)
-   & Chars0X.CopyString (res, len, from)
-   & Chars0X.PutChar    (res, len, Utf8.DQuote)
-   & Chars0X.CopyString (res, len, ", ")
-   & Chars0X.PutChar    (res, len, Utf8.DQuote)
-   & Chars0X.CopyString (res, len, to)
-   & Chars0X.PutChar    (res, len, Utf8.DQuote)
-   & Chars0X.CopyString (res, len, "); ")
+     Charz.CopyString (res, len, "sub(")
+   & Charz.PutChar    (res, len, Utf8.DQuote)
+   & Charz.CopyString (res, len, from)
+   & Charz.PutChar    (res, len, Utf8.DQuote)
+   & Charz.CopyString (res, len, ", ")
+   & Charz.PutChar    (res, len, Utf8.DQuote)
+   & Charz.CopyString (res, len, to)
+   & Charz.PutChar    (res, len, Utf8.DQuote)
+   & Charz.CopyString (res, len, "); ")
    END Sub;
  BEGIN
    len := 0;
-   ASSERT(Chars0X.CopyString(res, len, "{ ")
+   ASSERT(Charz.CopyString(res, len, "{ ")
         & Sub(res, len, "cpu-arch", arch)
         & Sub(res, len, "bin-version", BinVer)
         & Sub(res, len, "lib-version", LibVer)
-        & Chars0X.CopyString(res, len, "print $0 }")
+        & Charz.CopyString(res, len, "print $0 }")
    )
  END AwkScript;
 
@@ -558,12 +558,12 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  BEGIN
    i := 0
  RETURN
-   Chars0X.CopyString(full, i, name)
- & Chars0X.PutChar   (full, i, "_")
- & Chars0X.CopyString(full, i, version)
- & Chars0X.PutChar   (full, i, "_")
- & Chars0X.CopyString(full, i, platform)
- & Chars0X.CopyString(full, i, ".deb")
+   Charz.CopyString(full, i, name)
+ & Charz.PutChar   (full, i, "_")
+ & Charz.CopyString(full, i, version)
+ & Charz.PutChar   (full, i, "_")
+ & Charz.CopyString(full, i, platform)
+ & Charz.CopyString(full, i, ".deb")
  END GetDebName;
 
  PROCEDURE DebRename(name, version, platform: ARRAY OF CHAR): BOOLEAN;
@@ -672,18 +672,18 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  BEGIN
    ofs := 0;
    corr := Env.Get(tar, ofs, "HOME")
-         & Chars0X.CopyString(tar, ofs, "/RPM");
+         & Charz.CopyString(tar, ofs, "/RPM");
    IF corr & ~CFiles.Exist(tar, 0) THEN
       ofs := 0;
       corr := Env.Get(tar, ofs, "HOME")
-            & Chars0X.CopyString(tar, ofs, "/rpmbuild")
+            & Charz.CopyString(tar, ofs, "/rpmbuild")
             & CFiles.Exist(tar, 0)
    END
  RETURN
    corr
- & Chars0X.CopyString(tar, ofs, "/SOURCES/")
- & Chars0X.CopyString(tar, ofs, name)
- & Chars0X.CopyString(tar, ofs, ".tar.bz2")
+ & Charz.CopyString(tar, ofs, "/SOURCES/")
+ & Charz.CopyString(tar, ofs, name)
+ & Charz.CopyString(tar, ofs, ".tar.bz2")
  END GetRpmTarName;
 
  PROCEDURE RpmLib*;

@@ -1,5 +1,5 @@
 (*  Storage of procedure types for Java Generator
- *  Copyright (C) 2018-2019 ComdivByZero
+ *  Copyright (C) 2018-2019,2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -16,7 +16,7 @@
  *)
 MODULE JavaStoreProcTypes;
 
-  IMPORT V, Ast, Strings := StringStore, Chars0X, Log := DLog;
+  IMPORT V, Ast, Strings := StringStore, Charz, Log := DLog;
 
   CONST
 
@@ -80,7 +80,7 @@ MODULE JavaStoreProcTypes;
           INC(end);
           n := n DIV 10;
         END;
-        ok := Chars0X.CopyString(name, end, "_proc");
+        ok := Charz.CopyString(name, end, "_proc");
 
         Log.Str("Corr name: "); Log.StrLn(name)
       END;
@@ -136,20 +136,20 @@ MODULE JavaStoreProcTypes;
     BEGIN
       CASE t.id OF
         Ast.IdInteger  ,
-        Ast.IdSet      : ok := Chars0X.PutChar(name, i, "I")
+        Ast.IdSet      : ok := Charz.PutChar(name, i, "I")
       | Ast.IdLongInt  ,
-        Ast.IdLongSet  : ok := Chars0X.PutChar(name, i, "J")
-      | Ast.IdBoolean  : ok := Chars0X.PutChar(name, i, "Z")
-      | Ast.IdByte     : ok := Chars0X.PutChar(name, i, "B")
-      | Ast.IdChar     : ok := Chars0X.PutChar(name, i, "C")
-      | Ast.IdReal     : ok := Chars0X.PutChar(name, i, "D")
-      | Ast.IdReal32   : ok := Chars0X.PutChar(name, i, "F")
-      | Ast.IdPointer  : ok := Chars0X.PutChar(name, i, "L")
+        Ast.IdLongSet  : ok := Charz.PutChar(name, i, "J")
+      | Ast.IdBoolean  : ok := Charz.PutChar(name, i, "Z")
+      | Ast.IdByte     : ok := Charz.PutChar(name, i, "B")
+      | Ast.IdChar     : ok := Charz.PutChar(name, i, "C")
+      | Ast.IdReal     : ok := Charz.PutChar(name, i, "D")
+      | Ast.IdReal32   : ok := Charz.PutChar(name, i, "F")
+      | Ast.IdPointer  : ok := Charz.PutChar(name, i, "L")
 
-      | Ast.IdArray    : ok := Chars0X.PutChar(name, i, "A")
-      | Ast.IdRecord   : ok := Chars0X.PutChar(name, i, "R")
+      | Ast.IdArray    : ok := Charz.PutChar(name, i, "A")
+      | Ast.IdRecord   : ok := Charz.PutChar(name, i, "R")
       | Ast.IdProcType, Ast.IdFuncType
-                       : ok := Chars0X.PutChar(name, i, "P")
+                       : ok := Charz.PutChar(name, i, "P")
       END
     RETURN
       ok
@@ -158,7 +158,7 @@ MODULE JavaStoreProcTypes;
   BEGIN
     i := 0;
     IF proc.type = NIL THEN
-      ok := Chars0X.PutChar(nm, i, "V");
+      ok := Charz.PutChar(nm, i, "V");
       generic := FALSE
     ELSE
       ok := Type(nm, i, proc.type);
@@ -170,7 +170,7 @@ MODULE JavaStoreProcTypes;
       generic := generic OR (p.type.id IN GenericTypes);
       p := p.next
     END;
-    ok := ok & Chars0X.CopyString(nm, i, "_proc");
+    ok := ok & Charz.CopyString(nm, i, "_proc");
   RETURN
     Add(store, name, proc, generic, nm, i)
   END GenerateName;

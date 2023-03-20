@@ -1,6 +1,6 @@
 Provider of the content source from the file system
 
-Copyright (C) 2021-2022 ComdivByZero
+Copyright (C) 2021-2023 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -24,7 +24,7 @@ MODULE FileProvider;
     OsUtil,
     Stream := VDataStream,
     File := VFileStream,
-    Chars0X,
+    Charz,
     ArrayCopy,
     Log := DLog;
 
@@ -58,11 +58,11 @@ MODULE FileProvider;
       BEGIN
         l := 0;
         ofs := it.extOfs;
-        IF Chars0X.Copy          (n, l, it.p.path, it.pathOfs)
-         & Chars0X.CopyString    (n, l, OsUtil.DirSep)
-         & Chars0X.CopyString    (n, l, it.name)
-         & Chars0X.PutChar       (n, l, ".")
-         & Chars0X.CopyCharsUntil(n, l, Exts, ofs, ";")
+        IF Charz.Copy          (n, l, it.p.path, it.pathOfs)
+         & Charz.CopyString    (n, l, OsUtil.DirSep)
+         & Charz.CopyString    (n, l, it.name)
+         & Charz.PutChar       (n, l, ".")
+         & Charz.CopyCharsUntil(n, l, Exts, ofs, ";")
         THEN
           Log.Str("Open "); Log.StrLn(n);
           in := File.OpenIn(n);

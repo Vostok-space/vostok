@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -20,7 +20,7 @@ IMPORT
 	V,
 	Ast, AstTransform,
 	Utf8, Hex,
-	Strings := StringStore, Chars0X,
+	Strings := StringStore, Charz,
 	SpecIdentChecker,
 	SpecIdent  := OberonSpecIdent,
 	Stream     := VDataStream,
@@ -204,7 +204,7 @@ BEGIN
 		l := 0;
 		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
-		ASSERT(Chars0X.CopyString(anon, l, "_anon_0000"));
+		ASSERT(Charz.CopyString(anon, l, "_anon_0000"));
 		ASSERT((g.opt.index >= 0) & (g.opt.index < 10000));
 		i := g.opt.index;
 		j := l - 1;

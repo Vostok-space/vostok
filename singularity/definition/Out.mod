@@ -1,6 +1,6 @@
 (* Simple module for formatted output based on Oakwood guidelines
  *
- * Copyright 2017-2019,2021 ComdivByZero
+ * Copyright 2017-2019,2021,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  *)
 MODULE Out;
 
- IMPORT Stream := VDataStream, IO := VDefaultIO, Chars0X, Platform, IntToChars0X, RealToChars0X;
+ IMPORT Stream := VDataStream, IO := VDefaultIO, Charz, Platform, IntToCharz, RealToCharz;
 
  VAR
    success: BOOLEAN;
@@ -31,7 +31,7 @@ MODULE Out;
 
  PROCEDURE String*(s: ARRAY OF CHAR);
  BEGIN
-   Write(s, 0, Chars0X.CalcLen(s, 0))
+   Write(s, 0, Charz.CalcLen(s, 0))
  END String;
 
  PROCEDURE Char*(ch: CHAR);
@@ -46,7 +46,7 @@ MODULE Out;
      i: INTEGER;
  BEGIN
    i := 0;
-   ASSERT(IntToChars0X.Dec(s, i, x, n));
+   ASSERT(IntToCharz.Dec(s, i, x, n));
    Write(s, 0, i)
  END Int;
 
@@ -60,7 +60,7 @@ MODULE Out;
      i: INTEGER;
  BEGIN
    i := 0;
-   ASSERT(RealToChars0X.Exp(s, i, x, n));
+   ASSERT(RealToCharz.Exp(s, i, x, n));
    Write(s, 0, i)
  END Real;
 

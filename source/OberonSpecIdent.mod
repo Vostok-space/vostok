@@ -1,6 +1,6 @@
 (*  List of Oberon-07 keywords and predefined identifers
  *
- *  Copyright (C) 2016-2018, 2020-2021 ComdivByZero
+ *  Copyright (C) 2016-2018,2020-2022 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -165,10 +165,6 @@ MODULE OberonSpecIdent;
   BEGIN
     save := buf[end];
     buf[end] := Utf8.BackSpace;
-    (*
-    Log.Str("lexStart "); Log.Int(ind); Log.Str(" ");
-    Log.Int(ORD(buf[ind])); Log.Ln;
-    *)
     CASE buf[ind] OF
      "A": spec := O(kw, "ARRAY", Array, buf, ind, end)
     |"B": spec := T(kw, "BEGIN", Begin, "BY", By, buf, ind, end)

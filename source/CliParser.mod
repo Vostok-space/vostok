@@ -1,6 +1,6 @@
 (*  Command line interface for Oberon-07 translator
  *
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -19,7 +19,7 @@ MODULE CliParser;
 
 IMPORT V, CLI, Utf8, Strings := StringStore, Platform,
        GenOptions, GeneratorOberon, GeneratorC,
-       OsUtil, Chars0X;
+       OsUtil, Charz;
 
 CONST
 	CmdHelp*       = 1;
@@ -147,7 +147,7 @@ BEGIN
 			END;
 			str[i - 1] := Utf8.Null
 		END;
-		i := j + Chars0X.Trim(str, j);
+		i := j + Charz.Trim(str, j);
 		IF ~ret OR (i >= LEN(str) - 1) THEN
 			err := errTooLong
 		END
@@ -178,8 +178,8 @@ VAR ok: BOOLEAN;
 	               base, add: ARRAY OF CHAR): BOOLEAN;
 	VAR ret: BOOLEAN;
 	BEGIN
-		ret := Chars0X.CopyString(str, i, base)
-		     & Chars0X.CopyString(str, i, add);
+		ret := Charz.CopyString(str, i, base)
+		     & Charz.CopyString(str, i, add);
 		IF ret THEN
 			INC(i)
 		END
@@ -223,7 +223,7 @@ BEGIN
 			END
 		END;
 		INC(len);
-		ok := (i = 0) & Chars0X.CopyString(infr, len, "share/vostok")
+		ok := (i = 0) & Charz.CopyString(infr, len, "share/vostok")
 	END
 	RETURN ok
 END ReadNearInfr;
@@ -449,7 +449,7 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 		i := 0;
 		IF sep >= 0 THEN
 			j := 0;
-			IF Chars0X.CopyChars(args.modPath, i, file, j, sep + 1) THEN
+			IF Charz.CopyChars(args.modPath, i, file, j, sep + 1) THEN
 				args.modPathLen := i + 1;
 				args.modPath[i + 1] := Utf8.Null;
 				INC(count)
@@ -463,10 +463,10 @@ VAR i, arg, dot, sep, methodLen: INTEGER;
 			INC(count)
 		END;
 		args.srcNameEnd := 0;
-		ASSERT(Chars0X.CopyChars(args.src, args.srcNameEnd, file, i, dot));
+		ASSERT(Charz.CopyChars(args.src, args.srcNameEnd, file, i, dot));
 		args.srcLen := args.srcNameEnd;
 		IF method # "" THEN
-			ASSERT(Chars0X.CopyString(args.src, args.srcLen, method));
+			ASSERT(Charz.CopyString(args.src, args.srcLen, method));
 			INC(args.srcLen)
 		END;
 		IF (ret = ErrNo)
@@ -489,7 +489,7 @@ BEGIN
 	IF GetParam(ret, ErrTooLongSourceName, file, i, arg) THEN
 		IF (file[0] = ".") & (file[1] # "/") THEN
 			methodLen := 0;
-			IF ~Chars0X.CopyString(method, methodLen, file) THEN
+			IF ~Charz.CopyString(method, methodLen, file) THEN
 				(* TODO *)
 				ret := ErrTooLongSourceName
 			ELSE
@@ -615,7 +615,7 @@ VAR cmdLen, arg: INTEGER; cmd: ARRAY 100H OF CHAR; ignore: BOOLEAN;
 	VAR i: INTEGER;
 	BEGIN
 		i := 0;
-		RETURN Chars0X.SearchChar(str, i, ".")
+		RETURN Charz.SearchChar(str, i, ".")
 	END SearchDot;
 BEGIN
 	args.msgLang := MsgLangUndefined;

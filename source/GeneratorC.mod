@@ -20,7 +20,7 @@ IMPORT
 	V,
 	Ast,
 	Utf8, Hex,
-	Strings := StringStore, Chars0X,
+	Strings := StringStore, Charz,
 	SpecIdentChecker,
 	SpecIdent := OberonSpecIdent,
 	Stream    := VDataStream,
@@ -139,7 +139,7 @@ PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g
 
 PROCEDURE MemoryWrite(VAR out: MemoryOut; buf: ARRAY OF CHAR; ofs, count: INTEGER);
 BEGIN
-	ASSERT(Chars0X.CopyChars(
+	ASSERT(Charz.CopyChars(
 		out.mem[ORD(out.invert)].buf, out.mem[ORD(out.invert)].len,
 		buf, ofs, ofs + count
 	))
@@ -184,7 +184,7 @@ BEGIN
 		mo.invert := ~mo.invert
 	ELSE
 		direct := 1 - inv;
-		ASSERT(Chars0X.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
+		ASSERT(Charz.CopyChars(mo.mem[inv].buf, mo.mem[inv].len,
 		                         mo.mem[direct].buf, 0, mo.mem[direct].len));
 		mo.mem[direct].len := 0
 	END
@@ -323,7 +323,7 @@ BEGIN
 		l := 0;
 		ASSERT(Strings.CopyToChars(anon, l, rec.module.m.name));
 
-		ASSERT(Chars0X.CopyString(anon, l, "_anon_0000"));
+		ASSERT(Charz.CopyString(anon, l, "_anon_0000"));
 		ASSERT((g.opt.index >= 0) & (g.opt.index < 10000));
 		i := g.opt.index;
 		j := l - 1;

@@ -1,6 +1,6 @@
 (*  Wrapper over OS-specific execution
  *
- *  Copyright (C) 2017-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -23,7 +23,7 @@ IMPORT
 	OsExec, OsUtil,
 	DLog,
 	Platform,
-	Chars0X,
+	Charz,
 	CDir;
 
 CONST
@@ -148,7 +148,7 @@ BEGIN
 	IF CheckIsNeedQuote(s, j) THEN
 		ok := Quote(d, i) & Copy(d, i, s, j, FALSE) & Quote(d, i)
 	ELSE
-		ok := Chars0X.Copy(d, i, s, j)
+		ok := Charz.Copy(d, i, s, j)
 	END
 	RETURN ok
 END FullCopy;
@@ -189,12 +189,12 @@ BEGIN
 END AddByOfs;
 
 PROCEDURE AddAsIs*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
-	RETURN Chars0X.CopyString(c.buf, c.len, arg)
+	RETURN Charz.CopyString(c.buf, c.len, arg)
 END AddAsIs;
 
 PROCEDURE AddDirSep*(VAR c: Code): BOOLEAN;
 BEGIN
-	RETURN Chars0X.CopyString(c.buf, c.len, OsUtil.DirSep)
+	RETURN Charz.CopyString(c.buf, c.len, OsUtil.DirSep)
 END AddDirSep;
 
 PROCEDURE AddFullPath*(VAR c: Code; path: ARRAY OF CHAR): BOOLEAN;

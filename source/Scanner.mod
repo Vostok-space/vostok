@@ -21,7 +21,7 @@ IMPORT
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
-	Chars0X,
+	Charz,
 	ArrayCopy,
 	Log := DLog;
 
@@ -145,8 +145,8 @@ BEGIN
 	s.ind := 0;
 	s.buf[0] := " ";
 	len := 1;
-	ok := Chars0X.CopyString(s.buf, len, in)
-	    & Chars0X.PutChar(s.buf, len, Utf8.TransmissionEnd);
+	ok := Charz.CopyString(s.buf, len, in)
+	    & Charz.PutChar(s.buf, len, Utf8.TransmissionEnd);
 	s.transmissionEndPos := len - 1
 	RETURN ok
 END InitByString;

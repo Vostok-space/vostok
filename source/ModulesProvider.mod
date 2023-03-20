@@ -1,5 +1,5 @@
 (*  Provider of modules through file system
- *  Copyright (C) 2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -19,7 +19,7 @@ MODULE ModulesProvider;
   IMPORT
     Log := DLog, Out,
     Ast,
-    Strings := StringStore, Chars0X,
+    Strings := StringStore, Charz,
     ArrayCopy,
     Parser,
     TranLim := TranslatorLimits,
@@ -74,7 +74,7 @@ MODULE ModulesProvider;
   BEGIN
     mp := p(Provider);
     mp.nameLen := 0;
-    IF ~Chars0X.CopyString(mp.expectName, mp.nameLen, name) THEN
+    IF ~Charz.CopyString(mp.expectName, mp.nameLen, name) THEN
       m := NIL;
       MessageErrOberon.Text("Name of potential module is too large - ");
       Out.String(name);

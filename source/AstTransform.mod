@@ -1,6 +1,6 @@
 (*  Transformations of abstract syntax tree to simplify generation
  *
- *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -20,7 +20,7 @@ MODULE AstTransform;
   IMPORT Out, V, Ast,
          TranLim   := TranslatorLimits,
          Strings   := StringStore,
-         Chars0X, IntToChars0X, Utf8,
+         Charz, IntToCharz, Utf8,
          SpecIdent := OberonSpecIdent;
 
   CONST
@@ -103,7 +103,7 @@ MODULE AstTransform;
   BEGIN
     len := 0;
     ASSERT(Strings.CopyToChars(new, len, name)
-         & Chars0X.CopyString (new, len, append)
+         & Charz.CopyString (new, len, append)
     )
   END NameAppend;
 
@@ -528,7 +528,7 @@ MODULE AstTransform;
       IF o.moveStringToConst THEN
         name := "str_";
         i := 4;
-        ASSERT(IntToChars0X.Dec(name, i, o.moveStringIndex, 0));
+        ASSERT(IntToCharz.Dec(name, i, o.moveStringIndex, 0));
         INC(o.moveStringIndex);
         AstOk(Ast.ConstNew(ctx, o.module, name, 0, i, c));
         AstOk(Ast.ConstSetExpression(c, e));
@@ -678,7 +678,7 @@ MODULE AstTransform;
     REPEAT
       DEC(i)
     UNTIL ~Strings.CopyToChars(name, ofs, prs[i].name)
-       OR ~Chars0X.PutChar(name, ofs, "_")
+       OR ~Charz.PutChar(name, ofs, "_")
        OR (i = 0);
 
     IF (i = 0) & Strings.CopyToChars(name, ofs, decl.name) THEN

@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -24,7 +24,7 @@ IMPORT
 	Stream := VDataStream,
 	File := VFileStream,
 	Utf8,
-	Chars0X,
+	Charz,
 	Strings := StringStore,
 	SpecIdentChecker,
 	Parser,
@@ -154,7 +154,7 @@ BEGIN
 	     & (~(   SpecIdentChecker.IsSpecModuleName(name)
 	          OR (lang = LangC) & SpecIdentChecker.IsSpecCHeaderName(name)
 	         )
-	     OR Chars0X.PutChar(str, len, "_")
+	     OR Charz.PutChar(str, len, "_")
 	       )
 END CopyModuleNameForFile;
 
@@ -172,7 +172,7 @@ BEGIN
 		ASSERT(isMain);
 		implementation := File.out;
 		ret := ErrNo
-	ELSIF ~Chars0X.CopyString   (dir, destLen, OsUtil.DirSep)
+	ELSIF ~Charz.CopyString   (dir, destLen, OsUtil.DirSep)
 	   OR ~CopyModuleNameForFile(dir, destLen, module.name, LangC)
 	   OR (destLen > LEN(dir) - 3)
 	THEN
@@ -217,11 +217,11 @@ BEGIN
 	ELSE
 	out := NIL;
 	destLen := dirLen;
-	IF ~Chars0X.CopyString(dir, destLen, OsUtil.DirSep)
+	IF ~Charz.CopyString(dir, destLen, OsUtil.DirSep)
 	OR ~((module # NIL) & CopyModuleNameForFile(dir, destLen, module.name, lang)
-	  OR (module = NIL) & Chars0X.CopyString   (dir, destLen, orName)
+	  OR (module = NIL) & Charz.CopyString   (dir, destLen, orName)
 	    )
-	OR ~Chars0X.CopyString(dir, destLen, ext)
+	OR ~Charz.CopyString(dir, destLen, ext)
 	THEN
 		ret := Cli.ErrTooLongOutName
 	ELSE
@@ -292,10 +292,10 @@ BEGIN
 		WHILE ~sing & (dirs[i] # Utf8.Null) DO
 			nameLen := 0;
 			(* TODO *)
-			ASSERT(Chars0X.Copy      (name, nameLen, dirs, i)
-			     & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
+			ASSERT(Charz.Copy      (name, nameLen, dirs, i)
+			     & Charz.CopyString(name, nameLen, OsUtil.DirSep)
 			     & CopyModuleNameForFile(name, nameLen, module.name, lang)
-			     & Chars0X.CopyString(name, nameLen, ext)
+			     & Charz.CopyString(name, nameLen, ext)
 			);
 			INC(i);
 			IF Files.Exist(name, 0) THEN
@@ -358,10 +358,10 @@ VAR i: INTEGER;
 BEGIN
 	len := 0;
 	IF tmp # "" THEN
-		ok := Chars0X.CopyString(dirOut, len, tmp)
+		ok := Charz.CopyString(dirOut, len, tmp)
 	ELSE
 		ok := DirForTemp.Get     (dirOut, len)
-		    & Chars0X.CopyString (dirOut, len, "ost-")
+		    & Charz.CopyString (dirOut, len, "ost-")
 		    & Strings.CopyToChars(dirOut, len, name)
 	END;
 
@@ -371,7 +371,7 @@ BEGIN
 		IF ~ok & (tmp = "") THEN
 			WHILE ~ok & (i < 100) DO
 				IF i = 0 THEN
-					ASSERT(Chars0X.CopyString(dirOut, len, "-00"))
+					ASSERT(Charz.CopyString(dirOut, len, "-00"))
 				ELSE
 					dirOut[len - 2] := CHR(ORD("0") + i DIV 10);
 					dirOut[len - 1] := CHR(ORD("0") + i MOD 10)
@@ -385,7 +385,7 @@ BEGIN
 			IF tmp # "" THEN
 				saveTemp := V.Do(listener, tmpCreated)
 			ELSE
-				ok := Chars0X.CopyString(tmp, i, dirOut);
+				ok := Charz.CopyString(tmp, i, dirOut);
 				saveTemp := V.Do(listener, tmpCreated);
 				IF ~saveTemp THEN
 					tmp := ""
@@ -401,17 +401,17 @@ PROCEDURE GetCBin(VAR bin: ARRAY OF CHAR; dir: ARRAY OF CHAR;
 VAR len: INTEGER;
 BEGIN
 	len := 0
-	RETURN Chars0X.CopyString(bin, len, dir)
-	     & Chars0X.CopyString(bin, len, OsUtil.DirSep)
+	RETURN Charz.CopyString(bin, len, dir)
+	     & Charz.CopyString(bin, len, OsUtil.DirSep)
 	     & Strings.CopyToChars(bin, len, name)
-	     & (~Platform.Windows OR Chars0X.CopyString(bin, len, ".exe"))
+	     & (~Platform.Windows OR Charz.CopyString(bin, len, ".exe"))
 END GetCBin;
 
 PROCEDURE GetMainClass(VAR bin: ARRAY OF CHAR; name: Strings.String): BOOLEAN;
 VAR len: INTEGER;
 BEGIN
 	len := 0;
-	RETURN Chars0X.CopyString (bin, len, "o7.")
+	RETURN Charz.CopyString (bin, len, "o7.")
 	     & Strings.CopyToChars(bin, len, name)
 END GetMainClass;
 
@@ -507,16 +507,16 @@ VAR ret: INTEGER;
 				nameLen := 0;
 				ok := CComp.Include(cmd, cDirs, i);
 				IF ~o7c & ok THEN
-					ok := Chars0X.Copy      (name, nameLen, cDirs, i)
-					    & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
-					    & Chars0X.CopyString(name, nameLen, "o7.c");
+					ok := Charz.Copy      (name, nameLen, cDirs, i)
+					    & Charz.CopyString(name, nameLen, OsUtil.DirSep)
+					    & Charz.CopyString(name, nameLen, "o7.c");
 					o7c := ok & Files.Exist(name, 0);
 					IF o7c THEN
 						ok := CComp.Cfile(cmd, name, 0)
 					END;
 					INC(i)
 				ELSE
-					INC(i, Chars0X.CalcLen(cDirs, i) + 1)
+					INC(i, Charz.CalcLen(cDirs, i) + 1)
 				END
 			END
 			RETURN ok
@@ -526,7 +526,7 @@ VAR ret: INTEGER;
 		IF ~ok THEN
 			ret := Cli.ErrCantCreateOutDir
 		ELSE
-			ccEnd := Chars0X.CalcLen(cc, 0);
+			ccEnd := Charz.CalcLen(cc, 0);
 			IF ccEnd = 0 THEN
 				ok := CComp.Search(cmd, res = Cli.ResultRun)
 			ELSE
@@ -745,11 +745,11 @@ VAR opt: GeneratorJava.Options;
 		ELSE
 			IF args.resPath = "" THEN
 				args.resPathLen := 0;
-				ASSERT(Chars0X.CopyChars(args.resPath, args.resPathLen,
+				ASSERT(Charz.CopyChars(args.resPath, args.resPathLen,
 				                         outJava, 0, outJavaLen))
 			END;
 			prov.dirLen := 0;
-			ASSERT(Chars0X.CopyChars(prov.dir, prov.dirLen,
+			ASSERT(Charz.CopyChars(prov.dir, prov.dirLen,
 			                         outJava, 0, outJavaLen));
 
 			ASSERT(GetMainClass(mainClass, m.name));
@@ -779,9 +779,9 @@ VAR opt: GeneratorJava.Options;
 				i := 0;
 				WHILE ok & (args.javaDirs[i] # Utf8.Null) DO
 					nameLen := 0;
-					ok := Chars0X.Copy      (name, nameLen, args.javaDirs, i)
-					    & Chars0X.CopyString(name, nameLen, OsUtil.DirSep)
-					    & Chars0X.CopyString(name, nameLen, "O7.java")
+					ok := Charz.Copy      (name, nameLen, args.javaDirs, i)
+					    & Charz.CopyString(name, nameLen, OsUtil.DirSep)
+					    & Charz.CopyString(name, nameLen, "O7.java")
 
 					    & ( ~Files.Exist(name, 0)
 					     OR JavaComp.Java(prov.javac, name, 0)
@@ -857,7 +857,7 @@ BEGIN
 
 	IF res = Cli.ResultJava THEN
 		prov.dirLen := 0;
-		ASSERT(Chars0X.CopyChars(prov.dir, prov.dirLen,
+		ASSERT(Charz.CopyChars(prov.dir, prov.dirLen,
 		                         args.resPath, 0, args.resPathLen));
 		prov.usejavac := FALSE;
 		ret := GenerateJava(module, call,
@@ -897,9 +897,9 @@ PROCEDURE AppendModuleName(VAR name: ARRAY OF CHAR; VAR nameLen: INTEGER;
                            module: Ast.Module; ext: ARRAY OF CHAR
                            ): BOOLEAN;
 BEGIN
-	RETURN Chars0X.CopyString   (name, nameLen, OsUtil.DirSep)
+	RETURN Charz.CopyString   (name, nameLen, OsUtil.DirSep)
 	     & CopyModuleNameForFile(name, nameLen, module.name, Js)
-	     & Chars0X.CopyString   (name, nameLen, ext)
+	     & Charz.CopyString   (name, nameLen, ext)
 END AppendModuleName;
 
 PROCEDURE GenerateJs1(module: Ast.Module; cmd: Ast.Statement;
@@ -949,9 +949,9 @@ VAR i: INTEGER; name: ARRAY 1024 OF CHAR; ignore: BOOLEAN;
 	VAR len: INTEGER; ok: BOOLEAN;
 	BEGIN
 		len := 0;
-		ok := Chars0X.Copy      (name, len, dir, ofs)
-		    & Chars0X.CopyString(name, len, OsUtil.DirSep)
-		    & Chars0X.CopyString(name, len, "o7.js");
+		ok := Charz.Copy      (name, len, dir, ofs)
+		    & Charz.CopyString(name, len, OsUtil.DirSep)
+		    & Charz.CopyString(name, len, "o7.js");
 		INC(ofs)
 		RETURN ok
 	END Name;
@@ -1013,7 +1013,7 @@ VAR opt: GeneratorJs.Options;
 		ELSE
 			IF args.resPath = "" THEN
 				args.resPathLen := 0;
-				ASSERT(Chars0X.CopyChars(args.resPath, args.resPathLen,
+				ASSERT(Charz.CopyChars(args.resPath, args.resPathLen,
 				                         out, 0, dirLen))
 			END;
 			(* TODO *)

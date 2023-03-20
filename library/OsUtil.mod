@@ -1,5 +1,5 @@
 (* Subroutines for work in OS like GNU/Linux or Windows
- * Copyright 2019-2021 ComdivByZero
+ * Copyright 2019-2021,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  *)
 MODULE OsUtil;
 
-  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld, Dir := CDir, Chars0X;
+  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld, Dir := CDir, Charz;
 
   VAR
     DirSep*: ARRAY 2 OF CHAR;
@@ -79,9 +79,9 @@ MODULE OsUtil;
   RETURN
     (   IsFullPath(path)
      OR Dir.GetCurrent(full, ofs)
-      & Chars0X.CopyString(full, ofs, DirSep)
+      & Charz.CopyString(full, ofs, DirSep)
     )
-  & Chars0X.CopyString(full, ofs, path)
+  & Charz.CopyString(full, ofs, path)
   END CopyFullPath;
 
 BEGIN
