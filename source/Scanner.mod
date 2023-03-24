@@ -17,7 +17,7 @@
 MODULE Scanner;
 
 IMPORT
-	V,
+	V, log,
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
@@ -83,12 +83,14 @@ CONST
 	ErrExpectDQuote*        = -6;
 	ErrExpectDigitInScale*  = -7;
 	ErrUnclosedComment*     = -8;
+	ErrCyrSignAfterNonConsonant* = -9;
+	ErrCyrApostropheEnd*    = -10;
 
 	ErrMin*                 = -100;
 
 	BlockSize = 4096 * 2;
 
-	IntMax = 07FFFFFFFH;
+	IntMax = 7FFFFFFFH;
 	CharMax = 0FFX;
 	RealScaleMax = 512;
 
@@ -180,13 +182,13 @@ BEGIN
 END LookupEqual;
 
 PROCEDURE Lookup(VAR s: Scanner; i: INTEGER): CHAR;
-VAR ignore: BOOLEAN; ch: CHAR;
+VAR ch: CHAR;
 BEGIN
 	INC(i);
 	ch := s.buf[i];
-	IF ch = NewPage THEN
-		ignore := FillBuf(s, i)
-	END;
+	IF (ch = NewPage) & FillBuf(s, i) THEN
+		ch := s.buf[i]
+	END
 	RETURN ch
 END Lookup;
 
@@ -412,8 +414,9 @@ VAR ret: BOOLEAN;
 	END ForD2;
 BEGIN
 	CASE s.buf[s.ind] OF
-	  0X .. 0CFX, 0D3X .. 0FFX:
+	  0X .. 26X, 28X .. 0CFX, 0D3X .. 0FFX:
 	        ret := FALSE
+	| "'" : ret := TRUE
 	| 0D0X: ret := ForD0(Lookup(s, s.ind))
 	| 0D1X: ret := ForD1(Lookup(s, s.ind))
 	| 0D2X: ret := ForD2(Lookup(s, s.ind))
@@ -422,19 +425,60 @@ BEGIN
 END IsCurrentCyrillic;
 
 PROCEDURE CyrWord(VAR s: Scanner): INTEGER;
-VAR len, l: INTEGER;
+VAR len, l: INTEGER; ch, prev: ARRAY 3 OF CHAR;
+	PROCEDURE Letters(VAR s: Scanner; VAR prev, ch: ARRAY OF CHAR; VAR l: INTEGER);
+		PROCEDURE IsConsonant(ch: ARRAY OF CHAR): BOOLEAN;
+			RETURN ("Б" <= ch) & (ch <= "Д")
+			    OR (ch = "Ж") OR (ch = "З")
+			    OR ("К" <= ch) & (ch <= "Н")
+			    OR ("П" <= ch) & (ch <= "Т")
+			    OR ("Ф" <= ch) & (ch <= "Щ")
+
+			    OR ("б" <= ch) & (ch <= "д")
+			    OR (ch = "ж") OR (ch = "з")
+			    OR ("к" <= ch) & (ch <= "н")
+			    OR ("п" <= ch) & (ch <= "т")
+			    OR ("ф" <= ch) & (ch <= "щ")
+
+			    OR (ch = "Ґ") OR (ch = "ґ")
+		END IsConsonant;
+	BEGIN
+		WHILE IsCurrentCyrillic(s) DO
+			prev := ch;
+			ch[0] := s.buf[s.ind];
+			IF ch[0] = "'" THEN
+				ch[1] := 0X
+			ELSE
+				s.ind := (s.ind + 1) MOD (LEN(s.buf) - 1);
+				ch[1] := s.buf[s.ind];
+			END;
+			INC(s.ind);
+
+			IF ((ch = "ь") OR (ch = "Ь") OR (ch = "ъ") OR (ch = "Ъ") OR (ch = "'"))
+			 & ~IsConsonant(prev)
+			THEN
+				l := ErrCyrSignAfterNonConsonant
+			END;
+			IF ((ch = "ь") OR (ch = "Ь") OR (ch = "ъ") OR (ch = "Ъ") OR (ch = "'")) THEN
+				log.s(prev); log.s(":"); log.b(IsConsonant(prev)); log.s(" "); log.sn(ch)
+			END;
+			INC(s.column)
+		END;
+	END Letters;
 BEGIN
-	WHILE IsCurrentCyrillic(s) DO
-		s.ind := (s.ind + 2) MOD (LEN(s.buf) - 1);
-		INC(s.column)
-	ELSIF (s.buf[s.ind] = NewPage) & FillBuf(s, s.ind) DO
-		;
+	l := Ident;
+	ch[0] := 0X;
+	ch[2] := 0X;
+	Letters(s, prev, ch, l);
+	IF (s.buf[s.ind] = NewPage) & FillBuf(s, s.ind) THEN
+		Letters(s, prev, ch, l)
+	END;
+	IF (ch = "'") & (l = Ident) THEN
+		l := ErrCyrApostropheEnd
 	END;
 	len := s.ind - s.lexStart + ORD(s.ind < s.lexStart) * (LEN(s.buf) - 1);
 	ASSERT(0 < len);
-	IF len <= TranLim.LenName THEN
-		l := Ident
-	ELSE
+	IF (l = Ident) & (len > TranLim.LenName) THEN
 		l := ErrWordLenTooBig
 	END
 	RETURN l
