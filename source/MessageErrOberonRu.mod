@@ -288,6 +288,10 @@ BEGIN
 		C("ErrExpectDigitInScale")
 	| Scanner.ErrUnclosedComment:
 		C("Незакрытый комментарий")
+	| Scanner.ErrCyrSignAfterNonConsonant:
+		C("Ъ Ь ' разрешены только после согласных")
+	| Scanner.ErrCyrApostropheEnd:
+		C("' не может завершать слово")
 
 	| Parser.ErrExpectModule:
 		C("Ожидается 'MODULE'")

@@ -17,7 +17,7 @@
 MODULE Scanner;
 
 IMPORT
-	V, log,
+	V,
 	Stream := VDataStream,
 	Utf8,
 	TranLim := TranslatorLimits,
@@ -458,9 +458,6 @@ VAR len, l: INTEGER; ch, prev: ARRAY 3 OF CHAR;
 			 & ~IsConsonant(prev)
 			THEN
 				l := ErrCyrSignAfterNonConsonant
-			END;
-			IF ((ch = "ь") OR (ch = "Ь") OR (ch = "ъ") OR (ch = "Ъ") OR (ch = "'")) THEN
-				log.s(prev); log.s(":"); log.b(IsConsonant(prev)); log.s(" "); log.sn(ch)
 			END;
 			INC(s.column)
 		END;

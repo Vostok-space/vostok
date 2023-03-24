@@ -295,6 +295,10 @@ BEGIN
 		C("ErrExpectDigitInScale")
 	| Scanner.ErrUnclosedComment:
 		C("Unclosed comment")
+	| Scanner.ErrCyrSignAfterNonConsonant:
+		C("Ъ Ь ' allowed only after consonants")
+	| Scanner.ErrCyrApostropheEnd:
+		C("' is not allowed at the end of the identifier")
 
 	| Parser.ErrExpectModule:
 		C("Expected 'MODULE'")

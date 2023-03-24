@@ -288,6 +288,10 @@ BEGIN
 		C("ErrExpectDigitInScale")
 	| Scanner.ErrUnclosedComment:
 		C("Незавершений коментар")
+	| Scanner.ErrCyrSignAfterNonConsonant:
+		C("Ъ Ь ' дозволені тільки після приголосних")
+	| Scanner.ErrCyrApostropheEnd:
+		C("' не допускається в кінці слова")
 
 	| Parser.ErrExpectModule:
 		C("Очікується 'MODULE'")

@@ -115,7 +115,7 @@ MODULE ModulesProvider;
       Ast.ProviderInit(mp, GetModule, RegModule);
 
       mp.in := inp;
-      mp.firstNotOk := TRUE;
+      mp.firstNotOk := TRUE
     END
   RETURN
     mp # NIL
