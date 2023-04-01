@@ -565,7 +565,7 @@ BEGIN
 	INC(args.srcLen);
 
 	forRun := ret IN ForRun;
-	arg := arg + ORD(~forRun);
+	INC(arg, ORD(~forRun));
 	cpRet := Options(args, arg);
 	IF cpRet # ErrNo THEN
 		ret := cpRet
@@ -655,6 +655,9 @@ BEGIN
 		ret := Command(args, ResultRunJs)
 	ELSIF cmd = "to-mod" THEN
 		ret := Command(args, ResultMod)
+	ELSIF cmd = "to-e1" THEN
+		ret := Command(args, ResultMod);
+		args.obStd := GeneratorOberon.StdE1
 	ELSIF cmd = "to-modef" THEN
 		ret := Command(args, ResultDecl)
 	ELSIF cmd = "to-puml" THEN

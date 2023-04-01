@@ -1,6 +1,6 @@
 (*  Generator of Oberon-code by abstract syntax tree
  *
- *  Copyright (C) 2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -21,7 +21,7 @@ IMPORT
   V, LongSet, Ast,
   Log := DLog, Stream := VDataStream,
   Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
-  SpecIdent := OberonSpecIdent, Hex,
+  SpecIdent := OberonSpecIdent, Hex, RuHex, Chars0X,
   TranLim := TranslatorLimits,
   GenOptions, GenCommon;
 
@@ -31,6 +31,10 @@ CONST
   StdO7* = 1;
   StdAo* = 2;
   StdCp* = 3;
+
+  StdE1* = 1AH;
+
+  ForTypes = 7; (* Для ProcParams *)
 
 TYPE
   Options* = POINTER TO RECORD(GenOptions.R)
@@ -43,6 +47,11 @@ TYPE
   Generator = RECORD(Text.Out)
     module: Ast.Module;
     presentAlternative: BOOLEAN;
+
+    sep, sep1: CHAR;
+    sep1Sp, assign: ARRAY 6 OF CHAR;
+    retVar: Ast.Declaration;
+
     opt: Options
   END;
 
@@ -52,12 +61,18 @@ VAR
   expression  : PROCEDURE(VAR g: Generator; expr: Ast.Expression);
   type        : PROCEDURE(VAR g: Generator; typ: Ast.Type);
 
+  stdRetName  : Strings.String;
+
+
 PROCEDURE Str    (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.Str    (g, s) END Str;
 PROCEDURE StrLn  (VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLn  (g, s) END StrLn;
 PROCEDURE StrOpen(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrOpen(g, s) END StrOpen;
 PROCEDURE Ln     (VAR g: Text.Out);                   BEGIN Text.Ln     (g)    END Ln;
 PROCEDURE Int    (VAR g: Text.Out; i: INTEGER);       BEGIN Text.Int    (g, i) END Int;
+PROCEDURE Int3   (VAR g: Text.Out; i: INTEGER);       BEGIN Text.IntBy3 (g, i, "`") END Int3;
 PROCEDURE Chr    (VAR g: Text.Out; c: CHAR);          BEGIN Text.Char   (g, c) END Chr;
+PROCEDURE SepLn  (VAR g: Generator); BEGIN Text.Char(g, g.sep); Text.Ln(g)     END SepLn;
+(*PROCEDURE Sep1Sp (VAR g: Generator); BEGIN Text.Str(g, g.sep1Sp)               END Sep1Sp;*)
 PROCEDURE StrLnClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.StrLnClose(g, s) END StrLnClose;
 PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g, s) END LnStrClose;
 
@@ -89,7 +104,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     IF (decl.module # NIL) & (g.module # decl.module.m) THEN
       imp := Imported(g.module.import, decl.module.m);
       Ident(g, imp.name);
-      Chr(g, ".")
+      IF g.opt.std = StdE1 THEN
+        Chr(g, "`")
+      ELSE
+        Chr(g, ".")
+      END
     END;
     IF decl.mark OR ~g.opt.declaration THEN
       Name(g, decl)
@@ -107,7 +126,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       GenOptions.Default(o^);
       o.std := StdO7;
       o.plantUml := FALSE;
-      o.multibranchWhile := (o.std = StdO7) & ~o.plantUml;
+      o.multibranchWhile := (o.std IN {StdO7, StdE1}) & ~o.plantUml;
       o.declaration := FALSE;
       o.import := FALSE;
       o.identEnc := GenOptions.IdentEncSame
@@ -120,10 +139,22 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
   BEGIN
     ASSERT(m # NIL);
 
+    g.retVar := NIL;
+    g.sep := ";";
+    g.sep1 := ",";
+    g.sep1Sp := ", ";
+    g.assign := " := ";
     IF opt.std IN {StdCp, StdAo} THEN
       opt.caseAbort := FALSE
+    ELSIF opt.std = StdE1 THEN
+      g.sep  := ".";
+      (*
+      g.sep1 := ";";
+      g.sep1Sp := "; ";
+      *)
+      g.assign := " ← ";
     END;
-    opt.multibranchWhile := (opt.std = StdO7) & ~opt.plantUml;
+    opt.multibranchWhile := (opt.std IN {StdO7, StdE1}) & ~opt.plantUml;
 
     Text.Init(g, out);
     g.module := m;
@@ -171,7 +202,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       Name(g, decl);
       name := decl.module.m.name;
       IF Strings.Compare(decl.name, name) # 0 THEN
-        Str(g, " := ");
+        Str(g, g.assign);
         Ident(g, name)
       END
     END Import;
@@ -182,6 +213,9 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     ELSIF (g.opt.std = StdO7) OR g.opt.declaration THEN
       Ln(g);
       StrOpen(g, "IMPORT")
+    ELSIF g.opt.std = StdE1 THEN
+      Ln(g);
+      StrOpen(g, "((")
     ELSE ASSERT(g.opt.std IN {StdAo, StdCp});
       Ln(g);
       StrOpen(g, "IMPORT O_7, SYSTEM,")
@@ -190,17 +224,20 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     Import(g, d);
     d := d.next;
     WHILE (d # NIL) & (d.id = Ast.IdImport) DO
-      StrLn(g, ",");
+      Chr(g, g.sep1); Ln(g);
       Import(g, d);
       d := d.next
     END;
-    StrLn(g, ";");
 
     IF g.opt.plantUml THEN
+      SepLn(g);
       StrLn(g, "kill");
       StrLn(g, "}")
+    ELSIF g.opt.std = StdE1 THEN
+      LnClose(g);
+      StrLn(g, "))")
     ELSE
-      LnClose(g)
+      StrLnClose(g, ";")
     END
   END Imports;
 
@@ -220,6 +257,15 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     expression(g, e2)
   END ExpressionInfix;
 
+  PROCEDURE Decimal(VAR g: Generator; val: INTEGER);
+  BEGIN
+    IF g.opt.std = StdE1 THEN
+      Int3(g, val)
+    ELSE
+      Int(g, val)
+    END
+  END Decimal;
+
   PROCEDURE Designator(VAR g: Generator; des: Ast.Designator);
   VAR sel: Ast.Selector;
 
@@ -227,7 +273,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
 
       PROCEDURE Record(VAR g: Generator; sel: Ast.Selector);
       BEGIN
-        Str(g, ".");
+        IF g.opt.std = StdE1 THEN
+          Str(g, "˙")
+        ELSE
+          Chr(g, ".")
+        END;
         Name(g, sel(Ast.SelRecord).var);
       END Record;
 
@@ -237,7 +287,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         expression(g, sel(Ast.SelArray).index);
         sel := sel.next;
         WHILE (sel # NIL) & (sel IS Ast.SelArray) DO
-          Chr(g, ",");
+          Chr(g, g.sep1);
           expression(g, sel(Ast.SelArray).index);
           sel := sel.next;
         END;
@@ -246,9 +296,13 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
 
       PROCEDURE TypeGuard(VAR g: Generator; sel: Ast.SelGuard);
       BEGIN
-        Chr(g, "(");
+        IF g.opt.std = StdE1 THEN
+          Str(g, ":(")
+        ELSE
+          Chr(g, "(")
+        END;
         GlobalName(g, sel.type);
-        Chr(g, ")");
+        Chr(g, ")")
       END TypeGuard;
     BEGIN
       IF sel IS Ast.SelArray THEN
@@ -257,7 +311,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         IF sel IS Ast.SelRecord THEN
           Record(g, sel)
         ELSIF sel IS Ast.SelPointer THEN
-          Chr(g, "^")
+          IF g.opt.std = StdE1 THEN
+            Str(g, "↑")
+          ELSE
+            Chr(g, "^")
+          END
         ELSE
           TypeGuard(g, sel(Ast.SelGuard))
         END;
@@ -273,26 +331,40 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
   END Designator;
 
   PROCEDURE Char(VAR g: Generator; code: INTEGER; usedAs: INTEGER);
-  VAR s: ARRAY 4 OF CHAR;
+  VAR s: ARRAY 9 OF CHAR; i: INTEGER;
   BEGIN
     ASSERT((0 <= code) & (code < 100H));
     IF (code < 20H) OR (code >= 7FH)
     OR (code = ORD(Utf8.DQuote)) & (g.opt.std = StdO7)
     THEN
-      s[0] := "0";
-      s[1] := Hex.To(code DIV 10H);
-      s[2] := Hex.To(code MOD 10H);
-      IF (g.opt.std = StdO7) OR (usedAs # Ast.StrUsedAsArray) THEN
-        s[3] := "X";
-        Text.Data(g, s, 0, 4)
+      IF g.opt.std = StdE1 THEN
+        IF code > 9FH THEN
+          s[0] := "0";
+          s[1] := "0";
+          i := 2
+        ELSE
+          i := 0
+        END;
+        RuHex.To(code DIV 10H, s, i);
+        RuHex.To(code MOD 10H, s, i);
+        ASSERT(Chars0X.CopyString(s, i, "л"));
+        Text.Data(g, s, 0, i)
       ELSE
-        s[3] := "H";
-        Str(g, "O_7.ch[");
-        Text.Data(g, s, 0, 4);
-        Chr(g, "]")
+        s[0] := "0";
+        s[1] := Hex.To(code DIV 10H);
+        s[2] := Hex.To(code MOD 10H);
+        IF (g.opt.std = StdO7) OR (usedAs # Ast.StrUsedAsArray) THEN
+          s[3] := "X";
+          Text.Data(g, s, 0, 4)
+        ELSE
+          s[3] := "H";
+          Str(g, "O_7.ch[");
+          Text.Data(g, s, 0, 4);
+          Chr(g, "]")
+        END
       END
     ELSE
-      IF code = ORD(Utf8.DQuote) THEN
+      IF (code = ORD(Utf8.DQuote)) OR (g.opt.std = StdE1) THEN
         s[0] := "'";
         s[2] := "'"
       ELSE
@@ -310,7 +382,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
   PROCEDURE AssignExpr(VAR g: Generator; desType: Ast.Type; expr: Ast.Expression);
   VAR toByte: BOOLEAN;
   BEGIN
-    toByte := (g.opt.std # StdO7)
+    toByte := ~(g.opt.std IN {StdO7, StdE1})
             & (desType.id = Ast.IdByte)
             & (expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
     IF toByte THEN
@@ -323,17 +395,59 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     END
   END AssignExpr;
 
+  PROCEDURE Access1a(VAR g: Generator; access: SET);
+  BEGIN
+    IF    ~(Ast.ParamOut IN access) THEN
+      ;
+    ELSIF ~(Ast.ParamIn  IN access) THEN
+      Str(g, "→ ")
+    ELSE
+      Str(g, "↔ ")
+    END
+  END Access1a;
+
+  PROCEDURE Access(VAR g: Generator; fp: Ast.FormalParam; declaration: BOOLEAN);
+  BEGIN
+    IF g.opt.std = StdE1 THEN
+      Access1a(g, fp.access)
+    ELSIF declaration THEN
+      IF Ast.ParamOut IN fp.access THEN
+        Str(g, "VAR ")
+      ELSIF fp.type.id IN Ast.Structures THEN
+        CASE g.opt.std OF
+          StdO7,
+          StdE1: ;
+        | StdAo: Str(g, "CONST ")
+        | StdCp: Str(g, "IN ")
+        END
+      END
+    END
+  END Access;
+
+  PROCEDURE Factor(VAR g: Generator; expr: Ast.Expression);
+  BEGIN
+    IF expr.id IN Ast.IdFactors THEN
+      (* TODO *)
+      expression(g, expr)
+    ELSE
+      ExpressionBraced(g, "(", expr, ")");
+    END
+  END Factor;
+
   PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 
     PROCEDURE Call(VAR g: Generator; call: Ast.ExprCall);
-    VAR p: Ast.Parameter; fp: Ast.Declaration;
+    VAR p: Ast.Parameter; fp: Ast.Declaration; isNum: BOOLEAN;
 
       PROCEDURE Predefined(VAR g: Generator; call: Ast.ExprCall);
       VAR e1: Ast.Expression; p2: Ast.Parameter;
 
         PROCEDURE Ord(VAR g: Generator; e: Ast.Expression);
         BEGIN
-          IF (g.opt.std = StdO7) OR ~(e.type.id IN {Ast.IdSet, Ast.IdBoolean}) THEN
+          IF g.opt.std = StdE1 THEN
+            Factor(g, e);
+            Str(g, ":Ц")
+          ELSIF (g.opt.std = StdO7) OR ~(e.type.id IN {Ast.IdSet, Ast.IdBoolean}) THEN
             (* TODO *)
             ExpressionBraced(g, "ORD(", e, ")")
           ELSIF e.type.id = Ast.IdSet THEN
@@ -353,7 +467,14 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
 
         PROCEDURE Assert(VAR g: Generator; e: Ast.Expression);
         BEGIN
-          IF (g.opt.std = StdO7)
+          IF g.opt.std = StdE1 THEN
+            IF (e.value = NIL) OR e.value(Ast.ExprBoolean).bool THEN
+              Str(g, "!! ");
+              Expression(g, e)
+            ELSE
+              Str(g, "🚫")
+            END
+          ELSIF (g.opt.std = StdO7)
           OR (e.value = NIL) OR e.value(Ast.ExprBoolean).bool
           THEN
             ExpressionBraced(g, "ASSERT(", e, ")")
@@ -366,72 +487,94 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         BEGIN
           CASE g.opt.std OF
             StdO7: Str(g, "PACK(")
+          | StdE1: Str(g, "УПАК(");
+            Access1a(g, {Ast.ParamIn, Ast.ParamOut});
           | StdAo,
             StdCp: Str(g, "O_7.Pack(")
           END;
           Expression(g, e1);
-          ExpressionBraced(g, ", ", e2, ")")
+          ExpressionBraced(g, g.sep1Sp, e2, ")")
         END Pack;
 
         PROCEDURE Unpack(VAR g: Generator; e1, e2: Ast.Expression);
         BEGIN
           CASE g.opt.std OF
             StdO7: Str(g, "UNPK(")
+          | StdE1: Str(g, "РАСП(");
+            Access1a(g, {Ast.ParamIn, Ast.ParamOut});
+            Expression(g, e1);
+            Str(g, g.sep1Sp);
+            Access1a(g, {Ast.ParamOut})
           | StdAo,
             StdCp: Str(g, "O_7.Unpk(")
           END;
-          Expression(g, e1);
-          ExpressionBraced(g, ", ", e2, ")")
+          IF g.opt.std # StdE1 THEN
+            Expression(g, e1);
+            Str(g, g.sep1Sp)
+          END;
+          Expression(g, e2);
+          Chr(g, ")")
         END Unpack;
 
-        PROCEDURE One(VAR g: Generator; name: ARRAY OF CHAR; e: Ast.Expression);
+        PROCEDURE One(VAR g: Generator; name: ARRAY OF CHAR; e: Ast.Expression; acc: SET);
         BEGIN
           Str(g, name);
-          ExpressionBraced(g, "(", e, ")");
+          Chr(g, "(");
+          IF g.opt.std = StdE1 THEN Access1a(g, acc) END;
+          Expression(g, e);
+          Chr(g, ")")
         END One;
 
-        PROCEDURE Two(VAR g: Generator; name: ARRAY OF CHAR; e1, e2: Ast.Expression);
+        PROCEDURE Two(VAR g: Generator; name: ARRAY OF CHAR; e1: Ast.Expression; acc1: SET;
+                                                             e2: Ast.Expression);
         BEGIN
           Str(g, name);
-          ExpressionBraced(g, "(", e1, ", ");
+          Chr(g, "(");
+          IF g.opt.std = StdE1 THEN Access1a(g, acc1) END;
+          Expression(g, e1);
+          Str(g, g.sep1Sp);
           Expression(g, e2);
           Chr(g, ")")
         END Two;
 
         PROCEDURE MayTwo(VAR g: Generator; name: ARRAY OF CHAR;
-                         e1: Ast.Expression; p2: Ast.Parameter);
+                         e1: Ast.Expression; acc: SET; p2: Ast.Parameter);
         BEGIN
           Str(g, name);
-          IF p2 = NIL THEN
-            ExpressionBraced(g, "(", e1, ")");
-          ELSE
-            ExpressionBraced(g, "(", e1, ", ");
+          Chr(g, "(");
+          IF g.opt.std = StdE1 THEN Access1a(g, acc) END;
+          Expression(g, e1);
+          IF p2 # NIL THEN
+            Str(g, g.sep1Sp);
             Expression(g, p2.expr);
-            Chr(g, ")")
-          END
+          END;
+          Chr(g, ")")
         END MayTwo;
 
         PROCEDURE Lsl(VAR g: Generator; x, n: Ast.Expression);
         BEGIN
           CASE g.opt.std OF
-            StdO7: Str(g, "LSL(")
+            StdO7,
+            StdE1: Str(g, "LSL(")
           | StdAo: Str(g, "LSH(")
           | StdCp: Str(g, "ASH(")
           END;
           Expression(g, x);
-          ExpressionBraced(g, ", ", n, ")")
+          ExpressionBraced(g, g.sep1Sp, n, ")")
         END Lsl;
 
         PROCEDURE Asr(VAR g: Generator; x, n: Ast.Expression);
         BEGIN
           CASE g.opt.std OF
-            StdO7: Str(g, "ASR(");
+            StdO7,
+            StdE1: Str(g, "ASR(");
             Expression(g, x);
-            ExpressionBraced(g, ", ", n, ")")
+            ExpressionBraced(g, g.sep1Sp, n, ")")
           | StdAo,
             StdCp: Str(g, "ASH(");
             Expression(g, x);
-            ExpressionBraced(g, ", -(", n, "))")
+            Str(g, g.sep1Sp);
+            ExpressionBraced(g, "-(", n, "))")
           END;
         END Asr;
 
@@ -440,6 +583,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           CASE g.opt.std OF
             StdO7,
             StdCp: ExpressionBraced(g, "LEN(", arr, ")")
+          | StdE1: ExpressionBraced(g, "ДЛИНА(", arr, ")")
           | StdAo: ExpressionBraced(g, "INTEGER(LEN(", arr, "))")
           END
         END Len;
@@ -448,6 +592,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         BEGIN
           CASE g.opt.std OF
             StdO7: ExpressionBraced(g, "FLT(", int, ")")
+          | StdE1: Factor(g, int); Str(g, ":Д")
           | StdAo: ExpressionBraced(g, "REAL(", int, ")")
           | StdCp: ExpressionBraced(g, "(0.0 + ", int, ")")
           END
@@ -458,6 +603,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           CASE g.opt.std OF
             StdO7,
             StdAo: ExpressionBraced(g, "CHR(", int, ")")
+          | StdE1: Factor(g, int); Str(g, ":Л")
           | StdCp: ExpressionBraced(g, "SHORT(CHR(", int, "))")
           END
         END Chrf;
@@ -467,6 +613,9 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           CASE g.opt.std OF
             StdO7,
             StdAo: ExpressionBraced(g, "FLOOR(", r, ")")
+          | StdE1:
+            Factor(g, r);
+            Str(g, ":Ц")
           | StdCp: ExpressionBraced(g, "SHORT(ENTIER(", r, "))")
           END
         END Floor;
@@ -475,19 +624,52 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         BEGIN
           CASE g.opt.std OF
             StdO7,
+            StdE1,
             StdAo: Str(g, "ROR(")
           | StdCp: Str(g, "O_7.Ror(")
           END;
           Expression(g, v);
-          ExpressionBraced(g, ", ", n, ")")
+          ExpressionBraced(g, g.sep1Sp, n, ")")
         END Ror;
+
+        PROCEDURE Inc(VAR g: Generator; v: Ast.Expression; p: Ast.Parameter);
+        BEGIN
+          Expression(g, v);
+          IF p = NIL THEN
+            Str(g, " += 1")
+          ELSE
+            Str(g, " += ");
+            Expression(g, p.expr)
+          END
+        END Inc;
+
+        PROCEDURE Dec(VAR g: Generator; v: Ast.Expression; p: Ast.Parameter);
+        BEGIN
+          Expression(g, v);
+          IF p = NIL THEN
+            Str(g, " -= 1")
+          ELSE
+            Str(g, " -= ");
+            Expression(g, p.expr)
+          END
+        END Dec;
 
       BEGIN
         e1 := call.params.expr;
         p2 := call.params.next;
         CASE call.designator.decl.id OF
-          SpecIdent.Abs  : One(g, "ABS", e1)
-        | SpecIdent.Odd  : One(g, "ODD", e1)
+          SpecIdent.Abs  :
+          IF g.opt.std = StdE1 THEN
+            One(g, "АБС", e1, {})
+          ELSE
+            One(g, "ABS", e1, {})
+          END
+        | SpecIdent.Odd  :
+          IF g.opt.std = StdE1 THEN
+            ExpressionBraced(g, "(", e1, " % 2 = 1)")
+          ELSE
+            One(g, "ODD", e1, {})
+          END
         | SpecIdent.Len  : Len(g, e1)
         | SpecIdent.Lsl  : Lsl(g, e1, p2.expr)
         | SpecIdent.Asr  : Asr(g, e1, p2.expr)
@@ -496,11 +678,38 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         | SpecIdent.Flt  : Flt(g, e1)
         | SpecIdent.Ord  : Ord(g, e1)
         | SpecIdent.Chr  : Chrf(g, e1)
-        | SpecIdent.Inc  : MayTwo(g, "INC", e1, p2)
-        | SpecIdent.Dec  : MayTwo(g, "DEC", e1, p2)
-        | SpecIdent.Incl : Two(g, "INCL", e1, p2.expr)
-        | SpecIdent.Excl : Two(g, "EXCL", e1, p2.expr)
-        | SpecIdent.New  : One(g, "NEW", e1)
+        | SpecIdent.Inc  :
+          IF g.opt.std = StdE1 THEN
+            Inc(g, e1, p2)
+          ELSE
+            MayTwo(g, "INC", e1, {Ast.ParamIn, Ast.ParamOut}, p2)
+          END
+        | SpecIdent.Dec  :
+          IF g.opt.std = StdE1 THEN
+            Dec(g, e1, p2)
+          ELSE
+            MayTwo(g, "DEC", e1, {Ast.ParamIn, Ast.ParamOut}, p2)
+          END
+        | SpecIdent.Incl :
+          IF g.opt.std = StdE1 THEN
+            Expression(g, e1);
+            ExpressionBraced(g, " += {", p2.expr, "}")
+          ELSE
+            Two(g, "INCL", e1, {Ast.ParamIn, Ast.ParamOut}, p2.expr)
+          END
+        | SpecIdent.Excl :
+          IF g.opt.std = StdE1 THEN
+            Expression(g, e1);
+            ExpressionBraced(g, " -= {", p2.expr, "}")
+          ELSE
+            Two(g, "EXCL", e1, {Ast.ParamIn, Ast.ParamOut}, p2.expr)
+          END
+        | SpecIdent.New  :
+          IF g.opt.std = StdE1 THEN
+            One(g, "ВЫДЕЛИ", e1, {Ast.ParamOut})
+          ELSE
+            One(g, "NEW", e1, {Ast.ParamOut})
+          END
         | SpecIdent.Assert: Assert(g, e1)
         | SpecIdent.Pack : Pack(g, e1, p2.expr)
         | SpecIdent.Unpk : Unpack(g, e1, p2.expr)
@@ -510,6 +719,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       PROCEDURE ActualParam(VAR g: Generator; VAR p: Ast.Parameter;
                             VAR fp: Ast.Declaration);
       BEGIN
+        Access(g, fp(Ast.FormalParam), FALSE);
         AssignExpr(g, fp.type, p.expr);
         p  := p.next;
         fp := fp.next
@@ -523,9 +733,15 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         p  := call.params;
         fp := call.designator.type(Ast.ProcType).params;
         IF p # NIL THEN
+          isNum := (g.opt.std = StdE1) & (p.expr.id IN Ast.Numbers);
           ActualParam(g, p, fp);
           WHILE p # NIL DO
-            Str(g, ", ");
+            IF isNum THEN
+              Str(g, " , ")
+            ELSE
+              Str(g, g.sep1Sp)
+            END;
+            isNum := (g.opt.std = StdE1) & (p.expr.id IN Ast.Numbers);
             ActualParam(g, p, fp)
           END
         END;
@@ -539,24 +755,44 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       BEGIN
         ExpressionInfix(g, rel.exprs[0], oper, rel.exprs[1])
       END Infix;
+
+      PROCEDURE InfixOpt(VAR g: Generator; rel: Ast.ExprRelation; oper, oper1a: ARRAY OF CHAR);
+      BEGIN
+        IF g.opt.std = StdE1 THEN
+          ExpressionInfix(g, rel.exprs[0], oper1a, rel.exprs[1])
+        ELSE
+          ExpressionInfix(g, rel.exprs[0], oper, rel.exprs[1])
+        END
+      END InfixOpt;
+
     BEGIN
       CASE rel.relation OF
         Ast.Equal        : Infix(g, rel, " = " )
-      | Ast.Inequal      : Infix(g, rel, " # " )
+      | Ast.Inequal      : InfixOpt(g, rel, " # ", " ≠ ")
       | Ast.Less         : Infix(g, rel, " < " )
-      | Ast.LessEqual    : Infix(g, rel, " <= ")
+      | Ast.LessEqual    : InfixOpt(g, rel, " <= ", " ≤ ")
       | Ast.Greater      : Infix(g, rel, " > " )
-      | Ast.GreaterEqual : Infix(g, rel, " >= ")
-      | Ast.In           : Infix(g, rel, " IN ")
+      | Ast.GreaterEqual : InfixOpt(g, rel, " >= ", " ≥ ")
+      | Ast.In           : InfixOpt(g, rel, " IN ", " ∈ ")
       END
     END Relation;
 
     PROCEDURE Sum(VAR g: Generator; sum: Ast.ExprSum);
     BEGIN
-      IF sum.add = Ast.Minus THEN
-        Str(g, " -")
-      ELSIF sum.add = Ast.Plus THEN
-        Str(g, " +")
+      IF ~(sum.add IN {Ast.Minus, Ast.Plus}) THEN
+        ;
+      ELSIF (g.opt.std = StdE1) & ~(sum.type.id IN Ast.Sets) & ~(sum.term.id IN Ast.Numbers) THEN
+        IF sum.add = Ast.Minus THEN
+          Str(g, "0 - ")
+        ELSE
+          Str(g, "0 + ")
+        END
+      ELSE
+        IF sum.add = Ast.Minus THEN
+          Str(g, "-")
+        ELSE
+          Str(g, "+")
+        END
       END;
       Expression(g, sum.term);
       sum := sum.next;
@@ -564,9 +800,17 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         IF sum.add = Ast.Minus THEN
           Str(g, " - ")
         ELSIF sum.add = Ast.Plus THEN
-          Str(g, " + ")
+          IF (g.opt.std = StdE1) & (sum.type.id IN Ast.Sets) THEN
+            Str(g, " ∪ ")
+          ELSE
+            Str(g, " + ")
+          END
         ELSIF sum.add = Ast.Or THEN
-          Str(g, " OR ")
+          IF g.opt.std = StdE1 THEN
+            Str(g, "  ∨  ")
+          ELSE
+            Str(g, " OR ")
+          END
         END;
         Expression(g, sum.term);
         sum := sum.next
@@ -577,12 +821,32 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     BEGIN
       REPEAT
         Expression(g, term.factor);
-        CASE term.mult OF
-          Ast.Mult : Str(g, " * "  )
-        | Ast.Rdiv : Str(g, " / "  )
-        | Ast.Div  : Str(g, " DIV ")
-        | Ast.Mod  : Str(g, " MOD ")
-        | Ast.And  : Str(g, " & "  )
+        IF g.opt.std = StdE1 THEN
+          CASE term.mult OF
+            Ast.Mult :
+              IF (g.opt.std = StdE1) & (term.type.id IN Ast.Sets) THEN
+                Str(g, " ∩ ")
+              ELSE
+                Str(g, " ⋅ ")
+              END
+          | Ast.Rdiv :
+              IF (g.opt.std = StdE1) & (term.type.id IN Ast.Sets) THEN
+                Str(g, " ∆ ")
+              ELSE
+                Str(g, " / ")
+              END
+          | Ast.Div  : Str(g, " ÷ " )
+          | Ast.Mod  : Str(g, " |÷| " )
+          | Ast.And  : Str(g, " ∧ ")
+          END
+        ELSE
+          CASE term.mult OF
+            Ast.Mult : Str(g, " * "  )
+          | Ast.Rdiv : Str(g, " / "  )
+          | Ast.Div  : Str(g, " DIV ")
+          | Ast.Mod  : Str(g, " MOD ")
+          | Ast.And  : Str(g, " & "  )
+          END
         END;
         IF term.expr IS Ast.ExprTerm THEN
           term := term.expr(Ast.ExprTerm);
@@ -595,9 +859,16 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
 
     PROCEDURE Boolean(VAR g: Generator; e: Ast.ExprBoolean);
     BEGIN
-      IF   e.bool
-      THEN Str(g, "TRUE")
-      ELSE Str(g, "FALSE")
+      IF g.opt.std = StdE1 THEN
+        IF   e.bool
+        THEN Str(g, "ДА")
+        ELSE Str(g, "НЕТ")
+        END
+      ELSE
+        IF   e.bool
+        THEN Str(g, "TRUE")
+        ELSE Str(g, "FALSE")
+        END
       END
     END Boolean;
 
@@ -625,10 +896,10 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     PROCEDURE ExprInt(VAR g: Generator; int: INTEGER);
     BEGIN
       IF int >= 0 THEN
-        Int(g, int)
+        Decimal(g, int)
       ELSE
         Str(g, "(-");
-        Int(g, -int);
+        Decimal(g, -int);
         Chr(g, ")")
       END
     END ExprInt;
@@ -645,8 +916,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     END ValueOfSet;
 
     PROCEDURE Set(VAR g: Generator; set: Ast.ExprSet);
-    VAR braces: ARRAY 3 OF CHAR;
-      PROCEDURE Val(VAR g: Generator; set: Ast.ExprSet; braces: ARRAY OF CHAR);
+    VAR braceOpen, braceClose, empty: ARRAY 4 OF CHAR;
+      PROCEDURE Val(VAR g: Generator; set: Ast.ExprSet; braceOpen, braceClose, empty: ARRAY OF CHAR);
         PROCEDURE Item(VAR g: Generator; set: Ast.ExprSet);
         BEGIN
           IF set.exprs[1] = NIL THEN
@@ -656,39 +927,88 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           END
         END Item;
       BEGIN
-        IF (set.next = NIL) & (set.exprs[0] = NIL) THEN
-          Str(g, braces)
-        ELSE
-          Chr(g, braces[0]);
+        IF (set.next # NIL) OR (set.exprs[0] # NIL) THEN
+          Str(g, braceOpen);
           Item(g, set);
           set := set.next;
           WHILE set # NIL DO
-            Str(g, ", ");
+            Str(g, g.sep1Sp);
             Item(g, set);
             set := set.next
           END;
-          Chr(g, braces[1])
+          Str(g, braceClose)
+        ELSE
+          Str(g, empty)
         END
       END Val;
     BEGIN
-      IF g.opt.plantUml THEN
-        braces := "()"
+      empty := "";
+      IF g.opt.std = StdE1 THEN
+        braceOpen := "{"; braceClose := "}";
+        empty := "∅"
       ELSE
-        braces := "{}"
+        IF g.opt.plantUml THEN
+          braceOpen := "("; braceClose := ")"
+        ELSE
+          braceOpen := "{"; braceClose := "}"
+        END;
+        empty[0] := braceOpen[0];
+        empty[1] := braceClose[0];
+        empty[2] := 0X
       END;
       CASE g.opt.std OF
         StdO7,
-        StdCp: Val(g, set, braces)
-      | StdAo: Str(g, "SET32("); Val(g, set, braces); Str(g, ")")
+        StdE1,
+        StdCp: Val(g, set, braceOpen, braceClose, empty)
+      | StdAo: Str(g, "SET32("); Val(g, set, braceOpen, braceClose, empty); Str(g, ")")
       END
     END Set;
 
     PROCEDURE IsExtension(VAR g: Generator; is: Ast.ExprIsExtension);
     BEGIN
       Designator(g, is.designator);
-      Str(g, " IS ");
+      IF g.opt.std = StdE1 THEN
+        (*Str(g, " Е "*)
+        Str(g, " ЭТО ")
+      ELSE
+        Str(g, " IS ")
+      END;
       GlobalName(g, is.extType)
     END IsExtension;
+
+    PROCEDURE NegateTo(VAR g: Generator; e: Ast.Expression);
+    VAR e0: Ast.Expression; r: Ast.ExprRelation; is: Ast.ExprIsExtension; not: ARRAY 3 OF CHAR;
+    BEGIN
+      IF g.opt.std = StdE1 THEN
+        not := "¬";
+        IF e.id = Ast.IdBraces THEN
+          e0 := e(Ast.ExprBraces).expr;
+          IF e0.id = Ast.IdRelation THEN
+            r := e0(Ast.ExprRelation);
+            IF r.relation = Ast.In THEN
+              not := "";
+              ExpressionBraced(g, "(", r.exprs[0], " ∉ ");
+              Expression(g, r.exprs[1]);
+              Chr(g, ")")
+            END
+          ELSIF e0.id = Ast.IdIsExtension THEN
+            not := "";
+            is := e0(Ast.ExprIsExtension);
+            Chr(g, "(");
+            Designator(g, is.designator);
+            Str(g, " НЕ ");
+            GlobalName(g, is.extType);
+            Chr(g, ")")
+          END
+        END
+      ELSE
+        not := "~"
+      END;
+      IF not # "" THEN
+        Str(g, not);
+        Expression(g, e)
+      END
+    END NegateTo;
   BEGIN
     CASE expr.id OF
       Ast.IdInteger:
@@ -698,9 +1018,12 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     | Ast.IdBoolean:
       Boolean(g, expr(Ast.ExprBoolean))
     | Ast.IdReal, Ast.IdReal32:
-      IF Strings.IsDefined(expr(Ast.ExprReal).str)
-      THEN  Text.String(g, expr(Ast.ExprReal).str)
-      ELSE  Text.Real(g, expr(Ast.ExprReal).real)
+      IF  ~Strings.IsDefined(expr(Ast.ExprReal).str) THEN
+        Text.Real(g, expr(Ast.ExprReal).real)
+      ELSIF g.opt.std = StdE1 THEN
+        Text.RealString(g, expr(Ast.ExprReal).str)
+      ELSE
+        Text.String(g, expr(Ast.ExprReal).str)
       END
     | Ast.IdString:
       String(g, expr(Ast.ExprString))
@@ -712,7 +1035,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     | Ast.IdCall:
       Call(g, expr(Ast.ExprCall))
     | Ast.IdDesignator:
-      IF (g.opt.std = StdO7)
+      IF (g.opt.std IN {StdO7, StdE1})
       OR (expr.value = NIL) OR (expr.value.id # Ast.IdString)
       THEN  Designator(g, expr(Ast.Designator))
       ELSE  String(g, expr.value(Ast.ExprString))
@@ -723,28 +1046,41 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       Sum(g, expr(Ast.ExprSum))
     | Ast.IdTerm: Term(g, expr(Ast.ExprTerm))
     | Ast.IdNegate:
-      Str(g, "~");
-      Expression(g, expr(Ast.ExprNegate).expr)
+      NegateTo(g, expr(Ast.ExprNegate).expr);
     | Ast.IdBraces:
       ExpressionBraced(g, "(", expr(Ast.ExprBraces).expr, ")")
     | Ast.IdPointer:
-      Str(g, "NIL")
+      IF g.opt.std = StdE1 THEN
+        Str(g, "()")
+      ELSE
+        Str(g, "NIL")
+      END
     | Ast.IdIsExtension:
       IsExtension(g, expr(Ast.ExprIsExtension))
     END
   END Expression;
 
-  PROCEDURE Mark(VAR g: Generator; d: Ast.Declaration);
-  BEGIN
-    IF d.mark & ~g.opt.declaration THEN
-      Chr(g, "*")
-    END
-  END Mark;
-
   PROCEDURE MarkedName(VAR g: Generator; d: Ast.Declaration; str: ARRAY OF CHAR);
+  VAR m: BOOLEAN;
+    PROCEDURE PtrMark(r: Ast.Record): BOOLEAN;
+    RETURN
+      (r.pointer # NIL) & r.pointer.mark
+    END PtrMark;
   BEGIN
-    Name(g, d);
-    Mark(g, d);
+    m := d.mark & ~g.opt.declaration;
+    IF g.opt.std = StdE1 THEN
+      IF (d.id = Ast.IdRecord) & (m OR PtrMark(d(Ast.Record))) THEN
+        Chr(g, "*")
+      ELSIF m THEN
+        Chr(g, "+")
+      ELSIF (d.id # Ast.IdProc) & ((d.up = NIL) OR (d.up.d.up = NIL)) THEN
+        Chr(g, " ")
+      END;
+      Name(g, d)
+    ELSE
+      Name(g, d);
+      IF m THEN Chr(g, "*") END
+    END;
     Str(g, str)
   END MarkedName;
 
@@ -773,12 +1109,14 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF g.opt.plantUml THEN
         Ln(g)
       ELSE
-        StrLn(g, ";")
+        SepLn(g)
       END
     END Const;
   BEGIN
     IF g.opt.plantUml THEN
       Str(g, ":")
+    ELSIF g.opt.std = StdE1 THEN
+      Text.Ln(g)
     ELSE
       StrOpen(g, "CONST")
     END;
@@ -790,29 +1128,18 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     END;
     IF g.opt.plantUml THEN
       StrLn(g, ";")
+    ELSIF g.opt.std = StdE1 THEN
+      Ln(g)
     ELSE
       LnClose(g)
     END
   END Consts;
 
-  PROCEDURE ProcParams(VAR g: Generator; proc: Ast.ProcType);
+  PROCEDURE ProcParams(VAR g: Generator; proc: Ast.ProcType; opt: SET);
   VAR p: Ast.Declaration;
 
     PROCEDURE SimilarParams(VAR g: Generator; VAR p: Ast.Declaration);
     VAR fp: Ast.FormalParam;
-
-      PROCEDURE Access(VAR g: Generator; fp: Ast.FormalParam);
-      BEGIN
-        IF Ast.ParamOut IN fp.access THEN
-          Str(g, "VAR ")
-        ELSIF fp.type.id IN Ast.Structures THEN
-          CASE g.opt.std OF
-            StdO7: ;
-          | StdAo: Str(g, "CONST ")
-          | StdCp: Str(g, "IN ")
-          END
-        END
-      END Access;
 
       PROCEDURE Similar(p1, p2: Ast.FormalParam): BOOLEAN;
       RETURN
@@ -821,11 +1148,14 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
 
     BEGIN
       fp := p(Ast.FormalParam);
-      Access(g, fp);
+      Access(g, fp, TRUE);
       Name(g, p);
       p := p.next;
       WHILE (p # NIL) & Similar(fp, p(Ast.FormalParam)) DO
-        Str(g, ", ");
+        Str(g, g.sep1Sp);
+        IF g.opt.std = StdE1 THEN
+          Access1a(g, fp.access)
+        END;
         Name(g, p);
         p := p.next
       END;
@@ -834,7 +1164,9 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     END SimilarParams;
   BEGIN
     IF proc.params # NIL THEN
-      Chr(g, "(");
+      IF (g.opt.std # StdE1) OR ~(ForTypes IN opt) THEN
+        Chr(g, "(")
+      END;
       p := proc.params;
       SimilarParams(g, p);
       WHILE p # NIL DO
@@ -844,12 +1176,35 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF proc.type = NIL THEN
         Chr(g, ")")
       ELSE
-        Str(g, "): ");
+        IF g.opt.std # StdE1 THEN
+          Str(g, "): ")
+        ELSIF g.retVar # NIL THEN
+          Str(g, ") → ");
+          Name(g, g.retVar);
+          Str(g, ": ")
+        ELSE
+          Str(g, ") → ответ: ")
+        END;
         type(g, proc.type)
       END
     ELSIF proc.type # NIL THEN
-      Str(g, "(): ");
+      IF g.opt.std # StdE1 THEN
+        Str(g, "(): ")
+      ELSE
+        IF ForTypes IN opt THEN
+          Str(g, ") ")
+        END;
+        IF g.retVar # NIL THEN
+          Str(g, " → ");
+          Name(g, g.retVar);
+          Str(g, ": ")
+        ELSE
+          Str(g, " → ответ: ")
+        END
+      END;
       type(g, proc.type)
+    ELSIF g.opt.std = StdE1 THEN
+      Str(g, "()")
     END
   END ProcParams;
 
@@ -862,7 +1217,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       BEGIN
         REPEAT
           v := v.next
-        UNTIL (v = NIL) OR (v.id # Ast.IdVar) OR v.mark OR ~g.opt.declaration
+        UNTIL (v = NIL) OR (v.id # Ast.IdVar) OR v.mark
+           OR ~g.opt.declaration & (v # g.retVar)
       RETURN
         (v # NIL) & (v.id = Ast.IdVar)
       END Next;
@@ -871,7 +1227,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       MarkedName(g, v, "");
       p := v;
       WHILE Next(g, v) & (p.type = v.type) DO
-        Str(g, ", ");
+        Str(g, g.sep1Sp);
         MarkedName(g, v, "");
         p := v
       END;
@@ -885,7 +1241,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF g.opt.plantUml THEN
         Ln(g)
       ELSE
-        StrLn(g, ";")
+        SepLn(g)
       END;
       ListSameType(g, v, ": ")
     END
@@ -894,24 +1250,45 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
   PROCEDURE Type(VAR g: Generator; typ: Ast.Type; forDecl: BOOLEAN);
 
     PROCEDURE Array(VAR g: Generator; typ: Ast.Type): Ast.Type;
+    VAR a1: BOOLEAN; expr: PROCEDURE(VAR g: Generator; e: Ast.Expression);
     BEGIN
+      a1 := g.opt.std = StdE1;
       IF typ(Ast.Array).count = NIL THEN
         REPEAT
           ASSERT(typ(Ast.Array).count = NIL);
-          Str(g, "ARRAY OF ");
+          IF a1 THEN
+            Str(g, "×")
+          ELSE
+            Str(g, "ARRAY OF ")
+          END;
           typ := typ.type
         UNTIL typ.id # Ast.IdArray
       ELSE
-        Str(g, "ARRAY ");
-        Expression(g, typ(Ast.Array).count);
+        IF ~a1 THEN
+          Str(g, "ARRAY ")
+        END;
+        IF g.opt.std = StdE1 THEN
+          expr := Factor
+        ELSE
+          expr := Expression
+        END;
+        expr(g, typ(Ast.Array).count);
         typ := typ.type;
         WHILE (typ.id = Ast.IdArray) & ~Strings.IsDefined(typ.name) DO
-          Str(g, ", ");
-          Expression(g, typ(Ast.Array).count);
+          IF a1 THEN
+            Str(g, " × ")
+          ELSE
+            Str(g, g.sep1Sp)
+          END;
+          expr(g, typ(Ast.Array).count);
           typ := typ.type
         END;
-        Str(g, " OF ")
-      END;
+        IF a1 THEN
+          Str(g, " × ")
+        ELSE
+          Str(g, " OF ")
+        END
+      END
     RETURN
       typ
     END Array;
@@ -942,6 +1319,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         END;
         mark := v # NIL;
         IF mark THEN
+          Ln(g);
           VarList(g, v);
           WHILE i > 0 DO
             DEC(i);
@@ -971,24 +1349,42 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       ELSE
         i := 0
       END;
-      IF base[i] = NIL THEN
-        StrOpen(g, "RECORD")
-      ELSE
-        Str(g, "RECORD(");
-        GlobalName(g, base[i]);
-        StrOpen(g, ")")
-      END;
+
       v := rec.vars;
-      IF g.opt.declaration THEN
-        FirstMarked(v);
-        IF ExportedFromBase(g, base, i) & (v # NIL) THEN
+      IF g.opt.declaration THEN  FirstMarked(v)  END;
+
+      IF g.opt.std = StdE1 THEN
+        IF base[i] = NIL THEN
+          Str(g, "(;")
+        ELSE
+          Str(g, "(: ");
+          GlobalName(g, base[i]);
+          Chr(g, ";")
+        END;
+        IF v # NIL THEN
+          Text.IndentOpen(g); Ln(g);
+          VarList(g, v); LnClose(g)
+        END;
+        Chr(g, ")")
+      ELSE
+        IF base[i] = NIL THEN
+          Str(g, "RECORD")
+        ELSE
+          Str(g, "RECORD(");
+          GlobalName(g, base[i]);
+          Chr(g, ")")
+        END;
+        IF g.opt.declaration & ExportedFromBase(g, base, i) & (v # NIL) THEN
           StrLn(g, ";")
-        END
-      END;
-      IF v # NIL THEN
-        VarList(g, v)
-      END;
-      Text.LnStrClose(g, "END")
+        END;
+        IF v # NIL THEN
+          Text.IndentOpen(g); Ln(g);
+          VarList(g, v); LnClose(g)
+        ELSE
+          Chr(g, " ")
+        END;
+        Str(g, "END")
+      END
     END Record;
 
   BEGIN
@@ -996,6 +1392,9 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       & Strings.IsDefined(typ.name)
       & (typ.mark OR ~g.opt.declaration)
     THEN
+      IF (g.opt.std = StdE1) & (typ.id = Ast.IdPointer) THEN
+        Str(g, "(↑)")
+      END;
       GlobalName(g, typ)
     ELSE
       CASE typ.id OF
@@ -1004,12 +1403,14 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           StdO7,
           StdCp: Str(g, "INTEGER")
         | StdAo: Str(g, "SIGNED32")
+        | StdE1: Str(g, "Ц")
         END
       | Ast.IdSet:
         CASE g.opt.std OF
           StdO7,
           StdCp: Str(g, "SET")
         | StdAo: Str(g, "SET32")
+        | StdE1: Str(g, "М")
         END
       | Ast.IdLongInt:
         CASE g.opt.std OF
@@ -1021,24 +1422,31 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           StdAo: Str(g, "SET64")
         END
       | Ast.IdBoolean:
-        Str(g, "BOOLEAN")
+        IF g.opt.std = StdE1 THEN
+          Str(g, "П")
+        ELSE
+          Str(g, "BOOLEAN")
+        END
       | Ast.IdByte:
         CASE g.opt.std OF
           StdO7,
           StdCp: Str(g, "BYTE")
         | StdAo: Str(g, "UNSIGNED8")
+        | StdE1: Str(g, "Б")
         END
       | Ast.IdChar:
         CASE g.opt.std OF
           StdO7,
           StdAo: Str(g, "CHAR")
         | StdCp: Str(g, "SHORTCHAR")
+        | StdE1: Str(g, "Л")
         END
       | Ast.IdReal:
         CASE g.opt.std OF
           StdO7,
           StdCp: Str(g, "REAL")
         | StdAo: Str(g, "FLOAT64")
+        | StdE1: Str(g, "Д")
         END
       | Ast.IdReal32:
         CASE g.opt.std OF
@@ -1048,13 +1456,27 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       | Ast.IdRecord:
         Record(g, typ(Ast.Record))
       | Ast.IdProcType, Ast.IdFuncType:
-        Str(g, "PROCEDURE ");
-        ProcParams(g, typ(Ast.ProcType))
+        IF g.opt.std = StdE1 THEN
+          Str(g, "ВИД(; ")
+        ELSE
+          Str(g, "PROCEDURE")
+        END;
+        ProcParams(g, typ(Ast.ProcType), {ForTypes})
       | Ast.IdPointer:
-        Str(g, "POINTER TO ");
+        IF g.opt.std # StdE1 THEN
+          Str(g, "POINTER TO ")
+        ELSIF ~forDecl THEN
+          Str(g, "(↑)")
+        END;
         Type(g, typ.type, FALSE)
       | Ast.IdArray:
-        Type(g, Array(g, typ), FALSE)
+        IF g.opt.std = StdE1 THEN
+          Chr(g, "[");
+          Type(g, Array(g, typ), FALSE);
+          Chr(g, "]")
+        ELSE
+          Type(g, Array(g, typ), FALSE)
+        END
       END
     END
   END Type;
@@ -1074,12 +1496,14 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF g.opt.plantUml THEN
         Ln(g)
       ELSE
-        StrLn(g, ";")
+        SepLn(g)
       END;
     END Decl;
   BEGIN
     IF g.opt.plantUml THEN
       Str(g, ":")
+    ELSIF g.opt.std = StdE1 THEN
+      Ln(g)
     ELSE
       StrOpen(g, "TYPE")
     END;
@@ -1091,6 +1515,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     END;
     IF g.opt.plantUml THEN
       StrLn(g, ";")
+    ELSIF g.opt.std = StdE1 THEN
+      Ln(g)
     ELSE
       LnClose(g)
     END
@@ -1102,6 +1528,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       Str(g, ":");
       VarList(g, d);
       StrLn(g, ";")
+    ELSIF g.opt.std = StdE1 THEN
+      VarList(g, d); Chr(g, g.sep); Ln(g); Ln(g)
     ELSE
       StrOpen(g, "VAR");
       VarList(g, d);
@@ -1142,7 +1570,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     PROCEDURE WhileIf(VAR g: Generator; wi: Ast.WhileIf);
 
       PROCEDURE Wr(VAR g: Generator; wi: Ast.WhileIf;
-                   begin, then, thenNeg, elsif, else, end: ARRAY OF CHAR);
+                   begin, then, thenNeg, elsif, elsifThen, else, end: ARRAY OF CHAR);
 
         PROCEDURE Elsif(VAR g: Generator; VAR wi: Ast.WhileIf; then, thenNeg, elsif: ARRAY OF CHAR);
         BEGIN
@@ -1154,7 +1582,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       BEGIN
         Str(g, begin);
         ExprThenStats(g, wi, then, thenNeg);
-        Elsif(g, wi, then, thenNeg, elsif);
+        Elsif(g, wi, elsifThen, thenNeg, elsif);
         IF wi # NIL THEN
           LnClose(g);
           StrOpen(g, else);
@@ -1165,26 +1593,30 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     BEGIN
       IF wi IS Ast.If THEN
         IF g.opt.plantUml THEN
-          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", "else", "endif")
+          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", ") then (yes)", "else", "endif")
+        ELSIF g.opt.std = StdE1 THEN
+          Wr(g, wi, "??  ", "  (", "", ":?  ", ";", "::", ")")
         ELSE
-          Wr(g, wi, "IF ", " THEN", "", "ELSIF ", "ELSE", "END")
-        END;
+          Wr(g, wi, "IF ", " THEN", "", "ELSIF ", " THEN", "ELSE", "END")
+        END
       ELSIF (wi.elsif = NIL) OR g.opt.multibranchWhile THEN
         IF g.opt.plantUml THEN
-          Wr(g, wi, "while (", ") is (yes)", ") is (no)", "", "", "endwhile")
+          Wr(g, wi, "while (", ") is (yes)", ") is (no)", "", "", "", "endwhile")
+        ELSIF g.opt.std = StdE1 THEN
+          Wr(g, wi, "(↺)?  ", "  (", "", ":?    ", ";", "", ")")
         ELSE
-          Wr(g, wi, "WHILE ", " DO", "", "ELSIF ", "", "END")
+          Wr(g, wi, "WHILE ", " DO", "", "ELSIF ", " DO", "", "END")
         END
       ELSE
         IF g.opt.plantUml THEN
           StrOpen(g, "repeat");
-          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", "", "");
+          Wr(g, wi, "if (", ") then (yes)", ") then (no)", "elseif (", ") then (yes)", "", "");
           StrOpen(g, "else");
           StrLn(g, ":stop;");
           Text.StrClose(g, "endif");
           LnStrClose(g, "repeat while(continue?) not (stop) ")
         ELSE
-          Wr(g, wi, "LOOP IF ", " THEN", "", "ELSIF ", "", "ELSE EXIT END END")
+          Wr(g, wi, "LOOP IF ", " THEN", "", "ELSIF ", " THEN", "", "ELSE EXIT END END")
         END
       END
     END WhileIf;
@@ -1203,6 +1635,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           Expression(g, st.expr);
           Str(g, ") is (no) not (yes)")
         END
+      ELSIF g.opt.std = StdE1 THEN
+        StrOpen(g, "(↺) (");
+        statements(g, st.stats);
+        LnStrClose(g, ") ДО ");
+        Expression(g, st.expr)
       ELSE
         StrOpen(g, "REPEAT");
         statements(g, st.stats);
@@ -1216,18 +1653,32 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF g.opt.plantUml THEN
         Str(g, "while (")
       END;
-      Str(g, "FOR ");
-      GlobalName(g, st.var);
-      ExpressionBraced(g, " := ", st.expr, " TO ");
+      IF g.opt.std = StdE1 THEN
+        Str(g, "(↺) ");
+        GlobalName(g, st.var);
+        ExpressionBraced(g, g.assign, st.expr, " .. ");
+      ELSE
+        Str(g, "FOR ");
+        GlobalName(g, st.var);
+        ExpressionBraced(g, g.assign, st.expr, " TO ");
+      END;
       Expression(g, st.to);
       IF st.by # 1 THEN
-        Str(g, " BY ");
-        Int(g, st.by)
+        IF g.opt.std = StdE1 THEN
+          Str(g, " ПО ")
+        ELSE
+          Str(g, " BY ")
+        END;
+        Decimal(g, st.by)
       END;
       IF g.opt.plantUml THEN
         StrOpen(g, ")");
         statements(g, st.stats);
         LnStrClose(g, "endwhile (end)")
+      ELSIF g.opt.std = StdE1 THEN
+        StrOpen(g, " (");
+        statements(g, st.stats);
+        LnStrClose(g, ")")
       ELSE
         StrOpen(g, " DO");
         statements(g, st.stats);
@@ -1242,7 +1693,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       THEN
         ExpressionBraced(g, "ASSERT(LEN(", st.expr, ") <= LEN(");
         Designator(g, st.designator);
-        StrLn(g, "));");
+        Str(g, "))");
+        SepLn(g);
 
         ExpressionBraced(g, "SYSTEM.MOVE(SYSTEM.ADR(", st.expr, "), SYSTEM.ADR(");
         Designator(g, st.designator);
@@ -1254,7 +1706,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         Str(g, "))")
       ELSE
         Designator(g, st.designator);
-        Str(g, " := ");
+        Str(g, g.assign);
         AssignExpr(g, st.designator.type, st.expr)
       END
     END Assign;
@@ -1270,7 +1722,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
             IF l.qual # NIL THEN
               GlobalName(g, l.qual)
             ELSIF tid = Ast.IdInteger THEN
-              Int(g, l.value);
+              Decimal(g, l.value);
             ELSE ASSERT(tid = Ast.IdChar);
               Char(g, l.value, Ast.StrUsedAsChar)
             END
@@ -1284,11 +1736,15 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         END Range;
       BEGIN
         r := elem.labels;
-        IF g.opt.plantUml THEN Str(g, "case (") END;
+        IF g.opt.plantUml THEN
+          Str(g, "case (")
+        ELSIF g.opt.std = StdE1 THEN
+          Str(g, "• ")
+        END;
         Range(g, r, tid);
         r := r.next;
         WHILE r # NIL DO
-          Str(g, ", ");
+          Str(g, g.sep1Sp);
           Range(g, r, tid);
           r := r.next
         END;
@@ -1304,6 +1760,9 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF g.opt.plantUml THEN
         ExpressionBraced(g, "switch (", st.expr, ")");
         Ln(g)
+      ELSIF g.opt.std = StdE1 THEN
+        ExpressionBraced(g, "??? ", st.expr, " (");
+        Ln(g)
       ELSE
         ExpressionBraced(g, "CASE ", st.expr, " OF");
         Ln(g);
@@ -1313,18 +1772,25 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       CaseElement(g, elem, st.expr.type.id);
       elem := elem.next;
       WHILE elem # NIL DO
-        IF ~g.opt.plantUml THEN Str(g, "| ") END;
+        IF ~g.opt.plantUml & (g.opt.std # StdE1) THEN Str(g, "| ") END;
         CaseElement(g, elem, st.expr.type.id);
         elem := elem.next
       END;
       IF g.opt.plantUml THEN
         Str(g, "endswitch")
       ELSE
-        IF g.opt.caseAbort & (g.opt.std # StdO7) THEN
+        IF g.opt.caseAbort & ~(g.opt.std IN {StdO7, StdE1}) THEN
           (* TODO *)
           StrLn(g, "ELSE HALT(1)")
         END;
-        Str(g, "END")
+        IF g.opt.std = StdE1 THEN
+          IF st.else = NIL THEN
+            StrLn(g, ":: 🚫")
+          END;
+          Chr(g, ")")
+        ELSE
+          Str(g, "END")
+        END
       END
     END Case;
 
@@ -1386,15 +1852,19 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       stat := stat.next;
       WHILE stat # NIL DO
         IF ~g.opt.plantUml THEN
-          StrLn(g, ";")
+          SepLn(g)
         END;
         Statement(g, stat);
         stat := stat.next
       END
+    ELSE
+      Chr(g, g.sep)
     END
   END Statements;
 
   PROCEDURE Procedure(VAR g: Generator; p: Ast.Procedure);
+  VAR retVar: Ast.Declaration; startLine: INTEGER;
+
     PROCEDURE Return(VAR g: Generator; stats: BOOLEAN; ret: Ast.Expression);
     BEGIN
       IF ret # NIL THEN
@@ -1405,43 +1875,36 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           (* Невидимая { нужна из-за слабости разборщика Plang UML *)
           ExpressionBraced(g, ": RETURN ", ret, "<color:white>{}")
         ELSE
-          IF stats THEN
-            StrLn(g, ";")
+          IF stats & (g.retVar = NIL) THEN
+            SepLn(g)
           END;
-          ExpressionBraced(g, "RETURN ", ret, "")
+          IF g.opt.std # StdE1 THEN
+            ExpressionBraced(g, "RETURN ", ret, "")
+          ELSE
+            IF g.retVar = NIL THEN
+              ExpressionBraced(g, "ответ ← ", ret, "")
+            END
+          END
         END
       END
     END Return;
-  BEGIN
-    IF g.opt.plantUml THEN
-      Str(g, "group PROCEDURE ");
-      MarkedName(g, p, "");
-      ProcParams(g, p.header);
-      Ln(g);
-      Comment(g, p.comment, FALSE)
-    ELSE
-      Comment(g, p.comment, TRUE);
-      Str(g, "PROCEDURE ");
-      MarkedName(g, p, "");
-      ProcParams(g, p.header);
-      StrLn(g, ";")
-    END;
-    IF ~g.opt.declaration THEN
-      declarations(g, p);
-      IF g.opt.plantUml THEN
-        Text.IndentOpen(g);
-        IF p.stats # NIL THEN
-          StrLn(g, "start")
+
+    PROCEDURE TryGetVar(e: Ast.Expression): Ast.Declaration;
+    VAR d: Ast.Designator; v: Ast.Declaration;
+    BEGIN
+      v := NIL;
+      IF (e # NIL) & (e.id = Ast.IdDesignator) THEN
+        d := e(Ast.Designator);
+        IF ~Ast.IsGlobal(d.decl) & ~(d.decl IS Ast.FormalParam) THEN
+          v := d.decl
         END
-      ELSIF (p.stats # NIL)
-         OR (g.opt.std # StdO7) & (p.return # NIL)
-      THEN
-        StrOpen(g, "BEGIN")
-      ELSE
-        Text.IndentOpen(g)
-      END;
-      Statements(g, p.stats);
-      Return(g, p.stats # NIL, p.return);
+      END
+    RETURN
+      v
+    END TryGetVar;
+
+    PROCEDURE End(VAR g: Generator; p: Ast.Procedure; startLine: INTEGER);
+    BEGIN
       IF g.opt.plantUml THEN
         Ln(g);
         IF p.return = NIL THEN
@@ -1450,20 +1913,110 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           StrLn(g, "kill")
         END;
         StrLnClose(g, "end group")
-      ELSE
+      ELSIF g.opt.std # StdE1 THEN
         LnStrClose(g, "END ");
-        Name(g, p);
-        StrLn(g, ";")
+        Name(g, p); SepLn(g)
+      ELSIF (g.lines - startLine >= 16) OR ~Ast.IsGlobal(p) THEN
+        LnStrClose(g, ") ");
+        Name(g, p); SepLn(g)
+      ELSE
+        LnStrClose(g, ")."); Ln(g)
       END
+    END End;
+
+  BEGIN
+    startLine := g.lines;
+    IF g.opt.plantUml THEN
+      Str(g, "group PROCEDURE ");
+      MarkedName(g, p, "");
+      ProcParams(g, p.header, {});
+      Ln(g);
+      Comment(g, p.comment, FALSE)
+    ELSE
+      Comment(g, p.comment, TRUE);
+      IF g.opt.std = StdE1 THEN
+        Str(g, "== ")
+      ELSE
+        Str(g, "PROCEDURE ")
+      END;
+      MarkedName(g, p, "");
+      IF g.opt.std = StdE1 THEN
+        retVar := g.retVar;
+        g.retVar := TryGetVar(p.return);
+        ProcParams(g, p.header, {});
+        StrOpen(g, " (")
+      ELSE
+        ProcParams(g, p.header, {});
+        SepLn(g)
+      END
+    END;
+    IF ~g.opt.declaration THEN
+      declarations(g, p);
+      IF g.opt.plantUml THEN
+        Text.IndentOpen(g);
+        IF p.stats # NIL THEN
+          StrLn(g, "start")
+        END
+      ELSIF g.opt.std = StdE1 THEN
+        ;
+      ELSIF (p.stats # NIL)
+         OR (g.opt.std # StdO7) & (p.return # NIL)
+      THEN
+        StrOpen(g, "BEGIN")
+      ELSE
+        Text.IndentOpen(g)
+      END;
+      IF (p.stats # NIL) OR (p.return = NIL) THEN
+        Statements(g, p.stats)
+      END;
+      Return(g, p.stats # NIL, p.return);
+      End(g, p, startLine);
+      IF g.opt.std = StdE1 THEN  g.retVar := retVar  END;
     END
   END Procedure;
 
   PROCEDURE Declarations(VAR g: Generator; ds: Ast.Declarations);
-  VAR c, t, v, p: Ast.Declaration; decl: BOOLEAN;
+  VAR c, t, v, p: Ast.Declaration; decl, mod: BOOLEAN;
+
+    PROCEDURE Ctv(VAR g: Generator; c, t, v: Ast.Declaration);
+    BEGIN
+      IF c # NIL THEN
+        Consts(g, c)
+      END;
+
+      IF t # NIL THEN
+        Types(g, t)
+      END;
+
+      IF v # NIL THEN
+        Vars(g, v)
+      END
+    END Ctv;
+
+    PROCEDURE Procs(VAR g: Generator; p: Ast.Declaration);
+    BEGIN
+      IF p # NIL THEN
+        REPEAT
+          IF p.mark OR ~g.opt.declaration THEN
+            EmptyLines(g, p);
+            Procedure(g, p(Ast.Procedure))
+          END;
+          p := p.next
+        UNTIL p = NIL;
+        Ln(g)
+      END
+    END Procs;
+
   BEGIN
     c := ds.consts;
     t := ds.types;
     v := ds.vars;
+    IF (v # NIL) & (v = g.retVar) THEN
+      v := v.next;
+      IF (v # NIL) & (v.id # Ast.IdVar) THEN
+        v := NIL
+      END
+    END;
     p := ds.procedures;
     IF g.opt.declaration THEN
       FirstMarked(c);
@@ -1477,33 +2030,29 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       IF decl THEN
         StrLn(g, "card Declarations {")
       END
+    (*
     ELSIF decl OR (p # NIL) THEN
       Ln(g)
+    *)
     END;
 
-    IF c # NIL THEN
-      Consts(g, c)
-    END;
-
-    IF t # NIL THEN
-      Types(g, t)
-    END;
-
-    IF v # NIL THEN
-      Vars(g, v)
-    END;
-
-    IF decl & g.opt.plantUml THEN
-      StrLn(g, "kill");
-      StrLn(g, "}")
-    END;
-
-    WHILE p # NIL DO
-      IF p.mark OR ~g.opt.declaration THEN
-        EmptyLines(g, p);
-        Procedure(g, p(Ast.Procedure))
+    mod := ds.up = NIL;
+    IF ~mod & (g.opt.std = StdE1) THEN
+      Procs(g, p);
+      Ctv(g, c, t, v)
+    ELSE
+      Ctv(g, c, t, v);
+      IF decl & g.opt.plantUml THEN
+        StrLn(g, "kill");
+        StrLn(g, "}")
       END;
-      p := p.next
+      IF mod THEN
+        Procs(g, p)
+      ELSE
+        Text.IndentOpen(g);
+          Procs(g, p);
+        Text.IndentClose(g)
+      END
     END
   END Declarations;
 
@@ -1520,14 +2069,18 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       Name(g, module);
       Chr(g, Utf8.DQuote);
       StrLn(g, " {")
+    ELSIF g.opt.std = StdE1 THEN
+      Str(g, "==== ");
+      Name(g, module);
+      StrOpen(g, " (");
     ELSE
-      IF g.opt.declaration THEN
-        Str(g, "DEFINITION ")
-      ELSE
-        Str(g, "MODULE ")
+      IF    g.opt.declaration
+      THEN  Str(g, "DEFINITION ")
+      ELSE  Str(g, "MODULE ")
       END;
       Name(g, module);
-      StrLn(g, ";")
+      SepLn(g);
+      Text.IndentOpen(g)
     END;
 
     IF ~opt.declaration THEN
@@ -1543,7 +2096,6 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
       StrLn(g, "IMPORT O_7, SYSTEM;")
     END;
     Declarations(g, module);
-    Ln(g);
     IF (module.stats # NIL) & ~g.opt.declaration THEN
       IF g.opt.plantUml THEN
         StrOpen(g, "group initialization");
@@ -1552,18 +2104,29 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         Ln(g);
         StrLn(g, "stop");
         StrLnClose(g, "end group")
-      ELSE
-        StrOpen(g, "BEGIN");
+      ELSIF g.opt.std = StdE1 THEN
+        StrOpen(g, "== (");
         Statements(g, module.stats);
-        LnClose(g)
+        Ln(g);
+        StrLnClose(g, ").");
+        Ln(g)
+      ELSE
+        Text.IndentClose(g);
+        StrOpen(g, "BEGIN");
+        Statements(g, module.stats); Ln(g)
       END
     END;
 
     IF g.opt.plantUml THEN
       StrLn(g, "}");
       StrLn(g, "@enduml")
+    ELSIF g.opt.std = StdE1 THEN
+      Text.StrClose(g, ") ");
+      Name(g, module);
+      StrLn(g, ".");
+      StrLn(g, "====")
     ELSE
-      Str(g, "END ");
+      Text.StrClose(g, "END ");
       Name(g, module);
       StrLn(g, ".")
     END
@@ -1573,5 +2136,7 @@ BEGIN
   declarations := Declarations;
   statements   := Statements;
   expression   := Expression;
-  type         := ReferenceToType
+  type         := ReferenceToType;
+
+  Strings.Undef(stdRetName)
 END GeneratorOberon.

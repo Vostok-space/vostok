@@ -642,7 +642,7 @@ func command(ostDir string, src source, help, workdir string, skipUnknownCommand
     res = infoModule(ostDir, src.par, lang)
   } else if cmd == "to-c" || cmd == "to-java" || cmd == "to-js" ||
             cmd == "to-mod" || cmd == "to-modef" ||
-            cmd == "to-puml" || cmd == "to-scheme" {
+            cmd == "to-puml" || cmd == "to-scheme" || cmd == "to-e1" {
     res = toLang(ostDir, src, lang)
   } else if cmd == "save" {
     res = saveToWorkdir(src, workdir, origin, lang)

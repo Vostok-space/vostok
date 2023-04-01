@@ -211,6 +211,8 @@ CONST
 	IdIsExtension*      = 27;
 	IdExprType*         = 28;
 
+	IdFactors* = {IdDesignator, IdNegate, IdCall, IdBraces, IdExprType};
+
 	IdError*            = 31;
 
 	IdImport*           = 32;
@@ -2779,7 +2781,7 @@ VAR err: INTEGER;
 	res: BOOLEAN;
 	v1, v2: Expression;
 
-	PROCEDURE CheckType(t1, t2: Type; VAR e1, e2: Expression; relation: INTEGER;
+	PROCEDURE CheckType(t1, t2: Type; e1, e2: Expression; relation: INTEGER;
 	                    VAR distance, err: INTEGER): BOOLEAN;
 	VAR continue: BOOLEAN;
 		dist1, dist2: INTEGER;
@@ -2864,7 +2866,7 @@ BEGIN
 	PropTouch(e, Prop(expr1) + Prop(expr2));
 	err := ErrNo;
 	IF (expr1 # NIL) & (expr2 # NIL)
-	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
+	 & CheckType(expr1.type, expr2.type, expr1, expr2, relation, e.distance, err)
 	 & (c.opt.allowCmpProc OR IsNotProc(expr1, expr2, err))
 	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Is)
 	THEN
