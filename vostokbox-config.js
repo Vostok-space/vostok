@@ -1,7 +1,7 @@
 var VostokBoxConfig = {
   runUrl: {
-    http: 'http://178.32.173.236:8080/run',
-    https: 'https://178.32.173.236:3443/run',
+    http: 'http://vostokbox.oberon.org:8080/run',
+    https: 'https://vostokbox.oberon.org:3443/run',
     timeout  : 6000
   }
 };
