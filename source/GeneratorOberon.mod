@@ -1857,7 +1857,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
         Statement(g, stat);
         stat := stat.next
       END
-    ELSE
+    ELSIF g.opt.std = StdE1 THEN
       Chr(g, g.sep)
     END
   END Statements;
@@ -1876,7 +1876,11 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           ExpressionBraced(g, ": RETURN ", ret, "<color:white>{}")
         ELSE
           IF stats & (g.retVar = NIL) THEN
-            SepLn(g)
+            IF g.opt.std = StdO7 THEN
+              Ln(g)
+            ELSE
+              SepLn(g)
+            END
           END;
           IF g.opt.std # StdE1 THEN
             ExpressionBraced(g, "RETURN ", ret, "")
