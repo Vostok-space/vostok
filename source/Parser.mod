@@ -109,7 +109,8 @@ TYPE
 		inLoops: INTEGER;
 
 		c: Ast.Context;
-		module: Ast.Module
+		module: Ast.Module;
+		isProc: BOOLEAN
 	END;
 
 VAR
@@ -1485,6 +1486,8 @@ BEGIN
 	IF ~SearchModule(p.s) THEN
 		AddError(p, ErrExpectModule)
 	ELSE
+		p.isProc := "P" = p.s.buf[p.s.lexStart];
+
 		Scan(p);
 		IF p.l # Scanner.Ident THEN
 			AddError(p, ErrExpectIdent);

@@ -1,6 +1,6 @@
 (*  List of Oberon-07 keywords and predefined identifers
  *
- *  Copyright (C) 2016-2018,2020-2022 ComdivByZero
+ *  Copyright (C) 2016-2018,2020-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -145,13 +145,18 @@ MODULE OberonSpecIdent;
   END T;
 
   PROCEDURE IsModule*(VAR buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
-  VAR save: CHAR; match: BOOLEAN;
+  VAR c, save: CHAR; match: BOOLEAN;
   BEGIN
-    match := "M" = buf[ind];
+    c := buf[ind];
+    match := (c = "M") OR (c = "P");
     IF match THEN
         save := buf[end];
         buf[end] := Utf8.BackSpace;
-        match := Eq("MODULE", buf, ind, end);
+        IF c = "M" THEN
+            match := Eq("MODULE", buf, ind, end)
+        ELSE
+            match := Eq("PROCEDURE", buf, ind, end)
+        END;
         buf[end] := save
     END
   RETURN
