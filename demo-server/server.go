@@ -36,6 +36,7 @@ import (
 
 const (
   kwModule = "MODULE";
+  kwProc   = "PROCEDURE";
   teleApi = "https://api.telegram.org/bot";
 
   eng = 0;
@@ -80,7 +81,7 @@ var (
   };
   teleHelp = [] string {
     `/O7: log.sn("Script mode")` +
-    "\n/MODULE ModuleMode; END ModuleMode.\n",
+    "\n/PROCEDURE ModuleMode; END ModuleMode.\n",
   }
 )
 
@@ -177,7 +178,14 @@ func getModuleName(source string) (name string) {
   name = "";
   module = strings.Index(source, kwModule);
   if 0 <= module {
-    module += len(kwModule);
+    module += len(kwModule)
+  } else {
+    module = strings.Index(source, kwProc);
+    if 0 <= module {
+      module += len(kwProc)
+    }
+  }
+  if 0 < module {
     semicolon = strings.Index(source[module:], ";");
     if 0 <= semicolon {
       name = strings.TrimSpace(source[module: semicolon + module])
@@ -227,7 +235,7 @@ func run(ostDir string, src source, comp compiler, timeout, lang int) (output []
     }
     fmt.Print(string(output));
     if err == nil {
-      cmd = exec.Command("sh", "-c", comp.runner + " " + bin);
+      cmd = exec.Command("sh", "-c", comp.runner + " \"" + bin + "\"");
       cmd.Stdin = strings.NewReader(src.input);
       timeOut = "";
       output = nil;
@@ -891,7 +899,7 @@ func teleGetSrc(upd teleUpdate) (src source, chat, msgId int) {
   src.script = "";
   if strings.HasPrefix(txt, "/O7:") {
     txt = txt[4:]
-  } else if strings.HasPrefix(txt, "/MODULE ") {
+  } else if strings.HasPrefix(txt, "/" +  kwModule + " ") || strings.HasPrefix(txt, "/" +  kwProc + " ") {
     txt = txt[1:]
   } else if strings.HasPrefix(txt, "/") {
     i = strings.IndexAny(txt, "\r\n");
