@@ -215,18 +215,29 @@ var VostokBox;
     return ' \t\r\n'.indexOf(ch) >= 0;
   }
 
+  function searchWord(text, word) {
+    var i;
+    i = -1;
+    do {
+      i = text.indexOf(word, i + 1);
+    } while (i >= 0 && !((i == 0 || isBlank(text.charAt(i - 1))) && isBlank(text.charAt(i + word.length))));
+    if (i >= 0) {
+      i += word.length + 1;
+    }
+    return i;
+  }
+
   function getTabName(text, ind) {
     var n, t, i, l;
 
     n = null;
 
     t = text;
-    i = -1;
-    do {
-      i = t.indexOf('MODULE', i + 1);
-    } while (i >= 0 && !((i == 0 || isBlank(t.charAt(i - 1))) && isBlank(t.charAt(i + 6))));
+    i = searchWord(t, 'MODULE');
+    if (i < 0) {
+      i = searchWord(t, 'PROCEDURE');
+    }
     if (i >= 0) {
-      i += 7;
       while (isBlank(t.charAt(i))) { i += 1; }
       l = i;
       while ((l - i < 32) && isForIdent(t.charCodeAt(l))) { l += 1; }
@@ -365,7 +376,7 @@ var VostokBox;
         ', ',
         createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
                    function() {addButtonRunners(box, runners); }),
-        '. '
+        '.'
       );
       ln(box, div);
     }
