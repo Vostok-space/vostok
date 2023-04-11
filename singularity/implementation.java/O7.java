@@ -1,4 +1,4 @@
-/* Copyright 2018-2019,2021-2022 ComdivByZero
+/* Copyright 2018-2019,2021-2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,6 +439,12 @@ public static int ror(final int n, final int shift) {
     r = java.lang.Integer.rotateRight(n, shift);
     asrt(r >= 0);
     return r;
+}
+
+public static int asr(int n, int shift) {
+    if (shift >= 31) { shift = 31; }
+    else { asrt(shift >= 0); }
+    return n >> shift;
 }
 
 public static void init(final java.lang.String[] sargs) {

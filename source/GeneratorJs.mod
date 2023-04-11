@@ -695,7 +695,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			| SpecIdent.Lsl:
 				Shift(g, " << ", e1, p2.expr)
 			| SpecIdent.Asr:
-				Shift(g, " >> ", e1, p2.expr)
+				IF p2.expr.value # NIL THEN
+					Shift(g, " >> ", e1, p2.expr)
+				ELSE
+					ExpressionBraced(g, "o7.asr(", e1, ", ", {});
+					Expression(g, p2.expr, {});
+					Chr(g, ")")
+				END
 			| SpecIdent.Ror:
 				ExpressionBraced(g, "o7.ror(", e1, ", ", {});
 				Expression(g, p2.expr, {});
