@@ -208,7 +208,7 @@ END IsDigit;
 
 PROCEDURE IsHexDigit(ch: CHAR): BOOLEAN;
 	RETURN ("0" <= ch) & (ch <= "9")
-        OR ("A" <= ch) & (ch <= "F")
+	    OR ("A" <= ch) & (ch <= "F")
 END IsHexDigit;
 
 PROCEDURE ValDigit(ch: CHAR): INTEGER;
