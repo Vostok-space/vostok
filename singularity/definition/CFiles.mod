@@ -1,4 +1,4 @@
-(* Copyright 2016-2017, 2019 ComdivByZero
+(* Copyright 2016-2017,2019,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,15 @@ BEGIN
 	ASSERT(name[ofs] # 0X)
 	RETURN FALSE
 END Exist;
+
+PROCEDURE Rename*(src: ARRAY OF CHAR; sofs: INTEGER; dest: ARRAY OF CHAR; dofs: INTEGER): BOOLEAN;
+BEGIN
+	ASSERT((0 <= sofs) & (sofs < LEN(src)));
+	ASSERT((0 <= dofs) & (dofs < LEN(dest)));
+	ASSERT(src[sofs] # 0X);
+	ASSERT(dest[dofs] # 0X);
+	RETURN FALSE
+END Rename;
 
 BEGIN
 	in  := NIL;

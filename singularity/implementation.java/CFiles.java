@@ -1,4 +1,4 @@
-/* Copyright 2018-2019,2021 ComdivByZero
+/* Copyright 2018-2019,2021,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,13 @@ public static final boolean Exist(byte[] name, int ofs) {
         exist = false;
     } catch (java.io.IOException e) {}
     return exist;
+}
+
+public static final boolean Rename(byte[] src, int sofs, byte[] dest, int dofs) {
+    java.io.File s, d;
+    s = new java.io.File(O7.string(src, sofs));
+    d = new java.io.File(O7.string(dest, dofs));
+    return s.renameTo(d);
 }
 
 static {

@@ -1,4 +1,4 @@
-/* Copyright 2019-2021 ComdivByZero
+/* Copyright 2019-2021,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,6 +149,15 @@ if (fs != null) {
 		return str != null && fs.existsSync(str);
 	}
 
+	module.Rename = function(src, sofs, dest, dofs) {
+		var s, d;
+		s = utf8ByOfsToStr(src, sofs);
+		d = utf8ByOfsToStr(dest, dofs);
+		fs.renameSync(s, d);
+		/* TODO */
+		return true;
+	}
+
 } else if (typeof std !== 'undefined') {
 	module.in_ = wrapFile2(std.in);
 	module.out = wrapFile2(std.out);
@@ -238,6 +247,13 @@ if (fs != null) {
 		return ok;
 	}
 
+	module.Rename = function(src, sofs, dest, dofs) {
+		var s, d;
+		s = utf8ByOfsToStr(src, sofs);
+		d = utf8ByOfsToStr(dest, dofs);
+		return 0 == os.rename(s, d);
+	}
+
 } else {
 	module.in_ = new File();
 	module.out = new File();
@@ -250,6 +266,7 @@ if (fs != null) {
 	module.Flush = function(file) { return false; }
 	module.Remove = function(name, ofs)  { return false; }
 	module.Exist = function(name, ofs) { return false; }
+	module.Rename = function(src, sofs, dest, dofs) { return false; }
 }
 
 module.ReadChars = function(file, buf, ofs, count) {
