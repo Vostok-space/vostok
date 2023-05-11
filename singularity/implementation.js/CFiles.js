@@ -105,12 +105,12 @@ if (fs != null) {
 		var data, read, i;
 		if (typeof buf !== 'Uint8Array') {
 			data = bufGet(count);
-			read = fs.readSync(file.fd, data, 0, count);
+			read = fs.readSync(file.fd, data, 0, count, null);
 			for (i = 0; i < read; i += 1) {
 				buf[i + ofs] = data[i];
 			}
 		} else {
-			read = fs.readSync(file.fd, buf, ofs, count);
+			read = fs.readSync(file.fd, buf, ofs, count, null);
 		}
 		return read;
 	}
