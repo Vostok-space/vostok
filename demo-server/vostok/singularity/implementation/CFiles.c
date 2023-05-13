@@ -78,7 +78,7 @@ extern int CFiles_Write(CFiles_File file,
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
-extern o7_bool CFiles_Flush(CFiles_File file) {
+extern o7_cbool CFiles_Flush(CFiles_File file) {
 	return (o7_bool)(0 == fflush(file->file));
 }
 
@@ -109,7 +109,7 @@ CFiles_Remove(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
 	return 0 > 1;
 }
 
-extern o7_bool
+extern o7_cbool
 CFiles_Exist(o7_int_t len, o7_char const name[O7_VLA(len)], o7_int_t ofs) {
 	assert(0 <= ofs);
 	assert(ofs < len - 1);
