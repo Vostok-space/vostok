@@ -613,15 +613,6 @@ BEGIN
 	END
 END Selector;
 
-PROCEDURE IsDesignatorMayNotInited(des: Ast.Designator): BOOLEAN;
-	RETURN ({Ast.InitedNo, Ast.InitedCheck} * des.inited # {})
-	    OR (des.sel # NIL)
-END IsDesignatorMayNotInited;
-
-PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
-	RETURN (e.id = Ast.IdDesignator) & IsDesignatorMayNotInited(e(Ast.Designator))
-END IsMayNotInited;
-
 PROCEDURE Designator(VAR g: Generator; des: Ast.Designator);
 VAR sels: Selectors;
     typ: Ast.Type;
@@ -666,7 +657,7 @@ BEGIN
 	IF (g.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
 	 & (e.type.id IN CheckableInitTypes)
-	 & IsMayNotInited(e)
+	 & Ast.IsExprMayNotInited(e)
 	THEN
 		CASE e.type.id OF
 		  Ast.IdBoolean:
@@ -1415,7 +1406,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 			ELSIF (g.opt.varInit = GenOptions.VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
-			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
+			    & (Ast.IsExprMayNotInited(rel.exprs[0]) OR Ast.IsExprMayNotInited(rel.exprs[1]))
 			THEN
 				IF rel.exprs[0].type.id  = Ast.IdInteger THEN
 					Str(g, "o7_cmp(")

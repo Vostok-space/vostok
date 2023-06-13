@@ -1329,6 +1329,15 @@ BEGIN
 	END
 END VarStateUp;
 
+PROCEDURE IsDesignatorMayNotInited*(des: Designator): BOOLEAN;
+	RETURN ({InitedNo, InitedCheck} * des.inited # {})
+	    OR (des.sel # NIL)
+END IsDesignatorMayNotInited;
+
+PROCEDURE IsExprMayNotInited*(e: Expression): BOOLEAN;
+	RETURN (e.id = IdDesignator) & IsDesignatorMayNotInited(e(Designator))
+END IsExprMayNotInited;
+
 PROCEDURE TurnIf*(ds: Declarations);
 
 	PROCEDURE Handle(d: Declaration);
