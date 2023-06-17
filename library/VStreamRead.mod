@@ -1,6 +1,6 @@
 Subroutines for reading different types from VDataStream.In
 
-Copyright 2022 ComdivByZero
+Copyright 2022-2023 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -99,16 +99,8 @@ RETURN
 END SameChars;
 
 PROCEDURE Skip*(VAR in: Stream.In; count: INTEGER): BOOLEAN;
-VAR buf: ARRAY 64 OF BYTE;
-BEGIN
-  ASSERT(count >= 0);
-
-  WHILE (count > LEN(buf)) & (Stream.ReadWhole(in, buf) = LEN(buf)) DO
-    DEC(count, LEN(buf))
-  END
 RETURN
-   (count <= LEN(buf))
- & (count = Stream.Read(in, buf, 0, count))
+  count = Stream.Skip(in, count)
 END Skip;
 
 (* Читает до байта=end, но не больше count. Возвращает последний прочитанный байт *)

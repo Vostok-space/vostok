@@ -17,7 +17,7 @@ MODULE VCopy;
 
   IMPORT V, Stream := VDataStream;
 
-  CONST BlockSize = 4 * 1024;
+  CONST BlockSize = 1000H;
 
   PROCEDURE UntilEnd*(VAR in: Stream.In; VAR out: Stream.Out);
   VAR buf: ARRAY BlockSize OF BYTE; size: INTEGER;
