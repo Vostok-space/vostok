@@ -73,6 +73,7 @@ limitations under the License.
 #define Windows_Macedonian_cnst   47
 #define Windows_Afrikaans_cnst    48
 #define Windows_Georgian_cnst     55
+#define Windows_Faeroese_cnst     56
 #define Windows_Hindi_cnst        57
 #define Windows_Kazakh_cnst       63
 #define Windows_Kyrgyz_cnst       64
