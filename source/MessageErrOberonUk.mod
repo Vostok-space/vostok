@@ -250,6 +250,8 @@ BEGIN
 		C("Незадекларований запис в якості підтипу масиву")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Покажчик на незадекларований запис в якості підтипу масиву")
+	| AST.ErrParamOfSelfProcType:
+		C("Параметр задає рекурсивність власного процедурного типу")
 	| AST.ErrDeclarationUnused:
 		C("Існує незадіяна декларація в цій області видимості - ")
 	| AST.ErrProcNestedTooDeep:

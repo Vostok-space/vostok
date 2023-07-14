@@ -257,6 +257,8 @@ BEGIN
 		C("Incompletely declared record is used as subtype of array")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Pointer to incompletely declared record is used as subtype of array")
+	| AST.ErrParamOfSelfProcType:
+		C("The parameter leads to a recursion of its own procedural type")
 	| AST.ErrDeclarationUnused:
 		C("Exist unused declaration in the scope - ");
 	| AST.ErrProcNestedTooDeep:

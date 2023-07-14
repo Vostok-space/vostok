@@ -147,6 +147,7 @@ CONST
 	ErrArrayTypeOfRecordForward*    = -106;
 	ErrArrayTypeOfPointerToRecordForward*
 	                                = -107;
+	ErrParamOfSelfProcType*         = -117;(*TODO*)
 	ErrAssertConstFalse*            = -108;
 	ErrDeclarationUnused*           = -109;
 	ErrProcNestedTooDeep*           = -110;
@@ -158,6 +159,7 @@ CONST
 	                                (*-114*)
 	                                (*-115*)
 	                                (*-116*)
+	                                (*-117*)
 
 	ErrNegativeShift*               = -120;
 	ErrLslTooLargeShift*            = -121;
@@ -377,7 +379,9 @@ TYPE
 	END;
 
 	Construct* = POINTER TO RConstruct;
-	RConstruct* = RECORD(RType) END;
+	RConstruct* = RECORD(RType)
+		complete: BOOLEAN
+	END;
 
 	RArray* = RECORD(RConstruct)
 		count*: Expression
@@ -408,8 +412,7 @@ TYPE
 
 		needTag*,
 		inAssign*,
-		hasExt*,
-		complete: BOOLEAN
+		hasExt*: BOOLEAN
 	END;
 
 	RPointer* = RECORD(RConstruct)
@@ -1451,6 +1454,18 @@ BEGIN
 	t.array := NIL
 END TypeInit;
 
+PROCEDURE ConstructTypeInit(ct: Construct; id: INTEGER);
+BEGIN
+	TypeInit(ct, id);
+	ct.complete := FALSE
+END ConstructTypeInit;
+
+PROCEDURE ConstructTypeEnd(ct: Construct);
+BEGIN
+	ASSERT(~ct.complete);
+	ct.complete := TRUE
+END ConstructTypeEnd;
+
 PROCEDURE ProcTypeNew*(forType: BOOLEAN; id: INTEGER): ProcType;
 VAR p: ProcType;
     fp: FormalProcType;
@@ -1462,7 +1477,7 @@ BEGIN
 	ELSE
 		NEW(p)
 	END;
-	TypeInit(p, id);
+	ConstructTypeInit(p, id);
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -1640,6 +1655,7 @@ END ExchangeParamsNeedTag;
 PROCEDURE ProcTypeSetReturn*(proc: ProcType; type: Type): INTEGER;
 VAR err: INTEGER;
 BEGIN
+	ConstructTypeEnd(proc);
 	proc.type := type;
 	IF ~(type.id IN {IdArray, IdRecord}) THEN
 		err := ErrNo
@@ -1648,6 +1664,11 @@ BEGIN
 	END
 	RETURN err
 END ProcTypeSetReturn;
+
+PROCEDURE ProcTypeNoReturn*(proc: ProcType);
+BEGIN
+	ConstructTypeEnd(proc)
+END ProcTypeNoReturn;
 
 PROCEDURE AddError*(VAR c: Context; error, line, column: INTEGER);
 VAR e: Error;
@@ -1766,15 +1787,14 @@ PROCEDURE RecNew(VAR r: Record; id: INTEGER);
 BEGIN
 	ASSERT(id IN {IdRecord, IdRecordForward});
 
-	NEW(r); TypeInit(r, id);
+	NEW(r); ConstructTypeInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
 	r.needTag  := FALSE;
 	(* TODO *)
 	r.inAssign := TRUE;
-	r.hasExt := FALSE;
-	r.complete := FALSE
+	r.hasExt := FALSE
 END RecNew;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
@@ -1798,9 +1818,9 @@ END RecordForwardNew;
 PROCEDURE RecordEnd*(r: Record): INTEGER;
 BEGIN
 	ASSERT(r.id IN {IdRecord, IdRecordForward});
+	ConstructTypeEnd(r);
 	r.id := IdRecord;
 	r.used := TRUE;
-	r.complete := TRUE
 	RETURN ErrNo
 END RecordEnd;
 
@@ -2541,6 +2561,8 @@ BEGIN
 	   OR (t.id = IdRecord) & ~t(Record).complete
 	THEN
 		err := ErrVarOfRecordForward
+	ELSIF (t.id = IdProcType) & ~t(ProcType).complete THEN
+		err := ErrParamOfSelfProcType
 	END
 	RETURN err
 END VarListSetType;

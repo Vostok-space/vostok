@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -949,6 +949,8 @@ BEGIN
 			p.err := FALSE
 		END;
 		CheckAst(p, Ast.ProcTypeSetReturn(proc, TypeNamed(p, ds)))
+	ELSE
+		Ast.ProcTypeNoReturn(proc)
 	END
 END FormalParameters;
 

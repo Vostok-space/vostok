@@ -250,6 +250,8 @@ BEGIN
 		C("Недообъявленная запись в качестве подтипа массива")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Указатель на недообъявленную запись в качестве подтипа массива")
+	| AST.ErrParamOfSelfProcType:
+		C("Параметр задаёт рекурсивность собственного процедурного типа")
 	| AST.ErrDeclarationUnused:
 		C("Существует незадействованное объявление в этой области видимости - ")
 	| AST.ErrProcNestedTooDeep:
