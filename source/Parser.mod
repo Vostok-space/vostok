@@ -444,7 +444,7 @@ END CallParams;
 PROCEDURE ExprCall(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator): Ast.ExprCall;
 VAR e: Ast.ExprCall;
 BEGIN
-	CheckAst(p, Ast.ExprCallNew(e, des));
+	CheckAst(p, Ast.ExprCallNew(p.c, e, des));
 	CallParams(p, ds, e)
 	RETURN e
 END ExprCall;
@@ -539,7 +539,7 @@ BEGIN
 
 		turnIf := (l = Scanner.And);
 		IF turnIf THEN
-			Ast.TurnIf(ds)
+			Ast.TurnIf(p.c)
 		END;
 
 		Scan(p);
@@ -554,7 +554,7 @@ BEGIN
 		END;
 
 		IF turnIf THEN
-			Ast.BackFromBranch(ds)
+			Ast.BackFromBranch(p.c)
 		END
 	END
 	RETURN e
@@ -579,7 +579,7 @@ BEGIN
 			IF ~or THEN
 				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
 			ELSE
-				Ast.TurnIf(ds);
+				Ast.TurnIf(p.c);
 				CheckAst(p, Ast.ExprSumNew(sum, Ast.NoSign, e))
 			END;
 			e := sum
@@ -591,7 +591,7 @@ BEGIN
 		CheckAst(p, Ast.ExprSumAdd(e, sum, l, Term(p, ds, {})))
 	END;
 	IF or THEN
-		Ast.BackFromBranch(ds)
+		Ast.BackFromBranch(p.c)
 	END
 	RETURN e
 END Sum;
@@ -1032,7 +1032,7 @@ VAR if, else: Ast.If;
 	BEGIN
 		Scan(p);
 		CheckAst(p, Ast.IfNew(if, Expression(p, ds, {}), NIL));
-		Ast.TurnIf(ds);
+		Ast.TurnIf(p.c);
 		Expect(p, SpecIdent.Then, ErrExpectThen);
 		if.stats := statements(p, ds)
 		RETURN if
@@ -1055,7 +1055,7 @@ BEGIN
 	END;
 	REPEAT
 		DEC(i);
-		Ast.BackFromBranch(ds)
+		Ast.BackFromBranch(p.c)
 	UNTIL i = 0;
 	Expect(p, SpecIdent.End, ErrExpectEnd)
 	RETURN if
@@ -1119,7 +1119,7 @@ VAR case: Ast.Case;
 			RETURN first
 		END LabelList;
 	BEGIN
-		Ast.TurnIf(ds);
+		Ast.TurnIf(p.c);
 		elem := Ast.CaseElementNew(LabelList(p, case, ds));
 		(*ASSERT(elem.labels # NIL); TODO *)
 		Expect(p, Scanner.Colon, ErrExpectColon);
@@ -1145,7 +1145,7 @@ BEGIN
 	Ast.TurnFail(ds);
 	REPEAT
 		DEC(i);
-		Ast.BackFromBranch(ds)
+		Ast.BackFromBranch(p.c)
 	UNTIL i = 0;
 	Expect(p, SpecIdent.End, ErrExpectEnd);
 	Ast.CaseEnd(p.c, case)
@@ -1215,7 +1215,7 @@ BEGIN
 	INC(p.inLoops);
 		Scan(p);
 		CheckAst(p, Ast.WhileNew(w, Expression(p, ds, {}), NIL));
-		Ast.TurnIf(ds);
+		Ast.TurnIf(p.c);
 		elsif := w;
 		Expect(p, SpecIdent.Do, ErrExpectDo);
 		w.stats := statements(p, ds);
@@ -1225,7 +1225,7 @@ BEGIN
 			Ast.TurnElse(ds);
 			INC(i);
 			CheckAst(p, Ast.WhileNew(br, Expression(p, ds, {}), NIL));
-			Ast.TurnIf(ds);
+			Ast.TurnIf(p.c);
 			elsif.elsif := br;
 			elsif := br;
 			Expect(p, SpecIdent.Do, ErrExpectDo);
@@ -1233,7 +1233,7 @@ BEGIN
 		END;
 		Expect(p, SpecIdent.End, ErrExpectEnd);
 		REPEAT
-			Ast.BackFromBranch(ds);
+			Ast.BackFromBranch(p.c);
 			DEC(i)
 		UNTIL i = 0;
 	DecInLoops(p, ds)
@@ -1401,8 +1401,7 @@ PROCEDURE TakeComment(VAR p: Parser): BOOLEAN;
 END TakeComment;
 
 PROCEDURE Procedure(VAR p: Parser; ds: Ast.Declarations);
-VAR proc: Ast.Procedure;
-	nameStart, nameEnd, emptyLines: INTEGER;
+VAR proc: Ast.Procedure; nameStart, nameEnd, emptyLines: INTEGER; tds: Ast.Declarations;
 BEGIN
 	ASSERT(p.l = SpecIdent.Procedure);
 	emptyLines := p.s.emptyLines;
@@ -1413,7 +1412,9 @@ BEGIN
 	proc.emptyLines := emptyLines;
 	FormalParameters(p, ds, proc.header);
 	Expect(p, Scanner.Semicolon, ErrExpectSemicolon);
-	ProcBody(p, proc)
+	tds := p.c.ds; p.c.ds := proc;
+	ProcBody(p, proc);
+	p.c.ds := tds
 END Procedure;
 
 PROCEDURE Declarations(VAR p: Parser; ds: Ast.Declarations);
@@ -1494,6 +1495,7 @@ BEGIN
 		ELSE
 			Scanner.CopyCurrent(p.s, moduleName);
 			p.module := Ast.ModuleNew(p.c, moduleName);
+			p.c.ds := p.module;
 			expectedName := Ast.RegModule(p.opt.provider, p.module);
 			IF expectedName THEN
 				IF TakeComment(p) THEN

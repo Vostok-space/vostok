@@ -121,6 +121,8 @@ BEGIN
 		C("For variable parameter - pointer must used argument of same type")
 	| AST.ErrCallParamsNotEnough:
 		C("Not enough parameters in subroutine's call")
+	| AST.ErrInfiniteCall:
+		C("Infinite recursion")
 	| AST.ErrCaseExprWrongType:
 		C("Expression in CASE must be integer, char, record or pointer")
 	| AST.ErrCaseLabelWrongType:

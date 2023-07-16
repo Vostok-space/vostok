@@ -74,6 +74,7 @@ CONST
 	ErrCallExpectAddressableParam*  = -42;
 	ErrCallParamsNotEnough*         = -43;
 	ErrCallVarPointerTypeNotSame*   = -44;
+	ErrInfiniteCall*                = -118;(*TODO*)
 	ErrCaseExprWrongType*           = -45;
 	ErrCaseRecordNotLocalVar*       = -113;(*TODO*)
 	ErrCasePointerVarParam*         = -114;(*TODO*)
@@ -304,7 +305,7 @@ TYPE
 
 		m: Module;
 
-		ds: Declarations;
+		ds*: Declarations;
 		errLast*: Error;
 
 		strings: Strings.Store;
@@ -317,7 +318,9 @@ TYPE
 		case: RECORD
 			var: Var;
 			save: Type
-		END
+		END;
+
+		ifs: INTEGER
 	END;
 
 	Provider* = POINTER TO RProvider;
@@ -857,7 +860,9 @@ BEGIN
 	c.opt := opt;
 	c.errLast := NIL;
 	c.err.code := ErrNo;
-	c.case.var := NIL
+	c.case.var := NIL;
+	c.ds := NIL;
+	c.ifs := 0
 END ContextInit;
 
 PROCEDURE ModuleCreate(name: ARRAY OF CHAR): Module;
@@ -1341,7 +1346,7 @@ PROCEDURE IsExprMayNotInited*(e: Expression): BOOLEAN;
 	RETURN (e.id = IdDesignator) & IsDesignatorMayNotInited(e(Designator))
 END IsExprMayNotInited;
 
-PROCEDURE TurnIf*(ds: Declarations);
+PROCEDURE TurnIf*(VAR c: Context);
 
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var; vs: VarState;
@@ -1356,10 +1361,11 @@ PROCEDURE TurnIf*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds.id = IdProc THEN
-		Handle(ds(Procedure).header.params);
-		Handle(ds.vars)
-	END
+	IF c.ds.id = IdProc THEN
+		Handle(c.ds(Procedure).header.params);
+		Handle(c.ds.vars)
+	END;
+	INC(c.ifs)
 END TurnIf;
 
 PROCEDURE TurnElse*(ds: Declarations);
@@ -1399,7 +1405,7 @@ BEGIN
 	END
 END TurnFail;
 
-PROCEDURE BackFromBranch*(ds: Declarations);
+PROCEDURE BackFromBranch*(VAR c: Context);
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var;
 	BEGIN
@@ -1413,10 +1419,12 @@ PROCEDURE BackFromBranch*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds.id = IdProc THEN
-		Handle(ds(Procedure).header.params);
-		Handle(ds.vars)
-	END
+	IF c.ds.id = IdProc THEN
+		Handle(c.ds(Procedure).header.params);
+		Handle(c.ds.vars)
+	END;
+	DEC(c.ifs);
+	ASSERT(c.ifs >= 0)
 END BackFromBranch;
 
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
@@ -3341,7 +3349,7 @@ BEGIN
 	RETURN ErrNo
 END ExprTypeNew;
 
-PROCEDURE ExprCallCreate(VAR e: ExprCall; des: Designator; func: BOOLEAN): INTEGER;
+PROCEDURE ExprCallCreate(VAR c: Context; VAR e: ExprCall; des: Designator; func: BOOLEAN): INTEGER;
 VAR err: INTEGER;
 	t: Type;
 	pt: ProcType;
@@ -3367,14 +3375,17 @@ BEGIN
 	IF (t = NIL) & func THEN
 		t := TypeErrorNew()
 	END;
+	IF (err = ErrNo) & (des.decl = c.ds) & (c.ifs = 0) THEN
+		err := ErrInfiniteCall
+	END;
 	NEW(e); ExprInit(e, IdCall, t);
 	e.designator := des;
 	e.params := NIL
 	RETURN err
 END ExprCallCreate;
 
-PROCEDURE ExprCallNew*(VAR e: ExprCall; des: Designator): INTEGER;
-	RETURN ExprCallCreate(e, des, TRUE)
+PROCEDURE ExprCallNew*(VAR c: Context; VAR e: ExprCall; des: Designator): INTEGER;
+	RETURN ExprCallCreate(c, e, des, TRUE)
 END ExprCallNew;
 
 PROCEDURE IsChangeable*(des: Designator): BOOLEAN;
@@ -3795,7 +3806,7 @@ PROCEDURE CallNew*(VAR ctx: Context; VAR c: Call; des: Designator): INTEGER;
 VAR err: INTEGER;
 	e: ExprCall;
 BEGIN
-	err := ExprCallCreate(e, des, FALSE);
+	err := ExprCallCreate(ctx, e, des, FALSE);
 	IF err = ErrNo THEN
 		err := DesignatorUsed(ctx, des, {})
 	END;
