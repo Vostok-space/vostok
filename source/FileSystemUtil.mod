@@ -1,6 +1,6 @@
 (*  Utilities for work with file system
  *
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -79,15 +79,7 @@ MODULE FileSystemUtil;
   END RemoveFile;
 
   PROCEDURE Rename*(src, dest: ARRAY OF CHAR): BOOLEAN;
-  VAR cmd: Exec.Code;
-  BEGIN
-    IF Platform.Posix THEN
-      ASSERT(Exec.Init(cmd, "mv") & Exec.Vals(cmd, src, dest))
-    ELSE
-      (* TODO *)
-      ASSERT(FALSE)
-    END
-    RETURN Exec.Do(cmd) = Exec.Ok
+    RETURN Files.Rename(src, 0, dest, 0)
   END Rename;
 
 END FileSystemUtil.

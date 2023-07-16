@@ -48,7 +48,7 @@ MODULE PlatformMessagesLang;
       ok := lng = "en"
     END;
     IF ~ok & Platform.Windows THEN
-      lcid := Windows.GetUserDefaultUILanguage() MOD 100H;
+      lcid := Windows.GetUserDefaultUILanguage() MOD 400H;
       ok := TRUE;
       IF lcid = Windows.Russian THEN
         lang := Lang.Ru

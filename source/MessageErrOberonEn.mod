@@ -121,6 +121,8 @@ BEGIN
 		C("For variable parameter - pointer must used argument of same type")
 	| AST.ErrCallParamsNotEnough:
 		C("Not enough parameters in subroutine's call")
+	| AST.ErrInfiniteCall:
+		C("Infinite recursion")
 	| AST.ErrCaseExprWrongType:
 		C("Expression in CASE must be integer, char, record or pointer")
 	| AST.ErrCaseLabelWrongType:
@@ -257,6 +259,8 @@ BEGIN
 		C("Incompletely declared record is used as subtype of array")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Pointer to incompletely declared record is used as subtype of array")
+	| AST.ErrParamOfSelfProcType:
+		C("The parameter leads to a recursion of its own procedural type")
 	| AST.ErrDeclarationUnused:
 		C("Exist unused declaration in the scope - ");
 	| AST.ErrProcNestedTooDeep:

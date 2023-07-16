@@ -1,4 +1,4 @@
-/* Copyright 2016-2017,2020 ComdivByZero
+/* Copyright 2016-2017,2020,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,9 @@ extern int CFiles_Write(CFiles_File file, O7_FPA(o7_char, buf), o7_int_t ofs, o7
 	return fwrite(buf + ofs, 1, count, file->file);
 }
 
-extern o7_bool CFiles_Flush(CFiles_File file) {
+extern o7_cbool CFiles_Flush(CFiles_File file) {
 	assert(file->file != NULL);
-	return (o7_bool)(0 == fflush(file->file));
+	return 0 == fflush(file->file);
 }
 
 extern o7_int_t CFiles_Seek(CFiles_File file, o7_int_t gibs, o7_int_t bytes) {
@@ -106,7 +106,7 @@ extern o7_int_t CFiles_Remove(O7_FPA(o7_char const, name), o7_int_t ofs) {
 	return remove((char const *)name + ofs) == 0;
 }
 
-extern o7_bool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs) {
+extern o7_cbool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs) {
 	FILE *file;
 	assert(0 <= ofs);
 	assert(ofs < O7_FPA_LEN(name) - 1);
@@ -116,6 +116,17 @@ extern o7_bool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs) {
 		fclose(file);
 	}
 	return NULL != file;
+}
+
+extern o7_cbool CFiles_Rename(O7_FPA(o7_char const, src ), o7_int_t sofs,
+                              O7_FPA(o7_char const, dest), o7_int_t dofs) {
+	assert(0 <= sofs);
+	assert(sofs < O7_FPA_LEN(src) - 1);
+
+	assert(0 <= dofs);
+	assert(dofs < O7_FPA_LEN(dest) - 1);
+
+	return 0 == rename((char *)src + sofs, (char *)dest + dofs);
 }
 
 static void release(CFiles_File f) {

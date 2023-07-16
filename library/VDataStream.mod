@@ -1,6 +1,6 @@
 (* Abstract interfaces for data input and output
  *
- * Copyright (C) 2016-2019,2022 ComdivByZero
+ * Copyright (C) 2016-2019,2022-2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,29 @@ END ReadChars;
 PROCEDURE ReadCharsWhole*(VAR in: In; VAR buf: ARRAY OF CHAR): INTEGER;
 	RETURN ReadChars(in, buf, 0, LEN(buf))
 END ReadCharsWhole;
+
+PROCEDURE Skip*(VAR in: In; count: INTEGER): INTEGER;
+	PROCEDURE ByRead(VAR in: In; count: INTEGER): INTEGER;
+	VAR buf: ARRAY 1000H OF BYTE; r: INTEGER; read: ReadProc;
+	BEGIN
+		read := in.read;
+		r := LEN(buf);
+		WHILE (count >= LEN(buf)) & (r = LEN(buf)) DO
+			r := read(in, buf, 0, LEN(buf));
+			DEC(count, r)
+		END;
+		ASSERT((0 <= r) & (r <= LEN(buf)));
+		IF count > 0 THEN
+			r := read(in, buf, 0, count);
+			ASSERT((0 <= r) & (r <= count));
+			DEC(count, r)
+		END
+		RETURN count
+	END ByRead;
+BEGIN
+	ASSERT(count >= 0)
+	RETURN count - ByRead(in, count)
+END Skip;
 
 PROCEDURE InitOut*(VAR out: Out;
                    write: WriteProc; writeChars: WriteCharsProc; close: CloseStream);

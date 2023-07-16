@@ -114,6 +114,8 @@ BEGIN
 		C("Для переменного параметра - указателя должен использоваться аргумент того же типа")
 	| AST.ErrCallParamsNotEnough:
 		C("Не хватает фактических параметров в вызове процедуры")
+	| AST.ErrInfiniteCall:
+		C("Неограниченная рекурсия")
 	| AST.ErrCaseExprWrongType:
 		C("Выражение в CASE должно быть целочисленным, литерой, указателем или записью")
 	| AST.ErrCaseLabelWrongType:
@@ -250,6 +252,8 @@ BEGIN
 		C("Недообъявленная запись в качестве подтипа массива")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Указатель на недообъявленную запись в качестве подтипа массива")
+	| AST.ErrParamOfSelfProcType:
+		C("Параметр задаёт рекурсивность собственного процедурного типа")
 	| AST.ErrDeclarationUnused:
 		C("Существует незадействованное объявление в этой области видимости - ")
 	| AST.ErrProcNestedTooDeep:

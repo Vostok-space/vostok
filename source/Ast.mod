@@ -74,6 +74,7 @@ CONST
 	ErrCallExpectAddressableParam*  = -42;
 	ErrCallParamsNotEnough*         = -43;
 	ErrCallVarPointerTypeNotSame*   = -44;
+	ErrInfiniteCall*                = -118;(*TODO*)
 	ErrCaseExprWrongType*           = -45;
 	ErrCaseRecordNotLocalVar*       = -113;(*TODO*)
 	ErrCasePointerVarParam*         = -114;(*TODO*)
@@ -147,6 +148,7 @@ CONST
 	ErrArrayTypeOfRecordForward*    = -106;
 	ErrArrayTypeOfPointerToRecordForward*
 	                                = -107;
+	ErrParamOfSelfProcType*         = -117;(*TODO*)
 	ErrAssertConstFalse*            = -108;
 	ErrDeclarationUnused*           = -109;
 	ErrProcNestedTooDeep*           = -110;
@@ -158,6 +160,7 @@ CONST
 	                                (*-114*)
 	                                (*-115*)
 	                                (*-116*)
+	                                (*-117*)
 
 	ErrNegativeShift*               = -120;
 	ErrLslTooLargeShift*            = -121;
@@ -304,7 +307,7 @@ TYPE
 
 		m: Module;
 
-		ds: Declarations;
+		ds*: Declarations;
 		errLast*: Error;
 
 		strings: Strings.Store;
@@ -317,7 +320,9 @@ TYPE
 		case: RECORD
 			var: Var;
 			save: Type
-		END
+		END;
+
+		ifs: INTEGER
 	END;
 
 	Provider* = POINTER TO RProvider;
@@ -379,7 +384,9 @@ TYPE
 	END;
 
 	Construct* = POINTER TO RConstruct;
-	RConstruct* = RECORD(RType) END;
+	RConstruct* = RECORD(RType)
+		complete: BOOLEAN
+	END;
 
 	RArray* = RECORD(RConstruct)
 		count*: Expression
@@ -410,8 +417,7 @@ TYPE
 
 		needTag*,
 		inAssign*,
-		hasExt*,
-		complete: BOOLEAN
+		hasExt*: BOOLEAN
 	END;
 
 	RPointer* = RECORD(RConstruct)
@@ -856,7 +862,9 @@ BEGIN
 	c.opt := opt;
 	c.errLast := NIL;
 	c.err.code := ErrNo;
-	c.case.var := NIL
+	c.case.var := NIL;
+	c.ds := NIL;
+	c.ifs := 0
 END ContextInit;
 
 PROCEDURE ModuleCreate(name: ARRAY OF CHAR): Module;
@@ -1331,7 +1339,16 @@ BEGIN
 	END
 END VarStateUp;
 
-PROCEDURE TurnIf*(ds: Declarations);
+PROCEDURE IsDesignatorMayNotInited*(des: Designator): BOOLEAN;
+	RETURN ({InitedNo, InitedCheck} * des.inited # {})
+	    OR (des.sel # NIL)
+END IsDesignatorMayNotInited;
+
+PROCEDURE IsExprMayNotInited*(e: Expression): BOOLEAN;
+	RETURN (e.id = IdDesignator) & IsDesignatorMayNotInited(e(Designator))
+END IsExprMayNotInited;
+
+PROCEDURE TurnIf*(VAR c: Context);
 
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var; vs: VarState;
@@ -1346,10 +1363,11 @@ PROCEDURE TurnIf*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds.id = IdProc THEN
-		Handle(ds(Procedure).header.params);
-		Handle(ds.vars)
-	END
+	IF c.ds.id = IdProc THEN
+		Handle(c.ds(Procedure).header.params);
+		Handle(c.ds.vars)
+	END;
+	INC(c.ifs)
 END TurnIf;
 
 PROCEDURE TurnElse*(ds: Declarations);
@@ -1389,7 +1407,7 @@ BEGIN
 	END
 END TurnFail;
 
-PROCEDURE BackFromBranch*(ds: Declarations);
+PROCEDURE BackFromBranch*(VAR c: Context);
 	PROCEDURE Handle(d: Declaration);
 	VAR v: Var;
 	BEGIN
@@ -1403,10 +1421,12 @@ PROCEDURE BackFromBranch*(ds: Declarations);
 		END
 	END Handle;
 BEGIN
-	IF ds.id = IdProc THEN
-		Handle(ds(Procedure).header.params);
-		Handle(ds.vars)
-	END
+	IF c.ds.id = IdProc THEN
+		Handle(c.ds(Procedure).header.params);
+		Handle(c.ds.vars)
+	END;
+	DEC(c.ifs);
+	ASSERT(c.ifs >= 0)
 END BackFromBranch;
 
 PROCEDURE ChecklessVarAdd(VAR v: Var; ds: Declarations;
@@ -1444,6 +1464,18 @@ BEGIN
 	t.array := NIL
 END TypeInit;
 
+PROCEDURE ConstructTypeInit(ct: Construct; id: INTEGER);
+BEGIN
+	TypeInit(ct, id);
+	ct.complete := FALSE
+END ConstructTypeInit;
+
+PROCEDURE ConstructTypeEnd(ct: Construct);
+BEGIN
+	ASSERT(~ct.complete);
+	ct.complete := TRUE
+END ConstructTypeEnd;
+
 PROCEDURE ProcTypeNew*(forType: BOOLEAN; id: INTEGER): ProcType;
 VAR p: ProcType;
     fp: FormalProcType;
@@ -1455,7 +1487,7 @@ BEGIN
 	ELSE
 		NEW(p)
 	END;
-	TypeInit(p, id);
+	ConstructTypeInit(p, id);
 	p.params := NIL;
 	p.end := NIL
 	RETURN p
@@ -1633,6 +1665,7 @@ END ExchangeParamsNeedTag;
 PROCEDURE ProcTypeSetReturn*(proc: ProcType; type: Type): INTEGER;
 VAR err: INTEGER;
 BEGIN
+	ConstructTypeEnd(proc);
 	proc.type := type;
 	IF ~(type.id IN {IdArray, IdRecord}) THEN
 		err := ErrNo
@@ -1641,6 +1674,11 @@ BEGIN
 	END
 	RETURN err
 END ProcTypeSetReturn;
+
+PROCEDURE ProcTypeNoReturn*(proc: ProcType);
+BEGIN
+	ConstructTypeEnd(proc)
+END ProcTypeNoReturn;
 
 PROCEDURE AddError*(VAR c: Context; error, line, column: INTEGER);
 VAR e: Error;
@@ -1759,15 +1797,14 @@ PROCEDURE RecNew(VAR r: Record; id: INTEGER);
 BEGIN
 	ASSERT(id IN {IdRecord, IdRecordForward});
 
-	NEW(r); TypeInit(r, id);
+	NEW(r); ConstructTypeInit(r, id);
 	r.pointer := NIL;
 	r.vars := NIL;
 	r.base := NIL;
 	r.needTag  := FALSE;
 	(* TODO *)
 	r.inAssign := TRUE;
-	r.hasExt := FALSE;
-	r.complete := FALSE
+	r.hasExt := FALSE
 END RecNew;
 
 PROCEDURE RecordNew*(ds: Declarations; base: Record): Record;
@@ -1791,9 +1828,9 @@ END RecordForwardNew;
 PROCEDURE RecordEnd*(r: Record): INTEGER;
 BEGIN
 	ASSERT(r.id IN {IdRecord, IdRecordForward});
+	ConstructTypeEnd(r);
 	r.id := IdRecord;
 	r.used := TRUE;
-	r.complete := TRUE
 	RETURN ErrNo
 END RecordEnd;
 
@@ -2534,6 +2571,8 @@ BEGIN
 	   OR (t.id = IdRecord) & ~t(Record).complete
 	THEN
 		err := ErrVarOfRecordForward
+	ELSIF (t.id = IdProcType) & ~t(ProcType).complete THEN
+		err := ErrParamOfSelfProcType
 	END
 	RETURN err
 END VarListSetType;
@@ -3312,7 +3351,7 @@ BEGIN
 	RETURN ErrNo
 END ExprTypeNew;
 
-PROCEDURE ExprCallCreate(VAR e: ExprCall; des: Designator; func: BOOLEAN): INTEGER;
+PROCEDURE ExprCallCreate(VAR c: Context; VAR e: ExprCall; des: Designator; func: BOOLEAN): INTEGER;
 VAR err: INTEGER;
 	t: Type;
 	pt: ProcType;
@@ -3338,14 +3377,17 @@ BEGIN
 	IF (t = NIL) & func THEN
 		t := TypeErrorNew()
 	END;
+	IF (err = ErrNo) & (des.decl = c.ds) & (c.ifs = 0) THEN
+		err := ErrInfiniteCall
+	END;
 	NEW(e); ExprInit(e, IdCall, t);
 	e.designator := des;
 	e.params := NIL
 	RETURN err
 END ExprCallCreate;
 
-PROCEDURE ExprCallNew*(VAR e: ExprCall; des: Designator): INTEGER;
-	RETURN ExprCallCreate(e, des, TRUE)
+PROCEDURE ExprCallNew*(VAR c: Context; VAR e: ExprCall; des: Designator): INTEGER;
+	RETURN ExprCallCreate(c, e, des, TRUE)
 END ExprCallNew;
 
 PROCEDURE IsChangeable*(des: Designator): BOOLEAN;
@@ -3766,7 +3808,7 @@ PROCEDURE CallNew*(VAR ctx: Context; VAR c: Call; des: Designator): INTEGER;
 VAR err: INTEGER;
 	e: ExprCall;
 BEGIN
-	err := ExprCallCreate(e, des, FALSE);
+	err := ExprCallCreate(ctx, e, des, FALSE);
 	IF err = ErrNo THEN
 		err := DesignatorUsed(ctx, des, {})
 	END;

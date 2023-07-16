@@ -122,8 +122,6 @@ TYPE
 		multiErrors*: BOOLEAN
 	END;
 
-VAR dirSep: CHAR;
-
 PROCEDURE GetParam*(VAR err: INTEGER; errTooLong: INTEGER;
                     VAR str: ARRAY OF CHAR;
                     VAR i, arg: INTEGER): BOOLEAN;
@@ -218,7 +216,7 @@ BEGIN
 		i := 2;
 		WHILE (len >= 0) & (i > 0) DO
 			DEC(len);
-			IF infr[len] = dirSep THEN
+			IF infr[len] = OsUtil.DirSep[0] THEN
 				DEC(i)
 			END
 		END;
@@ -668,10 +666,4 @@ BEGIN
 	RETURN 0 <= ret
 END Parse;
 
-BEGIN
-	IF Platform.Posix THEN
-		dirSep := "/"
-	ELSE ASSERT(Platform.Windows);
-		dirSep := "\"
-	END
 END CliParser.

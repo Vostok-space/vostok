@@ -114,6 +114,8 @@ BEGIN
 		C("Для змінного параметру - покажчика повинен використовуватись аргумент того ж типу")
 	| AST.ErrCallParamsNotEnough:
 		C("Не вистачає фактичних параметрів у виклику підпрограми")
+	| AST.ErrInfiniteCall:
+		C("Необмежена рекурсія")
 	| AST.ErrCaseExprWrongType:
 		C("Вираз у CASE повинен бути цілочисельним або літерою, або бути типом запис чи вказівник")
 	| AST.ErrCaseLabelWrongType:
@@ -250,6 +252,8 @@ BEGIN
 		C("Незадекларований запис в якості підтипу масиву")
 	| AST.ErrArrayTypeOfPointerToRecordForward:
 		C("Покажчик на незадекларований запис в якості підтипу масиву")
+	| AST.ErrParamOfSelfProcType:
+		C("Параметр задає рекурсивність власного процедурного типу")
 	| AST.ErrDeclarationUnused:
 		C("Існує незадіяна декларація в цій області видимості - ")
 	| AST.ErrProcNestedTooDeep:

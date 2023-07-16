@@ -73,6 +73,7 @@ CONST
   Macedonian*   = 2FH;
   Afrikaans*    = 30H;
   Georgian*     = 37H;
+  Faeroese*     = 38H;
   Hindi*        = 39H;
   Kazakh*       = 3FH;
   Kyrgyz*       = 40H;

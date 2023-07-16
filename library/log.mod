@@ -143,6 +143,17 @@ MODULE log;
     set(val); Out.Ln
   END setn;
 
+  (* Double quote - " *)
+  PROCEDURE dq*;
+  BEGIN
+    Out.Char(22X)
+  END dq;
+
+  PROCEDURE dqn*;
+  BEGIN
+    Out.Char(22X); Out.Ln
+  END dqn;
+
   PROCEDURE n*;
   BEGIN
     Out.Ln

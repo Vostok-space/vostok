@@ -311,30 +311,12 @@ BEGIN
 	Selector(g, sels, sels.i, typ, des.type, set)
 END Designator;
 
-PROCEDURE IsMayNotInited(e: Ast.Expression): BOOLEAN;
-VAR des: Ast.Designator; var: Ast.Var;
-BEGIN
-	var := NIL;
-	IF e.id = Ast.IdDesignator THEN
-		des := e(Ast.Designator);
-		IF des.decl.id = Ast.IdVar THEN
-			var := des.decl(Ast.Var)
-		ELSE
-			des := NIL
-		END
-	ELSE
-		des := NIL
-	END
-	RETURN (des # NIL)
-	     & ((des.inited # {Ast.InitedValue}) OR (des.sel # NIL) OR var.checkInit)
-END IsMayNotInited;
-
 PROCEDURE CheckExpr(VAR g: Generator; e: Ast.Expression; set: SET);
 BEGIN
 	IF (g.opt.varInit = GenOptions.VarInitUndefined)
 	 & (e.value = NIL)
 	 & ~(e.type.id IN (Ast.Structures + Ast.Pointers))
-	 & IsMayNotInited(e)
+	 & Ast.IsExprMayNotInited(e)
 	THEN
 		Str(g, "o7.inited(");
 		expression(g, e, set);
@@ -840,7 +822,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			ELSIF (g.opt.varInit = GenOptions.VarInitUndefined)
 			    & (rel.value = NIL)
 			    & (rel.exprs[0].type.id IN {Ast.IdInteger, Ast.IdLongInt}) (* TODO *)
-			    & (IsMayNotInited(rel.exprs[0]) OR IsMayNotInited(rel.exprs[1]))
+			    & (Ast.IsExprMayNotInited(rel.exprs[0]) OR Ast.IsExprMayNotInited(rel.exprs[1]))
 			THEN
 				Str(g, "o7.cmp(");
 				Expr(g, rel.exprs[0]);

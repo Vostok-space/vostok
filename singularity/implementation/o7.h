@@ -34,7 +34,7 @@
 
 #if defined(O7_USE_GNUC_BUILTIN_OVERFLOW)
 #	define O7_GNUC_BUILTIN_OVERFLOW O7_USE_GNUC_BUILTIN_OVERFLOW
-#elif __GNUC__ >= 5
+#elif __GNUC__ >= 5 || __clang_major__ > 5
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 < 1)
 #else
 #	define O7_GNUC_BUILTIN_OVERFLOW (0 > 1)
@@ -731,7 +731,7 @@ char unsigned o7_chr(int v) {
 	return (char unsigned)v;
 }
 
-#if __GNUC__ * 100 + __GNUC_MINOR__ >= 440
+#if (__GNUC__ * 100 + __GNUC_MINOR__ >= 440) || (__clang_major__ > 5)
 	O7_CONST_INLINE
 	o7_cbool o7_isfinite(double v) {
 		return __builtin_isfinite(v);
@@ -1011,8 +1011,8 @@ o7_long_t o7_ladd(o7_long_t a1, o7_long_t a2) {
 	o7_long_t s;
 	o7_cbool overflow;
 	if (O7_OVERFLOW > 0 && O7_GNUC_BUILTIN_OVERFLOW) {
-		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s);
-		o7_assert(!overflow && s >= -O7_LONG_MAX);
+		overflow = O7_GNUC_SADDL(o7_long(a1), o7_long(a2), &s) || s < -O7_LONG_MAX;
+		o7_assert(!overflow);
 	} else {
 		if (O7_OVERFLOW < 1) {
 			if (O7_UNDEF) {
@@ -1559,7 +1559,7 @@ void o7_memcpy(o7_int_t dest_len, o7_char dest[O7_VLA(dest_len)],
 	memcpy(dest, src, (size_t)src_len);
 }
 
-#if (__GNUC__ * 100 + __GNUC_MINOR__ >= 480) \
+#if ((__GNUC__ * 100 + __GNUC_MINOR__ >= 480) || (__clang_major__ > 5)) \
  && (!defined(O7_USE_GNUC_BUILTIN_BSWAP) || O7_USE_GNUC_BUILTIN_BSWAP)
 
 	enum { O7_USED_GNUC_BUILTIN_BSWAP = 0 < 1 };
