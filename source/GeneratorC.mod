@@ -3511,7 +3511,7 @@ VAR imp: Ast.Declaration;
 	PROCEDURE Types(t: Ast.Declaration);
 	BEGIN
 		WHILE (t # NIL) & (t IS Ast.Type) DO
-			IF t.mark THEN
+			IF t.mark OR (t.id = Ast.IdRecord) & Ast.RecordHasMarkedVar(t(Ast.Record)) THEN
 				t.mark := FALSE;
 				MarkType(t(Ast.Type))
 			END;

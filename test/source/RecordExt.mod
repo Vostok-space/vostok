@@ -36,6 +36,8 @@ VAR
 	pb1	: PBase;
 	pe1	: PExt1;
 
+	ext1*: Ext1;
+
 PROCEDURE SetAa*(VAR r: Base; aa: INTEGER);
 BEGIN
 	r.aa := aa
@@ -177,4 +179,6 @@ BEGIN
 	PointersCheck
 END Go;
 
+BEGIN
+	ext1.r := 3.3
 END RecordExt.
