@@ -1834,6 +1834,16 @@ BEGIN
 	RETURN ErrNo
 END RecordEnd;
 
+PROCEDURE RecordHasMarkedVar*(r: Record): BOOLEAN;
+VAR v: Declaration;
+BEGIN
+	v := r.vars;
+	WHILE (v # NIL) & ~v.mark DO
+		v := v.next
+	END
+	RETURN v # NIL
+END RecordHasMarkedVar;
+
 PROCEDURE PredefinedGet*(id: INTEGER): Declaration;
 	RETURN predefined[id - SpecIdent.PredefinedFirst]
 END PredefinedGet;

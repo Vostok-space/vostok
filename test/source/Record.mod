@@ -146,7 +146,9 @@ BEGIN
 
 	Assign;
 
-	SameNameInBase
+	SameNameInBase;
+
+	ASSERT(RecordExt.ext1.r = 3.3)
 END Go;
 
 BEGIN
