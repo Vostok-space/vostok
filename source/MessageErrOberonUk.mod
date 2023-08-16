@@ -209,7 +209,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Ділення на 0")
 	| AST.ErrNegativeDivisor:
-		C("Ділення на від'ємне число не визначене")
+		C("Ділення на від'ємне ціле не визначене")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Значення виходить за межі BYTE")
 	| AST.ErrValueOutOfRangeOfChar:

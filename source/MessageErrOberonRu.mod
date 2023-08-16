@@ -209,7 +209,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Деление на 0")
 	| AST.ErrNegativeDivisor:
-		C("Деление на отрицательное число не определено")
+		C("Деление на отрицательное целое не определено")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Значение выходит за границы BYTE")
 	| AST.ErrValueOutOfRangeOfChar:

@@ -216,7 +216,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Division by zero")
 	| AST.ErrNegativeDivisor:
-		C("Division by negative number is undefined")
+		C("Division by negative integer is undefined")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Value out of byte's range")
 	| AST.ErrValueOutOfRangeOfChar:
