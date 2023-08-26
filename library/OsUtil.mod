@@ -15,7 +15,7 @@
  *)
 MODULE OsUtil;
 
-  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld, Dir := CDir, Charz;
+  IMPORT Platform, Unistd, Libloader := Wlibloaderapi, MachObjDyld, JsSelfExe, Dir := CDir, Charz;
 
   VAR
     DirSep*: ARRAY 2 OF CHAR;
@@ -51,13 +51,18 @@ MODULE OsUtil;
     END Windows;
 
   BEGIN
-    IF Platform.Darwin THEN
+    IF Platform.JavaScript THEN
+      len := 0;
+      ok := JsSelfExe.Get(path, len)
+    ELSIF Platform.Darwin THEN
       len := MachObjDyld.NSGetExecutablePath(path);
       ok := len < LEN(path)
     ELSIF Platform.Posix THEN
       ok := Posix(path, len)
-    ELSE ASSERT(Platform.Windows);
+    ELSIF Platform.Windows THEN
       ok := Windows(path, len)
+    ELSE
+      ok := FALSE
     END
   RETURN
     ok
