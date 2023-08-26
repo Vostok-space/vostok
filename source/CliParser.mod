@@ -210,7 +210,7 @@ END CopyInfr;
 PROCEDURE ReadNearInfr(VAR infr: ARRAY OF CHAR): BOOLEAN;
 VAR i, len: INTEGER; ok: BOOLEAN;
 BEGIN
-	ok := Platform.Posix
+	ok := (Platform.Posix OR Platform.JavaScript)
 	    & OsUtil.PathToSelfExe(infr, len) & (len < LEN(infr));
 	IF ok THEN
 		i := 2;
