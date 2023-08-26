@@ -612,6 +612,17 @@ var o7;
     assert(d[len - 1] == 0);
   };
 
+  o7.memcpy = function(d, di, s, si, len) {
+    var lim;
+
+    lim = di + len;
+    assert(d.length >= lim);
+    while (di < lim) {
+      d[di] = s[si];
+      di += 1; si += 1;
+    }
+  };
+
   function copy(d, s) {
     var i, len;
     len = s.length;
