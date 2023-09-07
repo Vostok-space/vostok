@@ -1,0 +1,24 @@
+{
+  "name": "vostok-oberon",
+  "version": "0.9.3",
+  "description": "Compiler from Oberon-07 to C/Java/Js/Oberon",
+  "main": "ost.js",
+  "scripts": {
+    "test": "bin/ost.js version",
+    "vostok": "bin/ost.js"
+  },
+  "keywords": [
+    "Oberon",
+    "Java",
+    "C",
+    "compiler",
+    "translator",
+    "transpiler"
+  ],
+  "author": "ComdivByZero",
+  "license": "Apache-2.0",
+  "bugs": { "url": "https://github.com/Vostok-space/vostok/issues" },
+  "homepage": "https://github.com/Vostok-space/vostok",
+  
+  "bin": { "ost": "bin/ost.js" }
+}
