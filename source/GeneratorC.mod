@@ -793,7 +793,7 @@ BEGIN
 		Str(g, "double")
 	| Ast.IdReal32:
 		Str(g, "float")
-	| Ast.IdRecord, Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType:
+	| Ast.IdRecord, Ast.IdPointer, Ast.IdProcType, Ast.IdFuncType, Ast.IdArray:
 		GlobalName(g, typ)
 	END
 END Qualifier;
