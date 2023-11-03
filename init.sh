@@ -11,18 +11,16 @@ OPT=
 LD_OPT=
 CC_OPT="$WARN $OPTIM $DEBUG $O7_OPT $OPT $LD_OPT"
 
-notfound() {
-    echo Can not found c compiler
-    exit 1
-}
-
 search_cc() {
-    for CC in cc gcc clang tcc "zig cc" ccomp zapcc notfound; do
-        if $CC -v >/dev/null 2>/dev/null; then
+    for CC in cc gcc clang tcc "zig cc" ccomp zapcc; do
+        if $CC -v 2>/dev/null; then
             echo Use \"$CC\" as C compiler
-            break
+            return 0
         fi
     done
+
+    echo Can not found c compiler
+    return 1
 }
 
 build() {
@@ -41,5 +39,4 @@ info() {
     echo "  /usr/bin/sudo result/ost run make.Install -infr . -m source"
 }
 
-search_cc
-build && info
+search_cc && build && info
