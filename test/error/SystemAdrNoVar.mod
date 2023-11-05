@@ -1,0 +1,11 @@
+MODULE SystemAdrNoVar;
+
+ IMPORT SYSTEM;
+
+ PROCEDURE Go*;
+ VAR c: CHAR; a: INTEGER;
+ BEGIN
+  a := SYSTEM.ADR(123123)
+ END Go;
+
+END SystemAdrNoVar.

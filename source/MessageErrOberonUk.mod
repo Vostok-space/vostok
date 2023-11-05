@@ -106,6 +106,8 @@ BEGIN
 		C("Зайві фактичні параметри у виклику підпрограми")
 	| AST.ErrCallIncompatibleParamType:
 		C("Несумісний тип фактичного параметру")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Небезпечна адреса змінної, тип якої містить вказівник")
 	| AST.ErrCallExpectVarParam:
 		C("Фактичний параметр повинен бути змінним")
 	| AST.ErrCallExpectAddressableParam:

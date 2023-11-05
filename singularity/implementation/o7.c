@@ -1,4 +1,4 @@
-/* Copyright 2016-2019,2021 ComdivByZero
+/* Copyright 2016-2019,2021-2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ int     o7_cli_argc;
 char**  o7_cli_argv;
 
 int o7_exit_code;
+
+static o7_uint_t  addrs_i;
+static o7_chadr_t addrs[1 + (int)(O7_CHECKED_ADR || (sizeof(void *) != sizeof(o7_int_t))) * 7];
 
 size_t o7_allocated;
 
@@ -64,6 +67,141 @@ static int calcByteOrder(void) {
 	static void setByteOrder(void) {(void)calcByteOrder;}
 #endif
 
+O7_ALWAYS_INLINE
+o7_uint_t ptr_to_uint(void *ptr, size_t size, o7_adr_kind_t kind, o7_uint_t *count) {
+	o7_uint_t s, i;
+
+	addrs_i = (addrs_i + 1) % 16;
+	i = addrs_i % 8;
+	addrs[i].adr = ptr;
+	if (O7_CHECKED_ADR) {
+		s = (O7_UINT_MAX + (o7_long_t)1) / 32;
+		if (size < s) {
+			s = size;
+		}
+		addrs[i].size = s;
+		addrs[i].kind = kind;
+		if (o7_adr_is_local(kind)) {
+			*count += 1;
+		}
+	}
+	return (addrs_i << 28) | 1;
+}
+
+extern o7_uint_t o7_ptr_to_uint(void *ptr, size_t size, o7_adr_kind_t kind) {
+	return ptr_to_uint(ptr, size, kind, NULL);
+}
+
+/* local pointer */
+extern o7_uint_t o7_lptr_to_uint(void *ptr, size_t size, o7_adr_kind_t kind, o7_uint_t *count) {
+	return ptr_to_uint(ptr, size, kind, count);
+}
+
+extern void o7_lptr_outdate(o7_uint_t count) {
+	o7_uint_t i, j;
+	if (count > 0) {
+		i = addrs_i % 8;
+		j = i;
+		do {
+			if (o7_adr_is_local(addrs[i].kind)) {
+				addrs[i].kind = O7_ADR_OUTDATE;
+				addrs[i].size = 0;
+				count -= 1;
+			}
+			i = (i + 7) % 8;
+		} while (count > 0 && i != j);
+	}
+}
+
+O7_ALWAYS_INLINE int getAddrIndex(o7_uint_t addr, o7_uint_t *rofs) {
+	o7_uint_t dist, ofs;
+	o7_cbool outdatedAddress, outOfSize;
+	int i;
+
+	ofs  = addr % 0x10000000 - 1;
+	addr = addr / 0x10000000;
+	dist = (16 + addrs_i - addr) % 16;
+	i = addr % 8;
+
+	if (O7_CHECKED_ADR) {
+		outdatedAddress = (addrs[i].kind == O7_ADR_OUTDATE) || (dist >= 8);
+		assert(!outdatedAddress);
+
+		outOfSize = ofs >= addrs[i].size;
+		assert(!outOfSize);
+	}
+
+	*rofs = ofs;
+	return i;
+}
+
+/* writable address */
+O7_ALWAYS_INLINE int getWaddrIndex(o7_uint_t addr, o7_uint_t *rofs) {
+	o7_uint_t dist, ofs;
+	o7_cbool outdatedAddress, writableAddress, outOfSize;
+	int i;
+
+	ofs  = addr % 0x10000000 - 1;
+	addr = addr / 0x10000000;
+	dist = (16 + addrs_i - addr) % 16;
+	i = addr % 8;
+
+	if (O7_CHECKED_ADR) {
+		writableAddress = (addrs[i].kind % 2 == 1) && (dist < 8);
+		if (!writableAddress) {
+			outdatedAddress = (addrs[i].kind == O7_ADR_OUTDATE) || (dist >= 8);
+			assert(!outdatedAddress);
+			assert(writableAddress);
+		}
+
+		outOfSize = ofs >= addrs[i].size;
+		assert(!outOfSize);
+	}
+
+	*rofs = ofs;
+	return i;
+}
+
+extern void const * o7_uint_to_ptr(o7_uint_t addr) {
+	o7_uint_t ofs;
+	int i;
+
+	i = getAddrIndex(addr, &ofs);
+	return (void const *)((char const*)addrs[i].adr + ofs);
+}
+
+extern void* o7_uint_to_wptr(o7_uint_t addr) {
+	o7_uint_t ofs;
+	int i;
+
+	i = getWaddrIndex(addr, &ofs);
+	return (void *)((char *)addrs[i].adr + ofs);
+}
+
+extern void o7_chcopy(o7_int_t src, o7_int_t dst, o7_int_t n) {
+	int si, di;
+	o7_uint_t ss, ds;
+	void const *sp;
+	void *dp;
+	o7_cbool outOfSize;
+
+	si = getAddrIndex(src, &ss);
+	if (O7_CHECKED_ADR) {
+		outOfSize = (addrs[si].size - ss) / sizeof(o7_uint_t) < n;
+		o7_assert(!outOfSize);
+	}
+	sp = (void const *)(ss + (char const *)addrs[si].adr);
+
+	di = getWaddrIndex(dst, &ds);
+	if (O7_CHECKED_ADR) {
+		outOfSize = (addrs[di].size - ds) / sizeof(o7_uint_t) < n;
+		o7_assert(!outOfSize);
+	}
+	dp = (void *)(ds + (char *)addrs[di].adr);
+
+	memmove(dp, sp, n * sizeof(o7_int_t));
+}
+
 extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	double undefined, nan;
 	float undefinedf, nanf;
@@ -82,12 +220,12 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 
 	undefined = O7_DBL_UNDEF;
 	nan = 0.0 / 0.0;
-	assert(undefined != undefined || (nan == nan));
+	o7_assert(undefined != undefined || (nan == nan));
 	undefinedf = O7_FLT_UNDEF;
 	nanf = 0.0f / 0.0f;
-	assert(undefinedf != undefinedf || (nanf == nanf));
+	o7_assert(undefinedf != undefinedf || (nanf == nanf));
 
-	assert((0 < argc) == (argv != NULL));
+	o7_assert((0 < argc) == (argv != NULL));
 
 	o7_exit_code = 0;
 
@@ -101,12 +239,14 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	}
 
 	setByteOrder();
+
+	addrs_i = 0;
 }
 
 extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *)) {
 	static o7_id_t id = 1;
 	int i;
-	assert((NULL != base) || (NULL != release));
+	o7_assert((NULL != base) || (NULL != release));
 	i = 1;
 
 	ext->ids[0] = base->ids[0] + 1;

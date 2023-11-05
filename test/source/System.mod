@@ -4,7 +4,8 @@ MODULE System;
 
   TYPE Ptr = POINTER TO RECORD END;
 
-  VAR i: INTEGER; b: BOOLEAN; bt: BYTE; c: CHAR; r: REAL; s: SET;
+  VAR i: INTEGER; b: BOOLEAN; bt: BYTE; c: CHAR; r: REAL; s: SET; b4: ARRAY 4 OF BYTE;
+      adr0, adr1: INTEGER;
 
   PROCEDURE Adr*;
   VAR a, v: INTEGER; ptr: Ptr;
@@ -18,7 +19,7 @@ MODULE System;
     ASSERT(v >= 4)
   END Adr;
 
-  PROCEDURE Bit;
+  PROCEDURE Bit*;
   VAR set: SET; j, a: INTEGER;
   BEGIN
     set := {1..3, 14, 18..22, 29};
@@ -28,10 +29,12 @@ MODULE System;
     END
   END Bit;
 
-  PROCEDURE Get;
+  PROCEDURE Get*;
   VAR j, li: INTEGER; lb: BOOLEAN; lbt: BYTE; lc: CHAR; lr: REAL; ls: SET;
       ai, ab, abt, ac, ar, as: INTEGER;
   BEGIN
+    ASSERT(Rand.Open());
+
     ai := SYSTEM.ADR(i);
     ab := SYSTEM.ADR(b);
     abt:= SYSTEM.ADR(bt);
@@ -66,10 +69,12 @@ MODULE System;
     END
   END Get;
 
-  PROCEDURE Put;
+  PROCEDURE Put*;
   VAR j, li: INTEGER; lb: BOOLEAN; lbt: BYTE; lc: CHAR; lr: REAL; ls: SET;
       ai, ab, abt, ac, ar, as: INTEGER;
   BEGIN
+    ASSERT(Rand.Open());
+
     ai := SYSTEM.ADR(li);
     ab := SYSTEM.ADR(lb);
     abt:= SYSTEM.ADR(lbt);
@@ -121,9 +126,11 @@ MODULE System;
     ASSERT(ls = {31, 0, 11..22})
   END Put;
 
-  PROCEDURE Copy;
+  PROCEDURE Copy*;
   VAR cc: ARRAY 32 OF CHAR; cb: ARRAY 32 OF BYTE; j, l, o, ab, ac: INTEGER;
   BEGIN
+    ASSERT(Rand.Open());
+
     FOR j := 0 TO LEN(cb) - 1 DO
       cb[j] := (j * (j MOD 2 * 2 - 1)) MOD 100H
     END;
@@ -150,29 +157,152 @@ MODULE System;
     END
   END Copy;
 
-  PROCEDURE Size;
-  TYPE Rec = RECORD a: INTEGER; z: BOOLEAN END;
+  PROCEDURE CopyParam*;
+  VAR a1: ARRAY 14 OF SET; b1: ARRAY 15 OF INTEGER; a2: ARRAY 17 OF SET; b2: ARRAY 16 OF INTEGER;
+      a11: ARRAY 5 OF ARRAY 7 OF SET; b11: ARRAY 4 OF ARRAY 8 OF INTEGER;
+
+    PROCEDURE Cp(VAR as: ARRAY OF SET; ai: ARRAY OF INTEGER);
+    VAR n: INTEGER;
+    BEGIN
+      n := LEN(as);
+      IF n > LEN(ai) THEN n := LEN(ai) END;
+      SYSTEM.COPY(SYSTEM.ADR(ai), SYSTEM.ADR(as), n);
+      WHILE n > 0 DO
+        DEC(n);
+        ASSERT(ORD(as[n]) = ai[n])
+      END
+    END Cp;
+
+    PROCEDURE Cp2(VAR ai: ARRAY OF ARRAY OF INTEGER; as: ARRAY OF ARRAY OF SET);
+    VAR n, n2: INTEGER;
+    BEGIN
+      n := LEN(as) * LEN(as[0]);
+      n2 := LEN(ai) * LEN(ai[0]);
+      IF n > n2 THEN n := n2 END;
+      SYSTEM.COPY(SYSTEM.ADR(as), SYSTEM.ADR(ai), n);
+      WHILE n > 0 DO
+        DEC(n);
+        ASSERT(ORD(as[n DIV LEN(as[0])][n MOD LEN(as[0])]) = ai[n DIV LEN(ai[0])][n MOD LEN(ai[0])])
+      END
+    END Cp2;
+
+    PROCEDURE Init(VAR ai: ARRAY OF INTEGER);
+    VAR j, v: INTEGER;
+    BEGIN
+      FOR j := LEN(ai) - 1 TO 0 BY -1 DO
+        ASSERT(Rand.Int(v));
+        ai[j] := ABS(v)
+      END
+    END Init;
+
+    PROCEDURE InitSets(VAR as: ARRAY OF ARRAY OF SET);
+    VAR j, k: INTEGER; v: SET;
+    BEGIN
+      FOR j := LEN(as) - 1 TO 0 BY -1 DO
+        FOR k := LEN(as[0]) -1 TO 0 BY -1 DO
+          ASSERT(Rand.Set(v));
+          as[j][k] := v - {31}
+        END
+      END
+    END InitSets;
+  BEGIN
+    ASSERT(Rand.Open());
+    Init(b1); Cp(a1, b1);
+    Init(b2); Cp(a2, b2);
+
+    InitSets(a11); Cp2(b11, a11);
+  END CopyParam;
+
+  PROCEDURE CopyGlobal*;
+  VAR tb: BYTE;
+  
+    PROCEDURE GetAdr;
+    VAR p: POINTER TO RECORD s: SET END;
+    BEGIN
+      adr0 := SYSTEM.ADR(b4);
+      NEW(p);
+      p.s := {0..30};
+      adr1 := SYSTEM.ADR(p^)
+    END GetAdr;
+  BEGIN
+    GetAdr;
+    SYSTEM.PUT(adr0, {1..31});
+    ASSERT(b4[0] = 0FEH);
+    ASSERT(b4[1] = 0FFH);
+    ASSERT(b4[2] = 0FFH);
+    ASSERT(b4[3] = 0FFH);
+
+    SYSTEM.GET(adr1, tb);
+    ASSERT(tb = 0FFH);
+    SYSTEM.GET(adr1 + 3, tb);
+    ASSERT(tb = 07FH)
+  END CopyGlobal;
+
+  PROCEDURE CopyItem*;
+  TYPE Rr = RECORD v: REAL END;
+  VAR r0: Rr; a0: INTEGER;
+  
+    PROCEDURE GetAdr(): INTEGER;
+    VAR p: ARRAY 2 OF POINTER TO RECORD r: ARRAY 3 OF POINTER TO RECORD r: REAL END END; j: INTEGER;
+    BEGIN
+      ASSERT(Rand.Int(j)); j := j MOD 6;
+      NEW(p[j MOD 2]);
+      NEW(p[j MOD 2].r[j DIV 2]);
+      p[j MOD 2].r[j DIV 2].r := 4.4
+    RETURN
+      SYSTEM.ADR(p[j MOD 2].r[j DIV 2]^)
+    END GetAdr;
+  BEGIN
+    ASSERT(Rand.Open());
+    a0 := GetAdr();
+    SYSTEM.COPY(a0, SYSTEM.ADR(r0), SYSTEM.SIZE(Rr) DIV SYSTEM.SIZE(INTEGER));
+    ASSERT(r0.v = 4.4);
+    r0.v := 5.5;
+    SYSTEM.COPY(SYSTEM.ADR(r0), a0, SYSTEM.SIZE(Rr) DIV SYSTEM.SIZE(INTEGER))
+  END CopyItem;
+
+  PROCEDURE Size*;
+  TYPE Rec = RECORD a: INTEGER; z: BOOLEAN END; Arr = ARRAY 321 OF BYTE;
+  VAR bs: INTEGER;
   BEGIN
     ASSERT(SYSTEM.SIZE(INTEGER) >= 4);
-    ASSERT(SYSTEM.SIZE(BYTE) >= 1);
+    bs := SYSTEM.SIZE(BYTE);
+    ASSERT(bs >= 1);
     ASSERT(SYSTEM.SIZE(BOOLEAN) >= 1);
     ASSERT(SYSTEM.SIZE(CHAR) >= 1);
     ASSERT(SYSTEM.SIZE(REAL) >= 4);
     ASSERT(SYSTEM.SIZE(SET) >= 4);
-    ASSERT(SYSTEM.SIZE(Rec) >= 5)
+    ASSERT(SYSTEM.SIZE(Rec) >= 5);
+    IF bs < 16 THEN
+      ASSERT(SYSTEM.SIZE(Arr) = bs * 321)
+    END
   END Size;
+
+  PROCEDURE AllAdrCorrectInt*;
+  VAR a, k, sum: INTEGER; sl: ARRAY 17 OF SET;
+  BEGIN
+    sum := 0;
+    FOR k := 0 TO LEN(sl) - 1 DO
+      a := SYSTEM.ADR(sl[k]);
+      sum := sum + a MOD 2 + (a + (ORD({27}) - 1)) MOD 2
+    END;
+    ASSERT(sum = 17)
+  END AllAdrCorrectInt;
 
   PROCEDURE Go*;
   BEGIN
     Size;
-    IF SYSTEM.SIZE(Ptr) = 4 THEN
+    IF (SYSTEM.SIZE(Ptr) = 4) OR (SYSTEM.SIZE(Ptr) = 8) THEN
       Adr;
       IF Platform.C THEN
         Bit;
-        ASSERT(Rand.Open());
         Get;
         Put;
         Copy;
+        CopyParam;
+        CopyGlobal;
+        CopyItem;
+        AllAdrCorrectInt;
         Rand.Close
       END
     END

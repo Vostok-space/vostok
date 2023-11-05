@@ -379,6 +379,18 @@ BEGIN
 	END
 END ArrayLen;
 
+PROCEDURE OpenArrayLensMult(VAR g: Generator; decl: Ast.Declaration; j: INTEGER; t: Ast.Type);
+BEGIN
+	WHILE (t # NIL) & (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
+		Str(g, " * ");
+		Name(g, decl);
+		Str(g, "_len");
+		Int(g, j);
+		INC(j);
+		t := t.type
+	END
+END OpenArrayLensMult;
+
 PROCEDURE Selector(VAR g: Generator; sels: Selectors; i: INTEGER;
                    VAR typ: Ast.Type; desType: Ast.Type);
 VAR sel: Ast.Selector; ref: BOOLEAN;
@@ -462,19 +474,6 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 	                VAR sel: Ast.Selector; decl: Ast.Declaration;
 	                isDesignatorArray: BOOLEAN);
 	VAR i: INTEGER;
-
-		PROCEDURE Mult(VAR g: Generator;
-		               decl: Ast.Declaration; j: INTEGER; t: Ast.Type);
-		BEGIN
-			WHILE (t # NIL) & (t.id = Ast.IdArray) & (t(Ast.Array).count = NIL) DO
-				Str(g, " * ");
-				Name(g, decl);
-				Str(g, "_len");
-				Int(g, j);
-				INC(j);
-				t := t.type
-			END
-		END Mult;
 	BEGIN
 		IF isDesignatorArray & ~g.opt.vla THEN
 			Str(g, " + ")
@@ -530,7 +529,7 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 				expression(g, sel(Ast.SelArray).index);
 				Chr(g, ")");
 				typ := typ.type;
-				Mult(g, decl, i + 1, typ);
+				OpenArrayLensMult(g, decl, i + 1, typ);
 				sel := sel.next;
 				INC(i);
 				Str(g, " + ")
@@ -540,7 +539,7 @@ VAR sel: Ast.Selector; ref: BOOLEAN;
 			Str(g, ", ");
 			expression(g, sel(Ast.SelArray).index);
 			Chr(g, ")");
-			Mult(g, decl, i + 1, typ.type)
+			OpenArrayLensMult(g, decl, i + 1, typ.type)
 		END;
 		IF ~isDesignatorArray OR g.opt.vla THEN
 			Chr(g, "]")
@@ -807,8 +806,8 @@ BEGIN
 END ExprBraced;
 
 PROCEDURE TwoExprBraced(VAR g: Generator;
-                       l: ARRAY OF CHAR; e1: Ast.Expression;
-                       m: ARRAY OF CHAR; e2: Ast.Expression; r: ARRAY OF CHAR);
+                        l: ARRAY OF CHAR; e1: Ast.Expression;
+                        m: ARRAY OF CHAR; e2: Ast.Expression; r: ARRAY OF CHAR);
 BEGIN
 	Str(g, l);
 	expression(g, e1);
@@ -1069,6 +1068,34 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				END
 			END SystemPut;
 
+			PROCEDURE Adr(VAR g: Generator; var: Ast.Designator);
+				PROCEDURE Templ(VAR g: Generator; var: Ast.Designator; adrs, adr, end: ARRAY OF CHAR);
+				BEGIN
+					IF (var.type.id = Ast.IdArray) & Ast.IsFormalParam(var) THEN
+						ExprBraced(g, adrs, var, ", sizeof(");
+						Designator(g, var);
+						Str(g, "[0])");
+						OpenArrayLensMult(g, var.decl, 0, var.type);
+						Str(g, end);
+					ELSE
+						ExprBraced(g, adr, var, end)
+					END
+				END Templ;
+			BEGIN
+				IF Ast.IsDesignateStableAddress(var) THEN
+					IF Ast.Writable IN var.inited THEN
+						Templ(g, var, "O7_ADRS(", "O7_ADR(", ")")
+					ELSE
+						ExprBraced(g, "O7_RADR(", var, ")")
+					END
+				ELSE
+					IF Ast.Writable IN var.inited THEN
+						Templ(g, var, "O7_LADRS(", "O7_LADR(", ", &o7_lac)")
+					ELSE
+						Templ(g, var, "O7_RLADRS(", "O7_RLADR(", ", &o7_lac)")
+					END
+				END
+			END Adr;
 		BEGIN
 			e1 := call.params.expr;
 			p2 := call.params.next;
@@ -1152,7 +1179,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 
 			(* SYSTEM *)
 			| SpecIdent.Adr:
-				ExprBraced(g, "O7_ADR(", e1, ")")
+				Adr(g, e1(Ast.Designator))
 			| SpecIdent.Size:
 				ExprBraced(g, "O7_SIZE(", e1, ")")
 			| SpecIdent.Bit:
@@ -3159,7 +3186,7 @@ END ReleaseVars;
 PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 	PROCEDURE Implement(VAR out: MOut; VAR g: Generator; proc: Ast.Procedure);
-	VAR retainParams: Ast.Declaration;
+	VAR retainParams: Ast.Declaration; rc: BOOLEAN;
 
 		PROCEDURE CloseConsts(VAR g: Generator; consts: Ast.Declaration);
 		BEGIN
@@ -3222,6 +3249,20 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			END
 		END ReleaseParams;
 
+		PROCEDURE LocalSystemAdrDeclare(VAR g: Generator; proc: Ast.Procedure);
+		BEGIN
+			IF Ast.WithSystemAdrLocal IN proc.info THEN
+				StrLn(g, "o7_uint_t o7_lac = 0;");
+			END
+		END LocalSystemAdrDeclare;
+
+		PROCEDURE LocalSystemAdrOutdate(VAR g: Generator; proc: Ast.Procedure);
+		BEGIN
+			IF Ast.WithSystemAdrLocal IN proc.info THEN
+				StrLn(g, "O7_LADROUT(o7_lac);");
+			END
+		END LocalSystemAdrOutdate;
+
 	BEGIN
 		Comment(g, proc.comment);
 		Mark(g, proc.mark);
@@ -3232,18 +3273,22 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		g.fixedLen := g.len;
 
-		IF g.opt.memManager # MemManagerCounter THEN
-			retainParams := NIL
+		rc := g.opt.memManager = MemManagerCounter;
+		IF rc THEN
+			retainParams := SearchRetain(g, proc.header.params)
 		ELSE
-			retainParams := SearchRetain(g, proc.header.params);
-			IF proc.header.type # NIL THEN
-				Qualifier(g, proc.header.type);
-				IF proc.header.type.id = Ast.IdPointer
-				THEN	StrLn(g, " o7_return = NULL;")
-				ELSE	StrLn(g, " o7_return;")
-				END
+			retainParams := NIL
+		END;
+		IF (rc OR (Ast.WithSystemAdrLocal IN proc.info)) & (proc.header.type # NIL) THEN
+			Qualifier(g, proc.header.type);
+			IF proc.header.type.id = Ast.IdPointer
+			THEN	StrLn(g, " o7_return = NULL;")
+			ELSE	StrLn(g, " o7_return;")
 			END
 		END;
+
+		LocalSystemAdrDeclare(g, proc);
+
 		declarations(out, proc);
 
 		RetainParams(g, retainParams);
@@ -3252,8 +3297,10 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 
 		IF proc.return = NIL THEN
 			ReleaseVars(g, proc.vars);
-			ReleaseParams(g, retainParams)
-		ELSIF g.opt.memManager = MemManagerCounter THEN
+			ReleaseParams(g, retainParams);
+
+			LocalSystemAdrOutdate(g, proc)
+		ELSIF rc THEN
 			IF proc.header.type.id = Ast.IdPointer THEN
 				Str(g, "O7_ASSIGN(&o7_return, ");
 				Expression(g, proc.return);
@@ -3268,6 +3315,15 @@ PROCEDURE Procedure(VAR out: MOut; proc: Ast.Procedure);
 			IF proc.header.type.id = Ast.IdPointer THEN
 				StrLn(g, "o7_unhold(o7_return);")
 			END;
+
+			LocalSystemAdrOutdate(g, proc);
+			StrLn(g, "return o7_return;")
+		ELSIF Ast.WithSystemAdrLocal IN proc.info THEN
+			Str(g, "o7_return = ");
+			CheckExpr(g, proc.return);
+			StrLn(g, ";");
+
+			LocalSystemAdrOutdate(g, proc);
 			StrLn(g, "return o7_return;")
 		ELSE
 			Str(g, "return ");

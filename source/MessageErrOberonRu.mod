@@ -106,6 +106,8 @@ BEGIN
 		C("Лишние параметры при вызове процедуры")
 	| AST.ErrCallIncompatibleParamType:
 		C("Несовместимый тип параметра")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Опасный адрес переменной, тип которой содержит указатель")
 	| AST.ErrCallExpectVarParam:
 		C("Параметр должен быть изменяемым")
 	| AST.ErrCallExpectAddressableParam:

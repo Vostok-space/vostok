@@ -113,6 +113,8 @@ BEGIN
 		C("Excess parameter in subroutine's call")
 	| AST.ErrCallIncompatibleParamType:
 		C("Incompatible parameter's type")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Unsafe address of variable, whose type contain a pointer")
 	| AST.ErrCallExpectVarParam:
 		C("The parameter must be variable")
 	| AST.ErrCallExpectAddressableParam:
