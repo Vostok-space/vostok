@@ -15,6 +15,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
+
+Init { Add | AddAsIs | ( FirstPart { AddPart | AddDirSep } LastPart ) } [ Do ]
+DoCharz
+
 MODULE PlatformExec;
 
 IMPORT
@@ -276,6 +280,17 @@ BEGIN
 	RETURN OsExec.Do(c.buf)
 END Do;
 
+PROCEDURE DoCharz*(cmd: ARRAY OF CHAR): INTEGER;
+VAR res: INTEGER;
+BEGIN
+	IF Charz.CalcLen(cmd, 0) > 0 THEN
+		res := OsExec.Do(cmd)
+	ELSE
+		res := Ok
+	END
+	RETURN res
+END DoCharz;
+
 PROCEDURE AutoCorrectDirSeparator*(state: BOOLEAN);
 BEGIN
 	autoCorrectDirSeparator := state
@@ -284,5 +299,3 @@ END AutoCorrectDirSeparator;
 BEGIN
 	autoCorrectDirSeparator := FALSE
 END PlatformExec.
-
-Init { Add | AddAsIs | ( FirstPart { AddPart } LastPart ) } [ Do ]
