@@ -25,7 +25,7 @@ MODULE System;
     set := {1..3, 14, 18..22, 29};
     a := SYSTEM.ADR(set);
     FOR j := 0 TO 31 DO
-      ASSERT(SYSTEM.BIT(a, j) = (j IN set))
+      ASSERT(SYSTEM.BIT(a + j DIV 8, j MOD 8) = (j IN set))
     END
   END Bit;
 

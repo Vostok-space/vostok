@@ -582,10 +582,11 @@ o7_int_t o7_size_to_int(size_t size) {
 O7_ALWAYS_INLINE
 o7_cbool o7_bit(o7_int_t addr, o7_int_t bit) {
 	char unsigned *ptr;
-	o7_assert((0 <= bit) && (bit < 32));
+	O7_STATIC_ASSERT(CHAR_BIT == 8);
+	o7_assert((0 <= bit) && (bit < 8));
 
-	ptr = (char unsigned *)o7_int_to_ptr(addr, sizeof(bit));
-	return (ptr[bit / 8] & (1u << (bit % 8))) != 0;
+	ptr = (char unsigned *)o7_int_to_ptr(addr, 1);
+	return (*ptr & (1u << bit)) != 0;
 }
 
 #define O7_GET(src, dst) memcpy((void *)dst, o7_int_to_ptr(src, sizeof(*(dst))), sizeof(*(dst)))
