@@ -178,6 +178,32 @@ extern void* o7_uint_to_wptr(o7_uint_t addr) {
 	return (void *)((char *)addrs[i].adr + ofs);
 }
 
+extern void const * o7_uint_to_sptr(o7_uint_t addr, o7_uint_t size) {
+	o7_uint_t ofs;
+	int i;
+	o7_cbool outOfSize;
+
+	i = getAddrIndex(addr, &ofs);
+	if (O7_CHECKED_ADR) {
+		outOfSize = addrs[i].size - ofs < size;
+		o7_assert(!outOfSize);
+	}
+	return (void const *)((char const*)addrs[i].adr + ofs);
+}
+
+extern void* o7_uint_to_swptr(o7_uint_t addr, o7_uint_t size) {
+	o7_uint_t ofs;
+	int i;
+	o7_cbool outOfSize;
+
+	i = getWaddrIndex(addr, &ofs);
+	if (O7_CHECKED_ADR) {
+		outOfSize = addrs[i].size - ofs < size;
+		o7_assert(!outOfSize);
+	}
+	return (void *)((char *)addrs[i].adr + ofs);
+}
+
 extern void o7_chcopy(o7_int_t src, o7_int_t dst, o7_int_t n) {
 	int si, di;
 	o7_uint_t ss, ds;
