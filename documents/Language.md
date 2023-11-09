@@ -1,10 +1,9 @@
 Oberon-07
 ===========
 
-[Language description](https://www.inf.ethz.ch/personal/wirth/Oberon/Oberon07.Report.pdf)
-from the author.
+[Language report](https://vostok-space.github.io/Oberon-report/)
 
-Specifications, absent in the decription:
+Implementation details missing from the report:
 
 | Type     |  Limits                     |
 |----------|-----------------------------|
@@ -44,11 +43,12 @@ Considered as errors:
  * No label containing the value from the input expression of the CASE-statement.
  * Constant value of loop expression and eternal loops.
  * FOR-loop with a step that does not match its limits.
+ * Accessing in the SYSTEM.GET,PUT,COPY by incorrect addresses.
 
 The desired reaction to errors is diagnostics.
 List of possible diagnostics kinds in decreasing of preference order:
 
- * Report during pre-check.
+ * Report during pre-check (compilation).
  * Runtime notification with continuation of execution if an error occurred in auxiliary
    or useless code.
  * Notification and emergency stop in runtime.
