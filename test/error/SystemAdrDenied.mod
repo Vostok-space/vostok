@@ -2,7 +2,7 @@ MODULE SystemAdrDenied;
 
  IMPORT SYSTEM, Rand := OsRand, Variables;
 
- CONST Count* = 5;  AddrReserved = 8;
+ CONST Count* = 8;  AddrReserved = 8;
 
  PROCEDURE OutReserved*;
  VAR a: ARRAY AddrReserved + 1 OF INTEGER; i: INTEGER;
@@ -32,6 +32,24 @@ MODULE SystemAdrDenied;
   Do(SYSTEM.ADR(Variables.data))
  END ImportedVar;
 
+ PROCEDURE PutOversizeInt*;
+ VAR b: ARRAY 3 OF BYTE;
+ BEGIN
+  SYSTEM.PUT(SYSTEM.ADR(b), 111)
+ END PutOversizeInt;
+
+ PROCEDURE GetOversizeInt*;
+ VAR b: ARRAY 2 OF BYTE; i: INTEGER;
+ BEGIN
+  SYSTEM.GET(SYSTEM.ADR(b), i)
+ END GetOversizeInt;
+
+ PROCEDURE GetOversizeReal*;
+ VAR b: ARRAY 3 OF BYTE; ign: REAL;
+ BEGIN
+  SYSTEM.GET(SYSTEM.ADR(b), ign)
+ END GetOversizeReal;
+
  PROCEDURE go*(p: INTEGER); VAR a: ARRAY 3 OF CHAR;
   PROCEDURE AdrLocal(): INTEGER;
   VAR i: INTEGER;
@@ -54,7 +72,10 @@ MODULE SystemAdrDenied;
     |1: SYSTEM.PUT(AdrPartOfAllocated(), {1,3})
     |2: OutReserved
     |3: a := ""; ParamValue(a)
-    |4: ImportedVar()
+    |4: ImportedVar
+    |5: PutOversizeInt
+    |6: GetOversizeInt
+    |7: GetOversizeReal
     END
   END
  END go;
