@@ -1,4 +1,4 @@
-(* Copyright 2017-2018 ComdivByZero
+(* Copyright 2017-2018,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
  *)
 MODULE PosixDir;
 
+ IMPORT Mode := PosixFileMode;
+
+ CONST
+   (* Режим создания каталога в 16-ричном виде *)
+   X* = Mode.X; W* = Mode.W; R* = Mode.R; Rw* = Mode.Rw; Rx* = Mode.Rx; Rwx* = Mode.Rwx;
+   O* = Mode.O; G* = Mode.G; U* = Mode.U; All* = Mode.All;
+
  TYPE
    Dir* = POINTER TO RECORD
    END;
@@ -25,6 +32,8 @@ MODULE PosixDir;
    supported*: BOOLEAN;
 
  PROCEDURE Open*(VAR d: Dir; name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+ BEGIN
+   ASSERT((0 <= ofs) & (ofs < LEN(name)))
  RETURN FALSE
  END Open;
 
@@ -35,14 +44,28 @@ MODULE PosixDir;
  PROCEDURE Read*(VAR e: Ent; d: Dir): BOOLEAN;
  BEGIN
    ASSERT(FALSE)
-   RETURN FALSE
+ RETURN FALSE
  END Read;
 
  PROCEDURE CopyName*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER; e: Ent): BOOLEAN;
  BEGIN
    ASSERT(FALSE)
-   RETURN FALSE
+ RETURN FALSE
  END CopyName;
+
+ PROCEDURE HexToMode*(hex: INTEGER): INTEGER;
+ RETURN
+   Mode.Hex(hex)
+ END HexToMode;
+
+ (* mode в 16-ричной системе, то есть 777H вместо 8-ричной 0777 *)
+ PROCEDURE Mkdir*(name: ARRAY OF CHAR; ofs: INTEGER; mode: INTEGER): BOOLEAN;
+ BEGIN
+   ASSERT((0 <= ofs) & (ofs < LEN(name)));
+   ASSERT(name # "");
+   ASSERT(Mode.Hex(mode) < 200H)
+ RETURN FALSE
+ END Mkdir;
 
 BEGIN
   supported := FALSE
