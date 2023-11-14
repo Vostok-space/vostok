@@ -1,4 +1,4 @@
-/* Copyright 2017-2018 ComdivByZero
+/* Copyright 2017-2018,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 && !(defined(__MINGW32__) || defined(__MINGW64__))
 	o7_bool WindowsDir_supported = 0 < 1;
 #	include <io.h>
+#	include <direct.h>
 	typedef intptr_t handle_t;
 #else
 	o7_bool WindowsDir_supported = 0 > 1;
@@ -30,6 +31,7 @@
 	O7_INLINE int _findnext(handle_t handle, struct _finddata_t *fileinfo)
 	{ (void)handle; (void)fileinfo; return -1; }
 	O7_INLINE int _findclose(handle_t handle) { (void)handle; return -1; }
+	O7_INLINE int _mkdir(char const *name) { return -1; }
 #endif
 
 #include "WindowsDir.h"
@@ -103,4 +105,9 @@ extern o7_bool WindowsDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_in
 	buf[j] = '\0';
 	*ofs = j;
 	return f->d.name[i] == '\0';
+}
+
+extern o7_bool WindowsDir_Mkdir(o7_int_t len, o7_char name[O7_VLA(len)], o7_int_t ofs) {
+	assert((0 <= ofs) && (ofs < len));
+	return 0 == _mkdir((char *)name + ofs);
 }
