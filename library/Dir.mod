@@ -1,4 +1,4 @@
-(* Copyright 2018 ComdivByZero
+(* Copyright 2018,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *)
 MODULE Dir;
 
- IMPORT Posix := PosixDir, Windows := WindowsDir;
+ IMPORT Posix := PosixDir, Windows := WindowsDir, Js := JsDir;
 
  CONST
    NameLenMax* = 260;
@@ -23,12 +23,14 @@ MODULE Dir;
    Dir* = RECORD
      p: Posix.Dir;
      w: Windows.FindId;
-     f: Windows.FindData
+     f: Windows.FindData;
+     js: Js.T
    END;
 
    File* = RECORD
      p: Posix.Ent;
-     w: Windows.FindData
+     w: Windows.FindData;
+     js: Js.Ent
    END;
 
  PROCEDURE Open*(VAR d: Dir; name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
@@ -48,6 +50,9 @@ MODULE Dir;
      spec[i + 1] := "*";
      spec[i + 2] := 0X;
      ok := Windows.FindFirst(d.w, d.f, spec, 0)
+   ELSIF Js.supported THEN
+     d.js := Js.OpenByCharz(name, ofs);
+     ok := d.js # NIL
    ELSE
      ok := FALSE
    END
@@ -61,6 +66,8 @@ MODULE Dir;
      ok := Posix.Close(d.p)
    ELSIF Windows.supported THEN
      ok := Windows.Close(d.w)
+   ELSIF Js.supported THEN
+     ok := Js.Close(d.js)
    ELSE
      ok := FALSE
    END
@@ -80,6 +87,9 @@ MODULE Dir;
      ELSE
        ok := Windows.FindNext(e.w, d.w)
      END
+   ELSIF Js.supported THEN
+     e.js := Js.Read(d.js);
+     ok := e.js # NIL
    ELSE
      ok := FALSE
    END
@@ -93,6 +103,8 @@ MODULE Dir;
      ok := Posix.CopyName(buf, ofs, f.p)
    ELSIF Windows.supported THEN
      ok := Windows.CopyName(buf, ofs, f.w)
+   ELSIF Js.supported THEN
+     ok := Js.CopyName(buf, ofs, f.js)
    ELSE
      ok := FALSE
    END
