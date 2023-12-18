@@ -49,7 +49,7 @@ public static void asrt(final boolean c) {
     }
 }
 
-public static void asrt(final boolean c, final String msg) {
+public static void asrt(final boolean c, final java.lang.String msg) {
     if (!c) {
         throw new java.lang.AssertionError(msg);
     }
