@@ -1,6 +1,6 @@
 MODULE System;
 
-  IMPORT SYSTEM, Rand := OsRand, Platform;
+  IMPORT SYSTEM, Rand := OsRand, Platform, log;
 
   TYPE Ptr = POINTER TO RECORD END;
 
@@ -24,8 +24,16 @@ MODULE System;
   BEGIN
     set := {1..3, 14, 18..22, 29};
     a := SYSTEM.ADR(set);
-    FOR j := 0 TO 31 DO
-      ASSERT(SYSTEM.BIT(a + j DIV 8, j MOD 8) = (j IN set))
+    log.s("set "); FOR j := 0 TO 31 DO log.i(ORD(j IN set)) END; log.n;
+    log.s("int "); FOR j := 0 TO 31 DO log.i(ORD(SYSTEM.BIT(a + j DIV 8, j MOD 8))) END; log.n;
+    IF Platform.ByteOrder = Platform.LittleEndian THEN
+      FOR j := 0 TO 31 DO
+        ASSERT(SYSTEM.BIT(a + j DIV 8, j MOD 8) = (j IN set))
+      END
+    ELSE
+      FOR j := 0 TO 31 DO
+        ASSERT(SYSTEM.BIT(a + j DIV 8, j MOD 8) = ((31 - j) IN set))
+      END
     END
   END Bit;
 
@@ -227,15 +235,25 @@ MODULE System;
   BEGIN
     GetAdr;
     SYSTEM.PUT(adr0, {1..31});
-    ASSERT(b4[0] = 0FEH);
     ASSERT(b4[1] = 0FFH);
     ASSERT(b4[2] = 0FFH);
-    ASSERT(b4[3] = 0FFH);
+    IF Platform.ByteOrder = Platform.LittleEndian THEN
+      ASSERT(b4[0] = 0FEH);
+      ASSERT(b4[3] = 0FFH);
 
-    SYSTEM.GET(adr1, tb);
-    ASSERT(tb = 0FFH);
-    SYSTEM.GET(adr1 + 3, tb);
-    ASSERT(tb = 07FH)
+      SYSTEM.GET(adr1, tb);
+      ASSERT(tb = 0FFH);
+      SYSTEM.GET(adr1 + 3, tb);
+      ASSERT(tb = 07FH)
+    ELSE
+      ASSERT(b4[0] = 0FFH);
+      ASSERT(b4[3] = 0FEH);
+
+      SYSTEM.GET(adr1, tb);
+      ASSERT(tb = 07FH);
+      SYSTEM.GET(adr1 + 3, tb);
+      ASSERT(tb = 0FFH)
+    END
   END CopyGlobal;
 
   PROCEDURE CopyItem*;

@@ -582,11 +582,17 @@ o7_int_t o7_size_to_int(size_t size) {
 O7_ALWAYS_INLINE
 o7_cbool o7_bit(o7_int_t addr, o7_int_t bit) {
 	char unsigned *ptr;
+	o7_cbool v;
 	O7_STATIC_ASSERT(CHAR_BIT == 8);
 	o7_assert((0 <= bit) && (bit < 8));
 
 	ptr = (char unsigned *)o7_int_to_ptr(addr, 1);
-	return (*ptr & (1u << bit)) != 0;
+	if (O7_BYTE_ORDER == O7_ORDER_LE) {
+		v = (*ptr & (1u << bit)) != 0;
+	} else if (O7_BYTE_ORDER == O7_ORDER_BE) {
+		v = (*ptr & (0x80u >> bit)) != 0;
+	} else { abort(); }
+	return v;
 }
 
 #define O7_GET(src, dst) memcpy((void *)dst, o7_int_to_ptr(src, sizeof(*(dst))), sizeof(*(dst)))
@@ -1266,26 +1272,33 @@ o7_set64_t o7_lset(o7_int_t low, o7_int_t high) {
 	return ((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high));
 }
 
-#define O7_SET(low, high) (((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high)))
+#define O7_SET(low, high) (((o7_set64_t)-1 << (low)) & ((o7_set64_t)-1 >> (63 - (high))))
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_set64_t)1u << (n)))))
+#define O7_IN(n, set) (0 != ((set) & ((o7_set64_t)1 << (n))))
 
 O7_CONST_INLINE
-o7_bool o7_lin(o7_int_t n, o7_set64_t set) {
+o7_cbool o7_lin(o7_int_t n, o7_set64_t set) {
 	o7_assert((0 <= n) && (n <= 63));
 	return 0 != (set & ((o7_set64_t)1 << n));
 }
 
 #else /* O7_LONG_SUPPORT */
 
-#define O7_SET(low, high) (((o7_set_t)-1 << low) & ((o7_set_t)-1 >> (31 - high)))
+#define O7_SET(low, high) ((~(o7_set_t)0 << (low)) & (~(o7_set_t)0 >> (31 - (high))))
 
-#define O7_IN(n, set) (0 != ((set) & ((o7_set_t)1u << (n))))
+#define O7_IN(n, set) (0 != ((set) & ((o7_set_t)1 << (n))))
 
 #endif /* O7_LONG_SUPPORT */
 
 O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_set_t set) {
+o7_set_t o7_set(o7_int_t low, o7_int_t high) {
+	o7_assert(0 <= low  && low  <= 31);
+	o7_assert(0 <= high && high <= 31);
+	return (~(o7_set_t)0 << low) & (~(o7_set_t)0 >> (31 - high));
+}
+
+O7_CONST_INLINE
+o7_cbool o7_in(o7_int_t n, o7_set_t set) {
 	o7_assert((0 <= n) && (n <= 31));
 	return 0 != (set & ((o7_set_t)1 << n));
 }
@@ -1574,13 +1587,6 @@ void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
 
 #define O7_GUARD_R(ExtType, strct, base) \
 	(*(struct ExtType *)o7_must_r(base, strct, &ExtType##_tag))
-
-O7_CONST_INLINE
-o7_set_t o7_set(o7_int_t low, o7_int_t high) {
-	o7_assert(0 <= low  && low  <= 31);
-	o7_assert(0 <= high && high <= 31);
-	return (~(o7_set_t)0 << low) & (~(o7_set_t)0 >> (31 - high));
-}
 
 
 O7_CONST_INLINE
