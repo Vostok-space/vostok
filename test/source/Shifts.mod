@@ -2,7 +2,7 @@ MODULE Shifts;
 
   IMPORT Out;
 
-  CONST
+  CONST A* = LSL(1, 30);
 
   TYPE
 
