@@ -145,13 +145,18 @@ MODULE OberonSpecIdent;
   END T;
 
   PROCEDURE IsModule*(VAR buf: ARRAY OF CHAR; ind, end: INTEGER): BOOLEAN;
-  VAR save: CHAR; match: BOOLEAN;
+  VAR c, save: CHAR; match: BOOLEAN;
   BEGIN
-    match := "M" = buf[ind];
+    c := buf[ind];
+    match := (c = "M") OR (c = "P");
     IF match THEN
         save := buf[end];
         buf[end] := Utf8.BackSpace;
-        match := Eq("MODULE", buf, ind, end);
+        IF c = "M" THEN
+            match := Eq("MODULE", buf, ind, end)
+        ELSE
+            match := Eq("PROCEDURE", buf, ind, end)
+        END;
         buf[end] := save
     END
   RETURN
