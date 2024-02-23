@@ -17,20 +17,21 @@
  *)
 MODULE FileSystemUtil;
 
-  IMPORT Platform, Exec := PlatformExec, Files := CFiles, CDir;
+  IMPORT Platform, Exec := PlatformExec, Files := CFiles, CDir, WindowsDir, PosixDir, JavaDir, JsDir;
 
   PROCEDURE MakeDir*(name: ARRAY OF CHAR): BOOLEAN;
-  VAR cmd: Exec.Code;
+  VAR ok: BOOLEAN;
   BEGIN
-    IF Platform.Posix THEN
-      ASSERT(Exec.Init(cmd, "mkdir")
-           & Exec.Val(cmd, name)
-           & (Platform.Java OR Exec.AddAsIs(cmd, " 2>/dev/null")))
-    ELSE ASSERT(Platform.Windows);
-      ASSERT(Exec.Init(cmd, "mkdir")
-           & Exec.Val(cmd, name))
+    IF Platform.Java THEN
+      ok := JavaDir.MkdirByCharz(name, 0)
+    ELSIF Platform.JavaScript THEN
+      ok := JsDir.MkdirByCharz(name, 0, 777H)
+    ELSIF Platform.Posix THEN
+      ok := PosixDir.Mkdir(name, 0, PosixDir.All * PosixDir.Rwx)
+    ELSE
+      ok := Platform.Windows & WindowsDir.Mkdir(name, 0)
     END
-    RETURN Exec.Do(cmd) = Exec.Ok
+    RETURN ok
   END MakeDir;
 
   PROCEDURE RemoveDir*(name: ARRAY OF CHAR): BOOLEAN;
