@@ -1,4 +1,4 @@
-/* Copyright 2018-2019,2021-2023 ComdivByZero
+/* Copyright 2018-2019,2021-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public static final long LONG_UNDEF   = Long.MIN_VALUE;
 public static final long DOUBLE_UNDEF = 0x7FFFFFFF00000000L;
 
 public static final java.nio.charset.Charset UTF_8
-                  = java.nio.charset.Charset.forName("UTF-8");
+                  = java.nio.charset.StandardCharsets.UTF_8;
 
 static int      exitCode  = 0;
 static byte[][] args      = new byte[][]{};
@@ -312,8 +312,7 @@ public static java.lang.String string(final byte[] bytes, final int ofs) {
     while (bytes[i] != 0) {
          i += 1;
     }
-    buf = java.nio.ByteBuffer.wrap(bytes, ofs, i - ofs);
-    return UTF_8.decode(buf).toString();
+    return new java.lang.String(bytes, ofs, i - ofs, UTF_8);
 }
 
 public static java.lang.String string(final byte[] bytes) {
