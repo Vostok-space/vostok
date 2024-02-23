@@ -20,5 +20,5 @@ MODULE JsSelfExe;
  RETURN
   FALSE
  END Get;
- 
+
 END JsSelfExe.
