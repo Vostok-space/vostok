@@ -304,15 +304,16 @@ public static byte[] bytes(final java.lang.String s) {
     return ba;
 }
 
-public static java.lang.String string(final byte[] bytes, final int ofs) {
+public static java.lang.String string(byte[] bytes, int ofs, int len) {
+    return new java.lang.String(bytes, ofs, len, UTF_8);
+}
+
+public static java.lang.String string(byte[] bytes, int ofs) {
     int i;
-    final java.nio.ByteBuffer buf;
 
     i = ofs;
-    while (bytes[i] != 0) {
-         i += 1;
-    }
-    return new java.lang.String(bytes, ofs, i - ofs, UTF_8);
+    while (bytes[i] != 0) { i += 1; }
+    return string(bytes, ofs, i - ofs);
 }
 
 public static java.lang.String string(final byte[] bytes) {

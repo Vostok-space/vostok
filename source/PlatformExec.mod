@@ -1,6 +1,6 @@
 (*  Wrapper over OS-specific execution
  *
- *  Copyright (C) 2017-2019,2021-2023 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -114,8 +114,8 @@ PROCEDURE Quote(VAR d: ARRAY OF CHAR; VAR i: INTEGER): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
 	ok := i < LEN(d) - 1;
-	IF ok & ~Platform.Java THEN
-		IF Platform.Posix THEN
+	IF ok THEN
+		IF Platform.Posix OR Platform.Java THEN
 			d[i] := "'"
 		ELSE ASSERT(Platform.Windows);
 			d[i] := Utf8.DQuote
@@ -224,7 +224,7 @@ BEGIN
 		ELSE
 			c.partsQuote := Platform.Posix
 		END;
-		ok := ok & (~c.partsQuote OR Quote(c.buf, c.len))
+		ok := ok & (~c.partsQuote OR AddQuote(c))
 		         & Copy(c.buf, c.len, arg, 0, c.parts)
 	END
 	RETURN ok
@@ -242,7 +242,7 @@ BEGIN
 	ASSERT(c.parts);
 	c.parts := FALSE
 
-	RETURN Copy(c.buf, c.len, arg, ofs, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
+	RETURN Copy(c.buf, c.len, arg, ofs, c.parts) & (~c.partsQuote OR AddQuote(c))
 END LastPartByOfs;
 
 PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;

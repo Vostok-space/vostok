@@ -1,4 +1,4 @@
-/* Copyright 2018,2021 ComdivByZero
+/* Copyright 2018,2021,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,49 @@ throws java.io.IOException
     }
 }
 
-public static int Do(final byte[] cmd) {
+private static String[] split(byte[] cmd) {
+    int i, k, len, skip;
+    java.util.ArrayList<String> als;
+
+    als = new java.util.ArrayList<String>();
+    cmd = cmd.clone();
+    i = 0;
+
+    while (cmd[i] != 0) {
+        while (cmd[i] == ' ') { i += 1; }
+        k = i;
+        if (cmd[i] == '\'') {
+            i += 1;
+            skip = 0;
+            while (cmd[i] != '\'') {
+                if (cmd[i] == '\\') {
+                    i += 2;
+                    skip += 1;
+                } else {
+                    i += 1;
+                }
+                cmd[i - 1 - skip] = cmd[i - 1];
+            }
+            als.add(O7.string(cmd, k + 1, i - k - 1 - skip));
+            i += 1;
+        } else {
+            while (cmd[i] != ' ' && cmd[i] != 0) { i += 1; }
+            als.add(O7.string(cmd, k, i - k));
+        }
+    }
+    return als.toArray(new String[0]);
+}
+
+public static int Do(byte[] cmd) {
     int ret;
+    String[] acmd;
     java.lang.Process p;
     byte[] buf = new byte[256];
+
+    acmd = split(cmd);
+    cmd = null;
     try {
-        p = java.lang.Runtime.getRuntime().exec(O7.string(cmd));
+        p = java.lang.Runtime.getRuntime().exec(acmd);
         ret = p.waitFor();
         print(p.getInputStream(), buf, java.lang.System.out);
         print(p.getErrorStream(), buf, java.lang.System.err);
