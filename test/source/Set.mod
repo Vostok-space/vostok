@@ -75,7 +75,10 @@ BEGIN
 	l := 5;
 	h := 8;
 	ASSERT({l .. h} = {8, 7, 6, 5});
-	ASSERT({h .. l} = {})
+	ASSERT({h .. l} = {});
+
+	ASSERT({2, 15, 17} / {15} = {2, 17});
+	ASSERT({17-2} / {2, 15, 17} = {17, 2})
 END Go;
 
 END Set.
