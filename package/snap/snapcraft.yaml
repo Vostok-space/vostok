@@ -1,5 +1,6 @@
 name: vostok
-base: core18
+base: bare
+build-base: core22
 adopt-info: ost
 license: LGPL-3.0-only
 icon: snap/gui/icon.svg
@@ -13,30 +14,43 @@ description: |
 grade: devel
 confinement: classic
 
+architectures:
+  - build-on: [amd64]
+  - build-on: [amd64]
+    build-for: [riscv64]
+  - build-on: [i386]
+  - build-on: [arm64]
+  - build-on: [armhf]
+  - build-on: [s390x]
+  - build-on: [ppc64el]
+
 parts:
   ost:
     plugin: nil
+    build-packages:
+      - on amd64 to riscv64:
+        - gcc-riscv64-linux-gnu
+        - libc6-dev-riscv64-cross
+      - else:
+        - musl-tools
+
     override-build: |
-      ./init.sh
-      result/bs-ost run make.Build -infr . -m source
-      if [ "${SNAPCRAFT_TARGET_ARCH}" = "riscv64" ]; then
+      OST=result/ost-run
+      if [ "${SNAPCRAFT_TARGET_ARCH}" = riscv64 ]; then
         CC=riscv64-linux-gnu-gcc
-        OSTRUN=result/ost-run
-        mv result/ost $OSTRUN
+        TEST=""
       else
-        CC=gcc
-        OSTRUN=result/ost
+        CC=musl-gcc
+        TEST="make.Self; "
       fi
-      $OSTRUN to-bin Translator.Go result/ost -infr . -m source -cc "$CC -Os -flto -s"
-      snapcraftctl set-version `$OSTRUN version | awk '{print $2}'`
-      rm -rf $SNAPCRAFT_PART_INSTALL/usr/share
-      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share
-      if [ "$CC" = "gcc" ]; then
-        $OSTRUN run 'make.Self; make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
-      else
-        $OSTRUN run 'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
-      fi
-      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
+      ./init.sh && result/bs-ost run make.Build -infr . -m source
+      mv result/ost $OST
+      craftctl set version=$($OST version | awk '{print $2}')
+      $OST to-bin Translator.Go result/ost -infr . -m source -cc "$CC -Os -flto -s -static"
+      rm -rf $SNAPCRAFT_PART_INSTALL/usr
+      mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/{bin,share}
+      $OST run 'make.Together(0=0); '"$TEST"'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
       cp result/ost $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result/
 
     source:
@@ -49,10 +63,10 @@ parts:
     build-attributes:
       - no-patchelf
     override-build: |
-      if [ "${SNAPCRAFT_TARGET_ARCH}" = "riscv64" ]; then
+      if [ "${SNAPCRAFT_TARGET_ARCH}" = riscv64 ]; then
         GOARCH=riscv64 go build -ldflags='-s -w' server.go
       else
-        go build -ldflags='-s -w' server.go
+        go build -ldflags='-s -w -linkmode external -extldflags "-static"' server.go
       fi
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
       cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/

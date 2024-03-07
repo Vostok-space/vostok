@@ -604,10 +604,10 @@ MODULE AstTransform;
         AstOk(Ast.CallNew(c, inc, d));
         einc := inc.expr(Ast.ExprCall);
         fp := d.type(Ast.ProcType).params;
-        AstOk(Ast.CallParamNew(einc, einc.params, var, fp));
+        AstOk(Ast.CallParamNew(c, einc, einc.params, var, fp));
         IF for.by # 1 THEN
           par := einc.params;
-          AstOk(Ast.CallParamNew(einc, par, Ast.ExprIntegerNew(ABS(for.by)), fp));
+          AstOk(Ast.CallParamNew(c, einc, par, Ast.ExprIntegerNew(ABS(for.by)), fp));
         END;
         last := NIL;
         Ast.StatementAdd(w.stats, last, inc);

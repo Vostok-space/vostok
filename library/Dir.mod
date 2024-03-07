@@ -1,4 +1,4 @@
-(* Copyright 2018 ComdivByZero
+(* Copyright 2018,2023-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,44 @@
  *)
 MODULE Dir;
 
- IMPORT Posix := PosixDir, Windows := WindowsDir;
+ IMPORT Posix := PosixDir, Windows := WindowsDir, Js := JsDir, Java := JavaDir, JavaPath;
 
  CONST
    NameLenMax* = 260;
+
+   None = 0;
+   IdPosix = 1;
+   IdWindows = 2;
+   IdJs = 3;
+   IdJava = 4;
 
  TYPE
    Dir* = RECORD
      p: Posix.Dir;
      w: Windows.FindId;
-     f: Windows.FindData
+     f: Windows.FindData;
+     js: Js.T;
+     jv: Java.T
    END;
 
    File* = RECORD
      p: Posix.Ent;
-     w: Windows.FindData
+     w: Windows.FindData;
+     js: Js.Ent;
+     jv: JavaPath.T
    END;
+
+ VAR id: INTEGER;
 
  PROCEDURE Open*(VAR d: Dir; name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
  VAR ok: BOOLEAN;
      spec: ARRAY 262 OF CHAR;
      i: INTEGER;
  BEGIN
-   IF Posix.supported THEN
+   CASE id OF
+     IdPosix:
      ok := Posix.Open(d.p, name, ofs)
-   ELSIF Windows.supported THEN
+   | IdWindows:
      i := 0;
      WHILE (ofs < LEN(name)) & (name[ofs] # 0X) DO
        spec[i] := name[ofs];
@@ -48,7 +61,13 @@ MODULE Dir;
      spec[i + 1] := "*";
      spec[i + 2] := 0X;
      ok := Windows.FindFirst(d.w, d.f, spec, 0)
-   ELSE
+   | IdJs:
+     d.js := Js.OpenByCharz(name, ofs);
+     ok := d.js # NIL
+   | IdJava:
+     d.jv := Java.OpenByCharz(name, ofs);
+     ok := d.jv # NIL
+   | None:
      ok := FALSE
    END
    RETURN ok
@@ -57,11 +76,17 @@ MODULE Dir;
  PROCEDURE Close*(VAR d: Dir): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Posix.supported THEN
+   CASE id OF
+     IdPosix:
      ok := Posix.Close(d.p)
-   ELSIF Windows.supported THEN
+   | IdWindows:
      ok := Windows.Close(d.w)
-   ELSE
+   | IdJs:
+     ok := Js.Close(d.js)
+   | IdJava:
+     ok := Java.Close(d.jv);
+     d.jv := NIL
+   | None:
      ok := FALSE
    END
    RETURN ok
@@ -70,9 +95,10 @@ MODULE Dir;
  PROCEDURE Read*(VAR e: File; VAR d: Dir): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Posix.supported THEN
+   CASE id OF
+     IdPosix:
      ok := Posix.Read(e.p, d.p)
-   ELSIF Windows.supported THEN
+   | IdWindows:
      IF d.f # NIL THEN
        e.w := d.f;
        d.f := NIL;
@@ -80,8 +106,12 @@ MODULE Dir;
      ELSE
        ok := Windows.FindNext(e.w, d.w)
      END
-   ELSE
-     ok := FALSE
+   | IdJs:
+     e.js := Js.Read(d.js);
+     ok := e.js # NIL
+   | IdJava:
+     e.jv := Java.Next(d.jv);
+     ok := e.jv # NIL
    END
    RETURN ok
  END Read;
@@ -89,14 +119,29 @@ MODULE Dir;
  PROCEDURE CopyName*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER; f: File): BOOLEAN;
  VAR ok: BOOLEAN;
  BEGIN
-   IF Posix.supported THEN
+   CASE id OF
+     IdPosix:
      ok := Posix.CopyName(buf, ofs, f.p)
-   ELSIF Windows.supported THEN
+   | IdWindows:
      ok := Windows.CopyName(buf, ofs, f.w)
-   ELSE
-     ok := FALSE
+   | IdJs:
+     ok := Js.CopyName(buf, ofs, f.js)
+   | IdJava:
+     ok := JavaPath.ToCharz(buf, ofs, f.jv)
    END
    RETURN ok
  END CopyName;
 
+BEGIN
+  IF Posix.supported THEN
+    id := IdPosix
+  ELSIF Windows.supported THEN
+    id := IdWindows
+  ELSIF Js.supported THEN
+    id := IdJs
+  ELSIF Java.supported THEN
+    id := IdJava
+  ELSE
+    id := None
+  END
 END Dir.

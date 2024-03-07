@@ -778,18 +778,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			ELSIF (p.expr.type.id = Ast.IdByte) & (t.id = Ast.IdByte) THEN
 				Designator(g, p.expr(Ast.Designator), {ForSameType})
 			ELSE
-				IF fp.type.id # Ast.IdChar THEN
-					t := fp.type
-				END;
-				g.expectArray := fp.type.id = Ast.IdArray;
+				g.expectArray := t.id = Ast.IdArray;
 				IF ~g.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
 				END;
-				g.expectArray := FALSE;
-
-				t := p.expr.type
+				g.expectArray := FALSE
 			END;
 
 			p := p.next;

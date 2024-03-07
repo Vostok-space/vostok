@@ -30,7 +30,6 @@ MODULE RealToCharz;
       i, e, eLen, lim: INTEGER;
       eSign: CHAR;
       sign, ok: BOOLEAN;
-      x0: REAL;
 
     PROCEDURE ExtractExp(VAR x: REAL; VAR sign: CHAR; VAR len: INTEGER): INTEGER;
     VAR e: INTEGER; tens: REAL;
@@ -44,15 +43,17 @@ MODULE RealToCharz;
           tens := tens * 10.0
         END;
         x := x * tens
-      ELSIF 10.0 <= x THEN
+      ELSE
         sign := "+";
-        WHILE (x / tens >= 10.0) & (e <= 308) DO
-          INC(e);
-          tens := tens * 10.0
-        END;
-        x := x / tens
-      ELSE ASSERT((1.0 <= x) & (x < 10.0));
-        e := 0
+        IF 10.0 <= x THEN
+          WHILE (x / tens >= 10.0) & (e <= 308) DO
+            INC(e);
+            tens := tens * 10.0
+          END;
+          x := x / tens
+        ELSE ASSERT((1.0 <= x) & (x < 10.0));
+          e := 0
+        END
       END;
       IF e = 0 THEN
         len := 0
@@ -126,7 +127,6 @@ MODULE RealToCharz;
     ASSERT(n >= 0);
     ASSERT((0 <= ofs) & (ofs < LEN(str)));
 
-    x0 := x;
     sign := x < 0.0;
     i := ORD(sign);
     IF sign THEN

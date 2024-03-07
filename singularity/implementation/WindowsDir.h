@@ -1,4 +1,4 @@
-/* Copyright 2017-2018 ComdivByZero
+/* Copyright 2017-2018,2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ extern o7_bool WindowsDir_Close(WindowsDir_FindId *id);
 
 extern o7_bool WindowsDir_CopyName(o7_int_t len, o7_char buf[O7_VLA(len)], o7_int_t *ofs,
                                    WindowsDir_FindData f);
+
+extern o7_bool WindowsDir_Mkdir(o7_int_t len, o7_char name[O7_VLA(len)], o7_int_t ofs);
 
 O7_ALWAYS_INLINE void WindowsDir_init(void) {}
 O7_ALWAYS_INLINE void WindowsDir_done(void) {}

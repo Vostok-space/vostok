@@ -555,7 +555,7 @@ var o7;
     if (isFinite(val)) {
       return val;
     } else {
-      throw new RangeError("Uninitialized value");
+      throw new RangeError("Uninitialized variable");
     }
   }
   o7.inited = inited;
@@ -565,14 +565,12 @@ var o7;
     d = a - b;
     if (isFinite(d)) {
       ;
-    } else if (inited(a) < inited(b)) {
+    } else if (a < b) {
       d = -1;
-    } else if (a > b) {
-      d = 1;
     } else {
-      d = 0;
+      inited(d);
     }
-    return d
+    return d;
   }
 
   o7.strcmp = function(s1, s2) {
@@ -581,7 +579,7 @@ var o7;
     while ((s1[i] == s2[i]) && (s1[i] != 0)) {
       i += 1;
     }
-    return s1[i] - s2[i];
+    return inited(s1[i] - s2[i]);
   };
 
   function strchcmp(s1, c2) {
@@ -589,8 +587,10 @@ var o7;
 
     c1 = s1[0];
     ret = c1 - c2;
-    if (ret == 0 && c1 != 0 && s1.length > 1 && s1[1] != 0) {
-        ret = s1[1];
+    if (ret != 0) {
+      inited(ret);
+    } else if (c1 != 0 && s1[1] != 0) {
+      ret = inited(s1[1]);
     }
     return ret;
   }
@@ -610,6 +610,17 @@ var o7;
       d[i] = s[i];
     }
     assert(d[len - 1] == 0);
+  };
+
+  o7.memcpy = function(d, di, s, si, len) {
+    var lim;
+
+    lim = di + len;
+    assert(d.length >= lim);
+    while (di < lim) {
+      d[di] = s[si];
+      di += 1; si += 1;
+    }
   };
 
   function copy(d, s) {

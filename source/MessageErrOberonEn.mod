@@ -113,6 +113,8 @@ BEGIN
 		C("Excess parameter in subroutine's call")
 	| AST.ErrCallIncompatibleParamType:
 		C("Incompatible parameter's type")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Unsafe address of variable, whose type contain a pointer")
 	| AST.ErrCallExpectVarParam:
 		C("The parameter must be variable")
 	| AST.ErrCallExpectAddressableParam:
@@ -216,7 +218,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Division by zero")
 	| AST.ErrNegativeDivisor:
-		C("Division by negative number is undefined")
+		C("Division by negative integer is undefined")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Value out of byte's range")
 	| AST.ErrValueOutOfRangeOfChar:

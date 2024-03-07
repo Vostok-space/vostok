@@ -106,6 +106,8 @@ BEGIN
 		C("Зайві фактичні параметри у виклику підпрограми")
 	| AST.ErrCallIncompatibleParamType:
 		C("Несумісний тип фактичного параметру")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Небезпечна адреса змінної, тип якої містить вказівник")
 	| AST.ErrCallExpectVarParam:
 		C("Фактичний параметр повинен бути змінним")
 	| AST.ErrCallExpectAddressableParam:
@@ -209,7 +211,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Ділення на 0")
 	| AST.ErrNegativeDivisor:
-		C("Ділення на від'ємне число не визначене")
+		C("Ділення на від'ємне ціле не визначене")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Значення виходить за межі BYTE")
 	| AST.ErrValueOutOfRangeOfChar:

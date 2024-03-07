@@ -918,7 +918,7 @@ BEGIN
 	ret := ErrNo;
 	IF (dir # "") & (dir # "-") THEN
 		imp := module.import;
-		WHILE (ret = ErrNo) & (imp # NIL) & (imp IS Ast.Import) DO
+		WHILE (ret = ErrNo) & (imp # NIL) & (imp.id = Ast.IdImport) DO
 			IF ~imp.module.m.used & ~imp.module.m.spec THEN
 				ret := GenerateJs1(imp.module.m, NIL, outSingle, opt, dir, dirLen, jsDirs)
 			END;
@@ -1031,7 +1031,7 @@ VAR opt: GeneratorJs.Options;
 	                opt: GeneratorJs.Options; jsDirs: ARRAY OF CHAR;
 	                arg: INTEGER): INTEGER;
 	VAR ret: INTEGER; out: Mem.Out; code: JsEval.Code;
-	    blank: ARRAY 1 OF CHAR; blankLen: INTEGER;
+	    blank: ARRAY 2 OF CHAR; blankLen: INTEGER;
 	BEGIN
 		IF ~Mem.New(out) THEN
 			(* TODO *)
@@ -1040,6 +1040,7 @@ VAR opt: GeneratorJs.Options;
 			blankLen := 0;
 			GeneratorJs.GenerateOptions(out, opt);
 			CopyO7js(jsDirs, out);
+			blank := " ";
 			ret := GenerateJs1(m, call, out, opt,
 			                   blank, blankLen,
 			                   jsDirs);

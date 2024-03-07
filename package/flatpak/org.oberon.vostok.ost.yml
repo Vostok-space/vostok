@@ -13,7 +13,7 @@ modules:
         result/bs-ost run make.Build -infr . -m source
         result/ost to-bin Translator.Go result/ost -infr . -m source -cc "cc -O1 -flto -s"
         rm -rf /app/share
-        mkdir -p /app/bin /app/share
+        mkdir --parents /app/bin /app/share
         result/ost run 'make.Self; (*make.TestGenOberon;*) make.InstallTo("/app")' -infr . -m source
     sources:
       - type: archive

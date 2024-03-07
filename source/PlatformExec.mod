@@ -1,6 +1,6 @@
 (*  Wrapper over OS-specific execution
  *
- *  Copyright (C) 2017-2019,2021-2023 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -15,6 +15,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *)
+
+Init { Add | AddAsIs | ( FirstPart { AddPart | AddDirSep } LastPart ) } [ Do ]
+DoCharz
+
 MODULE PlatformExec;
 
 IMPORT
@@ -110,8 +114,8 @@ PROCEDURE Quote(VAR d: ARRAY OF CHAR; VAR i: INTEGER): BOOLEAN;
 VAR ok: BOOLEAN;
 BEGIN
 	ok := i < LEN(d) - 1;
-	IF ok & ~Platform.Java THEN
-		IF Platform.Posix THEN
+	IF ok THEN
+		IF Platform.Posix OR Platform.Java THEN
 			d[i] := "'"
 		ELSE ASSERT(Platform.Windows);
 			d[i] := Utf8.DQuote
@@ -220,7 +224,7 @@ BEGIN
 		ELSE
 			c.partsQuote := Platform.Posix
 		END;
-		ok := ok & (~c.partsQuote OR Quote(c.buf, c.len))
+		ok := ok & (~c.partsQuote OR AddQuote(c))
 		         & Copy(c.buf, c.len, arg, 0, c.parts)
 	END
 	RETURN ok
@@ -238,7 +242,7 @@ BEGIN
 	ASSERT(c.parts);
 	c.parts := FALSE
 
-	RETURN Copy(c.buf, c.len, arg, ofs, c.parts) & (~c.partsQuote OR Quote(c.buf, c.len))
+	RETURN Copy(c.buf, c.len, arg, ofs, c.parts) & (~c.partsQuote OR AddQuote(c))
 END LastPartByOfs;
 
 PROCEDURE LastPart*(VAR c: Code; arg: ARRAY OF CHAR): BOOLEAN;
@@ -276,6 +280,17 @@ BEGIN
 	RETURN OsExec.Do(c.buf)
 END Do;
 
+PROCEDURE DoCharz*(cmd: ARRAY OF CHAR): INTEGER;
+VAR res: INTEGER;
+BEGIN
+	IF Charz.CalcLen(cmd, 0) > 0 THEN
+		res := OsExec.Do(cmd)
+	ELSE
+		res := Ok
+	END
+	RETURN res
+END DoCharz;
+
 PROCEDURE AutoCorrectDirSeparator*(state: BOOLEAN);
 BEGIN
 	autoCorrectDirSeparator := state
@@ -284,5 +299,3 @@ END AutoCorrectDirSeparator;
 BEGIN
 	autoCorrectDirSeparator := FALSE
 END PlatformExec.
-
-Init { Add | AddAsIs | ( FirstPart { AddPart } LastPart ) } [ Do ]

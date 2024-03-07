@@ -70,6 +70,7 @@ CONST
 	ErrCallIgnoredReturn*           = ErrCallExprWithoutReturn - 1;
 	ErrCallExcessParam*             = -39;
 	ErrCallIncompatibleParamType*   = -40;
+	ErrCallAdrParamTypeWithPtr*     = -119;(*TODO*)
 	ErrCallExpectVarParam*          = -41;
 	ErrCallExpectAddressableParam*  = -42;
 	ErrCallParamsNotEnough*         = -43;
@@ -236,6 +237,7 @@ CONST
 	InitedCheck*  = 4;
 	Used*         = 5;
 	Dereferenced* = 6;
+	Writable*     = 16;
 
 	Integers*   = {IdByte, IdInteger, IdLongInt};
 	Reals*      = {IdReal32, IdReal};
@@ -283,6 +285,9 @@ CONST
 	StrUsedAsChar*  = 0;
 	StrUsedUndef*   = 1;
 	StrUsedAsArray* = 2;
+
+	WithSystemAdr*      = 0;
+	WithSystemAdrLocal* = 1;
 
 TYPE
 	Options* = RECORD(V.Base)
@@ -465,7 +470,9 @@ TYPE
 
 		recordForwardCount: INTEGER;
 
-		stats*: Statement
+		stats*: Statement;
+
+		info*: SET
 	END;
 
 	Import* = POINTER TO RECORD(RDeclaration)
@@ -839,7 +846,8 @@ BEGIN
 	END;
 	d.stats := NIL;
 
-	d.recordForwardCount := 0
+	d.recordForwardCount := 0;
+	d.info := {}
 END DeclarationsInit;
 
 PROCEDURE DeclarationsConnect(d, up: Declarations;
@@ -1017,9 +1025,8 @@ VAR imp: Import; dup: Strings.String;
 	name: ARRAY TranLim.LenName + 1 OF CHAR;
 
 	PROCEDURE Load(VAR res: ModuleBag; prov: Provider; host: Module; name: ARRAY OF CHAR): INTEGER;
-	VAR err, i: INTEGER; m: Module;
+	VAR err: INTEGER; m: Module;
 	BEGIN
-		i := 0;
 		res := GetModuleByName(prov, host, name);
 		IF res = NIL THEN
 			m := ModuleCreate(name);
@@ -1782,6 +1789,23 @@ BEGIN
 	END
 	RETURN err
 END PointerSetType;
+
+PROCEDURE IsContainPointer*(t: Type): BOOLEAN;
+VAR v: Declaration; res: BOOLEAN;
+BEGIN
+	WHILE t.id = IdArray DO t := t.type END;
+
+	IF t.id = IdRecord THEN
+		v := t(Record).vars;
+		WHILE (v # NIL) & ~IsContainPointer(v.type) DO
+			v := v.next
+		END;
+		res := v # NIL
+	ELSE
+		res := t.id = IdPointer
+	END
+	RETURN res
+END IsContainPointer;
 
 PROCEDURE RecordSetBase*(r, base: Record);
 BEGIN
@@ -3381,6 +3405,9 @@ BEGIN
 				END
 			ELSE
 				err := ErrCallNotProc
+			END;
+			IF des.decl.id = SpecIdent.Adr THEN
+				INCL(c.ds.info, WithSystemAdr)
 			END
 		END
 	END;
@@ -3406,22 +3433,28 @@ VAR v: Var;
     tid: INTEGER;
     able: BOOLEAN;
 BEGIN
-	v := des.decl(Var);
-	IF IsGlobal(v) THEN
-		able := ~v.module.m.fixed
-	ELSE
-		able := ~(v IS FormalParam)
-		     OR (ParamOut IN v(FormalParam).access)
-		     OR ~(v.type.id IN {IdArray, IdRecord})
-	END;
+	able := Writable IN des.inited;
 	IF ~able THEN
-		tid := des.decl.type.id;
-		sel := des.sel;
-		WHILE (sel # NIL) & (tid # IdPointer) DO
-			tid := sel.type.id;
-			sel := sel.next
+		v := des.decl(Var);
+		IF IsGlobal(v) THEN
+			able := ~v.module.m.fixed
+		ELSE
+			able := ~(v IS FormalParam)
+			     OR (ParamOut IN v(FormalParam).access)
+			     OR ~(v.type.id IN {IdArray, IdRecord})
 		END;
-		able := sel # NIL
+		IF ~able THEN
+			tid := des.decl.type.id;
+			sel := des.sel;
+			WHILE (sel # NIL) & (tid # IdPointer) DO
+				tid := sel.type.id;
+				sel := sel.next
+			END;
+			able := sel # NIL
+		END;
+		IF able THEN
+			INCL(des.inited, Writable)
+		END
 	END
 	RETURN able
 END IsChangeable;
@@ -3457,6 +3490,26 @@ END ExprGetLocalVar;
 PROCEDURE IsLocalVar*(e: Expression): BOOLEAN;
 RETURN ExprGetLocalVar(e) # NIL
 END IsLocalVar;
+
+(* Глобальные переменные или их части и динамически выделенные записи.
+   Для включения частей выделенных записей необходимо добавить в адрес ещё и базовый указатель *)
+PROCEDURE IsDesignateStableAddress*(d: Designator): BOOLEAN;
+VAR res: BOOLEAN; sel: Selector;
+BEGIN
+	res := IsGlobal(d.decl);
+	sel := d.sel;
+	IF res THEN
+		WHILE (sel # NIL) & (sel.type.id # IdPointer) DO
+			sel := sel.next
+		END;
+		res := sel = NIL
+	END;
+	IF ~res & (d.type.id = IdRecord) & (sel # NIL) THEN
+		WHILE sel.next # NIL DO sel := sel.next END;
+		res := sel IS SelPointer
+	END
+	RETURN res
+END IsDesignateStableAddress;
 
 (*
 PROCEDURE IsConstOrLocalVar*(e: Expression): BOOLEAN;
@@ -3539,11 +3592,12 @@ BEGIN
 	RETURN (e.id = IdString) & e(ExprString).asChar
 END IsExprChar;
 
-PROCEDURE CallParamNew*(call: ExprCall; VAR lastParam: Parameter; e: Expression;
+PROCEDURE CallParamNew*(VAR c: Context; call: ExprCall; VAR lastParam: Parameter; e: Expression;
                         VAR currentFormalParam: FormalParam): INTEGER;
 VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 
-	PROCEDURE TypeVariation(call: ExprCall; e: Expression; fp: FormalParam): BOOLEAN;
+	PROCEDURE TypeVariation(VAR c: Context; call: ExprCall; e: Expression; fp: FormalParam;
+	                        VAR err: INTEGER): BOOLEAN;
 	VAR comp: BOOLEAN; id: INTEGER; tp: Type;
 	BEGIN
 		tp := e.type;
@@ -3561,8 +3615,16 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 				comp := tp.id = IdArray
 			ELSIF id = SpecIdent.Ord THEN
 				comp := tp.id IN (Sets + {IdChar, IdBoolean})
+			ELSIF id = SpecIdent.Adr THEN
+				comp := ~IsContainPointer(e.type);
+				IF ~comp THEN
+					err := ErrCallAdrParamTypeWithPtr
+				END;
+				IF ~IsDesignateStableAddress(e(Designator)) THEN
+					INCL(c.ds.info, WithSystemAdrLocal)
+				END
 			ELSE
-				comp := id = SpecIdent.Adr
+				comp := FALSE
 			END
 		END
 		RETURN comp
@@ -3598,9 +3660,11 @@ BEGIN
 		 &     ((ParamOut IN fp.access)
 		    OR ~CompatibleAsIntAndByte(fp.type, e.type)
 		       )
-		 & ~TypeVariation(call, e, fp)
+		 & ~TypeVariation(c, call, e, fp, err)
 		THEN
-			err := ErrCallIncompatibleParamType
+			IF err = ErrNo THEN
+				err := ErrCallIncompatibleParamType
+			END
 		ELSIF ParamOut IN fp.access THEN
 			IF ~(IsVar(e) & IsChangeable(e(Designator))) THEN
 				err := ErrCallExpectVarParam
@@ -4607,7 +4671,6 @@ BEGIN
 	ds.types := NIL;
 	ds.vars := NIL;
 	ds.ext := NIL;
-	p := ds.procedures;
 	ds.procedures := NIL;
 	st := ds.stats;
 	ds.stats := NIL;

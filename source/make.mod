@@ -149,12 +149,13 @@ MODULE make;
  END AddRun;
 
  PROCEDURE OstInit(VAR code: Exec.Code; ost: ARRAY OF CHAR; runLang: INTEGER): BOOLEAN;
+ VAR fost: ARRAY 64 OF CHAR;
  RETURN
    (  (runLang = Java) & Exec.Init(code, "java") & Exec.Key(code, "-cp")
    OR (runLang = Js) & Exec.Init(code, "node")
    OR (runLang = C) & Exec.Init(code, "")
    )
- & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
+ & Concat(fost, "result/", ost) & Exec.Val(code, fost)
  & AddRun(code, runLang = Java)
  END OstInit;
 
@@ -311,6 +312,7 @@ MODULE make;
                "translate the translator to Oberon")
       & RunOst("result/ost", "to-bin", "Translator.Go", "result/ost-mod/ost", "result/ost-mod",
                "translate the regenerated translator to binary")
+      & (~Platform.Windows OR FS.Rename("result/ost-mod/ost", "result/ost-mod/ost.exe"))
       & RunOst("result/ost-mod/ost", "to-mod", "Translator", "result/ost-mod2", "source",
                "translate the translator to Oberon by regenerated translator")
      )
@@ -746,36 +748,6 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    RpmBin
  END Rpm;
 
- PROCEDURE Help*;
- BEGIN
-   Msg("Commands and options:");
-   Msg("  Build         build from source ost translator by bootstrap");
-   Msg("  BuildAndroid  build simple android builder");
-   Msg("  Test          build and run tests from test/source");
-   Msg("  Example       build examples");
-   Msg("  Self          build itself then run tests");
-   Msg("  SelfFull      build translator by 2nd generation translator then tests");
-   Msg("  TestGenOberon test of generating to Oberon");
-   Msg("  UseJava       turn translation through Java");
-   Msg("  UseJs         turn translation through JavaScript");
-   Msg("  UseC          turn translation through C");
-   Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
-   Msg("  Opt(content)  string with additional options for the ost-translator");
-   Msg("  Strict(b)     boolean setting for more strict tests checking");
-   Msg("  Together(b)   boolean setting for combining tests into one run");
-   Msg("  Install       install translator and libraries to /usr/local");
-   Msg("  InstallTo(d)  install translator and libraries files to target directory");
-   Msg("  Remove        remove installed files from /usr/local");
-   Msg("  RemoveFrom(d) remove files from target directory");
-   Msg("  Deb           pack source library and translator to .deb-files");
-   Msg("  Rpm           pack source library and translator to .rpm-files");
-
-   Msg(""); Msg("Examples:");
-   Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
-   Msg("  result/ost run 'make.UseJava; make.Test' -infr . -m source");
-   Msg("  /usr/bin/sudo result/ost run make.Install -infr . -m source")
- END Help;
-
  PROCEDURE UseC*;
  BEGIN
    lang := C
@@ -812,6 +784,64 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  BEGIN
    testTogether := together
  END Together;
+
+ PROCEDURE Npm*;
+ VAR ignore: BOOLEAN;
+ BEGIN
+   UseJs; Test; Self;
+   IF ok THEN
+     ok := FS.ChangeDir("package/npm");
+     IF ok THEN
+       ok := FS.MakeDir("bin")
+           & FS.MakeDir("share")
+           & FS.MakeDir("share/vostok");
+       IF ok THEN
+         ok := (Exec.DoCharz("echo '#!/usr/bin/env node' > bin/ost.js") = 0)
+             & (Exec.DoCharz("cat ../../result/ost-v1-js.js >> bin/ost.js") = 0)
+             & (Exec.DoCharz("chmod 555 bin/ost.js") = 0)
+             & FS.Copy("../../singularity", "share/vostok/", TRUE)
+             & FS.Copy("../../library", "share/vostok/", TRUE)
+             & (Exec.DoCharz("npm pack") = 0)
+             & (Exec.DoCharz("mv *.tgz ../../result/") = 0);
+         ignore := FS.RemoveDir("share");
+         ignore := (Exec.DoCharz("chmod 666 bin/ost.js") = 0) & FS.RemoveDir("bin")
+       END;
+       ignore := FS.ChangeDir("../..")
+     END;
+   END;
+   IF ~ok THEN
+     Msg("Failed to pack to npm")
+   END
+ END Npm;
+
+ PROCEDURE Help*;
+ BEGIN
+   Msg("Commands and options:");
+   Msg("  Build         build from source ost translator by bootstrap");
+   Msg("  BuildAndroid  build simple android builder");
+   Msg("  Test          build and run tests from test/source");
+   Msg("  Example       build examples");
+   Msg("  Self          build itself then run tests");
+   Msg("  SelfFull      build translator by 2nd generation translator then tests");
+   Msg("  TestGenOberon test of generating to Oberon");
+   Msg("  UseJava       turn translation through Java");
+   Msg("  UseJs         turn translation through JavaScript");
+   Msg("  UseC          turn translation through C");
+   Msg("  UseCC(cc)     set C compiler from string and turn translation through C");
+   Msg("  Opt(content)  string with additional options for the ost-translator");
+   Msg("  Strict(b)     boolean setting for more strict tests checking");
+   Msg("  Together(b)   boolean setting for combining tests into one run");
+   Msg("  Install       install translator and libraries to /usr/local");
+   Msg("  InstallTo(d)  install translator and libraries files to target directory");
+   Msg("  Remove        remove installed files from /usr/local");
+   Msg("  RemoveFrom(d) remove files from target directory");
+   Msg("  Deb Rpm Npm   pack library and translator to deb|rpm|npm-package");
+
+   Msg(""); Msg("Examples:");
+   Msg("  result/bs-ost run 'make.Build; make.Test; make.Self' -infr . -m source");
+   Msg("  result/ost run 'make.UseJava; make.Test' -infr . -m source");
+   Msg("  /usr/bin/sudo result/ost run make.Install -infr . -m source")
+ END Help;
 
 BEGIN
   Log.On;

@@ -1,0 +1,8 @@
+MODULE Lsl2;
+
+ CONST N* = LSL(-8FFFFFFH, 4);
+
+ PROCEDURE Go*;
+ END Go;
+
+END Lsl2.

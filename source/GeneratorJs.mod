@@ -731,27 +731,22 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 
 		PROCEDURE ActualParam(VAR g: Generator; VAR p: Ast.Parameter;
 		                      VAR fp: Ast.Declaration);
-		VAR t: Ast.Type;
+		VAR isByte: BOOLEAN;
 		BEGIN
-			t := fp.type;
-			IF (t.id = Ast.IdByte) & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
+			isByte := fp.type.id = Ast.IdByte;
+			IF isByte & (p.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt})
 			THEN
 				ExpressionBraced(g, "o7.itb(", p.expr, ")", {ForSameType})
-			ELSIF (p.expr.type.id = Ast.IdByte) & (t.id = Ast.IdByte) THEN
+			ELSIF (p.expr.type.id = Ast.IdByte) & isByte THEN
 				Designator(g, p.expr(Ast.Designator), {ForSameType})
 			ELSE
-				IF fp.type.id # Ast.IdChar THEN
-					t := fp.type
-				END;
 				g.expectArray := fp.type.id = Ast.IdArray;
 				IF ~g.expectArray & (p.expr.id = Ast.IdDesignator) THEN
 					Designator(g, p.expr(Ast.Designator), {})
 				ELSE
 					Expression(g, p.expr, {})
 				END;
-				g.expectArray := FALSE;
-
-				t := p.expr.type
+				g.expectArray := FALSE
 			END;
 
 			p := p.next;
@@ -1033,7 +1028,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	END Boolean;
 
 	PROCEDURE CString(VAR g: Generator; e: Ast.ExprString);
-	VAR s: ARRAY 8 OF CHAR; ch: CHAR; w: Strings.String; len: INTEGER;
+	VAR s: ARRAY 8 OF CHAR; w: Strings.String; len: INTEGER;
 		PROCEDURE ByteString(VAR g: Generator; w: Strings.String);
 		VAR it: Strings.Iterator;
 		BEGIN
@@ -1048,7 +1043,6 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	BEGIN
 		w := e.string;
 		IF e.asChar & ~g.expectArray THEN
-			ch := CHR(e.int);
 			Str(g, "0x");
 			Chr(g, Hex.To(e.int DIV 16));
 			Chr(g, Hex.To(e.int MOD 16))

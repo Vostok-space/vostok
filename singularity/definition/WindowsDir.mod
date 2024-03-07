@@ -26,6 +26,8 @@ MODULE WindowsDir;
 
  PROCEDURE FindFirst*(VAR id: FindId; VAR d: FindData;
                       filespec: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+ BEGIN
+   ASSERT((0 <= ofs) & (ofs < LEN(filespec)))
  RETURN
    FALSE
  END FindFirst;
@@ -45,6 +47,12 @@ MODULE WindowsDir;
    ASSERT(FALSE)
    RETURN FALSE
  END CopyName;
+
+ PROCEDURE Mkdir*(name: ARRAY OF CHAR; ofs: INTEGER): BOOLEAN;
+ BEGIN
+   ASSERT((0 <= ofs) & (ofs < LEN(name)))
+   RETURN FALSE
+ END Mkdir;
 
 BEGIN
   supported := FALSE

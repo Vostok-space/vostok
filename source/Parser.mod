@@ -304,22 +304,70 @@ END ExpectRecordExtend;
 
 PROCEDURE Designator(VAR p: Parser; ds: Ast.Declarations; qualident: Ast.Declaration)
                     : Ast.Designator;
-VAR des: Ast.Designator;
-	decl, var: Ast.Declaration;
-	prev, sel: Ast.Selector;
-	nameBegin, nameEnd, ind, val: INTEGER;
-	str: Strings.String;
+VAR des: Ast.Designator; decl: Ast.Declaration; prev, sel: Ast.Selector; ignore: BOOLEAN;
 
-	PROCEDURE SetSel(VAR prev: Ast.Selector; sel: Ast.Selector;
-	                 des: Ast.Designator);
+	PROCEDURE Sel(VAR p: Parser; ds: Ast.Declarations; des: Ast.Designator; VAR last: Ast.Selector): Ast.Selector;
+	VAR var: Ast.Declaration; sel: Ast.Selector; nameBegin, nameEnd, ind, val: INTEGER;
+	    str: Strings.String;
 	BEGIN
-		IF prev = NIL THEN
-			des.sel := sel
-		ELSE
-			prev.next := sel
+		sel := NIL;
+		last := NIL;
+		IF p.l = Scanner.Dot THEN
+			Scan(p);
+			ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
+			IF nameBegin >= 0 THEN
+				IF des.type.id = Ast.IdPointer THEN
+					INCL(des.inited, Ast.Writable)
+				END;
+				CheckAst(p,
+					Ast.SelRecordNew(p.c, sel, des.type,
+					                 p.s.buf, nameBegin, nameEnd)
+				);
+				last := sel
+			END
+		ELSIF p.l = Scanner.Brace1Open THEN
+			IF des.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
+				Scan(p);
+				var := ExpectRecordExtend(p, ds, des.type(Ast.Construct));
+				CheckAst(p, Ast.SelGuardNew(sel, des, var));
+				last := sel;
+				Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
+			ELSIF ~(des.type.id IN Ast.ProcTypes) THEN
+				AddError(p, ErrExpectVarRecordOrPointer)
+			END
+		ELSIF p.l = Scanner.Brace2Open THEN
+			Scan(p);
+			CheckAst(p, Ast.SelArrayNew(p.c, sel, des.type, des.value, expression(p, ds, {})));
+			last := sel;
+			IF des.value = NIL THEN
+				;
+			ELSIF (des.value.id = Ast.IdString)
+				& (sel(Ast.SelArray).index.value # NIL)
+			THEN
+				val := des.value(Ast.ExprString).int;
+				ind := sel(Ast.SelArray).index.value(Ast.ExprInteger).int;
+				IF val < 0 THEN
+					str := des.value(Ast.ExprString).string;
+					val := ORD(Strings.GetChar(str, ind + 1))
+				END;
+				des.value := Ast.ExprCharNew(val)
+			ELSE
+				des.value := NIL
+			END;
+			WHILE ScanIfEqual(p, Scanner.Comma) DO
+				CheckAst(p,
+					Ast.SelArrayNew(p.c, last.next, des.type, des.value, expression(p, ds, {})));
+				last := last.next
+			END;
+			Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
+		ELSIF p.l = Scanner.Dereference THEN
+			CheckAst(p, Ast.SelPointerNew(sel, des.type));
+			INCL(des.inited, Ast.Writable);
+			last := sel;
+			Scan(p)
 		END;
-		prev := sel
-	END SetSel;
+		RETURN sel
+	END Sel;
 BEGIN
 	IF qualident = NIL THEN
 		ASSERT(p.l = Scanner.Ident);
@@ -330,63 +378,16 @@ BEGIN
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
 		IF (decl.id = Ast.IdVar) OR (decl.id = Ast.IdConst) THEN
-			prev := NIL;
-
-			REPEAT
-				sel := NIL;
-				IF p.l = Scanner.Dot THEN
-					Scan(p);
-					ExpectIdent(p, nameBegin, nameEnd, ErrExpectIdent);
-					IF nameBegin >= 0 THEN
-						CheckAst(p,
-							Ast.SelRecordNew(p.c, sel, des.type,
-							                 p.s.buf, nameBegin, nameEnd)
-						)
-					END
-				ELSIF p.l = Scanner.Brace1Open THEN
-					IF des.type.id IN {Ast.IdRecord, Ast.IdPointer} THEN
-						Scan(p);
-						var := ExpectRecordExtend(p, ds, des.type(Ast.Construct));
-						CheckAst(p, Ast.SelGuardNew(sel, des, var));
-						Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-					ELSIF ~(des.type.id IN Ast.ProcTypes) THEN
-						AddError(p, ErrExpectVarRecordOrPointer)
-					END
-				ELSIF p.l = Scanner.Brace2Open THEN
-					Scan(p);
-					CheckAst(p, Ast.SelArrayNew(p.c, sel, des.type, des.value, expression(p, ds, {})));
-					IF des.value = NIL THEN
-						;
-					ELSIF (des.value.id = Ast.IdString)
-					    & (sel(Ast.SelArray).index.value # NIL)
-					THEN
-						val := des.value(Ast.ExprString).int;
-						ind := sel(Ast.SelArray).index.value(Ast.ExprInteger).int;
-						IF val < 0 THEN
-							str := des.value(Ast.ExprString).string;
-							val := ORD(Strings.GetChar(str, ind + 1))
-						END;
-						des.value := Ast.ExprCharNew(val)
-					ELSE
-						des.value := NIL
-					END;
-					WHILE ScanIfEqual(p, Scanner.Comma) DO
-						SetSel(prev, sel, des);
-						CheckAst(p,
-							Ast.SelArrayNew(p.c, sel, des.type, des.value, expression(p, ds, {})))
-					END;
-					Expect(p, Scanner.Brace2Close, ErrExpectBrace2Close)
-				ELSIF p.l = Scanner.Dereference THEN
-					CheckAst(p, Ast.SelPointerNew(sel, des.type));
-					Scan(p)
-				END;
-				SetSel(prev, sel, des)
-			UNTIL sel = NIL
-
-		ELSIF ~((decl.id = Ast.IdConst) OR (decl IS Ast.GeneralProcedure)
-		     OR (decl.id = Ast.IdError)
-		       )
-		THEN
+			sel := Sel(p, ds, des, prev);
+			IF sel # NIL THEN
+				des.sel := sel;
+				REPEAT
+					sel := prev;
+					sel.next := Sel(p, ds, des, prev)
+				UNTIL sel.next = NIL
+			END;
+			ignore := (decl.id = Ast.IdConst) OR Ast.IsChangeable(des)
+		ELSIF ~((decl IS Ast.GeneralProcedure) OR (decl.id = Ast.IdError)) THEN
 			AddError(p, ErrExpectDesignator)
 		END
 	END
@@ -429,13 +430,13 @@ BEGIN
 			INCL(context, Ast.ParamOutReturnable)
 		END;
 		p.callId := e.designator.decl.id;
-		CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds, context), fp));
+		CheckAst(p, Ast.CallParamNew(p.c, e, par, expression(p, ds, context), fp));
 		p.callId := 0;
 		e.params := par;
 		WHILE ScanIfEqual(p, Scanner.Comma) DO
 			context := context - {Ast.ParamIn, Ast.ParamOut, Ast.ParamOutReturnable}
 			         + Access(fp);
-			CheckAst(p, Ast.CallParamNew(e, par, expression(p, ds, context), fp))
+			CheckAst(p, Ast.CallParamNew(p.c, e, par, expression(p, ds, context), fp))
 		END;
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
 	END;

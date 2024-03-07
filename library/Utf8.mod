@@ -1,6 +1,6 @@
 (*  Some constants and subroutines for Utf-8/ASC II
  *
- *  Copyright (C) 2016,2020-2022 ComdivByZero
+ *  Copyright (C) 2016,2020-2023 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ CONST
 	Delete*          = 7FX;
 
 TYPE
+	(* Минимальный массив, в который умещается любой Unicode character вместе с 0X *)
+	Char* = ARRAY 5 OF CHAR;
+
 	R* = RECORD
 		val*, len*: INTEGER
 	END;

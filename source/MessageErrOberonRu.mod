@@ -106,6 +106,8 @@ BEGIN
 		C("Лишние параметры при вызове процедуры")
 	| AST.ErrCallIncompatibleParamType:
 		C("Несовместимый тип параметра")
+	| AST.ErrCallAdrParamTypeWithPtr:
+		C("Опасный адрес переменной, тип которой содержит указатель")
 	| AST.ErrCallExpectVarParam:
 		C("Параметр должен быть изменяемым")
 	| AST.ErrCallExpectAddressableParam:
@@ -209,7 +211,7 @@ BEGIN
 	| AST.ErrComDivByZero:
 		C("Деление на 0")
 	| AST.ErrNegativeDivisor:
-		C("Деление на отрицательное число не определено")
+		C("Деление на отрицательное целое не определено")
 	| AST.ErrValueOutOfRangeOfByte:
 		C("Значение выходит за границы BYTE")
 	| AST.ErrValueOutOfRangeOfChar:

@@ -174,6 +174,8 @@ typedef char unsigned o7_char;
 #	endif
 #endif
 
+typedef size_t o7_ptr_t;
+
 #define O7_INT_BITS  (sizeof(o7_int_t ) * CHAR_BIT)
 #define O7_LONG_BITS (sizeof(o7_long_t) * CHAR_BIT)
 
@@ -460,34 +462,113 @@ typedef struct {
 #	endif
 #endif
 
-O7_CONST_INLINE
-o7_int_t o7_ptr_to_int(void *ptr) {
-	o7_uint_t addr4;
-	o7_ulong_t addr8;
 
-	if (sizeof(ptr) == sizeof(addr4)) {
-		memcpy(&addr4, &ptr, sizeof(addr4));
-	} else if (sizeof(ptr) == sizeof(addr8)) {
-		memcpy(&addr8, &ptr, sizeof(addr8));
-		o7_assert(addr8 <= O7_UINT_MAX);
-		addr4 = addr8;
+#if defined(O7_RAW_ADR)
+	enum { O7_CHECKED_ADR = (int)!(O7_RAW_ADR) };
+#else
+	enum { O7_CHECKED_ADR = 1 };
+#endif
+
+typedef enum {
+	O7_ADR_OUTDATE   = 0,
+	O7_ADR_LOCAL_RO  = 2,
+	O7_ADR_LOCAL     = 3,
+	O7_ADR_GLOBAL_RO = 4,
+	O7_ADR_GLOBAL    = 5
+} o7_adr_kind_t;
+
+/* checked address */
+typedef struct {
+	void *adr;
+	o7_uint_t size;
+	o7_adr_kind_t kind;
+} o7_chadr_t;
+
+O7_CONST_INLINE o7_cbool o7_adr_is_local(o7_adr_kind_t kind) {
+	return (int)kind / 2 == 1;
+}
+
+O7_ALWAYS_INLINE
+o7_int_t o7_ptr_to_int(void *ptr, size_t size, o7_adr_kind_t kind, o7_uint_t *count) {
+	extern o7_uint_t o7_ptr_to_uint(void *, size_t, o7_adr_kind_t);
+	extern o7_uint_t o7_lptr_to_uint(void *, size_t, o7_adr_kind_t, o7_uint_t *);
+	o7_uint_t addr;
+
+	if (O7_CHECKED_ADR || (sizeof(ptr) != sizeof(addr))) {
+		if (O7_CHECKED_ADR && o7_adr_is_local(kind)) {
+			addr = o7_lptr_to_uint(ptr, size, kind, count);
+		} else {
+			addr = o7_ptr_to_uint(ptr, size, kind);
+		}
+	} else if (sizeof(ptr) == sizeof(addr)) {
+		addr = (o7_uint_t)(o7_ptr_t)ptr;
 	} else {
 		abort();
 	}
-	return (o7_int_t)addr4;
+	return (o7_int_t)addr;
 }
 
-O7_CONST_INLINE
-void* o7_int_to_ptr(o7_int_t addr) {
-	o7_uint_t addr4;
-	char unsigned *ptr;
+O7_ALWAYS_INLINE
+void const * o7_int_to_ptr(o7_int_t saddr, size_t size) {
+	extern void const * o7_uint_to_ptr(o7_uint_t);
+	extern void const * o7_uint_to_sptr(o7_uint_t, o7_uint_t);
+	o7_uint_t addr;
+	void const *ptr;
 
-	addr4 = (o7_uint_t)addr;
-	memcpy(&ptr, &addr, sizeof(addr4));
+	addr = (o7_uint_t)saddr;
+	if (O7_CHECKED_ADR || (sizeof(ptr) != sizeof(addr))) {
+		if (size == 1) {
+			ptr = o7_uint_to_ptr(addr);
+		} else {
+			ptr = o7_uint_to_sptr(addr, (o7_uint_t)size);
+		}
+	} else if (sizeof(ptr) == sizeof(addr)) {
+		ptr = (void const *)(o7_ptr_t)addr;
+	} else {
+		abort();
+	}
 	return ptr;
 }
 
-#define O7_ADR(var) o7_ptr_to_int((void *)&(var))
+O7_ALWAYS_INLINE /* writable pointer */
+void* o7_int_to_wptr(o7_int_t saddr, size_t size) {
+	extern void* o7_uint_to_wptr(o7_uint_t);
+	extern void* o7_uint_to_swptr(o7_uint_t, o7_uint_t);
+	o7_uint_t addr;
+	char unsigned *ptr;
+
+	addr = (o7_uint_t)saddr;
+	if (O7_CHECKED_ADR || (sizeof(ptr) != sizeof(addr))) {
+		if (size == 1) {
+			ptr = o7_uint_to_wptr(addr);
+		} else {
+			ptr = o7_uint_to_swptr(addr, (o7_uint_t)size);
+		}
+	} else if (sizeof(ptr) == sizeof(addr)) {
+		ptr = (void *)(o7_ptr_t)addr;
+	} else {
+		abort();
+	}
+	return ptr;
+}
+
+O7_ALWAYS_INLINE /* local address out of scoupe */
+void O7_LADROUT(o7_uint_t count) {
+	extern void o7_lptr_outdate(o7_uint_t);
+	if (O7_CHECKED_ADR) {
+		o7_lptr_outdate(count);
+	}
+}
+
+#define O7_ADR(var)                   o7_ptr_to_int((void *)&(var)  , sizeof(var)  , O7_ADR_GLOBAL, NULL)
+#define O7_ADRS(var, size)            o7_ptr_to_int((void *)(var)   , (size)       , O7_ADR_GLOBAL, NULL)
+#define O7_LADR(local, count)         o7_ptr_to_int((void *)&(local), sizeof(local), O7_ADR_LOCAL , (count))
+#define O7_LADRS(local, size, count)  o7_ptr_to_int((void *)(local) , (size)       , O7_ADR_LOCAL , (count))
+
+#define O7_RADR(var)                  o7_ptr_to_int((void *)&(var)  , sizeof(var)  , O7_ADR_GLOBAL_RO, NULL)
+#define O7_RLADR(local, count)        o7_ptr_to_int((void *)&(local), sizeof(local), O7_ADR_LOCAL_RO , (count))
+#define O7_RLADRS(local, size, count) o7_ptr_to_int((void *)(local) , (size)       , O7_ADR_LOCAL_RO , (count))
+
 
 O7_CONST_INLINE
 o7_int_t o7_size_to_int(size_t size) {
@@ -500,51 +581,62 @@ o7_int_t o7_size_to_int(size_t size) {
 
 O7_ALWAYS_INLINE
 o7_cbool o7_bit(o7_int_t addr, o7_int_t bit) {
-	o7_uint_t addr4;
 	char unsigned *ptr;
-	o7_assert((0 <= bit) && (bit < 32));
+	o7_cbool v;
+	O7_STATIC_ASSERT(CHAR_BIT == 8);
+	o7_assert((0 <= bit) && (bit < 8));
 
-	addr4 = (o7_uint_t)addr;
-	memcpy(&ptr, &addr, sizeof(addr4));
-	return (ptr[bit / 8] & (1u << (bit % 8))) != 0;
+	ptr = (char unsigned *)o7_int_to_ptr(addr, 1);
+	if (O7_BYTE_ORDER == O7_ORDER_LE) {
+		v = (*ptr & (1u << bit)) != 0;
+	} else if (O7_BYTE_ORDER == O7_ORDER_BE) {
+		v = (*ptr & (0x80u >> bit)) != 0;
+	} else { abort(); }
+	return v;
 }
 
-#define O7_GET(src, dst) memcpy((void *)dst, o7_int_to_ptr(src), sizeof(*(dst)))
+#define O7_GET(src, dst) memcpy((void *)dst, o7_int_to_ptr(src, sizeof(*(dst))), sizeof(*(dst)))
 
 O7_ALWAYS_INLINE
 void o7_put_bool(o7_int_t addr, o7_bool val) {
-	*(o7_bool *)o7_int_to_ptr(addr) = val;
+	*(o7_bool *)o7_int_to_wptr(addr, sizeof(val)) = val;
 }
 
 O7_ALWAYS_INLINE
 void o7_put_char(o7_int_t addr, o7_char val) {
-	*(o7_char *)o7_int_to_ptr(addr) = val;
+	*(o7_char *)o7_int_to_wptr(addr, sizeof(val)) = val;
 }
 
 O7_ALWAYS_INLINE
 void o7_put_uint(o7_int_t addr, o7_uint_t val) {
-	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+	memcpy(o7_int_to_wptr(addr, sizeof(val)), &val, sizeof(val));
 }
 
 O7_ALWAYS_INLINE
 void o7_put_ulong(o7_int_t addr, o7_ulong_t val) {
-	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+	memcpy(o7_int_to_wptr(addr, sizeof(val)), &val, sizeof(val));
 }
 
 O7_ALWAYS_INLINE
 void o7_put_double(o7_int_t addr, double val) {
-	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+	memcpy(o7_int_to_wptr(addr, sizeof(val)), &val, sizeof(val));
 }
 
 O7_ALWAYS_INLINE
 void o7_put_float(o7_int_t addr, float val) {
-	memcpy(o7_int_to_ptr(addr), &val, sizeof(val));
+	memcpy(o7_int_to_wptr(addr, sizeof(val)), &val, sizeof(val));
 }
 
 O7_ALWAYS_INLINE
 void o7_copy(o7_int_t src, o7_int_t dst, o7_int_t n) {
+	extern void o7_chcopy(o7_int_t, o7_int_t, o7_int_t);
+
 	o7_assert(0 <= n && n <= (size_t)-1 / sizeof(o7_int_t));
-	memmove(o7_int_to_ptr(dst), o7_int_to_ptr(src), (size_t)n * sizeof(o7_int_t));
+	if (O7_CHECKED_ADR) {
+		o7_chcopy(src, dst, n);
+	} else {
+		memmove(o7_int_to_wptr(dst, 1), o7_int_to_ptr(src, 1), n * sizeof(o7_int_t));
+	}
 }
 
 
@@ -619,7 +711,7 @@ O7_ATTR_MALLOC O7_ALWAYS_INLINE void* o7_malloc(size_t size);
 #	define O7_APA(arrayName)            arrayName
 #	define O7_FPA_LEN(arrayName)        O7_E2K_LEN(arrayName)
 #else
-#	define O7_FPA(typeName, arrayName)      o7_int_t arrayName##_len, typeName arrayName[O7_VLA(arrayName##_len)]
+#	define O7_FPA(typeName, arrayName)  o7_int_t arrayName##_len, typeName arrayName[O7_VLA(arrayName##_len)]
 #	define O7_APA(arrayName)            arrayName##_len, arrayName
 #	define O7_FPA_LEN(arrayName)        arrayName##_len
 #endif
@@ -1180,26 +1272,33 @@ o7_set64_t o7_lset(o7_int_t low, o7_int_t high) {
 	return ((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high));
 }
 
-#define O7_SET(low, high) (((o7_set64_t)-1 << low) & ((o7_set64_t)-1 >> (63 - high)))
+#define O7_SET(low, high) (((o7_set64_t)-1 << (low)) & ((o7_set64_t)-1 >> (63 - (high))))
 
-#define O7_IN(n, set) (((n) >= 0) && ((n) <= 63) && (0 != ((set) & ((o7_set64_t)1u << (n)))))
+#define O7_IN(n, set) (0 != ((set) & ((o7_set64_t)1 << (n))))
 
 O7_CONST_INLINE
-o7_bool o7_lin(o7_int_t n, o7_set64_t set) {
+o7_cbool o7_lin(o7_int_t n, o7_set64_t set) {
 	o7_assert((0 <= n) && (n <= 63));
 	return 0 != (set & ((o7_set64_t)1 << n));
 }
 
 #else /* O7_LONG_SUPPORT */
 
-#define O7_SET(low, high) (((o7_set_t)-1 << low) & ((o7_set_t)-1 >> (31 - high)))
+#define O7_SET(low, high) ((~(o7_set_t)0 << (low)) & (~(o7_set_t)0 >> (31 - (high))))
 
-#define O7_IN(n, set) (0 != ((set) & ((o7_set_t)1u << (n))))
+#define O7_IN(n, set) (0 != ((set) & ((o7_set_t)1 << (n))))
 
 #endif /* O7_LONG_SUPPORT */
 
 O7_CONST_INLINE
-o7_bool o7_in(o7_int_t n, o7_set_t set) {
+o7_set_t o7_set(o7_int_t low, o7_int_t high) {
+	o7_assert(0 <= low  && low  <= 31);
+	o7_assert(0 <= high && high <= 31);
+	return (~(o7_set_t)0 << low) & (~(o7_set_t)0 >> (31 - high));
+}
+
+O7_CONST_INLINE
+o7_cbool o7_in(o7_int_t n, o7_set_t set) {
 	o7_assert((0 <= n) && (n <= 31));
 	return 0 != (set & ((o7_set_t)1 << n));
 }
@@ -1488,13 +1587,6 @@ void * o7_must_r(o7_tag_t const *base, void *strct, o7_tag_t const *ext) {
 
 #define O7_GUARD_R(ExtType, strct, base) \
 	(*(struct ExtType *)o7_must_r(base, strct, &ExtType##_tag))
-
-O7_CONST_INLINE
-o7_set_t o7_set(o7_int_t low, o7_int_t high) {
-	o7_assert(0 <= low  && low  <= 31);
-	o7_assert(0 <= high && high <= 31);
-	return (~(o7_set_t)0 << low) & (~(o7_set_t)0 >> (31 - high));
-}
 
 
 O7_CONST_INLINE

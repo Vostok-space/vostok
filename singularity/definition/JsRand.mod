@@ -26,7 +26,7 @@ MODULE JsRand;
                  : BOOLEAN;
   BEGIN
     ASSERT(0 < count);
-    ASSERT((0 <= ofs) & (ofs <= LEN(buf) - count));
+    ASSERT((0 <= ofs) & (ofs <= LEN(buf) - count))
   RETURN
     FALSE
   END Read;
