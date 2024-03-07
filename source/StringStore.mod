@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2022 ComdivByZero
+ *  Copyright (C) 2016-2023 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -308,15 +308,15 @@ BEGIN
 			INC(i)
 		END;
 		j := 0;
-		WHILE (j < LEN(s)) & (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
+		WHILE (b.s[i] = s[j]) & (s[j] # Utf8.Null) DO
 			INC(i);
 			INC(j)
 		ELSIF b.s[i] = Utf8.NewPage DO
 			b := b.next;
 			i := 0
 		END
-	UNTIL (j = LEN(s)) OR (s[j] = Utf8.Null) OR (b.s[i] = Utf8.Null)
-	RETURN (j = LEN(s)) OR (s[j] = Utf8.Null)
+	UNTIL (s[j] = Utf8.Null) OR (b.s[i] = Utf8.Null)
+	RETURN s[j] = Utf8.Null
 END SearchSubString;
 
 PROCEDURE CopyToChars*(VAR d: ARRAY OF CHAR; VAR dofs: INTEGER; w: String): BOOLEAN;
