@@ -149,12 +149,13 @@ MODULE make;
  END AddRun;
 
  PROCEDURE OstInit(VAR code: Exec.Code; ost: ARRAY OF CHAR; runLang: INTEGER): BOOLEAN;
+ VAR fost: ARRAY 64 OF CHAR;
  RETURN
    (  (runLang = Java) & Exec.Init(code, "java") & Exec.Key(code, "-cp")
    OR (runLang = Js) & Exec.Init(code, "node")
    OR (runLang = C) & Exec.Init(code, "")
    )
- & Exec.FirstPart(code, "result/") & Exec.LastPart(code, ost)
+ & Concat(fost, "result/", ost) & Exec.Val(code, fost)
  & AddRun(code, runLang = Java)
  END OstInit;
 
@@ -311,6 +312,7 @@ MODULE make;
                "translate the translator to Oberon")
       & RunOst("result/ost", "to-bin", "Translator.Go", "result/ost-mod/ost", "result/ost-mod",
                "translate the regenerated translator to binary")
+      & (~Platform.Windows OR FS.Rename("result/ost-mod/ost", "result/ost-mod/ost.exe"))
       & RunOst("result/ost-mod/ost", "to-mod", "Translator", "result/ost-mod2", "source",
                "translate the translator to Oberon by regenerated translator")
      )
