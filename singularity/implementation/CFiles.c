@@ -1,4 +1,4 @@
-/* Copyright 2016-2017,2020,2023 ComdivByZero
+/* Copyright 2016-2017,2020,2023-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <stdio.h>
+#include <errno.h>
 
 #include <o7.h>
 #include "CFiles.h"
@@ -107,15 +108,16 @@ extern o7_int_t CFiles_Remove(O7_FPA(o7_char const, name), o7_int_t ofs) {
 }
 
 extern o7_cbool CFiles_Exist(O7_FPA(o7_char const, name), o7_int_t ofs) {
+	o7_cbool exist;
 	FILE *file;
 	assert(0 <= ofs);
 	assert(ofs < O7_FPA_LEN(name) - 1);
-	/* TODO менее ресурсоёмкий способ */
 	file = fopen((char const *)(name + ofs), "rb");
+	exist = (NULL != file) || (errno != ENOENT);
 	if (NULL != file) {
 		fclose(file);
 	}
-	return NULL != file;
+	return exist;
 }
 
 extern o7_cbool CFiles_Rename(O7_FPA(o7_char const, src ), o7_int_t sofs,
