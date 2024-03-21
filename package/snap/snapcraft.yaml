@@ -36,6 +36,7 @@ parts:
 
     override-build: |
       OST=result/ost-run
+      SPLITEST="$OST run 'make.Together(0=1); make.Test' -infr . -m source"
       if [ "${SNAPCRAFT_TARGET_ARCH}" = riscv64 ]; then
         CC=riscv64-linux-gnu-gcc
         TEST=""
@@ -49,7 +50,7 @@ parts:
       $OST to-bin Translator.Go result/ost -infr . -m source -cc "$CC -Os -flto -s -static"
       rm -rf $SNAPCRAFT_PART_INSTALL/usr
       mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/{bin,share}
-      $OST run 'make.Together(0=0); '"$TEST"'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source
+      $OST run "$TEST"'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source || ($SPLITEST && false)
       mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
       cp result/ost $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result/
 
