@@ -3,6 +3,8 @@
 RESULT=result/benchmark
 GCDA=$RESULT/gcda
 
+SUM=md5sum
+
 generate() {
 	rm -rf $RESULT
 	mkdir --parents $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
@@ -98,7 +100,7 @@ runc() {
 				/usr/bin/time -f '%e sec  %M KiB' \
 					$RESULT/$ost to-c "Translator.Go" /tmp/ost-bench-$ost -infr . $SOURCE
 			done
-			crc32 <(cat /tmp/ost-bench-$ost/*)
+			$SUM <(cat /tmp/ost-bench-$ost/*)
 			rm -r /tmp/ost-bench-$ost
 		fi
 	done
@@ -114,7 +116,7 @@ runjs() {
 		ls -l $RESULT/$tr.js
 		/usr/bin/time -f '%e sec  %M KiB' \
 			$JSRUN $RESULT/$tr.js to-c "Translator.Go" /tmp/ost-bench-js -infr . $SOURCE
-		crc32 <(cat /tmp/ost-bench-js/*)
+		$SUM <(cat /tmp/ost-bench-js/*)
 	done
 
 	rm -r /tmp/ost-bench-js
@@ -132,7 +134,7 @@ runjava() {
 			$JAVA -cp result/benchmark/java \
 				o7.script to-c "Translator.Go" /tmp/ost-bench-java -infr . $SOURCE
 	done
-	crc32 <(cat /tmp/ost-bench-java/*)
+	$SUM <(cat /tmp/ost-bench-java/*)
 
 	rm -r /tmp/ost-bench-java
 }
