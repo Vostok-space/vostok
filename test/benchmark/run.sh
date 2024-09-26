@@ -5,7 +5,7 @@ GCDA=$RESULT/gcda
 
 generate() {
 	rm -rf $RESULT
-	mkdir -p $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
+	mkdir --parents $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
 	SOURCE="-m source/blankJava -m source/blankOberon -m source/blankJs -m source/en-only -m source"
 	NOCHECK="-init noinit -no-array-index-check -no-nil-check -no-arithmetic-overflow-check"
 	result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . $SOURCE -m test/benchmark
@@ -23,7 +23,7 @@ LIST_OST="ost ost-asrt ost-usan ost-asan ost-uasan ost-uasan-asrt"
 
 compile() {
 	SI=singularity/implementation
-	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/Wlibloaderapi.c $SI/MachObjDyld.c"
+	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/PosixDir.c  $SI/WindowsDir.c $SI/Wlibloaderapi.c $SI/Windows_.c $SI/MachObjDyld.c"
 	CC=gcc
 	MAIN="$CC -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation $CFILES"
 	if [[ $CC == clang* ]]; then
@@ -59,7 +59,7 @@ compile() {
 			PROFILE_ASAN=-fprofile-instr-use=$RESULT/ost-asan.profdata
 			PROFILE_USAN=-fprofile-instr-use=$RESULT/ost-usan.profdata
 		fi
-	else if [[ $CC == ccomp ]]; then
+	else if [[ $CC == ccomp ]] || [[ $CC == cproc ]]; then
 		PROFILE=
 	fi fi
 	if [[ $PROFILE == -fprofile-instr-generate ]] || [[ $PROFILE == "" ]]; then
