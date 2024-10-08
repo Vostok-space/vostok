@@ -24,7 +24,7 @@ examples.
 ## Install in Ubuntu 18.04:
 Add [repository](https://translate.google.com/translate?sl=ru&tl=en&u=https://wiki.oberon.org/repo) and execute command:
 
-    $ /usr/bin/sudo apt install vostok-bin
+    /usr/bin/sudo apt install vostok-bin
 
 ## Building in POSIX:
 Script init.sh build from pre-generated C-files the 0-version of the Oberon
@@ -32,19 +32,19 @@ translator - result/bs-ost, which can serve the rest of the tasks:
 generating the executable code of the translator - result/ost from Oberon-source
 and testing.
 
-    $ ./init.sh
+    ./init.sh
 
 Short help about the main targets and variables of build script:
 
-    $ result/bs-ost run make.Help -infr . -m source
+    result/bs-ost run make.Help -infr . -m source
 
 Build the translator:
 
-    $ result/bs-ost run make.Build -infr . -m source
+    result/bs-ost run make.Build -infr . -m source
 
 Testing:
 
-    $ result/bs-ost run 'make.Test; make.Self; make.SelfFull' -infr . -m source
+    result/bs-ost run 'make.Test; make.Self; make.SelfFull' -infr . -m source
 
 ## Building in Windows:
 
@@ -63,29 +63,29 @@ Testing. C-compiler(gcc, clang, tcc) searched automatically:
 ## Installing in POSIX:
 Copying the executable to /usr/local/bin/ and libraries to /usr/local/share:
 
-    $ /usr/bin/sudo result/ost run make.Install -infr . -m source
+    /usr/bin/sudo result/ost run make.Install -infr . -m source
 
 ## Usage:
 
 Help about translator usage:
 
-    $ ost help
+    ost help
 
 Oberon-modules running example:
 
-    $ ost run 'Out.Int(999 * 555, 0); Out.Ln'
+    ost run 'Out.Int(999 * 555, 0); Out.Ln'
 
 Same from project directory without installed ost:
 
-    $ result/ost run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
+    result/ost run 'Out.Int(999 * 555, 0); Out.Ln' -infr .
 
 The parameter '-infr .' indicates the path to the infrastructure, which also
 includes the path, where located library module Out.
 
 Example of executable binary build:
 
-    $ result/ost to-bin ReadDir.Go result/Dir -infr . -m example
-    $ result/Dir
+    result/ost to-bin ReadDir.Go result/Dir -infr . -m example
+    result/Dir
 
 In addition to the command line parameters from the previous examples, here
 introduced the name of the final executable file - result/Dir, which is
@@ -97,9 +97,9 @@ It will be entry point for "result/Dir".
 Launching a demo web server by 8080 port with the ability to edit and execute
 code in a browser:
 
-    $ cd demo-server
-    $ go build server.go
-    $ ./server
+    cd demo-server
+    go build server.go
+    ./server
 
 ## Questions:
 Russian-speaking forums, but possible to ask in english:
