@@ -1,9 +1,13 @@
 #!/bin/bash
 
+PARAMS=${1:-"CC=gcc"}
+eval "$PARAMS"
+
 RESULT=result/benchmark
 GCDA=$RESULT/gcda
-
 SUM=md5sum
+NPROC=`nproc || sysctl -n hw.ncpu || echo 2`
+
 
 generate() {
 	rm -rf $RESULT
@@ -14,9 +18,9 @@ generate() {
 	result/ost to-c "RepeatTran.Go(10)" $RESULT/san  -infr . $SOURCE -m test/benchmark $NOCHECK
 
 	result/ost to-class "RepeatTran.Go(10)" $RESULT/java -infr . $SOURCE -m test/benchmark
-	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost.js -infr . $SOURCE -m test/benchmark
-	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost-nai.js -infr . $SOURCE -m test/benchmark -no-array-index-check
-	result/ost to-js "RepeatTran.Go(1)" $RESULT/ost-naiao.js -infr . $SOURCE -m test/benchmark -no-array-index-check -no-arithmetic-overflow-check
+	result/ost to-js "RepeatTran.Go(2)" $RESULT/ost.js -infr . $SOURCE -m test/benchmark
+	result/ost to-js "RepeatTran.Go(2)" $RESULT/ost-nai.js -infr . $SOURCE -m test/benchmark -no-array-index-check
+	result/ost to-js "RepeatTran.Go(2)" $RESULT/ost-naiao.js -infr . $SOURCE -m test/benchmark -no-array-index-check -no-arithmetic-overflow-check
 }
 
 export ASAN_OPTIONS=detect_odr_violation=0
@@ -26,7 +30,6 @@ LIST_OST="ost ost-asrt ost-usan ost-asan ost-uasan ost-uasan-asrt"
 compile() {
 	SI=singularity/implementation
 	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/PosixDir.c  $SI/WindowsDir.c $SI/Wlibloaderapi.c $SI/Windows_.c $SI/MachObjDyld.c"
-	CC=gcc
 	MAIN="$CC -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation $CFILES"
 	if [[ $CC == clang* ]]; then
 		TRAP="-fsanitize-undefined-trap-on-error"
@@ -37,8 +40,6 @@ compile() {
 	ASAN="-fsanitize=address -DO7_LSAN_LEAK_IGNORE"
 	INIT_NO="-DNDEBUG -DO7_INIT_MODEL=O7_INIT_NO"
 	INIT_UNDEF="-DO7_INIT_MODEL=O7_INIT_UNDEF -DO7_ASSERT_NO_MESSAGE"
-
-	NPROC=`nproc || sysctl -n hw.ncpu`
 
 	PROFILE="$1 -fprofile-dir=$GCDA"
 	PROFILE_ASRT="$PROFILE-asrt"
@@ -94,7 +95,7 @@ runc() {
 		if [ -f $RESULT/$ost ]; then
 			echo
 			ls -l $RESULT/$ost
-			mkdir -p /tmp/ost-bench-$ost
+			mkdir --parents /tmp/ost-bench-$ost
 			for i in $@; do
 				LLVM_PROFILE_FILE="$RESULT/$ost.profraw" \
 				/usr/bin/time -f '%e sec  %M KiB' \
@@ -109,7 +110,7 @@ runc() {
 runjs() {
 	JSRUN="qjs --std"
 	JSRUN=node
-	mkdir -p /tmp/ost-bench-js
+	mkdir --parents /tmp/ost-bench-js
 
 	echo
 	for tr in ost ost-nai ost-naiao; do
@@ -123,7 +124,7 @@ runjs() {
 }
 
 runjava() {
-	mkdir -p /tmp/ost-bench-java
+	mkdir --parents /tmp/ost-bench-java
 
 	JAVA=java
 
@@ -141,7 +142,7 @@ runjava() {
 
 compile_with_profile() {
 	DIRS="$GCDA $GCDA-asrt $GCDA-usan $GCDA-asan $GCDA-uasan $GCDA-uasan-asrt"
-	mkdir -p $DIRS
+	mkdir --parents $DIRS
 
 	echo Compiles and runs for profiling
 	compile -fprofile-generate
