@@ -2082,12 +2082,16 @@ BEGIN
 		Str(g, "static void ")
 	END;
 	GlobalName(g, rec);
-	Str(g, "_undef(struct ");
-	GlobalName(g, rec);
+	Str(g, "_undef(void *v)");
 	IF interf THEN
-		StrLn(g, " *r);")
+		StrLn(g, ";")
 	ELSE
-		StrOpen(g, " *r) {")
+		StrOpen(g, " {");
+		Str(g, "struct ");
+		GlobalName(g, rec);
+		Str(g, "*r = (struct ");
+		GlobalName(g, rec);
+		StrLn(g, "*)v;")
 	END
 END RecordUndefHeader;
 
