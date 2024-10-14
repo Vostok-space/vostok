@@ -1,17 +1,24 @@
 #!/bin/bash
 
-PARAMS=${1:-"CC=gcc"}
+PARAMS=${1:-"# default args"}
 eval "$PARAMS"
+: "${CC:=gcc}"
+: "${COMPILE:=compile_with_profile}"
+: "${CC_OPT:="-O3 -flto -s"}"
+: "${TIME:=/usr/bin/time -f '%e sec  %M KiB'}"
 
 RESULT=result/benchmark
 GCDA=$RESULT/gcda
 SUM=md5sum
-NPROC=`nproc || sysctl -n hw.ncpu || echo 2`
+NPROC=$(nproc || sysctl -n hw.ncpu || echo 2)
 
+export ASAN_OPTIONS=detect_odr_violation=0
+
+LIST_OST="ost ost-asrt ost-usan ost-asan ost-uasan ost-uasan-asrt"
 
 generate() {
 	rm -rf $RESULT
-	mkdir --parents $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
+	mkdir -p $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
 	SOURCE="-m source/blankJava -m source/blankOberon -m source/blankJs -m source/en-only -m source"
 	NOCHECK="-init noinit -no-array-index-check -no-nil-check -no-arithmetic-overflow-check"
 	result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . $SOURCE -m test/benchmark
@@ -23,14 +30,10 @@ generate() {
 	result/ost to-js "RepeatTran.Go(2)" $RESULT/ost-naiao.js -infr . $SOURCE -m test/benchmark -no-array-index-check -no-arithmetic-overflow-check
 }
 
-export ASAN_OPTIONS=detect_odr_violation=0
-
-LIST_OST="ost ost-asrt ost-usan ost-asan ost-uasan ost-uasan-asrt"
-
 compile() {
 	SI=singularity/implementation
 	CFILES="$SI/o7.c $SI/CFiles.c $SI/CLI.c $SI/Platform.c $SI/OsEnv.c $SI/OsExec.c $SI/Unistd_.c $SI/CDir.c $SI/PosixDir.c  $SI/WindowsDir.c $SI/Wlibloaderapi.c $SI/Windows_.c $SI/MachObjDyld.c"
-	MAIN="$CC -O3 -flto -s -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation $CFILES"
+	MAIN="$CC $CC_OPT -DO7_MEMNG_MODEL=O7_MEMNG_NOFREE -Isingularity/implementation $CFILES"
 	if [[ $CC == clang* ]]; then
 		TRAP="-fsanitize-undefined-trap-on-error"
 	else
@@ -76,18 +79,13 @@ compile() {
 	SAN_SET="$INIT_NO -I$RESULT/san $RESULT/san/*.c"
 	# parallelize compilation
 	echo \
-	"$MAIN $PROFILE_ASRT $ASRT_SET -o $RESULT/ost-asrt" \
-	,\
-	"$MAIN $PROFILE_UASAN_ASRT $ASRT_SET $USAN $ASAN $TRAP -o $RESULT/ost-uasan-asrt" \
-	,\
-	"$MAIN $PROFILE_UASAN $SAN_SET $USAN $ASAN $TRAP -o $RESULT/ost-uasan" \
-	,\
-	"$MAIN $PROFILE_ASAN $SAN_SET $ASAN $TRAP -o $RESULT/ost-asan" \
-	,\
-	"$MAIN $PROFILE_USAN $SAN_SET $USAN $TRAP -o $RESULT/ost-usan" \
-	,\
-	"$MAIN $PROFILE $SAN_SET -o $RESULT/ost" \
-	| xargs -d , -n 1 -P $NPROC sh -c
+	\'"$MAIN $PROFILE_ASRT $ASRT_SET -o $RESULT/ost-asrt"\' \
+	\'"$MAIN $PROFILE_UASAN_ASRT $ASRT_SET $USAN $ASAN $TRAP -o $RESULT/ost-uasan-asrt"\' \
+	\'"$MAIN $PROFILE_UASAN $SAN_SET $USAN $ASAN $TRAP -o $RESULT/ost-uasan"\' \
+	\'"$MAIN $PROFILE_ASAN $SAN_SET $ASAN $TRAP -o $RESULT/ost-asan"\' \
+	\'"$MAIN $PROFILE_USAN $SAN_SET $USAN $TRAP -o $RESULT/ost-usan"\' \
+	\'"$MAIN $PROFILE $SAN_SET -o $RESULT/ost"\' \
+	| xargs -n 1 -P $NPROC sh -c
 }
 
 runc() {
@@ -95,11 +93,11 @@ runc() {
 		if [ -f $RESULT/$ost ]; then
 			echo
 			ls -l $RESULT/$ost
-			mkdir --parents /tmp/ost-bench-$ost
+			mkdir -p /tmp/ost-bench-$ost
 			for i in $@; do
 				LLVM_PROFILE_FILE="$RESULT/$ost.profraw" \
-				/usr/bin/time -f '%e sec  %M KiB' \
-					$RESULT/$ost to-c "Translator.Go" /tmp/ost-bench-$ost -infr . $SOURCE
+				eval "$TIME \
+					$RESULT/$ost to-c 'Translator.Go' /tmp/ost-bench-$ost -infr . $SOURCE"
 			done
 			$SUM <(cat /tmp/ost-bench-$ost/*)
 			rm -r /tmp/ost-bench-$ost
@@ -110,13 +108,13 @@ runc() {
 runjs() {
 	JSRUN="qjs --std"
 	JSRUN=node
-	mkdir --parents /tmp/ost-bench-js
+	mkdir -p /tmp/ost-bench-js
 
 	echo
 	for tr in ost ost-nai ost-naiao; do
 		ls -l $RESULT/$tr.js
-		/usr/bin/time -f '%e sec  %M KiB' \
-			$JSRUN $RESULT/$tr.js to-c "Translator.Go" /tmp/ost-bench-js -infr . $SOURCE
+		eval "$TIME \
+			$JSRUN $RESULT/$tr.js to-c 'Translator.Go' /tmp/ost-bench-js -infr . $SOURCE"
 		$SUM <(cat /tmp/ost-bench-js/*)
 	done
 
@@ -124,16 +122,16 @@ runjs() {
 }
 
 runjava() {
-	mkdir --parents /tmp/ost-bench-java
+	mkdir -p /tmp/ost-bench-java
 
 	JAVA=java
 
 	echo
 	echo java classes
 	for i in $@; do
-		/usr/bin/time -f '%e sec  %M KiB' \
+		eval "$TIME \
 			$JAVA -cp result/benchmark/java \
-				o7.script to-c "Translator.Go" /tmp/ost-bench-java -infr . $SOURCE
+				o7.script to-c 'Translator.Go' /tmp/ost-bench-java -infr . $SOURCE"
 	done
 	$SUM <(cat /tmp/ost-bench-java/*)
 
@@ -142,7 +140,7 @@ runjava() {
 
 compile_with_profile() {
 	DIRS="$GCDA $GCDA-asrt $GCDA-usan $GCDA-asan $GCDA-uasan $GCDA-uasan-asrt"
-	mkdir --parents $DIRS
+	mkdir -p $DIRS
 
 	echo Compiles and runs for profiling
 	compile -fprofile-generate
@@ -153,7 +151,8 @@ compile_with_profile() {
 }
 
 generate
-compile_with_profile
-runc 0 1 2 3 4
+$COMPILE
+
+runc    0 1 2 3 4
 runjava 0 1 2 3 4
 runjs
