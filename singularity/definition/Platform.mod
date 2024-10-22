@@ -27,6 +27,9 @@ MODULE Platform;
    Windows*,
    Darwin*,
 
+   Wasm*,
+   Wasi*,
+
    C*,
    Java*,
    JavaScript*: BOOLEAN;
@@ -41,6 +44,9 @@ BEGIN
   Dos        := FALSE;
   Windows    := FALSE;
   Darwin     := FALSE;
+
+  Wasm       := FALSE;
+  Wasi       := FALSE;
 
   C          := FALSE;
   Java       := FALSE;
