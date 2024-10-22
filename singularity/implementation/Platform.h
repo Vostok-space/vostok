@@ -1,4 +1,4 @@
-/* Copyright 2017-2018,2021-2022 ComdivByZero
+/* Copyright 2017-2018,2021-2022,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ extern o7_cbool const
   Platform_Windows,
   Platform_Darwin,
   Platform_Haiku,
+  Platform_Wasm,
+  Platform_Wasi,
   Platform_C,
   Platform_Java,
   Platform_JavaScript;

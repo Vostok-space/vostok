@@ -1,4 +1,4 @@
-/* Copyright 2019,2021-2022 ComdivByZero
+/* Copyright 2019,2021-2022,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,9 @@ module.Windows    = platform == 'win32';
 module.Darwin     = platform == 'darwin';
 
 module.Posix      = module.Linux || module.Bsd || module.Darwin || platform == 'sunos';
+
+module.Wasm       = false;
+module.Wasi       = false;
 
 module.C          = false;
 module.Java       = false;

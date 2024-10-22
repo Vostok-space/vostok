@@ -1,4 +1,4 @@
-/* Copyright 2017-2019,2021 ComdivByZero
+/* Copyright 2017-2019,2021,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,18 @@
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;
+#endif
+
+#if defined(__wasm) || defined(__wasm__)
+  o7_cbool const Platform_Wasm = 0 < 1;
+#else
+  o7_cbool const Platform_Wasm = 0 > 1;
+#endif
+
+#if defined(__wasi__)
+  o7_cbool const Platform_Wasi = 0 < 1;
+#else
+  o7_cbool const Platform_Wasi = 0 > 1;
 #endif
 
 o7_cbool const Platform_C          = 0 < 1;
