@@ -1,6 +1,6 @@
 (*  Generator of JavaScript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
  *
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -337,11 +337,19 @@ BEGIN
 		typ := typ.type
 	UNTIL typ.id # Ast.IdArray;
 
-	Str(g, " = o7.array(");
+	IF typ.id = Ast.IdRecord THEN
+		Str(g, " = o7.arrayOfRec(")
+	ELSE
+		Str(g, " = o7.array(")
+	END;
 	expression(g, sizes[0], {});
 	FOR i := 1 TO l DO
 		Str(g, ", ");
 		expression(g, sizes[i], {})
+	END;
+	IF typ.id = Ast.IdRecord THEN
+		Str(g, ", ");
+		GlobalName(g, typ)
 	END;
 	Chr(g, ")")
 END AssignInitValueArray;
@@ -1321,22 +1329,11 @@ BEGIN
 	var := rec.vars;
 	WHILE var # NIL DO
 		IF var.type.id = Ast.IdArray THEN
-			(* TODO вложенные циклы *)
-			Str(g, "for (var i = 0; i < r.");
+			Str(g, "o7.copy(this.");
 			Name(g, var);
-			StrOpen(g, ".length; i += 1) {");
-			Str(g, "this.");
+			Str(g, ", r.");
 			Name(g, var);
-			IF var.type.type.id # Ast.IdRecord THEN
-				Str(g, "[i] = r.");
-				Name(g, var);
-				StrLn(g, "[i];");
-			ELSE
-				Str(g, "[i].assign(r.");
-				Name(g, var);
-				StrLn(g, "[i]);")
-			END;
-			StrLnClose(g, "}")
+			StrLn(g, ");")
 		ELSE
 			Str(g, "this.");
 			Name(g, var);
@@ -1385,30 +1382,6 @@ BEGIN
 	END
 END GeneratorNotify;
 
-PROCEDURE AllocArrayOfRecord(VAR g: Generator; v: Ast.Declaration;
-                             inRecord: BOOLEAN);
-VAR
-BEGIN
-	(* TODO многомерные массивы *)
-	ASSERT(v.type.type.id = Ast.IdRecord);
-
-	IF inRecord THEN
-		Str(g, "for (var i_ = 0; i_ < this.")
-	ELSE
-		Str(g, "for (var i_ = 0; i_ < ")
-	END;
-	Name(g, v);
-	StrOpen(g, ".length; i_++) {");
-	IF inRecord THEN
-		Str(g, "this.")
-	END;
-	Name(g, v);
-	Str(g, "[i_] = new ");
-	type(g, NIL, v.type.type, FALSE, FALSE);
-	StrLn(g, "();");
-	StrLnClose(g, "}")
-END AllocArrayOfRecord;
-
 PROCEDURE SearchArrayOfRecord(v: Ast.Declaration): Ast.Declaration;
 VAR subt: Ast.Type;
 BEGIN
@@ -1425,21 +1398,6 @@ BEGIN
 	END
 	RETURN v
 END SearchArrayOfRecord;
-
-PROCEDURE InitAllVarsWichArrayOfRecord(VAR g: Generator; v: Ast.Declaration;
-                                       inRecord: BOOLEAN);
-VAR subt: Ast.Type;
-BEGIN
-	WHILE (v # NIL) & (v.id = Ast.IdVar) DO
-		IF (v.type.id = Ast.IdArray)
-		 & (Ast.ArrayGetSubtype(v.type(Ast.Array), subt) > 0)
-		 & (subt.id = Ast.IdRecord)
-		THEN
-			AllocArrayOfRecord(g, v, inRecord)
-		END;
-		v := v.next
-	END
-END InitAllVarsWichArrayOfRecord;
 
 PROCEDURE MarkWithDonor(VAR g: Generator; decl, donor: Ast.Declaration);
 BEGIN
@@ -1485,7 +1443,6 @@ PROCEDURE Type(VAR g: Generator; decl: Ast.Declaration; typ: Ast.Type;
 
 				v := v.next
 			END;
-			InitAllVarsWichArrayOfRecord(g, rec.vars, TRUE);
 			StrLnClose(g, "}")
 		END;
 		IF rec.base # NIL THEN
@@ -2028,8 +1985,6 @@ BEGIN
 
 	declarations(g, proc);
 
-	InitAllVarsWichArrayOfRecord(g, proc.vars, FALSE);
-
 	Statements(g, proc.stats);
 
 	IF proc.return # NIL THEN
@@ -2145,7 +2100,6 @@ VAR g: Generator;
 	BEGIN
 		v := SearchArrayOfRecord(module.vars);
 		IF (module.stats # NIL) OR (v # NIL) THEN
-			InitAllVarsWichArrayOfRecord(g, v, FALSE);
 			Statements(g, module.stats);
 			Statements(g, cmd);
 			Ln(g)
@@ -2155,7 +2109,6 @@ VAR g: Generator;
 	PROCEDURE Main(VAR g: Generator; module: Ast.Module; cmd: Ast.Statement);
 	BEGIN
 		StrOpen(g, "o7.main(function() {");
-		InitAllVarsWichArrayOfRecord(g, module.vars, FALSE);
 		Statements(g, module.stats);
 		Statements(g, cmd);
 		StrLnClose(g, "});")

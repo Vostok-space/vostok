@@ -1,4 +1,4 @@
-/* Copyright 2018-2023 ComdivByZero
+/* Copyright 2018-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ var o7;
     return new RangeError("array index - " + index + " out of bounds - 0 .. " + (array.length - 1));
   }
 
-  /* TODO */
   function array() {
     var lens;
 
@@ -64,6 +63,34 @@ var o7;
     return create(0);
   }
   o7.array = array;
+
+  function arrayOfRec() {
+    var lens, lim, rec;
+
+    lens = arguments;
+    lim = lens.length - 1;
+    rec = lens[lim];
+    function create(li) {
+      var a, len, i;
+
+      len = lens[li];
+      a = new Array(len);
+      li += 1;
+      if (li < lim) {
+        for (i = 0; i < len; i += 1) {
+          a[i] = create(li);
+        }
+      } else {
+        for (i = 0; i < len; i += 1) {
+          a[i] = new rec();
+        }
+      }
+      return a;
+    }
+    return create(0);
+  }
+  o7.arrayOfRec = arrayOfRec;
+
 
   Array.prototype.at = function(index) {
     if (0 <= index && index < this.length) {
@@ -627,13 +654,17 @@ var o7;
     var i, len;
     len = s.length;
     assert(d.length >= len);
-    if ((s[0] instanceof Object) && s[0].length) {
+    if (!(s[0] instanceof Object)) {
+      for (i = 0; i < len; i += 1) {
+        d[i] = s[i];
+      }
+    } else if (s[0].length) {
       for (i = 0; i < len; i += 1) {
         copy(d[i], s[i]);
       }
     } else {
       for (i = 0; i < len; i += 1) {
-        d[i] = s[i];
+        d[i].assign(s[i]);
       }
     }
   }

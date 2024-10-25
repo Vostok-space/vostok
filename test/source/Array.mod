@@ -12,7 +12,6 @@ VAR
 	bb: ARRAY 4 OF ARRAY 5, 6 OF INTEGER;
 	ind: INTEGER;
 
-
 PROCEDURE B(b: ARRAY OF CHAR);
 VAR c: CHAR;
 	l: INTEGER;
@@ -234,6 +233,11 @@ END BuiltinProc;
 
 PROCEDURE Assign*;
 VAR a1, a2: ARRAY 2,2 OF ARRAY 2 OF INTEGER;
+	ar1, ar2: ARRAY 2 OF RECORD
+		aar: ARRAY 3 OF ARRAY 4 OF RECORD
+			i: INTEGER
+		END
+	END;
 BEGIN
 	a1[0][0][0] := 5;
 	a1[0][0, 1] := 7;
@@ -259,7 +263,11 @@ BEGIN
 	ASSERT(a2[1,1,1] = 908);
 	ASSERT(a1[1,1,1] = -7);
 
-	(* TODO ARRAY OF RECORD *)
+	ar1[0].aar[2, 1].i := 333;
+	ar2 := ar1;
+	ASSERT(ar2[-1+3-2].aar[24 DIV 10][5-4].i = 222+111);
+	ar1[0].aar[2, 1].i := -101;
+	ASSERT(333 = ar2[0].aar[2, 1].i)
 END Assign;
 
 PROCEDURE Go*;
