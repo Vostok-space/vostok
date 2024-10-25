@@ -2,9 +2,9 @@ MODULE Привіт;
 
  IMPORT Out;
 
- PROCEDURE Вивід(строка: ARRAY OF CHAR);
+ PROCEDURE Вивід(об'єкт: ARRAY OF CHAR);
  BEGIN
-   Out.String(строка);
+   Out.String(об'єкт);
    Out.Ln
  END Вивід;
 

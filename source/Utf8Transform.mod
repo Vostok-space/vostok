@@ -1,6 +1,6 @@
-(*  Transformations from cyrillic Utf-8 to ASC II
+(*  Transformations from cyrillic Utf-8 in ident to ASCII
  *
- *  Copyright (C) 2016,2019,2021,2023 ComdivByZero
+ *  Copyright (C) 2016,2019,2021,2023-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -38,6 +38,11 @@ MODULE Utf8Transform;
         buf[i    ] := "_";
         buf[i + 1] := "_";
         INC(i, 2)
+      | "'":
+        buf[i    ] := "_";
+        buf[i + 1] := "q";
+        buf[i + 2] := "_";
+        INC(i, 3)
       | 0D0X, 0D1X:
         u := ORD(it.char) MOD 32;
         ASSERT(Strings.IterNext(it));
@@ -54,24 +59,32 @@ MODULE Utf8Transform;
 
   PROCEDURE EscapeForC90*(VAR buf: ARRAY OF CHAR; VAR ofs: INTEGER;
                           VAR it: Strings.Iterator);
-  VAR i: INTEGER; lastEscaped: BOOLEAN;
+  VAR i, afterEscaped: INTEGER;
   BEGIN
     i := ofs;
-    lastEscaped := FALSE;
+    afterEscaped := -1;
     REPEAT
-      IF (it.char < 80X)
-      & ~(lastEscaped & Hex.InRangeWithLowCase(it.char))
+      IF it.char = "_" THEN
+        buf[i    ] := "_";
+        buf[i + 1] := "_";
+        INC(i, 2)
+      ELSIF it.char = "'" THEN
+        buf[i    ] := "_";
+        buf[i + 1] := "q";
+        buf[i + 2] := "_";
+        INC(i, 3)
+      ELSIF (it.char < 80X)
+         & ~((afterEscaped = i) & Hex.InRangeWithLowCase(it.char))
       THEN
         buf[i] := it.char;
         INC(i);
-        lastEscaped := FALSE
       ELSE
         buf[i] := "\";
         buf[i + 1] := "x";
         buf[i + 2] := Hex.To(ORD(it.char) DIV 10H);
         buf[i + 3] := Hex.To(ORD(it.char) MOD 10H);
         INC(i, 4);
-        lastEscaped := FALSE
+        afterEscaped := i
       END
     UNTIL ~Strings.IterNext(it);
     ofs := i

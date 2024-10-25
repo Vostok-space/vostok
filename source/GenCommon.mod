@@ -1,6 +1,6 @@
 (*  Common subroutines for code-generators by Oberon-07 abstract syntax tree
  *
- *  Copyright (C) 2019 ComdivByZero
+ *  Copyright (C) 2019,2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -35,6 +35,11 @@ IMPORT
         IF it.char = "_" THEN
           buf[i] := "_";
           INC(i)
+        ELSIF it.char = "'" THEN
+          buf[i - 1] := "_";
+          buf[i    ] := "q";
+          buf[i + 1] := "_";
+          INC(i, 2)
         END
       UNTIL ~Strings.IterNext(it)
     ELSIF identEnc = GenOptions.IdentEncEscUnicode THEN
