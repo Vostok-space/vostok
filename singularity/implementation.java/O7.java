@@ -385,24 +385,14 @@ public static void copy(java.lang.Object d, java.lang.Object s, int ti, java.lan
     java.lang.Object item;
 
     len = java.lang.reflect.Array.getLength(s);
-    ct = type.charAt(ti + 1);
+    ct = type.charAt(ti);
     if (ct == '[') {
         for (int i = 0; i < len; i += 1) {
-            /* TODO */
             copy(java.lang.reflect.Array.get(d, i),
                  java.lang.reflect.Array.get(s, i), ti + 1, type);
         }
     } else {
-        /*TODO*/
-        asrt(ct != 'L');
-
-        item = java.lang.reflect.Array.get(s, 0);
-        ilen = java.lang.reflect.Array.getLength(item);
-        copy(java.lang.reflect.Array.get(d, 0), item, ilen);
-        for (int i = 1; i < len; i += 1) {
-            copy(java.lang.reflect.Array.get(d, i),
-                 java.lang.reflect.Array.get(s, i), ilen);
-        }
+        copy(d, s, len);
     }
 }
 

@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2019,2021-2023 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1329,13 +1329,57 @@ BEGIN
 	StrOpen(g, " r) {")
 END RecordAssignHeader;
 
+PROCEDURE ArrayBaseType(t: Ast.Type; VAR dim: INTEGER): Ast.Type;
+VAR d: INTEGER;
+BEGIN
+	ASSERT(t.id = Ast.IdArray);
+
+	d := 0;
+	REPEAT
+		t := t.type; INC(d)
+	UNTIL t.id # Ast.IdArray;
+
+	dim := d
+	RETURN t
+END ArrayBaseType;
+
+PROCEDURE ArrayAssignDes(VAR g: Generator; var: Ast.Declaration; dist: INTEGER);
+VAR i: INTEGER;
+BEGIN
+	DEC(dist);
+	IF var # NIL THEN Name(g, var) END;
+	FOR i := 0 TO dist DO
+		Str(g, "[i_"); Int(g, i);
+		Chr(g, "]")
+	END
+END ArrayAssignDes;
+
+PROCEDURE ArrayPassBegin(VAR g: Generator; varPrefix: ARRAY OF CHAR; var: Ast.Declaration;
+                         dimensions: INTEGER);
+VAR i: INTEGER;
+BEGIN
+	FOR i := 0 TO dimensions - 1 DO
+		Str(g, "for (int i_"); Int(g, i);
+		Str(g, " = 0; i_"); Int(g, i);
+		Str(g, " < ");
+		Str(g, varPrefix);
+		ArrayAssignDes(g, var, i);
+		Str(g, ".length; i_"); Int(g, i);
+		StrOpen(g, "++) {")
+	END;
+END ArrayPassBegin;
+
+PROCEDURE ArrayPassEnd(VAR g: Generator; dimensions: INTEGER);
+VAR i: INTEGER;
+BEGIN
+	FOR i := 0 TO dimensions - 1 DO
+		StrLnClose(g, "}")
+	END
+END ArrayPassEnd;
+
 PROCEDURE IsArrayTypeSimpleUndef(typ: Ast.Type; VAR id, deep: INTEGER): BOOLEAN;
 BEGIN
-	deep := 0;
-	WHILE typ.id = Ast.IdArray DO
-		INC(deep);
-		typ := typ.type
-	END;
+	typ := ArrayBaseType(typ, deep);
 	id := typ.id
 	RETURN id IN {Ast.IdReal, Ast.IdReal32, Ast.IdInteger, Ast.IdLongInt, Ast.IdBoolean}
 END IsArrayTypeSimpleUndef;
@@ -1409,16 +1453,15 @@ BEGIN
 			typeUndef := TypeForUndef(var.type.type);
 			IF IsArrayTypeSimpleUndef(var.type, arrTypeId, arrDeep) THEN
 				ArraySimpleUndef(g, arrTypeId, var, TRUE)
-			ELSIF typeUndef # NIL THEN (* TODO вложенные циклы *)
-				Str(g, "for (i = 0; i < r.");
-				Name(g, var);
-				StrOpen(g, ".length; i += 1) {");
+			ELSIF typeUndef # NIL THEN
+				ArrayPassBegin(g, "", var, arrDeep);
+
 				GlobalName(g, typeUndef);
 				Str(g, "_undef(r.");
-				Name(g, var);
-				StrLn(g, " + i);");
+				ArrayAssignDes(g, var, arrDeep);
+				StrLn(g, ");");
 
-				StrLnClose(g, "}")
+				ArrayPassEnd(g, arrDeep)
 			END
 		ELSIF (var.type.id = Ast.IdRecord) & (var.type.ext # NIL) THEN
 			GlobalName(g, var.type);
@@ -1440,7 +1483,7 @@ BEGIN
 END IsRecordNeedAssign;
 
 PROCEDURE RecordAssign(VAR g: Generator; rec: Ast.Record);
-VAR var: Ast.Declaration;
+VAR var: Ast.Declaration; d: INTEGER; t: Ast.Type;
 BEGIN
 	RecordAssignHeader(g, rec);
 	IF IsRecordNeedAssign(rec.base) THEN
@@ -1448,29 +1491,29 @@ BEGIN
 	END;
 	var := rec.vars;
 	WHILE var # NIL DO
-		IF var.type.id = Ast.IdArray THEN
-			(* TODO вложенные циклы *)
-			Str(g, "for (int i = 0; i < r.");
-			Name(g, var);
-			StrOpen(g, ".length; i += 1) {");
+		t := var.type;
+		IF t.id = Ast.IdArray THEN
+			t := ArrayBaseType(t, d);
+			ArrayPassBegin(g, "this.", var, d);
+
 			Str(g, "this.");
-			Name(g, var);
-			IF var.type.type.id # Ast.IdRecord THEN
-				Str(g, "[i] = r.");
-				Name(g, var);
-				StrLn(g, "[i];");
+			ArrayAssignDes(g, var, d);
+			IF t.id # Ast.IdRecord THEN
+				Str(g, " = r.");
+				ArrayAssignDes(g, var, d);
+				StrLn(g, ";")
 			ELSE
-				Str(g, "[i].assign(r.");
-				Name(g, var);
-				StrLn(g, "[i]);")
+				Str(g, ".assign(r.");
+				ArrayAssignDes(g, var, d);
+				StrLn(g, ");")
 			END;
-			StrLnClose(g, "}")
-		ELSIF (var.type.id # Ast.IdRecord)
-		   OR IsRecordNeedAssign(var.type(Ast.Record))
+			ArrayPassEnd(g, d)
+		ELSIF (t.id # Ast.IdRecord)
+		   OR IsRecordNeedAssign(t(Ast.Record))
 		THEN
 			Str(g, "this.");
 			Name(g, var);
-			IF var.type.id = Ast.IdRecord THEN
+			IF t.id = Ast.IdRecord THEN
 				Str(g, ".assign(r.");
 				Name(g, var);
 				StrLn(g, ");")
@@ -1565,19 +1608,17 @@ BEGIN
 END ProcTypeName;
 
 PROCEDURE AllocArrayOfRecord(VAR g: Generator; v: Ast.Declaration);
-VAR
+VAR rec: Ast.Type; d: INTEGER;
 BEGIN
-	(* TODO многомерные массивы *)
-	ASSERT(v.type.type.id = Ast.IdRecord);
+	rec := ArrayBaseType(v.type, d); ASSERT(rec.id = Ast.IdRecord);
+	ArrayPassBegin(g, "", v, d);
+	ArrayAssignDes(g, v, d);
 
-	Str(g, "for (int i_ = 0; i_ < ");
-	Name(g, v);
-	StrOpen(g, ".length; i_++) {");
-	Name(g, v);
-	Str(g, "[i_] = new ");
-	type(g, NIL, v.type.type, FALSE, FALSE);
+	Str(g, " = new ");
+	Name(g, rec);
 	StrLn(g, "();");
-	StrLnClose(g, "}")
+
+	ArrayPassEnd(g, d)
 END AllocArrayOfRecord;
 
 PROCEDURE SearchArrayOfRecord(v: Ast.Declaration): Ast.Declaration;
@@ -1958,40 +1999,65 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 	END For;
 
 	PROCEDURE Assign(VAR g: Generator; st: Ast.Assign);
-	VAR toByte: BOOLEAN;
+	VAR toByte, aor: BOOLEAN; t: Ast.Type; d: INTEGER;
 	BEGIN
-		IF (st.designator.type.id # Ast.IdRecord)
-		OR IsRecordNeedAssign(st.designator.type(Ast.Record))
+		t := st.designator.type;
+		IF (t.id # Ast.IdRecord)
+		OR IsRecordNeedAssign(t(Ast.Record))
 		THEN
-			toByte := (st.designator.type.id = Ast.IdByte)
+			toByte := (t.id = Ast.IdByte)
 			        & (st.expr.type.id IN {Ast.IdInteger, Ast.IdLongInt});
-			g.expectArray := st.designator.type.id = Ast.IdArray;
-			IF g.expectArray THEN
-				IF Ast.IsString(st.expr) THEN
-					Str(g, "O7.strcpy(")
-				ELSE
-					Str(g, "O7.copy(")
-				END;
-				Designator(g, st.designator, {ForSameType});
-				Str(g, ", ")
-			ELSIF st.designator.type.id = Ast.IdRecord THEN
-				Designator(g, st.designator, {ForSameType});
-				Str(g, ".assign(")
-			ELSIF toByte THEN
-				Designator(g, st.designator, {ForSameType});
-				Str(g, " = O7.toByte(")
-			ELSE
-				Designator(g, st.designator, {ForSameType});
-				Str(g, " = ")
+			aor := t.id = Ast.IdArray;
+			g.expectArray := aor;
+			IF aor THEN
+				t := ArrayBaseType(t, d);
+				aor := t.id = Ast.IdRecord;
+				t := st.designator.type
 			END;
-			CheckExpr(g, st.expr, IsForSameType(st.designator.type, st.expr.type));
-			g.expectArray := FALSE;
-			CASE ORD(toByte)
-			   + ORD(st.designator.type.id IN {Ast.IdArray, Ast.IdRecord})
-			OF
-			  0: StrLn(g, ";")
-			| 1: StrLn(g, ");")
-			| 2: StrLn(g, "));")
+			IF aor THEN
+				StrOpen(g, "{");
+				Type(g, NIL, t, FALSE, FALSE);
+				Str(g, " d_ = ");
+				Designator(g, st.designator, {});
+				Str(g, ", s_ = ");
+				Designator(g, st.expr(Ast.Designator), {});
+				StrLn(g, ";");
+
+				ArrayPassBegin(g, "d_", NIL, d);
+
+				Str(g, "d_");
+				ArrayAssignDes(g, NIL, d);
+				Str(g, ".assign(s_");
+				ArrayAssignDes(g, NIL, d);
+				StrLn(g, ");");
+
+				ArrayPassEnd(g, d + 1)
+			ELSE
+				IF g.expectArray THEN
+					IF Ast.IsString(st.expr) THEN
+						Str(g, "O7.strcpy(")
+					ELSE
+						Str(g, "O7.copy(")
+					END;
+					Designator(g, st.designator, {ForSameType});
+					Str(g, ", ")
+				ELSIF t.id = Ast.IdRecord THEN
+					Designator(g, st.designator, {ForSameType});
+					Str(g, ".assign(")
+				ELSIF toByte THEN
+					Designator(g, st.designator, {ForSameType});
+					Str(g, " = O7.toByte(")
+				ELSE
+					Designator(g, st.designator, {ForSameType});
+					Str(g, " = ")
+				END;
+				CheckExpr(g, st.expr, IsForSameType(t, st.expr.type));
+				g.expectArray := FALSE;
+				CASE ORD(toByte) + ORD(t.id IN Ast.Structures) OF
+				  0: StrLn(g, ";")
+				| 1: StrLn(g, ");")
+				| 2: StrLn(g, "));")
+				END
 			END
 		END
 	END Assign;

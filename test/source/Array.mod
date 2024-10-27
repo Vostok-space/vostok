@@ -238,6 +238,7 @@ VAR a1, a2: ARRAY 2,2 OF ARRAY 2 OF INTEGER;
 			i: INTEGER
 		END
 	END;
+	i, k: INTEGER;
 BEGIN
 	a1[0][0][0] := 5;
 	a1[0][0, 1] := 7;
@@ -267,7 +268,12 @@ BEGIN
 	ar2 := ar1;
 	ASSERT(ar2[-1+3-2].aar[24 DIV 10][5-4].i = 222+111);
 	ar1[0].aar[2, 1].i := -101;
-	ASSERT(333 = ar2[0].aar[2, 1].i)
+	ASSERT(333 = ar2[0].aar[2, 1].i);
+
+	ar1[0].aar[1, 2].i := 404;
+	i := 0; k := 0;
+	ar1[IncI(i)].aar[IncI(i)] := ar1[IncI(k) - 1].aar[IncI(k) - 1];
+	ASSERT(ar1[1].aar[2, 2].i = 404)
 END Assign;
 
 PROCEDURE Go*;
