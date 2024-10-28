@@ -1,4 +1,4 @@
-/* Copyright 2019,2021 ComdivByZero
+/* Copyright 2019,2021,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ module.power = power;
 
 function exp(x) {
 	/* TODO */
-	return Math.exp();
+	return Math.exp(x);
 }
 module.exp = exp;
 
