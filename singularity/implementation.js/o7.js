@@ -654,21 +654,33 @@ var o7;
     var i, len;
     len = s.length;
     assert(d.length >= len);
-    if (!(s[0] instanceof Object)) {
-      for (i = 0; i < len; i += 1) {
-        d[i] = s[i];
-      }
-    } else if (s[0].length) {
+    if (Array.isArray(s[0])) {
       for (i = 0; i < len; i += 1) {
         copy(d[i], s[i]);
       }
     } else {
       for (i = 0; i < len; i += 1) {
-        d[i].assign(s[i]);
+        d[i] = s[i];
       }
     }
   }
   o7.copy = copy;
+
+  function copyAor(d, s) {
+    var i, len;
+    len = s.length;
+    assert(d.length >= len);
+    if (Array.isArray(s[0])) {
+      for (i = 0; i < len; i += 1) {
+        copyAor(d[i], s[i]);
+      }
+    } else  {
+      for (i = 0; i < len; i += 1) {
+        d[i].assign(s[i]);
+      }
+    }
+  }
+  o7.copyAor = copyAor;
 
   o7.exit_code = 0;
   o7.main = function(main) {

@@ -239,6 +239,9 @@ VAR a1, a2: ARRAY 2,2 OF ARRAY 2 OF INTEGER;
 		END
 	END;
 	i, k: INTEGER;
+	ap: ARRAY 2, 3 OF POINTER TO RECORD
+		i: INTEGER
+	END;
 BEGIN
 	a1[0][0][0] := 5;
 	a1[0][0, 1] := 7;
@@ -273,7 +276,16 @@ BEGIN
 	ar1[0].aar[1, 2].i := 404;
 	i := 0; k := 0;
 	ar1[IncI(i)].aar[IncI(i)] := ar1[IncI(k) - 1].aar[IncI(k) - 1];
-	ASSERT(ar1[1].aar[2, 2].i = 404)
+	ASSERT(ar1[1].aar[2, 2].i = 404);
+
+	NEW(ap[0][1]);
+	NEW(ap[1][1]);
+	ap[0, 1].i := 57;
+	ap[1] := ap[0];
+	ASSERT(ap[0,1] = ap[1,1]);
+	ASSERT(ap[1,1].i = 57);
+	INC(ap[1,1].i);
+	ASSERT(ap[0,1].i = 58)
 END Assign;
 
 PROCEDURE Go*;

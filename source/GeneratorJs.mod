@@ -1304,6 +1304,17 @@ BEGIN
 END ArraySimpleUndef;
 *)
 
+PROCEDURE IsArrayOfRecord(t: Ast.Type): BOOLEAN;
+BEGIN
+	ASSERT(t.id = Ast.IdArray);
+
+	REPEAT
+		t := t.type
+	UNTIL t.id # Ast.IdArray
+
+	RETURN t.id = Ast.IdRecord
+END IsArrayOfRecord;
+
 PROCEDURE RecordAssign(VAR g: Generator; rec: Ast.Record);
 VAR var: Ast.Declaration;
 
@@ -1329,7 +1340,11 @@ BEGIN
 	var := rec.vars;
 	WHILE var # NIL DO
 		IF var.type.id = Ast.IdArray THEN
-			Str(g, "o7.copy(this.");
+			IF IsArrayOfRecord(var.type) THEN
+				Str(g, "o7.copyAor(this.")
+			ELSE
+				Str(g, "o7.copy(this.")
+			END;
 			Name(g, var);
 			Str(g, ", r.");
 			Name(g, var);
@@ -1733,6 +1748,8 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 			INC(braces);
 			IF Ast.IsString(st.expr) THEN
 				Str(g, "o7.strcpy(")
+			ELSIF IsArrayOfRecord(st.designator.type) THEN
+				Str(g, "o7.copyAor(")
 			ELSE
 				Str(g, "o7.copy(")
 			END;
