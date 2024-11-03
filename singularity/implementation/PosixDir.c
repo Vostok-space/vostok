@@ -36,7 +36,7 @@
 	O7_INLINE PosixDir_Dir opendir(char const *name) { return NULL; }
 	O7_INLINE int closedir(PosixDir_Dir dir) { return -1; }
 	O7_INLINE PosixDir_Ent readdir(PosixDir_Dir dir) { return NULL; }
-	O7_INLINE int mkdir(name, mode) { return -1; }
+	O7_INLINE int mkdir(char const *name, int mode) { return -1; }
 #endif
 
 #define Rwx PosixDir_Rwx_cnst
