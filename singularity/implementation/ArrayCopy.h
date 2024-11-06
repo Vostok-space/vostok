@@ -1,6 +1,6 @@
 /* Copying arrays of chars and bytes in any direction
  *
- * Copyright 2022 ComdivByZero
+ * Copyright 2022,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,12 @@ O7_ALWAYS_INLINE void ArrayCopy_BytesToChars(
     memcpy(dest + destOfs, src + srcOfs, (size_t)count);
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wstringop-overflow"
+#   pragma GCC diagnostic ignored "-Wstringop-overread"
+#endif
+
 O7_ALWAYS_INLINE void ArrayCopy_Data(o7_int_t direction,
     o7_int_t destBytes_len, char unsigned destBytes[O7_VLA(destBytes_len)],
     o7_int_t destChars_len, o7_char destChars[O7_VLA(destChars_len)], o7_int_t destOfs,
@@ -96,6 +102,10 @@ O7_ALWAYS_INLINE void ArrayCopy_Data(o7_int_t direction,
         break;
     }
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#   pragma GCC diagnostic pop
+#endif
 
 O7_ALWAYS_INLINE void ArrayCopy_init(void) {}
 O7_ALWAYS_INLINE void ArrayCopy_done(void) {}
