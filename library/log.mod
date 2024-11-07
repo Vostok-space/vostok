@@ -1,6 +1,6 @@
 Simple output subroutines with short names
 
-Copyright 2021-2022 ComdivByZero
+Copyright 2021-2022,2024 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -143,16 +143,16 @@ MODULE log;
     set(val); Out.Ln
   END setn;
 
-  (* Double quote - " *)
-  PROCEDURE dq*;
+  (* Quote mark - " *)
+  PROCEDURE q*;
   BEGIN
     Out.Char(22X)
-  END dq;
+  END q;
 
-  PROCEDURE dqn*;
+  PROCEDURE qn*;
   BEGIN
     Out.Char(22X); Out.Ln
-  END dqn;
+  END qn;
 
   PROCEDURE n*;
   BEGIN
