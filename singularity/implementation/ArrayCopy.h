@@ -72,7 +72,7 @@ O7_ALWAYS_INLINE void ArrayCopy_BytesToChars(
     memcpy(dest + destOfs, src + srcOfs, (size_t)count);
 }
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if (__GNUC__ > 10) && !defined(__clang__)
 #   pragma GCC diagnostic push
 #   pragma GCC diagnostic ignored "-Wstringop-overflow"
 #   pragma GCC diagnostic ignored "-Wstringop-overread"
@@ -103,7 +103,7 @@ O7_ALWAYS_INLINE void ArrayCopy_Data(o7_int_t direction,
     }
 }
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if (__GNUC__ > 10) && !defined(__clang__)
 #   pragma GCC diagnostic pop
 #endif
 
