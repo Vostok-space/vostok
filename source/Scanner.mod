@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -443,10 +443,10 @@ VAR len, l: INTEGER; ch, prev: ARRAY 3 OF CHAR;
 			    OR (ch = "Ґ") OR (ch = "ґ")
 		END IsConsonant;
 	BEGIN
-		WHILE IsCurrentCyrillic(s) DO
+		WHILE IsCurrentCyrillic(s) OR IsDigit(s.buf[s.ind]) DO
 			prev := ch;
 			ch[0] := s.buf[s.ind];
-			IF ch[0] = "'" THEN
+			IF ch[0] < 80X THEN
 				ch[1] := 0X
 			ELSE
 				s.ind := (s.ind + 1) MOD (LEN(s.buf) - 1);
