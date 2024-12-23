@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017,2019-2020,2022-2023 ComdivByZero
+ *  Copyright (C) 2017,2019-2020,2022-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -297,7 +297,7 @@ BEGIN
 	WHILE v # 0 DO
 		DEC(i);
 		buf[i] := Hexadecimal.To(v MOD 10H);
-		v := v DIV 10H;
+		v := v DIV 10H
 	END;
 	Write(g, buf, i, LEN(buf) - i)
 END HexSeparateHighBit;
@@ -311,7 +311,7 @@ BEGIN
 	END
 END Hex;
 
-PROCEDURE Set*(VAR g: Out; VAR set: SET);
+PROCEDURE Set*(VAR g: Out; set: SET);
 BEGIN
 	HexSeparateHighBit(g, ORD(set - {Limits.SetMax}), Limits.SetMax IN set)
 END Set;
