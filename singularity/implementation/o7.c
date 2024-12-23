@@ -1,4 +1,4 @@
-/* Copyright 2016-2019,2021-2023 ComdivByZero
+/* Copyright 2016-2019,2021-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -357,7 +357,7 @@ extern float* o7_floats_undef(o7_int_t len, float array[O7_VLA(len)]) {
 	return array;
 }
 
-extern o7_int_t* o7_ints_undef(o7_int_t len, int array[O7_VLA(len)]) {
+extern o7_int_t* o7_ints_undef(o7_int_t len, o7_int_t array[O7_VLA(len)]) {
 	o7_int_t i;
 	for (i = 0; i < len; i += 1) {
 		array[i] = O7_INT_UNDEF;

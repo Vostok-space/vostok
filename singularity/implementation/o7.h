@@ -1,4 +1,4 @@
-/* Copyright 2016-2023 ComdivByZero
+/* Copyright 2016-2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1615,7 +1615,7 @@ void o7_ldexp(double *f, o7_int_t n) {
 
 O7_ALWAYS_INLINE
 void o7_frexp(double *f, o7_int_t *n) {
-	extern double o7_raw_unpk(double x, int *exp);
+	extern double o7_raw_unpk(double x, o7_int_t *exp);
 	*f = o7_raw_unpk(o7_dbl_finite(*f), n);
 }
 
