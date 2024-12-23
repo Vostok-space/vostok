@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -17,7 +17,7 @@
 MODULE Ast;
 
 IMPORT
-	Log := DLog, Out,
+	Log := DLog,
 	Utf8,
 	Limits := TypesLimits,
 	V,
@@ -3167,6 +3167,17 @@ BEGIN
 	RETURN err
 END ExprSumAdd;
 
+PROCEDURE ValueCopy*(v: Value): Value;
+BEGIN
+	CASE v.id OF
+	  IdInteger: v := ExprIntegerNew(v(ExprInteger).int)
+	| IdBoolean: ;
+	| IdReal   : v := ExprRealNewByValue(v(ExprReal).real)
+	| IdSet    : v := ExprSetByValue(v(ExprSetValue).set)
+	END
+	RETURN v
+END ValueCopy;
+
 PROCEDURE MultCalc(res: Expression; mult: INTEGER; b: Expression): INTEGER;
 VAR err: INTEGER;
 
@@ -3325,10 +3336,10 @@ BEGIN
 
 	IF factor # NIL THEN
 		t := factor.type;
-		val := factor.value;
 		IF (t # NIL) & (t.id = IdByte) THEN
 			t := TypeGet(IdInteger)
 		END;
+		val := factor.value
 	ELSE
 		t := NIL;
 		val := NIL
@@ -3337,8 +3348,8 @@ BEGIN
 	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
-		IF e.type.id # IdReal THEN
-			e.value := val
+		IF (e.type.id # IdReal) & (val # NIL) & (factorOrTerm.value # NIL) THEN
+			e.value := ValueCopy(val)
 		END
 	END;
 	PropTouch(e, Prop(factor) + Prop(factorOrTerm));
