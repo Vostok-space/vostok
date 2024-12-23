@@ -5,7 +5,7 @@ CONST
 	s2 = {0 .. 31};
 	s3 = s2 - s;
 	s4 = {1 .. 3, 4 .. 6};
-	s5 = {2, 4 .. 5, 13 .. 31};
+	s5* = {2, 4 .. 5, 13 .. 31};
 	s6*= s2 - s;
 
 	sinv = -s;
@@ -61,6 +61,8 @@ BEGIN
 	ASSERT(13 IN s5);
 	ASSERT(23 IN s5);
 	ASSERT(31 IN s5);
+	ls := s5 * {0..30};
+	ASSERT(ORD(s5 / {31}) = 7FFFE034H);
 
 	ASSERT(s6 = s3);
 
