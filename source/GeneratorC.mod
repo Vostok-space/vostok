@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2024 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -280,7 +280,7 @@ END Include;
 
 PROCEDURE Factor(VAR g: Generator; expr: Ast.Expression);
 BEGIN
-	IF (expr IS Ast.Factor) & ~(expr.type.id = Ast.IdArray) THEN
+	IF (expr IS Ast.Factor) & (expr.type.id # Ast.IdArray) THEN
 		(* TODO *)
 		expression(g, expr)
 	ELSE
@@ -1135,7 +1135,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 					Ord(g, e1)
 				ELSE
 					Str(g, "((o7_int_t)");
-					Expression(g, e1);
+					Factor(g, e1);
 					Chr(g, ")");
 				END
 			| SpecIdent.Chr:
