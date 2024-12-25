@@ -1,6 +1,6 @@
 /* Wrapper of Windows libloaderapi.h for Oberon
  *
- * Copyright 2021 ComdivByZero
+ * Copyright 2021,2024 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
 
 #include "Wlibloaderapi.h"
 
-#if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64)) \
- && !defined(__TINYC__)
-#	include <libloaderapi.h>
+#if defined(_WIN32) || defined(_WIN64)
+#	include <windows.h>
 #else
 	typedef void *HMODULE;
 
