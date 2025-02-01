@@ -292,8 +292,10 @@ END Factor;
 
 PROCEDURE IsAnonStruct(rec: Ast.Record): BOOLEAN;
 BEGIN
-	RETURN ~Strings.IsDefined(rec.name)
-	    OR Strings.SearchSubString(rec.name, "_anon_")
+	RETURN (rec.up = NIL (* только для ускорения *))
+	    &  (   ~Strings.IsDefined(rec.name)
+	        OR Strings.SearchSubString(rec.name, "_anon_")
+	       )
 END IsAnonStruct;
 
 PROCEDURE TypeForTag(rec: Ast.Record): Ast.Type;
@@ -2558,7 +2560,7 @@ PROCEDURE TypeDecl(VAR out: MOut; typ: Ast.Type);
 BEGIN
 	Typedef(out.g[ORD(typ.mark & ~out.opt.main)], typ);
 	IF (typ.id = Ast.IdRecord)
-	OR (typ.id = Ast.IdPointer) & (typ.type.next = NIL)
+	OR (typ.id = Ast.IdPointer) & (typ.type.up = NIL)
 	THEN
 		IF typ.id = Ast.IdPointer THEN
 			typ := typ.type
