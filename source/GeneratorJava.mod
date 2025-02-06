@@ -1,5 +1,5 @@
 (*  Generator of Java-code by Oberon-07 abstract syntax tree. Based on GeneratorC
- *  Copyright (C) 2016-2019,2021-2024 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1054,33 +1054,9 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	VAR ch: CHAR;
 
 		PROCEDURE StringValue(VAR g: Generator; e: Ast.ExprString);
-		VAR s: ARRAY 8 OF CHAR; len: INTEGER; w: Strings.String;
 		BEGIN
 			Str(g, "O7.bytes(");
-			w := e.string;
-			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
-				Text.ScreeningString(g, w, FALSE)
-			ELSE
-				s[0] := Utf8.DQuote;
-				s[1] := "\";
-				len := 4;
-				IF e.int = ORD("\") THEN
-					s[2] := "\"
-				ELSIF e.int = 0AH THEN
-					s[2] := "n"
-				ELSIF e.int = ORD(Utf8.DQuote) THEN
-					s[2] := Utf8.DQuote
-				ELSE
-					s[2] := "u";
-					s[3] := "0";
-					s[4] := "0";
-					s[5] := Hex.To(e.int DIV 16);
-					s[6] := Hex.To(e.int MOD 16);
-					len := 8
-				END;
-				s[len - 1] := Utf8.DQuote;
-				Text.Data(g, s, 0, len)
-			END;
+			GenCommon.JString(g, e.string, e.int);
 			Chr(g, ")")
 		END StringValue;
 
@@ -1122,8 +1098,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				Str(g, "')")
 			ELSE
 				Str(g, "((byte)0x");
-				Chr(g, Hex.To(e.int DIV 16));
-				Chr(g, Hex.To(e.int MOD 16));
+				Chr(g, Hex.To(e.int DIV 10H));
+				Chr(g, Hex.To(e.int MOD 10H));
 				Chr(g, ")")
 			END
 		ELSIF g.opt.directString THEN

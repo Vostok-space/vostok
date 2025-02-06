@@ -1,6 +1,6 @@
 (*  Generator of JavaScript-code by Oberon-07 abstract syntax tree. Based on GeneratorJava
  *
- *  Copyright (C) 2016-2024 ComdivByZero
+ *  Copyright (C) 2016-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1036,15 +1036,15 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 	END Boolean;
 
 	PROCEDURE CString(VAR g: Generator; e: Ast.ExprString);
-	VAR s: ARRAY 8 OF CHAR; w: Strings.String; len: INTEGER;
+	VAR w: Strings.String;
 		PROCEDURE ByteString(VAR g: Generator; w: Strings.String);
 		VAR it: Strings.Iterator;
 		BEGIN
-			ASSERT(Strings.GetIter(it, w, 1));
-			WHILE it.char # Utf8.DQuote DO
-				Text.Int(g, ORD(it.char));
-				Chr(g, ",");
-				ASSERT(Strings.IterNext(it))
+			IF Strings.GetIter(it, w, 0) THEN
+				REPEAT
+					Text.Int(g, ORD(it.char));
+					Chr(g, ",")
+				UNTIL ~Strings.IterNext(it)
 			END;
 			Chr(g, "0")
 		END ByteString;
@@ -1052,11 +1052,11 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		w := e.string;
 		IF e.asChar & ~g.expectArray THEN
 			Str(g, "0x");
-			Chr(g, Hex.To(e.int DIV 16));
-			Chr(g, Hex.To(e.int MOD 16))
+			Chr(g, Hex.To(e.int DIV 10H));
+			Chr(g, Hex.To(e.int MOD 10H))
 		ELSIF g.opt.directString THEN
 			Chr(g, "[");
-			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
+			IF w.ofs >= 0 THEN
 				ByteString(g, w);
 				Chr(g, "]")
 			ELSE
@@ -1065,29 +1065,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 			END;
 		ELSE
 			Str(g, "o7.toUtf8(");
-			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
-				Text.ScreeningString(g, w, FALSE)
-			ELSE
-				s[0] := Utf8.DQuote;
-				s[1] := "\";
-				len := 4;
-				IF e.int = ORD("\") THEN
-					s[2] := "\"
-				ELSIF e.int = 0AH THEN
-					s[2] := "n"
-				ELSIF e.int = ORD(Utf8.DQuote) THEN
-					s[2] := Utf8.DQuote
-				ELSE
-					s[2] := "u";
-					s[3] := "0";
-					s[4] := "0";
-					s[5] := Hex.To(e.int DIV 10H);
-					s[6] := Hex.To(e.int MOD 10H);
-					len := 8
-				END;
-				s[len - 1] := Utf8.DQuote;
-				Text.Data(g, s, 0, len)
-			END;
+			GenCommon.JString(g, w, e.int);
 			Chr(g, ")")
 		END
 	END CString;

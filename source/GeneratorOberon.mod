@@ -1,6 +1,6 @@
 (*  Generator of Oberon-code by abstract syntax tree
  *
- *  Copyright (C) 2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2019,2021-2022,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -605,7 +605,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     VAR w: Strings.String;
     BEGIN
       w := e.string;
-      IF Strings.IsDefined(w) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
+      IF Strings.IsDefined(w) THEN
+        Chr(g, Utf8.DQuote);
         IF (g.opt.std # StdCp) OR Strings.IsUtfLess(w, 100H) THEN
           Text.String(g, w)
         ELSE
@@ -614,6 +615,7 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
           Text.String(g, w);
           Chr(g, ")")
         END;
+        Chr(g, Utf8.DQuote);
         IF g.opt.plantUml & Strings.SearchSubString(w, "|") THEN
           g.presentAlternative := TRUE
         END

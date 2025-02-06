@@ -1,5 +1,5 @@
 (*  Strings storage
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2023,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -266,8 +266,21 @@ BEGIN
 	RETURN (b.s[i] = Utf8.Null) & (s[j] = Utf8.Null)
 END IsEqualToStringIgnoreCase;
 
+PROCEDURE CompareTwoChars*(c0, c1: CHAR): INTEGER;
+VAR res: INTEGER;
+BEGIN
+	IF c0 = c1 THEN
+		res := 0
+	ELSIF c0 < c1 THEN
+		res := -1
+	ELSE
+		res := 1
+	END
+	RETURN res
+END CompareTwoChars;
+
 PROCEDURE Compare*(w1, w2: String): INTEGER;
-VAR i1, i2, res: INTEGER;
+VAR i1, i2: INTEGER;
 	b1, b2: Block;
 BEGIN
 	i1 := w1.ofs;
@@ -283,16 +296,27 @@ BEGIN
 	ELSIF (b1.s[i1] = b2.s[i2]) & (b1.s[i1] # Utf8.Null) DO
 		INC(i1);
 		INC(i2)
-	END;
-	IF b1.s[i1] = b2.s[i2] THEN
-		res := 0
-	ELSIF b1.s[i1] < b2.s[i2] THEN
-		res := -1
-	ELSE
-		res := 1
 	END
-	RETURN res
+	RETURN CompareTwoChars(b1.s[i1], b2.s[i2])
 END Compare;
+
+(* char выступает в роли однолитерной строки, завершаемой 0X *)
+PROCEDURE CompareWithChar*(w: String; c: CHAR): INTEGER;
+VAR i: INTEGER; c0: CHAR; b: Block;
+BEGIN
+	i := w.ofs;
+	b := w.block;
+	c0 := b.s[i];
+	IF (c0 = c) & (c # 0X) THEN
+		c := 0X;
+
+		c0 := b.s[i + 1];
+		IF c0 = Utf8.NewPage THEN
+			c0 := b.next.s[0]
+		END
+	END
+	RETURN CompareTwoChars(c0, c)
+END CompareWithChar;
 
 PROCEDURE SearchSubString*(w: String; s: ARRAY OF CHAR): BOOLEAN;
 VAR i, j: INTEGER;

@@ -1,6 +1,6 @@
 (*  Common subroutines for code-generators by Oberon-07 abstract syntax tree
  *
- *  Copyright (C) 2019,2024 ComdivByZero
+ *  Copyright (C) 2019,2024-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,7 @@
 MODULE GenCommon;
 
 IMPORT
-  Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
+  Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8, Hex,
   GenOptions,
   TranLim := TranslatorLimits;
 
@@ -79,5 +79,34 @@ IMPORT
   BEGIN
     Comment(out, opt, text, "(*", "*)")
   END CommentOberon;
+
+  PROCEDURE JString*(VAR g: Text.Out; w: Strings.String; char: INTEGER);
+  VAR s: ARRAY 8 OF CHAR; len: INTEGER;
+  BEGIN
+    IF w.ofs >= 0 THEN
+      Text.ScreeningString(g, w, FALSE)
+    ELSE
+      s[0] := Utf8.DQuote;
+      s[1] := "\";
+      len := 4;
+      IF char = ORD("\") THEN
+        s[2] := "\"
+      ELSIF char = 0AH THEN
+        s[2] := "n"
+      ELSIF char = ORD(Utf8.DQuote) THEN
+        s[2] := Utf8.DQuote
+      ELSE
+        s[2] := "u";
+        s[3] := "0";
+        s[4] := "0";
+        s[5] := Hex.To(char DIV 10H);
+        s[6] := Hex.To(char MOD 10H);
+        len := 8
+      END;
+      s[len - 1] := Utf8.DQuote;
+      Text.Data(g, s, 0, len)
+    END
+
+  END JString;
 
 END GenCommon.

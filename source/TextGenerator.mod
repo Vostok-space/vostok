@@ -1,5 +1,5 @@
 (*  Formatted plain text generator
- *  Copyright (C) 2017,2019-2020,2022-2024 ComdivByZero
+ *  Copyright (C) 2017,2019-2020,2022-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -221,11 +221,10 @@ VAR i, last: INTEGER; buf: ARRAY 4 OF CHAR; lastEscaped: BOOLEAN;
 	block: Strings.Block;
 BEGIN
 	NewLine(g);
+	Write(g, Utf8.DQuote, 0, 1);
 	block := str.block;
 	i := str.ofs;
 	last := i;
-	ASSERT(block.s[i] = Utf8.DQuote);
-	INC(i);
 	lastEscaped := FALSE;
 	WHILE block.s[i] = Utf8.NewPage DO
 		Write(g, block.s, last, i - last);
@@ -254,7 +253,8 @@ BEGIN
 		lastEscaped := FALSE
 	END;
 	ASSERT(block.s[i] = Utf8.Null);
-	Write(g, block.s, last, i - last)
+	Write(g, block.s, last, i - last);
+	Write(g, Utf8.DQuote, 0, 1)
 END ScreeningString;
 
 PROCEDURE Int*(VAR g: Out; int: INTEGER);

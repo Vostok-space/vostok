@@ -158,7 +158,73 @@ BEGIN
 	ASSERT(s0[0] = 9X);
 	ASSERT(s0[1] = 0X);
 	ASSERT(s0[2] = 94X);
-	ASSERT(s0[3] = 95X)
+	ASSERT(s0[3] = 95X);
+
+	ASSERT("X" < "x");
+	ASSERT("Xy" < "xy");
+	ASSERT("X" < "xy");
+	ASSERT("x" > "X");
+	ASSERT("x" > "Xy");
+	ASSERT("X" <  "Xy");
+	ASSERT("X" <= "Xy");
+	ASSERT("Xy" >  "X");
+	ASSERT("Xy" >= "X");
+
+	ASSERT(32X <= 32X);
+	ASSERT(32X # 33X);
+	ASSERT(20X = " ");
+	ASSERT(20X <= " ");
+	ASSERT(20X >= " ");
+	ASSERT(" " >= 20X);
+	ASSERT(" " <= 20X);
+	ASSERT(" " = 20X);
+	ASSERT(" " <= " ");
+	ASSERT(~(" " < " "));
+	ASSERT(~(" " > " "));
+	ASSERT(~(20X < " "));
+	ASSERT(~(20X > " "));
+	ASSERT(~(" " < 20X));
+	ASSERT(~(" " > 20X));
+	ASSERT(" " >= " ");
+	ASSERT(" " = " ");
+	ASSERT(" " # "  ");
+	ASSERT(~(" " = "  "));
+	ASSERT(" " < "  ");
+	ASSERT(" " <= "  ");
+	ASSERT(20X < "  ");
+	ASSERT(20X <= "  ");
+	ASSERT(~("  " < " "));
+	ASSERT(~("  " <= " "));
+	ASSERT(~("  " < 20X));
+	ASSERT(~("  " <= 20X));
+	ASSERT(~(" " > "  "));
+	ASSERT(~(" " >= "  "));
+	ASSERT(~(20X > "  "));
+	ASSERT(~(20X >= "  "));
+	ASSERT("  " > 20X);
+	ASSERT("  " >= 20X);
+	ASSERT("  " # " ");
+	ASSERT(~("  " = " "));
+	ASSERT(20X # "  ");
+	ASSERT(~(20X = "  "));
+	ASSERT("  " # 20X);
+	ASSERT(~("  " = 20X));
+
+	ASSERT(~(0X < ""));
+	ASSERT(~("" > 0X));
+	ASSERT(~("" < ""));
+	ASSERT(~("" > ""));
+
+	ASSERT(0X = "");
+	ASSERT("" = "");
+	ASSERT("" = 0X);
+	ASSERT(0X = 0X);
+	ASSERT(~(0X # ""));
+	ASSERT(~("" # ""));
+	ASSERT(~("" # 0X));
+	ASSERT(~(0X # 0X));
+
+	ASSERT("" < " ")
 END Go;
 
 END String.

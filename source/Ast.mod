@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2024 ComdivByZero
+ *  Copyright (C) 2016-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -2095,13 +2095,13 @@ BEGIN
 	len := end - begin;
 	(* поправка на циклический буфер *)
 	IF len < 0 THEN
-		len := len + LEN(buf) - 1
+		len := len + (LEN(buf) - 1)
 	END;
 	DEC(len, 1);
-	PutChars(m, s, buf, begin, end);
+	PutChars(m, s, buf, (begin + 1) MOD (LEN(buf) - 1), (end - 1) MOD (LEN(buf) - 1));
 	e := ExprStringNewPre(s, ArrayGet(TypeGet(IdChar), ExprIntegerNew(len)));
 	ASSERT(StrUsedUndef + 1 = StrUsedAsArray);
-	e.usedAs := StrUsedUndef + ORD(len # 3)
+	e.usedAs := StrUsedUndef + ORD(len # 2)
 	RETURN e
 END ExprStringNew;
 
@@ -2910,23 +2910,20 @@ VAR err: INTEGER;
 		RETURN err = ErrNo
 	END IsNotProc;
 
-	PROCEDURE IsEqualChars(v1, v2: ExprInteger): BOOLEAN;
+	PROCEDURE CompareStrings(v1, v2: ExprInteger): INTEGER;
+	VAR res: INTEGER;
 	BEGIN
-		ASSERT(Limits.InCharRange(v1.int));
-		ASSERT(Limits.InCharRange(v2.int))
-
-		RETURN v1.int = v2.int
-	END IsEqualChars;
-
-	PROCEDURE IsEqualStrings(v1, v2: ExprInteger): BOOLEAN;
-	VAR ret: BOOLEAN;
-	BEGIN
-		ret := (v1.int = v2.int);
-		IF ret & (v1.int = -1) THEN
-			ret := Strings.Compare(v1(ExprString).string, v2(ExprString).string) = 0
+		IF (v1.int >= 0) & (v2.int >= 0) THEN
+			res := Strings.CompareTwoChars(CHR(v1.int), CHR(v2.int))
+		ELSIF v2.int >= 0 THEN
+			res := Strings.CompareWithChar(v1(ExprString).string, CHR(v2.int))
+		ELSIF v1.int >= 0 THEN
+			res := -Strings.CompareWithChar(v2(ExprString).string, CHR(v1.int))
+		ELSE
+			res := Strings.Compare(v1(ExprString).string, v2(ExprString).string)
 		END
-		RETURN ret
-	END IsEqualStrings;
+		RETURN res
+	END CompareStrings;
 BEGIN
 	ASSERT(relation IN AcceptableRelations);
 
@@ -2946,29 +2943,26 @@ BEGIN
 		CASE relation OF
 		  Equal:
 			CASE expr1.type.id OF
-			  IdInteger  : res := v1(ExprInteger).int = v2(ExprInteger).int
-			| IdChar     : res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
+			  IdInteger,
+			  IdChar     : res := v1(ExprInteger).int = v2(ExprInteger).int
 			| IdBoolean  : res := v1(ExprBoolean).bool = v2(ExprBoolean).bool
 			| IdReal     :
-				(* TODO правильная обработка *)
-				res := (v1(ExprReal).real = v2(ExprReal).real) OR TRUE
+				res := v1(ExprReal).real = v2(ExprReal).real
 			| IdSet, IdLongSet
 			             : res := LongSet.Equal(v1(ExprSetValue).set, v2(ExprSetValue).set)
 			| IdPointer  : ASSERT(v1 = v2); res := TRUE
-			| IdArray    :
-				res := IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
+			| IdArray    : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) = 0
 			| IdProcType, IdFuncType
 			             : (* TODO *) res := FALSE
 			END
 		| Inequal:
 			CASE expr1.type.id OF
 			  IdInteger         : res := v1(ExprInteger).int # v2(ExprInteger).int
-			| IdChar            : res := ~IsEqualChars(v1(ExprInteger), v2(ExprInteger))
 			| IdBoolean         : res := v1(ExprBoolean).bool # v2(ExprBoolean).bool
 			| IdReal            : res := v1(ExprReal).real # v2(ExprReal).real
 			| IdSet, IdLongSet  : res := ~LongSet.Equal(v1(ExprSetValue).set, v2(ExprSetValue).set)
 			| IdPointer         : ASSERT(v1 = v2); res := FALSE
-			| IdArray           : res := ~IsEqualStrings(v1(ExprInteger), v2(ExprInteger))
+			| IdArray, IdChar   : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) # 0
 			| IdProcType, IdFuncType
 			                    : (* TODO *) res := FALSE
 			END
@@ -2976,25 +2970,25 @@ BEGIN
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int < v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real < v2(ExprReal).real
-			| IdArray           : (* TODO *) res := FALSE
+			| IdArray           : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) < 0
 			END
 		| LessEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int <= v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real <= v2(ExprReal).real
-			| IdArray           : (* TODO *) res := FALSE
+			| IdArray           : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) <= 0
 			END
 		| Greater:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int > v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real > v2(ExprReal).real
-			| IdArray           : (* TODO *) res := FALSE
+			| IdArray           : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) > 0
 			END
 		| GreaterEqual:
 			CASE expr1.type.id OF
 			  IdInteger, IdChar : res := v1(ExprInteger).int >= v2(ExprInteger).int
 			| IdReal            : res := v1(ExprReal).real >= v2(ExprReal).real
-			| IdArray           : (* TODO *) res := FALSE
+			| IdArray           : res := CompareStrings(v1(ExprInteger), v2(ExprInteger)) >= 0
 			END
 		| In:
 			res := LongSet.In(v1(ExprInteger).int, v2(ExprSetValue).set)

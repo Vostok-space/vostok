@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2024 ComdivByZero
+ *  Copyright (C) 2016-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1775,8 +1775,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				Text.Data(g, s, 0, 3)
 			ELSE
 				Str(g, "0x");
-				s[0] := Hex.To(e.int DIV 16);
-				s[1] := Hex.To(e.int MOD 16);
+				s[0] := Hex.To(e.int DIV 10H);
+				s[1] := Hex.To(e.int MOD 10H);
 				s[2] := "u";
 				Text.Data(g, s, 0, 3)
 			END
@@ -1784,14 +1784,14 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 			IF ~g.insideSizeOf THEN
 				Str(g, "(o7_char *)")
 			END;
-			IF (w.ofs >= 0) & (w.block.s[w.ofs] = Utf8.DQuote) THEN
+			IF w.ofs >= 0 THEN
 				Text.ScreeningString(g, w, g.opt.escapeHighChars)
 			ELSE
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
 				s[2] := "x";
-				s[3] := Hex.To(e.int DIV 16);
-				s[4] := Hex.To(e.int MOD 16);
+				s[3] := Hex.To(e.int DIV 10H);
+				s[4] := Hex.To(e.int MOD 10H);
 				s[5] := Utf8.DQuote;
 				Text.Data(g, s, 0, 6)
 			END
