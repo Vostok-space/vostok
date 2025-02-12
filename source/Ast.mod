@@ -3055,26 +3055,23 @@ BEGIN
 			ELSE
 				err := ErrSignForBool
 			END
-		ELSIF (term.value # NIL) & (e.type.id IN (Numbers + Sets)) THEN
+		ELSIF term.value # NIL THEN
 			CASE e.type.id OF
 			  IdInteger, IdLongInt:
 				e.value := ExprIntegerNew(
 					term.value(ExprInteger).int * LexToSign(add)
 				)
 			| IdReal, IdReal32:
-				(* из-за отсутствия точности в вычислениях
 				e.value := ExprRealNewByValue(
 					term.value(ExprReal).real * FLT(LexToSign(add))
 				)
-				*)
-				e.value := NIL
 			| IdSet, IdLongSet:
 				e.value := ExprSetByValue(term.value(ExprSetValue).set);
 				IF add = Minus THEN
 					ExprSetNot(e.value(ExprSetValue))
 				END
 			| IdBoolean:
-				e.value := ExprBooleanGet(term.value(ExprBoolean).bool)
+				e.value := term.value
 			END
 		END
 	END

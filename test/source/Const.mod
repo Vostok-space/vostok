@@ -13,6 +13,10 @@ CONST
 
 	Nil = NIL;
 
+	B0 = FALSE;
+	B1 = TRUE;
+	B2 = B0 OR B1;
+
 PROCEDURE Go*;
 BEGIN
 	ASSERT(A = 66 + 11);
@@ -33,7 +37,9 @@ BEGIN
 	ASSERT(NIL = Nil);
 	ASSERT(~(NIL # NIL));
 	ASSERT(~(Nil # NIL));
-	ASSERT(~(NIL # Nil))
+	ASSERT(~(NIL # Nil));
+
+	ASSERT(B2)
 END Go;
 
 END Const.
