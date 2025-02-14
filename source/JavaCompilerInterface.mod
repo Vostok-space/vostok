@@ -1,5 +1,5 @@
 (*  Wrapper for CLI of Java Compiler, based on CCompilerInterface
- *  Copyright (C) 2018-2019,2021-2022 ComdivByZero
+ *  Copyright (C) 2018-2019,2021-2022,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -63,7 +63,7 @@ MODULE JavaCompilerInterface;
           & (Exec.Ok = Exec.Do(exec));
       Exec.Log(exec);
       IF ok THEN
-        ASSERT(Exec.Init(cc.cmd, c));
+        ASSERT(Exec.Init(cc.cmd, c) & Exec.AddAsIs(cc.cmd, " -Xlint:unchecked"));
         cc.id := id;
         cc.destDir := FALSE;
         cc.classPath := FALSE;
@@ -115,6 +115,11 @@ MODULE JavaCompilerInterface;
     Exec.Par(c.cmd, "-source", s)
   & Exec.Par(c.cmd, "-target", s)
   END TargetVersion;
+
+  PROCEDURE SourceEncodingUtf8*(VAR c: Compiler): BOOLEAN;
+  RETURN
+    Exec.AddAsIs(c.cmd, " -encoding UTF-8")
+  END SourceEncodingUtf8;
 
   PROCEDURE Do*(VAR c: Compiler): INTEGER;
   RETURN

@@ -1,5 +1,5 @@
 (*  Command line interface for Oberon-07 translator
- *  Copyright (C) 2016-2023 ComdivByZero
+ *  Copyright (C) 2016-2023,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -853,7 +853,7 @@ BEGIN
 	prov := ProviderProcTypeNameNew();
 	opt := GeneratorJava.DefaultOptions();
 	SetCommonOptions(opt^, args);
-	ASSERT(JavaComp.Set(javac, "javac"));
+	ASSERT(JavaComp.Set(javac, "javac") & JavaComp.SourceEncodingUtf8(javac));
 
 	IF res = Cli.ResultJava THEN
 		prov.dirLen := 0;
