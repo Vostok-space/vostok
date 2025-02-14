@@ -759,7 +759,8 @@ VAR opt: GeneratorJava.Options;
 				ok := JavaComp.Search(prov.javac) & JavaComp.Debug(prov.javac);
 				opt.identEnc := GenOptions.IdentEncSame
 			END;
-			ok := ok & JavaComp.ClassPath(prov.javac, args.resPath, 0);
+			ok := ok & JavaComp.SourceEncodingUtf8(prov.javac)
+			         & JavaComp.ClassPath(prov.javac, args.resPath, 0);
 			prov.usejavac := TRUE;
 			IF ~ok THEN
 				ret := Cli.ErrCantFoundJavaCompiler
