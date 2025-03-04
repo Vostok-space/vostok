@@ -1,10 +1,13 @@
- vostok-deflib (0.0.9.dev) unstable; urgency=low
-  * Added module "In" similar to module from "The Oakwood Guidelines for Oberon-2"
+vostok-deflib (0.0.9.dev) unstable; urgency=low
+
+  * Added module "In" similar to module from "The Oakwood Guidelines for
+    Oberon-2"
   * Using space for padding instead of 0X in IntToChars0X.Dec
 
- -- project Vostok <project-Vostok@yandex.ru> Sun, 7 Aug 2022 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 7 Aug 2022 00:00:00 +0200
 
- vostok-deflib (0.0.8.dev) unstable; urgency=low
+vostok-deflib (0.0.8.dev) unstable; urgency=low
+
   * Added wrapper for WinAPI functions GetUserDefaultUILanguage, SetConsoleCP, SetConsoleOutputCP
     and encoding setup for correct input and output
   * Added VRead module for reading different kinds of data from VDataStream.In
@@ -14,9 +17,10 @@
   * Fixed compatibility with ECMAScript 5 of CFiles.js
   * Fixed compilability of ArrayCopy.h for some compilers
 
- -- project Vostok <project-Vostok@yandex.ru> Wed, 23 Feb 2022 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Wed, 23 Feb 2022 00:00:00 +0200
 
- vostok-deflib (0.0.7.dev) unstable; urgency=low
+vostok-deflib (0.0.7.dev) unstable; urgency=low
+
   * Added OsRand.Set for reading SET, Chars0X.CopyCharsFromLoop for copy from looped buffers,
     log.c for logging single char
   * Fixed output for OsExec for node.js and implemented version for QuickJS
@@ -29,9 +33,10 @@
   * Compilability by chibicc
   * Fixed closing of standard data streams
 
- -- project Vostok <project-Vostok@yandex.ru> Mon, 17 Jan 2022 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Mon, 17 Jan 2022 00:00:00 +0200
 
- vostok-deflib (0.0.6.dev) unstable; urgency=low
+vostok-deflib (0.0.6.dev) unstable; urgency=low
+
   * Chars0X.CopyChar -> PutChar, added CopyChar with count-parameter
   * Added modules IntToChars0X, RealToChars0X and ArraFill for chars and bytes
   * Added module AndroidMotionEvent for touches handling
@@ -39,9 +44,10 @@
   * Extended OsUtil(.DirSep, .IsFullPath(), .CopyFullPath())
   * Fixed offset changing in OsRand.Read and implemented similar functions for Java and JS
 
- -- project Vostok <project-Vostok@yandex.ru> Wed, 8 Dec 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Wed, 8 Dec 2021 00:00:00 +0200
 
- vostok-deflib (0.0.5.dev) unstable; urgency=low
+vostok-deflib (0.0.5.dev) unstable; urgency=low
+
   * Added DirForTemp module, added InRangeWithLowCase and FromWithLowCase to Hex module
   * Platform.(Javascript -> JavaScript)
   * In JavaScript arrays with index checks significantly optimized by memory
@@ -55,16 +61,18 @@
   * Fixed C-implementation of EditLine module
   * Disabled by default usage of signaling NaN for uninitialized variables in C
 
- -- project Vostok <project-Vostok@yandex.ru> Mon, 31 May 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Mon, 31 May 2021 00:00:00 +0200
 
- vostok-deflib (0.0.4.dev) unstable; urgency=low
+vostok-deflib (0.0.4.dev) unstable; urgency=low
+
   * Handling disabling index checking in JavaScript
   * Removed warning when compiled Unistd with ccomp
   * Improved assert handling in C
 
- -- project Vostok <project-Vostok@yandex.ru> Sat, 1 May 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Sat, 1 May 2021 00:00:00 +0200
 
- vostok-deflib (0.0.3.dev) unstable; urgency=low
+vostok-deflib (0.0.3.dev) unstable; urgency=low
+
   * Java and JavaScript implementation of interface modules for integers
   * Extended Utf8 by enconding procedures
   * Added module "log" with short names
@@ -76,31 +84,36 @@
   * Renames V.Stream->V.PStream,V.RStream->V.Stream
   * Reduced pointers align
   * Removed useless V.MsgContentPass
-  * Removed incorrect "var o7;function(o7){...}(o7 || (o7 = {}))" from JavaScript modules
+  * Removed incorrect "var o7;function(o7){...}(o7 || (o7 = {}))" from
+    JavaScript modules
   * Fixed UTF-8 -> String transformation for codes >= 0x10000 in JavaScript
   * Fixed absence of CLI.MaxLen in Java and C
-  * Fixed crashing because of TextEncoder/TextDecoder in newer version on Node.js
+  * Fixed crashing because of TextEncoder/TextDecoder in newer version on
+    Node.js
   * Fixed building CDir under Windows
   * Fixed excess releasing files in CFiles when used "-memng counter"
   * Fixed undefined behavior in o7_ror and O7_ROR
   * Fixed absence of 0-terminal after CLI.Get when size is not enough
 
- -- project Vostok <project-Vostok@yandex.ru> Sat, 27 March 2021 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Sat, 27 March 2021 00:00:00 +0200
 
- vostok-deflib (0.0.2.dev) unstable; urgency=low
+vostok-deflib (0.0.2.dev) unstable; urgency=low
+
   * Added default input and output streams. Out redirected to standard output
   * Improved functions for support LSL, ASR, ROR
   * Systematized work with 0-terminated char arrays
 
- -- project Vostok <project-Vostok@yandex.ru> Sun, 18 November 2019 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 18 November 2019 00:00:00 +0200
 
- vostok-deflib (0.0.1.dev) unstable; urgency=low
+vostok-deflib (0.0.1.dev) unstable; urgency=low
+
   * Added LongSet module
   * Added o7_set_t to o7.h
 
- -- project Vostok <project-Vostok@yandex.ru> Wed, 4 September 2019 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Wed, 4 September 2019 00:00:00 +0200
 
- vostok-deflib (0.0.0.dev) unstable; urgency=low
+vostok-deflib (0.0.0.dev) unstable; urgency=low
+
   * Initial package
 
- -- project Vostok <project-Vostok@yandex.ru> Sun, 23 June 2019 00:00:00 +0200
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 23 June 2019 00:00:00 +0200
