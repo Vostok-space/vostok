@@ -22,14 +22,17 @@ vostok-android (0.0.9.dev) unstable; urgency=low
 vostok-android (0.0.8.dev) unstable; urgency=low
 
   * In generated code by default tabulations replaced by spaces
-  * Fixed false diagnostic of hiding in the extended record of not exported item from imported module
+  * Fixed false diagnostic of hiding in the extended record of not exported item
+    from imported module
   * Fixed generating in the mode without initialization
   * Fixed generating LEN for lengths set as complex expression
   * To the output of diagnostic of some errors added names to improve clarity
   * Improved analysis of uninitialized variables using
   * Improved restoring after syntax mistake in the operators list
-  * Extended list of known C++ keywords to avoid name conflicts in the generated code
-  * Fixed crashing of parsing mistaken code, where created array selector from mistaken type
+  * Extended list of known C++ keywords to avoid name conflicts in the
+    generated code
+  * Fixed crashing of parsing mistaken code, where created array selector from
+    mistaken type
   * Fixed crashing of array length checking, set as a complex expression
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 17 Jan 2022 00:00:00 +0200
@@ -38,10 +41,12 @@ vostok-android (0.0.7.dev) unstable; urgency=low
 
   * Allows to setup android activity name
   * Allows to setup path to android.jar
-  * Allows to setup keystore, signing APK by key from a separate key-file and skip signing
+  * Allows to setup keystore, signing APK by key from a separate key-file and
+    skip signing
   * For signing used .android/debug.keystore by default
   * Allows using tools from Android SDK by short names
-  * Fixed diagnostic of uninitialized variables in VAR-argument of predefined procedures
+  * Fixed diagnostic of uninitialized variables in VAR-argument of predefined
+    procedures
   * Avoided marking of optional arguments of predefined procedures as VAR
   * Fixed generating FOR loops when iterator also used as VAR argument
   * Improved formatting of generated java code
@@ -51,10 +56,12 @@ vostok-android (0.0.7.dev) unstable; urgency=low
 vostok-android (0.0.6.dev) unstable; urgency=low
 
   * Used by default ~/.android/debug.keystore
-  * Builds for targetSdkVersion=26 for avoiding warnings during installation on modern Android
+  * Builds for targetSdkVersion=26 for avoiding warnings during installation
+    on modern Android
   * Compiles as Java 8 instead of 7 for avoiding warnings
   * Added CLI arguments for setup building: -sdk, -platform, -tools, -keystore
-  * Reduced excessive marking variables as VAR-arguments for using with predefined subroutines
+  * Reduced excessive marking variables as VAR-arguments for using with
+    predefined subroutines
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 31 May 2021 00:00:00 +0200
 

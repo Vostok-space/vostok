@@ -8,11 +8,12 @@ vostok-deflib (0.0.9.dev) unstable; urgency=low
 
 vostok-deflib (0.0.8.dev) unstable; urgency=low
 
-  * Added wrapper for WinAPI functions GetUserDefaultUILanguage, SetConsoleCP, SetConsoleOutputCP
-    and encoding setup for correct input and output
+  * Added wrapper for WinAPI functions GetUserDefaultUILanguage, SetConsoleCP,
+    SetConsoleOutputCP and encoding setup for correct input and output
   * Added VRead module for reading different kinds of data from VDataStream.In
   * Added ArrayCmp module for byte and char arrays comparison
-  * Added VDataStream.WriteCharsWhole, Utf8.FromCode, Chars0X.Compare, VFileStream.OpenForAppend
+  * Added VDataStream.WriteCharsWhole, Utf8.FromCode, Chars0X.Compare,
+    VFileStream.OpenForAppend
   * Added byte order subroutines
   * Fixed compatibility with ECMAScript 5 of CFiles.js
   * Fixed compilability of ArrayCopy.h for some compilers
@@ -21,8 +22,8 @@ vostok-deflib (0.0.8.dev) unstable; urgency=low
 
 vostok-deflib (0.0.7.dev) unstable; urgency=low
 
-  * Added OsRand.Set for reading SET, Chars0X.CopyCharsFromLoop for copy from looped buffers,
-    log.c for logging single char
+  * Added OsRand.Set for reading SET, Chars0X.CopyCharsFromLoop for copy from
+    looped buffers, log.c for logging single char
   * Fixed output for OsExec for node.js and implemented version for QuickJS
   * Implemented OsEnv for JavaScript
   * Fixed in Java possibility of a name conflict with the module, named System
@@ -42,16 +43,19 @@ vostok-deflib (0.0.6.dev) unstable; urgency=low
   * Added module AndroidMotionEvent for touches handling
   * Extended AndroidPaint by subroutines for text
   * Extended OsUtil(.DirSep, .IsFullPath(), .CopyFullPath())
-  * Fixed offset changing in OsRand.Read and implemented similar functions for Java and JS
+  * Fixed offset changing in OsRand.Read and implemented similar functions for
+    Java and JS
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 8 Dec 2021 00:00:00 +0200
 
 vostok-deflib (0.0.5.dev) unstable; urgency=low
 
-  * Added DirForTemp module, added InRangeWithLowCase and FromWithLowCase to Hex module
+  * Added DirForTemp module, added InRangeWithLowCase and FromWithLowCase to
+    Hex module
   * Platform.(Javascript -> JavaScript)
   * In JavaScript arrays with index checks significantly optimized by memory
-  * In JavaScript, o7.sarray is combined with o7.array for work in dependency on settings
+  * In JavaScript, o7.sarray is combined with o7.array for work in dependency
+    on settings
   * Implemented CFiles(.Seek and .Tell) to work with QuickJS
   * Implemented CFiles(.Seek, .Tell and .Remove) in Java
   * Implemented platform recognizing in Java
