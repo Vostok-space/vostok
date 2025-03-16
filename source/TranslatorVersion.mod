@@ -1,4 +1,4 @@
-Copyright (C) 2021-2022 ComdivByZero
+Copyright (C) 2021-2025 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -15,6 +15,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE TranslatorVersion;
 
- CONST Val* = "0.0.10.dev";
+ CONST Val* = "0.0.11";
 
 END TranslatorVersion.

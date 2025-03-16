@@ -1,4 +1,33 @@
-vostok-bin (0.0.10.dev) unstable; urgency=low
+vostok-bin (0.0.11) unstable; urgency=low
+
+  * Implemented generating multidimensional arrays of records to Java and
+    JavaScript
+  * Adds .exe for name of generating executable in WinApi
+  * Support procedure outside of module
+  * Generating to C checked operations from SYSTEM
+  * Check of simplest cases of unconditional recursion
+  * Possibility to check recursiveness of procedure type
+  * Overflow checks in ASL, LSL, ROR for compile time and C-runtime
+  * Cyrillic to English transliteration changed to closer to ISO 9-95
+  * In cyrillic identifiers letters ь,ъ are accepted only after consonants
+  * Set the Java compiler input encoding to UTF-8 to avoid misrepresentation of
+    intermediate Java code
+  * Fixed constant value evaluation of code like «FALSE OR TRUE»
+  * Fixed constant value evaluation of string relations
+  * Fixed generating to C values of factors, that are used as a subexpressions
+    in terms
+  * Fixed generating to C ORD(of constant)
+  * Fixed ability to use digits in Cyrillic identifiers
+  * Fixed generating _undef in C to avoid UB when used with clang
+  * Fixed crashing in generating to C SYSTEM.SIZE with array type
+  * Fixed generating to C exported items of private records
+  * Improved generation of ASR in Java and JavaScript
+  * Fixed rare occurrence of a control char in the value of a
+    single-character string
+
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 16 Mar 2025 00:00:00 +0200
+
+vostok-bin (0.0.10) unstable; urgency=low
 
   * Ability to directly generate strings as byte-arrays and moving string
     constants to declarations in Java and JavaScript to improve performance
@@ -14,7 +43,7 @@ vostok-bin (0.0.10.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 7 Aug 2022 00:00:00 +0200
 
-vostok-bin (0.0.9.dev) unstable; urgency=low
+vostok-bin (0.0.9) unstable; urgency=low
 
   * Accounted preferrable UI language in Windows
   * Supported CASE for pointers and records
@@ -26,7 +55,7 @@ vostok-bin (0.0.9.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 23 Feb 2022 00:00:00 +0200
 
-vostok-bin (0.0.8.dev) unstable; urgency=low
+vostok-bin (0.0.8) unstable; urgency=low
 
   * Supported pseudo module SYSTEM, available by option -allow-system
   * Added generator of module DEFINITION, available by command ost to-modef
@@ -56,7 +85,7 @@ vostok-bin (0.0.8.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 17 Jan 2022 00:00:00 +0200
 
-vostok-bin (0.0.7.dev) unstable; urgency=low
+vostok-bin (0.0.7) unstable; urgency=low
 
   * Fixed diagnostic of uninitialized variables in VAR-argument of predefined
     procedures
@@ -70,7 +99,7 @@ vostok-bin (0.0.7.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 8 Dec 2021 00:00:00 +0200
 
-vostok-bin (0.0.6.dev) unstable; urgency=low
+vostok-bin (0.0.6) unstable; urgency=low
 
   * For compatibility with C90 added escaping for chars >= 80X
     ("яд" - "\xD1\x8F\xD0\xB4")
@@ -85,7 +114,7 @@ vostok-bin (0.0.6.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 31 May 2021 00:00:00 +0200
 
-vostok-bin (0.0.5.dev) unstable; urgency=low
+vostok-bin (0.0.5) unstable; urgency=low
 
   * Added zig to list of C compilers
   * Improved generation to C for reduce warnings
@@ -97,7 +126,7 @@ vostok-bin (0.0.5.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sat, 1 May 2021 00:00:00 +0200
 
-vostok-bin (0.0.4.dev) unstable; urgency=low
+vostok-bin (0.0.4) unstable; urgency=low
 
   * Disallowed by default direct procedures comparison
   * Added checks of initialization, arithmetics, and array bounds in JavaScript
@@ -124,7 +153,7 @@ vostok-bin (0.0.4.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sat, 27 March 2021 00:00:00 +0200
 
-vostok-bin (0.0.3.dev) unstable; urgency=low
+vostok-bin (0.0.3) unstable; urgency=low
 
   * Improved diagnostic of uninitialized variables usage
   * Systematized work with 0-terminated char arrays
@@ -133,7 +162,7 @@ vostok-bin (0.0.3.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 18 November 2019 00:00:00 +0200
 
-vostok-bin (0.0.2.dev) unstable; urgency=low
+vostok-bin (0.0.2) unstable; urgency=low
 
   * Improved dynamic diagnostic of usage uninitialized values
   * Fixed generation of mixed expression("+","-") of SETs
@@ -141,7 +170,7 @@ vostok-bin (0.0.2.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 4 September 2019 00:00:00 +0200
 
-vostok-bin (0.0.1.dev) unstable; urgency=low
+vostok-bin (0.0.1) unstable; urgency=low
 
   * Splitted value of "-cc" argument for possibility to add arguments after
     files names
@@ -149,7 +178,7 @@ vostok-bin (0.0.1.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Fri, 25 July 2019 00:00:00 +0200
 
-vostok-bin (0.0.0.dev) unstable; urgency=low
+vostok-bin (0.0.0) unstable; urgency=low
 
   * Initial package
 

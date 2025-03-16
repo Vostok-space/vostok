@@ -4,7 +4,7 @@ Maintainer:   Vostok <project-Vostok@yandex.ru>
 Section:      devel
 Architecture: cpu-arch
 Priority:     optional
-Depends:      libc6, default-jdk, android-sdk, apksigner, google-android-platform-9-installer
+Depends:      libc6, default-jdk, android-sdk, apksigner, google-android-platform-14-installer
 Recommends:   vostok-deflib (= lib-version)
 Description:  Builder of simple Android applications from Oberon source
  Specialized version of Oberon-07 compiler from "Vostok"-project for building

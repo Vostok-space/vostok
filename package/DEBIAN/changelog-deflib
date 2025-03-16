@@ -1,4 +1,26 @@
-vostok-deflib (0.0.9.dev) unstable; urgency=low
+vostok-deflib (0.0.10) unstable; urgency=low
+
+  * Added modules to convert from charset Windows-1251
+  * Checked SYSTEM operation in C
+  * Enabled intrinsics for checked arithmetic for clang
+  * Renamed Chars0X to Charz
+  * Added CheckIntArithmetic.MulPow2, CFiles.Rename, VDataStream.Skip, log.q,
+    JsSelfExe, WindowsDir.Mkdir, PosixDir.Mkdir, PosixFileMode, JsString, JsDir,
+    JavaString, JavaPath, JavaDir, AdDraw, Utf8.Char type, CalcSet
+  * Support overflow checks in ASL, LSL, ROR in C
+  * Improved diagnostic of uninitialized variables in JavaScript
+  * Improved compatibility with bun — JS runtime
+  * Fixed Wlibloaderapi.GetModuleFileNameA using with tcc
+  * Fixed parameters type of runtime C functions — improved portability
+  * Fixed Math.exp in JavaScript
+  * Fixed CFiles.Exist in C when file is opened for reading even it does not
+    exist
+  * Fixed use of parameters with quotes in OsExec via Java
+  * Fixed support of Big Endianness in C
+
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 16 Mar 2025 00:00:00 +0200
+
+vostok-deflib (0.0.9) unstable; urgency=low
 
   * Added module "In" similar to module from "The Oakwood Guidelines for
     Oberon-2"
@@ -6,7 +28,7 @@ vostok-deflib (0.0.9.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 7 Aug 2022 00:00:00 +0200
 
-vostok-deflib (0.0.8.dev) unstable; urgency=low
+vostok-deflib (0.0.8) unstable; urgency=low
 
   * Added wrapper for WinAPI functions GetUserDefaultUILanguage, SetConsoleCP,
     SetConsoleOutputCP and encoding setup for correct input and output
@@ -20,7 +42,7 @@ vostok-deflib (0.0.8.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 23 Feb 2022 00:00:00 +0200
 
-vostok-deflib (0.0.7.dev) unstable; urgency=low
+vostok-deflib (0.0.7) unstable; urgency=low
 
   * Added OsRand.Set for reading SET, Chars0X.CopyCharsFromLoop for copy from
     looped buffers, log.c for logging single char
@@ -36,7 +58,7 @@ vostok-deflib (0.0.7.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 17 Jan 2022 00:00:00 +0200
 
-vostok-deflib (0.0.6.dev) unstable; urgency=low
+vostok-deflib (0.0.6) unstable; urgency=low
 
   * Chars0X.CopyChar -> PutChar, added CopyChar with count-parameter
   * Added modules IntToChars0X, RealToChars0X and ArraFill for chars and bytes
@@ -48,7 +70,7 @@ vostok-deflib (0.0.6.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 8 Dec 2021 00:00:00 +0200
 
-vostok-deflib (0.0.5.dev) unstable; urgency=low
+vostok-deflib (0.0.5) unstable; urgency=low
 
   * Added DirForTemp module, added InRangeWithLowCase and FromWithLowCase to
     Hex module
@@ -67,7 +89,7 @@ vostok-deflib (0.0.5.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 31 May 2021 00:00:00 +0200
 
-vostok-deflib (0.0.4.dev) unstable; urgency=low
+vostok-deflib (0.0.4) unstable; urgency=low
 
   * Handling disabling index checking in JavaScript
   * Removed warning when compiled Unistd with ccomp
@@ -75,7 +97,7 @@ vostok-deflib (0.0.4.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sat, 1 May 2021 00:00:00 +0200
 
-vostok-deflib (0.0.3.dev) unstable; urgency=low
+vostok-deflib (0.0.3) unstable; urgency=low
 
   * Java and JavaScript implementation of interface modules for integers
   * Extended Utf8 by enconding procedures
@@ -101,7 +123,7 @@ vostok-deflib (0.0.3.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sat, 27 March 2021 00:00:00 +0200
 
-vostok-deflib (0.0.2.dev) unstable; urgency=low
+vostok-deflib (0.0.2) unstable; urgency=low
 
   * Added default input and output streams. Out redirected to standard output
   * Improved functions for support LSL, ASR, ROR
@@ -109,14 +131,14 @@ vostok-deflib (0.0.2.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 18 November 2019 00:00:00 +0200
 
-vostok-deflib (0.0.1.dev) unstable; urgency=low
+vostok-deflib (0.0.1) unstable; urgency=low
 
   * Added LongSet module
   * Added o7_set_t to o7.h
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 4 September 2019 00:00:00 +0200
 
-vostok-deflib (0.0.0.dev) unstable; urgency=low
+vostok-deflib (0.0.0) unstable; urgency=low
 
   * Initial package
 

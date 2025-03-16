@@ -1,4 +1,17 @@
-vostok-android (0.0.10.dev) unstable; urgency=low
+vostok-android (0.0.11) unstable; urgency=low
+
+  * Implemented generating multidimensional arrays of records to Java
+  * Support procedure outside of module
+  * Check of simplest cases of unconditional recursion
+  * Possibility to check recursiveness of procedure type
+  * In cyrillic identifiers letters ь,ъ are accepted only after consonants
+  * Improve generation of ASR in Java
+  * Fixed rare occurrence of a control char in the value of a
+    single-character string
+
+ -- project Vostok <project-Vostok@yandex.ru>  Sun, 16 Mar 2025 00:00:00 +0200
+
+vostok-android (0.0.10) unstable; urgency=low
 
   * Ability to directly generate strings as byte-arrays and moving string
     constants to declarations in Java to improve performance
@@ -9,7 +22,7 @@ vostok-android (0.0.10.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 7 Aug 2022 00:00:00 +0200
 
-vostok-android (0.0.9.dev) unstable; urgency=low
+vostok-android (0.0.9) unstable; urgency=low
 
   * Supported CASE for pointers and records
   * Fixed determination of variable initialization state with the need of
@@ -19,7 +32,7 @@ vostok-android (0.0.9.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 23 Feb 2022 00:00:00 +0200
 
-vostok-android (0.0.8.dev) unstable; urgency=low
+vostok-android (0.0.8) unstable; urgency=low
 
   * In generated code by default tabulations replaced by spaces
   * Fixed false diagnostic of hiding in the extended record of not exported item
@@ -37,7 +50,7 @@ vostok-android (0.0.8.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 17 Jan 2022 00:00:00 +0200
 
-vostok-android (0.0.7.dev) unstable; urgency=low
+vostok-android (0.0.7) unstable; urgency=low
 
   * Allows to setup android activity name
   * Allows to setup path to android.jar
@@ -53,7 +66,7 @@ vostok-android (0.0.7.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 8 Dec 2021 00:00:00 +0200
 
-vostok-android (0.0.6.dev) unstable; urgency=low
+vostok-android (0.0.6) unstable; urgency=low
 
   * Used by default ~/.android/debug.keystore
   * Builds for targetSdkVersion=26 for avoiding warnings during installation
@@ -65,7 +78,7 @@ vostok-android (0.0.6.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Mon, 31 May 2021 00:00:00 +0200
 
-vostok-android (0.0.4.dev) unstable; urgency=low
+vostok-android (0.0.4) unstable; urgency=low
 
   * Simplified the deb-dependencies
   * Fixed assigning of strings through designator
@@ -76,7 +89,7 @@ vostok-android (0.0.4.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sat, 27 March 2021 00:00:00 +0200
 
-vostok-android (0.0.3.dev) unstable; urgency=low
+vostok-android (0.0.3) unstable; urgency=low
 
   * Public package
   * Improved diagnostic of uninitialized variables usage
@@ -86,7 +99,7 @@ vostok-android (0.0.3.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Sun, 18 November 2019 00:00:00 +0200
 
-vostok-android (0.0.2.dev) unstable; urgency=low
+vostok-android (0.0.2) unstable; urgency=low
 
   * Improved dynamic diagnostic of usage uninitialized values
   * Fixed generation of mixed expression("+","-") of SETs
@@ -94,7 +107,7 @@ vostok-android (0.0.2.dev) unstable; urgency=low
 
  -- project Vostok <project-Vostok@yandex.ru>  Wed, 4 September 2019 00:00:00 +0200
 
-vostok-android (0.0.0.dev) unstable; urgency=low
+vostok-android (0.0.0) unstable; urgency=low
 
   * Initial package
 

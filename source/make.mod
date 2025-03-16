@@ -1,7 +1,7 @@
 #!/usr/bin/env -S ost .
 
 Build and test tasks for the translator
-Copyright (C) 2018-2023 ComdivByZero
+Copyright (C) 2018-2025 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -25,7 +25,7 @@ MODULE make;
    C = 0; Java = 1; Js = 2;
 
    BinVer = TranslatorVersion.Val;
-   LibVer = "0.0.9.dev";
+   LibVer = "0.0.10";
 
  VAR ok*, windows, posix, testStrict, testTogether: BOOLEAN;
      lang: INTEGER;
@@ -476,6 +476,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
    Exec.Init(cmd, "lintian")
  & Concat(deb, name, ".deb")
  & Exec.Val(cmd, deb)
+ & Exec.Par(cmd, "--tag-display-limit", "0")
  & (Exec.Do(cmd) = Exec.Ok)
  END Lintian;
 

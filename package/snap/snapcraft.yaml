@@ -14,43 +14,31 @@ description: |
 grade: devel
 confinement: classic
 
-architectures:
-  - build-on: [amd64]
-  - build-on: [amd64]
-    build-for: [riscv64]
-  - build-on: [i386]
-  - build-on: [arm64]
-  - build-on: [armhf]
-  - build-on: [s390x]
-  - build-on: [ppc64el]
+#architectures: --build-for=amd64,arm64,armhf,riscv64,s390x,ppc64el
 
 parts:
   ost:
     plugin: nil
     build-packages:
-      - on amd64 to riscv64:
-        - gcc-riscv64-linux-gnu
-        - libc6-dev-riscv64-cross
-      - else:
-        - musl-tools
+      - musl-tools
 
     override-build: |
       OST=result/ost-run
-      SPLITEST="$OST run 'make.Together(0=1); make.Test' -infr . -m source"
-      if [ "${SNAPCRAFT_TARGET_ARCH}" = riscv64 ]; then
-        CC=riscv64-linux-gnu-gcc
-        TEST=""
+      SPLITEST() { $OST run 'make.Together(0=1); make.Test' -infr . -m source && false; }
+      if [ "${SNAPCRAFT_TARGET_ARCH}" = armhf ]; then
+        CC="musl-gcc -O1 -flto=auto -s -static"
       else
-        CC=musl-gcc
-        TEST="make.Self; "
+        CC="musl-gcc -Os -flto=auto -s -static"
       fi
+      TEST="make.Self;"
       ./init.sh && result/bs-ost run make.Build -infr . -m source
       mv result/ost $OST
-      craftctl set version=$($OST version | awk '{print $2}')
-      $OST to-bin Translator.Go result/ost -infr . -m source -cc "$CC -Os -flto -s -static"
+      VERSION=$($OST version | awk '{print $2}')
+      craftctl set version=$VERSION || snapcraftctl set-version $VERSION
+      $OST to-bin Translator.Go result/ost -infr . -m source -cc "$CC"
       rm -rf $SNAPCRAFT_PART_INSTALL/usr
-      mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/{bin,share}
-      $OST run "$TEST"'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source || ($SPLITEST && false)
+      mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share
+      $OST run "$TEST"'make.InstallTo("'$SNAPCRAFT_PART_INSTALL'/usr")' -infr . -m source || SPLITEST
       mkdir --parents $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result
       cp result/ost $SNAPCRAFT_PART_INSTALL/usr/share/vostok/result/
 
@@ -64,13 +52,10 @@ parts:
     build-attributes:
       - no-patchelf
     override-build: |
-      if [ "${SNAPCRAFT_TARGET_ARCH}" = riscv64 ]; then
-        GOARCH=riscv64 go build -ldflags='-s -w' server.go
-      else
-        go build -ldflags='-s -w -linkmode external -extldflags "-static"' server.go
-      fi
+      go build -ldflags='-s -w -linkmode external -extldflags "-static"' server.go
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server
       cp server $SNAPCRAFT_PROJECT_DIR/snap/local/server.sh $SNAPCRAFT_PART_INSTALL/usr/bin/
+      ln -s .. vostok-full
       cp -r vostok vostok-full web $SNAPCRAFT_PART_INSTALL/usr/share/vostok/server/
 
     source:
