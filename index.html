@@ -287,7 +287,7 @@ apt update'</code></pre>
   /usr/bin/sudo rpm --upgrade \
     ~/*/RPMS/*/vostok-deflib-$1.*.rpm ~/*/RPMS/*/vostok-bin-$2.*.rpm
 }
-vostokInstall 0.0.8 0.0.9</code></pre>
+vostokInstall 0.0.10 0.0.11</code></pre>
       </details>
 
       <details>
@@ -359,7 +359,7 @@ result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
         <span lang="en">Building and installation of the translator:</span>
         <pre><code>pkg install git clang &&
 git clone https://github.com/Vostok-space/vostok.git --depth 1 \
-    --branch lib-v0.0.8_ost-v0.0.9 &&
+    --branch lib-v0.0.10_ost-v0.0.11 &&
 cd vostok &&
 ./init.sh &&
 result/bs-ost run 'make.Build; make.Self' -infr . -m source &&
