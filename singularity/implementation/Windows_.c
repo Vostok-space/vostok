@@ -1,7 +1,7 @@
 /*
 Partial wrapper for Windows-specific windows.h
 
-Copyright 2022 ComdivByZero
+Copyright 2022,2025 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@ limitations under the License.
 */
 
 #include <o7.h>
+#include "Windows_.h"
 
 #if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64))
-#   include "Windows_.h"
 #   include <windows.h>
-    extern unsigned short GetUserDefaultUILanguage(void);
 #else
     typedef o7_uint_t UINT;
     static int GetUserDefaultUILanguage(void)     { return 0; }
