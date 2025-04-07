@@ -1,4 +1,4 @@
-/* Copyright 2016-2017,2020,2023-2024 ComdivByZero
+/* Copyright 2016-2017,2020,2023-2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,17 @@
 
 #include <o7.h>
 #include "CFiles.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+#	include <fcntl.h>
+	/* для избавления в WinAPI стандартных файлов ввода-вывода
+	   от особенного текстового поведения */
+	O7_ALWAYS_INLINE void setModeBin(FILE *f) {
+		(void)_setmode(_fileno(f), _O_BINARY);
+	}
+#else
+	O7_ALWAYS_INLINE void setModeBin(FILE *f) {}
+#endif
 
 struct CFiles_Implement {
 	FILE *file;
@@ -146,9 +157,11 @@ extern void CFiles_init(void) {
 
 		o7_mem_info_init((void *)fin, &CFiles_File_tag);
 		CFiles_in->file = stdin;
+		setModeBin(stdin);
 
 		o7_mem_info_init((void *)fout, &CFiles_File_tag);
 		CFiles_out->file = stdout;
+		setModeBin(stdout);
 
 		o7_mem_info_init((void *)ferr, &CFiles_File_tag);
 		CFiles_err->file = stderr;
