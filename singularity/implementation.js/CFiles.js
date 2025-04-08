@@ -1,4 +1,4 @@
-/* Copyright 2019-2021,2023 ComdivByZero
+/* Copyright 2019-2021,2023,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ if (fs != null) {
 			}
 			try {
 				fd = fs.openSync(name, smode, 6 * 64 + 6 * 8 + 6);
-			} catch (exc) {
+			} catch {
 				fd = -1;
 			}
 			if (fd != -1) {
@@ -101,16 +101,26 @@ if (fs != null) {
 		}
 	}
 
+	function tryRead(file, buf, ofs, count) {
+		var read;
+		try {
+			read = fs.readSync(file.fd, buf, ofs, count, null);
+		} catch {
+			read = 0;
+		}
+		return read;
+	}
+
 	module.Read = function(file, buf, ofs, count) {
 		var data, read, i;
 		if (typeof buf !== 'Uint8Array') {
 			data = bufGet(count);
-			read = fs.readSync(file.fd, data, 0, count, null);
+			read = tryRead(file, data, 0, count);
 			for (i = 0; i < read; i += 1) {
 				buf[i + ofs] = data[i];
 			}
 		} else {
-			read = fs.readSync(file.fd, buf, ofs, count, null);
+			read = tryRead(file, buf, ofs, count);
 		}
 		return read;
 	}
@@ -122,9 +132,14 @@ if (fs != null) {
 			for (i = 0; i < count; i += 1) {
 				data[i] = buf[i + ofs];
 			}
-			write = fs.writeSync(file.fd, data, 0, count);
+			ofs = 0;
 		} else {
-			write = fs.writeSync(file.fd, buf, ofs, count);
+			data = buf;
+		}
+		try {
+			write = fs.writeSync(file.fd, data, ofs, count);
+		} catch {
+			write = 0;
 		}
 		return write;
 	}
@@ -134,12 +149,16 @@ if (fs != null) {
 	}
 
 	module.Remove = function(name, ofs) {
-		var str;
+		var str, ok;
 		str = utf8ByOfsToStr(name, ofs);
-		if (str != null) {
-			fs.unlinkSync(str);
+		ok = str != null;
+		if (ok) {
+			try {
+				fs.unlinkSync(str);
+			} catch {
+				ok = false;
+			}
 		}
-		/* TODO недостаточное условие */
 		return str != null;
 	}
 
@@ -150,12 +169,18 @@ if (fs != null) {
 	}
 
 	module.Rename = function(src, sofs, dest, dofs) {
-		var s, d;
+		var s, d, ok;
 		s = utf8ByOfsToStr(src, sofs);
 		d = utf8ByOfsToStr(dest, dofs);
-		fs.renameSync(s, d);
-		/* TODO */
-		return true;
+		ok = (s != null) && (d != null);
+		if (ok) {
+			try {
+				fs.renameSync(s, d);
+			} catch {
+				ok = false;
+			}
+		}
+		return ok;
 	}
 
 } else if (typeof std !== 'undefined') {
