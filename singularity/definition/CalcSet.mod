@@ -1,7 +1,7 @@
-Arithmethic and bits operations for SET as two's complement 32-bit integers.
+Arithmetic and bits operations for SET as two's complement 32-bit integers.
 Executable specification.
 
-Copyright 2022,2024 ComdivByZero
+Copyright 2022,2024-2025 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ MODULE CalcSet;
   bytes[3] := v + ORD(31 IN s) * 80H
  END ToBytes;
 
- PROCEDURE FromByte(b: BYTE; i: INTEGER): SET;
+ PROCEDURE FromByte*(b: BYTE; i: INTEGER): SET;
  VAR s: SET;
  BEGIN
   ASSERT(i IN {0 .. 3});
@@ -147,11 +147,11 @@ MODULE CalcSet;
   r
  END Lsr;
 
- (* Arithmethic shift right *)
+ (* Arithmetic shift right *)
  PROCEDURE Asr*(s: SET; n: INTEGER): SET;
  VAR r: SET; i, l: INTEGER;
  BEGIN
-   ASSERT((0 <= n) & (n <= Last));
+  ASSERT((0 <= n) & (n <= Last));
   r := {};
   l := Last - n;
   FOR i := 0 TO l DO
