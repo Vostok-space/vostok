@@ -4,8 +4,9 @@ PARAMS=${1:-"# default args"}
 eval "$PARAMS"
 : "${CC:=gcc}"
 : "${COMPILE:=compile_with_profile}"
-: "${CC_OPT:="-O3 -flto -s"}"
+: "${CC_OPT:="-O3 -flto=auto -s"}"
 : "${TIME:=/usr/bin/time -f '%e sec  %M KiB'}"
+: "${JSRUN:=node}"
 
 RESULT=result/benchmark
 GCDA=$RESULT/gcda
@@ -20,9 +21,10 @@ generate() {
 	rm -rf $RESULT
 	mkdir -p $RESULT/asrt $RESULT/san $RESULT/java $RESULT/js
 	SOURCE="-m source/blankJava -m source/blankOberon -m source/blankJs -m source/en-only -m source"
+	ALLSOURCE="-infr . $SOURCE -m test/benchmark"
 	NOCHECK="-init noinit -no-array-index-check -no-nil-check -no-arithmetic-overflow-check"
-	result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt -infr . $SOURCE -m test/benchmark
-	result/ost to-c "RepeatTran.Go(10)" $RESULT/san  -infr . $SOURCE -m test/benchmark $NOCHECK
+	result/ost to-c "RepeatTran.Go(10)" $RESULT/asrt $ALLSOURCE
+	result/ost to-c "RepeatTran.Go(10)" $RESULT/san  $ALLSOURCE $NOCHECK
 
 	result/ost to-class "RepeatTran.Go(10)" $RESULT/java -infr . $SOURCE -m test/benchmark
 	result/ost to-js "RepeatTran.Go(2)" $RESULT/ost.js -infr . $SOURCE -m test/benchmark
@@ -106,8 +108,6 @@ runc() {
 }
 
 runjs() {
-	JSRUN="qjs --std"
-	JSRUN=node
 	mkdir -p /tmp/ost-bench-js
 
 	echo
