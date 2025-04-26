@@ -39,8 +39,24 @@ BEGIN
 	UNPK(b, n);
 	ASSERT(b = one);
 	ASSERT(n = -94)
-
 END Pack;
+
+PROCEDURE Floor*;
+VAR r: REAL;
+BEGIN
+	ASSERT(FLOOR(+1.5) = +1);
+	ASSERT(FLOOR(-1.5) = -2);
+	ASSERT(FLOOR(+1.) = +1);
+	ASSERT(FLOOR(-1.) = -1);
+
+	r := FLT(7FFFFFFFH);
+	ASSERT(FLOOR(+r + 1.E-7) = +7FFFFFFFH);
+	ASSERT(FLOOR(-r + 1.E-7) = -7FFFFFFFH);
+
+	r := r - r;
+	ASSERT(FLOOR(-r) = +0);
+	ASSERT(FLOOR(+r) = -0)
+END Floor;
 
 PROCEDURE Fail*;
 VAR a, b, c, d, e: REAL;
@@ -95,6 +111,15 @@ BEGIN
 	Out.Real(0.000000000 / a, 0); Out.Ln
 END FailDiv;
 
+PROCEDURE FailFloor*;
+VAR a: REAL;
+BEGIN
+	a := FLT(-7FFFFFFFH) - 1.E-6;
+	Out.Int(FLOOR(a), 0); Out.Ln;
+	a := a - 5.;
+	Out.Int(FLOOR(a), 0); Out.Ln
+END FailFloor;
+
 PROCEDURE Go*;
 VAR a, b, c: REAL;
 BEGIN
@@ -106,7 +131,9 @@ BEGIN
 	ASSERT(c = 1.02);
 
 	Pack(+1);
-	Pack(-1)
+	Pack(-1);
+
+	Floor
 END Go;
 
 BEGIN

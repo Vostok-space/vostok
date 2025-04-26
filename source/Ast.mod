@@ -168,6 +168,8 @@ CONST
 	ErrLslOverflow*                 = -122;
 	ErrShiftGeBits*                 = -123;
 
+	ErrFloorOverflow*               = -124;
+
 	ErrMin*                         = -200;
 
 	ParamIn*     = 0;
@@ -3133,7 +3135,7 @@ BEGIN
 					err := ErrConstAddOverflow
 				END
 			| IdReal:
-				(* из-за отсутствия точности в вычислениях
+				(* TODO из-за отсутствия точности в вычислениях
 				fullSum.value(ExprReal).real :=
 				    fullSum.value(ExprReal).real
 				  + term.value(ExprReal).real * FLT(LexToSign(add))
@@ -3290,7 +3292,7 @@ BEGIN
 		  IdInteger:
 			Int(res, mult, b, err)
 		| IdReal:
-			(* из-за отсутствия точности в вычислениях *)
+			(* TODO из-за отсутствия точности в вычислениях *)
 			IF FALSE THEN
 				Rl(res, mult, b)
 			END;
@@ -3748,7 +3750,7 @@ END CallParamInsert;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
                          ds: Declarations): INTEGER;
-VAR err: INTEGER;
+VAR err: INTEGER; r: REAL;
 
 	PROCEDURE CalcPredefined(call: ExprCall; v: Value; VAR err: INTEGER);
 	VAR i2: INTEGER;
@@ -3805,8 +3807,11 @@ VAR err: INTEGER;
 				call.value := ExprIntegerNew(ROR(v(ExprInteger).int, i2))
 			END
 		| SpecIdent.Floor:
-			IF FALSE THEN
-				call.value := ExprIntegerNew(FLOOR(v(ExprReal).real))
+			r := v(ExprReal).real;
+			IF (FLT(Limits.IntegerMin) > r) OR (r > FLT(Limits.IntegerMax)) THEN
+				err := ErrFloorOverflow
+			ELSE
+				call.value := ExprIntegerNew(FLOOR(r))
 			END
 		| SpecIdent.Flt:
 			call.value := ExprRealNewByValue(FLT(v(ExprInteger).int))

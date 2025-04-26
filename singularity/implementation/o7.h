@@ -1,4 +1,4 @@
-/* Copyright 2016-2024 ComdivByZero
+/* Copyright 2016-2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1597,8 +1597,18 @@ o7_int_t o7_sti(o7_uint_t v) {
 
 O7_CONST_INLINE
 o7_int_t o7_floor(double v) {
-	o7_assert((double)(-O7_INT_MAX) <= v && v <= (double)O7_INT_MAX);
-	return (o7_int_t)v;
+	o7_int_t i;
+	if (v >= 0.0) {
+		o7_assert(v <= (double)O7_INT_MAX);
+		i = (o7_int_t)v;
+	} else {
+		o7_assert((double)-O7_INT_MAX <= v);
+		i = (o7_int_t)v;
+		if ((double)i > v) {
+			i -= 1;
+		}
+	}
+	return i;
 }
 
 O7_CONST_INLINE
