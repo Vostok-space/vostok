@@ -1125,9 +1125,13 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 			| SpecIdent.Ror:
 				Rotate(g, e1, p2.expr);
 			| SpecIdent.Floor:
-				Str(g, "o7_floor(");
-				Expression(g, e1);
-				Chr(g, ")")
+				IF call.value = NIL THEN
+					Str(g, "o7_floor(");
+					Expression(g, e1);
+					Chr(g, ")")
+				ELSE
+					Int(g, call.value(Ast.ExprInteger).int)
+				END
 			| SpecIdent.Flt:
 				Str(g, "o7_flt(");
 				Expression(g, e1);
