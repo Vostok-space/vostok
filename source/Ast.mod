@@ -3750,10 +3750,10 @@ END CallParamInsert;
 
 PROCEDURE CallParamsEnd*(call: ExprCall; currentFormalParam: FormalParam;
                          ds: Declarations): INTEGER;
-VAR err: INTEGER; r: REAL;
+VAR err: INTEGER;
 
 	PROCEDURE CalcPredefined(call: ExprCall; v: Value; VAR err: INTEGER);
-	VAR i2: INTEGER;
+	VAR i2: INTEGER; r: REAL;
 
 		PROCEDURE ShiftVal(call: ExprCall; VAR err: INTEGER; VAR i2: INTEGER): BOOLEAN;
 		VAR v2: Value; val: BOOLEAN;
