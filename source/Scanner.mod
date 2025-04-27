@@ -1,5 +1,5 @@
 (*  Scanner of Oberon-07 lexems
- *  Copyright (C) 2016-2024 ComdivByZero
+ *  Copyright (C) 2016-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -273,7 +273,7 @@ VAR
 		scMinus, ignore: BOOLEAN;
 		val, t: REAL;
 	BEGIN
-		val := 1.0;
+		val := 0.0;
 		i := s.lexStart;
 		d := ValDigit(s.buf[i]);
 		WHILE d >= 0 DO
