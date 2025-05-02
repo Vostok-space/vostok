@@ -107,6 +107,7 @@ CONST
 	ErrGuardExpectRecordExt*        = -69;
 	ErrGuardExpectPointerExt*       = -70;
 	ErrGuardedTypeNotExtensible*    = -71;
+	ErrGuardExpectFormalParam*      = -130;(* TODO *)
 	ErrDotSelectorToNotRecord*      = -72;
 	ErrDeclarationNotVar*           = -73;
 	ErrForIteratorNotInteger*       = -74;
@@ -162,6 +163,8 @@ CONST
 	                                (*-115*)
 	                                (*-116*)
 	                                (*-117*)
+	                                (*-118*)
+	                                (*-119*)
 
 	ErrNegativeShift*               = -120;
 	ErrLslTooLargeShift*            = -121;
@@ -169,6 +172,8 @@ CONST
 	ErrShiftGeBits*                 = -123;
 
 	ErrFloorOverflow*               = -124;
+
+	                                (*-130*)
 
 	ErrMin*                         = -200;
 
@@ -2699,6 +2704,8 @@ BEGIN
 			guard(Record).needTag := TRUE;
 			IF (des.sel = NIL) & (des.decl IS FormalParam) THEN
 				SetNeedTag(des.decl(FormalParam))
+			ELSE
+				err := ErrGuardExpectFormalParam
 			END
 		END
 	ELSE

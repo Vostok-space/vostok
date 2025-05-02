@@ -1,5 +1,5 @@
 (*  English messages for syntax and semantic errors. Extracted from MessageEn.
- *  Copyright (C) 2017-2023 ComdivByZero
+ *  Copyright (C) 2017-2023,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -134,7 +134,7 @@ BEGIN
 	| AST.ErrCasePointerVarParam:
 		C("Expression in CASE should not be a VAR-parameter of pointer")
 	| AST.ErrCaseRecordNotParam:
-		C("Variable of record type in CASE should ber formal parameter")
+		C("Variable of record type in CASE should be formal parameter")
 	| AST.ErrCaseLabelNotRecExt:
 		C("Type guard shoud be extension of type of expression in CASE")
 	| AST.ErrCaseElemExprTypeMismatch:
@@ -185,6 +185,8 @@ BEGIN
 		C("In type's guard expected pointer to extended record")
 	| AST.ErrGuardedTypeNotExtensible:
 		C("In a type's guard must be designator of record or pointer to record")
+	| AST.ErrGuardExpectFormalParam:
+		C("Record type guard applicable only to a formal parameter")
 	| AST.ErrDotSelectorToNotRecord:
 		C("Selector '.' applicable only to record and pointer to record")
 	| AST.ErrDeclarationNotVar:
@@ -279,6 +281,8 @@ BEGIN
 		C("LSL overflow")
 	| AST.ErrShiftGeBits:
 		C("Shift ≥ 32")
+	| AST.ErrFloorOverflow:
+		C("FLOOR result is out the INTEGER range")
 	END
 END Ast;
 

@@ -1,5 +1,5 @@
 (*  Ukrainian messages for syntax and semantic errors. Extracted from MessageUa.
- *  Copyright (C) 2018-2023 ComdivByZero
+ *  Copyright (C) 2018-2023,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -178,6 +178,8 @@ BEGIN
 		C("У захисті типу очікується покажчик на розширений запис")
 	| AST.ErrGuardedTypeNotExtensible:
 		C("У захисті типу змінна повинна бути або записом, або покажчиком на запис")
+	| AST.ErrGuardExpectFormalParam:
+		C("Охрана типу запис застосовується тільки до формальних параметрів")
 	| AST.ErrDotSelectorToNotRecord:
 		C("Селектор елементу запису прикладений не до запису")
 	| AST.ErrDeclarationNotVar:
@@ -272,6 +274,8 @@ BEGIN
 		C("Переповнення в LSL")
 	| AST.ErrShiftGeBits:
 		C("Зсув ≥ 32")
+	| AST.ErrFloorOverflow:
+		C("Переповнення діапазону INTEGER у FLOOR")
 	END
 END Ast;
 

@@ -1,5 +1,5 @@
 (*  Russian messages for syntax and semantic errors. Extracted from MessageRu.
- *  Copyright (C) 2017-2023 ComdivByZero
+ *  Copyright (C) 2017-2023,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -178,6 +178,8 @@ BEGIN
 		C("В защите типа ожидается указатель на расширенную запись")
 	| AST.ErrGuardedTypeNotExtensible:
 		C("В защите типа переменная должна быть либо записью, либо указателем на запись")
+	| AST.ErrGuardExpectFormalParam:
+		C("Охрана записевого типа применима только к формальному параметру")
 	| AST.ErrDotSelectorToNotRecord:
 		C("Селектор элемента записи применён не к записи")
 	| AST.ErrDeclarationNotVar:
@@ -272,6 +274,8 @@ BEGIN
 		C("Переполнение в LSL")
 	| AST.ErrShiftGeBits:
 		C("Смещение ≥ 32")
+	| AST.ErrFloorOverflow:
+		C("Переполнение диапазона INTEGER в FLOOR")
 	END
 END Ast;
 
