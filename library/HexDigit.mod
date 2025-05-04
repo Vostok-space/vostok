@@ -1,6 +1,6 @@
-(* Converter of hexadecimal in char to integer and vise versa
+(* Converter of hexadecimal digit in CHAR to INTEGER and vise versa
  *
- * Copyright 2019,2021 ComdivByZero
+ * Copyright 2019,2021,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *)
-MODULE Hex;
+MODULE HexDigit;
 
 CONST
   Range* = {0 .. 0FH};
 
-  PROCEDURE To*(d: INTEGER): CHAR;
+  PROCEDURE From*(d: INTEGER): CHAR;
   BEGIN
     ASSERT(d IN Range);
     IF d < 0AH THEN
@@ -29,25 +29,25 @@ CONST
     END
   RETURN
     CHR(d)
-  END To;
+  END From;
 
-  PROCEDURE InRange*(ch: CHAR): BOOLEAN;
+  PROCEDURE Is*(ch: CHAR): BOOLEAN;
   RETURN
       ("0" <= ch) & (ch <= "9")
    OR ("A" <= ch) & (ch <= "F")
-  END InRange;
+  END Is;
 
-  PROCEDURE InRangeWithLowCase*(ch: CHAR): BOOLEAN;
+  PROCEDURE WithLowCaseIs*(ch: CHAR): BOOLEAN;
   RETURN
       ("0" <= ch) & (ch <= "9")
    OR ("A" <= ch) & (ch <= "F")
    OR ("a" <= ch) & (ch <= "f")
-  END InRangeWithLowCase;
+  END WithLowCaseIs;
 
-  PROCEDURE From*(d: CHAR): INTEGER;
+  PROCEDURE ToInt*(d: CHAR): INTEGER;
   VAR i: INTEGER;
   BEGIN
-    ASSERT(InRange(d));
+    ASSERT(Is(d));
 
     IF d <= "9" THEN
       i := ORD(d) - ORD("0")
@@ -56,12 +56,12 @@ CONST
     END
   RETURN
     i
-  END From;
+  END ToInt;
 
-  PROCEDURE FromWithLowCase*(d: CHAR): INTEGER;
+  PROCEDURE WithLowCaseToInt*(d: CHAR): INTEGER;
   VAR i: INTEGER;
   BEGIN
-    ASSERT(InRangeWithLowCase(d));
+    ASSERT(WithLowCaseIs(d));
 
     IF d <= "9" THEN
       i := ORD(d) - ORD("0")
@@ -72,6 +72,6 @@ CONST
     END
   RETURN
     i
-  END FromWithLowCase;
+  END WithLowCaseToInt;
 
-END Hex.
+END HexDigit.
