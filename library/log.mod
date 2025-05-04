@@ -1,6 +1,6 @@
 Simple output subroutines with short names
 
-Copyright 2021-2022,2024 ComdivByZero
+Copyright 2021-2022,2024-2025 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE log;
 
-  IMPORT Out, Hex;
+  IMPORT Out, HexDigit;
 
   PROCEDURE s*(str: ARRAY OF CHAR);
   BEGIN
@@ -50,11 +50,11 @@ MODULE log;
   VAR buf: ARRAY 9 OF CHAR; j, k: INTEGER;
   BEGIN
     j := LEN(buf) - 2;
-    buf[j] := Hex.To(int MOD 10H);
+    buf[j] := HexDigit.From(int MOD 10H);
     int := int DIV 10H + ORD(int < 0) * 8000000H;
     WHILE int # 0 DO
       DEC(j);
-      buf[j] := Hex.To(int MOD 10H);
+      buf[j] := HexDigit.From(int MOD 10H);
       int := int DIV 10H
     END;
 

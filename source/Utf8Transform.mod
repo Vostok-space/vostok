@@ -1,6 +1,6 @@
 (*  Transformations from cyrillic Utf-8 in ident to ASCII
  *
- *  Copyright (C) 2016,2019,2021,2023-2024 ComdivByZero
+ *  Copyright (C) 2016,2019,2021,2023-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -17,7 +17,7 @@
  *)
 MODULE Utf8Transform;
 
-  IMPORT Strings := StringStore, Charz, Hex;
+  IMPORT Strings := StringStore, Charz, HexDigit;
 
   PROCEDURE Puts(VAR buf: ARRAY OF CHAR; VAR i: INTEGER; str: ARRAY OF CHAR);
   BEGIN
@@ -48,9 +48,9 @@ MODULE Utf8Transform;
         ASSERT(Strings.IterNext(it));
         u := u * 64 + ORD(it.char) MOD 64;
         Puts(buf, i, "\u0");
-        buf[i    ] := Hex.To(u DIV 100H);
-        buf[i + 1] := Hex.To(u DIV 10H MOD 10H);
-        buf[i + 2] := Hex.To(u MOD 10H);
+        buf[i    ] := HexDigit.From(u DIV 100H);
+        buf[i + 1] := HexDigit.From(u DIV 10H MOD 10H);
+        buf[i + 2] := HexDigit.From(u MOD 10H);
         INC(i, 3)
       END
     UNTIL ~Strings.IterNext(it);
@@ -74,15 +74,15 @@ MODULE Utf8Transform;
         buf[i + 2] := "_";
         INC(i, 3)
       ELSIF (it.char < 80X)
-         & ~((afterEscaped = i) & Hex.InRangeWithLowCase(it.char))
+         & ~((afterEscaped = i) & HexDigit.WithLowCaseIs(it.char))
       THEN
         buf[i] := it.char;
         INC(i);
       ELSE
         buf[i] := "\";
         buf[i + 1] := "x";
-        buf[i + 2] := Hex.To(ORD(it.char) DIV 10H);
-        buf[i + 3] := Hex.To(ORD(it.char) MOD 10H);
+        buf[i + 2] := HexDigit.From(ORD(it.char) DIV 10H);
+        buf[i + 3] := HexDigit.From(ORD(it.char) MOD 10H);
         INC(i, 4);
         afterEscaped := i
       END

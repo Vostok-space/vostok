@@ -19,7 +19,7 @@ MODULE GeneratorC;
 IMPORT
 	V,
 	Ast,
-	Utf8, Hex,
+	Utf8, HexDigit,
 	Strings := StringStore, Charz,
 	SpecIdentChecker,
 	SpecIdent := OberonSpecIdent,
@@ -1779,8 +1779,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				Text.Data(g, s, 0, 3)
 			ELSE
 				Str(g, "0x");
-				s[0] := Hex.To(e.int DIV 10H);
-				s[1] := Hex.To(e.int MOD 10H);
+				s[0] := HexDigit.From(e.int DIV 10H);
+				s[1] := HexDigit.From(e.int MOD 10H);
 				s[2] := "u";
 				Text.Data(g, s, 0, 3)
 			END
@@ -1794,8 +1794,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 				s[0] := Utf8.DQuote;
 				s[1] := "\";
 				s[2] := "x";
-				s[3] := Hex.To(e.int DIV 10H);
-				s[4] := Hex.To(e.int MOD 10H);
+				s[3] := HexDigit.From(e.int DIV 10H);
+				s[4] := HexDigit.From(e.int MOD 10H);
 				s[5] := Utf8.DQuote;
 				Text.Data(g, s, 0, 6)
 			END

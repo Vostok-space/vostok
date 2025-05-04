@@ -20,7 +20,7 @@ MODULE GeneratorJs;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Utf8, Hex,
+	Utf8, HexDigit,
 	Strings := StringStore, Charz,
 	SpecIdentChecker,
 	SpecIdent  := OberonSpecIdent,
@@ -1052,8 +1052,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 		w := e.string;
 		IF e.asChar & ~g.expectArray THEN
 			Str(g, "0x");
-			Chr(g, Hex.To(e.int DIV 10H));
-			Chr(g, Hex.To(e.int MOD 10H))
+			Chr(g, HexDigit.From(e.int DIV 10H));
+			Chr(g, HexDigit.From(e.int MOD 10H))
 		ELSIF g.opt.directString THEN
 			Chr(g, "[");
 			IF w.ofs >= 0 THEN
@@ -1778,8 +1778,8 @@ PROCEDURE Statement(VAR g: Generator; st: Ast.Statement);
 						Int(g, r.value)
 					ELSE
 						Str(g, "0x");
-						Chr(g, Hex.To(r.value DIV 10H));
-						Chr(g, Hex.To(r.value MOD 10H))
+						Chr(g, HexDigit.From(r.value DIV 10H));
+						Chr(g, HexDigit.From(r.value MOD 10H))
 					END;
 					ASSERT(r.right = NIL);
 					StrLn(g, ":");

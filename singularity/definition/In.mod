@@ -1,6 +1,6 @@
 Simple module for text input based on Oakwood guidelines. Procedure Name is not included
 
-Copyright 2022 ComdivByZero
+Copyright 2022,2025 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE In;
 
-IMPORT Stream := VDataStream, IO := VDefaultIO, Arithm := CheckIntArithmetic, Hex, Utf8;
+IMPORT Stream := VDataStream, IO := VDefaultIO, Arithm := CheckIntArithmetic, HexDigit, Utf8;
 
 VAR
   Done*,
@@ -92,8 +92,8 @@ BEGIN
     IF (char = "H")
     OR ("A" <= char) & (char <= "F")
     THEN
-      WHILE (i < 8) & Hex.InRange(char) DO
-        b[i] := Hex.From(char);
+      WHILE (i < 8) & HexDigit.Is(char) DO
+        b[i] := HexDigit.ToInt(char);
         defer := Read();
         INC(i)
       END;

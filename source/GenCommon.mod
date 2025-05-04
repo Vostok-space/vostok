@@ -18,7 +18,7 @@
 MODULE GenCommon;
 
 IMPORT
-  Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8, Hex,
+  Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8, HexDigit,
   GenOptions,
   TranLim := TranslatorLimits;
 
@@ -99,8 +99,8 @@ IMPORT
         s[2] := "u";
         s[3] := "0";
         s[4] := "0";
-        s[5] := Hex.To(char DIV 10H);
-        s[6] := Hex.To(char MOD 10H);
+        s[5] := HexDigit.From(char DIV 10H);
+        s[6] := HexDigit.From(char MOD 10H);
         len := 8
       END;
       s[len - 1] := Utf8.DQuote;

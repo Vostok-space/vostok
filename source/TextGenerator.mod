@@ -18,7 +18,7 @@ MODULE TextGenerator;
 
 IMPORT
 	V,
-	Utf8, Hexadecimal := Hex,
+	Utf8, HexDigit,
 	Strings := StringStore, Charz,
 	Stream  := VDataStream,
 	Limits  := TypesLimits,
@@ -212,8 +212,8 @@ PROCEDURE EscapeHighChar(VAR buf: ARRAY OF CHAR; c: CHAR);
 BEGIN
 	buf[0] := "\";
 	buf[1] := "x";
-	buf[2] := Hexadecimal.To(ORD(c) DIV 10H);
-	buf[3] := Hexadecimal.To(ORD(c) MOD 10H)
+	buf[2] := HexDigit.From(ORD(c) DIV 10H);
+	buf[3] := HexDigit.From(ORD(c) MOD 10H)
 END EscapeHighChar;
 
 PROCEDURE ScreeningString*(VAR g: Out; str: Strings.String; escapeHighChars: BOOLEAN);
@@ -239,7 +239,7 @@ BEGIN
 		lastEscaped := FALSE
 	ELSIF escapeHighChars
 	   & (   (block.s[i] >= 80X)
-	      OR lastEscaped & Hexadecimal.InRangeWithLowCase(block.s[i])
+	      OR lastEscaped & HexDigit.WithLowCaseIs(block.s[i])
 	     )
 	DO
 		Write(g, block.s, last, i - last);
@@ -292,11 +292,11 @@ BEGIN
 	ASSERT(v >= 0);
 
 	i := LEN(buf) - 1;
-	buf[i] := Hexadecimal.To(v MOD 10H);
+	buf[i] := HexDigit.From(v MOD 10H);
 	v := v DIV 10H + ORD(highBit) * 8000000H;
 	WHILE v # 0 DO
 		DEC(i);
-		buf[i] := Hexadecimal.To(v MOD 10H);
+		buf[i] := HexDigit.From(v MOD 10H);
 		v := v DIV 10H
 	END;
 	Write(g, buf, i, LEN(buf) - i)

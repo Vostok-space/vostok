@@ -21,7 +21,7 @@ IMPORT
   V, LongSet, Ast,
   Log := DLog, Stream := VDataStream,
   Text := TextGenerator, Strings := StringStore, Utf8Transform, Utf8,
-  SpecIdent := OberonSpecIdent, Hex,
+  SpecIdent := OberonSpecIdent, HexDigit,
   TranLim := TranslatorLimits,
   GenOptions, GenCommon;
 
@@ -280,8 +280,8 @@ PROCEDURE LnStrClose(VAR g: Text.Out; s: ARRAY OF CHAR); BEGIN Text.LnStrClose(g
     OR (code = ORD(Utf8.DQuote)) & (g.opt.std = StdO7)
     THEN
       s[0] := "0";
-      s[1] := Hex.To(code DIV 10H);
-      s[2] := Hex.To(code MOD 10H);
+      s[1] := HexDigit.From(code DIV 10H);
+      s[2] := HexDigit.From(code MOD 10H);
       IF (g.opt.std = StdO7) OR (usedAs # Ast.StrUsedAsArray) THEN
         s[3] := "X";
         Text.Data(g, s, 0, 4)

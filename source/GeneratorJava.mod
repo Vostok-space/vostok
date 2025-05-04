@@ -19,7 +19,7 @@ MODULE GeneratorJava;
 IMPORT
 	V,
 	Ast, AstTransform,
-	Utf8, Hex,
+	Utf8, HexDigit,
 	Strings := StringStore, Charz,
 	SpecIdentChecker,
 	SpecIdent  := OberonSpecIdent,
@@ -1098,8 +1098,8 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression; set: SET);
 				Str(g, "')")
 			ELSE
 				Str(g, "((byte)0x");
-				Chr(g, Hex.To(e.int DIV 10H));
-				Chr(g, Hex.To(e.int MOD 10H));
+				Chr(g, HexDigit.From(e.int DIV 10H));
+				Chr(g, HexDigit.From(e.int MOD 10H));
 				Chr(g, ")")
 			END
 		ELSIF g.opt.directString THEN
