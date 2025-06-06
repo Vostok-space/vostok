@@ -6,7 +6,7 @@ MODULE Integers;
  CONST Max = 2147483647;
 
  PROCEDURE Int64;
- VAR i1, i2, i3: I64.Type;
+ VAR i1, i2, i3, r: I64.Type;
  BEGIN
    I64.FromInt(i1, 127, 0);
    I64.FromInt(i2, 63, 0);
@@ -21,6 +21,11 @@ MODULE Integers;
    I64.Div(i3, i2, i1);
    ASSERT(I64.ToInt(i3) = 0);
 
+   I64.DivMod(i3, r, i1, i2);
+   ASSERT(I64.ToInt(i3) = 2);
+   I64.FromInt(i1, 1, 0);
+   ASSERT(I64.Cmp(r, i1) = 0);
+
    I64.FromInt(i1, 0, Max);
    i2 := i1;
    ASSERT(I64.Cmp(i2, i1) = 0);
@@ -34,7 +39,7 @@ MODULE Integers;
  END Int64;
 
  PROCEDURE Int32;
- VAR i1, i2, i3: I32.Type;
+ VAR i1, i2, i3, r: I32.Type;
  BEGIN
    I32.FromInt(i1, 127);
    I32.FromInt(i2, 63);
@@ -48,6 +53,11 @@ MODULE Integers;
 
    I32.Div(i3, i2, i1);
    ASSERT(I32.ToInt(i3) = 0);
+
+   I32.DivMod(i3, r, i1, i2);
+   ASSERT(I32.ToInt(i3) = 2);
+   I32.FromInt(i1, 1);
+   ASSERT(I32.Cmp(r, i1) = 0);
 
    I32.FromInt(i1, Max DIV 3);
    i2 := i1;
