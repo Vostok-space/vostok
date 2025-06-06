@@ -19,7 +19,7 @@ Implementation details missing from the report:
 
 ## Dynamic memory management
 
-Available 3 implementations that garantee data integrity and do not require additional assumptions
+Available 3 implementations that guarantee data integrity and do not require additional assumptions
 in the language:
 
  * Without freeing memory.
