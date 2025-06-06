@@ -112,10 +112,10 @@ function Mod(mod, n, d) {
 module.Mod = Mod;
 
 function DivMod(div, mod, n, d) {
-	n = tobig(n);
-	d = tobig(d);
-	frombig(div, n / d);
-	frombig(div, n % d);
+        n = tobig(n);
+        d = tobig(d);
+        frombig(div, n / d);
+        frombig(mod, n % d);
 }
 module.DivMod = DivMod;
 
