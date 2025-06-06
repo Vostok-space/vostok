@@ -939,9 +939,9 @@ func teleUpdateHandle(api, workdir string, comp compiler, timeout int, upd teleU
   )
   src, chat, msgId = teleGetSrc(upd);
   if upd.Msg.Txt == "" {
-    lang = upd.Msg.From.Lang
-  } else {
     lang = upd.Edited.From.Lang
+  } else {
+    lang = upd.Msg.From.Lang
   }
   lng = getMsgLangId(lang);
   output, err = handleInput("vostok", src, local(webHelp, lng) + local(teleHelp, lng),
