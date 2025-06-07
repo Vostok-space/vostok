@@ -86,6 +86,8 @@ BEGIN
 		C("Тип змінної ліворуч від IS повинен бути того ж сорту, що й тип праворуч")
 	| AST.ErrIsExtExpectRecordExt:
 		C("Праворуч від IS потрібен розширений тип по відношенню до типу змінної ліворуч")
+	| AST.ErrIsExtExpectFormalParam:
+		C("Вираз типу запис зліва від IS має бути формальним параметром")
 	| AST.ErrIsEqualProc:
 		C("Безпосереднє порівняння підпрограм неприпустимо")
 	| AST.ErrConstDeclExprNotConst:

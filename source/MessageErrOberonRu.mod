@@ -86,6 +86,8 @@ BEGIN
 		C("Тип переменной слева от IS должен быть того же сорта, что и тип справа")
 	| AST.ErrIsExtExpectRecordExt:
 		C("Справа от IS нужен расширенный тип по отношению к типу переменной слева")
+	| AST.ErrIsExtExpectFormalParam:
+		C("Выражение записевого типа в IS должна быть формальным параметром")
 	| AST.ErrIsEqualProc:
 		C("Непосредственное сравнение подпрограмм недопустимо")
 	| AST.ErrConstDeclExprNotConst:

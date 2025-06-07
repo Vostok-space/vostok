@@ -1,4 +1,4 @@
-/* Copyright 2021 ComdivByZero
+/* Copyright 2021,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,10 +112,10 @@ function Mod(mod, n, d) {
 module.Mod = Mod;
 
 function DivMod(div, mod, n, d) {
-        n = tobig(n);
-        d = tobig(d);
-        frombig(div, n / d);
-        frombig(mod, n % d);
+	n = tobig(n);
+	d = tobig(d);
+	frombig(div, n / d);
+	frombig(mod, n % d);
 }
 module.DivMod = DivMod;
 

@@ -61,6 +61,7 @@ CONST
 	ErrIsExtVarNotRecord*           = -29;
 	ErrIsExtMeshupPtrAndRecord*     = -30;
 	ErrIsExtExpectRecordExt*        = -31;
+	ErrIsExtExpectFormalParam*      = -131;
 	ErrConstDeclExprNotConst*       = -32;
 	ErrAssignIncompatibleType*      = -33;
 	ErrAssignExpectVarParam*        = -34;
@@ -174,6 +175,7 @@ CONST
 	ErrFloorOverflow*               = -124;
 
 	                                (*-130*)
+	                                (*-131*)
 
 	ErrMin*                         = -200;
 
@@ -2809,6 +2811,8 @@ BEGIN
 			ELSIF (e.designator.sel = NIL) & (e.designator.decl IS FormalParam)
 			THEN
 				SetNeedTag(e.designator.decl(FormalParam))
+			ELSE
+				err := ErrIsExtExpectFormalParam
 			END;
 			IF IsRecordExtension(dist, desType(Record), type(Record)) THEN
 				type(Record).needTag := TRUE;
@@ -3629,11 +3633,11 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 				IF ~comp THEN
 					err := ErrCallAdrParamTypeWithPtr
 				END;
-                                IF (e.id = IdDesignator)
-                                 & ~IsDesignateStableAddress(e(Designator))
-                                THEN
-                                        INCL(c.ds.info, WithSystemAdrLocal)
-                                END
+				IF (e.id = IdDesignator)
+				 & ~IsDesignateStableAddress(e(Designator))
+				THEN
+					INCL(c.ds.info, WithSystemAdrLocal)
+				END
 			ELSE
 				comp := FALSE
 			END
