@@ -827,6 +827,40 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 		PROCEDURE Predefined(VAR g: Generator; call: Ast.ExprCall);
 		VAR e1: Ast.Expression; p2: Ast.Parameter;
 
+			PROCEDURE Abs(VAR g: Generator; e: Ast.Expression);
+			VAR pos: BOOLEAN;
+			BEGIN
+				IF e.value = NIL THEN
+					IF e.type.id = Ast.IdInteger THEN
+						Str(g, "abs(")
+					ELSIF e.type.id = Ast.IdLongInt THEN
+						Str(g, "O7_LABS(")
+					ELSE
+						Str(g, "fabs(")
+					END;
+					Expression(g, e);
+					Chr(g, ")")
+				ELSE
+					IF e.type.id = Ast.IdInteger THEN
+						pos := e.value(Ast.ExprInteger).int >= 0
+					ELSIF e.type.id = Ast.IdLongInt THEN
+						(* TODO *)
+						ASSERT(FALSE);
+						pos := e.value(Ast.ExprInteger).int >= 0
+					ELSE
+						(* TODO *)
+						pos := e.value(Ast.ExprReal).real >= 0.0
+					END;
+					IF pos THEN
+						Expression(g, e)
+					ELSE
+						Str(g, "(-");
+						Factor(g, e);
+						Chr(g, ")")
+					END
+				END
+			END Abs;
+
 			PROCEDURE LeftShift(VAR g: Generator; n, s: Ast.Expression);
 			BEGIN
 				IF g.opt.checkArith & (s.value = NIL) THEN
@@ -1103,15 +1137,7 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 			p2 := call.params.next;
 			CASE call.designator.decl.id OF
 			  SpecIdent.Abs:
-				IF call.type.id = Ast.IdInteger THEN
-					Str(g, "abs(")
-				ELSIF call.type.id = Ast.IdLongInt THEN
-					Str(g, "O7_LABS(")
-				ELSE
-					Str(g, "fabs(")
-				END;
-				Expression(g, e1);
-				Chr(g, ")")
+				Abs(g, e1)
 			| SpecIdent.Odd:
 				Chr(g, "(");
 				Factor(g, e1);

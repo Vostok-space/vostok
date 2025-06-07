@@ -17,6 +17,9 @@ CONST
 	B1 = TRUE;
 	B2 = B0 OR B1;
 
+	Aabs = ABS(A);
+	Babs = ABS(B);
+
 PROCEDURE Go*;
 BEGIN
 	ASSERT(A = 66 + 11);
@@ -39,7 +42,10 @@ BEGIN
 	ASSERT(~(Nil # NIL));
 	ASSERT(~(NIL # Nil));
 
-	ASSERT(B2)
+	ASSERT(B2);
+
+	ASSERT(Aabs = 77);
+	ASSERT(77 = Babs);
 END Go;
 
 END Const.
