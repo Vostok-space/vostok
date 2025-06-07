@@ -3629,9 +3629,11 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 				IF ~comp THEN
 					err := ErrCallAdrParamTypeWithPtr
 				END;
-				IF ~IsDesignateStableAddress(e(Designator)) THEN
-					INCL(c.ds.info, WithSystemAdrLocal)
-				END
+                                IF (e.id = IdDesignator)
+                                 & ~IsDesignateStableAddress(e(Designator))
+                                THEN
+                                        INCL(c.ds.info, WithSystemAdrLocal)
+                                END
 			ELSE
 				comp := FALSE
 			END
