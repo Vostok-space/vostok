@@ -1,0 +1,1 @@
+(* script with no content *)

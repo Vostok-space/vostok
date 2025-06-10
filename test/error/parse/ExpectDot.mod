@@ -1,0 +1,2 @@
+MODULE ExpectDot;
+END ExpectDot
