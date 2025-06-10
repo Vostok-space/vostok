@@ -1,0 +1,3 @@
+MODULE ExpectRecord;
+TYPE P = POINTER TO ARRAY 1 OF INTEGER;
+END ExpectRecord.

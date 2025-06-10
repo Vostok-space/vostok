@@ -1,0 +1,3 @@
+MODULE ExpectOf;
+TYPE T = ARRAY 1 INTEGER;
+END ExpectOf.

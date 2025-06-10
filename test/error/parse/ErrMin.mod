@@ -1,0 +1,3 @@
+MODULE ErrMin;
+CONST A = 1 MOD 0;
+END ErrMin.

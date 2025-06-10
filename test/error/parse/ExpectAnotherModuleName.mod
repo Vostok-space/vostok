@@ -1,0 +1,2 @@
+MODULE WrongName;
+END WrongName.

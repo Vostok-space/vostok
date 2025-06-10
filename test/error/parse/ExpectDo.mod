@@ -1,0 +1,4 @@
+MODULE ExpectDo;
+BEGIN
+  WHILE TRUE END;
+END ExpectDo.
