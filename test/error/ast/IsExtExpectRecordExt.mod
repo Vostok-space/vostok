@@ -1,0 +1,8 @@
+MODULE IsExtExpectRecordExt;
+TYPE R0 = RECORD END;
+TYPE P0 = POINTER TO R0;
+TYPE R1 = RECORD END;
+VAR p: P0; b: BOOLEAN;
+BEGIN
+  b := p IS R1;
+END IsExtExpectRecordExt.

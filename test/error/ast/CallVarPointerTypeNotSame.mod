@@ -1,0 +1,8 @@
+MODULE CallVarPointerTypeNotSame;
+TYPE P0 = POINTER TO RECORD END;
+TYPE P1 = POINTER TO RECORD END;
+PROCEDURE Take(VAR p: P0); END Take;
+VAR q: P1;
+BEGIN
+  Take(q);
+END CallVarPointerTypeNotSame.

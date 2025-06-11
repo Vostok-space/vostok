@@ -1,0 +1,7 @@
+MODULE CallAdrParamTypeWithPtr;
+IMPORT SYSTEM;
+TYPE Rec = RECORD p: POINTER TO RECORD END END;
+VAR r: Rec; a: SYSTEM.ADDRESS;
+BEGIN
+  a := SYSTEM.ADR(r);
+END CallAdrParamTypeWithPtr.

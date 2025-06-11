@@ -1,0 +1,6 @@
+MODULE IsExtTypeNotRecord;
+TYPE T* = POINTER TO RECORD END;
+VAR p: T; b: BOOLEAN;
+BEGIN
+  b := p IS INTEGER;
+END IsExtTypeNotRecord.

@@ -1,0 +1,5 @@
+MODULE ProcHasNoReturn;
+PROCEDURE P(): INTEGER;
+BEGIN
+END P;
+END ProcHasNoReturn.

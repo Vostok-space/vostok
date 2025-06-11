@@ -1,0 +1,6 @@
+MODULE ExpectReturn;
+PROCEDURE P(): INTEGER;
+BEGIN
+  IF FALSE THEN RETURN 1 END;
+END P;
+END ExpectReturn.
