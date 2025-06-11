@@ -1,0 +1,8 @@
+MODULE CaseLabelNotRecExt;
+TYPE R0 = RECORD END;
+TYPE R1 = RECORD END;
+PROCEDURE P(x: R0);
+BEGIN
+  CASE x OF R1: END;
+END P;
+END CaseLabelNotRecExt.

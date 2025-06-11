@@ -1,0 +1,7 @@
+MODULE CasePointerVarParam;
+TYPE P = POINTER TO RECORD END;
+PROCEDURE P0(VAR x: P);
+BEGIN
+  CASE x OF | P: END;
+END P0;
+END CasePointerVarParam.

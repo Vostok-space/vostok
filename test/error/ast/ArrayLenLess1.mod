@@ -1,0 +1,3 @@
+MODULE ArrayLenLess1;
+TYPE A = ARRAY 0 OF INTEGER;
+END ArrayLenLess1.

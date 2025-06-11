@@ -1,0 +1,3 @@
+MODULE ArrayLenTooBig;
+TYPE A = ARRAY 100000000 OF INTEGER;
+END ArrayLenTooBig.
