@@ -1,4 +1,4 @@
-/* Copyright 2016-2019,2021-2024 ComdivByZero
+/* Copyright 2016-2019,2021-2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ extern void o7_chcopy(o7_int_t src, o7_int_t dst, o7_int_t n) {
 	memmove(dp, sp, n * sizeof(o7_int_t));
 }
 
-extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
+static void runtimeTest(void) {
 	double undefined, nan;
 	float undefinedf, nanf;
 /* Необходимо для "неопределённого значения" при двоичном дополнении.
@@ -245,11 +245,15 @@ extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
 	O7_STATIC_ASSERT((int)(0 > 1) == 0);
 
 	undefined = O7_DBL_UNDEF;
-	nan = 0.0 / 0.0;
+	nan = O7_INF - O7_INF;
 	o7_assert(undefined != undefined || (nan == nan));
 	undefinedf = O7_FLT_UNDEF;
-	nanf = 0.0f / 0.0f;
+	nanf = nan;
 	o7_assert(undefinedf != undefinedf || (nanf == nanf));
+}
+
+extern void o7_init(int argc, char *argv[O7_VLA(argc)]) {
+	runtimeTest();
 
 	o7_assert((0 < argc) == (argv != NULL));
 

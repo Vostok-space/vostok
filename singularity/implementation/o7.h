@@ -102,6 +102,8 @@
 	extern int O7_BYTE_ORDER;
 #endif
 
+#define O7_INF (DBL_MAX * 2.0)
+
 #if (O7_INIT == O7_INIT_UNDEF)
 #	if O7_TWOS_COMPLEMENT
 #		define O7_INT_UNDEF  (-1 - O7_INT_MAX)
@@ -118,8 +120,8 @@
 #		define O7_DBL_UNDEF  o7_dbl_undef()
 #		define O7_FLT_UNDEF  o7_flt_undef()
 #	else
-#		define O7_DBL_UNDEF  (0. / 0.)
-#		define O7_FLT_UNDEF  (0.f / 0.f)
+#		define O7_DBL_UNDEF  (O7_INF - O7_INF)
+#		define O7_FLT_UNDEF  ((float)O7_DBL_UNDEF)
 #	endif
 #	define O7_BOOL_UNDEF 0xFF
 #else
@@ -462,6 +464,11 @@ typedef struct {
 #	endif
 #endif
 
+#if __STDC_VERSION__ >= 202311L
+#	define O7_TYPEOF(expr) typeof(expr)
+#elif (__GNUC__ >= 2) || defined(__TINYC__)
+#	define O7_TYPEOF(expr) __typeof__(expr)
+#endif
 
 #if defined(O7_RAW_ADR)
 	enum { O7_CHECKED_ADR = (int)!(O7_RAW_ADR) };
@@ -648,8 +655,8 @@ void* o7_ref(void *ptr) {
 	return ptr;
 }
 
-#if (__GNUC__ >= 2) || defined(__TINYC__)
-#	define O7_REF(ptr) ((__typeof__(ptr))o7_ref(ptr))
+#if defined(O7_TYPEOF)
+#	define O7_REF(ptr) ((O7_TYPEOF(ptr))o7_ref(ptr))
 #else
 #	define O7_REF(ptr) ptr
 #endif
@@ -836,12 +843,12 @@ char unsigned o7_chr(int v) {
 #else
 	O7_CONST_INLINE
 	o7_cbool o7_isfinite(double v) {
-		return O7_EXPECT((-1.0/0.0 < v) && (v < 1.0/0.0));
+		return O7_EXPECT((-O7_INF < v) && (v < O7_INF));
 	}
 
 	O7_CONST_INLINE
 	o7_cbool o7_isfinitef(float v) {
-		return O7_EXPECT((-1.0f/0.0f < v) && (v < 1.0f/0.0f));
+		return O7_EXPECT((-O7_INF < v) && (v < O7_INF));
 	}
 #endif
 
