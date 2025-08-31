@@ -858,7 +858,7 @@ static void Expression_Call_Predefined(struct Generator *gen, struct Ast_ExprCal
 		} else if (call->_._.type->_._.id == Ast_IdLongInt_cnst) {
 			TextGenerator_Str(&(*gen)._, 9, (o7_char *)"O7_LABS(");
 		} else {
-			TextGenerator_Str(&(*gen)._, 6, (o7_char *)"fabs(");
+			TextGenerator_Str(&(*gen)._, 9, (o7_char *)"o7_fabs(");
 		}
 		Expression(gen, e1);
 		TextGenerator_Str(&(*gen)._, 2, (o7_char *)"\x29");

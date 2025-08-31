@@ -828,37 +828,18 @@ PROCEDURE Expression(VAR g: Generator; expr: Ast.Expression);
 		VAR e1: Ast.Expression; p2: Ast.Parameter;
 
 			PROCEDURE Abs(VAR g: Generator; e: Ast.Expression);
-			VAR pos: BOOLEAN;
+			VAR left: ARRAY 9 OF CHAR;
 			BEGIN
-				IF e.value = NIL THEN
-					IF e.type.id = Ast.IdInteger THEN
-						Str(g, "abs(")
-					ELSIF e.type.id = Ast.IdLongInt THEN
-						Str(g, "O7_LABS(")
-					ELSE
-						Str(g, "fabs(")
-					END;
-					Expression(g, e);
-					Chr(g, ")")
-				ELSE
-					IF e.type.id = Ast.IdInteger THEN
-						pos := e.value(Ast.ExprInteger).int >= 0
-					ELSIF e.type.id = Ast.IdLongInt THEN
-						(* TODO *)
-						ASSERT(FALSE);
-						pos := e.value(Ast.ExprInteger).int >= 0
-					ELSE
-						(* TODO *)
-						pos := e.value(Ast.ExprReal).real >= 0.0
-					END;
-					IF pos THEN
-						Expression(g, e)
-					ELSE
-						Str(g, "(-");
-						Factor(g, e);
-						Chr(g, ")")
-					END
-				END
+				IF e.value # NIL THEN
+					left := "O7_ABS("
+				ELSIF e.type.id = Ast.IdInteger THEN
+					left := "abs("
+				ELSIF e.type.id = Ast.IdLongInt THEN
+					left := "O7_LABS("
+				ELSE ASSERT(e.type.id = Ast.IdReal);
+					left := "o7_fabs("
+				END;
+				ExprBraced(g, left, e, ")")
 			END Abs;
 
 			PROCEDURE LeftShift(VAR g: Generator; n, s: Ast.Expression);

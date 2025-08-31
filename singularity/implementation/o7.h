@@ -219,6 +219,8 @@ enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
 #	error
 #endif
 
+#define O7_ABS(a) ((a) > 0 ? (a) : -(a))
+
 #if O7_GNUC_BUILTIN_OVERFLOW
 #	define O7_GNUC_SADD(a, b, res)  __builtin_sadd_overflow(a, b, res)
 #	define O7_GNUC_SSUB(a, b, res)  __builtin_ssub_overflow(a, b, res)
@@ -1716,6 +1718,14 @@ O7_CONST_INLINE
 o7_long_t o7_bswap_long(o7_long_t i) {
 	/* TODO */
 	return (o7_long_t)o7_bswap_ulong((o7_ulong_t)i);
+}
+
+O7_ALWAYS_INLINE
+double o7_fabs(double a) {
+	if (a < 0.0) {
+		a = -a;
+	}
+	return a;
 }
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i);
