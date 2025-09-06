@@ -4,12 +4,11 @@
   }
 }
 
-html {
-  background-color  : #CCC;
+html, body {
+  background-color  : #666;
 }
 
 body {
-  background-color  : #CCC;
   margin            : 0;
   font-family       : Liberation Serif, Times New Roman, sans-serif;
   font-size         : 18px;
@@ -27,14 +26,14 @@ a:hover {
 
 article {
   margin            : auto;
-  background-color  : #EEE;
-  padding           : 5px;
+  background-color  : white;
+  padding           : 1px 20px 10px;
 }
 
 div.page {
-  border-radius: 20px;
+  border-radius     : 20px;
   margin            : auto;
-  max-width         : 720px;
+  max-width         : 760px;
   padding           : 0;
 }
 
@@ -56,13 +55,13 @@ nav.lang {
   float: right;
 }
 
-pre {
-  background-color  : #DCDCDC;
+pre, code {
+  background-color  : #EEE;
+  overflow-x        : auto;
 }
 
 code {
   font-size         : 13px;
-  background-color  : #DCDCDC;
 }
 
 ol {
