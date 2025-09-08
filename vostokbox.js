@@ -509,7 +509,7 @@ var VostokBox;
     return cmd;
   }
 
-  function requestRun(box, scr) {
+  function requestRun0(box, scr) {
     var req, data, i, text, texts, uscr, add, id;
 
     scriptEcho(box, scr);
@@ -580,6 +580,16 @@ var VostokBox;
 
       data.append('script', scr);
       req.send(data);
+    }
+  }
+
+  function requestRun(box, scr) {
+    var time;
+
+    time = performance.now();
+    if (time - box.lastRunTime > 500) {
+      box.lastRunTime = time;
+      requestRun0(box, scr);
     }
   }
 
@@ -746,7 +756,9 @@ var VostokBox;
 
       logInTab    : window.innerWidth < 934,
       logSelected : false,
-      ctrl        : false
+      ctrl        : false,
+
+      lastRunTime : 0
     };
 
     if (window.location.protocol == 'https:') {
