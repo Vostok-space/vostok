@@ -354,17 +354,17 @@ var VostokBox;
     return a;
   }
 
-  function defaultLog(box, empty, savedLog) {
+  function defaultLog(box, opt, savedLog) {
     var div, list, add, runners;
 
     div = box.doc.createElement('div');
     box.log.append(div);
-    if (savedLog == null) {
+    if (savedLog == null && opt.storage !== false) {
       div.append(local(box, ['Sandbox v' + version + ' of Vostok - Oberon translator.',
                              'Среда ' + version + ' Востока - транслятора Oberon.']));
       ln(box, div);
     }
-    if (empty) {
+    if (opt.empty) {
       runners = ['/INFO', '/LIST', '/TO-C', '/TO-JAVA', '/TO-JS', '/TO-SCHEME', '/CLEAR'];
       div.append(
         local(box, ['Use this links to add ', 'Используйте эти ссылки, чтобы добавить ']),
@@ -380,7 +380,7 @@ var VostokBox;
       );
       ln(box, div);
     }
-    if (savedLog == null) {
+    if (savedLog == null && opt.storage !== false) {
       div.append(local(box, ['Use Ctrl-key for an additional possibility to modify environment.',
             'Используйте клавишу Ctrl для дополнительной возможности редактирования окружения.']));
       ln(box, div);
@@ -718,8 +718,9 @@ var VostokBox;
   vb.addButtonRunners = addButtonRunners;
 
   vb.createByDefaultIdentifiers = function(doc, ace, runners) {
-    var box, editor, editors, i, text, texts, log, len;
+    var box, editor, editors, i, text, texts, log, len, tabs;
 
+    tabs = doc.getElementById('vostokbox-tabs');
     box = {
       ace     : ace,
       doc     : doc,
@@ -728,7 +729,7 @@ var VostokBox;
       runnersContainer : doc.getElementById('vostokbox-runners'),
       buttonsContainer : doc.getElementById('vostokbox-button-runners'),
       log     : doc.getElementById('vostokbox-log'),
-      tabs    : doc.getElementById('vostokbox-tabs'),
+      tabs    : tabs,
       editors : [],
       editorSize: null,
       editorSizeListener: new ResizeObserver(function(es) {
@@ -754,12 +755,16 @@ var VostokBox;
 
       lang: getLangInd(window.navigator.language.slice(0, 2)),
 
-      logInTab    : window.innerWidth < 934,
+      logInTab    : window.innerWidth < 934 && tabs,
       logSelected : false,
       ctrl        : false,
 
       lastRunTime : 0
     };
+
+    if (runners.storage === false) {
+      box.storage = {clear: function() {}};
+    }
 
     if (window.location.protocol == 'https:') {
       box.runUrl = VostokBoxConfig.runUrl.https;
@@ -813,7 +818,7 @@ var VostokBox;
       addAllRunners(box, runners);
     }
     if (log == null || box.runners.size == 0 || box.editors.length == 0) {
-      defaultLog(box, runners.empty, log);
+      defaultLog(box, runners, log);
     }
     if (box.log.lastChild != null) {
       box.log.lastChild.scrollIntoView({ block: 'nearest'});
