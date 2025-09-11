@@ -5,44 +5,21 @@
 <meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Vostok translator</title>
+<title>Пособие по Oberon</title>
 
 <link rel='icon' type='image/svg+xml' href='icon.svg'>
 <link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<link rel='stylesheet' type='text/css' href='tutorial.css'>
 <script src='vostokbox-config.js'   type='text/javascript' charset='utf-8'></script>
 <script src='vostokbox.js'          type='text/javascript' charset='utf-8'></script>
-
-<style>
-  div.page {margin: auto; max-width:700px; padding:1px 20px 20px;}
-  #vostokbox-log {height:100px;}
-  p { hyphens: auto; text-align: justify; }
-  code { font-size: 1.1em; }
-  @media (max-width: 500px) {
-    div.page { padding  : 1px 6px 6px; }
-  }
-  @media (max-width: 400px) {
-    div.page { padding  : 1px 3px 3px; }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    body {background-color:#000;}
-    div.page { background-color:#222; }
-    code { color: lightblue; }
-  }
-  @media (prefers-color-scheme: light) {
-    body {background-color:#666;}
-    div.page { background-color:white; }
-    code { color: darkblue; }
-  }
-</style>
-
 </head>
 
 <body>
 <div class='page'>
-  <p>Выполнение кода на языке программирования Oberon запускается командами. Текст самих команд составляется по правилам Oberon, поэтому команды уже дают некоторое представление о языке. Пример простейшей команды:</p>
+<article>
+  <p>Выполнение кода на языке программирования Oberon запускается командами. Текст команд тоже составляется по правилам Oberon, поэтому команды уже дают некоторое представление о языке. Пример простейшей команды:</p>
   <div id='vostokbox-button-runners'></div>
-  <p>Нажмите на неё, и в журнал запишется сама команда и результат её выполнения.</p>
+  <p>Нажмите на неё, и в журнал запишется сама команда и то, что она вывела в результате её выполнения.</p>
 
   <div id='vostokbox-log'></div>
   <div id='vostokbox-runners'></div>
@@ -55,10 +32,10 @@
 
   <p>Имена в Oberon регистрозависимы и необходимо строго соблюдать соответствующее написание для обращения к модулям и их объявлениям. <code>Hello</code> и <code>hello</code> — это совершенно разные имена, которые могут указывать на разные сущности.</p>
 
-  <p>В модуле-примере <code>Hello</code> есть ещё одна процедура — <code>Gone</code>. Вызовите её, напечатав в <a href='#vostokbox-runners'>командной строке</a> (поле ввода под журналом) команду, аналогичную предыдущей, заменив имя процедуры. Вызов можно осуществить либо клавишей Enter, оставаясь в поле ввода, либо нажатием кнопки со значком <b>⏎</b> справа от поля ввода.</p>
+  <p>В модуле-примере <code>Hello</code> есть ещё одна процедура — <code>Gone</code>. Вызовите её, напечатав в командной строке (поле ввода под <a href='#vostokbox-log'>журналом</a>) команду, аналогичную предыдущей, заменив имя процедуры. Вызов можно осуществить либо клавишей Enter, оставаясь в поле ввода, либо нажатием кнопки со значком <b>⏎</b> справа от поля ввода.</p>
+</article>
 
-
-
+<footer>&nbsp; <a href='tutorial1.html'>Далее</a></footer>
 </div>
 
 <script>

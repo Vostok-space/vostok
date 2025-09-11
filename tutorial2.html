@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+<meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Пособие по Oberon</title>
+
+<link rel='icon' type='image/svg+xml' href='icon.svg'>
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<link rel='stylesheet' type='text/css' href='tutorial.css'>
+<script src='vostokbox-config.js'   type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'          type='text/javascript' charset='utf-8'></script>
+</head>
+
+<body>
+<div class='page'>
+<article>
+  <p>Целые числа — ещё один базовый тип непосредственных значений в языке. Они записываются в привычном десятично-цифровом виде, например, <code>503</code>. А вот числительных, таки как «пятьсот три» язык не понимает. Для вывода целых можно воспользоваться соответствующей процедурой из уже известного модуля <code>Out</code>:</p>
+
+  <div id='vostokbox-button-runners'></div>&nbsp;
+
+  <div id='vostokbox-log'></div>
+  <div id='vostokbox-runners'></div>
+
+  <p>Процедура <code>Out.Int</code> принимает два параметра. Параметры всегда отделяются друг от друга запятой. Первый параметр процедуры <code>Out.Int</code> — это выводимое значение, а второй — минимальное количество выводимых литер. Если оно превышает количество литер выводимого значения, разница возмещается предваряющими пробелами, что может пригодиться для текстового выравнивания.</p>
+
+  <ul>
+    <li>Целые числа в виде непосредственных значений в Oberon не безграничны, а находятся в отрезке [0&nbsp;..&nbsp;2<sup>31</sup>&nbsp;-&nbsp;1], что равно [0&nbsp;..&nbsp;2147483647]
+    <li>Цифры одного числа записываются подряд без каких-либо разделяющих знаков
+    <li>Допустимо ставить лишние 0 перед первой значимой цифрой, например, <code>0032</code>
+  </ul>
+
+  <p>Воспользовавшись командной строкой под <a href='#vostokbox-log'>журналом</a>, создайте и выполните команду для вывода числа любого значения из допустимого отрезка значений.</p>
+</article>
+
+<footer><a href='tutorial1.html'>Назад</a> <a href='tutorial3.html'>Далее</a></footer>
+</div>
+
+<script>
+  VostokBox.createByDefaultIdentifiers(document, {}, {
+    buttonRunners: ['Out.Int(2007, 5)', 'Out.Int(207, 5)', 'Out.Int(27, 5)'],
+    runners: [''],
+    storage: false
+  });
+</script>
+
+</body>
+</html>

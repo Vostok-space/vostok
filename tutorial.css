@@ -1,0 +1,30 @@
+div.page { margin: auto; max-width: 700px; padding: 1px 20px 20px 20px; }
+
+#vostokbox-log {height:130px;}
+
+p { hyphens: auto; text-align: justify; }
+
+code { font-size: 1.1em; }
+
+@media (max-width: 500px) {
+  div.page { padding  : 1px 6px 6px; }
+}
+@media (max-width: 400px) {
+  div.page { padding  : 1px 3px 3px; }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {background-color:#000;}
+  div.page { background-color:#222; }
+  code { color: lightblue; }
+}
+@media (prefers-color-scheme: light) {
+  body {background-color:#666;}
+  div.page { background-color:white; }
+  code { color: darkblue; }
+}
+
+footer a:last-child {
+  float: right;
+}
+

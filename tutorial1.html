@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+<meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Пособие по Oberon</title>
+
+<link rel='icon' type='image/svg+xml' href='icon.svg'>
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<link rel='stylesheet' type='text/css' href='tutorial.css'>
+<script src='vostokbox-config.js'   type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'          type='text/javascript' charset='utf-8'></script>
+</head>
+
+<body>
+<div class='page'>
+<article>
+  <p>Простейшая команда заключается в вызове процедуры без параметров. Эта среда Oberon-Восток позволяет напрямую вызывать процедуры с параметрами, давая возможность легко расширить множество действий. Например, так можно вывести в журнал строку:</p>
+  
+  <div id='vostokbox-button-runners'></div>
+
+  &nbsp;
+  
+  <div id='vostokbox-log'></div>
+  <div id='vostokbox-runners'></div>
+
+  <p><code>Out</code> — стандартный модуль с процедурами для простого вывода. <code>Out.String</code> — процедура, ожидающая один параметр, являющийся строкой. Все параметры, передаваемые процедурам, должны обрамляться в круглые скобки.</p>
+
+  <ul>
+    <li>Строки — это одна из разновидностей непосредственных данных (значений-констант), доступных в Oberon <li>Строка начинается и завершается двойной кавычкой — <code>"</code>. Кавычки очерчивают границы для содержимого строки и, разумеется, не входят в это содержимое
+    <li>Строки, оправдывая своё название, не могут содержать <span title='оксюморон «многострочная строка» является обычным делом во многих других языках'>переносов строк<sup>*</sup></span>
+    <li>Литеры внутри строки всегда обозначают сами себя и никогда не требуют дополнительной интерпретации
+    <li>Строки могут быть пустыми — это две идущие подряд кавычки — <code>""</code>
+  </ul>
+
+  <p>Воспользовавшись командной строкой под <a href='#vostokbox-log'>журналом</a>, создайте и выполните команду для вывода строки любого содержания.</p>
+</article>
+
+<footer><a href='tutorial.html'>Назад</a> <a href='tutorial2.html'>Далее</a></footer>
+</div>
+
+<script>
+  VostokBox.createByDefaultIdentifiers(document, {}, {
+    buttonRunners: ['Out.String("Оберон — 2й по массе спутник Урана")'],
+    runners: [''],
+    storage: false
+  });
+</script>
+
+</body>
+</html>
