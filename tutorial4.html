@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+<meta charset='utf-8'/>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Пособие по Oberon</title>
+
+<link rel='icon' type='image/svg+xml' href='icon.svg'>
+<link rel='stylesheet' type='text/css' href='vostokbox.css'>
+<link rel='stylesheet' type='text/css' href='tutorial.css'>
+<script src='vostokbox-config.js'   type='text/javascript' charset='utf-8'></script>
+<script src='vostokbox.js'          type='text/javascript' charset='utf-8'></script>
+
+<style>.vostokbox-command-line { max-width: 350px; }
+</style
+</head>
+
+<body>
+<div class='page'>
+<article>
+  <p>Oberon — язык со строгой статической типизацией. Нельзя использовать неподходящие значения, где ожидаются значения иного рода. Примеры ошибок:</p>
+
+  <div id='vostokbox-runners'></div>
+
+  <div id='vostokbox-log'></div>
+
+  <p>Исправьте ошибки в представленных примерах минимальными изменениями параметров.</p>
+</article>
+
+<footer><a href='tutorial3.html'>Назад</a> <a href='tutorial5.html'>Далее</a></footer>
+</div>
+
+<script>
+  VostokBox.createByDefaultIdentifiers(document, {}, {
+    buttonRunners: [],
+    runners: ['Out.String(1113331)', 'Out.Int(5.0, 7)', 'Out.Real(7, 7)', 'Out.Real("5.5", 7)', 'Out.Int(404, 7.)'],
+    storage: false
+  });
+</script>
+
+</body>
+</html>
