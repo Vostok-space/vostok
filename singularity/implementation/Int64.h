@@ -1,4 +1,4 @@
-/* Copyright 2016, 2018 ComdivByZero
+/* Copyright 2016,2018,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ typedef o7_ulong_t Int64_ut;
 
 #define Int64_Size_cnst ((int)sizeof(Int64_t))
 
-typedef o7_char Int64_Type[Int64_Size_cnst];
+typedef o7_char Int64_Type[Int64_Size_cnst] O7_ATTR_ALIGN(8);
 
 static Int64_Type Int64_min, Int64_max;
 

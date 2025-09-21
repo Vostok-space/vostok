@@ -1,4 +1,4 @@
-/* Copyright 2016,2018,2022 ComdivByZero
+/* Copyright 2016,2018,2022,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ typedef o7_uint_t Uint32_t;
 #define Uint32_LittleEndian_cnst O7_ORDER_LE
 #define Uint32_BigEndian_cnst    O7_ORDER_BE
 
-typedef o7_char Uint32_Type[Uint32_Size_cnst];
+typedef o7_char Uint32_Type[Uint32_Size_cnst] O7_ATTR_ALIGN(4);
 
 static Uint32_Type Uint32_min, Uint32_max;
 

@@ -282,6 +282,14 @@ typedef o7_uint_t  o7_set_t;
 #	define O7_MEM_ALIGN sizeof(void*)
 #endif
 
+#if defined(O7_ATTR_ALIGN)
+#
+#elif __GNUC__ * 100 + __GNUC_MINOR__ >= 295
+#	define O7_ATTR_ALIGN(value) __attribute__((aligned(value)))
+#else
+#	define O7_ATTR_ALIGN(value)
+#endif
+
 #if defined(O7_MEMNG_MODEL)
 #	define O7_MEMNG O7_MEMNG_MODEL
 #else
