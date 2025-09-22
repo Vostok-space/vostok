@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <float.h>
 
-#include <math.h>
 #if defined(_WIN32) || defined(_WIN64)
 	extern double ldexp(double, int);
 	extern double frexp(double, int*);
@@ -405,68 +404,98 @@ extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
 	return c1 - c2;
 }
 
-extern double o7_raw_unpk(double x, o7_int_t *exp) {
-/*	define D  0x0010000000000000ULL*/
-#	define DH 0x00100000UL
-#	define D32 4294967296.0
+extern double o7_raw_regular_frexp(double x, o7_int_t *exp) {
+	o7_ulong_t u; int e;
 
+	memcpy(&u, &x, sizeof(u));
+	e = u / 0x0010000000000000ULL % 0x800 - 0x3FF;
+	u = (u & 0x800FFFFFFFFFFFFFULL) | 0x3FF0000000000000ULL;
+	memcpy(&x, &u, sizeof(u));
+	*exp = e;
+	return x;
+}
+
+extern double o7_raw_regular_ldexp(double x, int n) {
 	o7_uint_t u[2];
-	o7_int_t e;
-	double m;
+	int e;
 
 	memcpy(u, &x, sizeof(u));
+	e = (int)(u[2 - O7_BYTE_ORDER] / 0x00100000UL % 0x800) + n;
+	u[2 - O7_BYTE_ORDER] = (u[2 - O7_BYTE_ORDER] & 0x800FFFFFUL) | ((unsigned)e * 0x00100000UL);
+	memcpy(&x, u, sizeof(u));
+	return x;
+}
 
-	e = u[2 - O7_BYTE_ORDER] / DH;
-	m = (u[2 - O7_BYTE_ORDER] % DH * D32 + u[O7_BYTE_ORDER - 1]) / (DH * D32) + 1.0;
-	if (e >= 0x800) {
-		e -= 0xBFF;
-		m = -m;
-	} else {
+#if !O7_USED_GNUC_BUILTIN_LDEXP
+
+extern double o7_raw_frexp(double x, o7_int_t *exp) {
+	o7_ulong_t u, m;
+	int se, e, lz;
+
+	memcpy(&u, &x, sizeof(u));
+	se = u / 0x0010000000000000ULL;
+	e = se % 0x800;
+	if (e == 0x7FF) {
+		e = 0x400;
+		m = u % 0x0010000000000000ULL;
+		if (m != 0) {
+			x = 0.0;
+		} else if (se < 0x800) {
+			x = 1.0;
+		} else {
+			x = -1.0;
+		}
+	} else if (e != 0) {
 		e -= 0x3FF;
+		u = (u & 0x800FFFFFFFFFFFFFULL) | 0x3FF0000000000000ULL;
+		memcpy(&x, &u, sizeof(u));
+	} else {
+		m = u % 0x0010000000000000ULL;
+		if (m != 0) {
+			lz = o7_lclz(m) - 11;
+			e = -lz - 0x3FD;
+			u = (u & 0x8000000000000000ULL) | 0x3FF0000000000000ULL | (m << lz);
+			memcpy(&x, &u, sizeof(u));
+		}
 	}
 	*exp = e;
-	return m;
-
-#	undef DH
-#	undef D32
+	return x;
 }
 
+O7_ATTR_CONST
 extern double o7_raw_ldexp(double x, int n) {
-/*	define D   0x8000000000000000ULL*/
-#	define DF  9223372036854775808.0
-#	define D32 4294967296.0
+	o7_ulong_t u, m; int se, e0, e, lz;
 
-	o7_int_t e;
+	memcpy(&u, &x, sizeof(u));
+	se = u / 0x0010000000000000ULL;
+	e0 = se % 0x800;
+	if (e0 != 0x7FF && u * 2 != 0) {
+		if (n > 0x10000) { n = 0x10000; }
+		e = e0 + n;
 
-	/* TODO воплотить более эффективный подход */
-	x = o7_raw_unpk(x, &e);
-	n += e;
-	if (n > 0) {
-		assert(n < DBL_MAX_EXP);
-		while (n > 63) {
-			x *= DF;
-			n -= 63;
+		if (e0 == 0) {/*денормализовано*/
+			lz = o7_lclz(u << 12);
+			e -= lz;
+			u = (0x8000000000000000ULL & u)
+			  | (0x000FFFFFFFFFFFFFULL & (u << (lz + 1)));
 		}
-		if (n > 31) {
-			x *= D32;
-			n -= 32;
+
+		if (e >= 0x7FF) {
+			u =  0xFFF0000000000000ULL & u;
+		} else if (e > 0) {
+			u = (0x800FFFFFFFFFFFFFULL & u) | ((o7_ulong_t)e << 0x34);
+		} else if (e < -0x34) {
+			u =  0x8000000000000000ULL & u;
+		} else {
+			/* денормализация, восстанавление подразумеваемой 1 */
+			m = (0x000FFFFFFFFFFFFFULL & u) | 0x0010000000000000ULL;
+			/* округление (при переполнении денормализация самоустраняется) */
+			m += m & (0x1ULL << -e);
+			u = (0x8000000000000000ULL & u) | (m >> (1 - e));
 		}
-		x *= 1UL << n;
-	} else if (n < DBL_MIN_EXP - DBL_MANT_DIG) {
-		x = 0.0;
-	} else {
-		while (n < -63) {
-			x *= 1 / DF;
-			n += 63;
-		}
-		if (n < -31) {
-			x *= 1 / D32;
-			n += 32;
-		}
-		x /= 1UL << -n;
+		memcpy(&x, &u, sizeof(u));
 	}
 	return x;
-
-#	undef DF
-#	undef D32
 }
+
+#endif

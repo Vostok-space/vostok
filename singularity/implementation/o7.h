@@ -181,7 +181,7 @@ typedef size_t o7_ptr_t;
 #define O7_INT_BITS  (sizeof(o7_int_t ) * CHAR_BIT)
 #define O7_LONG_BITS (sizeof(o7_long_t) * CHAR_BIT)
 
-#if defined(__GNUC__) || defined(__TINYC__) || defined(__COMPCERT__)
+#if defined(__GNUC__) || defined(__TINYC__) || defined(__COMPCERT__) || (__cplusplus >= 202002L)
 	enum { O7_ARITHMETIC_SHIFT = 1 };
 #else
 	enum { O7_ARITHMETIC_SHIFT = 0 };
@@ -303,7 +303,7 @@ typedef o7_uint_t  o7_set_t;
 #	define O7_MEMNG_NOFREE_BUFFER_SIZE 1lu
 #endif
 
-#if __GNUC__ > 2
+#if (__GNUC__ > 2) || defined(__COMPCERT__)
 #	define O7_ATTR_CONST  __attribute__((const))
 #	define O7_ATTR_PURE   __attribute__((pure))
 #	define O7_ATTR_MALLOC __attribute__((malloc))
@@ -313,7 +313,7 @@ typedef o7_uint_t  o7_set_t;
 #	define O7_ATTR_MALLOC
 #endif
 
-#if __GNUC__ * 100 + __GNUC_MINOR__ >= 301
+#if (__GNUC__ * 100 + __GNUC_MINOR__ >= 301) || defined(__COMPCERT__)
 #	define O7_ATTR_ALWAYS_INLINE __attribute__((always_inline))
 #else
 #	define O7_ATTR_ALWAYS_INLINE
@@ -1633,17 +1633,52 @@ double o7_flt(o7_int_t v) {
 	return (double)o7_int(v);
 }
 
+#if (__GNUC__ >= 3) || defined(__COMPCERT__)
+#	define O7_USED_GNUC_BUILTIN_LDEXP 1
+
+	O7_CONST_INLINE double o7_gnuc_ldexp(double f, o7_int_t n) { return __builtin_ldexp(f, n); }
+	O7_ALWAYS_INLINE double o7_gnuc_frexp(double f, o7_int_t *n) { return __builtin_frexp(f, n); }
+
+	O7_CONST_INLINE double o7_raw_ldexp(double f, o7_int_t n) { abort(); return O7_DBL_UNDEF; }
+	O7_ALWAYS_INLINE double o7_raw_frexp(double f, o7_int_t *n) { abort(); return O7_DBL_UNDEF; }
+#else
+#	define O7_USED_GNUC_BUILTIN_LDEXP 0
+
+	extern O7_ATTR_CONST double o7_raw_ldexp(double f, o7_int_t n);
+	extern double o7_raw_frexp(double x, o7_int_t *exp);
+
+	O7_CONST_INLINE double o7_gnuc_ldexp(double f, o7_int_t n) { abort(); return O7_DBL_UNDEF; }
+	O7_ALWAYS_INLINE double o7_gnuc_frexp(double f, o7_int_t *n) { abort(); return O7_DBL_UNDEF; }
+#endif
+
+O7_CONST_INLINE
+double o7_c_ldexp(double f, o7_int_t n) {
+	if (O7_USED_GNUC_BUILTIN_LDEXP) {
+		f = o7_gnuc_ldexp(f, n);
+	} else {
+		f = o7_raw_ldexp(f, n);
+	}
+	return f;
+}
+
+O7_ALWAYS_INLINE
+double o7_c_frexp(double f, o7_int_t *n) {
+	if (O7_USED_GNUC_BUILTIN_LDEXP) {
+		f = o7_gnuc_frexp(f, n);
+	} else {
+		f = o7_raw_frexp(f, n);
+	}
+	return f;
+}
+
 O7_ALWAYS_INLINE
 void o7_ldexp(double *f, o7_int_t n) {
-	extern double o7_raw_ldexp(double f, int n);
-	/* TODO убрать o7_dbl_finite для результата */
-	*f = o7_dbl_finite(o7_raw_ldexp(o7_dbl_finite(*f), o7_int(n)));
+	*f = o7_dbl_finite(o7_c_ldexp(o7_dbl_finite(*f), o7_int(n)));
 }
 
 O7_ALWAYS_INLINE
 void o7_frexp(double *f, o7_int_t *n) {
-	extern double o7_raw_unpk(double x, o7_int_t *exp);
-	*f = o7_raw_unpk(o7_dbl_finite(*f), n);
+	*f = o7_c_frexp(o7_dbl_finite(*f), n);
 }
 
 extern O7_ATTR_PURE
@@ -1728,9 +1763,87 @@ o7_long_t o7_bswap_long(o7_long_t i) {
 	return (o7_long_t)o7_bswap_ulong((o7_ulong_t)i);
 }
 
-O7_ALWAYS_INLINE
+#if ((__GNUC__ * 100 + __GNUC_MINOR__ >= 452) || (__clang_major__ > 5) || defined(__COMPCERT__)) \
+ && (!defined(O7_USE_GNUC_BUILTIN_CLZ) || O7_USE_GNUC_BUILTIN_CLZ)
+
+	enum { O7_USED_GNUC_BUILTIN_CLZ = 0 < 1 };
+	O7_CONST_INLINE
+	o7_int_t  o7_gnuc_clz(o7_uint_t i ) { return __builtin_clz(i); }
+#	if O7_LONG_ENOUGH_FOR_64
+		O7_CONST_INLINE
+		o7_int_t o7_gnuc_clzl(o7_ulong_t i) { return __builtin_clzl(i); }
+#	else
+		O7_CONST_INLINE
+		o7_int_t o7_gnuc_clzl(o7_ulong_t i) { return __builtin_clzll(i); }
+#	endif
+#else
+	enum { O7_USED_GNUC_BUILTIN_CLZ = 0 > 1 };
+	O7_CONST_INLINE
+	o7_int_t o7_gnuc_clz(o7_uint_t i ) { abort(); return O7_INT_UNDEF;  }
+	O7_CONST_INLINE
+	o7_int_t o7_gnuc_clzl(o7_ulong_t i) { abort(); return O7_INT_UNDEF; }
+#endif
+
+O7_CONST_INLINE
+o7_int_t o7_clz(o7_uint_t i) {
+	int c, m;
+	if (O7_USED_GNUC_BUILTIN_CLZ) {
+		c = o7_gnuc_clz(i);
+	} else if (i == 0) {
+		c = 0x20;
+	} else {
+		c = 0x1F;
+
+		m = (i >= 0x10000) << 4;
+		c ^= m; i >>= m;
+
+		m = (i >= 0x100) << 3;
+		c ^= m; i >>= m;
+
+		m = (i >= 0x10) << 2;
+		c ^= m; i >>= m;
+
+		c ^= ((
+		   3 * ((1u << (15 * 2)) + (1 << (14 * 2)) + (1 << (13 * 2)) + (1 << (12 * 2)))
+		 + 3 * ((1u << (11 * 2)) + (1 << (10 * 2)) + (1 << ( 9 * 2)) + (1 << ( 8 * 2)))
+		 + 2 * ((1u << ( 7 * 2)) + (1 << ( 6 * 2)) + (1 << ( 5 * 2)) + (1 << ( 4 * 2)))
+		 + 1 * ((1u << ( 3 * 2)) + (1 << ( 2 * 2)))
+		      ) >> (i * 2)
+		     ) % 4;
+	}
+	return c;
+}
+
+O7_CONST_INLINE
+o7_int_t o7_lclz(o7_ulong_t i) {
+	int c;
+	if (O7_USED_GNUC_BUILTIN_CLZ) {
+		c = o7_gnuc_clzl(i);
+	} else if (i >= 0x100000000ULL) {
+		c = o7_clz((o7_uint_t)(i / 0x100000000ULL));
+	} else {
+		c = 0x20 + o7_clz((o7_uint_t)i);
+	}
+	return c;
+}
+
+#if ((__GNUC__ * 100 + __GNUC_MINOR__ >= 200) || defined(__COMPCERT__)) \
+ && (!defined(O7_USE_GNUC_BUILTIN_FABS) || O7_USE_GNUC_BUILTIN_FABS)
+
+	enum { O7_USED_GNUC_BUILTIN_FABS = 0 < 1 };
+	O7_CONST_INLINE
+	double o7_gnuc_fabs(double a) { return __builtin_fabs(a); }
+#else
+	enum { O7_USED_GNUC_BUILTIN_FABS = 0 > 1 };
+	O7_CONST_INLINE
+	double o7_gnuc_fabs(double a) { abort(); return O7_DBL_UNDEF; }
+#endif
+
+O7_CONST_INLINE
 double o7_fabs(double a) {
-	if (a < 0.0) {
+	if (O7_USED_GNUC_BUILTIN_FABS) {
+		a = o7_gnuc_fabs(a);
+	} else if (a < 0.0) {
 		a = -a;
 	}
 	return a;
