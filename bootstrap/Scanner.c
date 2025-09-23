@@ -163,7 +163,7 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
 	o7_bool scMinus;
 	double val, t;
 
-	val = 1.0;
+	val = 0.0;
 	i = s->lexStart;
 	d = ValDigit(s->buf[o7_ind(O7_MUL(Scanner_BlockSize_cnst, 2) + 1, i)]);
 	while (1) if (d >= 0) {
@@ -218,9 +218,9 @@ static void SNumber_ValReal(struct Scanner_Scanner *s, o7_int_t *lex) {
 			if (scale <= RealScaleMax_cnst) {
 				while (scale > 0) {
 					if (scMinus) {
-						val = o7_fmul(val, 10.0);
-					} else {
 						val = o7_fdiv(val, 10.0);
+					} else {
+						val = o7_fmul(val, 10.0);
 					}
 					scale = o7_sub(scale, 1);
 				}
