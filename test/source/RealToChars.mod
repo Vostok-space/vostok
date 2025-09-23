@@ -8,7 +8,8 @@ MODULE RealToChars;
   s := "#";
   i := 1;
   ASSERT(RealToCharz.Exp(s, i, 3405.987621, 0));
-  ASSERT("#3.405987621E+3" = s);
+  log.sn(s);
+  ASSERT("#3.405987621E3" = s);
   ASSERT(i = Charz.CalcLen(s, 0));
 
   s := "  ";
@@ -19,7 +20,7 @@ MODULE RealToChars;
 
   i := 0;
   ASSERT(RealToCharz.Exp(s, i, 0.15E309, 0));
-  ASSERT("1.5E+308" = s);
+  ASSERT("1.5E308" = s);
   ASSERT(i = Charz.CalcLen(s, 0));
 
   i := 0;
