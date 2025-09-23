@@ -16,19 +16,29 @@ limitations under the License.
 
 MODULE Real10;
 
- IMPORT MathPower10;
+ IMPORT MathPower10, Limits := TypesLimits;
 
- (* x' = x / 10^e'; 1.0 ≤ x' < 10.0 *)
+ (* x' := x / 10**e'; e' := round(lg(x)); 1.0 ≤ x' < 10.0 *)
  PROCEDURE Unpk*(VAR x: REAL; VAR e: INTEGER);
- VAR e10, e2: INTEGER; tx, xx, tens: REAL;
+ VAR e10, e2, de: INTEGER; tx, xx, tens: REAL; pos: BOOLEAN;
  BEGIN
-  tx := x; xx := tx;
+  tx := x;
+  pos := tx >= 0.0;
+  tx := ABS(tx);
+  xx := tx;
+
   UNPK(tx, e2);
-  e10 := ABS(e2) * 77 DIV 256;
+  e10 := ABS(e2) * 1233 DIV 4096;(*  *lg10(2) *)
+  de := e10 - 308;
+  IF de > 0 THEN e10 := 308 END;
   tens := MathPower10.Calc(e10);
   IF e2 < 0 THEN
     xx := xx * tens;
-    IF xx < 1.0 THEN
+    IF de > 0 THEN
+      xx := xx * MathPower10.Calc(de);
+      INC(e10, de)
+    END;
+    WHILE xx < 1.0 DO
       INC(e10);
       xx := xx * 10.0
     END;
@@ -36,7 +46,7 @@ MODULE Real10;
   ELSE
     IF 10.0 <= xx THEN
       xx := xx / tens;
-      IF 10.0 <= xx THEN
+      WHILE 10.0 <= xx DO
         INC(e10);
         xx := xx / 10.0
       END
@@ -44,32 +54,30 @@ MODULE Real10;
       e10 := 0
     END
   END;
-  tx := ABS(xx);
-  ASSERT((1.0 <= tx) & (tx < 10.0));
+  ASSERT((1.0 <= xx) & (xx < 10.0));
 
-  e := e10; x := xx
+  e := e10;
+  IF pos THEN x := xx ELSE x := -xx END
  END Unpk;
 
- (* x' := x * 10^e *)
+ (* x' := x * 10**e; ABS(e) ≤ TypesLimits.RealScaleMax - TypesLimits.RealScaleMin *)
  PROCEDURE Pack*(VAR x: REAL; e: INTEGER);
- VAR m: REAL;
  BEGIN
-  IF e > 0 THEN
-    IF e > 256 THEN
-      m := MathPower10.Calc(e DIV 2);
-      x := (x * m) * m;
-      IF ODD(e) THEN x := x * 10.0 END
-    ELSE
-      x := x * MathPower10.Calc(e)
-    END
+  ASSERT(ABS(e) <= Limits.RealScaleMax - Limits.RealScaleMin);
+  IF x = 0.0 THEN
+    ;
+  ELSIF e > 0 THEN
+    WHILE e >= 308 DO
+      DEC(e, 308);
+      x := x * 1.0E308
+    END;
+    x := x * MathPower10.Calc(e)
   ELSIF e < 0 THEN
-    IF e < 256 THEN
-      m := MathPower10.Calc((-e) DIV 2);
-      x := (x / m) / m;
-      IF ODD(e) THEN x := x / 10.0 END
-    ELSE
-      x := x / MathPower10.Calc(-e)
-    END  
+    WHILE e <= -308 DO
+      INC(e, 308);
+      x := x / 1.0E308
+    END;
+    x := x / MathPower10.Calc(-e)
   END
  END Pack;
 
