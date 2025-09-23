@@ -8,6 +8,18 @@ CONST
 
 VAR p1, p2: POINTER TO RECORD END;
 
+PROCEDURE Pack0(a: REAL; n: INTEGER; c: REAL);
+VAR b: REAL;
+BEGIN
+	b := a / c;
+	PACK(a, n);
+	ASSERT(a = b);
+
+	PACK(a, -n);
+	b := b * c;
+	ASSERT(a = b)
+END Pack0;
+
 PROCEDURE Pack(sign: INTEGER);
 VAR a, b, c, one: REAL;
     n: INTEGER;
@@ -21,7 +33,6 @@ BEGIN
 
 	b := a;
 	UNPK(b, n);
-	Out.Real(b, 0); Out.Ln;
 	ASSERT(b = one);
 	ASSERT(n = 30);
 
@@ -38,7 +49,22 @@ BEGIN
 	b := a;
 	UNPK(b, n);
 	ASSERT(b = one);
-	ASSERT(n = -94)
+	ASSERT(n = -94);
+
+	Pack0(one * 1.7E-302, -72, 4.722366482869645E+21);
+	Pack0(one * 1.7E-300, -72, 4.722366482869645E+21);
+
+	Pack0(one * 1.7E+301, -72, 4.722366482869645E+21);
+	Pack0(one * 1.7E+300, -72, 4.722366482869645E+21);
+
+	Pack0(one * 1.7E+308, -72, 4.722366482869645E+21);
+	Pack0(one * 1.7E+305, -72, 4.722366482869645E+21);
+
+	Pack0(one * 1.7E-200, 72, 1./4.722366482869645E+21);
+	Pack0(one * 1.7E-202, 72, 1./4.722366482869645E+21);
+
+	Pack0(one * 3.8E+286, 72, 1./4.722366482869645E+21);
+	Pack0(one * 3.678111111E-286, 72, 1./4.722366482869645E+21);
 END Pack;
 
 PROCEDURE Floor*;
@@ -129,7 +155,6 @@ BEGIN
 	b := 0.2;
 	c := 1.0;
 	c := a * b + c;
-	Out.Real(c, 0); Out.Ln;
 	ASSERT(c = 1.02);
 
 	Pack(+1);
