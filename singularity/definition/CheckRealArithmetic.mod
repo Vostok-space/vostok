@@ -14,7 +14,7 @@ limitations under the License.
 
 MODULE CheckRealArithmetic;
 
- IMPORT Real := Real64;
+ IMPORT Real := Real64, Real64Pack10;
 
  PROCEDURE Add*(VAR r: REAL; a, b: REAL): BOOLEAN;
  VAR c, d: Real.T;
@@ -73,5 +73,15 @@ MODULE CheckRealArithmetic;
  RETURN
   Real.To(r, c)
  END Unpk;
+
+ (* x' := x * 10**e; ABS(e) ≤ TypesLimits.RealScaleMax - TypesLimits.RealScaleMin *)
+ PROCEDURE Pack10*(VAR x: REAL; n: INTEGER): BOOLEAN;
+ VAR x64: Real.T;
+ BEGIN
+  Real.From(x64, x);
+  Real64Pack10.Do(x64, n)
+ RETURN
+  Real.To(x, x64)
+ END Pack10;
 
 END CheckRealArithmetic.

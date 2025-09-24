@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE Real10;
 
- IMPORT MathPower10, Limits := TypesLimits;
+ IMPORT MathPower10, Real64, Real64Pack10, Limits := TypesLimits;
 
  (* x' := x / 10**e'; e' := round(lg(x)); 1.0 ≤ x' < 10.0 *)
  PROCEDURE Unpk*(VAR x: REAL; VAR e: INTEGER);
@@ -62,23 +62,12 @@ MODULE Real10;
 
  (* x' := x * 10**e; ABS(e) ≤ TypesLimits.RealScaleMax - TypesLimits.RealScaleMin *)
  PROCEDURE Pack*(VAR x: REAL; e: INTEGER);
+ VAR x64: Real64.T; overflow: BOOLEAN;
  BEGIN
-  ASSERT(ABS(e) <= Limits.RealScaleMax - Limits.RealScaleMin);
-  IF x = 0.0 THEN
-    ;
-  ELSIF e > 0 THEN
-    WHILE e >= 308 DO
-      DEC(e, 308);
-      x := x * 1.0E308
-    END;
-    x := x * MathPower10.Calc(e)
-  ELSIF e < 0 THEN
-    WHILE e <= -308 DO
-      INC(e, 308);
-      x := x / 1.0E308
-    END;
-    x := x / MathPower10.Calc(-e)
-  END
+  Real64.From(x64, x);
+  Real64Pack10.Do(x64, e);
+  overflow := ~Real64.To(x, x64);
+  ASSERT(~overflow);
  END Pack;
 
 END Real10.
