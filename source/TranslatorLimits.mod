@@ -1,5 +1,5 @@
 (*  Limits for different parts of the translator
- *  Copyright (C) 2016, 2018 ComdivByZero
+ *  Copyright (C) 2016,2018,2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -85,5 +85,8 @@ CONST
 	TermsInSum*    = 255;
 	(* Количество подвыражений в умножении *)
 	FactorsInTerm* = 255;
+
+	(* Абсолютное значение экспоненты десятичной дроби *)
+	RealScale* = 324;
 
 END TranslatorLimits.

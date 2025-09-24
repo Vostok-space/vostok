@@ -1,4 +1,4 @@
-(* Copyright 2016-2018 ComdivByZero
+(* Copyright 2016-2018,2025 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,11 @@ CONST
 
 	SetMax* = 31;
 
+	RealScaleMax* = 308;
+	RealScaleMin* = -324;
+	RealExp10Max* = 1.0E308;
+	RealExp10Min* = 1.0E-324;
+
 PROCEDURE InByteRange*(v: INTEGER): BOOLEAN;
 	RETURN (0 <= v) & (v <= ByteMax)
 END InByteRange;
@@ -41,5 +46,9 @@ END InCharRange;
 PROCEDURE InSetRange*(v: INTEGER): BOOLEAN;
 	RETURN (0 <= v) & (v <= SetMax)
 END InSetRange;
+
+PROCEDURE InScaleRange*(v: INTEGER): BOOLEAN;
+	RETURN (RealScaleMin <= v) & (v <= RealScaleMax)
+END InScaleRange;
 
 END TypesLimits.
