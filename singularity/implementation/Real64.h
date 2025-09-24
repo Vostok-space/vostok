@@ -25,8 +25,8 @@ typedef struct Real64_T {
 
 O7_ALWAYS_INLINE void Real64_T_undef(void *v) { ((Real64_T*)v)->v = O7_DBL_UNDEF; }
 
-O7_ALWAYS_INLINE o7_cbool Real64_IsNan(Real64_T *r) { return r->v != r->v; }
-O7_ALWAYS_INLINE o7_cbool Real64_IsFinite(Real64_T *r) { return o7_isfinite(r->v); }
+O7_CONST_INLINE o7_cbool Real64_IsNan(Real64_T *r) { return r->v != r->v; }
+O7_CONST_INLINE o7_cbool Real64_IsFinite(Real64_T *r) { return o7_isfinite(r->v); }
 
 O7_ALWAYS_INLINE void Real64_From(Real64_T *r, double s) { r->v = s; }
 
@@ -49,6 +49,23 @@ O7_ALWAYS_INLINE void Real64_Pack(Real64_T *r, o7_int_t  n) {
 }
 O7_ALWAYS_INLINE void Real64_Unpk(Real64_T *r, o7_int_t *n) {
     r->v = o7_c_frexp(r->v, n);
+}
+
+O7_CONST_INLINE o7_int_t Real64_CmpReal(Real64_T *a, double b) {
+    o7_int_t c;
+
+    if (a->v < b) {
+        c = -1;
+    } else if (a->v > b) {
+        c = +1;
+    } else {
+        c = 0;
+    }
+    return c;
+}
+
+O7_CONST_INLINE o7_int_t Real64_Cmp(Real64_T *a, struct Real64_T *b) {
+    return Real64_CmpReal(a, b->v);
 }
 
 O7_ALWAYS_INLINE void Real64_init(void) {}

@@ -78,4 +78,32 @@ MODULE Real64;
   UNPK(r.v, n)
  END Unpk;
 
+ PROCEDURE Cmp*(a, b: T): INTEGER;
+ VAR c: INTEGER;
+ BEGIN
+  IF a.v < b.v THEN
+    c := -1
+  ELSIF a.v > b.v THEN
+    c := +1
+  ELSE
+    c := 0
+  END
+ RETURN
+  c
+ END Cmp;
+
+ PROCEDURE CmpReal*(a: T; b: REAL): INTEGER;
+ VAR c: INTEGER;
+ BEGIN
+  IF a.v < b THEN
+    c := -1
+  ELSIF a.v > b THEN
+    c := +1
+  ELSE
+    c := 0
+  END
+ RETURN
+  c
+ END CmpReal;
+
 END Real64.
