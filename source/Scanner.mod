@@ -23,7 +23,7 @@ IMPORT
 	TranLim := TranslatorLimits,
 	Charz,
 	ArrayCopy,
-	Log := DLog;
+	RealBuild, CheckRealArithmetic, log;
 
 CONST
 	NewPage = Utf8.NewPage;
@@ -92,7 +92,6 @@ CONST
 
 	IntMax = 7FFFFFFFH;
 	CharMax = 0FFX;
-	RealScaleMax = 512;
 
 TYPE
 	Scanner* = RECORD(V.Base)
@@ -271,13 +270,14 @@ VAR
 	VAR
 		i, d, scale: INTEGER;
 		scMinus, ignore: BOOLEAN;
-		val, t: REAL;
+		rb: RealBuild.T; val: REAL;
 	BEGIN
 		val := 0.0;
 		i := s.lexStart;
+		RealBuild.Begin(rb);
 		d := ValDigit(s.buf[i]);
 		WHILE d >= 0 DO
-			val := val * 10.0 + FLT(d);
+			RealBuild.Digit(rb, d);
 			INC(i);
 			d := ValDigit(s.buf[i])
 		ELSIF s.buf[i] = NewPage DO
@@ -286,17 +286,18 @@ VAR
 		END;
 		(* skip dot *)
 		INC(i);
-		t := 10.0;
+		RealBuild.Dot(rb);
 		d := ValDigit(s.buf[i]);
 		WHILE d >= 0 DO
+			RealBuild.Digit(rb, d);
+
 			INC(s.column);
-			val := val + FLT(d) / t;
-			t := t * 10.0;
 			INC(i);
 			d := ValDigit(s.buf[i])
 		ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
 			d := ValDigit(s.buf[i])
 		END;
+		RealBuild.End(rb, val);
 		IF s.buf[i] = "E" THEN
 			INC(i);
 			INC(s.column);
@@ -324,17 +325,9 @@ VAR
 				ELSIF (s.buf[i] = NewPage) & FillBuf(s, i) DO
 					d := ValDigit(s.buf[i])
 				END;
-				IF scale <= RealScaleMax THEN
-					(* TODO *)
-					WHILE scale > 0 DO
-						IF scMinus THEN
-							val := val * 10.0
-						ELSE
-							val := val / 10.0
-						END;
-						DEC(scale)
-					END
-				ELSE
+				IF scMinus THEN scale := -scale END;
+				log.rn(val);
+				IF ~CheckRealArithmetic.Pack10(val, scale) THEN
 					lex := ErrRealScaleTooBig
 				END
 			ELSE
