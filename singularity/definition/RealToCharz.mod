@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE RealToCharz;
 
-  IMPORT ArrayFill, ArrayCopy, Real10;
+  IMPORT ArrayFill, ArrayCopy, Real10, Int10 := MathPowerInt10;
 
   PROCEDURE Digit(i: INTEGER): CHAR;
   BEGIN
@@ -31,26 +31,27 @@ MODULE RealToCharz;
       sign, ok: BOOLEAN;
 
     PROCEDURE Exponent(VAR s: ARRAY OF CHAR; VAR i: INTEGER; len, sign: INTEGER; e: INTEGER);
+    VAR l: INTEGER;
     BEGIN
       IF len > 0 THEN
-        s[i + 1] := "E";
-        INC(i, 2);
-        IF sign > 0 THEN
-          s[i] := "+"
-        ELSE
-          s[i] := "-"
-        END;
-        INC(i, len - 2);
+        l := i + len;
+        i := l;
+
         REPEAT
-          s[i] := Digit(e MOD 10);
+          s[l] := Digit(e MOD 10);
           e := e DIV 10;
-          DEC(i)
+          DEC(l)
         UNTIL e = 0;
-        INC(i, len - 2)
+        IF sign < 0 THEN
+          s[l] := "-";
+          DEC(l)
+        END;
+        s[l] := "E"
       END
     END Exponent;
 
     PROCEDURE Significand(VAR s: ARRAY OF CHAR; VAR i: INTEGER; x: REAL; l: INTEGER; VAR dE: INTEGER);
+    VAR d, d1, n: INTEGER; p10, xp: REAL;
       PROCEDURE Inc(VAR s: ARRAY OF CHAR; VAR i, dE: INTEGER);
       VAR j: INTEGER;
       BEGIN
@@ -69,22 +70,52 @@ MODULE RealToCharz;
         END;
         i := j
       END Inc;
+
+      PROCEDURE Digits(VAR s: ARRAY OF CHAR; i, n, d: INTEGER);
+      VAR k: INTEGER;
+      BEGIN
+        ASSERT(d >= 0);
+        FOR k := n - 1 TO 0 BY -1 DO
+          ASSERT(d >= 0);
+          s[i + k] := Digit(d MOD 10);
+          d := d DIV 10
+        END;
+        ASSERT(d = 0)
+      END Digits;
     BEGIN
-      s[i] := Digit(FLOOR(x));
       INC(i);
+      n := l - i;
+      IF n > 9 THEN n := 9 END;
+      ASSERT(x >= 0.0);
+      xp := x * FLT(Int10.val[n - 1]);
+      d := FLOOR(xp);
+      Digits(s, i, n, d);
+      s[i - 1] := s[i];
       s[i] := ".";
-      REPEAT
-        x := (x - FLT(FLOOR(x))) * 10.0;
-        INC(i);
-        s[i] := Digit(FLOOR(x))
-      UNTIL i >= l;
+      INC(i, n);
+      IF i < l THEN
+        p10 := FLT(Int10.val[l - i]);
+        xp := x * (1.E8 * p10) - FLT(d) * p10;
+        IF xp >= 0.0 THEN
+          d1 := FLOOR(xp)
+        ELSE (* из-за погрешности *)
+          d1 := 0
+        END;
+        Digits(s, i, l - i, d1);
+
+        x := x * (1.E9 * p10) - FLT(d) *  FLT(Int10.val[l - i + 1]) - FLT(d1 * 10);
+        i := l - 1;
+      ELSE
+        x := x * FLT(Int10.val[n]) - FLT(d) * 10.0
+      END;
+      
       dE := 0;
-      IF 0.5 <= x - FLT(FLOOR(x)) THEN
+      IF 5.0 <= x THEN
         Inc(s, i, dE)
       ELSE
         WHILE s[i] = "0" DO
           DEC(i)
-        END;
+        END
       END
     END Significand;
 
@@ -107,37 +138,36 @@ MODULE RealToCharz;
     ELSE
       Real10.Unpk(x, se);
       e := ABS(se);
-      IF e > 308 THEN
-        ArrayCopy.Chars(s, i, "inf", 0, 3);
-        INC(i, 2)
+      IF e = 0 THEN
+        eLen := 0
       ELSE
-        IF e = 0 THEN
-          eLen := 0
-        ELSIF e < 10 THEN
-          eLen := 3
+        IF e < 10 THEN
+          eLen := 2
         ELSIF e < 100 THEN
+          eLen := 3
+        ELSE
           eLen := 4
-        ELSE
-          eLen := 5
         END;
-        IF n = 0 THEN
-          lim := 16
-        ELSE
-          lim := n - eLen
-        END;
-        Significand(s, i, x, lim, dE);
-        IF s[i] # "." THEN
-          ;
-        ELSIF e # 0 THEN
-          DEC(i)
-        ELSE
-          INC(i)
-        END;
-        IF se > 0 THEN
-          Exponent(s, i, eLen, 1, e + dE)
-        ELSE
-          Exponent(s, i, eLen, -1, e - dE)
-        END
+        INC(eLen, ORD(se < 0))
+      END;
+      IF n = 0 THEN
+        lim := 17
+      ELSE
+        lim := n - eLen;
+        IF lim < 3 THEN lim := 3 END
+      END;
+      Significand(s, i, x, lim, dE);
+      IF s[i] # "." THEN
+        ;
+      ELSIF e # 0 THEN
+        DEC(i)
+      ELSE
+        INC(i)
+      END;
+      IF se > 0 THEN
+        Exponent(s, i, eLen, 1, e + dE)
+      ELSE
+        Exponent(s, i, eLen, -1, e - dE)
       END
     END;
     INC(i);
