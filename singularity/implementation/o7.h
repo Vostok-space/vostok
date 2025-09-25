@@ -1637,7 +1637,16 @@ double o7_flt(o7_int_t v) {
 #	define O7_USED_GNUC_BUILTIN_LDEXP 1
 
 	O7_CONST_INLINE double o7_gnuc_ldexp(double f, o7_int_t n) { return __builtin_ldexp(f, n); }
-	O7_ALWAYS_INLINE double o7_gnuc_frexp(double f, o7_int_t *n) { return __builtin_frexp(f, n); }
+	O7_ALWAYS_INLINE double o7_gnuc_frexp(double f, o7_int_t *n) {
+		if (f != 0.0) {
+			f = __builtin_frexp(f, n);
+			f *= 2.0;
+			*n -= 1;
+		} else {
+			*n = 0;
+		}
+		return f;
+	}
 
 	O7_CONST_INLINE double o7_raw_ldexp(double f, o7_int_t n) { abort(); return O7_DBL_UNDEF; }
 	O7_ALWAYS_INLINE double o7_raw_frexp(double f, o7_int_t *n) { abort(); return O7_DBL_UNDEF; }
