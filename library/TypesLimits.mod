@@ -33,7 +33,6 @@ CONST
 	RealScaleMax* = 308;
 	RealScaleMin* = -324;
 	RealExp10Max* = 1.0E308;
-	RealExp10Min* = 1.0E-324;
 
 PROCEDURE InByteRange*(v: INTEGER): BOOLEAN;
 	RETURN (0 <= v) & (v <= ByteMax)

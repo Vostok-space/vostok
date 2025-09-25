@@ -23,7 +23,7 @@ IMPORT
 	TranLim := TranslatorLimits,
 	Charz,
 	ArrayCopy,
-	RealBuild, CheckRealArithmetic, log;
+	RealBuild, CheckRealArithmetic;
 
 CONST
 	NewPage = Utf8.NewPage;
@@ -326,7 +326,6 @@ VAR
 					d := ValDigit(s.buf[i])
 				END;
 				IF scMinus THEN scale := -scale END;
-				log.rn(val);
 				IF ~CheckRealArithmetic.Pack10(val, scale) THEN
 					lex := ErrRealScaleTooBig
 				END
