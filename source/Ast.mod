@@ -2056,11 +2056,17 @@ END ExprIntegerNew;
 
 PROCEDURE ExprRealNew*(real: REAL; m: Module;
                        buf: ARRAY OF CHAR; begin, end: INTEGER): ExprReal;
-VAR e: ExprReal;
+VAR e: ExprReal; i: INTEGER;
 BEGIN
 	ASSERT(m # NIL);
+	ASSERT(ODD(LEN(buf)));
 	NEW(e); ValueInit(e, IdReal, TypeGet(IdReal));
 	e.real := real;
+	i := (begin + 1) MOD (LEN(buf) - 1);
+	WHILE (buf[begin] = "0") & (buf[i] # ".") DO
+		begin := i;
+		i := (i + 1) MOD (LEN(buf) - 1)
+	END;
 	PutChars(m, e.str, buf, begin, end)
 	RETURN e
 END ExprRealNew;
