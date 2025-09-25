@@ -28,8 +28,8 @@ MODULE RealBuild;
 
  PROCEDURE Begin*(VAR b: T);
  BEGIN
-  b.i := -1;
-  b.n := 1;
+  b.i := 0;
+  b.n := 0;
   b.high := 0;
   b.digits := 0;
   b.dot := DotUndef;
@@ -40,8 +40,8 @@ MODULE RealBuild;
  BEGIN
   INC(b.i);
   b.digits := b.digits * 10 + dec;
-  IF b.i = 8 THEN
-    INC(b.n, 8);
+  IF b.i = 9 THEN
+    INC(b.n, 9);
     b.i := 0;
 
     b.valuable := b.high = 0;
@@ -53,19 +53,17 @@ MODULE RealBuild;
  END UncheckedDigit;
 
  PROCEDURE Digit*(VAR b: T; dec: INTEGER);
- VAR use: BOOLEAN;
  BEGIN
   ASSERT((0 <= dec) & (dec < 10));
 
-  use := TRUE;
-  IF (dec # 0) OR (b.i # -1) THEN
-      ;
+  IF (dec # 0) OR (b.i + b.n # 0) THEN
+    IF b.valuable THEN
+      UncheckedDigit(b, dec)
+    ELSE
+      INC(b.i)
+    END
   ELSIF b.dot # DotUndef THEN
-    use := FALSE;
     DEC(b.dot)
-  END;
-  IF use & b.valuable THEN
-    UncheckedDigit(b, dec)
   END
  END Digit;
 
@@ -87,15 +85,15 @@ MODULE RealBuild;
   dot := b.dot;
   IF dot = DotUndef THEN dot := i END;
 
-  IF i <= 9 THEN
+  IF i <= 8 THEN
     v := FLT(b.digits);
     Real10.Pack(v, dot - i)
-  ELSIF i <= 17 THEN
+  ELSIF i <= 18 THEN
     v := FLT(b.high) * FLT(Int10.val[i - 9]) + FLT(b.digits);
     Real10.Pack(v, dot - i)
   ELSE
-    v := FLT(b.high) * 1.0E8 + FLT(b.digits);
-    Real10.Pack(v, dot - 17)
+    v := FLT(b.high) * 1.0E9 + FLT(b.digits);
+    Real10.Pack(v, dot - 18)
   END
  END End;
 
