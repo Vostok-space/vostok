@@ -149,6 +149,10 @@ BEGIN
 		C("Left part of range in label of CASE must be less than right part")
 	| AST.ErrCaseLabelNotConst:
 		C("Labels in CASE must be constant")
+	| AST.ErrCaseRangeType:
+		C("A types range in CASE is meaningless")
+	| AST.ErrCaseLabelsType:
+		C("A types list in CASE is meaningless")
 	| AST.ErrCaseElseAlreadyExist:
 		C("Else branch in CASE already exist")
 	| AST.ErrProcHasNoReturn:

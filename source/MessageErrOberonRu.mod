@@ -144,6 +144,10 @@ BEGIN
 		C("Метки CASE должны быть константами")
 	| AST.ErrCaseElseAlreadyExist:
 		C("ELSE ветка в CASE уже есть")
+	| AST.ErrCaseRangeType:
+		C("В промежутке типов в CASE нет смысла")
+	| AST.ErrCaseLabelsType:
+		C("В списке типов в CASE нет смысла")
 	| AST.ErrProcHasNoReturn:
 		C("Подпрограмма не имеет возвращаемого значения")
 	| AST.ErrReturnIncompatibleType:

@@ -144,6 +144,10 @@ BEGIN
 		C("Мітки CASE повинні бути сталими")
 	| AST.ErrCaseElseAlreadyExist:
 		C("ELSE вітка в CASE вже є")
+	| AST.ErrCaseRangeType:
+		C("У проміжку типів в CASE немає сенсу")
+	| AST.ErrCaseLabelsType:
+		C("У списку типів в CASE немає сенсу")
 	| AST.ErrProcHasNoReturn:
 		C("Підпрограма не повертає значення")
 	| AST.ErrReturnIncompatibleType:

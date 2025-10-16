@@ -82,6 +82,8 @@ CONST
 	ErrCasePointerVarParam*         = -114;(*TODO*)
 	ErrCaseRecordNotParam*          = -116;(*TODO*)
 	ErrCaseLabelNotRecExt*          = -115;(*TODO*)
+	ErrCaseRangeType*               = -132;(*TODO*)
+	ErrCaseLabelsType*              = -133;(*TODO*)
 	ErrCaseLabelWrongType*          = -46;
 	ErrCaseElemExprTypeMismatch*    = -47;
 	ErrCaseElemDuplicate*           = -48;
@@ -176,6 +178,8 @@ CONST
 
 	                                (*-130*)
 	                                (*-131*)
+	                                (*-132*)
+	                                (*-133*)
 
 	ErrMin*                         = -200;
 
@@ -4217,6 +4221,8 @@ BEGIN
 	err := ErrNo;
 	IF right = NIL THEN
 		;
+	ELSIF left.id IN {IdRecord, IdPointer} THEN
+		err := ErrCaseRangeType
 	ELSIF left.id # right.id THEN
 		err := ErrCaseRangeLabelsTypeMismatch
 	ELSIF left.value >= right.value THEN
@@ -4286,6 +4292,8 @@ BEGIN
 	   OR (new.id = IdPointer) & ~IsRecordExtension(ignore, ct.type(Record), new.qual.type(Record))
 	THEN
 		err := ErrCaseLabelNotRecExt
+	ELSIF (first # NIL) & (new.id IN {IdRecord, IdPointer}) THEN
+		err := ErrCaseLabelsType
 	ELSE
 		IF IsElementsCrossRange(case.elements, new)
 		THEN err := ErrCaseElemDuplicate
