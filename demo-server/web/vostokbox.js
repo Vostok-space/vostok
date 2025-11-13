@@ -215,18 +215,29 @@ var VostokBox;
     return ' \t\r\n'.indexOf(ch) >= 0;
   }
 
+  function searchWord(text, word) {
+    var i;
+    i = -1;
+    do {
+      i = text.indexOf(word, i + 1);
+    } while (i >= 0 && !((i == 0 || isBlank(text.charAt(i - 1))) && isBlank(text.charAt(i + word.length))));
+    if (i >= 0) {
+      i += word.length + 1;
+    }
+    return i;
+  }
+
   function getTabName(text, ind) {
     var n, t, i, l;
 
     n = null;
 
     t = text;
-    i = -1;
-    do {
-      i = t.indexOf('MODULE', i + 1);
-    } while (i >= 0 && !((i == 0 || isBlank(t.charAt(i - 1))) && isBlank(t.charAt(i + 6))));
+    i = searchWord(t, 'MODULE');
+    if (i < 0) {
+      i = searchWord(t, 'PROCEDURE');
+    }
     if (i >= 0) {
-      i += 7;
       while (isBlank(t.charAt(i))) { i += 1; }
       l = i;
       while ((l - i < 32) && isForIdent(t.charCodeAt(l))) { l += 1; }
@@ -332,7 +343,15 @@ var VostokBox;
   }
 
   function ln(box, node) {
-    node.appendChild(box.doc.createElement("br"));
+    node.appendChild(box.doc.createElement('br'));
+  }
+
+  function createHref(box, text, ref) {
+    var a;
+    a = box.doc.createElement('a');
+    a.innerText = text;
+    a.href = ref;
+    return a;
   }
 
   function defaultLog(box, empty, savedLog) {
@@ -352,7 +371,7 @@ var VostokBox;
         createLink(box, local(box, ['editor', 'редактор']),
                    function() { addEditor(box, ''); }),
         ', ',
-        createLink(box, local(box, ['commands runner', 'командные строки']),
+        createLink(box, local(box, ['commands runner', 'командную строку']),
                    function() { addRunner(box, '/INFO Out'); }),
         ', ',
         createLink(box, local(box, ['predefined buttons', 'предопределённые кнопки']),
@@ -362,6 +381,15 @@ var VostokBox;
       ln(box, div);
     }
     if (savedLog == null) {
+      div.append(local(box, ['Use Ctrl-key for an additional possibility to modify environment.',
+            'Используйте клавишу Ctrl для дополнительной возможности редактирования окружения.']));
+      ln(box, div);
+      div.append(
+        local(box, ['See ', 'Посмотрите ']),
+        createHref(box, local(box, ['examples', 'примеры']), 'https://vostok.oberon.org/examples.html'),
+        '.'
+      );
+      ln(box, div);
       div.append(local(box, ['Note that sandbox uses web-storage to store input.',
                              'Среда использует web-хранилище для сохранения ввода.']));
     }

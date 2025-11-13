@@ -1,5 +1,5 @@
 /*  HTTP server and Telegram-bot for translator demonstration
- *  Copyright (C) 2017-2019,2021-2023 ComdivByZero
+ *  Copyright (C) 2017-2019,2021-2025 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -214,7 +214,8 @@ func ostToBin(ostDir, script, bin, tmp string, comp compiler, multiErrors bool, 
 
 func run(ostDir string, src source, comp compiler, timeout, lang int) (output []byte, err error) {
   var (
-    tmp, bin, timeOut string;
+    tmp, runner, bin, timeOut string;
+    args []string;
     cmd *exec.Cmd
   )
   tmp, err = saveSource(src, lang);
@@ -227,7 +228,13 @@ func run(ostDir string, src source, comp compiler, timeout, lang int) (output []
     }
     fmt.Print(string(output));
     if err == nil {
-      cmd = exec.Command("sh", "-c", comp.runner + " " + bin);
+      if comp.runner == "" {
+        cmd = exec.Command(bin);
+      } else {
+        args = strings.Fields(comp.runner);
+        runner = args[0];
+        cmd = exec.Command(runner, append(args[1:], bin)...);
+      }
       cmd.Stdin = strings.NewReader(src.input);
       timeOut = "";
       output = nil;
@@ -976,7 +983,6 @@ func teleBot(token, workdir string, comp compiler, timeout int) {
       time.Sleep(time.Second)
     }
   }
-  return
 }
 
 func newCompiler(cc, java, js string) (comp compiler) {
@@ -1030,7 +1036,7 @@ func main() {
   if lim.limit < 1 {
     lim.limit = 1
   }
-  comp = newCompiler(*cc, *java, *js);
+  comp = newCompiler(strings.Trim(*cc, " "), strings.Trim(*java, " "), strings.Trim(*js, " "));
   if *telegram != "" {
     err = nil;
     teleBot(*telegram, *workdir, comp, *timeout)
