@@ -822,9 +822,9 @@ func limDec(l *limiter) {
   atomic.AddInt32(&l.count, -1)
 }
 
-func webServer(ostDir, addr string, port, timeout int, comp compiler, allow, workdir, crt, key string, lim *limiter) (err error) {
+func webServer(ostDir, addr string, port, timeout int, comp compiler, allow, htmlDir, workdir, crt, key string, lim *limiter) (err error) {
   var (a string)
-  http.Handle("/", http.FileServer(http.Dir("web")));
+  http.Handle("/", http.FileServer(http.Dir(htmlDir)));
   http.HandleFunc("/run",
     func(w http.ResponseWriter, r *http.Request) {
       if limInc(lim) {
@@ -1010,7 +1010,7 @@ func newCompiler(cc, java, js string) (comp compiler) {
 func main() {
   var (
     port, timeout, tasksLimit *int;
-    addr, cc, java, js, telegram, allow, workdir, crt, key *string;
+    addr, cc, java, js, telegram, allow, workdir, htmldir, crt, key *string;
     ostDir string;
     full *bool;
     err error;
@@ -1026,6 +1026,7 @@ func main() {
   js       = flag.String("js"       , ""    , "use JavaScript engine to run code");
   java     = flag.String("java"     , ""    , "use Java compiler to build code");
   telegram = flag.String("telegram" , ""    , "telegram bot's token");
+  htmldir  = flag.String("htmldir"  , "web" , "directory with html-files");
   workdir  = flag.String("workdir"  , ""    , "directory for saves");
   crt      = flag.String("crt"      , ""    , "file with TLS certificate");
   key      = flag.String("key"      , ""    , "file with TLS private key");
@@ -1049,7 +1050,7 @@ func main() {
     } else {
       ostDir = "vostok"
     }
-    err = webServer(ostDir, *addr, *port, *timeout, comp, *allow, *workdir, *crt, *key, &lim)
+    err = webServer(ostDir, *addr, *port, *timeout, comp, *allow, *htmldir, *workdir, *crt, *key, &lim)
   }
   if err != nil {
     fmt.Println(err);
