@@ -216,6 +216,8 @@ BEGIN
 		C("Переповнення у відніманні сталих")
 	| AST.ErrConstMultOverflow:
 		C("Переповнення у множені сталих")
+	| AST.ErrConstDivOverflow:
+		C("Переповнення у діленні сталих")
 	| AST.ErrComDivByZero:
 		C("Ділення на 0")
 	| AST.ErrNegativeDivisor:

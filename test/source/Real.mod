@@ -5,6 +5,7 @@ IMPORT Out;
 CONST
 	ac = 1.0E307;
 	bc* = ac;
+	ac1 = ac / 1000.;
 
 VAR p1, p2: POINTER TO RECORD END;
 
@@ -66,6 +67,13 @@ BEGIN
 	Pack0(one * 3.8E+286, 72, 1./4.722366482869645E+21);
 	Pack0(one * 3.678111111E-286, 72, 1./4.722366482869645E+21);
 END Pack;
+
+PROCEDURE Const;
+CONST rc = ac + ac1 * 1.E3 + 2.0 * ac - 0.;
+BEGIN
+ ASSERT((ac1 >= 0.99999E304) & (ac1 <= 1.00001E304));
+ ASSERT(rc = ac * 4.)
+END Const;
 
 PROCEDURE Floor*;
 CONST F15 = FLOOR(1.5);
@@ -160,7 +168,8 @@ BEGIN
 	Pack(+1);
 	Pack(-1);
 
-	Floor
+	Floor;
+	Const
 END Go;
 
 BEGIN

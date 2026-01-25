@@ -216,6 +216,8 @@ BEGIN
 		C("Переполнение при вычитании постоянных")
 	| AST.ErrConstMultOverflow:
 		C("Переполнение при умножении постоянных")
+	| AST.ErrConstDivOverflow:
+		C("Переполнение при делении постоянных")
 	| AST.ErrComDivByZero:
 		C("Деление на 0")
 	| AST.ErrNegativeDivisor:

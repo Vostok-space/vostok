@@ -218,11 +218,13 @@ BEGIN
 	| AST.ErrNegateNotBool:
 		C("Logic negative ~ applicable only to boolean values")
 	| AST.ErrConstAddOverflow:
-		C("Overflow in constants sum")
+		C("Overflow in constant addition")
 	| AST.ErrConstSubOverflow:
-		C("Overflow in constants difference")
+		C("Overflow in constant subtraction")
 	| AST.ErrConstMultOverflow:
-		C("Overflow in constants multiplication")
+		C("Overflow in constant multiplication")
+	| AST.ErrConstDivOverflow:
+		C("Overflow in constant division")
 	| AST.ErrComDivByZero:
 		C("Division by zero")
 	| AST.ErrNegativeDivisor:

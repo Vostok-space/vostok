@@ -1,5 +1,5 @@
 (*  Abstract syntax tree support for Oberon-07
- *  Copyright (C) 2016-2025 ComdivByZero
+ *  Copyright (C) 2016-2026 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -26,6 +26,7 @@ IMPORT
 	Strings := StringStore, Charz,
 	TranLim := TranslatorLimits,
 	Arithmetic := CheckIntArithmetic,
+	CheckRealArithmetic,
 	LongSet;
 
 CONST
@@ -125,6 +126,7 @@ CONST
 	ErrConstAddOverflow*            = -83;
 	ErrConstSubOverflow*            = -84;
 	ErrConstMultOverflow*           = -85;
+	ErrConstDivOverflow*            = -134; (* TODO *)
 	ErrComDivByZero*                = -86;
 	ErrNegativeDivisor*             = -87;
 
@@ -180,6 +182,7 @@ CONST
 	                                (*-131*)
 	                                (*-132*)
 	                                (*-133*)
+	                                (*-134*)
 
 	ErrMin*                         = -200;
 
@@ -2960,6 +2963,7 @@ BEGIN
 	 & CheckType(expr1.type, expr2.type, e.exprs[0], e.exprs[1], relation, e.distance, err)
 	 & (c.opt.allowCmpProc OR IsNotProc(expr1, expr2, err))
 	 & (expr1.value # NIL) & (expr2.value # NIL) & (relation # Is)
+	 & (expr1.type.id # IdReal (* TODO *))
 	THEN
 		v1 := e.exprs[0].value;
 		v2 := e.exprs[1].value;
@@ -3016,15 +3020,13 @@ BEGIN
 		| In:
 			res := LongSet.In(v1(ExprInteger).int, v2(ExprSetValue).set)
 		END;
-		IF expr1.type.id # IdReal THEN
-			e.value := ExprBooleanGet(res);
+		e.value := ExprBooleanGet(res);
 
-			IF expr1.id = IdString THEN
-				StringUsedWithExpr(expr1(ExprString), expr2)
-			END;
-			IF expr2.id = IdString THEN
-				StringUsedWithExpr(expr2(ExprString), expr1)
-			END
+		IF expr1.id = IdString THEN
+			StringUsedWithExpr(expr1(ExprString), expr2)
+		END;
+		IF expr2.id = IdString THEN
+			StringUsedWithExpr(expr2(ExprString), expr1)
 		END
 	END
 	RETURN err
@@ -3156,11 +3158,16 @@ BEGIN
 					err := ErrConstAddOverflow
 				END
 			| IdReal:
-				(* TODO из-за отсутствия точности в вычислениях
-				fullSum.value(ExprReal).real :=
-				    fullSum.value(ExprReal).real
-				  + term.value(ExprReal).real * FLT(LexToSign(add))
-				*)
+				IF CheckRealArithmetic.Add(fullSum.value(ExprReal).real,
+				    fullSum.value(ExprReal).real,
+				    term.value(ExprReal).real * FLT(LexToSign(add)))
+				THEN
+					;
+				ELSIF add = Minus THEN
+					err := ErrConstSubOverflow
+				ELSE
+					err := ErrConstAddOverflow
+				END
 			| IdSet:
 				IF add = Plus THEN
 					ExprSetUnion(fullSum.value(ExprSetValue), term.value(ExprSetValue))
@@ -3267,15 +3274,21 @@ VAR err: INTEGER;
 		END
 	END Int;
 
-	PROCEDURE Rl(res: Expression; mult: INTEGER; b: Expression);
+	PROCEDURE Rl(res: Expression; mult: INTEGER; b: Expression; VAR err: INTEGER);
 	VAR r, r1, r2: REAL;
 	BEGIN
 		r1 := res.value(ExprReal).real;
 		r2 := b.value(ExprReal).real;
 		IF mult = Mult THEN
-			r := r1 * r2
+			IF ~CheckRealArithmetic.Mul(r, r1, r2) THEN
+				err := ErrConstMultOverflow
+			END
 		ELSE
-			r := r1 / r2
+			IF r2 = 0.0 THEN
+				err := ErrComDivByZero
+			ELSIF ~CheckRealArithmetic.Div(r, r1, r2) THEN
+				err := ErrConstDivOverflow
+			END
 		END;
 		IF res.value = NIL THEN
 			res.value := ExprRealNewByValue(r)
@@ -3313,11 +3326,7 @@ BEGIN
 		  IdInteger:
 			Int(res, mult, b, err)
 		| IdReal:
-			(* TODO из-за отсутствия точности в вычислениях *)
-			IF FALSE THEN
-				Rl(res, mult, b)
-			END;
-			res.value := NIL
+			Rl(res, mult, b, err)
 		| IdBoolean:
 			IF res.value(ExprBoolean).bool & ~b.value(ExprBoolean).bool THEN
 				res.value := b.value
@@ -3362,7 +3371,7 @@ BEGIN
 	NEW(e); ExprInit(e, IdTerm, t (* TODO *));
 	IF result = NIL THEN
 		result := e;
-		IF (e.type.id # IdReal) & (val # NIL) & (factorOrTerm.value # NIL) THEN
+		IF (val # NIL) & (factorOrTerm.value # NIL) THEN
 			e.value := ValueCopy(val)
 		END
 	END;
