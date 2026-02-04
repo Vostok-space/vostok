@@ -1,4 +1,4 @@
-/* Copyright 2019-2021,2023,2025 ComdivByZero
+/* Copyright 2019-2021,2023,2025-2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,9 +76,12 @@ if (fs != null) {
 		name = utf8ByOfsToStr(bytes_name, ofs);
 		if (name != null) {
 			smode = "r";
-			for (i = 0; i < mode.length; i += 1) {
-				if (mode[i] == 'w'.charCodeAt(0)) {
+			/* TODO */
+			for (i = mode.length - 1; i >= 0; i -= 1) {
+				if (mode[i] == 0x77) {
 					smode = "w+";
+				} else if (mode[i] == 0x61) {
+					smode = "a";
 				}
 			}
 			try {
