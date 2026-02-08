@@ -1,6 +1,6 @@
 ## Oberon‑07 Summary (Revision 2013/2016)
 
-[Full language report](https://vostok-space.github.io/Oberon-report/)
+[Full Oberon-07 report](https://vostok-space.github.io/Oberon-report/)
 
 ### 0. Operators and delimiters including reserved words (keywords)
 
@@ -20,7 +20,7 @@
 {  }   IF     RETURN
 ```
 
-### 1. EBNF syntax of Oberon‑07
+### 1. EBNF syntax
 
 ```ebnf
 (* some lexemes *)
@@ -168,7 +168,7 @@ import              = ident [ ":=" ident ] .
 |                 | `ASR(x,n)`   | arithmetic shift right (`x DIV 2^n`)        | `INTEGER`   |
 |                 | `ROR(x,n)`   | rotate right by `n` bits                    | `INTEGER`   |
 | **Conversions** | `FLOOR(x)`   | round toward −∞                             | `INTEGER`   |
-|                 | `FLT(x)`     | identity (`INTEGER → REAL`)                 | `REAL`      |
+|                 | `FLT(x)`     | identity (`INTEGER → REAL`)                  | `REAL`      |
 |                 | `ORD(x)`     | ordinal number of `x`                       | `INTEGER`   |
 |                 | `CHR(x)`     | character with code `x`                     | `CHAR`      |
 | **Proper**      | `INC(v[,n])` | `v := v + n` (default `n = 1`)              |             |
@@ -177,5 +177,5 @@ import              = ident [ ":=" ident ] .
 |                 | `EXCL(s,i)`  | `s := s − {i}`                              |             |
 |                 | `NEW(p)`     | allocate record instance that `p` points to |             |
 |                 | `ASSERT(b)`  | abort program if `b = FALSE`                |             |
-|                 | `PACK(x,n)`  | pack mantissa / exponent                    |             |
-|                 | `UNPK(x,n)`  | unpack mantissa / exponent                  |             |
+|                 | `PACK(x,n)`  | pack mantissa / exponent                     |             |
+|                 | `UNPK(x,n)`  | unpack mantissa / exponent                   |             |
