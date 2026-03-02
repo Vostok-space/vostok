@@ -16,7 +16,7 @@ limitations under the License.
 
 MODULE VStreamRead;
 
-IMPORT Stream := VDataStream, Uint32, Int32, ArrayCmp, log;
+IMPORT Stream := VDataStream, Uint32, Int32, ArrayCmp;
 
 PROCEDURE Byte*(VAR in: Stream.In; VAR b: BYTE): BOOLEAN;
 VAR buf: ARRAY 1 OF BYTE; ok: BOOLEAN;
