@@ -13,7 +13,7 @@ The translator is written in its own input language - Oberon.
 Generates code for:
 
   * A common subset of C and C++ compatible with gcc, clang, tcc and CompCert.
-  * Java 1.7
+  * Java 8
   * JavaScript compatible with ECMAScript 5
   * Oberon-07, Active Oberon and Component Pascal
   * Plant UML Activity Diagrams
@@ -21,10 +21,21 @@ Generates code for:
 License is LGPL for translator's code and Apache for libraries, tests and
 examples.
 
-## Install in Ubuntu 18.04:
+## Install
+### snap:
+    /usr/bin/sudo snap install vostok --classic --beta &&
+    /usr/bin/sudo snap alias vostok ost
+
+### deb:
 Add [repository](https://translate.google.com/translate?sl=ru&tl=en&u=https://wiki.oberon.org/repo) and execute command:
 
     /usr/bin/sudo apt install vostok-bin
+
+### Homebrew:
+    brew install vostok-space/oberon/vostok
+
+### npm
+    /usr/bin/sudo npm install --global vostok-oberon
 
 ## Building in POSIX:
 Script init.sh build from pre-generated C-files the 0-version of the Oberon
@@ -53,8 +64,7 @@ Build with direct using of [tcc](http://download.savannah.gnu.org/releases/tinyc
     > init.cmd
     > result\bs-ost run make.Build -infr . -m source -cc tcc
 
-Of course, the directory with the tcc.exe must be specified in the PATH
-environment variable.
+The directory with the tcc.exe must be specified in the PATH environment variable.
 
 Testing. C-compiler(gcc, clang, tcc) searched automatically:
 
@@ -102,9 +112,9 @@ code in a browser:
     ./server
 
 ## Questions:
-Russian-speaking forums, but possible to ask in english:
+Russian-speaking forums:
 [forum.oberoncore.ru](https://forum.oberoncore.ru/viewtopic.php?f=115&t=6217),
-[zx.oberon.org](https://zx.oberon.org/forum/viewtopic.php?f=117&t=297)
+[telegram](https://t.me/oberon_vostok)
 
 ## News:
 [Russian blog](https://vostok-space.blogspot.com/) through
