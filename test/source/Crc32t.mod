@@ -1,6 +1,8 @@
 MODULE Crc32t;
 
- IMPORT Crc := Crc32;
+ IMPORT Crc := Crc32, ArrayCopy;
+
+ CONST Bs = "123456789wertyuiop[]asdfghjkl;'\zxcvbnm,./QWERTYUIOP{}ASDFGHJKL;|ZXCXVBNM,>?";
  
  PROCEDURE Go*;
  VAR i: INTEGER; c: SET; src: ARRAY 10 OF CHAR; b: ARRAY 9 OF BYTE;
@@ -21,5 +23,17 @@ MODULE Crc32t;
 
   ASSERT(ORD(Crc.Calc(b, 1, 7)) = 2BC9895BH)
  END Go;
+
+ PROCEDURE Bench*(n: INTEGER): SET;
+ VAR i: INTEGER; c: SET; b: ARRAY LEN(Bs) OF BYTE;
+ BEGIN
+  ArrayCopy.CharsToBytes(b, 0, Bs, 0, LEN(Bs));
+  c := {};
+  FOR i := n TO 0 BY -1 DO
+    c := c / Crc.Calc(b, 0, LEN(Bs))
+  END
+ RETURN
+  c
+ END Bench;
 
 END Crc32t.
