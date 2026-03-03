@@ -1,4 +1,4 @@
-/* Copyright 2016-2025 ComdivByZero
+/* Copyright 2016-2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1321,7 +1321,7 @@ o7_cbool o7_in(o7_int_t n, o7_set_t set) {
 }
 
 #define O7_ASR(n, shift) \
-	(((shift) >= 32) ? ((n) >= 0 ? 0 : -1) : (((n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift))))
+	(((shift) >= 32) ? -(int)((n) < 0) : (((n) >= 0) ? (n) >> (shift) : -1 - ((-1 - (n)) >> (shift))))
 
 O7_CONST_INLINE
 o7_int_t o7_asr(o7_int_t n, o7_int_t shift) {

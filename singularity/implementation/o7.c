@@ -1,4 +1,4 @@
-/* Copyright 2016-2019,2021-2025 ComdivByZero
+/* Copyright 2016-2019,2021-2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -487,7 +487,7 @@ extern double o7_raw_ldexp(double x, int n) {
 		} else if (e < -0x34) {
 			u =  0x8000000000000000ULL & u;
 		} else {
-			/* денормализация, восстанавление подразумеваемой 1 */
+			/* денормализация, восстановление подразумеваемой 1 */
 			m = (0x000FFFFFFFFFFFFFULL & u) | 0x0010000000000000ULL;
 			/* округление (при переполнении денормализация самоустраняется) */
 			m += m & (0x1ULL << -e);

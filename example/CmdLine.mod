@@ -1,3 +1,5 @@
+#!/usr/bin/env -S ost .Go
+
 MODULE CmdLine;
 
 IMPORT CLI, Out;
