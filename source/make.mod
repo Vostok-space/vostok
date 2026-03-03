@@ -1,7 +1,7 @@
 #!/usr/bin/env -S ost .
 
 Build and test tasks for the translator
-Copyright (C) 2018-2025 ComdivByZero
+Copyright (C) 2018-2026 ComdivByZero
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -319,7 +319,7 @@ MODULE make;
    END
  END TestGenOberon;
 
-PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
+ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
                 baseDest, addDest: ARRAY OF CHAR): BOOLEAN;
  VAR dest: ARRAY 1024 OF CHAR;
  RETURN
@@ -429,6 +429,7 @@ PROCEDURE Copy(src: ARRAY OF CHAR; dir: BOOLEAN;
  RETURN
    Exec.Init(cmd, "fakeroot")
  & Exec.Val(cmd, "dpkg-deb")
+ & Exec.Vals(cmd, "-Zgzip", "-z9")
  & Exec.Par(cmd, "--build", dir)
  & (Exec.Do(cmd) = Exec.Ok)
  END DpkgDeb;
