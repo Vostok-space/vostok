@@ -1,6 +1,6 @@
 32 bit cyclic redundancy code calculating. CRC32
 
-Copyright 2024 ComdivByZero
+Copyright 2024,2026 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ MODULE Crc32;
   Init*   = P.Init;
   XorOut* = P.XorOut;
 
+ TYPE Table = ARRAY 100H OF SET;
+
  VAR
-  table: ARRAY 100H OF SET;
+  table: Table;
 
  PROCEDURE NextByte*(VAR crc: SET; b: BYTE);
  BEGIN
@@ -65,10 +67,10 @@ MODULE Crc32;
   crc / XorOut
  END Calc;
 
- PROCEDURE InitTable;
+ PROCEDURE Init(VAR t: Table);
  VAR i, l: INTEGER; crc: SET;
  BEGIN
-  FOR i := 0 TO LEN(table) - 1 DO
+  FOR i := 0 TO LEN(t) - 1 DO
     crc := Set.FromByte(i, 0);
     FOR l := 0 TO 7 DO
       IF 0 IN crc THEN
@@ -77,10 +79,10 @@ MODULE Crc32;
         crc := Set.Lsr(crc, 1)
       END
     END;
-    table[i] := crc
+    t[i] := crc
   END
  END InitTable;
 
 BEGIN
- InitTable
+ Init(table)
 END Crc32.
