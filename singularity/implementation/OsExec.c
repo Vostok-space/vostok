@@ -1,4 +1,4 @@
-/* Copyright 2016,2020 ComdivByZero
+/* Copyright 2016,2020,2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,13 @@
 
 #include "OsExec.h"
 
+#if defined(O7_CSYSTEM) && (O7_CSYSTEM == 0)
+#error
+	O7_INLINE int c_system(char const *cmd) { return 255; }
+#else
+	O7_INLINE int c_system(char const *cmd) { return system(cmd); }
+#endif
+
 extern o7_int_t OsExec_Do(O7_FPA(o7_char const, cmd)) {
-	return system((char const *)cmd);
+	return c_system((char const *)cmd);
 }

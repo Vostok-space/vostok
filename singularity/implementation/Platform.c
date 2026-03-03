@@ -1,4 +1,4 @@
-/* Copyright 2017-2019,2021,2024 ComdivByZero
+/* Copyright 2017-2019,2021,2024,2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@
  || defined(__linux__) || defined(__linux) || defined(Platform_Bsd_Macro) \
  || defined(__minix__) || defined(__minix) \
  || defined(__APPLE__) || defined(__HAIKU__) \
- || defined(__sun__) || defined(__sun)
+ || defined(__sun__) || defined(__sun) \
+ || defined(__wasi__)
   o7_cbool const Platform_Posix = 0 < 1;
 #else
   o7_cbool const Platform_Posix = 0 > 1;

@@ -67,7 +67,7 @@ MODULE Crc32;
   crc / XorOut
  END Calc;
 
- PROCEDURE Init(VAR t: Table);
+ PROCEDURE InitTable(VAR t: Table);
  VAR i, l: INTEGER; crc: SET;
  BEGIN
   FOR i := 0 TO LEN(t) - 1 DO
@@ -84,5 +84,5 @@ MODULE Crc32;
  END InitTable;
 
 BEGIN
- Init(table)
+ InitTable(table)
 END Crc32.
