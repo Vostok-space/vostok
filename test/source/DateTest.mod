@@ -1,6 +1,6 @@
 MODULE DateTest;
 
- IMPORT Date; 
+ IMPORT Date;
 
  PROCEDURE Go*;
  VAR t: Date.T;
@@ -11,7 +11,7 @@ MODULE DateTest;
     ASSERT((0 < t.day) & (t.day < 32));
     ASSERT((0 <= t.hour) & (t.hour < 24));
     ASSERT((0 <= t.minute) & (t.minute < 60));
-    ASSERT((0 < t.second) & (t.second <= 60));
+    ASSERT((0 <= t.second) & (t.second <= 61))
   END
  END Go;
 
