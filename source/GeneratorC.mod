@@ -1,5 +1,5 @@
 (*  Generator of C-code by Oberon-07 abstract syntax tree
- *  Copyright (C) 2016-2025 ComdivByZero
+ *  Copyright (C) 2016-2026 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -2180,6 +2180,9 @@ END RecordUndefCall;
 
 PROCEDURE TypeForUndef(t: Ast.Type): Ast.Type;
 BEGIN
+	WHILE t.id = Ast.IdArray DO
+		t := t.type
+	END;
 	IF (t.id # Ast.IdRecord) OR (t.ext = NIL) OR ~t.ext(RecExt).undef THEN
 		t := NIL
 	END
@@ -2238,16 +2241,12 @@ BEGIN
 			typeUndef := TypeForUndef(var.type.type);
 			IF IsArrayTypeSimpleUndef(var.type, arrTypeId, arrDeep) THEN
 				ArraySimpleUndef(g, arrTypeId, var, TRUE)
-			ELSIF typeUndef # NIL THEN (* TODO вложенные циклы *)
-				Str(g, "for (i = 0; i < O7_LEN(r->");
-				Name(g, var);
-				StrOpen(g, "); i += 1) {");
+			ELSIF typeUndef # NIL THEN
+				Str(g, "O7_STRUCTS_INIT(");
 				GlobalName(g, typeUndef);
-				Str(g, "_undef(r->");
+				Str(g, ", r->");
 				Name(g, var);
-				StrLn(g, " + i);");
-
-				StrLnClose(g, "}")
+				StrLn(g, ");")
 			ELSE
 				Memset(g, var)
 			END
@@ -3402,28 +3401,29 @@ BEGIN
 END LnIfWrote;
 
 PROCEDURE VarsInit(VAR g: Generator; d: Ast.Declaration);
-VAR arrDeep, arrTypeId: INTEGER;
+VAR arrDeep, arrTypeId: INTEGER; typeUndef: Ast.Type;
 BEGIN
 	WHILE (d # NIL) & (d.id = Ast.IdVar) DO
 		IF d.type.id IN Ast.Structures THEN
-			IF (g.opt.varInit = GenOptions.VarInitUndefined)
-			 & (d.type.id = Ast.IdRecord) & Strings.IsDefined(d.type.name)
-			 & Ast.IsGlobal(d.type)
-			THEN
-				RecordUndefCall(g, d)
-			ELSIF (g.opt.varInit = GenOptions.VarInitZero)
-			OR (d.type.id = Ast.IdRecord)
-			OR    (d.type.id = Ast.IdArray)
-			    & ~IsArrayTypeSimpleUndef(d.type, arrTypeId, arrDeep)
-			THEN
+			typeUndef := TypeForUndef(d.type);
+			IF (typeUndef = NIL) OR (g.opt.varInit = GenOptions.VarInitZero) THEN
 				Str(g, "memset(&");
 				Name(g, d);
 				Str(g, ", 0, sizeof(");
 				Name(g, d);
 				StrLn(g, "));")
-			ELSE
-				ASSERT(g.opt.varInit = GenOptions.VarInitUndefined);
+			ELSIF (d.type.id = Ast.IdArray)
+			    & IsArrayTypeSimpleUndef(d.type, arrTypeId, arrDeep)
+			THEN
 				ArraySimpleUndef(g, arrTypeId, d, FALSE)
+			ELSIF d.type.id = Ast.IdRecord THEN
+				RecordUndefCall(g, d)
+			ELSE
+				Str(g, "O7_STRUCTS_INIT(");
+				GlobalName(g, typeUndef);
+				Str(g, ", ");
+				Name(g, d);
+				StrLn(g, ");")
 			END
 		END;
 		d := d.next

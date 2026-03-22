@@ -1555,6 +1555,17 @@ void o7_assign(void **m1, void *m2) {
 
 #define O7_ASSIGN(m1, m2) o7_assign((void **)(m1), m2)
 
+extern void o7_array_extfill(o7_int_t size, o7_int_t len, char array[O7_VLA(size * len)]);
+
+O7_ALWAYS_INLINE
+void o7_array_fill(o7_int_t size, o7_int_t len, char array[O7_VLA(size * len)], void (*init)(void*)) {
+	init((void *)array);
+	o7_array_extfill(size, len, array);
+}
+
+#define O7_STRUCTS_INIT(tname, array) \
+	o7_array_fill(sizeof(tname), sizeof(array) / sizeof(tname), (char *)array, tname##_undef)
+
 extern void o7_tag_init(o7_tag_t *ext, o7_tag_t const *base, void release(void *));
 
 #if O7_MEMNG == O7_MEMNG_COUNTER

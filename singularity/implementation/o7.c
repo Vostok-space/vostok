@@ -378,6 +378,15 @@ extern o7_long_t* o7_longs_undef(o7_int_t len, o7_long_t array[O7_VLA(len)]) {
 }
 #endif
 
+extern void o7_array_extfill(o7_int_t size, o7_int_t len, char array[O7_VLA(size * len)]) {
+	char *m;
+	m = array + size * (len - 1);
+	while (m != array) {
+		memcpy(m, array, size);
+		m -= size;
+	}
+}
+
 extern int o7_strcmp(o7_int_t s1_len, o7_char const s1[O7_VLA(s1_len)],
                      o7_int_t s2_len, o7_char const s2[O7_VLA(s2_len)]) {
 	int c1, c2;
