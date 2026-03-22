@@ -15,6 +15,12 @@
 #if !defined HEADER_GUARD_o7
 #    define  HEADER_GUARD_o7 1
 
+#if __GNUC__ * 100 + __GNUC_MINOR__ >= 440
+#	define O7_GCC_PUSHED 1
+#	pragma GCC push_options
+#	pragma GCC optimize ("-O3")
+#endif
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -182,9 +188,9 @@ typedef size_t o7_ptr_t;
 #define O7_LONG_BITS (sizeof(o7_long_t) * CHAR_BIT)
 
 #if defined(__GNUC__) || defined(__TINYC__) || defined(__COMPCERT__) || (__cplusplus >= 202002L)
-	enum { O7_ARITHMETIC_SHIFT = 1 };
+	enum { O7_ARITHMETIC_SHIFT = 0 < 1 };
 #else
-	enum { O7_ARITHMETIC_SHIFT = 0 };
+	enum { O7_ARITHMETIC_SHIFT = 0 > 1 };
 #endif
 
 enum { O7_DIV_BRANCHLESS = O7_ARITHMETIC_SHIFT };
@@ -682,7 +688,7 @@ void* o7_raw_alloc(size_t size) {
 		if (o7_allocated < (size_t)O7_MEMNG_NOFREE_BUFFER_SIZE - size) {
 			mem = (void *)(o7_memory + o7_allocated);
 			o7_allocated +=
-				(size - 1 + O7_MEM_ALIGN) / O7_MEM_ALIGN * O7_MEM_ALIGN;
+				(size + (O7_MEM_ALIGN - 1)) / O7_MEM_ALIGN * O7_MEM_ALIGN;
 		} else {
 			mem = NULL;
 		}
@@ -1809,8 +1815,6 @@ o7_int_t o7_clz(o7_uint_t i) {
 	int c, m;
 	if (O7_USED_GNUC_BUILTIN_CLZ) {
 		c = o7_gnuc_clz(i);
-	} else if (i == 0) {
-		c = 0x20;
 	} else {
 		c = 0x1F;
 
@@ -1823,11 +1827,14 @@ o7_int_t o7_clz(o7_uint_t i) {
 		m = (i >= 0x10) << 2;
 		c ^= m; i >>= m;
 
+		/* int2_t v[16] = { __, 00, 01, 01, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11 };
+		 * c ^= v[i] */
 		c ^= ((
-		   3 * ((1u << (15 * 2)) + (1 << (14 * 2)) + (1 << (13 * 2)) + (1 << (12 * 2)))
-		 + 3 * ((1u << (11 * 2)) + (1 << (10 * 2)) + (1 << ( 9 * 2)) + (1 << ( 8 * 2)))
-		 + 2 * ((1u << ( 7 * 2)) + (1 << ( 6 * 2)) + (1 << ( 5 * 2)) + (1 << ( 4 * 2)))
-		 + 1 * ((1u << ( 3 * 2)) + (1 << ( 2 * 2)))
+		 + (0 + 0) *  (1u << ( 1 * 2))
+		 + (0 + 1) * ((1u << ( 2 * 2)) + (1u << ( 3 * 2)))
+		 + (2 + 0) * ((1u << ( 4 * 2)) + (1u << ( 5 * 2)) + (1u << ( 6 * 2)) + (1u << ( 7 * 2)))
+		 + (2 + 1) * ((1u << ( 8 * 2)) + (1u << ( 9 * 2)) + (1u << (10 * 2)) + (1u << (11 * 2)) +
+		              (1u << (12 * 2)) + (1u << (13 * 2)) + (1u << (14 * 2)) + (1u << (15 * 2)))
 		      ) >> (i * 2)
 		     ) % 4;
 	}
@@ -1847,7 +1854,7 @@ o7_int_t o7_lclz(o7_ulong_t i) {
 	return c;
 }
 
-#if ((__GNUC__ * 100 + __GNUC_MINOR__ >= 200) || defined(__COMPCERT__)) \
+#if ((__GNUC__ >= 2) || defined(__COMPCERT__)) \
  && (!defined(O7_USE_GNUC_BUILTIN_FABS) || O7_USE_GNUC_BUILTIN_FABS)
 
 	enum { O7_USED_GNUC_BUILTIN_FABS = 0 < 1 };
@@ -1868,6 +1875,10 @@ double o7_fabs(double a) {
 	}
 	return a;
 }
+
+#if O7_GCC_PUSHED
+#	pragma GCC pop_options
+#endif
 
 extern O7_NORETURN void o7_case_fail(o7_int_t i);
 

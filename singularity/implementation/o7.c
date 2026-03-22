@@ -15,6 +15,10 @@
 
 #include "o7.h"
 
+#if defined(O7_GCC_PUSHED)
+#	pragma GCC optimize ("-O3")
+#endif
+
 #include <stdio.h>
 #include <float.h>
 
@@ -41,8 +45,10 @@ static void nothing(void *mem) {
 	(void)mem;
 }
 
-static int calcByteOrder(void) {
-	o7_int_t i, bo;
+O7_CONST_INLINE
+int calcByteOrder(void) {
+	o7_int_t i;
+	int bo;
 	char b[sizeof(i)];
 	b[0] = 1;
 	b[1] = 2;
@@ -59,11 +65,9 @@ static int calcByteOrder(void) {
 
 #if !defined(O7_BYTE_ORDER)
 	o7_int_t O7_BYTE_ORDER;
-	static void setByteOrder(void) {
-		O7_BYTE_ORDER = calcByteOrder();
-	}
+	O7_ALWAYS_INLINE void setByteOrder(void) { O7_BYTE_ORDER = calcByteOrder(); }
 #else
-	static void setByteOrder(void) {(void)calcByteOrder;}
+	O7_ALWAYS_INLINE void setByteOrder(void) { (void)calcByteOrder; }
 #endif
 
 O7_ALWAYS_INLINE
