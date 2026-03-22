@@ -194,8 +194,7 @@ O7_CONST_INLINE o7_long_t CalcSet_ToLong(o7_set_t v) {
   return (o7_long_t)(v ^ CalcSet_Min_cnst) - CalcSet_Min_cnst;
 }
 
-
-O7_ALWAYS_INLINE o7_int_t CalcSet_Divide(o7_int_t a, o7_int_t b) {
+O7_CONST_INLINE o7_int_t CalcSet_Divide(o7_int_t a, o7_int_t b) {
   o7_int_t c;
   if (a > 0) {
     if (b > 0) {
@@ -215,7 +214,7 @@ O7_ALWAYS_INLINE o7_int_t CalcSet_Divide(o7_int_t a, o7_int_t b) {
   return c;
 }
 
-O7_ALWAYS_INLINE o7_int_t CalcSet_Module(o7_int_t a, o7_int_t b) {
+O7_CONST_INLINE o7_int_t CalcSet_Module(o7_int_t a, o7_int_t b) {
   o7_int_t c;
   if (a > 0) {
     if (b > 0) {
