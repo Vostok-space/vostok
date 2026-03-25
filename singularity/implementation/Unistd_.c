@@ -1,6 +1,6 @@
 /* Bindings of some functions from unistd.h
  *
- * Copyright 2019-2021 ComdivByZero
+ * Copyright 2019-2021,2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
 	O7_ALWAYS_INLINE o7_int_t readlink(char const path[], char buf[], size_t len) {
-		O7_ASSERT(0>1);
+		o7_assert(0>1);
 		return -1;
 	}
 	O7_ALWAYS_INLINE o7_int_t sysconf(o7_int_t name) {
-		O7_ASSERT(0>1);
+		o7_assert(0>1);
 		return -1;
 	}
 	O7_ALWAYS_INLINE o7_int_t chdir(char const name[]) {
-		O7_ASSERT(0>1);
+		o7_assert(0>1);
 		return -1;
 	}
 #	define _SC_PAGESIZE 0
@@ -62,7 +62,7 @@ static o7_int_t Len(O7_FPA(o7_char const, str)) {
 }
 
 extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char, buf)) {
-	O7_ASSERT(Len(O7_APA(pathname)) < O7_FPA_LEN(pathname));
+	o7_assert(Len(O7_APA(pathname)) < O7_FPA_LEN(pathname));
 	return (o7_int_t)readlink((char const *)pathname, (char *)buf, (o7_uint_t)O7_FPA_LEN(buf));
 }
 
@@ -71,6 +71,20 @@ extern o7_int_t Unistd_Sysconf(o7_int_t name) {
 }
 
 extern o7_int_t Unistd_Chdir(O7_FPA(o7_char const, path)) {
-	O7_ASSERT(Len(O7_APA(path)) < O7_FPA_LEN(path));
+	o7_assert(Len(O7_APA(path)) < O7_FPA_LEN(path));
 	return (o7_int_t)chdir((char const *)path);
+}
+
+extern o7_int_t Unistd_Read(o7_int_t fd, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t len) {
+	o7_assert(0 <= len);
+	o7_assert(0 <= ofs && ofs <= O7_FPA_LEN(buf) - len);
+
+	return read(fd, buf + ofs, len);
+}
+
+extern o7_int_t Unistd_Write(o7_int_t fd, O7_FPA(o7_char const, buf), o7_int_t ofs, o7_int_t len) {
+	o7_assert(0 <= len);
+	o7_assert(0 <= ofs && ofs <= O7_FPA_LEN(buf) - len);
+
+	return write(fd, buf + ofs, len);
 }

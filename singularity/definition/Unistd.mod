@@ -1,5 +1,5 @@
 (* Bindings of some functions from unistd.h
- * Copyright 2019-2020 ComdivByZero
+ * Copyright 2019-2020,2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,16 @@ MODULE Unistd;
 
   PROCEDURE Readlink*(pathname: ARRAY OF CHAR; VAR buf: ARRAY OF CHAR): INTEGER;
   BEGIN
-    ASSERT(Platform.Posix);
-    ASSERT(Len(pathname) < LEN(pathname))
+    ASSERT(Len(pathname) < LEN(pathname));
+
+    ASSERT(Platform.Posix)
   RETURN
     -1
   END Readlink;
 
   PROCEDURE Sysconf*(name: INTEGER): INTEGER;
   BEGIN
-    ASSERT(Platform.Posix);
+    ASSERT(Platform.Posix)
   RETURN
     -1
   END Sysconf;
@@ -52,5 +53,25 @@ MODULE Unistd;
   RETURN
     -1
   END Chdir;
+
+  PROCEDURE Read*(fd: INTEGER; VAR data: ARRAY OF BYTE; ofs, len: INTEGER): INTEGER;
+  BEGIN
+    ASSERT(0 <= len);
+    ASSERT((0 <= ofs) & (ofs <= LEN(data) - len));
+  
+    ASSERT(Platform.Posix)
+  RETURN
+    -1
+  END Read;
+
+  PROCEDURE Write*(fd: INTEGER; data: ARRAY OF BYTE; ofs, len: INTEGER): INTEGER;
+  BEGIN
+    ASSERT(0 <= len);
+    ASSERT((0 <= ofs) & (ofs <= LEN(data) - len));
+
+    ASSERT(Platform.Posix)
+  RETURN
+    -1
+  END Write;
 
 END Unistd.

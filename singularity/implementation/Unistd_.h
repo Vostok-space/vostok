@@ -1,5 +1,5 @@
 /* Bindings of some functions from unistd.h
- * Copyright 2019-2020 ComdivByZero
+ * Copyright 2019-2020,2026 ComdivByZero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ extern o7_int_t Unistd_Readlink(O7_FPA(o7_char const, pathname), O7_FPA(o7_char,
 extern o7_int_t Unistd_Sysconf(o7_int_t name);
 
 extern o7_int_t Unistd_Chdir(O7_FPA(o7_char const, path));
+
+extern o7_int_t Unistd_Read(o7_int_t fd, O7_FPA(o7_char, buf), o7_int_t ofs, o7_int_t len);
+extern o7_int_t Unistd_Write(o7_int_t fd, O7_FPA(o7_char const, buf), o7_int_t ofs, o7_int_t len);
 
 O7_ALWAYS_INLINE void Unistd_init(void) { ; }
 O7_ALWAYS_INLINE void Unistd_done(void) { ; }
