@@ -21,6 +21,7 @@ MODULE PosixFcntl;
   Append*, Async*, Cloexec*, Creat*, Directory*, Dsync*, Excl*,
   Noctty*, Nofollow*, Nonblock*, Path*, Sync*, Trunc*: SET;
 
+ (* mode 16-ричен для удобства *)
  PROCEDURE Open*(path: ARRAY OF CHAR; flags: SET; mode: INTEGER): INTEGER;
  RETURN
   -1

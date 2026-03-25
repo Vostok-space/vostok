@@ -36,7 +36,7 @@ o7_set_t
   PosixFcntl_Trunc     = O_TRUNC;
 
 extern o7_int_t PosixFcntl_Open(o7_int_t len, o7_char path[O7_VLA(len)], o7_set_t flags, o7_int_t mode) {
-  return open((char *)path, flags, mode);
+  return open((char *)path, flags, mode % 0x10 + mode / 0x10 % 0x10 * 010 + mode / 0x100 % 0x10 * 0100 + mode / 0x1000  * 01000);
 }
 
 extern o7_bool PosixFcntl_Close(o7_int_t *fid) {
