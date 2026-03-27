@@ -109,7 +109,7 @@ TYPE
 		inLoops: INTEGER;
 
 		c: Ast.Context;
-		module: Ast.Module
+		lastCallFromModule, module: Ast.Module
 	END;
 
 VAR
@@ -368,11 +368,13 @@ VAR des: Ast.Designator; decl: Ast.Declaration; prev, sel: Ast.Selector; ignore:
 		RETURN sel
 	END Sel;
 BEGIN
-	IF qualident = NIL THEN
-		ASSERT(p.l = Scanner.Ident);
+	IF qualident # NIL THEN
+		decl := qualident
+	ELSIF p.l # Scanner.Dot THEN
 		decl := Qualident(p, ds)
 	ELSE
-		decl := qualident
+		Scan(p);
+		decl := ExpectDecl(p, p.lastCallFromModule)
 	END;
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
@@ -1301,7 +1303,7 @@ VAR stats, last: Ast.Statement;
 			commentOfs := -1
 		END;
 		emptyLines := p.s.emptyLines;
-		IF p.l = Scanner.Ident      THEN
+		IF (p.l = Scanner.Ident) OR p.module.script & (p.l = Scanner.Dot) & (p.lastCallFromModule # NIL) THEN
 			des := Designator(p, ds, NIL);
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
@@ -1309,7 +1311,10 @@ VAR stats, last: Ast.Statement;
 				AddError(p, ErrMaybeAssignInsteadEqual);
 				st := Ast.StatementErrorNew()
 			ELSE
-				st := Call(p, ds, des)
+				st := Call(p, ds, des);
+				IF p.module.script THEN
+					p.lastCallFromModule := des.decl.module.m
+				END
 			END
 		ELSIF p.l = SpecIdent.If      THEN
 			st := If(p, ds)
@@ -1347,7 +1352,7 @@ BEGIN
 	stats := Statement(p, ds);
 	last := stats;
 
-	WHILE ScanIfEqual(p, Scanner.Semicolon) DO
+	WHILE ScanIfEqual(p, Scanner.Semicolon) OR (p.module.script) & (p.l = Scanner.Dot) DO
 		Ast.StatementAdd(stats, last, Statement(p, ds))
 	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
@@ -1562,6 +1567,7 @@ BEGIN
 	p.err           := FALSE;
 	p.errorsCount   := 0;
 	p.module        := NIL;
+	p.lastCallFromModule := NIL;
 	p.callId        := 0;
 	p.inLoops       := 0;
 	IF in # NIL THEN
