@@ -1,5 +1,5 @@
 (*  Parser of Oberon-07 modules
- *  Copyright (C) 2016-2019,2021-2023 ComdivByZero
+ *  Copyright (C) 2016-2019,2021-2023,2026 ComdivByZero
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published
@@ -1588,6 +1588,7 @@ VAR p: Parser;
 BEGIN
 	ParserInit(p, NIL, in, opt);
 	p.module := Ast.ScriptNew(p.c);
+	p.c.ds := p.module;
 	Scan(p);
 	p.module.stats := Statements(p, p.module);
 	IF (p.module.stats = NIL) & (p.module.errors = NIL) THEN
