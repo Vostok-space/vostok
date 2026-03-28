@@ -1,7 +1,7 @@
 Arithmetic and bits operations for SET as two's complement 32-bit integers.
 Executable specification.
 
-Copyright 2022,2024-2025 ComdivByZero
+Copyright 2022,2024-2026 ComdivByZero
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -121,11 +121,9 @@ MODULE CalcSet;
  BEGIN
   ASSERT(n >= 0);
   r := {};
-  IF n < Len THEN
-    FOR i := n TO Last DO
-      IF i - n IN s THEN
-        INCL(r, i)
-      END
+  FOR i := Last - n TO 0 BY -1 DO
+    IF i IN s THEN
+      INCL(r, i + n)
     END
   END
  RETURN
