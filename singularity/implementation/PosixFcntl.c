@@ -16,6 +16,7 @@
 #include "PosixFcntl.h"
 
 #include <fcntl.h>
+#include <unistd.h>
 
 o7_set_t
   PosixFcntl_Rdonly    = O_RDONLY,
@@ -45,4 +46,3 @@ extern o7_bool PosixFcntl_Close(o7_int_t *fid) {
   *fid = -1;
   return ok;
 }
-
