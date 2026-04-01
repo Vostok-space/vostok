@@ -285,10 +285,14 @@ END ExpectDecl;
 PROCEDURE Qualident(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
-	d := ExpectDecl(p, ds);
-	IF d.id = Ast.IdImport THEN
-		Expect(p, Scanner.Dot, ErrExpectDot);
-		d := ExpectDecl(p, d(Ast.Import).module.m)
+	IF ~p.module.script OR ~ScanIfEqual(p, Scanner.Dot) THEN
+		d := ExpectDecl(p, ds);
+		IF d.id = Ast.IdImport THEN
+			Expect(p, Scanner.Dot, ErrExpectDot);
+			d := ExpectDecl(p, d(Ast.Import).module.m)
+		END
+	ELSE
+		d := ExpectDecl(p, p.lastCallFromModule)
 	END
 	RETURN d
 END Qualident;
@@ -368,14 +372,7 @@ VAR des: Ast.Designator; decl: Ast.Declaration; prev, sel: Ast.Selector; ignore:
 		RETURN sel
 	END Sel;
 BEGIN
-	IF qualident # NIL THEN
-		decl := qualident
-	ELSIF p.l # Scanner.Dot THEN
-		decl := Qualident(p, ds)
-	ELSE
-		Scan(p);
-		decl := ExpectDecl(p, p.lastCallFromModule)
-	END;
+	decl := qualident;
 	CheckAst(p, Ast.DesignatorNew(des, decl));
 	IF decl # NIL THEN
 		IF (decl.id = Ast.IdVar) OR (decl.id = Ast.IdConst) THEN
@@ -517,7 +514,7 @@ BEGIN
 		Scan(p);
 		e := Ast.ExprBracesNew(expression(p, ds, {}));
 		Expect(p, Scanner.Brace1Close, ErrExpectBrace1Close)
-	ELSIF p.l = Scanner.Ident THEN
+	ELSIF (p.l = Scanner.Ident) OR (p.l = Scanner.Dot) & p.module.script THEN
 		Ident(p, ds, context, e)
 	ELSIF p.l = Scanner.Brace3Open THEN
 		e := Set(p, ds)
@@ -1304,17 +1301,17 @@ VAR stats, last: Ast.Statement;
 		END;
 		emptyLines := p.s.emptyLines;
 		IF (p.l = Scanner.Ident) OR p.module.script & (p.l = Scanner.Dot) & (p.lastCallFromModule # NIL) THEN
-			des := Designator(p, ds, NIL);
+			des := Designator(p, ds, Qualident(p, ds));
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
 			ELSIF p.l = Scanner.Equal THEN
 				AddError(p, ErrMaybeAssignInsteadEqual);
 				st := Ast.StatementErrorNew()
 			ELSE
-				st := Call(p, ds, des);
 				IF p.module.script THEN
 					p.lastCallFromModule := des.decl.module.m
-				END
+				END;
+				st := Call(p, ds, des)
 			END
 		ELSIF p.l = SpecIdent.If      THEN
 			st := If(p, ds)
@@ -1352,7 +1349,7 @@ BEGIN
 	stats := Statement(p, ds);
 	last := stats;
 
-	WHILE ScanIfEqual(p, Scanner.Semicolon) OR (p.module.script) & (p.l = Scanner.Dot) DO
+	WHILE ScanIfEqual(p, Scanner.Semicolon) OR (p.l = Scanner.Dot) & p.module.script DO
 		Ast.StatementAdd(stats, last, Statement(p, ds))
 	ELSIF NotEnd(p.l) & ~p.module.script DO
 		AddError(p, ErrExpectSemicolon);
