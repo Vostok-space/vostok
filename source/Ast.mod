@@ -2036,6 +2036,9 @@ PROCEDURE ForIteratorGet*(VAR c: Context;
 VAR err: INTEGER;
 BEGIN
 	err := VarGet(c, v, ds, buf, begin, end);
+	IF (err = ErrDeclarationNotFound) & c.m.script THEN
+		err := ErrNo
+	END;
 	IF v # NIL THEN
 		IF v.type = NIL THEN
 			v.type := TypeGet(IdInteger)
