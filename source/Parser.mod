@@ -258,22 +258,15 @@ BEGIN
 	RETURN e
 END Set;
 
-PROCEDURE DeclarationGet(ds: Ast.Declarations; VAR p: Parser): Ast.Declaration;
-VAR d: Ast.Declaration;
-BEGIN
-	d := NIL;
-	CheckAst(p, Ast.DeclarationGet(p.c, d, p.opt.provider, ds, p.s.buf, p.s.lexStart, p.s.lexEnd))
-	RETURN d
-END DeclarationGet;
-
-PROCEDURE ExpectDecl(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
+PROCEDURE ExpectDecl(VAR p: Parser; ds: Ast.Declarations; allowImplicit: BOOLEAN): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
 	IF p.l # Scanner.Ident THEN
 		d := NIL;
 		AddError(p, ErrExpectIdent)
 	ELSE
-		d := DeclarationGet(ds, p);
+		CheckAst(p, Ast.DeclarationGet(p.c, d, p.opt.provider, ds,
+		                               p.s.buf, p.s.lexStart, p.s.lexEnd, allowImplicit));
 		Scan(p)
 	END;
 	IF d = NIL THEN
@@ -282,17 +275,17 @@ BEGIN
 	RETURN d
 END ExpectDecl;
 
-PROCEDURE Qualident(VAR p: Parser; ds: Ast.Declarations): Ast.Declaration;
+PROCEDURE Qualident(VAR p: Parser; ds: Ast.Declarations; allowImplicit: BOOLEAN): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN
-	IF ~p.module.script OR ~ScanIfEqual(p, Scanner.Dot) THEN
-		d := ExpectDecl(p, ds);
+	IF p.module.script & ScanIfEqual(p, Scanner.Dot) THEN
+		d := ExpectDecl(p, p.lastCallFromModule, FALSE)
+	ELSE
+		d := ExpectDecl(p, ds, allowImplicit);
 		IF d.id = Ast.IdImport THEN
 			Expect(p, Scanner.Dot, ErrExpectDot);
-			d := ExpectDecl(p, d(Ast.Import).module.m)
+			d := ExpectDecl(p, d(Ast.Import).module.m, FALSE)
 		END
-	ELSE
-		d := ExpectDecl(p, p.lastCallFromModule)
 	END
 	RETURN d
 END Qualident;
@@ -301,7 +294,7 @@ PROCEDURE ExpectRecordExtend(VAR p: Parser; ds: Ast.Declarations;
                              base: Ast.Construct): Ast.Declaration;
 VAR d: Ast.Declaration;
 BEGIN (*TODO*)
-	d := Qualident(p, ds)
+	d := Qualident(p, ds, FALSE)
 	RETURN d
 END ExpectRecordExtend;
 
@@ -374,7 +367,7 @@ VAR des: Ast.Designator; decl: Ast.Declaration; prev, sel: Ast.Selector; ignore:
 BEGIN
 	decl := qualident;
 	CheckAst(p, Ast.DesignatorNew(des, decl));
-	IF decl # NIL THEN
+	IF (decl # NIL) & (decl.type # NIL) THEN
 		IF (decl.id = Ast.IdVar) OR (decl.id = Ast.IdConst) THEN
 			sel := Sel(p, ds, des, prev);
 			IF sel # NIL THEN
@@ -463,7 +456,7 @@ VAR e: Ast.Expression;
 	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; context: SET; VAR e: Ast.Expression);
 	VAR des: Ast.Designator; decl: Ast.Declaration; et: Ast.ExprType;
 	BEGIN
-		decl := Qualident(p, ds);
+		decl := Qualident(p, ds, FALSE);
 		IF decl IS Ast.Type THEN
 			CheckAst(p, Ast.ExprTypeNew(et, decl(Ast.Type)));
 			e := et
@@ -701,7 +694,7 @@ VAR d: Ast.Declaration;
 	t: Ast.Type;
 BEGIN
 	t := NIL;
-	d := Qualident(p, ds);
+	d := Qualident(p, ds, FALSE);
 	IF d # NIL THEN
 		IF d IS Ast.Type THEN
 			t := d(Ast.Type)
@@ -803,7 +796,7 @@ BEGIN
 	Scan(p);
 	base := NIL;
 	IF ScanIfEqual(p, Scanner.Brace1Open) THEN
-		decl := Qualident(p, ds);
+		decl := Qualident(p, ds, FALSE);
 		IF (decl # NIL) & (decl.id = Ast.IdRecord) THEN
 			base := decl(Ast.Record)
 		ELSE
@@ -1092,7 +1085,7 @@ VAR case: Ast.Case;
 						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdChar, i));
 						Scan(p)
 					ELSIF p.l = Scanner.Ident THEN
-						CheckAst(p, Ast.CaseLabelQualNew(p.c, l, Qualident(p, ds)))
+						CheckAst(p, Ast.CaseLabelQualNew(p.c, l, Qualident(p, ds, FALSE)))
 					ELSE
 						CheckAst(p, Ast.CaseLabelNew(l, Ast.IdInteger, 0));
 						AddError(p, ErrExpectIntOrStrOrQualident)
@@ -1246,10 +1239,10 @@ VAR st: Ast.Assign;
 BEGIN
 	ASSERT(p.l = Scanner.Assign);
 	Scan(p);
+	CheckAst(p, Ast.AssignNew(p.c, st, 0 < p.inLoops, des, Expression(p, ds, {})));
 	IF (des.decl.type.id = Ast.IdPointer) & (des.sel # NIL) THEN
 		DesignatorUsed(p, des, {})
-	END;
-	CheckAst(p, Ast.AssignNew(p.c, st, 0 < p.inLoops, des, Expression(p, ds, {})))
+	END
 	RETURN st
 END Assign;
 
@@ -1301,7 +1294,7 @@ VAR stats, last: Ast.Statement;
 		END;
 		emptyLines := p.s.emptyLines;
 		IF (p.l = Scanner.Ident) OR p.module.script & (p.l = Scanner.Dot) & (p.lastCallFromModule # NIL) THEN
-			des := Designator(p, ds, Qualident(p, ds));
+			des := Designator(p, ds, Qualident(p, ds, p.module.script));
 			IF p.l = Scanner.Assign THEN
 				st := Assign(p, ds, des)
 			ELSIF p.l = Scanner.Equal THEN

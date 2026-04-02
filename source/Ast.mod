@@ -805,7 +805,7 @@ BEGIN
 	ASSERT((ds.start = NIL) OR (ds.start.id # IdModule));
 
 	DeclInit(d, ds);
-	IF (ds.end # NIL) & (ds.procedures # NIL) & (d.id = IdVar) THEN
+	IF (ds.procedures # NIL) & (d.id = IdVar) THEN
 		IF ds.vars = NIL THEN
 			IF ds.start = ds.procedures THEN
 				ds.start := d
@@ -822,6 +822,9 @@ BEGIN
 			ds.varsEnd.next := d;
 			ds.varsEnd := d(Var)
 		END
+	ELSIF (ds.vars # NIL) & (d.id = IdImport) THEN
+		d.next := ds.start;
+		ds.start := d
 	ELSE
 		IF ds.end # NIL THEN
 			ASSERT(ds.end.next = NIL);
@@ -1942,15 +1945,24 @@ END DeclErrorNew;
 
 PROCEDURE RegularDeclGet(VAR c: Context;
                          VAR d: Declaration; prov: Provider; ds: Declarations;
-                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
-VAR err: INTEGER;
+                         VAR buf: ARRAY OF CHAR; begin, end: INTEGER; allowImplicit: BOOLEAN): INTEGER;
+VAR err: INTEGER; v: Var;
 BEGIN
 	d := DeclarationSearch(ds, buf, begin, end);
 	IF d = NIL THEN
-		IF (ds.module # NIL) & ds.module.m.script THEN
+		IF (buf[end] = ".") & (ds.module # NIL) & ds.module.m.script THEN
 			err := ImportAdd(c, prov, ds.module.m, buf, begin, end, begin, end);
-			d := ds.end
+			(* TODO *)
+			IF ds.vars = NIL THEN
+				d := ds.end
+			ELSE
+				d := ds.start
+			END
 		ELSE
+			IF allowImplicit & (ds.module # NIL) & ds.module.m.script THEN
+				ChecklessVarAdd(v, ds, buf, begin, end);
+				d := v
+			END;
 			err := ErrNo
 		END;
 		IF (d = NIL) & (err = ErrNo) THEN
@@ -1974,11 +1986,11 @@ END RegularDeclGet;
 
 PROCEDURE DeclarationGet*(VAR c: Context;
                           VAR d: Declaration; prov: Provider; ds: Declarations;
-                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER): INTEGER;
+                          VAR buf: ARRAY OF CHAR; begin, end: INTEGER; allowImplicit: BOOLEAN): INTEGER;
 VAR err, id: INTEGER;
 BEGIN
 	IF ds # system THEN
-		err := RegularDeclGet(c, d, prov, ds, buf, begin, end)
+		err := RegularDeclGet(c, d, prov, ds, buf, begin, end, allowImplicit)
 	ELSIF SpecIdent.IsSystemProc(id, buf, begin, end) THEN
 		d := predefined[id - SpecIdent.PredefinedFirst];
 		err := ErrNo
@@ -4389,6 +4401,10 @@ VAR err: INTEGER;
 BEGIN
 	NEW(a); StatInit(a, expr);
 	a.designator := des;
+	IF (des.sel = NIL) & (des.type = NIL) THEN
+		des.decl.type := expr.type;
+		des.type := expr.type
+	END;
 	err := ErrNo;
 	IF des # NIL THEN
 		IF (des.decl.id = IdVar) & IsChangeable(des) THEN
