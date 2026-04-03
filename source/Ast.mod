@@ -1084,7 +1084,6 @@ BEGIN
 	ASSERT(~m.fixed);
 
 	i := m.import;
-	ASSERT((i = NIL) OR (m.end.id = IdImport));
 	IF Strings.IsEqualToChars(m.name, buf, realOfs, realEnd) THEN
 		err := ErrImportSelf;
 		AddErrorNote(c, err, m.name)
