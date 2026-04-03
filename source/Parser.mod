@@ -456,7 +456,7 @@ VAR e: Ast.Expression;
 	PROCEDURE Ident(VAR p: Parser; ds: Ast.Declarations; context: SET; VAR e: Ast.Expression);
 	VAR des: Ast.Designator; decl: Ast.Declaration; et: Ast.ExprType;
 	BEGIN
-		decl := Qualident(p, ds, FALSE);
+		decl := Qualident(p, ds, (Ast.ParamOut IN context) & p.module.script);
 		IF decl IS Ast.Type THEN
 			CheckAst(p, Ast.ExprTypeNew(et, decl(Ast.Type)));
 			e := et

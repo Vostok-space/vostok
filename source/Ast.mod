@@ -3699,10 +3699,34 @@ VAR err, distance: INTEGER; fp: FormalParam; str: ExprString;
 			ExchangeParamsNeedTag(fp, e(Designator).decl(FormalParam))
 		END
 	END CheckNeedTag;
+
+	PROCEDURE AutoType(t: Type): Type;
+	VAR d, c: INTEGER;
+	BEGIN
+		d := 0;
+		WHILE (t.id = IdArray) & (t(Array).count = NIL) DO
+			t := t.type;
+			INC(d)
+		END;
+		c := 4096;
+		WHILE d > 0 DO
+			t := ArrayGet(t, ExprIntegerNew(c));
+			c := 8;
+			DEC(d)
+		END
+		RETURN t
+	END AutoType;
 BEGIN
 	err := ErrNo;
 	fp := currentFormalParam;
 	IF fp # NIL THEN
+		IF e.type = NIL THEN
+			e.type := AutoType(fp.type);
+			IF e.id = IdDesignator THEN
+				e(Designator).decl.type := e.type
+			END
+		END;
+
 		IF ~CompatibleTypes(distance, fp.type, e.type, TRUE)
 		 & ~CompatibleAsCharAndString(currentFormalParam.type, e)
 		 &     ((ParamOut IN fp.access)
