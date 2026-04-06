@@ -1098,7 +1098,7 @@ BEGIN
 			NEW(imp); NodeInit(imp^, IdImport);
 			DeclConnect(imp, m, buf, nameOfs, nameEnd);
 			imp.mark := TRUE;
-			IF m.import = NIL THEN
+			IF m.start = imp THEN
 				m.import := imp
 			END;
 			ofs := 0;
